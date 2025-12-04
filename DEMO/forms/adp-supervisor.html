@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADP Supervisor Setup - Demo</title>
+  <link rel="stylesheet" href="form-styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <img src="../team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+    <button class="back-btn" onclick="window.location.href='../dashboard.html'">← Back to Dashboard</button>
+
+    <div id="form-container">
+      <h1>ADP Supervisor Permissions Setup</h1>
+      <div class="info-card">
+        <p><b>Employee:</b> <span id="employeeName">Loading...</span></p>
+        <p><b>Position:</b> <span id="position">Loading...</span></p>
+        <p><b>Workflow ID:</b> <span id="workflowId">Loading...</span></p>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 20px;">
+        Configure ADP supervisor-level permissions and access.
+      </p>
+
+      <form id="adpSupForm">
+        <h2>ADP Account Setup</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>ADP Username <span class="required">*</span></label>
+            <input type="text" name="adpUsername" required placeholder="ADP Username">
+          </div>
+          <div class="form-field">
+            <label>ADP Password <span class="required">*</span></label>
+            <input type="text" name="adpPassword" required placeholder="Temporary Password">
+          </div>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Employee ID in ADP</label>
+          <input type="text" name="adpEmployeeId" placeholder="ADP Employee ID">
+        </div>
+
+        <hr>
+
+        <h2>Supervisor Permissions</h2>
+        <p style="color: var(--text-muted); margin-bottom: 15px;">Enable the following supervisor permissions:</p>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="viewTimecard" name="viewTimecard">
+          <label for="viewTimecard">View Team Timecards</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="approveTimecard" name="approveTimecard">
+          <label for="approveTimecard">Approve Team Timecards</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="viewPTO" name="viewPTO">
+          <label for="viewPTO">View PTO Requests</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="approvePTO" name="approvePTO">
+          <label for="approvePTO">Approve PTO Requests</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="viewReports" name="viewReports">
+          <label for="viewReports">Access Team Reports</label>
+        </div>
+
+        <hr>
+
+        <h2>Team Assignment</h2>
+        <div class="question-wrapper">
+          <label>Direct Reports (Employee IDs)</label>
+          <textarea name="directReports" placeholder="Enter employee IDs, separated by commas..."></textarea>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Department/Team</label>
+          <input type="text" name="department" placeholder="e.g., Operations, Engineering">
+        </div>
+
+        <hr>
+
+        <h2>Completion</h2>
+        <div class="question-wrapper">
+          <label>Setup Notes</label>
+          <textarea name="setupNotes" placeholder="Any notes about the ADP setup..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Configured By <span class="required">*</span></label>
+            <input type="text" name="configuredBy" required placeholder="Your Name">
+          </div>
+          <div class="form-field">
+            <label>Setup Date <span class="required">*</span></label>
+            <input type="text" name="setupDate" required id="setupDate">
+          </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+          <button type="submit">Submit ADP Supervisor Setup</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="form-script.js"></script>
+  <script>
+    initForm('ADP-SUP', 'ADP Supervisor', 'ADP supervisor permissions configured.');
+  </script>
+</body>
+</html>

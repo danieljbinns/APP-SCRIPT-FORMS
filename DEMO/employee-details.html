@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Details - Full View</title>
+  <style>
+    /* Dark Mode Theme */
+    :root {
+      --bg-color: #000000;
+      --card-bg: #1a1a1a;
+      --text-main: #ffffff;
+      --text-muted: #b0b0b0;
+      --brand-red: #EB1C2D;
+      --brand-red-hover: #c41522;
+      --input-bg: #2a2a2a;
+      --input-border: #444;
+      --border-color: #333;
+      --status-complete: #0f9d58;
+      --status-open: #f4b400;
+      --status-progress: #4285f4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      max-height: 70px;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .back-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: bold;
+      transition: background 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .back-btn:hover {
+      background: var(--input-border);
+    }
+
+    .employee-header {
+      background: linear-gradient(135deg, var(--brand-red), #c41522);
+      padding: 3rem 2rem;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .employee-name {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .employee-title {
+      font-size: 1.3rem;
+      opacity: 0.9;
+      margin-bottom: 1rem;
+    }
+
+    .employee-meta {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      font-size: 1rem;
+      opacity: 0.95;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    @media (max-width: 1200px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .info-section {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--brand-red);
+    }
+
+    .section-title {
+      color: var(--brand-red);
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .field-item {
+      background: var(--input-bg);
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 3px solid var(--brand-red);
+    }
+
+    .field-label {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .field-value {
+      color: var(--text-main);
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    .workflow-section {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      margin-bottom: 30px;
+    }
+
+    .tasks-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .task-item {
+      background: var(--input-bg);
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 4px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      transition: all 0.2s;
+    }
+
+    .task-item:hover {
+      border-left-color: var(--brand-red);
+      transform: translateX(5px);
+    }
+
+    .task-item.complete {
+      border-left-color: var(--status-complete);
+    }
+
+    .task-item.in-progress {
+      border-left-color: var(--status-progress);
+    }
+
+    .task-item.open {
+      border-left-color: var(--status-open);
+    }
+
+    .task-info {
+      flex: 1;
+    }
+
+    .task-name {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .task-description {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+    }
+
+    .task-id {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-family: monospace;
+    }
+
+    .task-status {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .status-complete {
+      background: var(--status-complete);
+      color: white;
+    }
+
+    .status-open {
+      background: var(--status-open);
+      color: black;
+    }
+
+    .status-progress {
+      background: var(--status-progress);
+      color: white;
+    }
+
+    .equipment-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .equipment-badge {
+      background: var(--brand-red);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .full-width-section {
+      grid-column: 1 / -1;
+    }
+
+    .print-btn {
+      background: var(--brand-red);
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    .print-btn:hover {
+      background: var(--brand-red-hover);
+    }
+
+    @media print {
+      body {
+        background: white;
+        color: black;
+      }
+      .back-btn, .print-btn {
+        display: none;
+      }
+    }
+
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+
+    <!-- Header Bar -->
+    <div class="header-bar">
+      <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
+      <button class="print-btn" onclick="window.print()">🖨️ Print Details</button>
+    </div>
+
+    <!-- Employee Header -->
+    <div class="employee-header">
+      <div class="employee-name" id="employeeName">Loading...</div>
+      <div class="employee-title" id="employeeTitle">Loading...</div>
+      <div class="employee-meta">
+        <div class="meta-item">
+          <span>📅</span>
+          <span>Hire Date: <strong id="hireDate">Loading...</strong></span>
+        </div>
+        <div class="meta-item">
+          <span>📍</span>
+          <span id="siteName">Loading...</span>
+        </div>
+        <div class="meta-item">
+          <span>🆔</span>
+          <span>Workflow ID: <strong id="workflowId">Loading...</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+      <!-- Personal Information -->
+      <div class="info-section">
+        <h2 class="section-title">👤 Personal Information</h2>
+        <div class="field-grid">
+          <div class="field-item">
+            <div class="field-label">Full Legal Name</div>
+            <div class="field-value" id="fullName">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Preferred Name</div>
+            <div class="field-value" id="preferredName">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Personal Email</div>
+            <div class="field-value" id="personalEmail">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Personal Phone</div>
+            <div class="field-value" id="personalPhone">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Employment Information -->
+      <div class="info-section">
+        <h2 class="section-title">💼 Employment Information</h2>
+        <div class="field-grid">
+          <div class="field-item">
+            <div class="field-label">Hire Type</div>
+            <div class="field-value" id="hireType">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Employee Type</div>
+            <div class="field-value" id="employeeType">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Employment Classification</div>
+            <div class="field-value" id="employmentType">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Position / Job Title</div>
+            <div class="field-value" id="position">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Site & Location -->
+      <div class="info-section">
+        <h2 class="section-title">📍 Site & Location Information</h2>
+        <div class="field-grid">
+          <div class="field-item">
+            <div class="field-label">Site Name</div>
+            <div class="field-value" id="siteNameFull">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Job Site Number</div>
+            <div class="field-value" id="jobSiteNumber">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Department</div>
+            <div class="field-value" id="department">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manager/Supervisor -->
+      <div class="info-section">
+        <h2 class="section-title">👔 Manager & Supervisor</h2>
+        <div class="field-grid">
+          <div class="field-item">
+            <div class="field-label">Reporting Manager Name</div>
+            <div class="field-value" id="managerName">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Manager Email</div>
+            <div class="field-value" id="managerEmail">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Request Information -->
+      <div class="info-section full-width-section">
+        <h2 class="section-title">📋 Request Information</h2>
+        <div class="field-grid">
+          <div class="field-item">
+            <div class="field-label">Requested By</div>
+            <div class="field-value" id="requesterName">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Requester Email</div>
+            <div class="field-value" id="requesterEmail">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Date Requested</div>
+            <div class="field-value" id="dateRequested">-</div>
+          </div>
+          <div class="field-item">
+            <div class="field-label">Gatekeeper Approved</div>
+            <div class="field-value" id="gatekeeper">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Equipment & Access -->
+      <div class="info-section full-width-section">
+        <h2 class="section-title">🖥️ System & Equipment Access</h2>
+        <div class="field-grid">
+          <div class="field-item">
+            <div class="field-label">Additional Access Needed</div>
+            <div class="field-value" id="additionalAccess">-</div>
+          </div>
+        </div>
+        <div class="equipment-list" id="equipmentList">
+          <!-- Equipment badges will be inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Workflow Tasks -->
+    <div class="workflow-section">
+      <h2 class="section-title">📊 Workflow Tasks Progress</h2>
+      <div class="tasks-timeline" id="tasksTimeline">
+        <!-- Tasks will be dynamically inserted -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load workflow data
+    const workflowId = sessionStorage.getItem('demoWorkflowId') || 'WF-REQ-20251204-DEMO';
+    const formDataStr = sessionStorage.getItem('demoFormData');
+    const formData = formDataStr ? JSON.parse(formDataStr) : {
+      gatekeeper: 'Yes',
+      dateRequested: '2025-12-04',
+      requesterName: 'Sarah Johnson',
+      requesterEmail: 'sarah.johnson@team-group.com',
+      newHireRehire: 'New Hire',
+      employeeType: 'Direct Hire',
+      firstName: 'John',
+      middleName: 'Michael',
+      lastName: 'Smith',
+      preferredName: 'Johnny',
+      personalEmail: 'john.smith@email.com',
+      personalPhone: '555-123-4567',
+      hireDate: '2025-12-15',
+      siteName: 'GM Oshawa Assembly',
+      jobSiteNumber: 'GM-OSH-001',
+      employmentType: 'Salary',
+      position: 'Project Manager',
+      department: 'Operations',
+      managerName: 'Jennifer Davis',
+      managerEmail: 'jennifer.davis@team-group.com',
+      additionalAccess: 'Yes',
+      equipment: ['Google Account', 'Email', 'Computer', 'Mobile Phone']
+    };
+
+    // Populate header
+    const fullName = `${formData.firstName || ''} ${formData.middleName || ''} ${formData.lastName || ''}`.trim();
+    document.getElementById('employeeName').textContent = fullName;
+    document.getElementById('employeeTitle').textContent = formData.position || 'Position Not Specified';
+    document.getElementById('hireDate').textContent = formData.hireDate || 'N/A';
+    document.getElementById('siteName').textContent = formData.siteName || 'N/A';
+    document.getElementById('workflowId').textContent = workflowId;
+
+    // Populate personal information
+    document.getElementById('fullName').textContent = fullName;
+    document.getElementById('preferredName').textContent = formData.preferredName || 'N/A';
+    document.getElementById('personalEmail').textContent = formData.personalEmail || 'N/A';
+    document.getElementById('personalPhone').textContent = formData.personalPhone || 'N/A';
+
+    // Populate employment information
+    document.getElementById('hireType').textContent = formData.newHireRehire || formData.hireType || 'N/A';
+    document.getElementById('employeeType').textContent = formData.employeeType || 'N/A';
+    document.getElementById('employmentType').textContent = formData.employmentType || 'N/A';
+    document.getElementById('position').textContent = formData.position || 'N/A';
+
+    // Populate site information
+    document.getElementById('siteNameFull').textContent = formData.siteName || 'N/A';
+    document.getElementById('jobSiteNumber').textContent = formData.jobSiteNumber || 'N/A';
+    document.getElementById('department').textContent = formData.department || 'N/A';
+
+    // Populate manager information
+    document.getElementById('managerName').textContent = formData.managerName || formData.supervisor || 'N/A';
+    document.getElementById('managerEmail').textContent = formData.managerEmail || formData.supervisorEmail || 'N/A';
+
+    // Populate request information
+    document.getElementById('requesterName').textContent = formData.requesterName || 'N/A';
+    document.getElementById('requesterEmail').textContent = formData.requesterEmail || 'N/A';
+    document.getElementById('dateRequested').textContent = formData.dateRequested || 'N/A';
+    document.getElementById('gatekeeper').textContent = formData.gatekeeper || 'N/A';
+
+    // Populate equipment
+    document.getElementById('additionalAccess').textContent = formData.additionalAccess || 'N/A';
+    const equipmentList = document.getElementById('equipmentList');
+    if (formData.equipment && formData.equipment.length > 0) {
+      formData.equipment.forEach(item => {
+        const badge = document.createElement('div');
+        badge.className = 'equipment-badge';
+        badge.textContent = item;
+        equipmentList.appendChild(badge);
+      });
+    } else {
+      equipmentList.innerHTML = '<span class="empty-state">No equipment requested</span>';
+    }
+
+    // Define tasks with demo statuses
+    const tasks = [
+      { id: 'HR', title: 'HR Setup', status: 'Complete', taskId: 'TASK-HR-20251204-A1B2', description: 'Benefits, I-9, Emergency Contacts' },
+      { id: 'IT', title: 'IT Setup', status: 'Complete', taskId: 'TASK-IT-20251204-C3D4', description: 'Email, Computer, Phone, Software' },
+      { id: 'FLEETIO', title: 'Fleetio - Vehicle Assignment', status: 'In Progress', taskId: '', description: 'Vehicle, Fuel Card Assignment' },
+      { id: 'CREDITCARD', title: 'Credit Card Request', status: 'Complete', taskId: 'TASK-CC-20251204-E5F6', description: 'Corporate Credit Card Setup' },
+      { id: 'REVIEW', title: '30-60-90 Day Review', status: 'Open', taskId: '', description: 'Performance Review Schedule' },
+      { id: 'ADP_SUP', title: 'ADP Supervisor Setup', status: 'Open', taskId: '', description: 'Supervisor Permissions in ADP' },
+      { id: 'ADP_MGR', title: 'ADP Manager Setup', status: 'Open', taskId: '', description: 'Manager Permissions in ADP' },
+      { id: 'JONAS', title: 'JONAS Project Assignment', status: 'In Progress', taskId: '', description: 'Project Access in JONAS' },
+      { id: 'SITEDOCS', title: 'SiteDocs Safety Training', status: 'Open', taskId: '', description: 'Safety Training Assignment' }
+    ];
+
+    // Render tasks timeline
+    const tasksTimeline = document.getElementById('tasksTimeline');
+    tasks.forEach(task => {
+      const taskDiv = document.createElement('div');
+      const statusClass = task.status === 'Complete' ? 'complete' :
+                         task.status === 'In Progress' ? 'in-progress' : 'open';
+      taskDiv.className = `task-item ${statusClass}`;
+
+      const statusBadgeClass = task.status === 'Complete' ? 'status-complete' :
+                              task.status === 'In Progress' ? 'status-progress' : 'status-open';
+
+      taskDiv.innerHTML = `
+        <div class="task-info">
+          <div class="task-name">${task.title}</div>
+          <div class="task-description">${task.description}</div>
+          ${task.taskId ? `<div class="task-id">Task ID: ${task.taskId}</div>` : ''}
+        </div>
+        <div class="task-status ${statusBadgeClass}">${task.status}</div>
+      `;
+
+      tasksTimeline.appendChild(taskDiv);
+    });
+  </script>
+</body>
+</html>

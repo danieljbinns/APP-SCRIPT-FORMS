@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow Dashboard - Demo</title>
+  <style>
+    /* Dark Mode Theme */
+    :root {
+      --bg-color: #000000;
+      --card-bg: #1a1a1a;
+      --text-main: #ffffff;
+      --text-muted: #b0b0b0;
+      --brand-red: #EB1C2D;
+      --brand-red-hover: #c41522;
+      --input-bg: #2a2a2a;
+      --input-border: #444;
+      --border-color: #333;
+      --status-complete: #0f9d58;
+      --status-open: #f4b400;
+      --status-progress: #4285f4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      max-height: 70px;
+    }
+
+    .dashboard-header {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      margin-bottom: 30px;
+      border-left: 4px solid var(--brand-red);
+    }
+
+    h1 {
+      color: var(--text-main);
+      margin-bottom: 1rem;
+    }
+
+    .workflow-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-label {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+    }
+
+    .info-value {
+      color: var(--text-main);
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
+    /* Process Diagram */
+    .process-diagram {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      margin-bottom: 30px;
+    }
+
+    .diagram-title {
+      text-align: center;
+      color: var(--brand-red);
+      margin-bottom: 30px;
+      font-size: 1.3rem;
+    }
+
+    .flow-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .flow-box {
+      background: var(--input-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      padding: 15px 20px;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .flow-box.main {
+      background: linear-gradient(135deg, var(--brand-red), #c41522);
+      border-color: var(--brand-red);
+    }
+
+    .flow-box.sub {
+      background: var(--input-bg);
+      border-color: var(--input-border);
+    }
+
+    .flow-arrow {
+      color: var(--text-muted);
+      font-size: 1.5rem;
+    }
+
+    .sub-forms-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    /* Task Cards */
+    .tasks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+
+    .task-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      transition: transform 0.2s;
+    }
+
+    .task-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--brand-red);
+    }
+
+    .task-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .task-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--text-main);
+    }
+
+    .task-status {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+
+    .status-complete {
+      background: var(--status-complete);
+      color: white;
+    }
+
+    .status-open {
+      background: var(--status-open);
+      color: black;
+    }
+
+    .status-progress {
+      background: var(--status-progress);
+      color: white;
+    }
+
+    .task-meta {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+    }
+
+    .task-actions {
+      margin-top: 15px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: var(--brand-red);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      transition: background 0.2s;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .btn:hover {
+      background: var(--brand-red-hover);
+    }
+
+    .btn:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+
+    .btn-sm {
+      padding: 8px 15px;
+      font-size: 0.9rem;
+    }
+
+    .back-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+    }
+
+    .back-btn:hover {
+      background: var(--input-border);
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border-color);
+      margin: 30px 0;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .btn-success {
+      background: var(--status-complete);
+    }
+
+    .btn-success:hover {
+      background: #0d8548;
+    }
+
+    .employee-summary {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      margin-bottom: 30px;
+    }
+
+    .summary-title {
+      color: var(--brand-red);
+      font-size: 1.3rem;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .summary-section {
+      background: var(--input-bg);
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 3px solid var(--brand-red);
+    }
+
+    .summary-section h3 {
+      color: var(--text-main);
+      font-size: 1rem;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-field {
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+
+    .summary-field strong {
+      color: var(--text-muted);
+      display: inline-block;
+      min-width: 140px;
+    }
+
+    .summary-field span {
+      color: var(--text-main);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button class="btn back-btn" onclick="window.location.href='index.html'">
+        ← Back to New Request
+      </button>
+      <button class="btn btn-success" onclick="completeAll()">
+        ✓ Complete All Tasks
+      </button>
+    </div>
+
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+      <h1>Workflow Dashboard</h1>
+      <div class="workflow-info">
+        <div class="info-item">
+          <span class="info-label">Workflow ID</span>
+          <span class="info-value" id="workflowId">Loading...</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Employee</span>
+          <span class="info-value" id="employeeName" style="cursor: pointer; text-decoration: underline; color: var(--brand-red);" onclick="window.location.href='employee-details.html'">Loading...</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Hire Date</span>
+          <span class="info-value" id="hireDate">Loading...</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Progress</span>
+          <span class="info-value" id="progress">0/9</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Process Flow Diagram -->
+    <div class="process-diagram">
+      <h2 class="diagram-title">Workflow Process Flow</h2>
+
+      <div class="flow-container">
+        <div class="flow-box main">
+          <strong>Initial Request</strong><br>
+          <small>WF-REQ-XXXXXX</small>
+        </div>
+
+        <div class="flow-arrow">→</div>
+
+        <div style="text-align: center;">
+          <strong style="color: var(--text-muted);">Creates 9 Sub-Tasks</strong>
+          <div class="sub-forms-grid" style="margin-top: 15px;">
+            <div class="flow-box sub"><small>HR Setup</small></div>
+            <div class="flow-box sub"><small>IT Setup</small></div>
+            <div class="flow-box sub"><small>Fleetio</small></div>
+            <div class="flow-box sub"><small>Credit Card</small></div>
+            <div class="flow-box sub"><small>30-60-90</small></div>
+            <div class="flow-box sub"><small>ADP Sup.</small></div>
+            <div class="flow-box sub"><small>ADP Mgr.</small></div>
+            <div class="flow-box sub"><small>JONAS</small></div>
+            <div class="flow-box sub"><small>SiteDocs</small></div>
+          </div>
+        </div>
+
+        <div class="flow-arrow">→</div>
+
+        <div class="flow-box main">
+          <strong>Complete</strong><br>
+          <small>All Tasks Done</small>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Employee Summary -->
+    <div class="employee-summary">
+      <h2 class="summary-title">
+        Employee Information Summary
+        <a href="employee-details.html" style="float: right; font-size: 0.9rem; color: var(--brand-red); text-decoration: none; border: 1px solid var(--brand-red); padding: 5px 15px; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.background='var(--brand-red)'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='var(--brand-red)';">
+          View Full Details →
+        </a>
+      </h2>
+      <div class="summary-grid" id="summaryGrid">
+        <!-- Summary will be dynamically inserted -->
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Task Cards -->
+    <h2 style="margin-bottom: 20px; color: var(--text-main);">Sub-Form Tasks</h2>
+    <div class="tasks-grid" id="tasksGrid">
+      <!-- Tasks will be dynamically inserted -->
+    </div>
+  </div>
+
+  <script>
+    // Load workflow data
+    const workflowId = sessionStorage.getItem('demoWorkflowId') || 'WF-REQ-20251204-DEMO';
+    const formDataStr = sessionStorage.getItem('demoFormData');
+    const formData = formDataStr ? JSON.parse(formDataStr) : {
+      gatekeeper: 'Yes',
+      dateRequested: '2025-12-04',
+      requesterName: 'Sarah Johnson',
+      requesterEmail: 'sarah.johnson@team-group.com',
+      newHireRehire: 'New Hire',
+      employeeType: 'Direct Hire',
+      firstName: 'John',
+      middleName: 'Michael',
+      lastName: 'Smith',
+      preferredName: 'Johnny',
+      personalEmail: 'john.smith@email.com',
+      personalPhone: '555-123-4567',
+      hireDate: '2025-12-15',
+      siteName: 'GM Oshawa Assembly',
+      jobSiteNumber: 'GM-OSH-001',
+      employmentType: 'Salary',
+      position: 'Project Manager',
+      department: 'Operations',
+      supervisor: 'Jane Wilson',
+      supervisorEmail: 'jane.wilson@team-group.com'
+    };
+
+    // Display workflow info
+    document.getElementById('workflowId').textContent = workflowId;
+    document.getElementById('employeeName').textContent = formData.firstName + ' ' + formData.lastName;
+    document.getElementById('hireDate').textContent = formData.hireDate;
+
+    // Define tasks with demo statuses
+    const tasks = [
+      { id: 'HR', title: 'HR Setup', status: 'Complete', taskId: 'TASK-HR-20251204-A1B2', description: 'Benefits, I-9, Emergency Contacts' },
+      { id: 'IT', title: 'IT Setup', status: 'Complete', taskId: 'TASK-IT-20251204-C3D4', description: 'Email, Computer, Phone, Software' },
+      { id: 'FLEETIO', title: 'Fleetio - Vehicle Assignment', status: 'In Progress', taskId: '', description: 'Vehicle, Fuel Card Assignment' },
+      { id: 'CREDITCARD', title: 'Credit Card Request', status: 'Complete', taskId: 'TASK-CC-20251204-E5F6', description: 'Corporate Credit Card Setup' },
+      { id: 'REVIEW', title: '30-60-90 Day Review', status: 'Open', taskId: '', description: 'Performance Review Schedule' },
+      { id: 'ADP_SUP', title: 'ADP Supervisor Setup', status: 'Open', taskId: '', description: 'Supervisor Permissions in ADP' },
+      { id: 'ADP_MGR', title: 'ADP Manager Setup', status: 'Open', taskId: '', description: 'Manager Permissions in ADP' },
+      { id: 'JONAS', title: 'JONAS Project Assignment', status: 'In Progress', taskId: '', description: 'Project Access in JONAS' },
+      { id: 'SITEDOCS', title: 'SiteDocs Safety Training', status: 'Open', taskId: '', description: 'Safety Training Assignment' }
+    ];
+
+    // Count completed tasks
+    const completedCount = tasks.filter(t => t.status === 'Complete').length;
+    document.getElementById('progress').textContent = `${completedCount}/9 Complete`;
+
+    // Render task cards
+    const tasksGrid = document.getElementById('tasksGrid');
+    tasks.forEach(task => {
+      const card = document.createElement('div');
+      card.className = 'task-card';
+
+      const statusClass = task.status === 'Complete' ? 'status-complete' :
+                         task.status === 'In Progress' ? 'status-progress' : 'status-open';
+
+      card.innerHTML = `
+        <div class="task-header">
+          <div class="task-title">${task.title}</div>
+          <div class="task-status ${statusClass}">${task.status}</div>
+        </div>
+        <div class="task-meta">
+          ${task.description}
+          ${task.taskId ? '<br><strong>Task ID:</strong> ' + task.taskId : ''}
+        </div>
+        <div class="task-actions">
+          ${task.status === 'Complete'
+            ? '<button class="btn btn-sm" disabled>✓ Completed</button>'
+            : `<button class="btn btn-sm" onclick="openForm('${task.id}')">Open Form →</button>`
+          }
+        </div>
+      `;
+
+      tasksGrid.appendChild(card);
+    });
+
+    // Render employee summary
+    function renderSummary() {
+      const summaryGrid = document.getElementById('summaryGrid');
+
+      const sections = [
+        {
+          title: 'Personal Information',
+          fields: [
+            { label: 'Full Name', value: `${formData.firstName} ${formData.middleName || ''} ${formData.lastName}`.trim() },
+            { label: 'Preferred Name', value: formData.preferredName || 'N/A' },
+            { label: 'Personal Email', value: formData.personalEmail || 'N/A' },
+            { label: 'Personal Phone', value: formData.personalPhone || 'N/A' },
+            { label: 'Hire Type', value: formData.newHireRehire || 'N/A' },
+            { label: 'Employee Type', value: formData.employeeType || 'N/A' }
+          ]
+        },
+        {
+          title: 'Employment Details',
+          fields: [
+            { label: 'Hire Date', value: formData.hireDate || 'N/A' },
+            { label: 'Position', value: formData.position || 'N/A' },
+            { label: 'Employment Type', value: formData.employmentType || 'N/A' },
+            { label: 'Site Name', value: formData.siteName || 'N/A' },
+            { label: 'Job Site Number', value: formData.jobSiteNumber || 'N/A' }
+          ]
+        },
+        {
+          title: 'Supervisor Information',
+          fields: [
+            { label: 'Supervisor Name', value: formData.supervisor || 'N/A' },
+            { label: 'Supervisor Email', value: formData.supervisorEmail || 'N/A' },
+            { label: 'Department', value: formData.department || 'N/A' }
+          ]
+        },
+        {
+          title: 'Request Information',
+          fields: [
+            { label: 'Requested By', value: formData.requesterName || 'N/A' },
+            { label: 'Requester Email', value: formData.requesterEmail || 'N/A' },
+            { label: 'Date Requested', value: formData.dateRequested || 'N/A' },
+            { label: 'Workflow ID', value: workflowId }
+          ]
+        }
+      ];
+
+      sections.forEach(section => {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'summary-section';
+
+        let html = `<h3>${section.title}</h3>`;
+        section.fields.forEach(field => {
+          html += `<div class="summary-field"><strong>${field.label}:</strong> <span>${field.value}</span></div>`;
+        });
+
+        sectionDiv.innerHTML = html;
+        summaryGrid.appendChild(sectionDiv);
+      });
+    }
+
+    renderSummary();
+
+    function openForm(taskId) {
+      // Map task IDs to specific form pages
+      const formMap = {
+        'HR': 'forms/hr-setup.html',
+        'IT': 'forms/it-setup.html',
+        'FLEETIO': 'forms/fleetio.html',
+        'CREDITCARD': 'forms/credit-card.html',
+        'REVIEW': 'forms/30-60-90-review.html',
+        'ADP_SUP': 'forms/adp-supervisor.html',
+        'ADP_MGR': 'forms/adp-manager.html',
+        'JONAS': 'forms/jonas.html',
+        'SITEDOCS': 'forms/sitedocs.html'
+      };
+
+      // Navigate to the specific form
+      const formUrl = formMap[taskId] || 'form.html?task=' + taskId;
+      window.location.href = formUrl;
+    }
+
+    function completeAll() {
+      if (confirm('This will mark all tasks as complete for demo purposes. Continue?')) {
+        // Update all tasks to complete
+        tasks.forEach(task => {
+          if (task.status !== 'Complete') {
+            task.status = 'Complete';
+            if (!task.taskId) {
+              task.taskId = `TASK-${task.id}-20251204-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+            }
+          }
+        });
+
+        // Reload page to show updated status
+        location.reload();
+      }
+    }
+  </script>
+</body>
+</html>

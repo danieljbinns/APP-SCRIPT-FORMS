@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>30-60-90 Day Review - Demo</title>
+  <link rel="stylesheet" href="form-styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <img src="../team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+    <button class="back-btn" onclick="window.location.href='../dashboard.html'">← Back to Dashboard</button>
+
+    <div id="form-container">
+      <h1>30-60-90 Day Performance Review</h1>
+      <div class="info-card">
+        <p><b>Employee:</b> <span id="employeeName">Loading...</span></p>
+        <p><b>Position:</b> <span id="position">Loading...</span></p>
+        <p><b>Hire Date:</b> <span id="hireDate">Loading...</span></p>
+        <p><b>Workflow ID:</b> <span id="workflowId">Loading...</span></p>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 20px;">
+        Schedule and document performance review milestones for new employee.
+      </p>
+
+      <form id="reviewForm">
+        <h2>30-Day Review</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>30-Day Review Date <span class="required">*</span></label>
+            <input type="text" name="review30Date" required placeholder="YYYY-MM-DD" id="review30Date">
+          </div>
+          <div class="form-field">
+            <label>30-Day Review Status</label>
+            <select name="review30Status">
+              <option value="">-- Select --</option>
+              <option value="Scheduled">Scheduled</option>
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+        </div>
+        <div class="question-wrapper">
+          <label>30-Day Review Summary</label>
+          <textarea name="review30Summary" placeholder="Key points, performance, areas of improvement..."></textarea>
+        </div>
+
+        <hr>
+
+        <h2>60-Day Review</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>60-Day Review Date <span class="required">*</span></label>
+            <input type="text" name="review60Date" required placeholder="YYYY-MM-DD" id="review60Date">
+          </div>
+          <div class="form-field">
+            <label>60-Day Review Status</label>
+            <select name="review60Status">
+              <option value="">-- Select --</option>
+              <option value="Scheduled">Scheduled</option>
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+        </div>
+        <div class="question-wrapper">
+          <label>60-Day Review Summary</label>
+          <textarea name="review60Summary" placeholder="Progress update, achievements, development areas..."></textarea>
+        </div>
+
+        <hr>
+
+        <h2>90-Day Review</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>90-Day Review Date <span class="required">*</span></label>
+            <input type="text" name="review90Date" required placeholder="YYYY-MM-DD" id="review90Date">
+          </div>
+          <div class="form-field">
+            <label>90-Day Review Status</label>
+            <select name="review90Status">
+              <option value="">-- Select --</option>
+              <option value="Scheduled">Scheduled</option>
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+        </div>
+        <div class="question-wrapper">
+          <label>90-Day Review Summary</label>
+          <textarea name="review90Summary" placeholder="Overall performance, goals achieved, future objectives..."></textarea>
+        </div>
+
+        <hr>
+
+        <h2>Overall Assessment</h2>
+        <div class="question-wrapper">
+          <label>Performance Rating</label>
+          <select name="overallRating">
+            <option value="">-- Select --</option>
+            <option value="Exceeds Expectations">Exceeds Expectations</option>
+            <option value="Meets Expectations">Meets Expectations</option>
+            <option value="Needs Improvement">Needs Improvement</option>
+          </select>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Recommendation</label>
+          <select name="recommendation">
+            <option value="">-- Select --</option>
+            <option value="Continue Employment">Continue Employment</option>
+            <option value="Additional Training">Additional Training</option>
+            <option value="Performance Improvement Plan">Performance Improvement Plan</option>
+          </select>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Additional Comments</label>
+          <textarea name="additionalComments" placeholder="Any additional observations or recommendations..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Reviewed By <span class="required">*</span></label>
+            <input type="text" name="reviewedBy" required placeholder="Manager Name">
+          </div>
+          <div class="form-field">
+            <label>Completion Date <span class="required">*</span></label>
+            <input type="text" name="completionDate" required id="completionDate">
+          </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+          <button type="submit">Submit Review Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="form-script.js"></script>
+  <script>
+    // Custom init with date calculations
+    const workflowId = sessionStorage.getItem('demoWorkflowId') || 'WF-REQ-20251204-DEMO';
+    const formDataStr = sessionStorage.getItem('demoFormData');
+    const formData = formDataStr ? JSON.parse(formDataStr) : {
+      firstName: 'John',
+      lastName: 'Smith',
+      position: 'Project Manager',
+      hireDate: '2025-12-15'
+    };
+
+    document.getElementById('employeeName').textContent = `${formData.firstName} ${formData.lastName}`;
+    document.getElementById('position').textContent = formData.position || 'N/A';
+    document.getElementById('hireDate').textContent = formData.hireDate || 'N/A';
+    document.getElementById('workflowId').textContent = workflowId;
+    document.getElementById('completionDate').value = new Date().toISOString().split('T')[0];
+
+    // Calculate review dates
+    const hireDate = new Date(formData.hireDate || '2025-12-15');
+    const date30 = new Date(hireDate);
+    date30.setDate(date30.getDate() + 30);
+    const date60 = new Date(hireDate);
+    date60.setDate(date60.getDate() + 60);
+    const date90 = new Date(hireDate);
+    date90.setDate(date90.getDate() + 90);
+
+    document.getElementById('review30Date').value = date30.toISOString().split('T')[0];
+    document.getElementById('review60Date').value = date60.toISOString().split('T')[0];
+    document.getElementById('review90Date').value = date90.toISOString().split('T')[0];
+
+    document.querySelector('form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const taskId = 'TASK-REVIEW-' + new Date().getTime().toString(36).toUpperCase();
+      document.getElementById('form-container').innerHTML = `
+        <div class="success-message">
+          <h2>✓ Review Plan Completed</h2>
+          <p><strong>Task ID:</strong> ${taskId}</p>
+          <p><strong>Employee:</strong> ${document.getElementById('employeeName').textContent}</p>
+          <p>30-60-90 day review plan has been scheduled.</p>
+          <p style="margin-top: 30px;">
+            <button onclick="window.location.href='../dashboard.html'">Return to Dashboard</button>
+          </p>
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>

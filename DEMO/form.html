@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sub-Form - Demo</title>
+  <style>
+    /* Dark Mode Theme */
+    :root {
+      --bg-color: #000000;
+      --card-bg: #1a1a1a;
+      --text-main: #ffffff;
+      --text-muted: #b0b0b0;
+      --brand-red: #EB1C2D;
+      --brand-red-hover: #c41522;
+      --input-bg: #2a2a2a;
+      --input-border: #444;
+      --border-color: #333;
+      --status-success-bg: #0f5132;
+      --status-success-text: #d1e7dd;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      max-height: 70px;
+    }
+
+    #form-container {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    .review-card {
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      border-left: 3px solid var(--brand-red);
+    }
+
+    .review-card p {
+      margin-bottom: 10px;
+      color: var(--text-muted);
+    }
+
+    .review-card strong {
+      color: var(--text-main);
+    }
+
+    h1 {
+      color: var(--text-main);
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    h3 {
+      color: var(--brand-red);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      margin-top: 30px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      background-color: var(--input-bg);
+      color: var(--text-main);
+      box-sizing: border-box;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: 2px solid var(--brand-red);
+      border-color: var(--brand-red);
+    }
+
+    .question-wrapper {
+      margin-bottom: 25px;
+    }
+
+    button {
+      padding: 1rem;
+      font-size: 1.1rem;
+      background-color: var(--brand-red);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: var(--brand-red-hover);
+    }
+
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+      color: #aaa;
+    }
+
+    #submit-container {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    #status-message {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .status-success {
+      background-color: var(--status-success-bg);
+      color: var(--status-success-text);
+      border: 1px solid #0f5132;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border-color);
+      margin: 20px 0;
+    }
+
+    .back-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      display: inline-block;
+      text-decoration: none;
+      color: var(--text-main);
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    .back-btn:hover {
+      background: var(--input-border);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+
+    <!-- Back Button -->
+    <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
+
+    <!-- Form Container -->
+    <div id="form-container">
+      <h1 id="formTitle">Loading...</h1>
+
+      <!-- Workflow Info Card -->
+      <div class="review-card">
+        <p><strong>Workflow ID:</strong> <span id="workflowId">Loading...</span></p>
+        <p><strong>Employee:</strong> <span id="employeeName">Loading...</span></p>
+        <p><strong>Hire Date:</strong> <span id="hireDate">Loading...</span></p>
+      </div>
+
+      <p id="formDescription" style="color: var(--text-muted); margin-bottom: 20px;"></p>
+      <hr>
+
+      <!-- Dynamic Form -->
+      <form id="taskForm">
+        <div id="formFields"></div>
+
+        <div id="submit-container">
+          <button type="submit" id="submitBtn">Complete Task</button>
+        </div>
+      </form>
+
+      <div id="status-message"></div>
+    </div>
+  </div>
+
+  <script>
+    // Get task ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const taskId = urlParams.get('task') || sessionStorage.getItem('demoCurrentTask') || 'HR';
+
+    // Load workflow data
+    const workflowId = sessionStorage.getItem('demoWorkflowId') || 'WF-REQ-20251204-DEMO';
+    const formDataStr = sessionStorage.getItem('demoFormData');
+    const formData = formDataStr ? JSON.parse(formDataStr) : {
+      firstName: 'John',
+      lastName: 'Smith',
+      hireDate: '2025-12-15'
+    };
+
+    // Display workflow info
+    document.getElementById('workflowId').textContent = workflowId;
+    document.getElementById('employeeName').textContent = formData.firstName + ' ' + formData.lastName;
+    document.getElementById('hireDate').textContent = formData.hireDate;
+
+    // Form configurations
+    const formConfigs = {
+      HR: {
+        title: 'HR Setup',
+        description: 'Complete the HR onboarding checklist for the new employee.',
+        fields: [
+          { name: 'benefits', label: 'Benefits Enrollment Complete', type: 'select', options: ['Yes - Enrolled', 'No - Not Enrolled', 'Pending'] },
+          { name: 'i9', label: 'I-9 Verification Complete', type: 'select', options: ['Yes - Completed', 'No - Incomplete'] },
+          { name: 'emergency', label: 'Emergency Contacts Added', type: 'select', options: ['Yes - Added', 'No - Not Added'] },
+          { name: 'notes', label: 'HR Notes (Optional)', type: 'textarea' }
+        ]
+      },
+      IT: {
+        title: 'IT Setup',
+        description: 'Complete the IT provisioning checklist.',
+        fields: [
+          { name: 'email', label: 'Email Account Created', type: 'select', options: ['Yes', 'No'] },
+          { name: 'emailAddress', label: 'Email Address', type: 'text' },
+          { name: 'computer', label: 'Computer Assigned', type: 'select', options: ['Yes', 'No'] },
+          { name: 'computerSerial', label: 'Computer Serial Number', type: 'text' },
+          { name: 'phone', label: 'Phone Assigned', type: 'select', options: ['Yes', 'No'] },
+          { name: 'notes', label: 'IT Notes (Optional)', type: 'textarea' }
+        ]
+      },
+      FLEETIO: {
+        title: 'Fleetio - Vehicle Assignment',
+        description: 'Assign vehicle and fuel card to employee.',
+        fields: [
+          { name: 'vehicleAssigned', label: 'Vehicle Assigned', type: 'select', options: ['Yes', 'No'] },
+          { name: 'vehicleId', label: 'Vehicle ID/Number', type: 'text' },
+          { name: 'fuelCard', label: 'Fuel Card Issued', type: 'select', options: ['Yes', 'No'] },
+          { name: 'fuelCardNumber', label: 'Fuel Card Number', type: 'text' },
+          { name: 'notes', label: 'Fleet Notes (Optional)', type: 'textarea' }
+        ]
+      },
+      CREDITCARD: {
+        title: 'Credit Card Request',
+        description: 'Request corporate credit card for employee.',
+        fields: [
+          { name: 'cardType', label: 'Card Type', type: 'select', options: ['Standard', 'Premium', 'Travel'] },
+          { name: 'limit', label: 'Credit Limit', type: 'select', options: ['$1,000', '$2,500', '$5,000', '$10,000'] },
+          { name: 'approved', label: 'Request Approved', type: 'select', options: ['Yes', 'No', 'Pending'] },
+          { name: 'notes', label: 'Notes (Optional)', type: 'textarea' }
+        ]
+      },
+      REVIEW: {
+        title: '30-60-90 Day Review',
+        description: 'Schedule performance review checkpoints.',
+        fields: [
+          { name: 'day30Scheduled', label: '30-Day Review Scheduled', type: 'select', options: ['Yes', 'No'] },
+          { name: 'day60Scheduled', label: '60-Day Review Scheduled', type: 'select', options: ['Yes', 'No'] },
+          { name: 'day90Scheduled', label: '90-Day Review Scheduled', type: 'select', options: ['Yes', 'No'] },
+          { name: 'notes', label: 'Notes (Optional)', type: 'textarea' }
+        ]
+      },
+      ADP_SUP: {
+        title: 'ADP Supervisor Setup',
+        description: 'Configure supervisor permissions in ADP.',
+        fields: [
+          { name: 'accountCreated', label: 'ADP Account Created', type: 'select', options: ['Yes', 'No'] },
+          { name: 'supervisorAccess', label: 'Supervisor Access Granted', type: 'select', options: ['Yes', 'No'] },
+          { name: 'training', label: 'Training Completed', type: 'select', options: ['Yes', 'No', 'Scheduled'] },
+          { name: 'notes', label: 'Notes (Optional)', type: 'textarea' }
+        ]
+      },
+      ADP_MGR: {
+        title: 'ADP Manager Setup',
+        description: 'Configure manager permissions in ADP.',
+        fields: [
+          { name: 'accountCreated', label: 'ADP Account Created', type: 'select', options: ['Yes', 'No'] },
+          { name: 'managerAccess', label: 'Manager Access Granted', type: 'select', options: ['Yes', 'No'] },
+          { name: 'approvalRights', label: 'Approval Rights Configured', type: 'select', options: ['Yes', 'No'] },
+          { name: 'notes', label: 'Notes (Optional)', type: 'textarea' }
+        ]
+      },
+      JONAS: {
+        title: 'JONAS Project Assignment',
+        description: 'Assign employee to projects in JONAS.',
+        fields: [
+          { name: 'accountCreated', label: 'JONAS Account Created', type: 'select', options: ['Yes', 'No'] },
+          { name: 'projectsAssigned', label: 'Projects Assigned', type: 'select', options: ['Yes', 'No'] },
+          { name: 'projectList', label: 'Project List', type: 'text' },
+          { name: 'notes', label: 'Notes (Optional)', type: 'textarea' }
+        ]
+      },
+      SITEDOCS: {
+        title: 'SiteDocs Safety Training',
+        description: 'Assign safety training to employee.',
+        fields: [
+          { name: 'accountCreated', label: 'SiteDocs Account Created', type: 'select', options: ['Yes', 'No'] },
+          { name: 'trainingsAssigned', label: 'Trainings Assigned', type: 'select', options: ['Yes', 'No'] },
+          { name: 'dueDate', label: 'Training Due Date', type: 'text' },
+          { name: 'notes', label: 'Notes (Optional)', type: 'textarea' }
+        ]
+      }
+    };
+
+    // Get form config
+    const config = formConfigs[taskId] || formConfigs.HR;
+
+    // Set title and description
+    document.getElementById('formTitle').textContent = config.title;
+    document.getElementById('formDescription').textContent = config.description;
+
+    // Build form fields
+    const formFieldsContainer = document.getElementById('formFields');
+    formFieldsContainer.innerHTML = '<h3>Task Details</h3>';
+
+    config.fields.forEach(field => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'question-wrapper';
+
+      const label = document.createElement('label');
+      label.textContent = field.label;
+
+      let input;
+      if (field.type === 'select') {
+        input = document.createElement('select');
+        input.name = field.name;
+        input.required = !field.label.includes('Optional');
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '--Please Select--';
+        input.appendChild(defaultOption);
+
+        field.options.forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt;
+          option.textContent = opt;
+          input.appendChild(option);
+        });
+      } else if (field.type === 'textarea') {
+        input = document.createElement('textarea');
+        input.name = field.name;
+        input.rows = 4;
+        input.placeholder = 'Additional comments or notes...';
+      } else {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.name = field.name;
+        input.required = !field.label.includes('Optional');
+      }
+
+      wrapper.appendChild(label);
+      wrapper.appendChild(input);
+      formFieldsContainer.appendChild(wrapper);
+    });
+
+    // Handle form submission
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById('submitBtn');
+      const statusMessage = document.getElementById('status-message');
+
+      // Disable button and show loading
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      statusMessage.innerHTML = '';
+
+      // Simulate submission delay
+      setTimeout(() => {
+        const now = new Date();
+        const dateStr = now.getFullYear() +
+          String(now.getMonth() + 1).padStart(2, '0') +
+          String(now.getDate()).padStart(2, '0');
+        const taskIdGenerated = 'TASK-' + taskId + '-' + dateStr + '-' +
+          Math.random().toString(36).substr(2, 4).toUpperCase();
+
+        statusMessage.innerHTML = `
+          <div class="status-success">
+            Task completed successfully!<br>
+            Task ID: ${taskIdGenerated}<br><br>
+            <a href="dashboard.html" style="color: #d1e7dd; text-decoration: underline;">
+              Return to Dashboard →
+            </a>
+          </div>
+        `;
+
+        // Scroll to message
+        statusMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 1500);
+    });
+  </script>
+</body>
+</html>

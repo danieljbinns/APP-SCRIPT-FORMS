@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT Setup Form - Demo</title>
+  <style>
+    /* Dark Mode Theme */
+    :root {
+      --bg-color: #000000;
+      --card-bg: #1a1a1a;
+      --text-main: #ffffff;
+      --text-muted: #b0b0b0;
+      --brand-red: #EB1C2D;
+      --brand-red-hover: #c41522;
+      --input-bg: #2a2a2a;
+      --input-border: #444;
+      --border-color: #333;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      max-height: 70px;
+    }
+
+    #form-container {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    h1 {
+      color: var(--text-main);
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      color: var(--brand-red);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+      margin: 30px 0 20px 0;
+    }
+
+    h3 {
+      color: var(--text-main);
+      margin: 20px 0 15px 0;
+      font-size: 1.1rem;
+    }
+
+    .info-card {
+      background: var(--input-bg);
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid var(--brand-red);
+    }
+
+    .info-card p {
+      margin: 5px 0;
+      font-size: 0.9rem;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+
+    .required {
+      color: var(--brand-red);
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      background-color: var(--input-bg);
+      color: var(--text-main);
+      box-sizing: border-box;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 2px solid var(--brand-red);
+      border-color: var(--brand-red);
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .question-wrapper {
+      margin-bottom: 25px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .checkbox-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background: var(--input-bg);
+      border-radius: 6px;
+    }
+
+    .checkbox-wrapper input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--brand-red);
+    }
+
+    .checkbox-wrapper label {
+      margin: 0;
+      font-weight: normal;
+      cursor: pointer;
+    }
+
+    button {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      background-color: var(--brand-red);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: var(--brand-red-hover);
+    }
+
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+
+    .back-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      width: auto;
+      padding: 10px 20px;
+      font-size: 1rem;
+    }
+
+    .back-btn:hover {
+      background: var(--input-border);
+    }
+
+    .success-message {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .success-message h2 {
+      color: #0f9d58;
+      border: none;
+      margin-bottom: 20px;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border-color);
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="../team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+
+    <button class="back-btn" onclick="window.location.href='../dashboard.html'">
+      ← Back to Dashboard
+    </button>
+
+    <!-- Form Container -->
+    <div id="form-container">
+      <h1>IT Setup Form</h1>
+
+      <div class="info-card" id="employeeInfo">
+        <p><b>Employee:</b> <span id="employeeName">Loading...</span></p>
+        <p><b>Hire Date:</b> <span id="hireDate">Loading...</span></p>
+        <p><b>Position:</b> <span id="position">Loading...</span></p>
+        <p><b>Workflow ID:</b> <span id="workflowId">Loading...</span></p>
+      </div>
+
+      <p style="color: var(--text-muted); margin-bottom: 20px;">
+        Please complete all required IT setup items and provide access credentials.
+      </p>
+
+      <form id="itForm">
+        <!-- Google Account -->
+        <h2>Google Account Setup</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Google Account Email <span class="required">*</span></label>
+            <input type="email" name="googleEmail" required placeholder="user@team-group.com">
+          </div>
+          <div class="form-field">
+            <label>Google Account Password <span class="required">*</span></label>
+            <input type="text" name="googlePassword" required placeholder="Temporary Password">
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Phone Setup -->
+        <h2>Mobile Phone Setup</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Phone Number <span class="required">*</span></label>
+            <input type="text" name="phoneNumber" required placeholder="(555) 123-4567">
+          </div>
+          <div class="form-field">
+            <label>Phone Voicemail Password <span class="required">*</span></label>
+            <input type="text" name="voicemailPassword" required placeholder="Voicemail PIN">
+          </div>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Phone Model/Type</label>
+          <input type="text" name="phoneModel" placeholder="e.g., iPhone 15, Samsung Galaxy S24">
+        </div>
+
+        <hr>
+
+        <!-- Computer Setup -->
+        <h2>Computer Setup</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Computer Model <span class="required">*</span></label>
+            <input type="text" name="computerModel" required placeholder="e.g., MacBook Pro, Dell Latitude">
+          </div>
+          <div class="form-field">
+            <label>Computer Serial Number <span class="required">*</span></label>
+            <input type="text" name="computerSerial" required placeholder="Serial Number">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Computer Login Username</label>
+            <input type="text" name="computerUsername" placeholder="Computer Username">
+          </div>
+          <div class="form-field">
+            <label>Computer Login Password</label>
+            <input type="text" name="computerPassword" placeholder="Temporary Password">
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- BOSS System Access -->
+        <h2>BOSS System Access</h2>
+        <p style="color: var(--text-muted); margin-bottom: 15px;">Check all applicable BOSS modules:</p>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="bossUser" name="bossUser">
+          <label for="bossUser">BOSS User Account</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="bossCostSheet" name="bossCostSheet">
+          <label for="bossCostSheet">Cost Sheet Access</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="bossLeader" name="bossLeader">
+          <label for="bossLeader">Leader Access</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="bossTripReports" name="bossTripReports">
+          <label for="bossTripReports">Trip Reports Access</label>
+        </div>
+
+        <hr>
+
+        <!-- Additional System Access -->
+        <h2>Additional System Access</h2>
+        <p style="color: var(--text-muted); margin-bottom: 15px;">Check all applicable systems:</p>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="incidents" name="incidents">
+          <label for="incidents">Incidents System</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="caa" name="caa">
+          <label for="caa">CAA (Corrective Action Analysis)</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="transform" name="transform">
+          <label for="transform">Transform Platform</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="nps" name="nps">
+          <label for="nps">Net Promoter Score</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="deliveryApp" name="deliveryApp">
+          <label for="deliveryApp">Delivery App</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="eBusinessCard" name="eBusinessCard">
+          <label for="eBusinessCard">E-Business Card</label>
+        </div>
+
+        <hr>
+
+        <!-- Software Licenses -->
+        <h2>Software Licenses</h2>
+        <div class="question-wrapper">
+          <label>Microsoft Office License</label>
+          <select name="officeStatus">
+            <option value="">-- Please Select --</option>
+            <option value="Assigned">Assigned</option>
+            <option value="Not Required">Not Required</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Additional Software Required</label>
+          <textarea name="additionalSoftware" placeholder="List any additional software licenses needed (e.g., Adobe Creative Cloud, AutoCAD, etc.)"></textarea>
+        </div>
+
+        <hr>
+
+        <!-- Network Access -->
+        <h2>Network & VPN Access</h2>
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="vpnAccess" name="vpnAccess">
+          <label for="vpnAccess">VPN Access Configured</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="networkDrive" name="networkDrive">
+          <label for="networkDrive">Network Drive Access Configured</label>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Network Drive Locations</label>
+          <textarea name="networkDrives" placeholder="List specific network drive paths or shared folders..."></textarea>
+        </div>
+
+        <hr>
+
+        <!-- Additional Notes -->
+        <h2>Completion & Notes</h2>
+        <div class="question-wrapper">
+          <label>IT Setup Notes</label>
+          <textarea name="itNotes" placeholder="Any additional notes about the IT setup..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>IT Technician Name <span class="required">*</span></label>
+            <input type="text" name="techName" required placeholder="Your Name">
+          </div>
+          <div class="form-field">
+            <label>Completion Date <span class="required">*</span></label>
+            <input type="text" name="completionDate" required id="completionDate">
+          </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+          <button type="submit">Submit IT Setup</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Load employee data from session storage
+    const workflowId = sessionStorage.getItem('demoWorkflowId') || 'WF-REQ-20251204-DEMO';
+    const formDataStr = sessionStorage.getItem('demoFormData');
+    const formData = formDataStr ? JSON.parse(formDataStr) : {
+      firstName: 'John',
+      middleName: 'Michael',
+      lastName: 'Smith',
+      hireDate: '2025-12-15',
+      position: 'Project Manager'
+    };
+
+    // Display employee info
+    document.getElementById('employeeName').textContent = `${formData.firstName} ${formData.lastName}`;
+    document.getElementById('hireDate').textContent = formData.hireDate || 'N/A';
+    document.getElementById('position').textContent = formData.position || 'N/A';
+    document.getElementById('workflowId').textContent = workflowId;
+
+    // Set today's date as completion date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('completionDate').value = today;
+
+    // Handle form submission
+    document.getElementById('itForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+
+      // Generate task ID
+      const taskId = 'TASK-IT-' + new Date().getTime().toString(36).toUpperCase();
+
+      // Show success message
+      document.getElementById('form-container').innerHTML = `
+        <div class="success-message">
+          <h2>✓ IT Setup Completed Successfully</h2>
+          <p><strong>Task ID:</strong> ${taskId}</p>
+          <p><strong>Employee:</strong> ${document.getElementById('employeeName').textContent}</p>
+          <p>All IT equipment and access has been configured.</p>
+          <p style="margin-top: 30px;">
+            <button onclick="window.location.href='../dashboard.html'">Return to Dashboard</button>
+          </p>
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>

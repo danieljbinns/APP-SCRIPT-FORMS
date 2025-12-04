@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADP Manager Setup - Demo</title>
+  <link rel="stylesheet" href="form-styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <img src="../team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+    <button class="back-btn" onclick="window.location.href='../dashboard.html'">← Back to Dashboard</button>
+
+    <div id="form-container">
+      <h1>ADP Manager Permissions Setup</h1>
+      <div class="info-card">
+        <p><b>Employee:</b> <span id="employeeName">Loading...</span></p>
+        <p><b>Position:</b> <span id="position">Loading...</span></p>
+        <p><b>Workflow ID:</b> <span id="workflowId">Loading...</span></p>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 20px;">
+        Configure ADP manager-level permissions and access.
+      </p>
+
+      <form id="adpMgrForm">
+        <h2>ADP Account Setup</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>ADP Username <span class="required">*</span></label>
+            <input type="text" name="adpUsername" required placeholder="ADP Username">
+          </div>
+          <div class="form-field">
+            <label>ADP Password <span class="required">*</span></label>
+            <input type="text" name="adpPassword" required placeholder="Temporary Password">
+          </div>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Employee ID in ADP</label>
+          <input type="text" name="adpEmployeeId" placeholder="ADP Employee ID">
+        </div>
+
+        <hr>
+
+        <h2>Manager Permissions</h2>
+        <p style="color: var(--text-muted); margin-bottom: 15px;">Enable the following manager permissions:</p>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="viewTimecard" name="viewTimecard">
+          <label for="viewTimecard">View Department Timecards</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="approveTimecard" name="approveTimecard">
+          <label for="approveTimecard">Approve Department Timecards</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="viewPTO" name="viewPTO">
+          <label for="viewPTO">View All PTO Requests</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="approvePTO" name="approvePTO">
+          <label for="approvePTO">Approve All PTO Requests</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="viewPayroll" name="viewPayroll">
+          <label for="viewPayroll">View Payroll Reports</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="budgetAccess" name="budgetAccess">
+          <label for="budgetAccess">Access Budget & Forecast Data</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="hireTerminate" name="hireTerminate">
+          <label for="hireTerminate">Hiring & Termination Authority</label>
+        </div>
+
+        <hr>
+
+        <h2>Department Assignment</h2>
+        <div class="question-wrapper">
+          <label>Department/Division Managed</label>
+          <input type="text" name="departmentManaged" placeholder="e.g., Operations, Engineering">
+        </div>
+
+        <div class="question-wrapper">
+          <label>Direct Reports (Employee IDs)</label>
+          <textarea name="directReports" placeholder="Enter employee IDs, separated by commas..."></textarea>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Cost Center</label>
+          <input type="text" name="costCenter" placeholder="Cost Center Code">
+        </div>
+
+        <hr>
+
+        <h2>Completion</h2>
+        <div class="question-wrapper">
+          <label>Setup Notes</label>
+          <textarea name="setupNotes" placeholder="Any notes about the ADP manager setup..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Configured By <span class="required">*</span></label>
+            <input type="text" name="configuredBy" required placeholder="Your Name">
+          </div>
+          <div class="form-field">
+            <label>Setup Date <span class="required">*</span></label>
+            <input type="text" name="setupDate" required id="setupDate">
+          </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+          <button type="submit">Submit ADP Manager Setup</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="form-script.js"></script>
+  <script>
+    initForm('ADP-MGR', 'ADP Manager Setup', 'ADP manager permissions configured.');
+  </script>
+</body>
+</html>

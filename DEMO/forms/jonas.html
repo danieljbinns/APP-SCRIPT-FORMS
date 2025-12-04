@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JONAS ERP Setup - Demo</title>
+  <link rel="stylesheet" href="form-styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <img src="../team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+    <button class="back-btn" onclick="window.location.href='../dashboard.html'">← Back to Dashboard</button>
+
+    <div id="form-container">
+      <h1>JONAS ERP Project Assignment</h1>
+      <div class="info-card">
+        <p><b>Employee:</b> <span id="employeeName">Loading...</span></p>
+        <p><b>Position:</b> <span id="position">Loading...</span></p>
+        <p><b>Workflow ID:</b> <span id="workflowId">Loading...</span></p>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 20px;">
+        Configure JONAS ERP access and project assignments.
+      </p>
+
+      <form id="jonasForm">
+        <h2>JONAS Account Setup</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>JONAS Username <span class="required">*</span></label>
+            <input type="text" name="jonasUsername" required placeholder="JONAS Username">
+          </div>
+          <div class="form-field">
+            <label>JONAS Password <span class="required">*</span></label>
+            <input type="text" name="jonasPassword" required placeholder="Temporary Password">
+          </div>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Employee ID in JONAS</label>
+          <input type="text" name="jonasEmployeeId" placeholder="JONAS Employee ID">
+        </div>
+
+        <hr>
+
+        <h2>Module Access</h2>
+        <p style="color: var(--text-muted); margin-bottom: 15px;">Enable access to the following JONAS modules:</p>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="projectMgmt" name="projectMgmt">
+          <label for="projectMgmt">Project Management</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="timeEntry" name="timeEntry">
+          <label for="timeEntry">Time Entry</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="expenseEntry" name="expenseEntry">
+          <label for="expenseEntry">Expense Entry</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="purchaseOrders" name="purchaseOrders">
+          <label for="purchaseOrders">Purchase Orders</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="inventory" name="inventory">
+          <label for="inventory">Inventory Management</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="reporting" name="reporting">
+          <label for="reporting">Reporting & Analytics</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="accounting" name="accounting">
+          <label for="accounting">Accounting & Finance</label>
+        </div>
+
+        <hr>
+
+        <h2>Project Assignments</h2>
+        <div class="question-wrapper">
+          <label>Assigned Project Codes</label>
+          <textarea name="projectCodes" placeholder="Enter project codes, one per line or separated by commas..."></textarea>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Default Cost Center</label>
+          <input type="text" name="defaultCostCenter" placeholder="e.g., CC-001, CC-OPS">
+        </div>
+
+        <div class="question-wrapper">
+          <label>Approval Limit (if applicable)</label>
+          <input type="text" name="approvalLimit" placeholder="e.g., $5,000">
+        </div>
+
+        <hr>
+
+        <h2>Access Level</h2>
+        <div class="question-wrapper">
+          <label>User Role <span class="required">*</span></label>
+          <select name="userRole" required>
+            <option value="">-- Select --</option>
+            <option value="Standard User">Standard User</option>
+            <option value="Project Manager">Project Manager</option>
+            <option value="Department Manager">Department Manager</option>
+            <option value="Administrator">Administrator</option>
+            <option value="View Only">View Only</option>
+          </select>
+        </div>
+
+        <hr>
+
+        <h2>Completion</h2>
+        <div class="question-wrapper">
+          <label>Setup Notes</label>
+          <textarea name="setupNotes" placeholder="Any additional notes about JONAS setup..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Configured By <span class="required">*</span></label>
+            <input type="text" name="configuredBy" required placeholder="Your Name">
+          </div>
+          <div class="form-field">
+            <label>Setup Date <span class="required">*</span></label>
+            <input type="text" name="setupDate" required id="setupDate">
+          </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+          <button type="submit">Submit JONAS Setup</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="form-script.js"></script>
+  <script>
+    initForm('JONAS', 'JONAS ERP Setup', 'JONAS project access configured.');
+  </script>
+</body>
+</html>

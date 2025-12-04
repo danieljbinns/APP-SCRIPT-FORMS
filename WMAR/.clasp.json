@@ -1,0 +1,29 @@
+{
+  "scriptId": "14GCBEab_lBMXObVmcWGKJMJjiNOsvaHQL8naFtgj37nNdeG_JtEQUbaR",
+  "rootDir": "",
+  "scriptExtensions": [
+    ".js",
+    ".gs"
+  ],
+  "htmlExtensions": [
+    ".html"
+  ],
+  "jsonExtensions": [
+    ".json"
+  ],
+  "filePushOrder": [
+    "Config.gs",
+    "SheetAccess.gs",
+    "EmailUtils.gs",
+    "PDFUtils.gs",
+    "TicketingAPI.gs",
+    "TaskBase.gs",
+    "Tasks.gs",
+    "WorkflowBase.gs",
+    "WorkflowEngine.gs",
+    "NewHireWorkflow.gs",
+    "TestWorkflowEngine.gs",
+    "Code.gs"
+  ],
+  "skipSubdirectories": false
+}

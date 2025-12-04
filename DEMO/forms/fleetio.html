@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fleetio Vehicle Assignment - Demo</title>
+  <style>
+    :root {
+      --bg-color: #000000;
+      --card-bg: #1a1a1a;
+      --text-main: #ffffff;
+      --text-muted: #b0b0b0;
+      --brand-red: #EB1C2D;
+      --brand-red-hover: #c41522;
+      --input-bg: #2a2a2a;
+      --input-border: #444;
+      --border-color: #333;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+      margin: 0; padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    .logo-container { text-align: center; margin-bottom: 20px; }
+    .logo { max-height: 70px; }
+    #form-container {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+    }
+    h1 { color: var(--text-main); margin-bottom: 1rem; }
+    h2 {
+      color: var(--brand-red);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+      margin: 30px 0 20px 0;
+    }
+    .info-card {
+      background: var(--input-bg);
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid var(--brand-red);
+    }
+    .info-card p { margin: 5px 0; font-size: 0.9rem; }
+    label { display: block; font-weight: bold; margin-bottom: 8px; color: var(--text-muted); }
+    .required { color: var(--brand-red); }
+    input[type="text"], input[type="email"], select, textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      background-color: var(--input-bg);
+      color: var(--text-main);
+      box-sizing: border-box;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid var(--brand-red);
+      border-color: var(--brand-red);
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    .question-wrapper { margin-bottom: 25px; }
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+    .form-field { display: flex; flex-direction: column; }
+    button {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      background-color: var(--brand-red);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      font-weight: bold;
+      width: 100%;
+    }
+    button:hover { background-color: var(--brand-red-hover); }
+    .back-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      width: auto;
+      padding: 10px 20px;
+      font-size: 1rem;
+    }
+    .back-btn:hover { background: var(--input-border); }
+    .success-message { text-align: center; padding: 40px; }
+    .success-message h2 { color: #0f9d58; border: none; margin-bottom: 20px; }
+    hr { border: 0; border-top: 1px solid var(--border-color); margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <img src="../team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+    <button class="back-btn" onclick="window.location.href='../dashboard.html'">← Back to Dashboard</button>
+
+    <div id="form-container">
+      <h1>Fleetio Vehicle Assignment</h1>
+      <div class="info-card">
+        <p><b>Employee:</b> <span id="employeeName">Loading...</span></p>
+        <p><b>Position:</b> <span id="position">Loading...</span></p>
+        <p><b>Workflow ID:</b> <span id="workflowId">Loading...</span></p>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 20px;">
+        Complete vehicle assignment and fuel card setup in Fleetio.
+      </p>
+
+      <form id="fleetioForm">
+        <h2>Vehicle Information</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Asset Number <span class="required">*</span></label>
+            <input type="text" name="assetNumber" required placeholder="e.g., VEH-2024-001">
+          </div>
+          <div class="form-field">
+            <label>Vehicle Make <span class="required">*</span></label>
+            <input type="text" name="vehicleMake" required placeholder="e.g., Ford, Chevrolet">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Vehicle Model <span class="required">*</span></label>
+            <input type="text" name="vehicleModel" required placeholder="e.g., F-150, Silverado">
+          </div>
+          <div class="form-field">
+            <label>Vehicle Year <span class="required">*</span></label>
+            <input type="text" name="vehicleYear" required placeholder="e.g., 2024">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>License Plate <span class="required">*</span></label>
+            <input type="text" name="licensePlate" required placeholder="e.g., ABC-1234">
+          </div>
+          <div class="form-field">
+            <label>VIN (Last 8 digits)</label>
+            <input type="text" name="vin" placeholder="Last 8 of VIN">
+          </div>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Vehicle Color</label>
+          <input type="text" name="vehicleColor" placeholder="e.g., White, Black, Silver">
+        </div>
+
+        <hr>
+
+        <h2>Fuel Card Assignment</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Fuel Card Number <span class="required">*</span></label>
+            <input type="text" name="fuelCardNumber" required placeholder="Card Number">
+          </div>
+          <div class="form-field">
+            <label>Fuel Card Provider</label>
+            <select name="fuelCardProvider">
+              <option value="">-- Please Select --</option>
+              <option value="Shell">Shell</option>
+              <option value="Esso">Esso</option>
+              <option value="Petro-Canada">Petro-Canada</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Fuel Card PIN</label>
+          <input type="text" name="fuelCardPin" placeholder="PIN (if applicable)">
+        </div>
+
+        <hr>
+
+        <h2>Insurance & Registration</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Insurance Policy Number</label>
+            <input type="text" name="insurancePolicy" placeholder="Policy Number">
+          </div>
+          <div class="form-field">
+            <label>Insurance Expiry Date</label>
+            <input type="text" name="insuranceExpiry" placeholder="YYYY-MM-DD">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Registration Expiry Date</label>
+            <input type="text" name="registrationExpiry" placeholder="YYYY-MM-DD">
+          </div>
+          <div class="form-field">
+            <label>Odometer Reading (km)</label>
+            <input type="text" name="odometer" placeholder="Current km">
+          </div>
+        </div>
+
+        <hr>
+
+        <h2>Additional Notes</h2>
+        <div class="question-wrapper">
+          <label>Notes</label>
+          <textarea name="notes" placeholder="Any additional information about the vehicle assignment..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Assigned By <span class="required">*</span></label>
+            <input type="text" name="assignedBy" required placeholder="Your Name">
+          </div>
+          <div class="form-field">
+            <label>Assignment Date <span class="required">*</span></label>
+            <input type="text" name="assignmentDate" required id="assignmentDate">
+          </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+          <button type="submit">Submit Vehicle Assignment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const workflowId = sessionStorage.getItem('demoWorkflowId') || 'WF-REQ-20251204-DEMO';
+    const formDataStr = sessionStorage.getItem('demoFormData');
+    const formData = formDataStr ? JSON.parse(formDataStr) : {
+      firstName: 'John', lastName: 'Smith', position: 'Project Manager'
+    };
+
+    document.getElementById('employeeName').textContent = `${formData.firstName} ${formData.lastName}`;
+    document.getElementById('position').textContent = formData.position || 'N/A';
+    document.getElementById('workflowId').textContent = workflowId;
+    document.getElementById('assignmentDate').value = new Date().toISOString().split('T')[0];
+
+    document.getElementById('fleetioForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const taskId = 'TASK-FLEETIO-' + new Date().getTime().toString(36).toUpperCase();
+      document.getElementById('form-container').innerHTML = `
+        <div class="success-message">
+          <h2>✓ Vehicle Assignment Completed</h2>
+          <p><strong>Task ID:</strong> ${taskId}</p>
+          <p><strong>Employee:</strong> ${document.getElementById('employeeName').textContent}</p>
+          <p>Vehicle has been assigned in Fleetio.</p>
+          <p style="margin-top: 30px;">
+            <button onclick="window.location.href='../dashboard.html'">Return to Dashboard</button>
+          </p>
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>

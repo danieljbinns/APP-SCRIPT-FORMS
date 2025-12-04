@@ -1,0 +1,18 @@
+<svg width="200" height="60" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#EB1C2D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c41522;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="200" height="60" fill="#1a1a1a" rx="5"/>
+
+  <!-- Company Initials -->
+  <text x="20" y="42" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="url(#grad)">TGC</text>
+
+  <!-- Full Name -->
+  <text x="85" y="25" font-family="Arial, sans-serif" font-size="10" fill="#ffffff">Team Group</text>
+  <text x="85" y="38" font-family="Arial, sans-serif" font-size="10" fill="#ffffff">Companies</text>
+</svg>

@@ -1,0 +1,34 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "PowerShell: Launch Current File",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${file}",
+            "args": []
+        },
+        {
+            "name": "PowerShell: Deploy Workflow Engine",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/deploy_workflow_engine.ps1",
+            "args": []
+        },
+        {
+            "name": "Clasp: Push",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "clasp push"
+        },
+        {
+            "name": "Clasp: Push & Open",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "clasp push && clasp open"
+        }
+    ]
+}

@@ -1,0 +1,171 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <?!= HtmlService.createHtmlOutputFromFile('CSS.html').getContent(); ?>
+  <style>
+    .checkbox-question {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .checkbox-question label {
+      margin: 0;
+      font-size: 1.2em;
+    }
+
+    .checkbox-question input {
+      width: 20px;
+      height: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <img src="<?= logoUrl ?>" alt="Company Logo" style="max-height: 70px;">
+    </div>
+    <div id="form-container">
+      <h1>Credit Card Request</h1>
+
+      <? if (typeof isStandalone !== 'undefined' && isStandalone) { ?>
+      <p>Please provide the employee and credit card details below.</p>
+      <hr>
+
+      <h3>Employee Information</h3>
+      <div class="question-wrapper">
+        <label>First Name</label>
+        <input type="text" name="First Name" required>
+      </div>
+      <div class="question-wrapper">
+        <label>Last Name</label>
+        <input type="text" name="Last Name" required>
+      </div>
+      <div class="question-wrapper">
+        <label>Email Address</label>
+        <input type="email" name="Requester Email" required>
+      </div>
+      <div class="question-wrapper">
+        <label>Department</label>
+        <input type="text" name="Department" required>
+      </div>
+      <div class="question-wrapper">
+        <label>Reporting Manager</label>
+        <input type="text" name="Reporting Manager" required>
+      </div>
+      <hr>
+      <? } else { ?>
+      <h3>Request for:
+        <?= employeeName ?> (Temporary ID:
+        <?= employeeId ?>)
+      </h3>
+      <p>Please provide the credit card details below and confirm completion.</p>
+      <hr>
+      <? } ?>
+
+      <form id="task-form">
+        <? if (typeof isStandalone !== 'undefined' && isStandalone) { ?>
+        <input type="hidden" name="formType" value="<?= formType ?>">
+        <input type="hidden" name="formTitle" value="<?= formTitle ?>">
+        <input type="hidden" name="isStandalone" value="true">
+        <? } else { ?>
+        <input type="hidden" name="formType" value="parallel_task_submission">
+        <input type="hidden" name="requestId" value="<?= requestId ?>">
+        <? } ?>
+        <input type="hidden" name="statusColumn" value="<?= statusColumn ?>">
+
+        <h3>Credit Card Limit</h3>
+        <div class="question-wrapper">
+          <label>Please enter the Credit Card Spending Limit</label>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" class="form-control" name="Credit Card - Limit" placeholder="$" required
+              style="width: 75%;">
+            <select class="form-control" name="Credit Card - Currency" required style="width: 25%;">
+              <option value="CAD">CAD</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
+        </div>
+
+        <hr>
+
+        <hr>
+        <h3>Additional Accounts</h3>
+        <p>Please select and set up any additional accounts required.</p>
+
+        <div class="question-wrapper checkbox-question">
+          <input type="checkbox" id="amazon_complete" name="Amazon - Status" value="Complete">
+          <label for="amazon_complete">Amazon Account Setup Complete</label>
+        </div>
+
+        <div class="question-wrapper checkbox-question">
+          <input type="checkbox" id="staples_complete" name="Staples - Status" value="Complete">
+          <label for="staples_complete">Staples Account Setup Complete</label>
+        </div>
+
+        <div class="question-wrapper checkbox-question">
+          <input type="checkbox" id="homedepot_complete" name="HomeDepot - Status" value="Complete">
+          <label for="homedepot_complete">HomeDepot Account Setup Complete</label>
+        </div>
+
+        <hr>
+
+        <div class="question-wrapper checkbox-question">
+          <input type="checkbox" id="isComplete" name="isComplete" required>
+          <label for="isComplete">Has the main credit card setup been completed?</label>
+        </div>
+
+        <div id="submit-container">
+          <button type="submit">Submit Credit Card Details</button>
+        </div>
+      </form>
+    </div>
+    <div id="status-message"></div>
+  </div>
+
+  <script>
+    document.getElementById('task-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const form = e.target;
+      form.querySelector('button[type="submit"]').textContent = 'Submitting...';
+      form.querySelector('button[type="submit"]').disabled = true;
+
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+
+      // Handle the main completion status
+      data['Credit Card - Status'] = form.isComplete.checked ? 'Complete' : 'Incomplete';
+      delete data.isComplete;
+
+      // Handle additional accounts
+      if (form.querySelector('#amazon_complete')) data['Amazon - Status'] = form.querySelector('#amazon_complete').checked ? 'Complete' : 'Incomplete';
+      if (form.querySelector('#staples_complete')) data['Staples - Status'] = form.querySelector('#staples_complete').checked ? 'Complete' : 'Incomplete';
+      if (form.querySelector('#homedepot_complete')) data['HomeDepot - Status'] = form.querySelector('#homedepot_complete').checked ? 'Complete' : 'Incomplete';
+
+      // Determine which handler to call based on standalone mode
+      const isStandalone = data.isStandalone === 'true';
+      const handlerFunction = isStandalone ? 'handleStandaloneSubmission' : 'handleParallelTaskSubmission';
+
+      google.script.run
+        .withSuccessHandler(function (response) {
+          let message = isStandalone
+            ? `\u003ch1\u003eRequest Submitted\u003c/h1\u003e\u003cp\u003eYour credit card request has been submitted successfully.\u003c/p\u003e\u003cp\u003eRequest ID: \u003cstrong\u003e${response.requestId || 'N/A'}\u003c/strong\u003e\u003c/p\u003e\u003cp\u003eYou may now close this window.\u003c/p\u003e`
+            : `\u003ch1\u003eConfirmation Received\u003c/h1\u003e\u003cp\u003eThank you, the Credit Card details have been updated. You may now close this window.\u003c/p\u003e`;
+          document.getElementById('form-container').innerHTML = message;
+        })
+        .withFailureHandler(function (error) {
+          const statusMessage = document.getElementById('status-message');
+          statusMessage.className = 'status-error';
+          statusMessage.textContent = 'Error: ' + error.message;
+          form.querySelector('button[type="submit"]').textContent = 'Submit Credit Card Details';
+          form.querySelector('button[type="submit"]').disabled = false;
+        })[handlerFunction](data);
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="<?= config.LOGO_URL ?>" alt="Logo" class="logo">
+      <h1><?= config.FORM_NAME ?></h1>
+    </div>
+
+    <div class="workflow-info">
+      <p><strong>Workflow ID:</strong> <?= workflowId ?></p>
+      <p><strong>Employee:</strong> <?= workflowData.Employee_Name ?></p>
+    </div>
+
+    <form id="taskForm">
+      <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+
+      <div class="form-group">
+        <label>Notes:</label>
+        <textarea name="notes" rows="4"></textarea>
+      </div>
+
+      <button type="submit" class="btn-submit">Complete Task</button>
+      <div id="status"></div>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = Object.fromEntries(new FormData(e.target));
+      document.getElementById('status').innerHTML = 'Submitting...';
+
+      google.script.run
+        .withSuccessHandler(r => {
+          document.getElementById('status').innerHTML =
+            r.success ? '<div class="success">' + r.message + '</div>' :
+                       '<div class="error">' + r.message + '</div>';
+        })
+        .withFailureHandler(e => {
+          document.getElementById('status').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
+        })
+        .processFormSubmission(formData);
+    });
+  </script>
+</body>
+</html>

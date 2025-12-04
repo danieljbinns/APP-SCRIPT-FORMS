@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Setup Form - Demo</title>
+  <style>
+    /* Dark Mode Theme */
+    :root {
+      --bg-color: #000000;
+      --card-bg: #1a1a1a;
+      --text-main: #ffffff;
+      --text-muted: #b0b0b0;
+      --brand-red: #EB1C2D;
+      --brand-red-hover: #c41522;
+      --input-bg: #2a2a2a;
+      --input-border: #444;
+      --border-color: #333;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      max-height: 70px;
+    }
+
+    #form-container {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    h1 {
+      color: var(--text-main);
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      color: var(--brand-red);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+      margin: 30px 0 20px 0;
+    }
+
+    h3 {
+      color: var(--text-main);
+      margin: 20px 0 15px 0;
+      font-size: 1.1rem;
+    }
+
+    .info-card {
+      background: var(--input-bg);
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid var(--brand-red);
+    }
+
+    .info-card p {
+      margin: 5px 0;
+      font-size: 0.9rem;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+
+    .required {
+      color: var(--brand-red);
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      background-color: var(--input-bg);
+      color: var(--text-main);
+      box-sizing: border-box;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 2px solid var(--brand-red);
+      border-color: var(--brand-red);
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .question-wrapper {
+      margin-bottom: 25px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .checkbox-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background: var(--input-bg);
+      border-radius: 6px;
+    }
+
+    .checkbox-wrapper input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--brand-red);
+    }
+
+    .checkbox-wrapper label {
+      margin: 0;
+      font-weight: normal;
+      cursor: pointer;
+    }
+
+    button {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      background-color: var(--brand-red);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: var(--brand-red-hover);
+    }
+
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+
+    .back-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      width: auto;
+      padding: 10px 20px;
+      font-size: 1rem;
+    }
+
+    .back-btn:hover {
+      background: var(--input-border);
+    }
+
+    .success-message {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .success-message h2 {
+      color: #0f9d58;
+      border: none;
+      margin-bottom: 20px;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border-color);
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="../team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+
+    <button class="back-btn" onclick="window.location.href='../dashboard.html'">
+      ← Back to Dashboard
+    </button>
+
+    <!-- Form Container -->
+    <div id="form-container">
+      <h1>HR Setup Form</h1>
+
+      <div class="info-card" id="employeeInfo">
+        <p><b>Employee:</b> <span id="employeeName">Loading...</span></p>
+        <p><b>Hire Date:</b> <span id="hireDate">Loading...</span></p>
+        <p><b>Position:</b> <span id="position">Loading...</span></p>
+        <p><b>Workflow ID:</b> <span id="workflowId">Loading...</span></p>
+      </div>
+
+      <p style="color: var(--text-muted); margin-bottom: 20px;">
+        Please complete all required fields for HR setup and onboarding.
+      </p>
+
+      <form id="hrForm">
+        <!-- Benefits Enrollment -->
+        <h2>Benefits Enrollment</h2>
+        <div class="question-wrapper">
+          <label>Benefits Enrollment Status <span class="required">*</span></label>
+          <select name="benefitsStatus" required>
+            <option value="">-- Please Select --</option>
+            <option value="Complete">Complete</option>
+            <option value="Pending">Pending</option>
+            <option value="Not Required">Not Required</option>
+          </select>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Health Insurance Plan</label>
+          <input type="text" name="healthInsurancePlan" placeholder="e.g., Gold Plan, Silver Plan">
+        </div>
+
+        <div class="question-wrapper">
+          <label>Dental Insurance</label>
+          <select name="dentalInsurance">
+            <option value="">-- Please Select --</option>
+            <option value="Enrolled">Enrolled</option>
+            <option value="Declined">Declined</option>
+            <option value="Not Eligible">Not Eligible</option>
+          </select>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Vision Insurance</label>
+          <select name="visionInsurance">
+            <option value="">-- Please Select --</option>
+            <option value="Enrolled">Enrolled</option>
+            <option value="Declined">Declined</option>
+            <option value="Not Eligible">Not Eligible</option>
+          </select>
+        </div>
+
+        <hr>
+
+        <!-- I-9 Verification -->
+        <h2>I-9 Verification & Documentation</h2>
+        <div class="question-wrapper">
+          <label>I-9 Form Completed <span class="required">*</span></label>
+          <select name="i9Status" required>
+            <option value="">-- Please Select --</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Document Type Provided</label>
+          <input type="text" name="i9DocumentType" placeholder="e.g., Passport, Driver's License + Social Security Card">
+        </div>
+
+        <div class="question-wrapper">
+          <label>I-9 Verification Date</label>
+          <input type="text" name="i9VerificationDate" placeholder="YYYY-MM-DD">
+        </div>
+
+        <hr>
+
+        <!-- Emergency Contacts -->
+        <h2>Emergency Contacts</h2>
+        <div class="question-wrapper">
+          <label>Emergency Contact Form Completed <span class="required">*</span></label>
+          <select name="emergencyContactStatus" required>
+            <option value="">-- Please Select --</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+
+        <h3>Primary Emergency Contact</h3>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Contact Name</label>
+            <input type="text" name="emergencyContactName1" placeholder="Full Name">
+          </div>
+          <div class="form-field">
+            <label>Relationship</label>
+            <input type="text" name="emergencyContactRelationship1" placeholder="e.g., Spouse, Parent">
+          </div>
+          <div class="form-field">
+            <label>Phone Number</label>
+            <input type="text" name="emergencyContactPhone1" placeholder="(555) 123-4567">
+          </div>
+        </div>
+
+        <h3>Secondary Emergency Contact</h3>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Contact Name</label>
+            <input type="text" name="emergencyContactName2" placeholder="Full Name">
+          </div>
+          <div class="form-field">
+            <label>Relationship</label>
+            <input type="text" name="emergencyContactRelationship2" placeholder="e.g., Sibling, Friend">
+          </div>
+          <div class="form-field">
+            <label>Phone Number</label>
+            <input type="text" name="emergencyContactPhone2" placeholder="(555) 123-4567">
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- SiteDocs (if required) -->
+        <h2>SiteDocs Safety Training</h2>
+        <div class="question-wrapper">
+          <label>SiteDocs Required?</label>
+          <select name="siteDocsRequired" id="siteDocsRequired" onchange="toggleSiteDocs()">
+            <option value="">-- Please Select --</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+
+        <div id="siteDocsSection" style="display: none;">
+          <div class="form-row">
+            <div class="form-field">
+              <label>SiteDocs Worker ID <span class="required">*</span></label>
+              <input type="text" name="siteDocsWorkerId" id="siteDocsWorkerId" placeholder="Worker ID">
+            </div>
+            <div class="form-field">
+              <label>Training Username <span class="required">*</span></label>
+              <input type="text" name="siteDocsUsername" id="siteDocsUsername" placeholder="Username">
+            </div>
+            <div class="form-field">
+              <label>Training Password <span class="required">*</span></label>
+              <input type="password" name="siteDocsPassword" id="siteDocsPassword" placeholder="Password">
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- DSS Access -->
+        <h2>DSS (Dynamic Safety Solutions) Access</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>DSS Username <span class="required">*</span></label>
+            <input type="text" name="dssUsername" required placeholder="DSS Username">
+          </div>
+          <div class="form-field">
+            <label>DSS Password <span class="required">*</span></label>
+            <input type="password" name="dssPassword" required placeholder="DSS Password">
+          </div>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Employee Assigned to WIS Module? <span class="required">*</span></label>
+          <select name="wisModuleAssigned" required>
+            <option value="">-- Please Select --</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+
+        <hr>
+
+        <!-- Additional Notes -->
+        <h2>Signoff & Additional Information</h2>
+        <div class="question-wrapper">
+          <label>Additional Comments/Notes</label>
+          <textarea name="hrNotes" placeholder="Any additional information or notes about the HR setup..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>HR Authorizer Name <span class="required">*</span></label>
+            <input type="text" name="authorizerName" required placeholder="Your Name">
+          </div>
+          <div class="form-field">
+            <label>Completion Date <span class="required">*</span></label>
+            <input type="text" name="completionDate" required id="completionDate">
+          </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+          <button type="submit">Submit HR Setup</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Load employee data from session storage
+    const workflowId = sessionStorage.getItem('demoWorkflowId') || 'WF-REQ-20251204-DEMO';
+    const formDataStr = sessionStorage.getItem('demoFormData');
+    const formData = formDataStr ? JSON.parse(formDataStr) : {
+      firstName: 'John',
+      middleName: 'Michael',
+      lastName: 'Smith',
+      hireDate: '2025-12-15',
+      position: 'Project Manager'
+    };
+
+    // Display employee info
+    document.getElementById('employeeName').textContent = `${formData.firstName} ${formData.lastName}`;
+    document.getElementById('hireDate').textContent = formData.hireDate || 'N/A';
+    document.getElementById('position').textContent = formData.position || 'N/A';
+    document.getElementById('workflowId').textContent = workflowId;
+
+    // Set today's date as completion date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('completionDate').value = today;
+
+    // Toggle SiteDocs section
+    function toggleSiteDocs() {
+      const required = document.getElementById('siteDocsRequired').value;
+      const section = document.getElementById('siteDocsSection');
+      const workerId = document.getElementById('siteDocsWorkerId');
+      const username = document.getElementById('siteDocsUsername');
+      const password = document.getElementById('siteDocsPassword');
+
+      if (required === 'Yes') {
+        section.style.display = 'block';
+        workerId.required = true;
+        username.required = true;
+        password.required = true;
+      } else {
+        section.style.display = 'none';
+        workerId.required = false;
+        username.required = false;
+        password.required = false;
+      }
+    }
+
+    // Handle form submission
+    document.getElementById('hrForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+
+      // Generate task ID
+      const taskId = 'TASK-HR-' + new Date().getTime().toString(36).toUpperCase();
+
+      // Show success message
+      document.getElementById('form-container').innerHTML = `
+        <div class="success-message">
+          <h2>✓ HR Setup Completed Successfully</h2>
+          <p><strong>Task ID:</strong> ${taskId}</p>
+          <p><strong>Employee:</strong> ${document.getElementById('employeeName').textContent}</p>
+          <p>All HR information has been recorded.</p>
+          <p style="margin-top: 30px;">
+            <button onclick="window.location.href='../dashboard.html'">Return to Dashboard</button>
+          </p>
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>

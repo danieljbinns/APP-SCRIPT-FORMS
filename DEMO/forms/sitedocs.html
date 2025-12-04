@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SiteDocs Safety Training - Demo</title>
+  <link rel="stylesheet" href="form-styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <img src="../team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+    <button class="back-btn" onclick="window.location.href='../dashboard.html'">← Back to Dashboard</button>
+
+    <div id="form-container">
+      <h1>SiteDocs Safety Training Setup</h1>
+      <div class="info-card">
+        <p><b>Employee:</b> <span id="employeeName">Loading...</span></p>
+        <p><b>Position:</b> <span id="position">Loading...</span></p>
+        <p><b>Site:</b> <span id="siteName">Loading...</span></p>
+        <p><b>Workflow ID:</b> <span id="workflowId">Loading...</span></p>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 20px;">
+        Configure SiteDocs safety training and compliance tracking.
+      </p>
+
+      <form id="sitedocsForm">
+        <h2>SiteDocs Account Setup</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>SiteDocs Worker ID <span class="required">*</span></label>
+            <input type="text" name="workerID" required placeholder="Worker ID">
+          </div>
+          <div class="form-field">
+            <label>Training Username <span class="required">*</span></label>
+            <input type="text" name="trainingUsername" required placeholder="Username">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Training Password <span class="required">*</span></label>
+            <input type="text" name="trainingPassword" required placeholder="Temporary Password">
+          </div>
+          <div class="form-field">
+            <label>Account Email</label>
+            <input type="email" name="accountEmail" placeholder="employee@team-group.com">
+          </div>
+        </div>
+
+        <hr>
+
+        <h2>Required Safety Training</h2>
+        <p style="color: var(--text-muted); margin-bottom: 15px;">Mark all training modules completed:</p>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="orientationTraining" name="orientationTraining">
+          <label for="orientationTraining">Site Orientation & Safety Basics</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="whmisTraining" name="whmisTraining">
+          <label for="whmisTraining">WHMIS 2015 Training</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="fallProtection" name="fallProtection">
+          <label for="fallProtection">Fall Protection</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="confinedSpace" name="confinedSpace">
+          <label for="confinedSpace">Confined Space Entry</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="lockoutTagout" name="lockoutTagout">
+          <label for="lockoutTagout">Lockout/Tagout (LOTO)</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="firstAid" name="firstAid">
+          <label for="firstAid">First Aid & CPR</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="fireExtinguisher" name="fireExtinguisher">
+          <label for="fireExtinguisher">Fire Extinguisher Training</label>
+        </div>
+
+        <div class="checkbox-wrapper">
+          <input type="checkbox" id="toolsEquipment" name="toolsEquipment">
+          <label for="toolsEquipment">Tools & Equipment Safety</label>
+        </div>
+
+        <hr>
+
+        <h2>Certifications & Compliance</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Safety Boots Verified</label>
+            <select name="safetyBoots">
+              <option value="">-- Select --</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+              <option value="N/A">N/A</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>PPE Kit Issued</label>
+            <select name="ppeIssued">
+              <option value="">-- Select --</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Hard Hat Number</label>
+          <input type="text" name="hardHatNumber" placeholder="Hard Hat ID">
+        </div>
+
+        <div class="question-wrapper">
+          <label>Additional Certifications</label>
+          <textarea name="additionalCerts" placeholder="List any additional certifications (forklift, crane operator, etc.)..."></textarea>
+        </div>
+
+        <hr>
+
+        <h2>Training Completion</h2>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Training Completion Date</label>
+            <input type="text" name="trainingCompletionDate" placeholder="YYYY-MM-DD">
+          </div>
+          <div class="form-field">
+            <label>Next Renewal Date</label>
+            <input type="text" name="renewalDate" placeholder="YYYY-MM-DD">
+          </div>
+        </div>
+
+        <div class="question-wrapper">
+          <label>Training Notes</label>
+          <textarea name="trainingNotes" placeholder="Any notes about the safety training..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Trainer Name <span class="required">*</span></label>
+            <input type="text" name="trainerName" required placeholder="Your Name">
+          </div>
+          <div class="form-field">
+            <label>Training Date <span class="required">*</span></label>
+            <input type="text" name="setupDate" required id="setupDate">
+          </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+          <button type="submit">Submit Safety Training</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="form-script.js"></script>
+  <script>
+    // Custom init to include site name
+    const workflowId = sessionStorage.getItem('demoWorkflowId') || 'WF-REQ-20251204-DEMO';
+    const formDataStr = sessionStorage.getItem('demoFormData');
+    const formData = formDataStr ? JSON.parse(formDataStr) : {
+      firstName: 'John',
+      lastName: 'Smith',
+      position: 'Project Manager',
+      siteName: 'GM Oshawa Assembly'
+    };
+
+    document.getElementById('employeeName').textContent = `${formData.firstName} ${formData.lastName}`;
+    document.getElementById('position').textContent = formData.position || 'N/A';
+    document.getElementById('siteName').textContent = formData.siteName || 'N/A';
+    document.getElementById('workflowId').textContent = workflowId;
+    document.getElementById('setupDate').value = new Date().toISOString().split('T')[0];
+
+    document.querySelector('form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const taskId = 'TASK-SITEDOCS-' + new Date().getTime().toString(36).toUpperCase();
+      document.getElementById('form-container').innerHTML = `
+        <div class="success-message">
+          <h2>✓ Safety Training Completed</h2>
+          <p><strong>Task ID:</strong> ${taskId}</p>
+          <p><strong>Employee:</strong> ${document.getElementById('employeeName').textContent}</p>
+          <p>SiteDocs safety training has been completed and recorded.</p>
+          <p style="margin-top: 30px;">
+            <button onclick="window.location.href='../dashboard.html'">Return to Dashboard</button>
+          </p>
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>

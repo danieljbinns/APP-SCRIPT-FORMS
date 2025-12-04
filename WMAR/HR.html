@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <?!= HtmlService.createHtmlOutputFromFile('CSS.html').getContent(); ?>
+  </head>
+  <body>
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <img src="<?= logoUrl ?>" alt="Company Logo" style="max-height: 70px;">
+      </div>
+      <div id="form-container">
+        <div class="loader">Loading Request Data...</div>
+      </div>
+      <div id="status-message"></div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const formContainer = document.getElementById('form-container');
+        const statusMessage = document.getElementById('status-message');
+        const requestId = "<?= requestId ?>";
+
+        google.script.run
+          .withSuccessHandler(buildHrForm)
+          .withFailureHandler(onFailure)
+          .getHrRequestData(requestId);
+          
+        function buildHrForm(data) {
+          if (!data) {
+            onFailure({ message: `Could not find a request with the ID "${requestId}". The link may be invalid or the request may have been deleted.` });
+            return;
+          }
+
+          let siteDocsFields = '';
+          if (data['SiteDocs'] === 'Yes') {
+            siteDocsFields = `
+              <h3>SiteDocs</h3>
+              <div class="question-wrapper">
+                <label>SiteDocs Worker ID</label>
+                <input type="text" class="form-control" name="HR - SiteDocs Worker ID" required>
+              </div>
+              <div class="question-wrapper">
+                <label>SiteDocs Training Username</label>
+                <input type="text" class="form-control" name="HR - SiteDocs Training Username" required>
+              </div>
+              <div class="question-wrapper">
+                <label>SiteDocs Training Password</label>
+                <input type="text" class="form-control" name="HR - SiteDocs Training Password" required>
+              </div>
+            `;
+          }
+          
+          formContainer.innerHTML = `
+            <h1>Employee Setup Form</h1>
+            <h3>Request for: ${data['First Name']} ${data['Last Name']} (Temporary ID: ${data['Temporary ID']})</h3>
+            <div style="margin-top:-5px; margin-bottom: 15px; color: #555; font-size: 0.9em; border-left: 3px solid #ccc; padding-left: 10px;">
+                <p><b>Requested Email:</b> ${data['Email Requested'] || 'Not Specified'}</p>
+                <p><b>Requester:</b> ${data['Requester Name'] || 'Not Specified'} (${data['Requester Email'] || 'N/A'})</p>
+                <p><b>Reporting Manager:</b> ${data['Reporting Manager Name'] || 'Not Specified'} (${data['Reporting Manager Email '] || 'N/A'})</p>
+            </div>
+            <p>Please enroll the new hire and complete the access details below.</p>
+            <hr>
+            <form id="hr-form">
+              <input type="hidden" name="formType" value="hr">
+              <input type="hidden" name="Request ID" value="${requestId}">
+
+              ${siteDocsFields}
+
+              <h3>Access Details</h3>
+              <div class="question-wrapper">
+                <label>DSS Username</label>
+                <input type="text" class="form-control" name="HR - DSS Username" value="${data.generatedDssUsername || ''}" required>
+              </div>
+              <div class="question-wrapper">
+                <label>DSS Password</label>
+                <input type="text" class="form-control" name="HR - DSS Password" required>
+              </div>
+              <div class="question-wrapper">
+                <label>Employee assigned to WIS module?</label>
+                <select class="form-control" name="HR - Employee assigned to WIS module?" required>
+                    <option value="">--Please Select--</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+              </div>
+
+              <hr>
+              <h3>Signoff</h3>
+              <div class="question-wrapper">
+                <label>Additional Comments/Notes</label>
+                <textarea class="form-control" name="HR - Additional Comments"></textarea>
+              </div>
+              <div class="question-wrapper">
+                <label>Authorizer Name</label>
+                <input type="text" class="form-control" name="HR - Team Member Name" value="Jennifer" required>
+              </div>
+              <div id="submit-container">
+                <button type="submit">Submit</button>
+              </div>
+            </form>`;
+          document.getElementById('hr-form').addEventListener('submit', handleFormSubmit);
+        }
+        
+        function onFailure(error) {
+          formContainer.innerHTML = `<h1>Error</h1><p>${error.message}</p>`;
+        }
+
+        function handleFormSubmit(e) {
+          e.preventDefault();
+          statusMessage.textContent = 'Submitting...';
+          statusMessage.className = 'status-info';
+          const form = e.target;
+          const formData = new FormData(form);
+          const data = Object.fromEntries(formData.entries());
+
+          google.script.run
+            .withSuccessHandler(response => {
+              if (response.status === 'success') {
+                formContainer.innerHTML = `<div style="text-align: center; padding: 40px;"><h2>${response.message}</h2><p>You may now close this window.</p></div>`;
+                statusMessage.innerHTML = '';
+              } else {
+                statusMessage.className = 'status-error';
+                statusMessage.textContent = response.message;
+              }
+            })
+            .withFailureHandler(onFailure)
+            .processSubmission(data);
+        }
+      });
+    </script>
+  </body>
+</html>
