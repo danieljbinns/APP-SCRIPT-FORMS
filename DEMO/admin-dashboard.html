@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Workflow Management</title>
+  <link rel="stylesheet" href="shared/theme-toggle.css">
+  <link rel="stylesheet" href="shared/notifications.css">
+  <style>
+    :root {
+      --bg-color: #000000;
+      --card-bg: #1a1a1a;
+      --text-main: #ffffff;
+      --text-muted: #b0b0b0;
+      --brand-red: #EB1C2D;
+      --brand-red-hover: #c41522;
+      --input-bg: #2a2a2a;
+      --input-border: #444;
+      --border-color: #333;
+      --status-complete: #0f9d58;
+      --status-open: #f4b400;
+      --status-progress: #4285f4;
+      --status-overdue: #db4437;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      max-height: 70px;
+    }
+
+    .admin-header {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      margin-bottom: 30px;
+      border-left: 4px solid var(--brand-red);
+    }
+
+    .admin-header h1 {
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+    }
+
+    .admin-header p {
+      color: var(--text-muted);
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .stat-card.total .stat-number { color: var(--brand-red); }
+    .stat-card.open .stat-number { color: var(--status-open); }
+    .stat-card.progress .stat-number { color: var(--status-progress); }
+    .stat-card.complete .stat-number { color: var(--status-complete); }
+    .stat-card.overdue .stat-number { color: var(--status-overdue); }
+
+    /* Filters */
+    .filters-section {
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 30px;
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .filter-field label {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+    }
+
+    .filter-field input,
+    .filter-field select {
+      padding: 10px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      color: var(--text-main);
+    }
+
+    .filter-field input:focus,
+    .filter-field select:focus {
+      outline: 2px solid var(--brand-red);
+      border-color: var(--brand-red);
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--brand-red);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--brand-red-hover);
+    }
+
+    .btn-secondary {
+      background: var(--input-bg);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: var(--input-border);
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+    }
+
+    /* Table */
+    .table-container {
+      background: var(--card-bg);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: var(--input-bg);
+    }
+
+    th {
+      padding: 15px;
+      text-align: left;
+      font-weight: bold;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    th:hover {
+      background: var(--input-border);
+    }
+
+    th .sort-icon {
+      margin-left: 5px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    td {
+      padding: 15px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    tr:hover {
+      background: var(--input-bg);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+
+    .status-complete {
+      background: var(--status-complete);
+      color: white;
+    }
+
+    .status-open {
+      background: var(--status-open);
+      color: black;
+    }
+
+    .status-progress {
+      background: var(--status-progress);
+      color: white;
+    }
+
+    .status-overdue {
+      background: var(--status-overdue);
+      color: white;
+    }
+
+    .workflow-id {
+      font-family: 'Courier New', monospace;
+      color: var(--brand-red);
+      font-weight: bold;
+    }
+
+    .action-cell {
+      display: flex;
+      gap: 8px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      max-width: 500px;
+      width: 90%;
+    }
+
+    .modal-header {
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      color: var(--text-main);
+    }
+
+    .modal-body {
+      margin-bottom: 20px;
+    }
+
+    .modal-body textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 10px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .back-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+
+    .back-btn:hover {
+      background: var(--input-border);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+
+    <!-- Theme Toggle -->
+    <div id="theme-toggle-container" style="text-align: center; margin-bottom: 15px;"></div>
+
+    <a href="index.html" class="back-btn">← Back to Demo</a>
+
+    <!-- Admin Header -->
+    <div class="admin-header">
+      <h1>Admin Dashboard</h1>
+      <p>Manage all workflows and tasks across the system</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-number" id="stat-total">0</div>
+        <div class="stat-label">Total Workflows</div>
+      </div>
+      <div class="stat-card open">
+        <div class="stat-number" id="stat-open">0</div>
+        <div class="stat-label">Open</div>
+      </div>
+      <div class="stat-card progress">
+        <div class="stat-number" id="stat-progress">0</div>
+        <div class="stat-label">In Progress</div>
+      </div>
+      <div class="stat-card complete">
+        <div class="stat-number" id="stat-complete">0</div>
+        <div class="stat-label">Complete</div>
+      </div>
+      <div class="stat-card overdue">
+        <div class="stat-number" id="stat-overdue">0</div>
+        <div class="stat-label">Overdue</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+      <div class="filters-grid">
+        <div class="filter-field">
+          <label>Search</label>
+          <input type="text" id="filter-search" placeholder="Search by name, ID, or email...">
+        </div>
+        <div class="filter-field">
+          <label>Status</label>
+          <select id="filter-status">
+            <option value="">All Statuses</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Complete">Complete</option>
+            <option value="Overdue">Overdue</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Form Type</label>
+          <select id="filter-type">
+            <option value="">All Types</option>
+            <option value="HR">HR Setup</option>
+            <option value="IT">IT Setup</option>
+            <option value="FLEETIO">Fleetio</option>
+            <option value="CREDITCARD">Credit Card</option>
+            <option value="REVIEW">30-60-90 Review</option>
+            <option value="ADP">ADP Access</option>
+            <option value="JONAS">JONAS ERP</option>
+            <option value="SITEDOCS">SiteDocs</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Date Range</label>
+          <input type="date" id="filter-date-from" placeholder="From">
+        </div>
+        <div class="filter-field">
+          <label>&nbsp;</label>
+          <input type="date" id="filter-date-to" placeholder="To">
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+        <button class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+        <button class="btn btn-secondary" onclick="sendBulkReminders()">Send Overdue Reminders</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+      <table id="workflows-table">
+        <thead>
+          <tr>
+            <th onclick="sortTable('workflowId')">Workflow ID <span class="sort-icon">▼</span></th>
+            <th onclick="sortTable('employee')">Employee <span class="sort-icon">▼</span></th>
+            <th onclick="sortTable('position')">Position <span class="sort-icon">▼</span></th>
+            <th onclick="sortTable('date')">Date <span class="sort-icon">▼</span></th>
+            <th onclick="sortTable('status')">Status <span class="sort-icon">▼</span></th>
+            <th onclick="sortTable('tasksComplete')">Progress <span class="sort-icon">▼</span></th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="workflows-tbody">
+          <!-- Populated by JavaScript -->
+        </tbody>
+      </table>
+      <div id="empty-state" class="empty-state" style="display: none;">
+        <div class="empty-state-icon">📋</div>
+        <h3>No workflows found</h3>
+        <p>Try adjusting your filters or create a new workflow</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reminder Modal -->
+  <div class="modal" id="reminder-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Send Reminder</h2>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 15px; color: var(--text-muted);">
+          Workflow: <strong id="modal-workflow-id">-</strong><br>
+          Employee: <strong id="modal-employee">-</strong>
+        </p>
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Custom Message (optional)</label>
+        <textarea id="reminder-message" placeholder="Add a custom message to the reminder email..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeReminderModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="sendReminder()">Send Reminder</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sample data (in real implementation, this would come from backend/database)
+    let allWorkflows = [
+      {
+        workflowId: 'WF-REQ-20251204-DEMO',
+        employee: 'John Smith',
+        position: 'Project Manager',
+        email: 'john.smith@team-group.com',
+        date: '2025-12-04',
+        hireDate: '2025-12-15',
+        status: 'In Progress',
+        tasksTotal: 9,
+        tasksComplete: 3,
+        lastReminder: null,
+        tasks: [
+          { id: 'HR', name: 'HR Setup', status: 'Complete' },
+          { id: 'IT', name: 'IT Setup', status: 'Complete' },
+          { id: 'FLEETIO', name: 'Fleetio', status: 'Complete' },
+          { id: 'CREDITCARD', name: 'Credit Card', status: 'Open' },
+          { id: 'REVIEW', name: '30-60-90 Review', status: 'Open' },
+          { id: 'ADP_SUP', name: 'ADP Supervisor', status: 'Open' },
+          { id: 'ADP_MGR', name: 'ADP Manager', status: 'Open' },
+          { id: 'JONAS', name: 'JONAS ERP', status: 'Open' },
+          { id: 'SITEDOCS', name: 'SiteDocs', status: 'Open' }
+        ]
+      },
+      {
+        workflowId: 'WF-REQ-20251201-ABC1',
+        employee: 'Sarah Johnson',
+        position: 'Operations Coordinator',
+        email: 'sarah.johnson@team-group.com',
+        date: '2025-12-01',
+        hireDate: '2025-12-10',
+        status: 'Open',
+        tasksTotal: 5,
+        tasksComplete: 0,
+        lastReminder: '2025-12-03',
+        tasks: []
+      },
+      {
+        workflowId: 'WF-REQ-20251128-XYZ9',
+        employee: 'Michael Chen',
+        position: 'Safety Supervisor',
+        email: 'michael.chen@team-group.com',
+        date: '2025-11-28',
+        hireDate: '2025-12-05',
+        status: 'Complete',
+        tasksTotal: 7,
+        tasksComplete: 7,
+        lastReminder: null,
+        tasks: []
+      }
+    ];
+
+    let filteredWorkflows = [...allWorkflows];
+    let currentSort = { column: 'date', direction: 'desc' };
+    let currentReminderWorkflow = null;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize error handling modules
+      ErrorHandler.init({
+        showStack: false,
+        logErrors: true,
+        showToast: true
+      });
+
+      ToastManager.init({
+        duration: 3000,
+        position: 'top-right',
+        maxToasts: 5
+      });
+
+      LoadingOverlay.init({
+        minDisplayTime: 300
+      });
+
+      ConfirmDialog.init({
+        confirmText: 'Confirm',
+        cancelText: 'Cancel'
+      });
+
+      // Initialize dashboard
+      try {
+        updateStats();
+        renderTable();
+        setDefaultDates();
+      } catch (error) {
+        ErrorHandler.handle(error, 'Failed to initialize dashboard');
+      }
+    });
+
+    function setDefaultDates() {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+
+      document.getElementById('filter-date-to').valueAsDate = today;
+      document.getElementById('filter-date-from').valueAsDate = thirtyDaysAgo;
+    }
+
+    function calculateStatus(workflow) {
+      const today = new Date();
+      const hireDate = new Date(workflow.hireDate);
+      const daysDiff = Math.floor((hireDate - today) / (1000 * 60 * 60 * 24));
+
+      if (workflow.tasksComplete === workflow.tasksTotal) {
+        return 'Complete';
+      } else if (daysDiff < 0) {
+        return 'Overdue';
+      } else if (workflow.tasksComplete > 0) {
+        return 'In Progress';
+      } else {
+        return 'Open';
+      }
+    }
+
+    function updateStats() {
+      const stats = {
+        total: allWorkflows.length,
+        open: 0,
+        progress: 0,
+        complete: 0,
+        overdue: 0
+      };
+
+      allWorkflows.forEach(wf => {
+        const status = calculateStatus(wf);
+        wf.status = status; // Update status based on current date
+
+        if (status === 'Open') stats.open++;
+        else if (status === 'In Progress') stats.progress++;
+        else if (status === 'Complete') stats.complete++;
+        else if (status === 'Overdue') stats.overdue++;
+      });
+
+      document.getElementById('stat-total').textContent = stats.total;
+      document.getElementById('stat-open').textContent = stats.open;
+      document.getElementById('stat-progress').textContent = stats.progress;
+      document.getElementById('stat-complete').textContent = stats.complete;
+      document.getElementById('stat-overdue').textContent = stats.overdue;
+    }
+
+    function applyFilters() {
+      const search = document.getElementById('filter-search').value.toLowerCase();
+      const status = document.getElementById('filter-status').value;
+      const type = document.getElementById('filter-type').value;
+      const dateFrom = document.getElementById('filter-date-from').value;
+      const dateTo = document.getElementById('filter-date-to').value;
+
+      filteredWorkflows = allWorkflows.filter(wf => {
+        // Search filter
+        if (search && !wf.employee.toLowerCase().includes(search) &&
+            !wf.workflowId.toLowerCase().includes(search) &&
+            !wf.email.toLowerCase().includes(search) &&
+            !wf.position.toLowerCase().includes(search)) {
+          return false;
+        }
+
+        // Status filter
+        if (status && wf.status !== status) {
+          return false;
+        }
+
+        // Type filter (check if workflow has task of this type)
+        if (type && !wf.tasks.some(t => t.id.includes(type))) {
+          return false;
+        }
+
+        // Date range filter
+        if (dateFrom && wf.date < dateFrom) {
+          return false;
+        }
+        if (dateTo && wf.date > dateTo) {
+          return false;
+        }
+
+        return true;
+      });
+
+      renderTable();
+    }
+
+    function clearFilters() {
+      document.getElementById('filter-search').value = '';
+      document.getElementById('filter-status').value = '';
+      document.getElementById('filter-type').value = '';
+      document.getElementById('filter-date-from').value = '';
+      document.getElementById('filter-date-to').value = '';
+
+      filteredWorkflows = [...allWorkflows];
+      renderTable();
+    }
+
+    function sortTable(column) {
+      if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort.column = column;
+        currentSort.direction = 'asc';
+      }
+
+      filteredWorkflows.sort((a, b) => {
+        let aVal, bVal;
+
+        switch(column) {
+          case 'workflowId':
+            aVal = a.workflowId;
+            bVal = b.workflowId;
+            break;
+          case 'employee':
+            aVal = a.employee;
+            bVal = b.employee;
+            break;
+          case 'position':
+            aVal = a.position;
+            bVal = b.position;
+            break;
+          case 'date':
+            aVal = a.date;
+            bVal = b.date;
+            break;
+          case 'status':
+            aVal = a.status;
+            bVal = b.status;
+            break;
+          case 'tasksComplete':
+            aVal = a.tasksComplete / a.tasksTotal;
+            bVal = b.tasksComplete / b.tasksTotal;
+            break;
+          default:
+            return 0;
+        }
+
+        if (currentSort.direction === 'asc') {
+          return aVal > bVal ? 1 : -1;
+        } else {
+          return aVal < bVal ? 1 : -1;
+        }
+      });
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('workflows-tbody');
+      const emptyState = document.getElementById('empty-state');
+
+      if (filteredWorkflows.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      tbody.innerHTML = filteredWorkflows.map(wf => {
+        const statusClass = wf.status.toLowerCase().replace(' ', '-');
+        const progress = Math.round((wf.tasksComplete / wf.tasksTotal) * 100);
+
+        return `
+          <tr>
+            <td><span class="workflow-id">${wf.workflowId}</span></td>
+            <td>${wf.employee}<br><small style="color: var(--text-muted);">${wf.email}</small></td>
+            <td>${wf.position}</td>
+            <td>${formatDate(wf.date)}<br><small style="color: var(--text-muted);">Hire: ${formatDate(wf.hireDate)}</small></td>
+            <td><span class="status-badge status-${statusClass}">${wf.status}</span></td>
+            <td>${wf.tasksComplete}/${wf.tasksTotal} (${progress}%)</td>
+            <td>
+              <div class="action-cell">
+                <button class="btn btn-secondary btn-small" onclick="viewWorkflow('${wf.workflowId}')">View</button>
+                ${wf.status !== 'Complete' ? `<button class="btn btn-primary btn-small" onclick="openReminderModal('${wf.workflowId}')">Remind</button>` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function viewWorkflow(workflowId) {
+      // In real implementation, navigate to workflow detail page
+      window.location.href = `dashboard.html`;
+    }
+
+    function openReminderModal(workflowId) {
+      currentReminderWorkflow = allWorkflows.find(wf => wf.workflowId === workflowId);
+
+      document.getElementById('modal-workflow-id').textContent = currentReminderWorkflow.workflowId;
+      document.getElementById('modal-employee').textContent = currentReminderWorkflow.employee;
+      document.getElementById('reminder-message').value = '';
+
+      document.getElementById('reminder-modal').classList.add('active');
+    }
+
+    function closeReminderModal() {
+      document.getElementById('reminder-modal').classList.remove('active');
+      currentReminderWorkflow = null;
+    }
+
+    async function sendReminder() {
+      const customMessage = document.getElementById('reminder-message').value;
+
+      try {
+        // Show loading state
+        LoadingOverlay.show('Sending reminder...');
+
+        // In real implementation, this would call backend API to send email
+        console.log('Sending reminder for:', currentReminderWorkflow.workflowId);
+        console.log('Custom message:', customMessage);
+
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Update last reminder date
+        currentReminderWorkflow.lastReminder = new Date().toISOString().split('T')[0];
+
+        // Hide loading
+        LoadingOverlay.hide();
+
+        // Show success toast
+        ToastManager.success(`Reminder sent to ${currentReminderWorkflow.employee}`);
+
+        closeReminderModal();
+        renderTable();
+      } catch (error) {
+        LoadingOverlay.hide();
+        ErrorHandler.handle(error, 'Failed to send reminder');
+      }
+    }
+
+    async function sendBulkReminders() {
+      const overdueWorkflows = filteredWorkflows.filter(wf => wf.status === 'Overdue');
+
+      if (overdueWorkflows.length === 0) {
+        ToastManager.info('No overdue workflows found in current filter');
+        return;
+      }
+
+      // Use confirmation dialog instead of native confirm
+      const confirmed = await ConfirmDialog.confirm({
+        title: 'Send Bulk Reminders',
+        message: `Send reminders to ${overdueWorkflows.length} overdue workflow(s)?`,
+        confirmText: 'Send Reminders',
+        type: 'default'
+      });
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        // Show loading state with progress
+        LoadingOverlay.show(`Sending reminder 0 of ${overdueWorkflows.length}...`);
+
+        let successCount = 0;
+        let failureCount = 0;
+
+        // In real implementation, this would call backend API
+        for (let i = 0; i < overdueWorkflows.length; i++) {
+          const wf = overdueWorkflows[i];
+
+          LoadingOverlay.updateMessage(`Sending reminder ${i + 1} of ${overdueWorkflows.length}...`);
+
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          try {
+            wf.lastReminder = new Date().toISOString().split('T')[0];
+            successCount++;
+          } catch (error) {
+            failureCount++;
+            console.error(`Failed to send reminder for ${wf.workflowId}:`, error);
+          }
+        }
+
+        LoadingOverlay.hide();
+
+        // Show summary toast
+        if (failureCount === 0) {
+          ToastManager.success(`Successfully sent ${successCount} reminder${successCount > 1 ? 's' : ''}!`);
+        } else if (successCount === 0) {
+          ToastManager.error(`Failed to send all ${failureCount} reminders`);
+        } else {
+          ToastManager.warning(`Sent ${successCount} reminders, ${failureCount} failed`);
+        }
+
+        renderTable();
+      } catch (error) {
+        LoadingOverlay.hide();
+        ErrorHandler.handle(error, 'Failed to send bulk reminders');
+      }
+    }
+
+    // Add event listeners for real-time filtering
+    document.getElementById('filter-search').addEventListener('input', applyFilters);
+    document.getElementById('filter-status').addEventListener('change', applyFilters);
+    document.getElementById('filter-type').addEventListener('change', applyFilters);
+  </script>
+
+  <!-- Error Handling & Notifications -->
+  <script src="shared/toast-notifications.js"></script>
+  <script src="shared/loading-overlay.js"></script>
+  <script src="shared/error-handler.js"></script>
+  <script src="shared/confirmation-dialog.js"></script>
+
+  <script src="shared/theme-toggle.js"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+/**
+ * Theme Toggle Button Styles
+ * Works with both light and dark modes
+ */
+
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--card-bg);
+  border-color: var(--brand-red);
+  transform: translateY(-1px);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0);
+}
+
+.theme-toggle-btn .theme-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.theme-toggle-btn .theme-label {
+  line-height: 1;
+}
+
+/* Accessibility: Focus styles */
+.theme-toggle-btn:focus {
+  outline: 2px solid var(--brand-red);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .theme-toggle-btn {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-btn {
+    transition: none;
+  }
+
+  .theme-toggle-btn:hover {
+    transform: none;
+  }
+}
