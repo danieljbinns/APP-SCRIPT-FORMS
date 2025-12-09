@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center h-screen" style="font-family: 'Inter', sans-serif;">
+    <div id="main-content" class="bg-white p-10 rounded-lg shadow-lg w-full max-w-lg">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <img src="<?= logoUrl ?>" alt="Company Logo" style="max-height: 70px;">
+      </div>
+      <h1 class="text-2xl font-bold text-gray-800 text-center">Deny Request</h1>
+      <p class="text-gray-600 mt-2 text-center mb-6">Please provide a reason for denying this request and sign below. This information will be stored.</p>
+      
+      <form id="denialForm">
+        <input type="hidden" id="approvalId" name="approvalId" value="<?= approvalId ?>">
+        
+        <div>
+          <label for="denialReason" class="block text-sm font-medium text-gray-700">Denial Reason*</label>
+          <div class="mt-1">
+            <textarea id="denialReason" name="denialReason" rows="4" required class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500"></textarea>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <label for="managerSignature" class="block text-sm font-medium text-gray-700">Your Full Name (E-Signature)*</label>
+          <div class="mt-1">
+            <input type="text" id="managerSignature" name="managerSignature" required class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500" placeholder="e.g., John Doe">
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <button type="submit" id="submitButton" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+            Submit Denial
+          </button>
+        </div>
+      </form>
+      <div id="status" class="mt-4 text-center text-sm"></div>
+    </div>
+
+    <script>
+      // Attaches an event listener to the form that triggers when the user clicks the submit button.
+      document.getElementById('denialForm').addEventListener('submit', function(e) {
+        // Prevents the default browser behavior for form submission, which is to reload the page.
+        e.preventDefault();
+        // Gets references to the submit button and the status message div.
+        const submitButton = document.getElementById('submitButton');
+        const statusDiv = document.getElementById('status');
+        // Provides visual feedback to the user by disabling the button and changing its text.
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting...';
+
+        // Collects the data from the form fields into a JavaScript object.
+        const denialData = {
+          approvalId: this.approvalId.value,
+          denialReason: this.denialReason.value,
+          managerSignature: this.managerSignature.value
+        };
+        
+        // Gets the name of the server-side function to call, which is passed dynamically from Google Apps Script.
+        // This makes the HTML template reusable.
+        const submitFunction = "<?= submitFunction ?>";
+
+        // Calls a server-side Google Apps Script function from the client-side JavaScript.
+        google.script.run
+          // Sets up a success handler: a function to run if the server call is successful.
+          .withSuccessHandler(function(response) {
+            // On success, the form is replaced with a confirmation message.
+            document.getElementById('main-content').innerHTML = '<div style="text-align: center; margin-bottom: 20px;"><img src="<?= logoUrl ?>" alt="Company Logo" style="max-height: 70px;"></div><div class="text-center"><h1 class="text-2xl font-bold text-red-700">Request Denied</h1><p class="text-gray-600 mt-2">The denial has been processed successfully. You may now close this window.</p></div>';
+          })
+          // Sets up a failure handler: a function to run if the server call fails.
+          .withFailureHandler(function(error) {
+            // On failure, an error message is displayed in the status div.
+            statusDiv.textContent = 'Error: ' + error.message;
+            statusDiv.className = 'mt-4 text-center text-sm text-red-600 font-semibold';
+            // The submit button is re-enabled and its text is reset so the user can try again.
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit Denial';
+          })
+          // Executes the server-side function whose name is stored in the 'submitFunction' variable,
+          // passing the 'denialData' object as an argument.
+          [submitFunction](denialData);
+      });
+    </script>
+  </body>
+</html>

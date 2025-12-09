@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <title>HR Setup</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?!= include('Shared/CSS'); ?>
+  </head>
+  <body>
+    <?!= include('Shared/Header'); ?>
+    
+    <div class="container">
+      <h1>HR Setup</h1>
+      <p>Complete HR tasks for: <strong><?= requestData['First Name'] ?> <?= requestData['Last Name'] ?></strong></p>
+      
+      <!-- Prefilled Information -->
+      <div class="form-section">
+        <h2>Employee Information</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td class="label" style="width: 40%; padding: 8px; border: 1px solid #ddd; background: #f5f5f5; font-weight: bold;">Request ID</td><td style="padding: 8px; border: 1px solid #ddd;"><?= requestData['Request ID'] ?></td></tr>
+          <tr><td class="label" style="width: 40%; padding: 8px; border: 1px solid #ddd; background: #f5f5f5; font-weight: bold;">Name</td><td style="padding: 8px; border: 1px solid #ddd;"><?= requestData['First Name'] ?> <?= requestData['Last Name'] ?></td></tr>
+          <tr><td class="label" style="width: 40%; padding: 8px; border: 1px solid #ddd; background: #f5f5f5; font-weight: bold;">Hire Date</td><td style="padding: 8px; border: 1px solid #ddd;"><?= requestData['Hire Date'] ?></td></tr>
+          <tr><td class="label" style="width: 40%; padding: 8px; border: 1px solid #ddd; background: #f5f5f5; font-weight: bold;">Position</td><td style="padding: 8px; border: 1px solid #ddd;"><?= requestData['Position/Title'] ?></td></tr>
+        </table>
+      </div>
+      
+      <form id="hr-form" onsubmit="handleSubmit(event)">
+        <input type="hidden" name="Request ID" value="<?= requestData['Request ID'] ?>">
+        <input type="hidden" name="Employee Name" value="<?= requestData['First Name'] ?> <?= requestData['Last Name'] ?>">
+        
+        <div class="form-section">
+          <h2>HR Tasks</h2>
+          
+          <div class="question-wrapper checkbox-wrapper">
+            <input type="checkbox" id="benefits" name="Benefits Enrollment Complete" value="Yes">
+            <label for="benefits">Benefits Enrollment Complete</label>
+          </div>
+          
+          <div class="question-wrapper checkbox-wrapper">
+            <input type="checkbox" id="i9" name="I-9 Verification Complete" value="Yes">
+            <label for="i9">I-9 Verification Complete</label>
+          </div>
+          
+          <div class="question-wrapper checkbox-wrapper">
+            <input type="checkbox" id="emergency" name="Emergency Contacts Added" value="Yes">
+            <label for="emergency">Emergency Contacts Added</label>
+          </div>
+          
+          <div class="question-wrapper">
+            <label for="hr-notes">HR Notes</label>
+            <textarea id="hr-notes" name="HR Notes"></textarea>
+          </div>
+          
+          <div class="question-wrapper">
+            <label for="completed-by">Completed By *</label>
+            <input type="text" id="completed-by" name="Completed By" required>
+          </div>
+        </div>
+        
+        <div class="submit-container">
+          <button type="submit" class="submit-btn">Submit HR Setup</button>
+        </div>
+      </form>
+      
+      <div id="status-message"></div>
+    </div>
+    
+    <?!= include('Shared/Footer'); ?>
+    
+    <script>
+      function handleSubmit(event) {
+        event.preventDefault();
+        
+        const statusDiv = document.getElementById('status-message');
+        statusDiv.textContent = 'Submitting...';
+        statusDiv.className = 'status-info';
+        
+        const formData = new FormData(event.target);
+        const data = {};
+        
+        for (const [key, value] of formData.entries()) {
+          data[key] = value;
+        }
+        
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          data[cb.name] = cb.checked ? 'Yes' : 'No';
+        });
+        
+        data['Completion Date'] = new Date().toISOString();
+        
+        google.script.run
+          .withSuccessHandler(function(response) {
+            statusDiv.className = 'status-success';
+            statusDiv.textContent = response.message;
+            if (response.status === 'success') {
+              document.getElementById('hr-form').reset();
+            }
+          })
+          .withFailureHandler(function(error) {
+            statusDiv.className = 'status-error';
+            statusDiv.textContent = 'Error: ' + error.message;
+          })
+          .processHRSetup(data);
+      }
+    </script>
+  </body>
+</html>

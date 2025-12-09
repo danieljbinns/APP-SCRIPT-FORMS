@@ -1,0 +1,9 @@
+**/.git/**
+**/.github/**
+**/node_modules/**
+**/.DS_Store
+OLD_DEPLOYMENT/**
+*.md
+.clasp.json
+.claspignore
+.gitignore

@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center h-screen" style="font-family: 'Inter', sans-serif;">
+    <div id="main-content" class="bg-white p-10 rounded-lg shadow-lg w-full max-w-lg">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <img src="<?= logoUrl ?>" alt="Company Logo" style="max-height: 70px;">
+      </div>
+      <h1 class="text-2xl font-bold text-gray-800 text-center">Send Back for Edits</h1>
+      <p class="text-gray-600 mt-2 text-center mb-6">Please provide the reason(s) this request needs to be revised. This information will be sent to the original requester.</p>
+      
+      <form id="sendBackForm">
+        <input type="hidden" id="requestId" name="requestId" value="<?= requestId ?>">
+        
+        <div>
+          <label for="reason" class="block text-sm font-medium text-gray-700">Reason for Sending Back*</label>
+          <div class="mt-1">
+            <textarea id="reason" name="reason" rows="4" required class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500"></textarea>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <button type="submit" id="submitButton" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-yellow-400 hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+            Submit Feedback to Requester
+          </button>
+        </div>
+      </form>
+      <div id="status" class="mt-4 text-center text-sm"></div>
+    </div>
+
+    <script>
+      document.getElementById('sendBackForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const submitButton = document.getElementById('submitButton');
+        const statusDiv = document.getElementById('status');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting...';
+
+        const feedbackData = {
+          requestId: this.requestId.value,
+          reason: this.reason.value,
+        };
+
+        google.script.run
+          .withSuccessHandler(function(response) {
+            document.getElementById('main-content').innerHTML = '<div style="text-align: center; margin-bottom: 20px;"><img src="<?= logoUrl ?>" alt="Company Logo" style="max-height: 70px;"></div><div class="text-center"><h1 class="text-2xl font-bold text-yellow-600">Request Sent Back</h1><p class="text-gray-600 mt-2">The requester has been notified to edit their submission. You may now close this window.</p></div>';
+          })
+          .withFailureHandler(function(error) {
+            statusDiv.textContent = 'Error: ' + error.message;
+            statusDiv.className = 'mt-4 text-center text-sm text-red-600 font-semibold';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit Feedback to Requester';
+          })
+          .processSendBack(feedbackData);
+      });
+    </script>
+  </body>
+</html>

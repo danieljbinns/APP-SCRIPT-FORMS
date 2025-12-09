@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Workflow Builder</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        background: #f0f2f5;
+        color: #333;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .builder-container {
+        display: flex;
+        height: 100vh;
+      }
+
+      /* Left Sidebar - Components Library */
+      .sidebar-left {
+        width: 280px;
+        background: white;
+        border-right: 1px solid #ddd;
+        overflow-y: auto;
+        box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+        z-index: 100;
+      }
+
+      .sidebar-header {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        font-weight: 600;
+        color: #1a73e8;
+      }
+
+      .component-section {
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+      }
+
+      .section-title {
+        padding: 10px 15px;
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #666;
+        background: #f9f9f9;
+      }
+
+      .component-item {
+        padding: 12px 15px;
+        cursor: move;
+        border-left: 3px solid transparent;
+        transition: all 0.2s;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .component-item:hover {
+        background: #f0f0f0;
+        border-left-color: #1a73e8;
+      }
+
+      .component-icon {
+        font-size: 18px;
+      }
+
+      /* Center Canvas */
+      .canvas-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #f0f2f5;
+      }
+
+      .canvas-toolbar {
+        background: white;
+        padding: 12px 20px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .workflow-info {
+        flex: 1;
+      }
+
+      .workflow-name-input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .canvas-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 13px;
+      }
+
+      .btn-primary {
+        background: #1a73e8;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #1566c0;
+        box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+      }
+
+      .btn-secondary {
+        background: #f0f0f0;
+        color: #333;
+        border: 1px solid #ddd;
+      }
+
+      .btn-secondary:hover {
+        background: #e8e8e8;
+      }
+
+      .btn-danger {
+        background: #d32f2f;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #b71c1c;
+      }
+
+      .canvas {
+        flex: 1;
+        background: linear-gradient(45deg, #fafafa 25%, transparent 25%, transparent 75%, #fafafa 75%, #fafafa),
+                    linear-gradient(45deg, #fafafa 25%, transparent 25%, transparent 75%, #fafafa 75%, #fafafa);
+        background-size: 20px 20px;
+        background-position: 0 0, 10px 10px;
+        background-color: #f0f2f5;
+        position: relative;
+        overflow: auto;
+        padding: 30px;
+      }
+
+      .workflow-canvas {
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        min-height: 500px;
+        position: relative;
+      }
+
+      .workflow-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .workflow-step {
+        background: white;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        padding: 15px;
+        min-width: 250px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+      }
+
+      .workflow-step:hover {
+        border-color: #1a73e8;
+        box-shadow: 0 2px 8px rgba(26, 115, 232, 0.2);
+      }
+
+      .workflow-step.selected {
+        border-color: #1a73e8;
+        background: #f0f7ff;
+      }
+
+      .step-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        margin-bottom: 10px;
+      }
+
+      .step-icon {
+        font-size: 20px;
+      }
+
+      .step-type {
+        font-size: 12px;
+        color: #999;
+        margin-top: 5px;
+      }
+
+      .step-delete {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #d32f2f;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        font-size: 12px;
+        display: none;
+      }
+
+      .workflow-step:hover .step-delete {
+        display: block;
+      }
+
+      .add-step-button {
+        text-align: center;
+        padding: 15px;
+        border: 2px dashed #ccc;
+        border-radius: 6px;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .add-step-button:hover {
+        border-color: #1a73e8;
+        color: #1a73e8;
+      }
+
+      /* Right Sidebar - Configuration Panel */
+      .sidebar-right {
+        width: 320px;
+        background: white;
+        border-left: 1px solid #ddd;
+        overflow-y: auto;
+        box-shadow: -2px 0 4px rgba(0,0,0,0.1);
+        z-index: 100;
+      }
+
+      .config-panel {
+        padding: 20px;
+      }
+
+      .config-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+      }
+
+      .config-section {
+        margin-bottom: 20px;
+      }
+
+      .config-label {
+        display: block;
+        font-weight: 600;
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .config-input,
+      .config-select,
+      .config-textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 13px;
+      }
+
+      .config-input:focus,
+      .config-select:focus,
+      .config-textarea:focus {
+        outline: none;
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+      }
+
+      .config-textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .help-text {
+        font-size: 12px;
+        color: #999;
+        margin-top: 5px;
+        line-height: 1.4;
+      }
+
+      .tag-input {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        min-height: 40px;
+      }
+
+      .tag {
+        background: #e3f2fd;
+        color: #1a73e8;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .tag-remove {
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      /* Library Panel */
+      .library-panel {
+        padding: 15px;
+        margin-bottom: 15px;
+        background: #f9f9f9;
+        border-radius: 4px;
+      }
+
+      .library-title {
+        font-weight: 600;
+        margin-bottom: 10px;
+        font-size: 12px;
+        color: #666;
+        text-transform: uppercase;
+      }
+
+      .library-item {
+        padding: 8px;
+        background: white;
+        border-radius: 3px;
+        font-size: 12px;
+        margin-bottom: 5px;
+        cursor: pointer;
+        border-left: 3px solid transparent;
+        transition: all 0.2s;
+      }
+
+      .library-item:hover {
+        border-left-color: #1a73e8;
+        background: #f0f7ff;
+      }
+
+      /* Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+      }
+
+      .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-content {
+        background-color: white;
+        padding: 30px;
+        border-radius: 8px;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      }
+
+      .modal-header {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+      }
+
+      .modal-footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+      }
+
+      /* Status Message */
+      .status-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 4px;
+        display: none;
+        z-index: 2000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      }
+
+      .status-message.show {
+        display: block;
+      }
+
+      .status-success {
+        background: #4caf50;
+        color: white;
+      }
+
+      .status-error {
+        background: #f44336;
+        color: white;
+      }
+
+      /* Responsive */
+      @media (max-width: 1400px) {
+        .sidebar-left {
+          width: 240px;
+        }
+
+        .sidebar-right {
+          width: 280px;
+        }
+      }
+
+      @media (max-width: 1000px) {
+        .sidebar-left,
+        .sidebar-right {
+          display: none;
+        }
+
+        .canvas-area {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="builder-container">
+
+      <!-- Left Sidebar: Components Library -->
+      <div class="sidebar-left">
+        <div class="sidebar-header">📚 Components</div>
+
+        <div class="component-section">
+          <div class="section-title">Triggers</div>
+          <div class="component-item" draggable="true" data-type="trigger" data-trigger-type="form_submission">
+            <span class="component-icon">📋</span>
+            <span>Form Submission</span>
+          </div>
+          <div class="component-item" draggable="true" data-type="trigger" data-trigger-type="scheduled">
+            <span class="component-icon">⏰</span>
+            <span>Scheduled</span>
+          </div>
+          <div class="component-item" draggable="true" data-type="trigger" data-trigger-type="webhook">
+            <span class="component-icon">🔗</span>
+            <span>Webhook</span>
+          </div>
+        </div>
+
+        <div class="component-section">
+          <div class="section-title">Actions</div>
+          <div class="component-item" draggable="true" data-type="action" data-action-type="send_email">
+            <span class="component-icon">📧</span>
+            <span>Send Email</span>
+          </div>
+          <div class="component-item" draggable="true" data-type="action" data-action-type="assign_form">
+            <span class="component-icon">📝</span>
+            <span>Assign Task Form</span>
+          </div>
+          <div class="component-item" draggable="true" data-type="action" data-action-type="update_status">
+            <span class="component-icon">✓</span>
+            <span>Update Status</span>
+          </div>
+          <div class="component-item" draggable="true" data-type="action" data-action-type="call_function">
+            <span class="component-icon">⚙️</span>
+            <span>Call Function</span>
+          </div>
+        </div>
+
+        <div class="component-section">
+          <div class="section-title">Logic</div>
+          <div class="component-item" draggable="true" data-type="condition">
+            <span class="component-icon">🔀</span>
+            <span>Condition (If/Then)</span>
+          </div>
+          <div class="component-item" draggable="true" data-type="parallel">
+            <span class="component-icon">⚡</span>
+            <span>Parallel Steps</span>
+          </div>
+          <div class="component-item" draggable="true" data-type="wait">
+            <span class="component-icon">⏸️</span>
+            <span>Wait/Delay</span>
+          </div>
+        </div>
+
+        <div class="component-section">
+          <div class="section-title">Forms</div>
+          <? for (let i = 0; i < existingForms.length; i++) { ?>
+            <div class="component-item" draggable="true" data-type="form" data-form-id="<?= existingForms[i].id ?>">
+              <span class="component-icon">📄</span>
+              <span><?= existingForms[i].name ?></span>
+            </div>
+          <? } ?>
+          <div class="component-item" onclick="openNewFormModal()">
+            <span class="component-icon">➕</span>
+            <span>Create New Form</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Canvas -->
+      <div class="canvas-area">
+        <div class="canvas-toolbar">
+          <div class="workflow-info">
+            <input type="text" class="workflow-name-input" id="workflowName" placeholder="Enter workflow name..." value="New Workflow">
+          </div>
+          <div class="canvas-buttons">
+            <button class="btn-secondary" onclick="previewWorkflow()">👁️ Preview</button>
+            <button class="btn-secondary" onclick="testWorkflow()">🧪 Test</button>
+            <button class="btn-primary" onclick="saveWorkflow()">💾 Save</button>
+            <button class="btn-secondary" onclick="publishWorkflow()">🚀 Publish</button>
+          </div>
+        </div>
+
+        <div class="canvas">
+          <div class="workflow-canvas">
+            <div class="workflow-steps" id="workflowSteps">
+              <div class="add-step-button" onclick="addStep('trigger')">
+                Click or drag trigger to start
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Sidebar: Configuration Panel -->
+      <div class="sidebar-right">
+        <div class="config-panel">
+          <div class="config-title">Configuration</div>
+          <div id="configPanel">
+            <p style="color: #999; font-size: 13px;">Select a step to configure</p>
+          </div>
+
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+
+          <div class="library-panel">
+            <div class="library-title">Shared Functions</div>
+            <? for (let i = 0; i < sharedLibraries.functions.length; i++) { ?>
+              <div class="library-item" onclick="insertFunction('<?= sharedLibraries.functions[i].name ?>')">
+                ⚙️ <?= sharedLibraries.functions[i].name ?>
+              </div>
+            <? } ?>
+          </div>
+
+          <div class="library-panel">
+            <div class="library-title">Email Templates</div>
+            <? for (let i = 0; i < emailTemplates.length; i++) { ?>
+              <div class="library-item" onclick="insertTemplate('<?= emailTemplates[i].id ?>')">
+                📧 <?= emailTemplates[i].name ?>
+              </div>
+            <? } ?>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status Message -->
+    <div class="status-message" id="statusMessage"></div>
+
+    <!-- New Form Modal -->
+    <div id="newFormModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">Create New Form</div>
+        <div class="modal-body">
+          <div class="config-section">
+            <label class="config-label">Form Name</label>
+            <input type="text" class="config-input" id="newFormName" placeholder="e.g., Background Check Form">
+          </div>
+          <div class="config-section">
+            <label class="config-label">Form Type</label>
+            <select class="config-select" id="newFormType">
+              <option value="task">Task/Checklist Form</option>
+              <option value="approval">Approval Form</option>
+              <option value="data_entry">Data Entry Form</option>
+              <option value="survey">Survey/Feedback Form</option>
+            </select>
+          </div>
+          <div class="config-section">
+            <label class="config-label">Field Names (comma separated)</label>
+            <textarea class="config-textarea" id="newFormFields" placeholder="Field1, Field2, Field3..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeModal('newFormModal')">Cancel</button>
+          <button class="btn-primary" onclick="createNewForm()">Create Form</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">Workflow Preview</div>
+        <div id="previewContent" style="padding: 20px; line-height: 1.6;">
+          <!-- Generated workflow preview -->
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeModal('previewModal')">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentWorkflow = {
+        name: 'New Workflow',
+        steps: [],
+        selectedStep: null
+      };
+
+      let existingForms = <?!= JSON.stringify(existingForms) ?>;
+      let availableTriggers = <?!= JSON.stringify(availableTriggers) ?>;
+      let availableActions = <?!= JSON.stringify(availableActions) ?>;
+      let sharedLibraries = <?!= JSON.stringify(sharedLibraries) ?>;
+      let emailTemplates = <?!= JSON.stringify(emailTemplates) ?>;
+
+      // Drag and drop functionality
+      document.addEventListener('dragstart', function(e) {
+        if (e.target.classList.contains('component-item')) {
+          e.dataTransfer.effectAllowed = 'copy';
+          e.dataTransfer.setData('componentType', e.target.dataset.type);
+          e.dataTransfer.setData('componentData', JSON.stringify({
+            type: e.target.dataset.type,
+            triggerType: e.target.dataset.triggerType,
+            actionType: e.target.dataset.actionType,
+            formId: e.target.dataset.formId
+          }));
+        }
+      });
+
+      document.querySelector('.workflow-canvas').addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        this.style.backgroundColor = '#f0f7ff';
+      });
+
+      document.querySelector('.workflow-canvas').addEventListener('dragleave', function(e) {
+        this.style.backgroundColor = 'white';
+      });
+
+      document.querySelector('.workflow-canvas').addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.style.backgroundColor = 'white';
+        const componentData = JSON.parse(e.dataTransfer.getData('componentData'));
+        addStepToWorkflow(componentData);
+      });
+
+      function addStepToWorkflow(componentData) {
+        const stepId = 'step-' + Date.now();
+        const step = {
+          id: stepId,
+          type: componentData.type,
+          ...componentData
+        };
+
+        currentWorkflow.steps.push(step);
+        renderWorkflow();
+        selectStep(stepId);
+        showStatus('Step added', 'success');
+      }
+
+      function renderWorkflow() {
+        const stepsContainer = document.getElementById('workflowSteps');
+        let html = '';
+
+        if (currentWorkflow.steps.length === 0) {
+          html = '<div class="add-step-button">Click or drag trigger to start</div>';
+        } else {
+          currentWorkflow.steps.forEach(step => {
+            const icon = getStepIcon(step.type);
+            const title = getStepTitle(step);
+            html += `
+              <div class="workflow-step ${step.id === currentWorkflow.selectedStep ? 'selected' : ''}"
+                   id="step-${step.id}" onclick="selectStep('${step.id}')">
+                <div class="step-header">
+                  <span class="step-icon">${icon}</span>
+                  <span>${title}</span>
+                </div>
+                <div class="step-type">${step.type}</div>
+                <button class="step-delete" onclick="deleteStep('${step.id}', event)">×</button>
+              </div>
+            `;
+          });
+          html += '<div class="add-step-button" onclick="addStep()">+ Add Step</div>';
+        }
+
+        stepsContainer.innerHTML = html;
+      }
+
+      function getStepIcon(type) {
+        const icons = {
+          'trigger': '🔔',
+          'action': '⚙️',
+          'condition': '🔀',
+          'form': '📝',
+          'parallel': '⚡',
+          'wait': '⏸️'
+        };
+        return icons[type] || '◉';
+      }
+
+      function getStepTitle(step) {
+        if (step.type === 'trigger') return step.triggerType || 'Trigger';
+        if (step.type === 'action') return step.actionType || 'Action';
+        if (step.type === 'form') {
+          const form = existingForms.find(f => f.id === step.formId);
+          return form ? form.name : 'Form';
+        }
+        return 'Step';
+      }
+
+      function selectStep(stepId) {
+        currentWorkflow.selectedStep = stepId;
+        renderWorkflow();
+        renderConfigPanel(stepId);
+      }
+
+      function renderConfigPanel(stepId) {
+        const step = currentWorkflow.steps.find(s => s.id === stepId);
+        const configPanel = document.getElementById('configPanel');
+
+        if (!step) {
+          configPanel.innerHTML = '<p style="color: #999; font-size: 13px;">Select a step to configure</p>';
+          return;
+        }
+
+        let html = `<div class="config-section">
+          <label class="config-label">Step Type</label>
+          <div style="padding: 8px; background: #f0f0f0; border-radius: 4px;">${step.type}</div>
+        </div>`;
+
+        if (step.type === 'action' && step.actionType === 'send_email') {
+          html += `
+            <div class="config-section">
+              <label class="config-label">Send To</label>
+              <input type="text" class="config-input" placeholder="email@company.com or variable">
+            </div>
+            <div class="config-section">
+              <label class="config-label">Subject</label>
+              <input type="text" class="config-input" placeholder="Email subject">
+            </div>
+            <div class="config-section">
+              <label class="config-label">Template</label>
+              <select class="config-select">
+                <option>Select Template...</option>
+              </select>
+            </div>
+          `;
+        } else if (step.type === 'action' && step.actionType === 'assign_form') {
+          html += `
+            <div class="config-section">
+              <label class="config-label">Assign Form</label>
+              <select class="config-select">
+                <option>Select Form...</option>
+              </select>
+            </div>
+            <div class="config-section">
+              <label class="config-label">Assign To</label>
+              <input type="text" class="config-input" placeholder="Department or Email">
+            </div>
+            <div class="config-section">
+              <label class="config-label">Due In (Days)</label>
+              <input type="number" class="config-input" placeholder="3" min="1">
+            </div>
+          `;
+        } else if (step.type === 'condition') {
+          html += `
+            <div class="config-section">
+              <label class="config-label">If Field</label>
+              <select class="config-select">
+                <option>Select Field...</option>
+              </select>
+            </div>
+            <div class="config-section">
+              <label class="config-label">Operator</label>
+              <select class="config-select">
+                <option>equals</option>
+                <option>not equals</option>
+                <option>contains</option>
+                <option>greater than</option>
+                <option>less than</option>
+              </select>
+            </div>
+            <div class="config-section">
+              <label class="config-label">Value</label>
+              <input type="text" class="config-input" placeholder="Value to compare">
+            </div>
+          `;
+        }
+
+        configPanel.innerHTML = html;
+      }
+
+      function deleteStep(stepId, event) {
+        event.stopPropagation();
+        currentWorkflow.steps = currentWorkflow.steps.filter(s => s.id !== stepId);
+        currentWorkflow.selectedStep = null;
+        renderWorkflow();
+        showStatus('Step deleted', 'success');
+      }
+
+      function addStep() {
+        // Open step type selector
+        alert('Choose a step type from the left sidebar and drag it here');
+      }
+
+      function openNewFormModal() {
+        document.getElementById('newFormModal').classList.add('show');
+      }
+
+      function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('show');
+      }
+
+      function createNewForm() {
+        const name = document.getElementById('newFormName').value;
+        const type = document.getElementById('newFormType').value;
+        const fields = document.getElementById('newFormFields').value.split(',').map(f => f.trim());
+
+        if (!name) {
+          alert('Please enter a form name');
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(function(response) {
+            if (response.success) {
+              showStatus('Form created: ' + name, 'success');
+              closeModal('newFormModal');
+              // Add form to existingForms array
+              existingForms.push({
+                id: response.formId,
+                name: name,
+                type: 'form',
+                fields: fields
+              });
+            } else {
+              showStatus('Error: ' + response.message, 'error');
+            }
+          })
+          .createPlaceholderForm({name: name, type: type, fields: fields});
+      }
+
+      function saveWorkflow() {
+        const name = document.getElementById('workflowName').value;
+
+        if (!name) {
+          showStatus('Please enter a workflow name', 'error');
+          return;
+        }
+
+        if (currentWorkflow.steps.length === 0) {
+          showStatus('Please add at least one step', 'error');
+          return;
+        }
+
+        const workflow = {
+          name: name,
+          description: 'Workflow created with builder',
+          status: 'draft',
+          steps: currentWorkflow.steps,
+          createdDate: new Date().toISOString()
+        };
+
+        google.script.run
+          .withSuccessHandler(function(response) {
+            if (response.success) {
+              showStatus('Workflow saved: ' + response.workflowId, 'success');
+            } else {
+              showStatus('Error: ' + response.message, 'error');
+            }
+          })
+          .saveWorkflow(workflow);
+      }
+
+      function previewWorkflow() {
+        let html = '<h3>' + document.getElementById('workflowName').value + '</h3>';
+        html += '<p><strong>Steps:</strong></p><ol>';
+
+        currentWorkflow.steps.forEach(step => {
+          html += '<li><strong>' + getStepTitle(step) + '</strong> (' + step.type + ')</li>';
+        });
+
+        html += '</ol>';
+        document.getElementById('previewContent').innerHTML = html;
+        document.getElementById('previewModal').classList.add('show');
+      }
+
+      function testWorkflow() {
+        alert('Testing workflow: ' + document.getElementById('workflowName').value + '\nTest execution would happen here');
+      }
+
+      function publishWorkflow() {
+        alert('Publishing workflow: ' + document.getElementById('workflowName').value);
+      }
+
+      function insertFunction(functionName) {
+        if (currentWorkflow.selectedStep) {
+          showStatus('Function ' + functionName + ' inserted', 'success');
+        } else {
+          showStatus('Please select a step first', 'error');
+        }
+      }
+
+      function insertTemplate(templateId) {
+        if (currentWorkflow.selectedStep) {
+          showStatus('Template inserted', 'success');
+        } else {
+          showStatus('Please select a step first', 'error');
+        }
+      }
+
+      function showStatus(message, type) {
+        const el = document.getElementById('statusMessage');
+        el.textContent = message;
+        el.className = 'status-message show status-' + type;
+        setTimeout(() => {
+          el.classList.remove('show');
+        }, 3000);
+      }
+
+      // Initialize
+      renderWorkflow();
+    </script>
+
+  </body>
+</html>

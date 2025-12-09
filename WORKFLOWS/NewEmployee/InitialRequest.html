@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Employee Request</title>
+    <?!= include('Styles'); ?>
+  </head>
+  <body>
+    <div class="container">
+
+      <!-- Header -->
+      <div class="header">
+        <img src="<?= logoUrl ?>" alt="<?= companyName ?>" class="logo">
+        <div class="company-name"><?= companyName ?></div>
+      </div>
+
+      <h1>New Employee Request</h1>
+      <p>Please complete all  fields to submit a new employee request.</p>
+
+      <!-- Status Message -->
+      <div id="status-message" class="status-message"></div>
+
+      <!-- Form -->
+      <form id="request-form" onsubmit="handleSubmit(event)">
+
+        <!-- Gatekeeper Question -->
+        <div class="form-section">
+          <h2>Pre-Submission Checklist</h2>
+
+          <div class="question-wrapper">
+            <label for="gatekeeper">
+              Have all Recruiting Requirements been met? <span class="">*</span>
+            </label>
+            <select id="gatekeeper" name="gatekeeper"  onchange="toggleMainForm()">
+              <option value="">-- Please Select --</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+
+          <div id="gatekeeper-message" class="status-error gatekeeper-message hidden">
+            All Recruiting Requirements must be met before proceeding. Please contact HR.
+          </div>
+        </div>
+
+        <!-- Main Form (hidden until gatekeeper = Yes) -->
+        <div id="main-form" class="hidden">
+
+          <!-- Requester Information -->
+          <div class="form-section">
+            <h2>Requester Information</h2>
+
+            <div class="question-wrapper">
+              <label for="requester-name">Your Name <span class="">*</span></label>
+              <input type="text" id="requester-name" name="Requester Name" >
+            </div>
+
+            <div class="question-wrapper">
+              <label for="requester-email">Your Email <span class="">*</span></label>
+              <input type="email" id="requester-email" name="Requester Email" >
+            </div>
+
+            <div class="question-wrapper">
+              <label for="requester-phone">Your Phone Number</label>
+              <input type="tel" id="requester-phone" name="Requester Phone">
+            </div>
+          </div>
+
+          <!-- New Employee Information -->
+          <div class="form-section">
+            <h2>New Employee Information</h2>
+
+            <div class="question-wrapper">
+              <label for="first-name">First Name <span class="">*</span></label>
+              <input type="text" id="first-name" name="First Name" >
+            </div>
+
+            <div class="question-wrapper">
+              <label for="last-name">Last Name <span class="">*</span></label>
+              <input type="text" id="last-name" name="Last Name" >
+            </div>
+
+            <div class="question-wrapper">
+              <label for="hire-date">Hire Date <span class="">*</span></label>
+              <input type="date" id="hire-date" name="Hire Date" >
+            </div>
+
+            <div class="question-wrapper">
+              <label for="site-name">Site Name <span class="">*</span></label>
+              <select id="site-name" name="Site Name"  onchange="updateJobCodes()">
+                <option value="">-- Select Site --</option>
+                <? for (let site in jobCodes) { ?>
+                  <option value="<?= site ?>"><?= site ?></option>
+                <? } ?>
+              </select>
+            </div>
+
+            <div class="question-wrapper">
+              <label for="job-code">Position/Job Code <span class="">*</span></label>
+              <select id="job-code" name="Position/Title"  disabled>
+                <option value="">-- Select Site First --</option>
+              </select>
+            </div>
+
+            <div class="question-wrapper">
+              <label for="department">Department <span class="">*</span></label>
+              <select id="department" name="Department" >
+                <option value="">-- Select Department --</option>
+                <? for (let i = 0; i < departments.length; i++) { ?>
+                  <option value="<?= departments[i] ?>"><?= departments[i] ?></option>
+                <? } ?>
+              </select>
+            </div>
+
+            <div class="question-wrapper">
+              <label for="hourly-salary">Employment Type <span class="">*</span></label>
+              <select id="hourly-salary" name="Hourly or Salary" >
+                <option value="">-- Select Type --</option>
+                <option value="Hourly">Hourly</option>
+                <option value="Salary">Salary</option>
+              </select>
+            </div>
+
+            <div class="question-wrapper">
+              <label for="manager-email">Reporting Manager Email <span class="">*</span></label>
+              <input type="email" id="manager-email" name="Reporting Manager Email" >
+            </div>
+          </div>
+
+          <!-- Equipment & Access Requests -->
+          <div class="form-section">
+            <h2>Equipment & Access Requests</h2>
+            <p>Select all items needed for the new employee:</p>
+
+            <div class="checkbox-group">
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="laptop" name="Laptop" value="Yes">
+                <label for="laptop">Laptop</label>
+              </div>
+
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="monitor" name="Monitor" value="Yes">
+                <label for="monitor">Monitor</label>
+              </div>
+
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="keyboard" name="Keyboard" value="Yes">
+                <label for="keyboard">Keyboard</label>
+              </div>
+
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="mouse" name="Mouse" value="Yes">
+                <label for="mouse">Mouse</label>
+              </div>
+
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="phone" name="Phone" value="Yes">
+                <label for="phone">Phone</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Buttons -->
+          <div class="button-group">
+            <button type="reset">Reset Form</button>
+            <button type="submit" id="submit-btn">Submit Request</button>
+          </div>
+
+        </div>
+
+      </form>
+
+    </div>
+
+    <script>
+      // Server-side data injection
+      const jobCodesData = <?!= JSON.stringify(jobCodes) ?>;
+      const enableDefaultValues = <?= enableDefaultValues ?>;
+      const defaultValues = <?!= JSON.stringify(defaultValues) ?>;
+
+      /**
+       * Toggle main form visibility based on gatekeeper answer
+       */
+      function toggleMainForm() {
+        const gatekeeper = document.getElementById('gatekeeper').value;
+        const mainForm = document.getElementById('main-form');
+        const message = document.getElementById('gatekeeper-message');
+
+        if (gatekeeper === 'Yes') {
+          mainForm.classList.remove('hidden');
+          message.classList.add('hidden');
+        } else if (gatekeeper === 'No') {
+          mainForm.classList.add('hidden');
+          message.classList.remove('hidden');
+        } else {
+          mainForm.classList.add('hidden');
+          message.classList.add('hidden');
+        }
+      }
+
+      /**
+       * Update job codes dropdown when site is selected
+       */
+      function updateJobCodes() {
+        const siteName = document.getElementById('site-name').value;
+        const jobCodeSelect = document.getElementById('job-code');
+
+        // Clear existing options
+        jobCodeSelect.innerHTML = '<option value="">-- Select Position --</option>';
+
+        if (siteName && jobCodesData[siteName]) {
+          // Enable and populate
+          jobCodeSelect.disabled = false;
+          jobCodesData[siteName].forEach(function(job) {
+            const option = document.createElement('option');
+            option.value = job.number + ' - ' + job.description;
+            option.textContent = job.number + ' - ' + job.description;
+            jobCodeSelect.appendChild(option);
+          });
+        } else {
+          // Disable if no site selected
+          jobCodeSelect.disabled = true;
+          jobCodeSelect.innerHTML = '<option value="">-- Select Site First --</option>';
+        }
+      }
+
+      /**
+       * Handle form submission
+       */
+      function handleSubmit(event) {
+        event.preventDefault();
+
+        const submitBtn = document.getElementById('submit-btn');
+        const statusMessage = document.getElementById('status-message');
+
+        // Disable submit button
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Submitting... <span class="spinner"></span>';
+
+        // Get form data
+        const form = document.getElementById('request-form');
+        const formData = {};
+
+        // Get all input fields
+        const inputs = form.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="date"], select');
+        inputs.forEach(function(input) {
+          if (input.name && input.name !== 'gatekeeper') {
+            formData[input.name] = input.value;
+          }
+        });
+
+        // Get checkboxes
+        const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(function(checkbox) {
+          formData[checkbox.name] = checkbox.checked ? 'Yes' : 'No';
+        });
+
+        // Call server-side function
+        google.script.run
+          .withSuccessHandler(function(response) {
+            if (response.success) {
+              showMessage('success', response.message + ' (Request ID: ' + response.requestId + ')');
+              form.reset();
+              document.getElementById('main-form').classList.add('hidden');
+              document.getElementById('gatekeeper').value = '';
+            } else {
+              showMessage('error', response.message);
+            }
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Request';
+          })
+          .withFailureHandler(function(error) {
+            showMessage('error', 'System error: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Request';
+          })
+          .processInitialRequest(formData);
+      }
+
+      /**
+       * Show status message
+       */
+      function showMessage(type, message) {
+        const statusMessage = document.getElementById('status-message');
+        statusMessage.className = 'status-message status-' + type;
+        statusMessage.textContent = message;
+        statusMessage.style.display = 'block';
+
+        // Scroll to message
+        statusMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        // Auto-hide after 5 seconds for success messages
+        if (type === 'success') {
+          setTimeout(function() {
+            statusMessage.style.display = 'none';
+          }, 5000);
+        }
+      }
+
+      /**
+       * Prefill form with default values for testing
+       */
+      function prefillDefaultValues() {
+        if (!enableDefaultValues || !defaultValues) return;
+
+        // Set gatekeeper to Yes to show form
+        document.getElementById('gatekeeper').value = 'Yes';
+        toggleMainForm();
+
+        // Prefill all form fields
+        for (let fieldName in defaultValues) {
+          const value = defaultValues[fieldName];
+          
+          // Try to find the input by name
+          let input = document.querySelector('[name="' + fieldName + '"]');
+          
+          if (input) {
+            if (input.type === 'checkbox') {
+              input.checked = (value === 'Yes');
+            } else {
+              input.value = value;
+            }
+          }
+        }
+
+        // Trigger job codes update for Position/Title
+        if (defaultValues['Site Name']) {
+          updateJobCodes();
+          // Set job code after a small delay to ensure dropdown is populated
+          setTimeout(function() {
+            if (defaultValues['Position/Title']) {
+              document.getElementById('job-code').value = defaultValues['Position/Title'];
+            }
+          }, 100);
+        }
+      }
+
+      // Run prefill on page load
+      window.addEventListener('DOMContentLoaded', function() {
+        prefillDefaultValues();
+      });
+    </script>
+  </body>
+</html>

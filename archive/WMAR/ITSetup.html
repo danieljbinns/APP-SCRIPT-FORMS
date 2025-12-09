@@ -1,0 +1,223 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <?!= HtmlService.createHtmlOutputFromFile('CSS.html').getContent(); ?>
+    <style>
+      /* Styles for the checkbox question container to align label and input side-by-side. */
+      .checkbox-question { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+      /* Removes the default bottom margin from the label within the flex container. */
+      .checkbox-question label { margin-bottom: 0; }
+      /* Sets a fixed larger size for the checkbox inputs for better visibility and usability. */
+      .checkbox-question input { width: auto; height: 1.5rem; width: 1.5rem; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+       <div style="text-align: center; margin-bottom: 20px;">
+        <img src="<?= logoUrl ?>" alt="Company Logo" style="max-height: 70px;">
+      </div>
+      <div id="form-container">
+        <div class="loader">Loading Request Data...</div>
+      </div>
+      <div id="status-message"></div>
+    </div>
+
+    <script>
+      // Adds an event listener that runs the enclosed function once the entire HTML document has been loaded and parsed.
+      document.addEventListener('DOMContentLoaded', function() {
+        // Get references to the main form container and the status message element.
+        const formContainer = document.getElementById('form-container');
+        const statusMessage = document.getElementById('status-message');
+        // The unique ID for the request is injected here from the server-side Google Apps Script.
+        const requestId = "<?= requestId ?>";
+
+        // Call a server-side function to fetch the data needed to build the form.
+        google.script.run
+          // If the server call is successful, run the 'buildItForm' function with the returned data.
+          .withSuccessHandler(buildItForm)
+          // If the server call fails, run the 'onFailure' function with the error object.
+          .withFailureHandler(onFailure)
+          // The name of the server-side function to call, passing the requestId as an argument.
+          .getItSetupData(requestId);
+          
+        /**
+         * Dynamically builds the IT setup form based on data fetched from the server.
+         * @param {object} data - The data for the specific request, usually a row from a Google Sheet.
+         */
+        function buildItForm(data) {
+          // Log the received data to the browser console for debugging purposes.
+          console.log("Data received for IT form:", data);
+          // Check if any data was returned. If not, the request ID might be invalid.
+          if (!data) {
+            onFailure({ message: `Could not find a request with the ID "${requestId}". The link may be invalid.` });
+            return; // Stop the function execution.
+          }
+          
+          // Use a template literal to create the basic HTML structure of the form.
+          // Data from the server (e.g., names, emails) is used to populate the header.
+          let formHtml = `
+            <h1>IT Setup Form</h1>
+            <h3>Request for: ${data['First Name']} ${data['Last Name']} (Temporary ID: ${data['Temporary ID']})</h3>
+            <div style="margin-top:-5px; margin-bottom: 15px; color: #555; font-size: 0.9em; border-left: 3px solid #ccc; padding-left: 10px;">
+                <p><b>Requested Email:</b> ${data['Email Requested'] || 'Not Specified'}</p>
+                <p><b>Requester:</b> ${data['Requester Name'] || 'Not Specified'} (${data['Requester Email'] || 'N/A'})</p>
+                <p><b>Reporting Manager:</b> ${data['Reporting Manager Name'] || 'Not Specified'} (${data['Reporting Manager Email '] || 'N/A'})</p>
+            </div>
+            <p>Please complete the setup for the required items below.</p>
+            <hr>
+            <form id="it-form">
+              <input type="hidden" name="formType" value="it">
+              <input type="hidden" name="Request ID" value="${requestId}">
+              <div id="it-form-content"></div>
+              <div id="submit-container" style="margin-top: 20px;">
+                <button type="submit">Submit</button>
+              </div>
+            </form>`;
+            
+          // Inject the basic form structure into the page.
+          formContainer.innerHTML = formHtml;
+          // Get a reference to the container where the form questions will be added.
+          const itFormContent = document.getElementById('it-form-content');
+
+          // A configuration object that defines all possible sections and questions for the IT form.
+          // The keys (e.g., 'BOSS User Account') match column headers in the source Google Sheet.
+          const sections = {
+            'BOSS': {
+                'BOSS User Account': { label: 'BOSS User Account', type: 'checkbox' },
+                'Cost Sheet': { label: 'Cost Sheet', type: 'checkbox' },
+                'Leader Access': { label: 'Leader Access', type: 'checkbox' },
+                'Trip Reports Access': { label: 'Trip Reports Access', type: 'checkbox' }
+            },
+            'Additional': {
+                'Incidents': { label: 'Incidents', type: 'checkbox' },
+                'CAA': { label: 'CAA', type: 'checkbox' },
+                'Transform': { label: 'Transform', type: 'checkbox' },
+                'Net Promoter Score': { label: 'Net Promoter Score', type: 'checkbox' },
+                'Delivery App': { label: 'Delivery App', type: 'checkbox' },
+                'E-Business Card': { label: 'E-Business Card', type: 'checkbox' }
+            },
+            'Google Account': {
+                'Google Account': [
+                    { label: 'Google Account Email', type: 'text', name: 'IT - Google Account Email' },
+                    { label: 'Google Account Password', type: 'text', name: 'IT - Google Account Password' }
+                ]
+            },
+            'Phone': {
+                'Mobile Phone': [
+                    { label: 'Phone Number', type: 'text', name: 'IT - Phone Number' },
+                    { label: 'Phone Voicemail Password', type: 'text', name: 'IT - Phone Voicemail Password' }
+                ]
+            },
+            'Computer': {
+                'Computer': [
+                    { label: 'Computer Model', type: 'text', name: 'IT - Computer Model' },
+                    { label: 'Computer Serial Number', type: 'text', name: 'IT - Computer Serial Number' }
+                ]
+            }
+          };
+          
+          // Build the form content dynamically based on the received data.
+          let formContentHtml = '';
+          // Loop through each section defined in the configuration object.
+          for (const sectionTitle in sections) {
+              let sectionHtml = '';
+              const questions = sections[sectionTitle];
+              // Loop through each question within the section.
+              for (const key in questions) {
+                  // CRITICAL LOGIC: Only add a question to the form if the corresponding column in the spreadsheet for this request is 'Yes'.
+                  if (data[key] === 'Yes') {
+                      const item = questions[key];
+                      // If the question is an array, it means it's a group of text inputs.
+                      if (Array.isArray(item)) {
+                          item.forEach(q => sectionHtml += createTextInput(q.label, q.name));
+                      } else { // Otherwise, it's a single checkbox.
+                          sectionHtml += createCheckbox(item.label, `IT - ${key}`);
+                      }
+                  }
+              }
+              // If any questions were added for this section, add the section title and its questions to the final HTML.
+              if (sectionHtml !== '') {
+                  formContentHtml += `<h3>${sectionTitle}</h3>${sectionHtml}<hr>`;
+              }
+          }
+          // Inject the generated questions into the form content area.
+          itFormContent.innerHTML = formContentHtml;
+
+          // Now that the form exists in the DOM, add a submit event listener to it.
+          document.getElementById('it-form').addEventListener('submit', handleFormSubmit);
+        }
+
+        /**
+         * Helper function to create the HTML string for a checkbox input.
+         * @param {string} label - The text label for the checkbox.
+         * @param {string} name - The name attribute for the input element.
+         * @returns {string} The HTML string for the checkbox question.
+         */
+        function createCheckbox(label, name) {
+            return `<div class="checkbox-question"><label for="${name}">${label}:</label><input type="checkbox" id="${name}" name="${name}" value="Complete" required></div>`;
+        }
+        
+        /**
+         * Helper function to create the HTML string for a text input.
+         * @param {string} label - The text label for the input.
+         * @param {string} name - The name attribute for the input element.
+         * @returns {string} The HTML string for the text input question.
+         */
+        function createTextInput(label, name) {
+            return `<div class="question-wrapper"><label>${label}</label><input type="text" class="form-control" name="${name}" required></div>`;
+        }
+        
+        /**
+         * Generic failure handler function that displays an error message on the page.
+         * @param {Error} error - The error object returned from the server.
+         */
+        function onFailure(error) {
+          formContainer.innerHTML = `<h1>Error</h1><p>${error.message}</p>`;
+        }
+
+        /**
+         * Handles the form submission event.
+         * @param {Event} e - The form submission event object.
+         */
+        function handleFormSubmit(e) {
+          // Prevent the default form submission behavior (which would cause a page reload).
+          e.preventDefault();
+          // Provide visual feedback to the user.
+          statusMessage.textContent = 'Submitting...';
+          statusMessage.className = 'status-info';
+          const form = e.target;
+          // Use the FormData API to easily collect all form data.
+          const formData = new FormData(form);
+          // Convert the FormData object into a plain JavaScript object.
+          const data = Object.fromEntries(formData.entries());
+
+          // Unchecked checkboxes are not included by FormData, so we loop through them manually
+          // to ensure every checkbox has a value ('Complete' or 'Incomplete') in the submitted data.
+          form.querySelectorAll('input[type=checkbox]').forEach(cb => {
+            data[cb.name] = cb.checked ? 'Complete' : 'Incomplete';
+          });
+
+          // Send the collected form data to the server for processing.
+          google.script.run
+            .withSuccessHandler(response => {
+              // The server sends back a response object with a status.
+              if (response.status === 'success') {
+                // If successful, replace the form with a success message.
+                formContainer.innerHTML = `<div style="text-align: center; padding: 40px;"><h2>${response.message}</h2><p>You may now close this window.</p></div>`;
+                statusMessage.innerHTML = '';
+              } else {
+                // If the server indicates an error, display the error message.
+                statusMessage.className = 'status-error';
+                statusMessage.textContent = response.message;
+              }
+            })
+            // If the call to the server fails entirely, use the generic failure handler.
+            .withFailureHandler(onFailure)
+            // The name of the server-side function to handle the submission.
+            .processSubmission(data);
+        }
+      });
+    </script>
+  </body>
+</html>

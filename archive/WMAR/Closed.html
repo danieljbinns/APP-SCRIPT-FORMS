@@ -1,0 +1,24 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center h-screen" style="font-family: 'Inter', sans-serif;">
+    <div class="bg-white p-10 rounded-lg shadow-lg w-full max-w-lg text-center">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <img src="<?= logoUrl ?>" alt="Company Logo" style="max-height: 70px;">
+      </div>
+      <h1 class="text-2xl font-bold text-gray-800">Link Expired or Action Not Available</h1>
+      
+      <? if (status) { ?>
+        <p class="text-gray-600 mt-4">This action cannot be completed because the request's current status is: <strong class="font-bold"><?= status ?></strong>.</p>
+      <? } else { ?>
+        <p class="text-gray-600 mt-4">This request has already been processed and is now closed.</p>
+      <? } ?>
+
+      <p class="text-gray-600 mt-2">No further action can be taken from this link. You may now close this window.</p>
+    </div>
+  </body>
+</html>

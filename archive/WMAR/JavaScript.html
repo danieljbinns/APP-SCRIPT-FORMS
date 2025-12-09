@@ -1,0 +1,591 @@
+﻿<script>
+/**
+ * @description Main entry point for the script. This function executes after the entire HTML document has been loaded and parsed.
+ * @howItWorks It adds an event listener for 'DOMContentLoaded'. Once the DOM is ready, it initiates the process of fetching data from the server-side Apps Script and then builds the dynamic form on the page.
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM Content Loaded - Starting form initialization');
+  
+  // Define logicMap at top level so all functions can access it
+  const logicMap = {'Cost Sheet': 'COST Sheet Module','Delivery App': 'Delivery Module','JONAS Purchasing Software': 'JONAS Purchasing Module','JONAS Field Time/Field Project Access': 'JONAS Field Time/Field Project Access','JONAS EBI Access': 'JONAS EBI Access','Mobile Phone': 'Mobile Phone Assignment','Computer': 'Computer Assignment','Is the new User getting a previous user assigned phone?': 'Reassigned Phone Details','Is the new User getting a previous user assigned computer?': 'Reassigned Computer Details', 'BOSS User Account': 'BOSS User Account'};
+  
+  // Get references to the main DOM elements where the form and status messages will be rendered.
+  const formContainer = document.getElementById('form-container');
+  const statusMessage = document.getElementById('status-message');
+  // A global variable to hold job code data fetched from the server, used for populating dynamic dropdowns.
+  let jobCodeData = [];
+
+  // --- 1. INITIAL DATA FETCH ---
+  /**
+   * @description Fetches the initial data required to build the form from the server-side Google Apps Script.
+   * @howItWorks
+   * - It reads the URL parameters (specifically the 'id' for editing an existing request).
+   * - It calls the `getRequesterInitialData` function in the `code.gs` file using `google.script.run`.
+   * - `withSuccessHandler(onDataReceived)` specifies the function to call when data is returned successfully.
+   * - `withFailureHandler(onFailure)` specifies the function to call if an error occurs.
+   */
+  const urlParams = new URLSearchParams(window.location.search);
+  const params = {
+    id: urlParams.get('id') // Will be null if it's a new form, or have a value if editing.
+  };
+
+  console.log('Fetching initial data with params:', params);
+  
+  google.script.run
+    .withSuccessHandler(onDataReceived)
+    .withFailureHandler(onFailure)
+    .getRequesterInitialData(params);
+
+  /**
+   * @description Callback function that executes when the initial data is successfully fetched from the server.
+   * @whatItDoes It receives the data object from the server, stores the job code data, and triggers the form building process.
+   * @param {object} data - An object returned from the server containing `requestData` (for edits), `formStructure`, and `jobCodeData`.
+   */
+  function onDataReceived(data) {
+    console.log('Data received from server:', data);
+    // If the server returned a custom error message, handle it.
+    if (data.error) {
+      console.error('Server returned error:', data.error);
+      onFailure({ message: data.error });
+      return;
+    }
+    // Store job code data for later use.
+    jobCodeData = data.jobCodeData;
+    console.log('Building form with structure:', data.formStructure);
+    // Call the main function to construct the HTML form.
+    buildRequesterForm(data.requestData, params.id, data.formStructure);
+  }
+
+  /**
+   * @description Callback function that executes if the server call fails.
+   * @whatItDoes It displays a user-friendly error message in the main form container.
+   * @param {Error} error - An error object containing a message about the failure.
+   */
+  function onFailure(error) {
+    console.error('Failed to load data:', error);
+    formContainer.innerHTML = `<h1>Error</h1><p>Could not load the application: ${error.message}</p>`;
+  }
+
+
+  // --- 2. FORM BUILDING ---
+  /**
+   * @description The core function that dynamically builds the entire HTML form based on the structure received from the server. It also sets up all client-side logic and event listeners.
+   * @whatItDoes It iterates through the form structure, creates corresponding HTML elements for each question and section, and attaches event listeners to handle dynamic interactions like showing/hiding sections, auto-populating fields, and syncing dropdowns.
+   * @param {object} existingData - An object with pre-filled data if editing a request. Null for a new request.
+   * @param {string} id - The request ID, if editing.
+   * @param {Array<object>} structure - An array of objects, where each object describes a question or section from the Google Form.
+   */
+  function buildRequesterForm(existingData, id, structure) {
+    console.log('Starting buildRequesterForm with structure length:', structure ? structure.length : 'null');
+    
+    // Determine titles and text based on whether this is a new form or an edit.
+    let formTitle = existingData ? 'Edit Employee Request' : 'Employee Request Form';
+    let submitButtonText = existingData ? 'Resubmit Request' : 'Submit Request';
+    let introText = existingData ? `Please revise the details below. Reason for sending back: <strong><em>${existingData['Approval Notes'] || 'N/A'}</em></strong>` : 'This form is generated directly from the master Google Form. Sections will appear below as you make selections.';
+    
+    console.log('Setting up form skeleton');
+    // Set up the basic skeleton of the form.
+    formContainer.innerHTML = `<h1>${formTitle}</h1><p>${introText}</p><form id="requester-form"><input type="hidden" name="formType" value="requester"><div id="gatekeeper-container"></div><div id="gatekeeper-message" class="status-error" style="display: none;">All Recruiting Requirements must be met to proceed.</div><div id="main-form-container" style="display: none;"><div id="form-content"></div><div id="submit-container"><button type="submit">${submitButtonText}</button></div></div></form>`;
+    
+    // If we are editing, add a hidden input to store the Request ID.
+    if (existingData) {
+      const hiddenIdInput = document.createElement('input');
+      hiddenIdInput.type = 'hidden';
+      hiddenIdInput.name = 'Request ID';
+      hiddenIdInput.value = id;
+      document.getElementById('requester-form').appendChild(hiddenIdInput);
+    }
+    
+    // Handle case where form structure failed to load.
+    if (!structure || structure.length === 0) {
+      console.error('Form structure is empty or null');
+      formContainer.innerHTML = '<h1>Error: Could not load form structure.</h1>';
+      return;
+    }
+    
+    console.log('Form structure valid, proceeding to build elements');
+
+    // Get references to the newly created form elements.
+    const formElement = document.getElementById('requester-form');
+    const formContent = document.getElementById('form-content');
+    const gatekeeperContainer = document.getElementById('gatekeeper-container');
+    let gatekeeperSelect = null;
+    
+    // --- Loop through the form structure from the server and build HTML elements ---
+    structure.forEach(item => {
+        if (item.type === 'PAGE_BREAK') {
+            // Create a new section <div> with an <h2> title.
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'form-section';
+            const sectionId = 'section-' + item.title.replace(/\s|[/?]/g, '-');
+            sectionDiv.id = sectionId;
+            const sectionTitle = document.createElement('h2');
+            sectionTitle.textContent = item.title;
+            sectionDiv.appendChild(sectionTitle);
+            // Hide sections that are controlled by conditional logic by default.
+            if (Object.values(logicMap).includes(item.title)) {
+                sectionDiv.style.display = 'none';
+            }
+            formContent.appendChild(sectionDiv);
+        } else {
+            // For regular questions, create the appropriate input element.
+            const questionElement = createQuestionElement(item, existingData);
+            // The "gatekeeper" question is special and gets placed in its own container.
+            if (item.title === "Have all Recruiting Requirements been met?") {
+                gatekeeperContainer.appendChild(questionElement);
+                gatekeeperSelect = questionElement.querySelector('select');
+                if (gatekeeperSelect) {
+                    gatekeeperSelect.addEventListener('change', handleGatekeeperChange);
+                }
+            } else {
+                // All other questions go into the current section.
+                const sections = formContent.querySelectorAll('.form-section');
+                const currentSection = sections.length > 0 ? sections[sections.length - 1] : formContent;
+                currentSection.appendChild(questionElement);
+            }
+        }
+    });
+    
+    // After creating all elements, set up dropdowns that depend on the job code data.
+    setupDynamicDropdowns(existingData);
+
+    // --- Set up dynamic client-side logic and event listeners ---
+    const hourlySalarySelect = formElement.querySelector('[name="Hourly or Salary"]');
+    const firstNameInput = formElement.querySelector('[name="First Name"]');
+    const lastNameInput = formElement.querySelector('[name="Last Name"]');
+    const emailInput = formElement.querySelector('[name="Email Requested"]');
+    const googleAccountSelect = formElement.querySelector('[name="Google Account"]');
+    const emailWrapper = emailInput ? emailInput.closest('.question-wrapper') : null;
+
+    /**
+     * @description Shows or hides the "Email Requested" input field based on whether a Google Account is needed.
+     */
+    function updateEmailVisibility() {
+        if (!googleAccountSelect || !emailWrapper) return;
+        if (googleAccountSelect.checked) {
+            emailWrapper.style.display = 'block';
+        } else {
+            emailWrapper.style.display = 'none';
+            emailInput.value = ''; // Clear the value when hidden.
+        }
+    }
+
+    /**
+     * @description Automatically generates a suggested email address for salaried employees.
+     * @howItWorks It combines the first and last names into the format "firstname.lastname@team-group.com".
+     */
+    function updateEmail() {
+        if (!hourlySalarySelect || !firstNameInput || !lastNameInput || !emailInput || !googleAccountSelect) return;
+        
+        if (googleAccountSelect.checked && hourlySalarySelect.value === 'Salary') {
+            const first = firstNameInput.value.trim().toLowerCase().split(' ')[0];
+            const last = lastNameInput.value.trim().toLowerCase().split(' ')[0];
+            if (first && last) {
+                emailInput.value = `${first}.${last}@team-group.com`;
+            } else {
+                 emailInput.value = '';
+            }
+        }
+    }
+    
+    // Attach listeners for the email generation logic.
+    if (googleAccountSelect) {
+        googleAccountSelect.addEventListener('change', () => {
+            updateEmailVisibility();
+            updateEmail();
+        });
+    }
+    if (firstNameInput && lastNameInput && hourlySalarySelect) {
+        firstNameInput.addEventListener('input', updateEmail);
+        lastNameInput.addEventListener('input', updateEmail);
+        hourlySalarySelect.addEventListener('change', updateEmail);
+    }
+
+    // Logic for showing/hiding the entire "System/Equipment Access" section.
+    const additionalAccessCheckbox = formElement.querySelector('[name="Additional System/Equipment Access Needed?"]');
+    const systemAccessSection = document.getElementById('section-System-Equipment-Access');
+
+    function updateSystemAccessVisibility() {
+        if (!hourlySalarySelect || !systemAccessSection) return;
+        const type = hourlySalarySelect.value;
+        if (type === 'Salary') {
+            // Salaried employees always see this section.
+            systemAccessSection.style.display = 'block';
+            if (additionalAccessCheckbox) additionalAccessCheckbox.closest('.question-wrapper').style.display = 'none';
+            if (googleAccountSelect) {
+              googleAccountSelect.checked = true; // Salaried employees get a Google account by default.
+              googleAccountSelect.dispatchEvent(new Event('change')); // Trigger other logic.
+            }
+        } else if (type === 'Hourly') {
+            // Hourly employees only see it if they check the 'Additional Access' box.
+            if (additionalAccessCheckbox) {
+                additionalAccessCheckbox.closest('.question-wrapper').style.display = 'block';
+                systemAccessSection.style.display = additionalAccessCheckbox.checked ? 'block' : 'none';
+            } else {
+                systemAccessSection.style.display = 'none';
+            }
+            if (googleAccountSelect && !existingData) { // Don't override existing data.
+              googleAccountSelect.checked = false;
+              googleAccountSelect.dispatchEvent(new Event('change'));
+            }
+        } else {
+            // If neither is selected, hide everything.
+            systemAccessSection.style.display = 'none';
+            if (additionalAccessCheckbox) additionalAccessCheckbox.closest('.question-wrapper').style.display = 'none';
+        }
+    }
+    
+    // Attach listeners for the system access visibility logic.
+    if (hourlySalarySelect) hourlySalarySelect.addEventListener('change', updateSystemAccessVisibility);
+    if (additionalAccessCheckbox) additionalAccessCheckbox.addEventListener('change', updateSystemAccessVisibility);
+
+    // Logic to ensure "BOSS User Account" is checked if any of its sub-options are checked.
+    const bossAccountCheckbox = formElement.querySelector('[name="BOSS User Account"]');
+    const dependentCheckboxes = [
+        formElement.querySelector('[name="Cost Sheet"]'),
+        formElement.querySelector('[name="Leader Access"]'),
+        formElement.querySelector('[name="Trip Reports Access"]')
+    ];
+    
+    dependentCheckboxes.forEach(checkbox => {
+        if (checkbox) {
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked && bossAccountCheckbox) {
+                    bossAccountCheckbox.checked = true;
+                }
+            });
+        }
+    });
+
+    // Logic to show/hide 'Transform' and 'CAA' checkboxes based on selected Site Name.
+    const siteNameSelectForLogic = formElement.querySelector('[name="Site Name"]');
+    const transformCheckboxWrapper = formElement.querySelector('[name="Transform"]')?.closest('.question-wrapper');
+    const caaCheckboxWrapper = formElement.querySelector('[name="CAA"]')?.closest('.question-wrapper');
+
+    function updateSiteSpecificCheckboxes() {
+        if (!siteNameSelectForLogic || (!transformCheckboxWrapper && !caaCheckboxWrapper)) return;
+        
+        const selectedSite = siteNameSelectForLogic.value.toLowerCase();
+        
+        // 'Transform' is only for Toyota sites.
+        if (transformCheckboxWrapper) {
+            transformCheckboxWrapper.style.display = selectedSite.startsWith('toyota') ? 'flex' : 'none';
+            if (!selectedSite.startsWith('toyota')) formElement.querySelector('[name="Transform"]').checked = false;
+        }
+        // 'CAA' is only for GM sites.
+        if (caaCheckboxWrapper) {
+            caaCheckboxWrapper.style.display = selectedSite.startsWith('gm') ? 'flex' : 'none';
+            if (!selectedSite.startsWith('gm')) formElement.querySelector('[name="CAA"]').checked = false;
+        }
+    }
+
+    if (siteNameSelectForLogic) {
+      siteNameSelectForLogic.addEventListener('change', updateSiteSpecificCheckboxes);
+    }
+    
+    // --- Initial State Setup ---
+    // Run all the logic functions once on page load to set the initial state of the form correctly.
+    document.querySelectorAll('select, input[type=checkbox]').forEach(el => handleSubLogicChange({target: el}));
+    if (gatekeeperSelect) handleGatekeeperChange({ target: gatekeeperSelect });
+    updateSystemAccessVisibility();
+    updateEmailVisibility();
+    updateEmail();
+    updateSiteSpecificCheckboxes();
+
+    // Attach the final submit handler to the form.
+    formElement.addEventListener('submit', handleFormSubmit);
+    // Prevent accidental submission by pressing Enter in text fields.
+    formElement.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') {
+            event.preventDefault();
+        }
+    });
+
+    // Remove the initial loading spinner.
+    const loader = formContainer.querySelector('.loader');
+    if(loader) loader.remove();
+  }
+  
+  /**
+   * @description Handles the change event for the "gatekeeper" question.
+   * @whatItDoes It shows or hides the main body of the form. The user cannot proceed until they select "Yes".
+   */
+  function handleGatekeeperChange(event) {
+    const showForm = event.target.value === 'Yes';
+    document.getElementById('main-form-container').style.display = showForm ? 'block' : 'none';
+    document.getElementById('gatekeeper-message').style.display = showForm ? 'none' : 'block';
+  }
+  
+  /**
+   * @description Creates the HTML elements for a single question based on its type and other properties from the form structure.
+   * @whatItDoes This is a factory function for form elements. It handles simple text inputs, textareas, dropdowns, checkboxes, and special multi-input fields.
+   * @param {object} item - An object describing the question (title, type, choices, etc.).
+   * @param {object} existingData - The pre-filled data for the form, if any.
+   * @returns {HTMLElement} A div element (`question-wrapper`) containing the label and input field for the question.
+   */
+  function createQuestionElement(item, existingData) {
+    const questionWrapper = document.createElement('div');
+    questionWrapper.className = 'question-wrapper';
+    
+    // Create the <label> for the question.
+    if(item.type !== 'PAGE_BREAK') {
+        const label = document.createElement('label');
+        label.textContent = item.title;
+        // Special styling for checkboxes to align them nicely.
+        if(item.type === 'CHECKBOX') {
+          questionWrapper.style.display = 'flex';
+          questionWrapper.style.alignItems = 'center';
+          label.style.order = 2; // Label comes after checkbox.
+          label.style.marginBottom = 0;
+          label.style.marginLeft = '10px';
+        }
+        questionWrapper.appendChild(label);
+    }
+
+    // Get the existing value for this question, if available.
+    const value = existingData ? (existingData[item.title] || '') : '';
+    const lowerCaseTitle = item.title.toLowerCase();
+    
+    // --- SPECIAL LOGIC for Multi-Input Dropdowns ---
+    if (lowerCaseTitle.includes('job site(s) to be assigned') || lowerCaseTitle.includes('job number(s) to be assigned')) {
+        const isJobNumber = lowerCaseTitle.includes('job number(s) to be assigned');
+        const sourceIndex = isJobNumber ? 2 : 0; // Index in jobCodeData array
+        const placeholder = isJobNumber ? 'Job Number' : 'Site Name';
+
+        const multiInputContainer = document.createElement('div');
+        multiInputContainer.className = 'multi-input-container';
+
+        // Function to create a single dropdown row.
+        const createDropdownRow = (selectedValue) => {
+            const row = document.createElement('div');
+            row.className = 'multi-input-row';
+            const dropdown = document.createElement('select');
+            dropdown.name = item.title; // All dropdowns share the same name.
+            dropdown.innerHTML = `<option value="">-- Select ${placeholder} --</option>`;
+            jobCodeData.forEach(jobRow => {
+                dropdown.innerHTML += `<option value="${jobRow[sourceIndex]}">${jobRow[sourceIndex]}</option>`;
+            });
+            if (selectedValue) {
+                dropdown.value = selectedValue;
+            }
+            row.appendChild(dropdown);
+            return row;
+        };
+        
+        // If editing, split the comma-separated string into multiple dropdowns.
+        const existingValues = value ? value.split(', ') : [''];
+        existingValues.forEach((val, index) => {
+            const newRow = createDropdownRow(val);
+            if (index === 0) { // Add the '+' button only to the first row.
+                const addButton = document.createElement('button');
+                addButton.type = 'button';
+                addButton.className = 'add-btn';
+                addButton.textContent = '+';
+                addButton.addEventListener('click', () => {
+                    const freshRow = createDropdownRow();
+                    multiInputContainer.appendChild(freshRow);
+                });
+                newRow.appendChild(addButton);
+            }
+            multiInputContainer.appendChild(newRow);
+        });
+
+        questionWrapper.appendChild(multiInputContainer);
+        return questionWrapper;
+    }
+    
+    // --- Standard Input Creation ---
+    let input;
+    switch(item.type) {
+        case 'CHECKBOX':
+            input = document.createElement('input');
+            input.type = 'checkbox';
+            input.name = item.title;
+            input.style.width = '20px';
+            input.style.height = '20px';
+            input.style.order = 1; // Checkbox comes before label.
+            input.checked = value === 'Yes' || value === true;
+            // Add a listener if this checkbox controls a section's visibility.
+            if (logicMap[item.title] || item.title.startsWith('BOSS') || item.title.startsWith('Cost') || item.title.startsWith('Leader') || item.title.startsWith('Trip')) {
+                input.addEventListener('change', handleSubLogicChange);
+            }
+            break;
+        case 'TEXT':
+        case 'DATE':
+            input = document.createElement('input');
+            input.type = item.type === 'DATE' ? 'date' : 'text';
+            break;
+        case 'PARAGRAPH_TEXT':
+            input = document.createElement('textarea');
+            break;
+        case 'MULTIPLE_CHOICE':
+        case 'LIST':
+            input = document.createElement('select');
+            input.innerHTML = '<option value="">--Please choose an option--</option>';
+            if (item.choices) item.choices.forEach(c => { 
+                const isSelected = (c === value) ? 'selected' : '';
+                input.innerHTML += `<option value="${c}" ${isSelected}>${c}</option>`; 
+            });
+            // Add a listener if this dropdown controls a section's visibility.
+            if (logicMap[item.title]) {
+                input.addEventListener('change', handleSubLogicChange);
+            }
+            break;
+    }
+
+    if (input) {
+        if (input.type !== 'checkbox') {
+            input.name = item.title;
+            if(input.tagName.toLowerCase() !== 'select'){
+                input.value = value;
+            }
+        }
+        questionWrapper.appendChild(input);
+    }
+    return questionWrapper;
+  }
+
+  /**
+   * @description Converts the plain text inputs for "Site Name" and "Job Site Number" into dynamic, synchronized dropdowns.
+   * @howItWorks It finds the original input elements created by `createQuestionElement`, replaces them with `<select>` elements populated from `jobCodeData`, and then adds `change` listeners to each. When one dropdown changes, the `syncDropdowns` function is called to update the other.
+   */
+  function setupDynamicDropdowns(existingData) {
+      if (jobCodeData.length === 0) return;
+      
+      let siteNameWrapper, jobSiteNumberWrapper;
+      document.querySelectorAll('.question-wrapper label').forEach(label => {
+          if (label.textContent === "Site Name") siteNameWrapper = label.parentElement;
+          if (label.textContent === "Job Site Number") jobSiteNumberWrapper = label.parentElement;
+      });
+
+      if (!siteNameWrapper || !jobSiteNumberWrapper) return;
+
+      // Create Site Name dropdown.
+      const siteNameSelect = document.createElement('select');
+      siteNameSelect.name = "Site Name";
+      siteNameSelect.innerHTML = '<option value="">-- Select Site Name --</option>';
+      jobCodeData.forEach(row => {
+          siteNameSelect.innerHTML += `<option value="${row[0]}">${row[0]}</option>`;
+      });
+
+      // Create Job Site Number dropdown.
+      const jobSiteNumberSelect = document.createElement('select');
+      jobSiteNumberSelect.name = "Job Site Number";
+      jobSiteNumberSelect.innerHTML = '<option value="">-- Select Job Number --</option>';
+      jobCodeData.forEach(row => {
+          jobSiteNumberSelect.innerHTML += `<option value="${row[2]}">${row[2]}</option>`;
+      });
+
+      // Replace the original text inputs with the new select elements.
+      siteNameWrapper.querySelector('input').replaceWith(siteNameSelect);
+      jobSiteNumberWrapper.querySelector('input').replaceWith(jobSiteNumberSelect);
+
+      // Add event listeners to sync them.
+      siteNameSelect.addEventListener('change', () => syncDropdowns('siteName', siteNameSelect.value, jobSiteNumberSelect));
+      jobSiteNumberSelect.addEventListener('change', () => syncDropdowns('jobNumber', jobSiteNumberSelect.value, siteNameSelect));
+      
+      // If editing, set the dropdowns to their previously saved values.
+      if (existingData) {
+        siteNameSelect.value = existingData['Site Name'] || '';
+        jobSiteNumberSelect.value = existingData['Job Site Number'] || '';
+      }
+  }
+
+  /**
+   * @description A helper function that synchronizes the "Site Name" and "Job Site Number" dropdowns.
+   * @howItWorks When one dropdown changes, this function finds the corresponding value for the other dropdown in the `jobCodeData` array and sets its value.
+   */
+  function syncDropdowns(source, value, targetSelect) {
+      if (!value) {
+          targetSelect.value = '';
+          return;
+      }
+      if (source === 'siteName') {
+          const match = jobCodeData.find(row => row[0] === value);
+          if (match) targetSelect.value = match[2];
+      } else if (source === 'jobNumber') {
+          const match = jobCodeData.find(row => row[2] === value);
+          if (match) targetSelect.value = match[0];
+      }
+  }
+
+  /**
+   * @description Handles the logic for showing/hiding form sections based on user selections.
+   * @howItWorks It checks if the changed input (`triggerInput`) is a key in the `logicMap`. If it is, it finds the target section by its ID and toggles its `display` style between 'block' and 'none' based on the input's value or checked state.
+   */
+  function handleSubLogicChange(event) {
+    const triggerInput = event.target;
+    const sectionTitleToShow = logicMap[triggerInput.name];
+    if (sectionTitleToShow) {
+        const sectionId = 'section-' + sectionTitleToShow.replace(/\s|[/?]/g, '-');
+        const sectionElement = document.getElementById(sectionId);
+        if (sectionElement) {
+            const show = (triggerInput.type === 'checkbox') ? triggerInput.checked : (triggerInput.value === 'Required' || triggerInput.value === 'Yes');
+            sectionElement.style.display = show ? 'block' : 'none';
+        }
+    }
+  }
+
+
+  // --- 3. FORM SUBMISSION ---
+  /**
+   * @description Handles the form's submit event.
+   * @whatItDoes It gathers all the data from the form, packages it into a single object, and sends it to the server-side `processSubmission` function for processing.
+   * @howItWorks
+   * - It prevents the default browser form submission.
+   * - It creates a `FormData` object and converts it to a plain JavaScript object.
+   * - It has special logic to correctly handle multi-select fields (joining them with ', ') and to format all checkbox values as "Yes" or "No".
+   * - It calls `google.script.run.processSubmission(data)` and provides success and failure handlers to display the final outcome to the user.
+   */
+  function handleFormSubmit(e) {
+    e.preventDefault(); // Stop the browser from reloading the page.
+    
+    // Provide user feedback.
+    statusMessage.textContent = 'Submitting...';
+    statusMessage.className = 'status-info';
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = {};
+    const multiInputNames = new Set(); // To handle fields with multiple inputs of the same name.
+
+    // Convert FormData to a plain object.
+    for (const [key, value] of formData.entries()) {
+      // Check if this is a multi-input field (e.g., Job Sites).
+      if (form.elements[key] && form.elements[key].length > 1 && !form.elements[key].nodeName) {
+        if (!multiInputNames.has(key)) {
+          multiInputNames.add(key);
+          const values = formData.getAll(key).filter(v => v.trim() !== ''); // Get all values and remove empty ones.
+          if (values.length > 0) data[key] = values.join(', '); // Join into a single string.
+        }
+      } else { 
+        // For single-input fields.
+        data[key] = value; 
+      }
+    }
+    
+    // Standardize checkbox values to 'Yes'/'No' for the spreadsheet.
+    form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        data[cb.name] = cb.checked ? 'Yes' : 'No';
+    });
+
+    // Send the final data object to the server.
+    google.script.run
+      .withSuccessHandler(response => {
+        // Handle the server's response (success or error message).
+        statusMessage.className = response.status === 'success' ? 'status-success' : 'status-error';
+        statusMessage.textContent = response.message;
+        if (response.status === 'success') {
+          // On success, replace the form with a confirmation message.
+          formContainer.innerHTML = `<div style="text-align: center; padding: 40px;"><h2>${response.message}</h2><p>You may now close this window.</p></div>`;
+        }
+      })
+      .withFailureHandler(err => {
+        // Handle script execution errors.
+        statusMessage.textContent = 'An error occurred: ' + err.message;
+        statusMessage.className = 'status-error';
+      })
+      .processSubmission(data);
+  }
+});
+</script>

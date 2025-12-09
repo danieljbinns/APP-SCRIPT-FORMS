@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center h-screen" style="font-family: 'Inter', sans-serif;">
+    <div id="main-content" class="bg-white p-10 rounded-lg shadow-lg w-full max-w-lg">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <img src="<?= logoUrl ?>" alt="Company Logo" style="max-height: 70px;">
+      </div>
+      <h1 class="text-2xl font-bold text-gray-800 text-center">Approve & E-Sign Request</h1>
+      <p class="text-gray-600 mt-2 text-center mb-6">Please type your full name below to electronically sign and approve this request.</p>
+      
+      <form id="approvalForm">
+        <input type="hidden" id="approvalId" name="approvalId" value="<?= approvalId ?>">
+        
+        <div>
+          <label for="managerSignature" class="block text-sm font-medium text-gray-700">Your Full Name (E-Signature)*</label>
+          <div class="mt-1">
+            <input type="text" id="managerSignature" name="managerSignature" required class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500" placeholder="e.g., Jane Doe">
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <label for="additionalComments" class="block text-sm font-medium text-gray-700">Additional Comments (optional)</label>
+          <div class="mt-1">
+            <textarea id="additionalComments" name="additionalComments" rows="3" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="e.g., Approved."></textarea>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <button type="submit" id="submitButton" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            Approve and Submit Signature
+          </button>
+        </div>
+      </form>
+      <div id="status" class="mt-4 text-center text-sm"></div>
+    </div>
+
+    <script>
+      // Adds an event listener to the form that triggers a function when the form is submitted.
+      document.getElementById('approvalForm').addEventListener('submit', function(e) {
+        // Prevents the default form submission action, which would reload the page. We handle it with JavaScript instead.
+        e.preventDefault();
+        // Get references to the submit button and the status message div.
+        const submitButton = document.getElementById('submitButton');
+        const statusDiv = document.getElementById('status');
+        // Disable the button and change its text to give the user feedback that something is happening.
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting...';
+
+        // Create an object to hold the data from the form fields.
+        const approvalData = {
+          approvalId: this.approvalId.value,
+          managerSignature: this.managerSignature.value,
+          additionalComments: this.additionalComments.value
+        };
+
+        // This gets the name of the server-side function to call, which is dynamically passed from Google Apps Script.
+        // This makes the HTML template reusable for different types of approvals.
+        const submitFunction = "<?= submitFunction ?>";
+
+        // This is the Google Apps Script API to run a server-side function from the client.
+        google.script.run
+          // Defines the callback function to execute if the server-side function completes successfully.
+          .withSuccessHandler(function(response) {
+            // On success, replace the form content with a confirmation message.
+            document.getElementById('main-content').innerHTML = '<div style="text-align: center; margin-bottom: 20px;"><img src="<?= logoUrl ?>" alt="Company Logo" style="max-height: 70px;"></div><div class="text-center"><h1 class="text-2xl font-bold text-green-700">Request Approved</h1><p class="text-gray-600 mt-2">The approval has been processed successfully. You may now close this window.</p></div>';
+          })
+          // Defines the callback function to execute if the server-side function fails.
+          .withFailureHandler(function(error) {
+            // On failure, display the error message in the status div.
+            statusDiv.textContent = 'Error: ' + error.message;
+            statusDiv.className = 'mt-4 text-center text-sm text-red-600 font-semibold';
+            // Re-enable the submit button and reset its text so the user can try again.
+            submitButton.disabled = false;
+            submitButton.textContent = 'Approve and Submit Signature';
+          })
+          // This calls the server-side function. The function name is determined by the 'submitFunction' variable,
+          // and the 'approvalData' object is passed as its argument.
+          [submitFunction](approvalData);
+      });
+    </script>
+  </body>
+</html>

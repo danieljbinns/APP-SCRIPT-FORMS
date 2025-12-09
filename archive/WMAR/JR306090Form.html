@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <?!= HtmlService.createHtmlOutputFromFile('CSS.html').getContent(); ?>
+  <style>
+    .checkbox-question {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .checkbox-question label {
+      margin: 0;
+      font-size: 1.2em;
+    }
+
+    .checkbox-question input {
+      width: 20px;
+      height: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <img src="<?= logoUrl ?>" alt="Company Logo" style="max-height: 70px;">
+    </div>
+    <div id="form-container">
+      <h1>JR / 30-60-90 Plan Setup</h1>
+
+      <? if (typeof isStandalone !== 'undefined' && isStandalone) { ?>
+      <p>Please provide the employee details below and confirm completion.</p>
+      <hr>
+
+      <h3>Employee Information</h3>
+      <div class="question-wrapper">
+        <label>First Name</label>
+        <input type="text" name="First Name" required>
+      </div>
+      <div class="question-wrapper">
+        <label>Last Name</label>
+        <input type="text" name="Last Name" required>
+      </div>
+      <div class="question-wrapper">
+        <label>Email Address</label>
+        <input type="email" name="Requester Email" required>
+      </div>
+      <div class="question-wrapper">
+        <label>Department</label>
+        <input type="text" name="Department" required>
+      </div>
+      <div class="question-wrapper">
+        <label>Reporting Manager</label>
+        <input type="text" name="Reporting Manager" required>
+      </div>
+      <hr>
+      <? } else { ?>
+      <h3>Request for:
+        <?= employeeName ?> (Temporary ID:
+        <?= employeeId ?>)
+      </h3>
+      <p>Please confirm once the following items have been completed.</p>
+      <hr>
+      <? } ?>
+
+      <form id="task-form">
+        <? if (typeof isStandalone !== 'undefined' && isStandalone) { ?>
+        <input type="hidden" name="formType" value="<?= formType ?>">
+        <input type="hidden" name="formTitle" value="<?= formTitle ?>">
+        <input type="hidden" name="isStandalone" value="true">
+        <? } else { ?>
+        <input type="hidden" name="formType" value="parallel_task_submission">
+        <input type="hidden" name="requestId" value="<?= requestId ?>">
+        <? } ?>
+
+        <div class="question-wrapper checkbox-question">
+          <input type="checkbox" id="jr_complete" name="JR - Status" value="Complete">
+          <label for="jr_complete">JR Setup Complete?</label>
+        </div>
+        <div class="question-wrapper checkbox-question">
+          <input type="checkbox" id="plan_complete" name="30-60-90 - Status" value="Complete">
+          <label for="plan_complete">30-60-90 Plan Complete?</label>
+        </div>
+
+        <div id="submit-container">
+          <button type="submit">Submit Confirmation</button>
+        </div>
+      </form>
+    </div>
+    <div id="status-message"></div>
+  </div>
+
+  <script>
+    document.getElementById('task-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const form = e.target;
+      form.querySelector('button[type="submit"]').textContent = 'Submitting...';
+      form.querySelector('button[type="submit"]').disabled = true;
+
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+
+      // Manually set status for checkboxes
+      data['JR - Status'] = form.querySelector('#jr_complete').checked ? 'Complete' : 'Incomplete';
+      data['30-60-90 - Status'] = form.querySelector('#plan_complete').checked ? 'Complete' : 'Incomplete';
+
+      // Determine which handler to call based on standalone mode
+      const isStandalone = data.isStandalone === 'true';
+      const handlerFunction = isStandalone ? 'handleStandaloneSubmission' : 'handleParallelTaskSubmission';
+
+      google.script.run
+        .withSuccessHandler(function (response) {
+          let message = isStandalone
+            ? `<h1>Request Submitted</h1><p>Your JR/30-60-90 request has been submitted successfully.</p><p>Request ID: <strong>${response.requestId || 'N/A'}</strong></p><p>You may now close this window.</p>`
+            : `<h1>Confirmation Received</h1><p>Thank you, the status has been updated. You may now close this window.</p>`;
+          document.getElementById('form-container').innerHTML = message;
+        })
+        .withFailureHandler(function (error) {
+          const statusMessage = document.getElementById('status-message');
+          statusMessage.className = 'status-error';
+          statusMessage.textContent = 'Error: ' + error.message;
+          form.querySelector('button[type="submit"]').textContent = 'Submit Confirmation';
+          form.querySelector('button[type="submit"]').disabled = false;
+        })[handlerFunction](data);
+    });
+  </script>
+</body>
+
+</html>
