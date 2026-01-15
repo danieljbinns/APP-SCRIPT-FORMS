@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="<?= config.LOGO_URL ?>" alt="Logo" class="logo">
+      <h1><?= config.FORM_NAME ?></h1>
+    </div>
+
+    <div class="workflow-info">
+      <p><strong>Workflow ID:</strong> <?= workflowId ?></p>
+      <p><strong>Employee:</strong> <?= workflowData.Employee_Name ?></p>
+      <p><strong>Hire Date:</strong> <?= workflowData.Hire_Date ?></p>
+    </div>
+
+    <form id="taskForm">
+      <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+
+      <div class="form-section">
+        <h2>DSS Learning Platform Setup</h2>
+
+        <div class="form-group">
+          <label for="dssUsername">DSS Username: <span class="required">*</span></label>
+          <input type="text" id="dssUsername" name="DSS_Username" required>
+          <small>Username for DSS training platform</small>
+        </div>
+
+        <div class="form-group">
+          <label for="trainingModules">Training Modules Assigned:</label>
+          <textarea id="trainingModules" name="Training_Modules_Assigned" rows="4" placeholder="List training modules assigned to employee"></textarea>
+          <small>Comma-separated list of training modules</small>
+        </div>
+
+        <div class="form-group">
+          <label for="learningPath">Learning Path Setup: <span class="required">*</span></label>
+          <select id="learningPath" name="Learning_Path_Setup" required>
+            <option value="">-- Select Learning Path --</option>
+            <option value="New Hire - General">New Hire - General</option>
+            <option value="New Hire - Safety Specific">New Hire - Safety Specific</option>
+            <option value="New Hire - Leadership">New Hire - Leadership</option>
+            <option value="Supervisor Track">Supervisor Track</option>
+            <option value="Custom">Custom</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Initial Training Complete:</label>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="Initial_Training_Complete" value="Yes" required>
+              <span>Yes</span>
+            </label>
+            <label>
+              <input type="radio" name="Initial_Training_Complete" value="No">
+              <span>No</span>
+            </label>
+            <label>
+              <input type="radio" name="Initial_Training_Complete" value="In Progress">
+              <span>In Progress</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="dssNotes">DSS Notes:</label>
+          <textarea id="dssNotes" name="DSS_Notes" rows="4" placeholder="Additional notes about DSS setup"></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">Complete Task</button>
+      <div id="status"></div>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = Object.fromEntries(new FormData(e.target));
+      document.getElementById('status').innerHTML = 'Submitting...';
+
+      google.script.run
+        .withSuccessHandler(r => {
+          document.getElementById('status').innerHTML =
+            r.success ? '<div class="success">' + r.message + '</div>' :
+                       '<div class="error">' + r.message + '</div>';
+          if (r.success) {
+            document.getElementById('taskForm').reset();
+          }
+        })
+        .withFailureHandler(e => {
+          document.getElementById('status').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
+        })
+        .processFormSubmission(formData);
+    });
+  </script>
+</body>
+</html>

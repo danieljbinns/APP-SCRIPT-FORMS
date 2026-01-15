@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee ID Setup</title>
+    <style>
+        /* Dark Mode Theme - Matching InitialRequest */
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --brand-red: #EB1C2D;
+            --brand-red-hover: #c41522;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+            --border-color: #333;
+            --success-green: #0f9d58;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            max-height: 70px;
+        }
+
+        #form-container {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            color: var(--text-main);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            color: var(--text-main);
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-left: 4px solid var(--brand-red);
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 6px;
+        }
+
+        .info-box h3 {
+            color: var(--text-main);
+            margin-bottom: 15px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+        }
+
+        .info-item {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .info-item .label {
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-right: 8px;
+        }
+
+        .info-item .value {
+            color: var(--text-main);
+        }
+
+        /* Form Sections */
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .section-note {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #fbbf24;
+        }
+
+        .conditional-section {
+            background: rgba(245, 158, 11, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Form Fields */
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .required {
+            color: var(--brand-red);
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            box-sizing: border-box;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: 2px solid var(--brand-red);
+            border-color: var(--brand-red);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        small {
+            display: block;
+            margin-top: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .form-field {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Submit Button */
+        button[type="submit"] {
+            padding: 1rem;
+            font-size: 1.1rem;
+            background-color: var(--brand-red);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 30px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: var(--brand-red-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(235, 28, 45, 0.3);
+        }
+
+        button[type="submit"]:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Status Messages */
+        #statusMessage {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .success {
+            color: var(--success-green);
+            font-weight: 600;
+            padding: 20px;
+            background: rgba(15, 157, 88, 0.1);
+            border-radius: 6px;
+            border: 1px solid var(--success-green);
+        }
+
+        .error {
+            color: #ef4444;
+            font-weight: 600;
+            padding: 20px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 6px;
+            border: 1px solid #ef4444;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border-color);
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Logo -->
+        <div class="logo-container">
+            <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+                alt="Team Group Companies" class="logo">
+        </div>
+
+        <!-- Form Container -->
+        <div id="form-container">
+            <h1>Employee ID Setup</h1>
+            <p class="subtitle">Initial Employee Setup - System IDs & Access</p>
+
+            <hr>
+
+            <!-- Request Info Box -->
+            <div class="info-box">
+                <h3>Request Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">Request ID:</span>
+                        <span class="value">
+                            <?= requestId ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Employee:</span>
+                        <span class="value">
+                            <?= requestData.employeeName ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Position:</span>
+                        <span class="value">
+                            <?= requestData.position ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Manager:</span>
+                        <span class="value">
+                            <?= requestData.managerName ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Manager Email:</span>
+                        <span class="value">
+                            <?= requestData.managerEmail ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Systems Selected:</span>
+                        <span class="value">
+                            <?= requestData.systemsSelected ?>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <form id="setupForm">
+                <input type="hidden" name="requestId" value="<?= requestId ?>">
+
+                <!-- Internal Employee ID -->
+                <div class="form-section">
+                    <h2>Internal Employee ID</h2>
+                    <div class="form-field">
+                        <label>Internal Employee ID <span class="required">*</span></label>
+                        <input type="text" name="internalEmployeeId" value="<?= generatedEmployeeId ?>" required>
+                        <small>Auto-generated. Modify if needed or use existing ID for rehires.</small>
+                    </div>
+                </div>
+
+                <!-- SiteDocs Setup (ALL Employees) -->
+                <div class="form-section">
+                    <h2>SiteDocs Setup</h2>
+                    <p class="section-note"><strong>Note:</strong> All employees receive SiteDocs worker access</p>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>SiteDocs Worker ID <span class="required">*</span></label>
+                            <input type="text" name="siteDocsWorkerId" required>
+                            <small>Worker ID assigned in SiteDocs system</small>
+                        </div>
+
+                        <div class="form-field">
+                            <label>SiteDocs Job Code <span class="required">*</span></label>
+                            <select name="siteDocsJobCode" required>
+                                <option value="">-- Select Job Code --</option>
+                                <option value="Hourly 1">Hourly 1</option>
+                                <option value="Hourly 2">Hourly 2</option>
+                                <option value="Salary 1">Salary 1</option>
+                                <option value="Salary 2">Salary 2</option>
+                                <option value="Supervisor">Supervisor</option>
+                                <option value="Manager">Manager</option>
+                            </select>
+                            <small>Job classification for SiteDocs permissions</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SiteDocs Admin/Login Access (Conditional) -->
+                <? if (requestData.siteDocsAccess) { ?>
+                <div class="form-section conditional-section">
+                    <h2>SiteDocs Admin/Login Access</h2>
+                    <p class="section-note"><strong>Note:</strong> SiteDocs admin/login access was requested in the
+                        initial form</p>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>SiteDocs Training Username <span class="required">*</span></label>
+                            <input type="text" name="siteDocsUsername" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label>SiteDocs Training Password <span class="required">*</span></label>
+                            <input type="text" name="siteDocsPassword" required>
+                            <small>Temporary password for initial login</small>
+                        </div>
+                    </div>
+                </div>
+                <? } ?>
+
+                <!-- DSS Training Access (ALL Employees) -->
+                <div class="form-section">
+                    <h2>DSS Training Access</h2>
+                    <p class="section-note"><strong>Note:</strong> All employees receive DSS training platform access
+                    </p>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>DSS Username <span class="required">*</span></label>
+                            <input type="text" name="dssUsername" value="<?= generatedDssUsername ?>" required>
+                            <small>Auto-generated from name. Modify if needed.</small>
+                        </div>
+
+                        <div class="form-field">
+                            <label>DSS Password <span class="required">*</span></label>
+                            <input type="text" name="dssPassword" required>
+                            <small>Temporary password for initial login</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Setup Notes -->
+                <div class="form-section">
+                    <h2>Setup Notes</h2>
+                    <div class="form-field">
+                        <label>Additional Comments / Notes</label>
+                        <textarea name="setupNotes"
+                            placeholder="Any additional notes about the employee setup process"></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn">Complete Employee ID Setup</button>
+            </form>
+
+            <div id="statusMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('setupForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const statusMsg = document.getElementById('statusMessage');
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            statusMsg.innerHTML = '';
+
+            const formData = new FormData(e.target);
+            const data = {
+                requestId: formData.get('requestId'),
+                internalEmployeeId: formData.get('internalEmployeeId'),
+                siteDocsWorkerId: formData.get('siteDocsWorkerId'),
+                siteDocsJobCode: formData.get('siteDocsJobCode'),
+                siteDocsUsername: formData.get('siteDocsUsername'),
+                siteDocsPassword: formData.get('siteDocsPassword'),
+                dssUsername: formData.get('dssUsername'),
+                dssPassword: formData.get('dssPassword'),
+                setupNotes: formData.get('setupNotes')
+            };
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    if (response.success) {
+                        statusMsg.innerHTML = '<div class="success">✅ Employee ID Setup Complete!<br><br>IT and other teams have been notified.<br><br>You may now close this window.</div>';
+                        document.getElementById('setupForm').style.display = 'none';
+                    } else {
+                        statusMsg.innerHTML = '<div class="error">❌ Error: ' + response.message + '</div>';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Complete Employee ID Setup';
+                    }
+                })
+                .withFailureHandler(function (error) {
+                    statusMsg.innerHTML = '<div class="error">❌ Submission failed: ' + error.message + '</div>';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Complete Employee ID Setup';
+                })
+                .submitEmployeeIDSetup(data);
+        });
+    </script>
+</body>
+
+</html>

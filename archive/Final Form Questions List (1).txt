@@ -1,0 +1,407 @@
+Requester: marquita.oliver@team-group.com (Submitter)
+
+
+
+Site: HYUNDAI PAINT UC217
+Reporting Manager: Kanzy Lawson (email important)
+Date Requested: 
+Date Required By: 
+
+New Hire / Rehire: 
+Hourly / Salary: 
+
+Business Cards Needed: Yes/No
+306090 Needed: Yes/No
+
+First Name: Sherry 
+Middle Name:   
+Last Name:Williams
+Job Title:  Industrial Cleaner    
+Hire Date: 2025-07-22
+Employee Type: Direct Hire  
+Rehire: No
+Job Site Number: 000
+Internal Employee ID: 151048 
+Sitedocs Job Code: Salary 2
+DSS Username: JD20250414BMW
+Comments: 
+
+WMAR 
+
+Section A - To be completed by Site Requester
+? Requester:
+? Date Requested:
+? Employee Name:
+? Date Required By:
+? Site Name:
+? Job Number / Cost Centre:
+? New Hire or Rehire:
+? Position (JR Title) :
+? Hourly or Salary:
+? Reporting To:
+? Business Cards Required:
+? Google Account Required:
+? Email Address Requested:
+? 306090 Required? (yes/No):
+ADP
+? Vacation Entitlement (number of weeks):
+? # of days employee works per week (4 or 5):
+? Approving Manager:
+BOSS
+? DELIVERY MODULE
+? Job Site(s) To Be Assigned:
+? COST SHEET MODULE
+? Job Number(s) To Be Assigned:
+? Leader Access? (Yes/No):
+? Trip Reports Access? (Yes/No):
+? JR Required? (Yes/No):
+Jonas Purchasing
+? JONAS PURCHASING MODULE
+? Jonas Software Access (Yes/No):
+? Job Number(s) To Be Assigned:
+? Field Time/Field Project Access (Yes/No):
+? Job Number(s) To Be Assigned:
+? EBI Access (Yes/No):
+? Job Number(s) To Be Assigned:
+Mobile / Web Applications
+? SiteDocs (Yes/No):
+? Audit Apps (Yes/No):
+? Incidents (Yes/No):
+? CAA (Yes/No):
+? Delivery App (Yes/No):
+? Net Promoter Score (Yes/No):
+Vehicle / Fleetio
+? Vehicle Assigned (Yes/No):
+? Fleetio Access Required (Yes/No):
+Equipment
+? MOBILE PHONE
+? Required? (Yes/No):
+? If employee is being reassigned a mobile phone, Previous User Name:
+? Carrier:
+? Phone #:
+? If a new phone is required, Preferred Carrier:
+? COMPUTER
+? Required? (Yes/No):
+? If User is receiving a computer previously assigned, please enter previous user's name:
+? Type (Desktop/Laptop):
+? Microsoft 365 License Required? (Yes/No):
+? SITEDOCS TABLET
+? Required? (Yes/No):
+Miscellaneous
+? NOTES/COMMENTS:
+Requester sign off
+? Name:
+? Date:
+
+
+
+Section A - To be completed by Site Requester
+? Requester Name & Email:
+? Date Requested:
+? First Name:
+? Middle Name:
+? Last Name:
+? Preferred Name:
+? Date Required By:
+? Employee Type (e.g., Direct Hire, Agency):
+? Site Name:
+? Hire Date:
+? Job Number / Cost Centre:
+? Internal Employee ID (if known):
+? Job Site Number:
+? New Hire or Rehire:
+? Position / Job Title:
+? Hourly or Salary:
+? Reporting Manager (Name & Email):
+? Google Account Required? (Yes/No):
+? Email Address Requested (e.g., firstname.lastname):
+? Business Cards Required? (Yes/No):
+? 306090 Plan Required? (Yes/No):
+
+ADP
+(Only applies to salary employees)
+? Vacation Entitlement (Number of Weeks):
+? Number of Days Employee Works per Week (4 or 5):
+? Approving Manager (if different from Reporting Manager):
+
+BOSS
+? DELIVERY MODULE
+? Job Site(s) To Be Assigned:
+? COST SHEET MODULE
+? Job Number(s) To Be Assigned:
+? Leader Access? (Yes/No):
+? Trip Reports Access? (Yes/No):
+? JR Required? (Yes/No):
+
+Jonas Purchasing
+? JONAS PURCHASING MODULE
+? Jonas Software Access (Yes/No):
+? Job Number(s) To Be Assigned:
+? Field Time/Field Project Access (Yes/No):
+? Job Number(s) To Be Assigned:
+? EBI Access (Yes/No):
+? Job Number(s) To Be Assigned:
+
+Mobile / Web Applications & Safety
+? SiteDocs Access? (Yes/No):
+? Sitedocs Job Code:
+? DSS Username:
+? Audit Apps Access? (Yes/No):
+? Incidents App Access? (Yes/No):
+? CAA App Access? (Yes/No):
+? Delivery App Access? (Yes/No):
+? Net Promoter Score Access? (Yes/No):
+
+Vehicle / Fleetio
+? Company Vehicle Assigned? (Yes/No):
+? Fleetio Access Required? (Yes/No):
+
+Equipment
+? MOBILE PHONE
+? Required? (Yes/No):
+? If reassigning a phone:
+? Previous User's Name:
+? Carrier:
+? Phone Number:
+? If new phone is required:
+? Preferred Carrier:
+? COMPUTER
+? Required? (Yes/No):
+? Type (Desktop/Laptop):
+? Microsoft 365 License Required? (Yes/No):
+? If reassigning a computer:
+? Previous User's Name:
+? SITEDOCS TABLET
+? Required? (Yes/No):
+
+Miscellaneous
+? Notes / Comments:
+
+Requester Sign Off
+? Submitter Name:
+? Submission Date:
+
+
+
+
+Google Forms Format
+Section 1: Requester & Employee Information
+This section collects the core details for every request.
+Questions to add:
+? Requester Name & Email: (Short answer)
+? Date Requested: (Date) - Set this to default to "Today"
+? First Name: (Short answer)
+? Last Name: (Short answer)
+? Middle Name: (Short answer)
+? Preferred Name: (Short answer)
+? Hire Date: (Date)
+? Date Required By: (Date)
+? Employee Type: (Multiple choice: "Direct Hire", "Agency")
+? Site Name: (Short answer)
+? Job Number / Cost Centre: (Short answer)
+? Job Site Number: (Short answer)
+? Internal Employee ID (if known): (Short answer)
+? New Hire or Rehire: (Multiple choice)
+? Position / Job Title: (Short answer)
+? Hourly or Salary: (Multiple choice)
+? Reporting Manager (Name & Email): (Short answer)
+?? After section 1, go to: Continue to next section
+
+Section 2: General Requirements Trigger
+This section begins our conditional logic.
+Questions to add:
+? Google Account Required? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 3: Google Account Details
+? If No, go to Section 4: Business Cards Trigger
+?? After section 2, go to: This will be greyed out because the question above controls all navigation.
+
+Section 3: Google Account Details
+Questions to add:
+? Email Address Requested (e.g., firstname.lastname): (Short answer)
+?? After section 3, go to: Section 4: Business Cards Trigger
+
+Section 4: Business Cards Trigger
+Questions to add:
+? Business Cards Required? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 5: 306090 Plan Trigger (There are no details to add, this just flags the need).
+? If No, go to Section 5: 306090 Plan Trigger
+?? After section 4, go to: Greyed out.
+
+Section 5: 306090 Plan Trigger
+Questions to add:
+? 306090 Plan Required? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 6: ADP Trigger
+? If No, go to Section 6: ADP Trigger
+?? After section 5, go to: Greyed out.
+
+Section 6: ADP Trigger
+Questions to add:
+? Is this a Salaried employee requiring ADP setup? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 7: ADP Details
+? If No, go to Section 8: BOSS Trigger
+?? After section 6, go to: Greyed out.
+
+Section 7: ADP Details
+Questions to add:
+? Vacation Entitlement (Number of Weeks): (Short answer)
+? Number of Days Employee Works per Week: (Multiple choice: "4", "5")
+? Approving Manager (if different from Reporting Manager): (Short answer)
+?? After section 7, go to: Section 8: BOSS Trigger
+
+Section 8: BOSS Trigger
+Questions to add:
+? Is BOSS access required? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 9: BOSS Details
+? If No, go to Section 10: Jonas Trigger
+?? After section 8, go to: Greyed out.
+
+Section 9: BOSS Details
+Questions to add:
+? Add a "Description" field with the title "DELIVERY MODULE"
+? Job Site(s) To Be Assigned: (Paragraph)
+? Add a "Description" field with the title "COST SHEET MODULE"
+? Job Number(s) To Be Assigned: (Paragraph)
+? Leader Access? (Multiple choice: "Yes", "No")
+? Trip Reports Access? (Multiple choice: "Yes", "No")
+? JR Required? (Multiple choice: "Yes", "No")
+?? After section 9, go to: Section 10: Jonas Trigger
+
+Section 10: Jonas Trigger
+Questions to add:
+? Is Jonas Purchasing access required? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 11: Jonas Details
+? If No, go to Section 12: Mobile/Web Apps Trigger
+?? After section 10, go to: Greyed out.
+
+Section 11: Jonas Details
+Questions to add:
+? Add a "Description" field with the title "JONAS PURCHASING MODULE"
+? Jonas Software Access? (Multiple choice: "Yes", "No")
+? Job Number(s) To Be Assigned: (Paragraph)
+? Field Time/Field Project Access? (Multiple choice: "Yes", "No")
+? Job Number(s) To Be Assigned: (Paragraph)
+? EBI Access? (Multiple choice: "Yes", "No")
+? Job Number(s) To Be Assigned: (Paragraph)
+?? After section 11, go to: Section 12: Mobile/Web Apps Trigger
+
+Section 12: Mobile/Web Apps Trigger
+Questions to add:
+? Is access to Mobile / Web Applications or Safety platforms required? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 13: Mobile/Web Apps Details
+? If No, go to Section 14: Vehicle/Fleetio Trigger
+?? After section 12, go to: Greyed out.
+
+Section 13: Mobile/Web Apps Details
+Questions to add:
+? SiteDocs Access? (Multiple choice: "Yes", "No")
+? Sitedocs Job Code: (Short answer)
+? DSS Username: (Short answer)
+? Audit Apps Access? (Multiple choice: "Yes", "No")
+? Incidents App Access? (Multiple choice: "Yes", "No")
+? CAA App Access? (Multiple choice: "Yes", "No")
+? Delivery App Access? (Multiple choice: "Yes", "No")
+? Net Promoter Score Access? (Multiple choice: "Yes", "No")
+?? After section 13, go to: Section 14: Vehicle/Fleetio Trigger
+
+Section 14: Vehicle/Fleetio Trigger
+Questions to add:
+? Is a Company Vehicle or Fleetio access required? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 15: Vehicle/Fleetio Details
+? If No, go to Section 16: Equipment Trigger
+?? After section 14, go to: Greyed out.
+
+Section 15: Vehicle/Fleetio Details
+Questions to add:
+? Company Vehicle Assigned? (Multiple choice: "Yes", "No")
+? Fleetio Access Required? (Multiple choice: "Yes", "No")
+?? After section 15, go to: Section 16: Equipment Trigger
+
+Section 16: Equipment Trigger
+Questions to add:
+? Is Equipment (Phone, Computer, or Tablet) required? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 17: Mobile Phone Trigger
+? If No, go to Section 24: Final Comments
+?? After section 16, go to: Greyed out.
+
+Section 17: Mobile Phone Trigger
+Questions to add:
+? Is a MOBILE PHONE required? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 18: Mobile Phone Assignment Type
+? If No, go to Section 20: Computer Trigger
+?? After section 17, go to: Greyed out.
+
+Section 18: Mobile Phone Assignment Type
+Questions to add:
+? Are you reassigning a previous user's phone or is this a new phone? (Multiple choice: "Reassigning a phone", "New phone") (Logic Applied)
+? If Reassigning a phone, go to Section 19: Reassigned Phone Details
+? If New phone, go to Section 20: Computer Trigger (It seems you only have a field for "Preferred Carrier" for a new phone, which can be in the final notes or added as a new section if needed. For simplicity, we'll skip adding a new section just for that one field for now.)
+?? After section 18, go to: Greyed out.
+
+Section 19: Reassigned Phone Details
+Questions to add:
+? Previous User's Name: (Short answer)
+? Carrier: (Short answer)
+? Phone Number: (Short answer)
+?? After section 19, go to: Section 20: Computer Trigger
+
+Section 20: Computer Trigger
+Questions to add:
+? Is a COMPUTER required? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 21: Computer Details
+? If No, go to Section 23: SiteDocs Tablet Trigger
+?? After section 20, go to: Greyed out.
+
+Section 21: Computer Details
+Questions to add:
+? Type: (Multiple choice: "Desktop", "Laptop")
+? Microsoft 365 License Required? (Multiple choice: "Yes", "No")
+? Is this a reassigned computer? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 22: Reassigned Computer Details
+? If No, go to Section 23: SiteDocs Tablet Trigger
+?? After section 21, go to: Greyed out.
+
+Section 22: Reassigned Computer Details
+Questions to add:
+? Previous User's Name: (Short answer)
+?? After section 22, go to: Section 23: SiteDocs Tablet Trigger
+
+Section 23: SiteDocs Tablet Trigger
+Questions to add:
+? Is a SITEDOCS TABLET required? (Multiple choice: "Yes", "No") (Logic Applied)
+? If Yes, go to Section 24: Final Comments
+? If No, go to Section 24: Final Comments
+?? After section 23, go to: Greyed out.
+
+Section 24: Final Comments & Submission
+This is the last stop. All paths lead here.
+Questions to add:
+? Notes / Comments: (Paragraph)
+? Submitter Name: (Short answer)
+? Submission Date: (Date) - Set this to default to "Today"
+?? After section 24, go to: Submit form
+
+
+
+
+Logic
+
+The basic idea is that almost every Yes/No question has conditional formatting. In this i’m only adding the questions that have conditional triggers
+
+1. Employee Request Form (Requester)
+a. Have all Recruiting Requirements been met? (Yes/No)
+i. Yes: If yes, then proceed to next question
+ii. No: If no, then the user gets a message saying something like “Please ensure all recruiting requirement have been met, then try again”
+b. Access / Equipment Needed (Checkboxes. 
+For each option that's been checked, the consequent questions for that option appear, if not checked, keep hidden.
+i. Business Card
+1. 
+ii. 30-60-90
+iii. ADP Manager Access
+iv. BOSS
+v. JONAS Purchasing
+vi. Mobile / Web Applications (SiteDocs, Incidents, Delivery, Audit etc.)
+vii. Fleetio / Vehicle
+viii. Credit Card
+ix. Google Account
+x. Delivery App
+

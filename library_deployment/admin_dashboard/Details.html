@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Details - Full View</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --brand-red: #EB1C2D;
+            --brand-red-hover: #c41522;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+            --border-color: #333;
+            --status-complete: #0f9d58;
+            --status-open: #f4b400;
+            --status-progress: #4285f4;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .back-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .back-btn:hover {
+            background: var(--input-border);
+        }
+
+        .hero-banner {
+            background: linear-gradient(135deg, var(--brand-red), #c41522);
+            padding: 2.5rem;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .hero-banner h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 800;
+        }
+
+        .hero-banner p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            font-size: 1rem;
+            opacity: 0.95;
+        }
+
+        .meta-tag {
+            font-weight: 600;
+            padding: 5px 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 30px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .info-card {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            border-top: 4px solid var(--brand-red);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            color: var(--brand-red);
+            margin-bottom: 20px;
+            font-weight: bold;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .field {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .label {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .value {
+            font-weight: 500;
+            font-size: 1rem;
+            color: white;
+        }
+
+        /* Timeline */
+        .workflow-card {
+            grid-column: 1 / -1;
+        }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .timeline-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--input-bg);
+            padding: 15px 25px;
+            border-radius: 8px;
+            border-left: 5px solid var(--border-color);
+        }
+
+        .timeline-item.complete {
+            border-left-color: var(--status-complete);
+        }
+
+        .timeline-item.pending {
+            border-left-color: var(--status-progress);
+        }
+
+        .task-id {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 0.8rem;
+        }
+
+        .bg-complete {
+            background: var(--status-complete);
+            color: white;
+        }
+
+        .bg-pending {
+            background: var(--status-progress);
+            color: white;
+        }
+
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        @media (max-width: 1000px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading-screen">
+        <div style="text-align: center;">
+            <div
+                style="width: 50px; height: 50px; border: 4px solid #333; border-top-color: var(--brand-red); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;">
+            </div>
+            <p>Loading Employee Record...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header-bar">
+            <a href="<?!= scriptUrl ?>" target="_top" class="back-btn">← Back to Dashboard</a>
+            <p id="wfDisplay" style="font-family: monospace; color: var(--text-muted);">ID:
+                <?= requestId ?>
+            </p>
+        </div>
+
+        <div class="hero-banner">
+            <h1 id="heroName">Loading...</h1>
+            <p id="heroPos">Workflow Management System</p>
+            <div class="hero-meta">
+                <span class="meta-tag">Hire Date: <span id="metaHire">--</span></span>
+                <span class="meta-tag">Site: <span id="metaSite">--</span></span>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <!-- HR / ID Setup -->
+            <div class="info-card">
+                <h2 class="card-title">🆔 ID & HR Setup</h2>
+                <div class="field-grid" id="hrFields">
+                    <div class="field"><span class="label">Employee ID</span><span class="value"
+                            id="val-empId">Pending</span></div>
+                    <div class="field"><span class="label">DSS Username</span><span class="value"
+                            id="val-dssUser">Pending</span></div>
+                    <div class="field"><span class="label">Job Code</span><span class="value"
+                            id="val-jobCode">Pending</span></div>
+                    <div class="field"><span class="label">SiteDocs ID</span><span class="value"
+                            id="val-sdId">Pending</span></div>
+                </div>
+            </div>
+
+            <!-- IT Setup -->
+            <div class="info-card">
+                <h2 class="card-title">🖥️ IT & Systems Access</h2>
+                <div class="field-grid" id="itFields">
+                    <div class="field"><span class="label">Assigned Email</span><span class="value"
+                            id="val-email">Pending</span></div>
+                    <div class="field"><span class="label">Computer Type</span><span class="value"
+                            id="val-compType">Pending</span></div>
+                    <div class="field"><span class="label">Phone Number</span><span class="value"
+                            id="val-phone">Pending</span></div>
+                    <div class="field"><span class="label">BOSS Access</span><span class="value"
+                            id="val-boss">Pending</span></div>
+                </div>
+            </div>
+
+            <!-- Workflow Timeline -->
+            <div class="info-card workflow-card">
+                <h2 class="card-title">📊 Workflow Timeline</h2>
+                <div class="timeline" id="timeline">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Full Submission Data -->
+            <div class="info-card workflow-card">
+                <h2 class="card-title">📋 Full Submission Data Dump</h2>
+                <div id="full-data-container">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const requestId = '<?= requestId ?>';
+
+        function init() {
+            console.log('Fetching details for requestId:', requestId);
+            google.script.run
+                .withSuccessHandler(data => {
+                    document.getElementById('loading-screen').style.display = 'none';
+                    console.log('Details response received:', data);
+                    if (data && data.success) {
+                        populateUI(data);
+                    } else {
+                        const msg = data ? data.message : 'Server returned null (possible timeout or quota issue)';
+                        console.error('Record loading error:', msg);
+                        alert('Error: ' + msg);
+                    }
+                })
+                .withFailureHandler(err => {
+                    document.getElementById('loading-screen').style.display = 'none';
+                    console.error('Google Script system error:', err);
+                    alert('System Error: ' + err.message);
+                })
+                .getDetailedEmployeeData(requestId);
+        }
+
+        function populateUI(data) {
+            const init = data.initial;
+            const hr = data.idSetup;
+            const it = data.itSetup;
+            const specs = data.specialists;
+
+            // Hero
+            document.getElementById('heroName').innerText = init['First Name'] + ' ' + init['Last Name'];
+            document.getElementById('heroPos').innerText = init['Position/JR Title'];
+            document.getElementById('metaHire').innerText = formatDate(init['Hire Date']);
+            document.getElementById('metaSite').innerText = init['Site Name'];
+
+            // HR Fields
+            setVal('val-empId', hr['Internal Employee ID']);
+            setVal('val-dssUser', hr['DSS Username']);
+            setVal('val-jobCode', hr['SiteDocs Job Code']);
+            setVal('val-sdId', hr['SiteDocs Worker ID']);
+
+            // IT Fields
+            setVal('val-email', it['Assigned Email']);
+            setVal('val-compType', it['Computer Type']);
+            setVal('val-phone', it['Phone Number']);
+            setVal('val-boss', it['BOSS Access']);
+
+            // Timeline
+            const timeline = document.getElementById('timeline');
+
+            // Stage 1: Initial Request (Always done)
+            addTimelineItem('Initial Request Submitted', 'HR Gatekeeper', 'Complete', init['Submission Timestamp']);
+
+            // Stage 2: HR / ID Setup
+            const hrStatus = hr['Submission Timestamp'] ? 'Complete' : 'Pending';
+            addTimelineItem('ID & Payroll Setup', 'HR Team', hrStatus, hr['Submission Timestamp']);
+
+            // Stage 3: IT Setup
+            const itStatus = it['Submission Timestamp'] ? 'Complete' : 'Pending';
+            addTimelineItem('IT Equipment & Access', 'IT Team', itStatus, it['Submission Timestamp']);
+
+            // Stage 4+: Specialists
+            specs.forEach(s => {
+                addTimelineItem(s['Department'] + ' Setup', 'Specialist', 'Complete', s['Submission Timestamp']);
+            });
+
+            // Full Data Dump
+            renderFullData(hr, it, specs);
+        }
+
+        function renderFullData(hr, it, specs) {
+            const container = document.getElementById('full-data-container');
+            container.innerHTML = '';
+
+            const sections = [
+                { title: 'HR ID Setup Results', data: hr },
+                { title: 'IT Setup Results', data: it }
+            ];
+
+            specs.forEach((s, i) => {
+                sections.push({ title: s['Department'] + ' Specialist Submission', data: s });
+            });
+
+            sections.forEach(section => {
+                if (!section.data || Object.keys(section.data).length === 0) return;
+
+                const sectionDiv = document.createElement('div');
+                sectionDiv.style.marginBottom = '25px';
+                sectionDiv.innerHTML = '<h3 style="color: var(--brand-red); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 5px;">' + section.title + '</h3>';
+
+                const grid = document.createElement('div');
+                grid.className = 'field-grid';
+                grid.style.marginBottom = '20px';
+
+                // Keys to skip (already in UI or technical)
+                const skip = ['Request ID', 'Submission Timestamp', 'Department', 'Status'];
+
+                Object.entries(section.data).forEach(([key, value]) => {
+                    if (skip.includes(key)) return;
+                    if (value === 'N/A' || value === '' || value === null) return;
+
+                    const field = document.createElement('div');
+                    field.className = 'field';
+                    field.innerHTML = '<span class="label">' + key + '</span><span class="value">' + value + '</span>';
+                    grid.appendChild(field);
+                });
+
+                if (grid.children.length > 0) {
+                    sectionDiv.appendChild(grid);
+                    container.appendChild(sectionDiv);
+                }
+            });
+
+            if (container.children.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); font-style: italic;">No secondary data sets available yet.</p>';
+            }
+        }
+
+        function addTimelineItem(title, owner, status, time) {
+            const timeline = document.getElementById('timeline');
+            const item = document.createElement('div');
+            const isDone = status === 'Complete';
+            item.className = 'timeline-item ' + (isDone ? 'complete' : 'pending');
+
+            item.innerHTML = '<div>' +
+                '<div class="task-name">' + title + '</div>' +
+                '<div style="font-size: 0.8rem; color: var(--text-muted);">' + owner + ' | ' + (time ? formatDate(time) : 'Waiting...') + '</div>' +
+                '</div>' +
+                '<div class="status-badge ' + (isDone ? 'bg-complete' : 'bg-pending') + '">' + status.toUpperCase() + '</div>';
+            timeline.appendChild(item);
+        }
+
+        function setVal(id, val) {
+            if (val && val !== 'N/A') {
+                document.getElementById(id).innerText = val;
+                document.getElementById(id).style.color = 'white';
+            }
+        }
+
+        function formatDate(date) {
+            if (!date) return '';
+            const d = new Date(date);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>

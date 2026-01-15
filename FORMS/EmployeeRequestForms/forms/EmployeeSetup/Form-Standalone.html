@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Setup - Standalone Demo</title>
+  <style>
+  /* Dark Mode Theme - Matching InitialRequest */
+  :root {
+    --bg-color: #000000;
+    --card-bg: #1a1a1a;
+    --text-main: #ffffff;
+    --text-muted: #b0b0b0;
+    --brand-red: #EB1C2D;
+    --brand-red-hover: #c41522;
+    --input-bg: #2a2a2a;
+    --input-border: #444;
+    --border-color: #333;
+    --success-green: #0f9d58;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 25px;
+    border-bottom: 2px solid var(--brand-red);
+  }
+
+  .logo {
+    max-height: 70px;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    color: var(--text-main);
+    font-size: 2.2em;
+    margin: 0 0 10px 0;
+    font-weight: 700;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 1em;
+    font-weight: 400;
+    margin: 0;
+  }
+
+  h2 {
+    color: var(--text-main);
+    font-size: 1.4em;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    margin-top: 30px;
+  }
+
+  /* Context Card Styling */
+  .context-card {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    border-left: 4px solid var(--brand-red);
+  }
+
+  .context-card h2 {
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    margin-top: 0;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .info-item .label {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .info-item .value {
+    font-size: 1.05em;
+    font-weight: 500;
+    color: var(--text-main);
+  }
+
+  /* Form Sections */
+  .form-section {
+    margin-bottom: 35px;
+    padding: 25px;
+    background: var(--input-bg);
+    border-radius: 8px;
+    border-left: 4px solid var(--brand-red);
+    border: 1px solid var(--border-color);
+  }
+
+  .form-section.highlight {
+    background: rgba(235, 28, 45, 0.1);
+    border-left-color: var(--brand-red);
+    border: 1px solid var(--brand-red);
+  }
+
+  .section-note {
+    background: rgba(235, 28, 45, 0.15);
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    font-size: 0.95em;
+    border-left: 3px solid var(--brand-red);
+    color: var(--text-muted);
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-muted);
+    font-size: 0.95em;
+  }
+
+  .required {
+    color: var(--brand-red);
+    font-weight: bold;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    font-size: 1em;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    background: var(--input-bg);
+    color: var(--text-main);
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: 2px solid var(--brand-red);
+    border-color: var(--brand-red);
+  }
+
+  select option {
+    background: var(--input-bg);
+    color: var(--text-main);
+  }
+
+  small {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    font-style: italic;
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 0;
+    margin-top: 10px;
+    border: 2px solid var(--input-border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--input-bg);
+  }
+
+  .radio-group label {
+    flex: 1;
+    position: relative;
+    margin: 0;
+  }
+
+  .radio-group label:not(:last-child) {
+    border-right: 1px solid var(--input-border);
+  }
+
+  .radio-group input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+  }
+
+  .radio-group span {
+    display: block;
+    padding: 12px 20px;
+    background: transparent;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+    color: var(--text-main);
+  }
+
+  .radio-group span:hover {
+    background: var(--input-border);
+  }
+
+  .radio-group input[type="radio"]:checked + span {
+    background: var(--brand-red);
+    color: white;
+  }
+
+  .btn-submit {
+    background-color: var(--brand-red);
+    color: white;
+    padding: 16px 40px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.15em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .btn-submit:hover {
+    background-color: var(--brand-red-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(235, 28, 45, 0.3);
+  }
+
+  .btn-submit:active {
+    transform: translateY(0);
+  }
+
+  #status {
+    margin-top: 25px;
+  }
+
+  .success {
+    background: rgba(15, 157, 88, 0.2);
+    color: var(--success-green);
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid var(--success-green);
+    font-weight: 500;
+  }
+
+  .error {
+    background: rgba(235, 28, 45, 0.2);
+    color: #ff6b6b;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid var(--brand-red);
+    font-weight: 500;
+  }
+
+  .status-info {
+    background: rgba(66, 133, 244, 0.2);
+    color: #64b5f6;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #4285f4;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  @media (max-width: 768px) {
+    .container {
+      padding: 25px;
+    }
+
+    h1 {
+      font-size: 1.6em;
+    }
+
+    .form-row-2 {
+      grid-template-columns: 1fr;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .radio-group {
+      flex-direction: column;
+      gap: 10px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="../../styles/team-group-logo-01.png" alt="Logo" class="logo">
+      <h1>Employee Setup</h1>
+      <p class="subtitle">Initial Employee Setup - Form 2</p>
+    </div>
+
+    <!-- Employee Context from InitialRequest -->
+    <div class="context-card">
+      <h2>New Hire Information</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">Workflow ID:</span>
+          <span class="value">[Workflow ID from Form 1]</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Employee Name:</span>
+          <span class="value">[Employee Name from Form 1]</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Hire Date:</span>
+          <span class="value">[Hire Date from Form 1]</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Position:</span>
+          <span class="value">[Position from Form 1]</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Site:</span>
+          <span class="value">[Site Name from Form 1]</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Manager:</span>
+          <span class="value">[Manager Info from Form 1]</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Employment Type:</span>
+          <span class="value">[Employment Type from Form 1]</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Email Requested:</span>
+          <span class="value">[Email from Form 1]</span>
+        </div>
+      </div>
+    </div>
+
+    <form id="taskForm">
+      <input type="hidden" name="workflowId" value="">
+      <input type="hidden" name="Employee_Name" value="">
+
+      <!-- Internal Employee ID Section -->
+      <div class="form-section">
+        <h2>Internal Employee ID</h2>
+        <div class="form-group">
+          <label for="employeeId">Internal Employee ID: <span class="required">*</span></label>
+          <input type="text" id="employeeId" name="Internal_Employee_ID" required>
+          <small>Auto-generated. Modify if needed or use existing ID for rehires.</small>
+        </div>
+      </div>
+
+      <!-- SiteDocs Section - All Employees -->
+      <div class="form-section">
+        <h2>SiteDocs Setup</h2>
+        <p class="section-note">All employees receive SiteDocs worker access</p>
+
+        <div class="form-group">
+          <label for="siteDocsWorkerId">SiteDocs Worker ID: <span class="required">*</span></label>
+          <input type="text" id="siteDocsWorkerId" name="SiteDocs_Worker_ID" required>
+          <small>Worker ID assigned in SiteDocs system</small>
+        </div>
+
+        <div class="form-group">
+          <label for="siteDocsJobCode">SiteDocs Job Code: <span class="required">*</span></label>
+          <select id="siteDocsJobCode" name="SiteDocs_Job_Code" required>
+            <option value="">-- Select Job Code --</option>
+            <option value="Hourly 1">Hourly 1</option>
+            <option value="Hourly 2">Hourly 2</option>
+            <option value="Salary 1">Salary 1</option>
+            <option value="Salary 2">Salary 2</option>
+            <option value="Supervisor">Supervisor</option>
+            <option value="Manager">Manager</option>
+          </select>
+          <small>Job classification for SiteDocs permissions</small>
+        </div>
+      </div>
+
+      <!-- SiteDocs Admin/Login Access - Conditional -->
+      <div class="form-section highlight">
+        <h2>SiteDocs Admin/Login Access</h2>
+        <p class="section-note"><strong>Note:</strong> SiteDocs admin/login access was requested in the initial form.</p>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="siteDocsUsername">SiteDocs Training Username: <span class="required">*</span></label>
+            <input type="text" id="siteDocsUsername" name="SiteDocs_Training_Username" required>
+          </div>
+
+          <div class="form-group">
+            <label for="siteDocsPassword">SiteDocs Training Password: <span class="required">*</span></label>
+            <input type="text" id="siteDocsPassword" name="SiteDocs_Training_Password" required>
+            <small>Temporary password for initial login</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- DSS Training Access Section -->
+      <div class="form-section">
+        <h2>DSS Training Access</h2>
+        <p class="section-note">All employees receive DSS training platform access</p>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="dssUsername">DSS Username: <span class="required">*</span></label>
+            <input type="text" id="dssUsername" name="DSS_Username" required>
+            <small>Auto-generated from name. Modify if needed.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="dssPassword">DSS Password: <span class="required">*</span></label>
+            <input type="text" id="dssPassword" name="DSS_Password" required>
+            <small>Temporary password for initial login</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOSS System Access Section -->
+      <div class="form-section">
+        <h2>BOSS System Access</h2>
+        <div class="form-group">
+          <label>Employee Assigned to WIS Module: <span class="required">*</span></label>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="WIS_Module_Assigned" value="Yes" required>
+              <span>Yes</span>
+            </label>
+            <label>
+              <input type="radio" name="WIS_Module_Assigned" value="No" required>
+              <span>No</span>
+            </label>
+          </div>
+          <small>Workplace Inspection System module access</small>
+        </div>
+      </div>
+
+      <!-- Notes Section -->
+      <div class="form-section">
+        <h2>Setup Notes</h2>
+        <div class="form-group">
+          <label for="setupNotes">Additional Comments / Notes:</label>
+          <textarea id="setupNotes" name="Setup_Notes" rows="4"
+                    placeholder="Any additional notes about the employee setup process"></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">Complete Employee Setup</button>
+      <div id="status"></div>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = Object.fromEntries(new FormData(e.target));
+      document.getElementById('status').innerHTML = '<div class="status-info">Submitting...</div>';
+
+      // Simulate submission
+      setTimeout(() => {
+        document.getElementById('status').innerHTML =
+          '<div class="success">Employee setup completed successfully!' +
+          '<p style="margin-top: 10px;">Task ID: <strong>TASK-EMPSETUP-20251216-XY7Z</strong></p>' +
+          '<p style="margin-top: 10px;">You may now close this window.</p></div>';
+        document.getElementById('taskForm').style.display = 'none';
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

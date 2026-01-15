@@ -10,10 +10,15 @@ const CONFIG = {
   WORKFLOW_TASKS_SHEET: 'Workflow_Tasks',
   FORM_NAME: 'IT Setup',
   TASK_TYPE: 'IT',
-  DESCRIPTION: 'IT provisioning: email, computer, phone, software',
+  DESCRIPTION: 'IT provisioning: email, computer, phone, system access',
   GROUP_EMAIL: 'grp.forms.it@team-group.com',
   FORM_FIELDS: [
-    'Task_ID', 'Workflow_ID', 'Employee_Name', 'Email_Created', 'Email_Address', 'Computer_Assigned', 'Computer_Serial', 'Phone_Assigned', 'Phone_Number', 'Software_Installed', 'Network_Access_Granted', 'IT_Notes', 'Completed_By', 'Completion_Date'
+    'Task_ID', 'Workflow_ID', 'Employee_Name',
+    'Email_Created', 'Email_Username', 'Email_Domain', 'Email_Temp_Password',
+    'Computer_Assigned', 'Computer_Make', 'Computer_Model', 'Computer_Type',
+    'Phone_Assigned', 'Phone_Carrier', 'Phone_Model', 'Phone_Number', 'Phone_VM_Password',
+    'BOSS_Access', 'Incidents_Access', 'CAA_Access', 'Delivery_App_Access', 'Net_Promoter_Score_Access',
+    'IT_Notes', 'Completed_By', 'Completion_Date'
   ],
   TASK_ID_PREFIX: 'TASK-IT',
   COMPANY_NAME: 'Team Group Companies',

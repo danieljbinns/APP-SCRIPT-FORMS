@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Employee Setup - Placeholder</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 50px auto; padding: 20px; }
+    h1 { color: #EB1C2D; }
+    .info { background: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    .highlight { background: #fff3cd; padding: 10px; border-left: 4px solid #ffc107; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h1>Employee Setup Form (Form 2)</h1>
+  <div class="info">
+    <h2>Form Purpose:</h2>
+    <p>This is the first form after InitialRequest. It handles core employee identity and access setup.</p>
+
+    <h3>Fields Include:</h3>
+    <ul>
+      <li><strong>Internal Employee ID</strong> - Auto-generated 6-digit number, editable</li>
+      <li><strong>SiteDocs Setup (All Employees):</strong>
+        <ul>
+          <li>Worker ID</li>
+          <li>Job Code</li>
+        </ul>
+      </li>
+      <li><strong>SiteDocs Admin/Login Access (Conditional - if checkbox selected):</strong>
+        <ul>
+          <li>Training Username</li>
+          <li>Training Password</li>
+        </ul>
+      </li>
+      <li><strong>DSS Training Access (All Employees):</strong>
+        <ul>
+          <li>Username (auto-generated: FirstInitialLastName-SiteCode-YYYYMMDD)</li>
+          <li>Password</li>
+        </ul>
+      </li>
+      <li><strong>BOSS System Access:</strong>
+        <ul>
+          <li>WIS Module Assignment</li>
+        </ul>
+      </li>
+      <li><strong>Setup Notes</strong></li>
+    </ul>
+
+    <div class="highlight">
+      <h3>Data Passed from InitialRequest (Form 1):</h3>
+      <ul>
+        <li>Employee Name, Hire Date, Position</li>
+        <li>Site Name, Site Code, Manager Info</li>
+        <li>Employment Type</li>
+        <li>SiteDocs Access flag (determines if admin fields show)</li>
+        <li>Email Requested</li>
+      </ul>
+    </div>
+
+    <h3>Auto-Generated/Pre-filled Fields:</h3>
+    <ul>
+      <li>Internal Employee ID (6-digit number)</li>
+      <li>DSS Username (FirstInitialLastName-SiteCode-YYYYMMDD)</li>
+    </ul>
+
+    <h3>Workflow Position:</h3>
+    <p><strong>Sequential:</strong> Always triggers immediately after InitialRequest (Form 1)</p>
+    <p><strong>Next:</strong> After completion, triggers parallel forms (IT, Jonas, DSS Learning, etc.)</p>
+
+    <h3>Email Group:</h3>
+    <p><code>grp.forms.employeesetup@team-group.com</code></p>
+  </div>
+</body>
+</html>

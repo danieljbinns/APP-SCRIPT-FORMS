@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Employee Request</title>
+  <style>
+    /* Dark Mode Theme */
+    :root {
+      --bg-color: #000000;
+      --card-bg: #1a1a1a;
+      --text-main: #ffffff;
+      --text-muted: #b0b0b0;
+      --brand-red: #EB1C2D;
+      --brand-red-hover: #c41522;
+      --input-bg: #2a2a2a;
+      --input-border: #444;
+      --border-color: #333;
+      --success-green: #0f9d58;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      max-height: 70px;
+    }
+
+    #form-container {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    h1 {
+      color: var(--text-main);
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      color: var(--text-main);
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+      margin-top: 30px;
+      margin-bottom: 20px;
+    }
+
+    /* Gatekeeper Section */
+    #gatekeeperSection {
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+
+    #gatekeeperSection h1 {
+      font-size: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .requirements-toggle {
+      margin: 2rem 0;
+    }
+
+    .requirements-toggle summary {
+      cursor: pointer;
+      color: var(--brand-red);
+      font-weight: bold;
+      padding: 1rem;
+      background: var(--input-bg);
+      border-radius: 6px;
+      list-style: none;
+      user-select: none;
+    }
+
+    .requirements-toggle summary:hover {
+      background: var(--input-border);
+    }
+
+    .requirements-toggle summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .requirements-toggle summary::before {
+      content: "▶ ";
+      display: inline-block;
+      transition: transform 0.2s;
+    }
+
+    .requirements-toggle[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    .requirements-content {
+      padding: 1.5rem;
+      background: var(--input-bg);
+      border-radius: 0 0 6px 6px;
+      text-align: left;
+      color: var(--text-muted);
+    }
+
+    .requirements-content ul {
+      margin-left: 1.5rem;
+      line-height: 1.8;
+    }
+
+    .confirm-button {
+      padding: 1.5rem 3rem;
+      font-size: 1.2rem;
+      background-color: var(--brand-red);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: bold;
+      margin-top: 2rem;
+      min-width: 300px;
+    }
+
+    .confirm-button:hover {
+      background-color: var(--brand-red-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(235, 28, 45, 0.3);
+    }
+
+    /* Main Form (hidden initially) */
+    #mainForm {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    #mainForm.show {
+      display: block;
+      opacity: 1;
+    }
+
+    /* Radio Button Groups (styled as connected button group) */
+    .radio-group {
+      display: flex;
+      gap: 0;
+      margin-top: 10px;
+      border: 2px solid var(--input-border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--input-bg);
+    }
+
+    .radio-group label {
+      flex: 1;
+      position: relative;
+      margin: 0;
+    }
+
+    .radio-group label:not(:last-child) {
+      border-right: 1px solid var(--input-border);
+    }
+
+    .radio-group input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+    }
+
+    .radio-button {
+      display: block;
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .radio-button:hover {
+      background: var(--input-border);
+    }
+
+    .radio-group input[type="radio"]:checked + .radio-button {
+      background: var(--brand-red);
+      color: white;
+    }
+
+    /* Standard Form Fields */
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+
+    .required {
+      color: var(--brand-red);
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="email"],
+    input[type="tel"],
+    select {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      background-color: var(--input-bg);
+      color: var(--text-main);
+      box-sizing: border-box;
+    }
+
+    input:focus,
+    select:focus {
+      outline: 2px solid var(--brand-red);
+      border-color: var(--brand-red);
+    }
+
+    .question-wrapper {
+      margin-bottom: 25px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: 2fr 1fr 2fr;
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .form-row-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-field label {
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .form-row,
+      .form-row-2,
+      .form-row-3,
+      .form-row-4,
+      .radio-group {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Checkbox Groups */
+    .checkbox-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .checkbox-label:hover {
+      border-color: var(--brand-red);
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      accent-color: var(--brand-red);
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+    }
+
+    /* Make checked checkboxes display in red */
+    .checkbox-label:has(input[type="checkbox"]:checked) {
+      background: rgba(235, 28, 45, 0.1);
+      border-color: var(--brand-red);
+    }
+
+    .checkbox-label:has(input[type="checkbox"]:checked) span {
+      color: var(--brand-red);
+      font-weight: 600;
+    }
+
+    button[type="submit"] {
+      padding: 1rem;
+      font-size: 1.1rem;
+      background-color: var(--brand-red);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    button[type="submit"]:hover {
+      background-color: var(--brand-red-hover);
+    }
+
+    button[type="submit"]:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+
+    #submit-container {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border-color);
+      margin: 20px 0;
+    }
+
+    .form-section {
+      margin-bottom: 30px;
+    }
+
+    #equipmentSection {
+      display: none;
+    }
+
+    /* Loading indicator */
+    .loading-text {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="../../styles/team-group-logo-01.png" alt="Team Group Companies" class="logo">
+    </div>
+
+    <!-- Form Container -->
+    <div id="form-container">
+
+      <!-- Gatekeeper Section (shown first) -->
+      <div id="gatekeeperSection">
+        <h1>New Employee Request</h1>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">
+          Before proceeding, please confirm all recruiting requirements have been met.
+        </p>
+
+        <details class="requirements-toggle">
+          <summary>What are the recruiting requirements?</summary>
+          <div class="requirements-content">
+            <p><strong>To be defined:</strong></p>
+            <ul>
+              <li>Requirement 1</li>
+              <li>Requirement 2</li>
+              <li>Requirement 3</li>
+            </ul>
+            <p style="margin-top: 1rem;">
+              <em>Contact HR for questions about these requirements.</em>
+            </p>
+          </div>
+        </details>
+
+        <button type="button" class="confirm-button" onclick="confirmGatekeeper()">
+          ✓ Yes, all requirements are met
+        </button>
+      </div>
+
+      <!-- Main Form (hidden initially, loaded in background) -->
+      <form id="mainForm">
+        <h1>New Employee Request</h1>
+        <p style="text-align: center; color: var(--text-muted); margin-bottom: 20px;">
+          Complete all required fields to submit a new employee request.
+        </p>
+
+        <hr>
+
+        <!-- Requester Information -->
+        <div class="form-section">
+          <h2>Requester Information</h2>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label>Date Requested <span class="required">*</span></label>
+              <input type="date" name="dateRequested" required readonly
+                     style="background-color: var(--input-border); cursor: not-allowed;">
+              <!-- Always set to today, readonly. Future: Add scheduled send feature -->
+            </div>
+
+            <div class="form-field">
+              <label>Requester Email <span class="required">*</span></label>
+              <input type="email" name="requesterEmail" id="requesterEmail" required
+                     placeholder="Type to search Google Directory..."
+                     autocomplete="off">
+              <!-- TODO BACKEND: Implement Google Directory autocomplete lookup
+                   - Type-ahead search as user types
+                   - Search Google Workspace directory
+                   - Auto-populate requesterName from selected result
+                   - If not found: allow any email value to be entered -->
+            </div>
+
+            <div class="form-field">
+              <label>Requester Name <span class="required">*</span></label>
+              <input type="text" name="requesterName" id="requesterName" required
+                     placeholder="Auto-filled from lookup or enter manually">
+              <!-- Auto-populated from directory lookup
+                   If email not found: user must enter name manually
+                   Field becomes editable when email is not in directory -->
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Employee Information -->
+        <div class="form-section">
+          <h2>Employee Information</h2>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label>Hire Date <span class="required">*</span></label>
+              <input type="date" name="hireDate" id="hireDate" required onchange="checkHireDate()">
+              <div id="hireDateWarning" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background: #FEF3C7; border-left: 4px solid #F59E0B; color: #92400E; border-radius: 4px; font-size: 0.9rem;">
+                <strong>⚠️ Notice:</strong> Processing typically requires 3 business days. If this request is time-sensitive, please contact IT directly to expedite.
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label>New Hire or Rehire <span class="required">*</span></label>
+              <div class="radio-group">
+                <label>
+                  <input type="radio" name="hireType" value="New Hire" required>
+                  <span class="radio-button">New Hire</span>
+                </label>
+                <label>
+                  <input type="radio" name="hireType" value="Rehire">
+                  <span class="radio-button">Rehire</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label>Employee Type <span class="required">*</span></label>
+              <div class="radio-group">
+                <label>
+                  <input type="radio" name="employeeType" value="Direct Hire" required>
+                  <span class="radio-button">Direct Hire</span>
+                </label>
+                <label>
+                  <input type="radio" name="employeeType" value="Agency">
+                  <span class="radio-button">Agency</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label>Hourly or Salary <span class="required">*</span></label>
+              <div class="radio-group">
+                <label>
+                  <input type="radio" name="employmentType" value="Hourly" required onchange="handleEmploymentTypeChange()">
+                  <span class="radio-button">Hourly</span>
+                </label>
+                <label>
+                  <input type="radio" name="employmentType" value="Salary" onchange="handleEmploymentTypeChange()">
+                  <span class="radio-button">Salary</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row-4">
+            <div class="form-field">
+              <label>First Name <span class="required">*</span></label>
+              <input type="text" name="firstName" required>
+            </div>
+
+            <div class="form-field">
+              <label>Middle Name</label>
+              <input type="text" name="middleName">
+            </div>
+
+            <div class="form-field">
+              <label>Last Name <span class="required">*</span></label>
+              <input type="text" name="lastName" required>
+            </div>
+
+            <div class="form-field">
+              <label>Preferred Name</label>
+              <input type="text" name="preferredName">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label>Position / Job Title <span class="required">*</span></label>
+              <input type="text" name="position" required>
+            </div>
+
+            <div class="form-field">
+              <label>Site Name <span class="required">*</span></label>
+              <select name="siteName" id="siteName" required onchange="autoFillJobNumber()">
+                <option value="">-- Please Select --</option>
+                <option value="GM CAMI Assembly" data-job-number="CAMI-001">GM CAMI Assembly</option>
+                <option value="GM Canada PDC's" data-job-number="PDC-CAN">GM Canada PDC's</option>
+                <option value="GM Edmonton PDC" data-job-number="PDC-EDM">GM Edmonton PDC</option>
+                <option value="GM Lansing Delta Township Assembly" data-job-number="LDT-001">GM Lansing Delta Township Assembly</option>
+                <option value="GM Lansing Grand River Assembly" data-job-number="LGR-001">GM Lansing Grand River Assembly</option>
+                <option value="GM Montréal PDC" data-job-number="PDC-MTL">GM Montréal PDC</option>
+                <option value="GM Oshawa Assembly" data-job-number="OSH-001">GM Oshawa Assembly</option>
+                <option value="GM Oshawa TR220 HKB" data-job-number="TR220-HKB">GM Oshawa TR220 HKB</option>
+                <option value="GM Oshawa TR230 PPS" data-job-number="TR230-PPS">GM Oshawa TR230 PPS</option>
+                <option value="GM OShawa TR240 C-MT" data-job-number="TR240-CMT">GM OShawa TR240 C-MT</option>
+                <option value="GM Vancouver PDC" data-job-number="PDC-VAN">GM Vancouver PDC</option>
+                <option value="GM Woodstock PDC" data-job-number="PDC-WDS">GM Woodstock PDC</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label>Job Site Number <span class="required">*</span></label>
+              <input type="text" name="jobSiteNumber" id="jobSiteNumber" required readonly style="background-color: var(--input-border); cursor: not-allowed;">
+              <!-- Auto-filled based on Site Name selection -->
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-field">
+              <label>Reporting Manager Email</label>
+              <input type="email" name="managerEmail" id="managerEmail"
+                     placeholder="Type to search Google Directory..."
+                     autocomplete="off">
+              <!-- TODO BACKEND: Implement Google Directory autocomplete lookup -->
+            </div>
+
+            <div class="form-field">
+              <label>Reporting Manager Name</label>
+              <input type="text" name="managerName" id="managerName"
+                     placeholder="Auto-filled from lookup or enter manually">
+              <!-- Auto-populated from directory lookup -->
+            </div>
+          </div>
+
+          <div class="question-wrapper">
+            <label>System Access Needed? <span class="required">*</span></label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="systemAccess" id="systemAccessYes" value="Yes" required onchange="toggleSystemAccess()">
+                <span class="radio-button">Yes</span>
+              </label>
+              <label>
+                <input type="radio" name="systemAccess" id="systemAccessNo" value="No" onchange="toggleSystemAccess()">
+                <span class="radio-button">No</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- System Access Section (conditional) -->
+        <div class="form-section" id="systemAccessSection" style="display: none;">
+          <h2>System Access</h2>
+
+          <!-- Systems/Apps Checkboxes (Alphabetical) -->
+          <h3 style="margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.1rem;">Systems/Apps</h3>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="systems" value="ADP Supervisor Access" id="adpSupervisorAccess" onchange="toggleSections()">
+              <span>ADP Supervisor Access</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="systems" value="BOSS" onchange="toggleSections()">
+              <span>BOSS</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="systems" value="CAA" onchange="toggleSections()">
+              <span>CAA</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="systems" value="Delivery" onchange="toggleSections()">
+              <span>Delivery</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="systems" value="Fleetio" onchange="toggleSections()">
+              <span>Fleetio</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="systems" value="Google Account" onchange="toggleSections()">
+              <span>Google Account</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="systems" value="Incidents" onchange="toggleSections()">
+              <span>Incidents</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="systems" value="Jonas Purchasing" onchange="toggleSections()">
+              <span>Jonas Purchasing</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="systems" value="Net Promoter Score" onchange="toggleSections()">
+              <span>Net Promoter Score</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="systems" value="SiteDocs" onchange="toggleSections()">
+              <span>SiteDocs</span>
+            </label>
+          </div>
+
+          <!-- Equipment Checkboxes (Alphabetical) -->
+          <h3 style="margin-top: 2rem; margin-bottom: 1rem; font-size: 1.1rem;">Equipment</h3>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="equipment" value="Business Cards" onchange="toggleEquipmentDetails()">
+              <span>Digital Business Cards</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="equipment" value="Computer" onchange="toggleEquipmentDetails()">
+              <span>Computer</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="equipment" value="Credit Card" onchange="toggleEquipmentDetails()">
+              <span>Credit Card</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="equipment" value="Mobile Phone" onchange="toggleEquipmentDetails()">
+              <span>Mobile Phone</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="equipment" value="Vehicle" onchange="toggleEquipmentDetails()">
+              <span>Vehicle</span>
+            </label>
+          </div>
+
+          <hr style="margin-top: 2rem;">
+
+          <!-- Google Account Details (conditional on Google Account checkbox) -->
+          <div id="googleAccountDetailsSection" style="display: none;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Google Account Details</h3>
+
+            <div class="form-row-2">
+              <div class="form-field">
+                <label>Requested Email Address</label>
+                <input type="text" name="googleEmailLocal" id="googleEmailLocal" placeholder="firstname.lastname" style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Default format: firstname.lastname (domain selected separately)</small>
+              </div>
+
+              <div class="form-field">
+                <label>Email Domain</label>
+                <select name="googleDomain" id="googleDomain" style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                  <option value="">-- Select Domain --</option>
+                  <!-- TODO BACKEND: Default to manager's domain -->
+                  <option value="team-group.com">team-group.com</option>
+                  <option value="robinsonsolutions.com">robinsonsolutions.com</option>
+                  <option value="industrialappliedtech.com">industrialappliedtech.com</option>
+                  <option value="stgroup.ca">stgroup.ca</option>
+                </select>
+                <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Will auto-select based on manager's domain</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Computer Details (conditional on Computer checkbox) -->
+          <div id="computerDetailsSection" style="display: none;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Computer Details</h3>
+
+            <div class="form-field">
+              <label>Computer Type Requested</label>
+              <div class="radio-group">
+                <label>
+                  <input type="radio" name="computerType" value="Chromebook" checked>
+                  <span class="radio-button">Chromebook</span>
+                </label>
+                <label>
+                  <input type="radio" name="computerType" value="Windows">
+                  <span class="radio-button">Windows</span>
+                </label>
+                <label>
+                  <input type="radio" name="computerType" value="Mac">
+                  <span class="radio-button">Mac</span>
+                </label>
+              </div>
+              <div style="margin-top: 0.75rem; padding: 0.75rem; background: #DBEAFE; border-left: 4px solid #3B82F6; color: #1E40AF; border-radius: 4px; font-size: 0.9rem;">
+                <strong>Note:</strong> Chromebook is the default option. Windows or Mac computers require IT Director approval.
+              </div>
+            </div>
+          </div>
+
+          <!-- Credit Card Details (conditional on Credit Card checkbox) -->
+          <div id="creditCardDetailsSection" style="display: none;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Credit Card Details</h3>
+
+            <div class="form-row-2">
+              <div class="form-field">
+                <label>USA Credit Card</label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0;">
+                    <input type="checkbox" name="creditCardUSA" value="Yes">
+                    <span>Request USA Credit Card</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>USA Credit Card Limit</label>
+                <input type="text" name="creditCardLimitUSA" placeholder="e.g., $5,000" style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-field">
+                <label>Canada Credit Card</label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0;">
+                    <input type="checkbox" name="creditCardCanada" value="Yes">
+                    <span>Request Canada Credit Card</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>Canada Credit Card Limit</label>
+                <input type="text" name="creditCardLimitCanada" placeholder="e.g., $5,000 CAD" style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+              </div>
+            </div>
+          </div>
+
+          <!-- BOSS Details (conditional on BOSS checkbox) -->
+          <div id="bossDetailsSection" style="display: none;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">BOSS System Details</h3>
+
+            <div class="form-field">
+              <label>Job Site(s) To Be Assigned</label>
+              <select name="bossJobSites" multiple size="5" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                <option value="">-- Select Job Site(s) (Hold Ctrl/Cmd for multiple) --</option>
+                <!-- TODO BACKEND: Populate from job sites data lookup -->
+              </select>
+              <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sites</small>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label>Cost Sheet Module Access?</label>
+                <div class="radio-group">
+                  <label>
+                    <input type="radio" name="bossCostSheet" value="Yes" onchange="toggleCostSheetJobs()">
+                    <span class="radio-button">Yes</span>
+                  </label>
+                  <label>
+                    <input type="radio" name="bossCostSheet" value="No" onchange="toggleCostSheetJobs()">
+                    <span class="radio-button">No</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div id="costSheetJobs" style="display: none;">
+              <div class="form-field">
+                <label>Job Number(s) for Cost Sheet</label>
+                <select name="costSheetJobNumbers" multiple size="4" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                  <option value="">-- Select Job Number(s) (Hold Ctrl/Cmd for multiple) --</option>
+                  <!-- TODO BACKEND: Populate from job numbers data lookup -->
+                </select>
+                <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Hold Ctrl (Windows) or Cmd (Mac) to select multiple job numbers</small>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label>Trip Reports Access?</label>
+                <div class="radio-group">
+                  <label>
+                    <input type="radio" name="bossTripReports" value="Yes">
+                    <span class="radio-button">Yes</span>
+                  </label>
+                  <label>
+                    <input type="radio" name="bossTripReports" value="No">
+                    <span class="radio-button">No</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>Corrective Counselling and Grievances Module Access?</label>
+                <div class="radio-group">
+                  <label>
+                    <input type="radio" name="bossGrievance" value="Yes">
+                    <span class="radio-button">Yes</span>
+                  </label>
+                  <label>
+                    <input type="radio" name="bossGrievance" value="No">
+                    <span class="radio-button">No</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Jonas Details (conditional on Jonas checkbox) -->
+          <div id="jonasDetailsSection" style="display: none;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Jonas Purchasing Details</h3>
+
+            <div class="form-field">
+              <label>Job Number(s) To Be Assigned</label>
+              <select name="jonasJobNumbers" multiple size="4" style="width: 100%; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                <option value="">-- Select Job Number(s) (Hold Ctrl/Cmd for multiple) --</option>
+                <!-- TODO BACKEND: Populate from same job numbers data lookup as BOSS cost sheet -->
+              </select>
+              <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Hold Ctrl (Windows) or Cmd (Mac) to select multiple job numbers</small>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label>Field Time/Field Project Access?</label>
+                <div class="radio-group">
+                  <label>
+                    <input type="radio" name="jonasFieldTime" value="Yes">
+                    <span class="radio-button">Yes</span>
+                  </label>
+                  <label>
+                    <input type="radio" name="jonasFieldTime" value="No">
+                    <span class="radio-button">No</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>EBI Access?</label>
+                <div class="radio-group">
+                  <label>
+                    <input type="radio" name="jonasEBI" value="Yes">
+                    <span class="radio-button">Yes</span>
+                  </label>
+                  <label>
+                    <input type="radio" name="jonasEBI" value="No">
+                    <span class="radio-button">No</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- JR Assignment -->
+          <div style="margin-top: 2rem;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">JR Assignment</h3>
+            <div class="form-field">
+              <label>JR Required?</label>
+              <div class="radio-group">
+                <label>
+                  <input type="radio" name="jrRequired" value="Yes" onchange="toggleJRPicker()">
+                  <span class="radio-button">Yes</span>
+                </label>
+                <label>
+                  <input type="radio" name="jrRequired" value="No" onchange="toggleJRPicker()">
+                  <span class="radio-button">No</span>
+                </label>
+              </div>
+            </div>
+
+            <div id="jrPicker" style="display: none; margin-top: 1rem;">
+              <div class="form-field">
+                <label>Select JR to Assign</label>
+                <select name="jrAssignment" style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                  <option value="">-- Select JR --</option>
+                  <!-- TODO BACKEND: Populate from JR lookup data -->
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 30-60-90 Day Plan -->
+          <div style="margin-top: 2rem;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">30-60-90 Day Plan</h3>
+            <div class="form-field">
+              <label>30-60-90 Day Plan Required?</label>
+              <div class="radio-group">
+                <label>
+                  <input type="radio" name="plan306090" value="Yes">
+                  <span class="radio-button">Yes</span>
+                </label>
+                <label>
+                  <input type="radio" name="plan306090" value="No">
+                  <span class="radio-button">No</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <!-- END Additional Access Section -->
+
+        <div id="submit-container">
+          <button type="submit" id="submitBtn">Submit Request</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <script>
+    // Pre-load form in background on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      // Form content is loaded, just hidden - ready immediately
+      console.log('Form loaded in background');
+
+      // Set today's date as default for Date Requested (pre-filled, ready to go)
+      document.querySelector('[name="dateRequested"]').valueAsDate = new Date();
+    });
+
+    // Confirm gatekeeper and show main form
+    function confirmGatekeeper() {
+      // No loading delay - form is already loaded in background
+      document.getElementById('gatekeeperSection').style.display = 'none';
+      const mainForm = document.getElementById('mainForm');
+      mainForm.classList.add('show');
+    }
+
+    // Toggle system access section
+    function toggleSystemAccess() {
+      const systemAccess = document.querySelector('[name="systemAccess"]:checked');
+      const systemAccessSection = document.getElementById('systemAccessSection');
+
+      if (systemAccess && systemAccess.value === 'Yes') {
+        systemAccessSection.style.display = 'block';
+      } else {
+        systemAccessSection.style.display = 'none';
+      }
+    }
+
+    // Handle employment type change - auto-enable System Access for salary employees
+    function handleEmploymentTypeChange() {
+      const employmentType = document.querySelector('[name="employmentType"]:checked');
+
+      if (employmentType && employmentType.value === 'Salary') {
+        // Auto-select System Access "Yes" for salary employees
+        const systemAccessYes = document.getElementById('systemAccessYes');
+        if (systemAccessYes) {
+          systemAccessYes.checked = true;
+          toggleSystemAccess(); // Show the section
+        }
+
+        // Auto-check ADP Supervisor Access for salary employees
+        const adpSupervisorAccess = document.getElementById('adpSupervisorAccess');
+        if (adpSupervisorAccess) {
+          adpSupervisorAccess.checked = true;
+        }
+      }
+    }
+
+    // Check hire date and show warning if less than 3 business days
+    function checkHireDate() {
+      const hireDateInput = document.getElementById('hireDate');
+      const warningDiv = document.getElementById('hireDateWarning');
+      const requestDateInput = document.querySelector('[name="dateRequested"]');
+
+      if (!hireDateInput.value || !requestDateInput.value) {
+        warningDiv.style.display = 'none';
+        return;
+      }
+
+      const hireDate = new Date(hireDateInput.value);
+      const requestDate = new Date(requestDateInput.value);
+
+      // Calculate business days between dates
+      let businessDays = 0;
+      let currentDate = new Date(requestDate);
+
+      while (currentDate < hireDate) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        const dayOfWeek = currentDate.getDay();
+        // Count if not Saturday (6) or Sunday (0)
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          businessDays++;
+        }
+      }
+
+      // Show warning if less than 3 business days
+      if (businessDays < 3) {
+        warningDiv.style.display = 'block';
+      } else {
+        warningDiv.style.display = 'none';
+      }
+    }
+
+    // Toggle detail sections based on system checkboxes
+    function toggleSections() {
+      // Check if BOSS is checked
+      const bossChecked = document.querySelector('[name="systems"][value="BOSS"]').checked;
+      const bossDetails = document.getElementById('bossDetailsSection');
+      bossDetails.style.display = bossChecked ? 'block' : 'none';
+
+      // Check if Jonas is checked
+      const jonasChecked = document.querySelector('[name="systems"][value="Jonas Purchasing"]').checked;
+      const jonasDetails = document.getElementById('jonasDetailsSection');
+      jonasDetails.style.display = jonasChecked ? 'block' : 'none';
+
+      // Check if Google Account is checked
+      const googleChecked = document.querySelector('[name="systems"][value="Google Account"]').checked;
+      const googleDetails = document.getElementById('googleAccountDetailsSection');
+      googleDetails.style.display = googleChecked ? 'block' : 'none';
+    }
+
+    // Toggle equipment detail sections based on checkboxes
+    function toggleEquipmentDetails() {
+      // Check if Computer is checked
+      const computerChecked = document.querySelector('[name="equipment"][value="Computer"]').checked;
+      const computerDetails = document.getElementById('computerDetailsSection');
+      computerDetails.style.display = computerChecked ? 'block' : 'none';
+
+      // Check if Credit Card is checked
+      const creditCardChecked = document.querySelector('[name="equipment"][value="Credit Card"]').checked;
+      const creditCardDetails = document.getElementById('creditCardDetailsSection');
+      creditCardDetails.style.display = creditCardChecked ? 'block' : 'none';
+    }
+
+    // Toggle Cost Sheet job numbers
+    function toggleCostSheetJobs() {
+      const costSheet = document.querySelector('[name="bossCostSheet"]:checked');
+      const costSheetJobs = document.getElementById('costSheetJobs');
+
+      if (costSheet && costSheet.value === 'Yes') {
+        costSheetJobs.style.display = 'block';
+      } else {
+        costSheetJobs.style.display = 'none';
+      }
+    }
+
+    // Toggle JR picker
+    function toggleJRPicker() {
+      const jr = document.querySelector('[name="jrRequired"]:checked');
+      const jrPicker = document.getElementById('jrPicker');
+
+      if (jr && jr.value === 'Yes') {
+        jrPicker.style.display = 'block';
+      } else {
+        jrPicker.style.display = 'none';
+      }
+    }
+
+    // Auto-fill job number based on site selection
+    function autoFillJobNumber() {
+      const siteSelect = document.getElementById('siteName');
+      const jobNumberInput = document.getElementById('jobSiteNumber');
+
+      const selectedOption = siteSelect.options[siteSelect.selectedIndex];
+      const jobNumber = selectedOption.getAttribute('data-job-number');
+
+      if (jobNumber) {
+        jobNumberInput.value = jobNumber;
+      } else {
+        jobNumberInput.value = '';
+      }
+    }
+
+    document.getElementById('mainForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const data = {
+        gatekeeper: 'Yes', // Always yes if they got here
+        requesterName: formData.get('requesterName'),
+        requesterEmail: formData.get('requesterEmail'),
+        dateRequested: formData.get('dateRequested'),
+        firstName: formData.get('firstName'),
+        middleName: formData.get('middleName'),
+        lastName: formData.get('lastName'),
+        preferredName: formData.get('preferredName'),
+        hireDate: formData.get('hireDate'),
+        hireType: formData.get('hireType'),
+        employeeType: formData.get('employeeType'),
+        employmentType: formData.get('employmentType'),
+        siteName: formData.get('siteName'),
+        jobSiteNumber: formData.get('jobSiteNumber'),
+        position: formData.get('position'),
+        managerName: formData.get('managerName'),
+        managerEmail: formData.get('managerEmail'),
+        additionalAccess: formData.get('additionalAccess'),
+        equipment: formData.getAll('equipment')
+      };
+
+      // Generate workflow ID
+      const now = new Date();
+      const dateStr = now.getFullYear() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0');
+      const workflowId = 'WF-REQ-' + dateStr + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+
+      // Store in session storage
+      sessionStorage.setItem('demoWorkflowId', workflowId);
+      sessionStorage.setItem('demoFormData', JSON.stringify(data));
+
+      // TODO: Replace with actual submission to Google Apps Script
+      console.log('Form submitted:', data);
+      console.log('Workflow ID:', workflowId);
+
+      // Redirect to dashboard (if it exists)
+      // window.location.href = 'dashboard.html';
+
+      alert('Form submitted successfully!\nWorkflow ID: ' + workflowId);
+    });
+  </script>
+</body>
+</html>

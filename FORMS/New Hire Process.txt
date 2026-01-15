@@ -1,0 +1,602 @@
+﻿[Make a directly editable version of the Visualizer, so we can easily and quickly change the description] 
+Title : “New Hire Process”
+This is the format:
+
+
+PBP#  = Process Branch Parent
+TBP# = Task Branch Parent
+
+
+PB# = Process Branch Name
+PBD# = Process Branch Description
+TB# = Task Branch Name
+TBD# = Task Branch Description
+
+
+P# = Process Name
+PC# = Process Conditional Requirement (anchors to TS#, and conditional answer)
+PD# = Process Description = This the ……
+T# = Task name 
+TC# = Task Conditional Requirement (Anchors to TS#, and conditional answer)
+TD# = “Task Description = …..
+
+
+TS# = Task Step (used as anchor to link tasks) 
+TSD# = Task Step Description
+
+
+
+
+P1 = Recruitment Process
+PD1 = “Description = This the ……”
+P2 = Request Initiation
+P3 = HR Request Review
+P4 = Request Initial Set up
+        T1: DSS training accounts (Workflow TBD)
+T2: Sitedocs (Workflow TBD)
+T3: Internal employee id (Workflow TBD)
+P5 = Send paperwork to HR
+        T1
+
+
+
+
+1. Recruitment Process is completed
+   1. Eligibility for hiring is validated
+These steps occur before our process, but before starting our process the submitter must confirm those processes are complete. 
+1. Request initiation
+2. Request Review (HR) and Request Employee Set-up (parallel) 
+3. .
+   1. Request initial employee set up | These are not in-order, they may have dependencies and each has a workflow that we need to document.  
+      1. DSS training accounts (Workflow TBD)
+      2. Sitedocs (Workflow TBD)
+      3. Internal employee id (Workflow TBD)[a]
+   2. Send paperwork to HR department [b]
+4. . 
+   1. Employee completes training 
+   2. HR approves paperwork[c]
+5. .
+   1. HR sends request to Payroll to add new hire to ADP[d] (this can have multiple tasks under it, some mandatory) (adding emp could be a separate branch) 
+   2. Initiate other requests
+      1. IT / system requests
+      2. Vehicle request initiated
+      3. Credit Card request initiated[e]
+6. .
+   1. Payroll adds to ADP
+   2. Any requests for IT department are initiated 
+      1. IT processes current WMAR form (this creates a branch, lets call it “IT 1”, we’ll figure it out tomorrow) (this also initiates other work flows in parallel)[f]
+7. .
+   1. Payroll sends ADP number to HR
+   2. IT communicates credentials to form initiator/new hire (This is the last step of “IT 1” there more stuff in between)  
+8. HR sends ADP info to form initiator (this relates to 7a)
+9. HR confirms form is complete
+10. Initiator confirms form is complete
+11. HR sends communication to company (depends on role)
+
+
+Question 5 of N
+Here is a master checklist of tasks for a New Hire. Please check all the items that apply and, most importantly, add any tasks that I have missed in the space at the bottom.
+Initial Request & Data Entry
+* [ ] Complete Employee & Position Details (Name, Job Title, etc.)
+* [ ] Define Vacation Entitlement & Pay Type (Hourly/Salary)
+* [ ] Request Business Cards (digital only)
+* [ ] Request a Google Account / Email Address
+System & Application Access
+* [ ] Request BOSS Access (Delivery, Cost Sheet modules)
+* [ ] Request Jonas Purchasing Access
+* [ ] Request Mobile App Access (e.g., SiteDocs, Incidents, Delivery App) [IT]
+* [ ] Request Field Time/Field Project Access
+* [ ] Request EBI Access
+Departmental Processing Tasks
+* [ ]
+HR: Assign Associate ID / Employee #
+* [ ]
+HR: Confirm accuracy of employee details and Job Title
+* [ ]
+IT: Create Google Account (Email, Password)
+* [ ]
+IT: Create BOSS Account
+* [ ]
+IT: Create accounts for all other requested applications
+* [ ]
+IT: Add Microsoft 365 License if approved
+* [ ]
+Fleet: Create Fleetio Account (Username, Password)
+* [ ]
+Safety: Create DSS+ Account (Username, Password)
+* [ ]
+Safety: Create Sitedocs Account (Username, Password)
+Hardware & Equipment
+   * [ ] Request a Company Vehicle
+   * [ ]
+Fleet: Assign Vehicle TRU Number & VIN
+   * [ ] Request a Mobile Phone
+   * [ ]
+IT: Order/Provision a new Mobile Phone & Cell #
+   * [ ] Request a Computer (Laptop/Desktop)
+   * [ ]
+IT: Order/Provision a new Computer
+   * [ ] Request a SiteDocs Tablet
+Please list any missing steps here:
+________________
+      * ________________
+      *       * ________________
+
+
+Digitized New Hire Onboarding Workflow
+Process 1: Initiation & Data Aggregation
+This initial process is focused on a single goal: collecting all the required information in a structured way so the system can automate the rest of the workflow.
+      * Tasks:
+      1. Attest Pre-Hiring Checks Complete: A mandatory checkbox for the Requester to confirm that recruitment and eligibility validation are done.
+      2. Aggregate New Hire Data: The Requester fills out the single dynamic form. The output of this task is a "New Hire Request" data object containing all the information needed for every subsequent step.
+      * Developer's Note: By treating data collection as a single task that creates one master data object, we ensure that every following process has all the information it needs without having to ask for it again. This is the foundation of the entire automation.
+Process 2: HR & Payroll Foundation
+This process establishes the employee's official identity within the company's core administrative systems. It is the first major administrative milestone.
+      * Tasks:
+      1. HR: Validate Request & Assign Employee ID: The request is automatically routed to HR. An HR team member reviews the data, validates it, and enters the official "Associate ID / Employee #".
+      2. HR: Trigger Payroll Setup: Upon saving the Employee ID, the system automatically notifies the Payroll department and provides them with the necessary new hire data.
+      3. Payroll: Add Employee to ADP: A Payroll team member's task to create the employee's profile in the ADP system.
+      4. Payroll: Return ADP Number to System: Once the ADP profile is created, the Payroll team member enters the new ADP number into their task, which updates the central record.
+Process 3: Parallel Provisioning
+This is the core of the automated workflow. As soon as Process 2, Task 1 is complete, the system triggers several sub-processes simultaneously. This parallel execution is the key to an efficient onboarding.
+      * Developer's Note: We don't wait for Payroll to finish before starting IT and other tasks. The Employee ID from HR is the only prerequisite. This saves a tremendous amount of time.
+      * Sub-Process 3a: IT Provisioning
+      * Tasks:
+      * Create Google Workspace Account
+      * Create BOSS Account
+      * Create Jonas Account
+      * Provision Computer Hardware
+      * Provision Mobile Phone Hardware
+      * Assign Microsoft 365 License
+      * Notify Safety Team of IT Completion (An automated signal sent when all other IT tasks are done).
+      * Sub-Process 3b: Fleet Provisioning (Conditional)
+      * Developer's Note: This entire process only gets created if the "Vehicle Assigned" field in the initial data object is 'Yes'.
+      * Tasks:
+      * Assign Vehicle Details (TRU, VIN)
+      * Create Fleetio Account
+      * Notify Safety Team of Fleet Completion (An automated signal).
+      * Sub-Process 3c: Independent Onboarding Tasks
+      * Tasks:
+      * Manager: Draft 30-60-90 Day Plan (Assigned to the new hire's manager).
+      * Employee: Complete & Submit HR Paperwork (Assigned to the new hire's personal email).
+      * Admin: Order Business Cards (Assigned to an Office Administrator).
+Process 4: Final Access & Safety Setup
+This process acts as a "gate" or synchronization point. It cannot begin until it receives the completion signals from the provisioning processes.
+      * Developer's Note: This is a critical dependency management step. The system will automatically hold these tasks until it receives the "completion" signals from both the IT and Fleet sub-processes.
+      * Tasks:
+      1. Await Provisioning Completion Signals: A system task that listens for the "Notify Safety" signals from Process 3a and 3b.
+      2. Safety: Create DSS+ Account
+      3. Safety: Create Sitedocs Account
+Process 5: Finalization & Communication
+This final process is responsible for distributing all the newly created information and officially closing out the onboarding request.
+      * Tasks:
+      1. Distribute System Credentials: The system securely sends usernames and temporary passwords to the new hire and their manager.
+      2. Distribute ADP Information: HR receives a notification that the ADP number is available and forwards it to the initiator.
+      3. Generate & Distribute Final Onboarding Report: Once all processes are complete, the system automatically generates a PDF summary of the entire request—what was requested, what was created, and who completed each step. This report is emailed to the Requester, HR, and IT.
+      4. HR: Announce New Hire to Team: The final task for HR to send the welcome announcement to the broader team.
+
+
+
+
+
+
+________________
+
+
+New Hire Process
+
+
+Title : "New Hire Process"
+
+
+P1# = "Initiate New Hire Request"
+PD1# = "The process begins when an initiator submits a request for a new hire after confirming prerequisites are met."
+
+
+T1.1# = "Fill out New Hire Request Form"
+TS1.1.1# = "New Hire Details Provided"
+TSD1.1.1# = "Initiator provides all required details for the new hire (e.g., name, role, start date)."
+
+
+T1.2# = "Confirm Prerequisites"
+TS1.2.1# = "Recruitment Process Confirmed Complete"
+TSD1.2.1# = "Initiator confirms that the main recruitment process has been successfully completed."
+TS1.2.2# = "Hiring Eligibility Confirmed"
+TSD1.2.2# = "Initiator confirms that the candidate's eligibility for hiring has been validated."
+
+
+T1.3# = "Submit Form"
+TS1.3.1# = "Form Submitted"
+TSD1.3.1# = "The initiator officially submits the completed New Hire Request form, triggering the next set of parallel processes."
+
+
+---
+
+
+P2# = "HR Review"
+PC2# = "Starts after TS1.3.1 is 'Form Submitted'."
+PD2# = "HR reviews the submitted new hire request for approval. This runs in parallel with Initial Employee Setup (P3)."
+
+
+T2.1# = "Approve/Reject Request"
+TS2.1.1# = "Request Approved"
+TSD2.1.1# = "HR approves the new hire request, allowing the main onboarding process to continue."
+TS2.1.2# = "Request Rejected"
+TSD2.1.2# = "HR rejects the new hire request. Process ends for this candidate."
+
+
+---
+
+
+P3# = "Initial Employee Setup"
+PC3# = "Starts after TS1.3.1 is 'Form Submitted'."
+PD3# = "Handles the initial technical setup tasks and paperwork distribution. This process runs in parallel with HR Review (P2). The tasks within this process can also run in parallel."
+
+
+T3.1# = "Send Paperwork to HR Department"
+TS3.1.1# = "Paperwork Sent to HR"
+TSD3.1.1# = "Initiator sends the new hire's required paperwork to the HR department for processing and approval."
+
+
+T3.2# = "Provision DSS Training Accounts"
+TD3.2# = "Workflow for creating DSS training accounts is initiated."
+TS3.2.1# = "DSS Accounts Created"
+TSD3.2.1# = "The necessary DSS training accounts are successfully created for the new hire."
+
+
+T3.3# = "Provision Sitedocs Account"
+TD3.3# = "Workflow for creating a Sitedocs account is initiated."
+TS3.3.1# = "Sitedocs Account Created"
+TSD3.3.1# = "A Sitedocs account is successfully created for the new hire."
+
+
+T3.4# = "Provision Internal Employee Account"
+TD3.4# = "Workflow for creating an internal employee account is initiated."
+TS3.4.1# = "Internal Account Created"
+TSD3.4.1# = "An internal employee account (e.g., email, network access) is successfully created."
+
+
+---
+
+
+P4# = "Employee Onboarding Tasks"
+PC4# = "This process begins once prerequisite setup tasks are complete."
+PD4# = "The new employee completes initial tasks while HR approves their paperwork."
+
+
+T4.1# = "Employee Completes Training"
+TC4.1# = "Starts after TS3.2.1, TS3.3.1, and TS3.4.1 are all complete."
+TS4.1.1# = "Training Completed"
+TSD4.1.1# = "The new hire uses their provisioned accounts to complete all required initial training."
+
+
+T4.2# = "HR Approves Paperwork"
+TC4.2# = "Starts after TS3.1.1 is 'Paperwork Sent to HR'."
+TS4.2.1# = "Paperwork Approved"
+TSD4.2.1# = "HR reviews and approves the new hire's submitted paperwork."
+
+
+---
+
+
+P5# = "Payroll & System Access Onboarding"
+PC5# = "Starts after TS2.1.1 is 'Request Approved' AND TS4.2.1 is 'Paperwork Approved'."
+PD5# = "HR officially initiates the payroll process and triggers requests for additional systems and resources. This action starts multiple parallel process branches."
+
+
+T5.1# = "HR Sends Request to Payroll"
+TS5.1.1# = "ADP Add Request Sent"
+TSD5.1.1# = "HR submits a formal request to the Payroll department to add the new hire to the ADP system. This step also triggers the initiation of PB1, PB2, and PB3."
+
+
+---
+
+
+P6# = "Payroll Processing"
+PC6# = "Starts after TS5.1.1 is 'ADP Add Request Sent'."
+PD6# = "The Payroll department adds the new hire to the system and communicates the new ADP number."
+
+
+T6.1# = "Payroll Adds Employee to ADP"
+TS6.1.1# = "Employee Added to ADP"
+TSD6.1.1# = "Payroll department successfully creates the new employee's record in the ADP system."
+
+
+T6.2# = "Payroll Sends ADP Number to HR"
+TC6.2# = "Starts after TS6.1.1 is 'Employee Added to ADP'."
+TS6.2.1# = "ADP Number Received by HR"
+TSD6.2.1# = "HR receives the newly created ADP employee number from Payroll."
+
+
+---
+
+
+P7# = "HR Finalizes Onboarding Info"
+PC7# = "Starts after TS6.2.1 is 'ADP Number Received by HR'."
+PD7# = "HR communicates the payroll information back to the original form initiator."
+
+
+T7.1# = "HR Sends ADP Info to Form Initiator"
+TS7.1.1# = "ADP Info Sent to Initiator"
+TSD7.1.1# = "The form initiator receives the new hire's ADP information from HR."
+
+
+---
+
+
+PB1# = "Process Branch: IT / System Requests"
+PBD1# = "This branch, called 'IT 1', handles all IT-related requests for the new hire based on the WMAR form. It runs in parallel with Payroll Processing (P6) and other branches."
+
+
+P8# = "Process IT Request (WMAR Form)"
+PC8# = "Starts after TS5.1.1 is 'ADP Add Request Sent'."
+PD8# = "IT processes the WMAR form, which can initiate other parallel workflows for provisioning hardware and software."
+
+
+T8.1# = "Process WMAR form"
+TS8.1.1# = "WMAR Form Processed"
+TSD8.1.1# = "The IT department processes the submitted WMAR form to determine required assets."
+
+
+T8.2# = "Provision IT Assets"
+TD8.2# = "This represents the various sub-tasks for provisioning systems, hardware, software, etc."
+TC8.2# = "Starts after TS8.1.1 is 'WMAR Form Processed'."
+TS8.2.1# = "All IT Assets Provisioned"
+TSD8.2.1# = "All necessary IT assets and system access have been successfully provisioned."
+
+
+T8.3# = "IT Communicates Credentials"
+TC8.3# = "Starts after TS8.2.1 is 'All IT Assets Provisioned'."
+TS8.3.1# = "IT Credentials Communicated"
+TSD8.3.1# = "IT communicates all relevant credentials and access information to the form initiator and/or the new hire. This signals the completion of the IT branch."
+
+
+---
+
+
+PB2# = "Process Branch: Vehicle Request"
+PBD2# = "Handles the process for requesting a company vehicle, if applicable. Runs in parallel to other branches."
+
+
+P9# = "Process Vehicle Request"
+PC9# = "Starts after TS5.1.1 is 'ADP Add Request Sent' (and is conditional on role)."
+
+
+T9.1# = "Process and Approve Request"
+TS9.1.1# = "Vehicle Request Approved"
+TSD9.1.1# = "The request for a company vehicle is reviewed and approved."
+
+
+T9.2# = "Arrange Vehicle"
+TC9.2# = "Starts after TS9.1.1 is 'Vehicle Request Approved'."
+TS9.2.1# = "Vehicle Arranged"
+TSD9.2.1# = "A company vehicle is assigned or procured for the new employee."
+
+
+---
+
+
+PB3# = "Process Branch: Credit Card Request"
+PBD3# = "Handles the process for requesting a corporate credit card, if applicable. Runs in parallel to other branches."
+
+
+P10# = "Process Credit Card Request"
+PC10# = "Starts after TS5.1.1 is 'ADP Add Request Sent' (and is conditional on role)."
+
+
+T10.1# = "Process and Approve Request"
+TS10.1.1# = "Credit Card Request Approved"
+TSD10.1.1# = "The request for a corporate credit card is reviewed and approved."
+
+
+T10.2# = "Issue Card"
+TC10.2# = "Starts after TS10.1.1 is 'Credit Card Request Approved'."
+TS10.2.1# = "Card Issued"
+TSD10.2.1# = "A corporate credit card is issued to the new employee."
+
+
+---
+
+
+P11# = "Final Confirmations"
+PC11# = "Starts after TS7.1.1 is 'ADP Info Sent to Initiator' AND TS8.3.1 is 'IT Credentials Communicated'."
+PD11# = "The final confirmation steps from HR and the initiator to officially close the onboarding request form."
+
+
+T11.1# = "HR Confirms Form is Complete"
+TS11.1.1# = "HR Final Confirmation"
+TSD11.1.1# = "HR conducts a final review and confirms that all their required steps are complete."
+
+
+T11.2# = "Initiator Confirms Form is Complete"
+TC11.2# = "Starts after TS11.1.1 is 'HR Final Confirmation'."
+TS11.2.1# = "Initiator Final Confirmation"
+TSD11.2.1# = "The original initiator provides their final confirmation that the process is complete."
+
+
+---
+
+
+P12# = "Announce New Hire"
+PC12# = "Starts after TS11.2.1 is 'Initiator Final Confirmation'."
+PD12# = "The final step is to communicate the new hire's arrival to the company."
+
+
+T12.1# = "HR Sends Communication to Company"
+TD12.1# = "This communication is dependent on the new hire's role."
+TS12.1.1# = "Announcement Sent"
+________________
+________________
+
+
+Final, All-Inclusive Prompt for Gemini
+Hello Gemini,
+You are an expert full-stack developer specializing in creating dynamic, single-page applications with vanilla JavaScript and modern CSS.
+Your task is to create a single, self-contained HTML file that functions as a live, low-code process workflow editor. This tool will be used by a non-technical client in a meeting to modify a business process in real-time.
+The editor must be pre-loaded with the complete data structure provided below and support:
+      1. Content Editing: Changing the text of titles and descriptions.
+      2. Structural Editing: Adding and deleting entire processes and tasks from the workflow.
+All changes must be saved automatically to the browser's localStorage and persist across page reloads.
+________________
+
+
+Asset 1: Base HTML & CSS
+Use this as the starting template. It includes the necessary layout, styles, and containers.
+HTML
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Workflow Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+        .process-header { display: flex; justify-content: space-between; align-items: center; text-align: center; margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e5e7eb; }
+        .flow-card { display: flex; justify-content: space-between; align-items: center; background-color: white; border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 1rem; text-align: left; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .connector { display: flex; justify-content: center; margin: 0.5rem 0; }
+        .connector div { height: 2rem; width: 2px; background-color: #d1d5db; }
+        [contenteditable="true"] { outline: 2px solid transparent; transition: outline 0.2s; }
+        [contenteditable="true"]:hover, [contenteditable="true"]:focus { outline: 2px dashed #0284c7; background-color: #f0f9ff; border-radius: 0.25rem; }
+        .delete-btn, .add-btn { cursor: pointer; font-size: 1.25rem; padding: 0.25rem; border-radius: 99px; transition: background-color 0.2s; }
+        .delete-btn:hover { background-color: #fee2e2; color: #ef4444; }
+        .add-btn:hover { background-color: #dbeafe; color: #2563eb; }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Live New Hire Workflow Editor</h1>
+            <p class="mt-3 text-lg text-gray-600">Click any text to edit. Use the '+' and '❌' buttons to modify the structure.</p>
+            <div class="mt-6 flex justify-center gap-4">
+                 <button id="addProcessBtn" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">Add New Process</button>
+                 <button id="resetButton" class="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">Reset All Changes</button>
+            </div>
+        </header>
+        <main>
+            <section id="workflow-section">
+                <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                    <div id="workflow-container" class="max-w-4xl mx-auto">
+                        </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script>
+        // All JavaScript logic will go here
+    </script>
+</body>
+</html>
+
+
+
+________________
+Asset 2: The Complete Initial Data Structure
+This is the full, detailed process data that the editor should load on startup.
+JavaScript
+
+const initialProcessData = {
+    processes: [
+        { id: "P1", name: "Initiate New Hire Request", desc: "The process begins when an initiator submits a request for a new hire after confirming prerequisites are met.", tasks: [
+            { id: "T1.1", name: "Fill out New Hire Request Form", desc: "Initiator provides all required details for the new hire (e.g., name, role, start date)." },
+            { id: "T1.2", name: "Confirm Prerequisites", desc: "Initiator confirms that the main recruitment process has been successfully completed and that the candidate's eligibility for hiring has been validated." },
+            { id: "T1.3", name: "Submit Form", desc: "The initiator officially submits the completed New Hire Request form, triggering the next set of parallel processes." }
+        ]},
+        { id: "P2", name: "HR Review", desc: "HR reviews the submitted new hire request for approval. This runs in parallel with Initial Employee Setup (P3). Condition: Starts after Form is Submitted.", tasks: [
+            { id: "T2.1", name: "Approve/Reject Request", desc: "HR approves the new hire request, allowing the main onboarding process to continue. If rejected, the process ends for this candidate." }
+        ]},
+        { id: "P3", name: "Initial Employee Setup", desc: "Handles the initial technical setup tasks and paperwork distribution. This process runs in parallel with HR Review (P2). Condition: Starts after Form is Submitted.", tasks: [
+            { id: "T3.1", name: "Send Paperwork to HR Department", desc: "Initiator sends the new hire's required paperwork to the HR department for processing and approval." },
+            { id: "T3.2", name: "Provision DSS Training Accounts", desc: "The necessary DSS training accounts are successfully created for the new hire." },
+            { id: "T3.3", name: "Provision Sitedocs Account", desc: "A Sitedocs account is successfully created for the new hire." },
+            { id: "T3.4", name: "Provision Internal Employee Account", desc: "An internal employee account (e.g., email, network access) is successfully created." }
+        ]},
+        { id: "P4", name: "Employee Onboarding Tasks", desc: "The new employee completes initial tasks while HR approves their paperwork. Condition: This process begins once prerequisite setup tasks are complete.", tasks: [
+            { id: "T4.1", name: "Employee Completes Training", desc: "The new hire uses their provisioned accounts to complete all required initial training. Condition: Starts after all accounts (DSS, Sitedocs, Internal) are created." },
+            { id: "T4.2", name: "HR Approves Paperwork", desc: "HR reviews and approves the new hire's submitted paperwork. Condition: Starts after paperwork is sent to HR." }
+        ]},
+        { id: "P5", name: "Payroll & System Access Onboarding", desc: "HR officially initiates the payroll process and triggers requests for additional systems and resources. This action starts multiple parallel process branches. Condition: Starts after Request is Approved AND Paperwork is Approved.", tasks: [
+            { id: "T5.1", name: "HR Sends Request to Payroll", desc: "HR submits a formal request to the Payroll department to add the new hire to the ADP system. This step also triggers the initiation of IT, Vehicle, and Credit Card request branches." }
+        ]},
+        { id: "P6", name: "Payroll Processing", desc: "The Payroll department adds the new hire to the system and communicates the new ADP number. Condition: Starts after ADP Add Request is Sent.", tasks: [
+            { id: "T6.1", name: "Payroll Adds Employee to ADP", desc: "Payroll department successfully creates the new employee's record in the ADP system." },
+            { id: "T6.2", name: "Payroll Sends ADP Number to HR", desc: "HR receives the newly created ADP employee number from Payroll. Condition: Starts after Employee is Added to ADP." }
+        ]},
+        { id: "PB1", name: "Process Branch: IT, Vehicle, & Credit Card", desc: "These processes run in parallel, triggered after the main payroll request is sent.", isBranch: true, branchProcesses: [
+            { id: "P8", name: "IT / System Requests", desc: "This branch, called 'IT 1', handles all IT-related requests for the new hire based on the WMAR form.", tasks: [
+                { id: "T8.1", name: "Process WMAR form", desc: "The IT department processes the submitted WMAR form to determine required assets." },
+                { id: "T8.2", name: "Provision IT Assets", desc: "This represents the various sub-tasks for provisioning systems, hardware, software, etc. Condition: Starts after WMAR Form is Processed." },
+                { id: "T8.3", name: "IT Communicates Credentials", desc: "IT communicates all relevant credentials and access information to the form initiator and/or the new hire. Condition: Starts after All IT Assets are Provisioned." }
+            ]},
+            { id: "P9", name: "Vehicle Request", desc: "Handles the process for requesting a company vehicle, if applicable and conditional on role.", tasks: [
+                { id: "T9.1", name: "Process and Approve Request", desc: "The request for a company vehicle is reviewed and approved." },
+                { id: "T9.2", name: "Arrange Vehicle", desc: "A company vehicle is assigned or procured for the new employee. Condition: Starts after Vehicle Request is Approved." }
+            ]},
+            { id: "P10", name: "Credit Card Request", desc: "Handles the process for requesting a corporate credit card, if applicable and conditional on role.", tasks: [
+                { id: "T10.1", name: "Process and Approve Request", desc: "The request for a corporate credit card is reviewed and approved." },
+                { id: "T10.2", name: "Issue Card", desc: "A corporate credit card is issued to the new employee. Condition: Starts after Credit Card Request is Approved." }
+            ]}
+        ]},
+        { id: "P7", name: "HR Finalizes Onboarding Info", desc: "HR communicates the payroll information back to the original form initiator. Condition: Starts after ADP Number is Received by HR.", tasks: [
+            { id: "T7.1", name: "HR Sends ADP Info to Form Initiator", desc: "The form initiator receives the new hire's ADP information from HR." }
+        ]},
+        { id: "P11", name: "Final Confirmations", desc: "The final confirmation steps from HR and the initiator to officially close the onboarding request form. Condition: Starts after Initiator receives ADP info AND IT has communicated credentials.", tasks: [
+            { id: "T11.1", name: "HR Confirms Form is Complete", desc: "HR conducts a final review and confirms that all their required steps are complete." },
+            { id: "T11.2", name: "Initiator Confirms Form is Complete", desc: "The original initiator provides their final confirmation that the process is complete. Condition: Starts after HR Final Confirmation." }
+        ]},
+        { id: "P12", name: "Announce New Hire", desc: "The final step is to communicate the new hire's arrival to the company. Condition: Starts after Initiator Final Confirmation.", tasks: [
+            { id: "T12.1", name: "HR Sends Communication to Company", desc: "HR sends the new hire announcement to the relevant parts of the company. This communication is dependent on the new hire's role." }
+        ]}
+    ]
+};
+
+
+
+________________
+Detailed Functional Requirements
+Please implement the following logic within the <script> tag of the provided HTML.
+      1. Central Data Management & Rendering:
+      * On DOMContentLoaded, load the process data. Check localStorage first for a key named savedWorkflow. If it exists, JSON.parse() it and use it. If not, use a deep copy of the initialProcessData.
+      * Create a single master function, renderWorkflow(). This function will be responsible for clearing the #workflow-container and completely rebuilding the entire HTML view from the current state of the data object.
+      * Crucially, create a saveAndRerender() function. This function must first save the current data object to localStorage (as a string) and then call renderWorkflow(). This will be the main function called after any user action.
+      2. Content Editing (Text):
+      * When rendering, all process/task titles and descriptions should have the contenteditable="true" attribute.
+      * Attach a blur event listener to these editable elements. On blur, update the corresponding property in the JavaScript data object and then call saveAndRerender().
+      3. Structural Editing (Adding Items):
+      * Add Process: The main #addProcessBtn button, when clicked, should add a new, blank process object to the processes array in your data model. It should have a unique ID, a default name like "New Process," and an empty tasks array. Then call saveAndRerender().
+      * Add Task: Inside the renderWorkflow function, each rendered process header must include an "Add Task" button (<div class="add-btn">+</div>). When clicked, it should find the corresponding process in the data object, add a new blank task to its tasks array, and then call saveAndRerender().
+      4. Structural Editing (Deleting Items):
+      * Delete Process & Task: Each process header and each task card must include a "Delete" button (<div class="delete-btn">❌</div>).
+      * When a delete button is clicked, use window.confirm('Are you sure you want to delete this item?') to ask for confirmation.
+      * If confirmed, remove the corresponding object (either a process from the main array or a task from its parent's tasks array) from the data model. Then call saveAndRerender().
+      5. Reset Functionality:
+      * The #resetButton should, when clicked, remove the savedWorkflow key from localStorage and then reload the page (location.reload()). This will revert all changes back to the original state.
+The core logical flow of the application should always be:
+User Action (edit, add, delete) → Update the JavaScript Data Object → Call saveAndRerender()
+Please provide the final, complete index.html file with the fully implemented JavaScript logic.
+
+
+________________
+
+
+. 
+under "form submitted" add "pre=requisites not met"
+"send paperwork to hr" is part of "hr review"
+make drag to re-order
+if process halted, nothing happens
+IT Verification triggers vehicle and credit car
+P5, P8, P9, and new for credit card all get triggered by P2
+In parallel after HR approves, CC, Vehicle, IT and Purchasing Accounts happen
+
+
+
+
+[a]Request set-up step
+[b]Part of Request review
+[c]Can be indepent, and works parallely
+[d]if the previous two arent done, this wont happen. This is also a process with many steps
+[e]These 3 are also processes, each with tasks
+[f]IT Team @dbinns@team-group.com , need to define this on monday
+_Assigned to dbinns@team-group.com_
