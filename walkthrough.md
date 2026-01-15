@@ -9,7 +9,7 @@ All active deployment code is located in the `employee_forms_deployment/` direct
 - `new_employee_request/`: The initial entry point.
 - `employee_id_setup/`: HR gatekeeper form (IDs, Payroll).
 - `it_setup/`: IT provisioning (Email, Hardware, BOSS).
-- `specialist_placeholder/`: Generic form for remaining 7 departments (ADP, Jonas, etc.).
+- `specialist_placeholder/`: Generic form for remaining 7 departments (ADP, Jonas, etc.). Includes the **Specialist Forms Roadmap & Checklist**.
 - `admin_dashboard/`: The "Employee Request Dashboard" for management.
 
 ---
