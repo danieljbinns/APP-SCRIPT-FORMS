@@ -43,6 +43,8 @@ Current Deployment Folder: `employee_forms_deployment/`
 ## Phase 7: Specialist Form Customization [IN PROGRESS]
 
 - [x] Create Specialist Forms Roadmap & Checklist
-- [ ] Develop standalone ADP Setup Form
+- [x] **HR Verification & ADP Step**: Created form and conditional routing logic
+- [ ] Deploy HR Verification form and test both paths
+- [ ] Develop standalone ADP Setup Form (note: ADP ID now captured in HR Verification)
 - [ ] Develop standalone Fleetio Form
 - [ ] Develop remaining custom specialist forms

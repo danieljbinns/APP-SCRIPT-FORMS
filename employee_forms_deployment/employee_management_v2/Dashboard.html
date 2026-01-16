@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Onboarding Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --border-color: #333;
+            --success: #00c853;
+            --warning: #ffab00;
+            --info: #2196f3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            height: 40px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input.search-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            width: 300px;
+        }
+
+        button.refresh-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button.refresh-btn:hover {
+            background: #333;
+        }
+
+        /* Table */
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 15px;
+            background: #252525;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: #222;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge.in-progress {
+            background: rgba(33, 150, 243, 0.2);
+            color: var(--info);
+        }
+
+        .badge.completed {
+            background: rgba(0, 200, 83, 0.2);
+            color: var(--success);
+        }
+
+        .badge.pending {
+            background: rgba(255, 171, 0, 0.2);
+            color: var(--warning);
+        }
+
+        /* Links */
+        a.action-link {
+            color: var(--brand-red);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a.action-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+                    class="logo">
+                <h1>Onboarding Dashboard</h1>
+            </div>
+            <div>
+                <a href="<?= getBaseUrl() ?>?form=initial_request" class="action-link"
+                    style="background: var(--brand-red); color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none;">+
+                    New Request</a>
+            </div>
+        </header>
+
+        <div class="controls">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search workflows...">
+            <button class="refresh-btn" onclick="loadData()">Refresh</button>
+        </div>
+
+        <div class="table-container">
+            <table id="workflowTable">
+                <thead>
+                    <tr>
+                        <th>Workflow ID</th>
+                        <th>Employee</th>
+                        <th>Status</th>
+                        <th>Current Step</th>
+                        <th>Initiated By</th>
+                        <th>Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="6" class="loading">Loading requests...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', loadData);
+
+        let allWorkflows = [];
+
+        function loadData() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading data...</td></tr>';
+
+            google.script.run
+                .withSuccessHandler(displayData)
+                .withFailureHandler(showError)
+                .getDashboardData();
+        }
+
+        function displayData(response) {
+            console.log('Received dashboard data:', response);
+            if (!response || !response.success) {
+                showError(response ? response.message : 'Server returned no data (null response)');
+                return;
+            }
+
+            allWorkflows = response.workflows;
+            renderTable(allWorkflows);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="loading">No records found.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            data.forEach(wf => {
+                const date = new Date(wf.updated).toLocaleDateString();
+                const statusClass = wf.status === 'Completed' ? 'completed' : (wf.status === 'Pending' ? 'pending' : 'in-progress');
+
+                html += `
+          <tr>
+            <td style="font-family: monospace;">${wf.id}</td>
+            <td><strong>${wf.employee || 'Pending Name'}</strong></td>
+            <td><span class="badge ${statusClass}">${wf.status}</span></td>
+            <td>${wf.step}</td>
+            <td>${wf.initiator}</td>
+            <td>${date}</td>
+          </tr>
+        `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function showError(msg) {
+            document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" style="padding: 20px; color: #ef4444; text-align: center;">Error: ${msg}</td></tr>`;
+        }
+
+        // Search filter
+        document.getElementById('searchInput').addEventListener('input', function (e) {
+            const term = e.target.value.toLowerCase();
+            const filtered = allWorkflows.filter(wf =>
+                (wf.employee && wf.employee.toLowerCase().includes(term)) ||
+                (wf.id && wf.id.toLowerCase().includes(term)) ||
+                (wf.initiator && wf.initiator.toLowerCase().includes(term))
+            );
+            renderTable(filtered);
+        });
+    </script>
+</body>
+
+</html>
