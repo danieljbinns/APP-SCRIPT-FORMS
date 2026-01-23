@@ -102,3 +102,83 @@ function initSheet(ss, sheetName, headers) {
     sheet.setFrozenRows(1);
   }
 }
+
+/**
+ * Create Data_Lookup sheet with simplified 4-column structure
+ * Run this once manually from Apps Script editor
+ */
+function createDataLookupSheet() {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    
+    // Check if sheet already exists
+    let sheet = ss.getSheetByName('Data_Lookup');
+    if (sheet) {
+      Logger.log('Data_Lookup sheet already exists - skipping creation');
+      return;
+    }
+    
+    // Create new sheet
+    sheet = ss.insertSheet('Data_Lookup');
+    Logger.log('Created Data_Lookup sheet');
+    
+    // Set up headers (4 columns: Sites, Job Codes, JRs, Job Numbers)
+    const headers = ['Sites', 'Job Codes', 'JRs', 'Job Numbers'];
+    sheet.getRange(1, 1, 1, 4).setValues([headers]);
+    
+    // Style headers
+    sheet.getRange(1, 1, 1, 4)
+      .setBackground('#EB1C2D')
+      .setFontColor('#FFFFFF')
+      .setFontWeight('bold')
+      .setHorizontalAlignment('center');
+    
+    // Pre-populate Job Codes (from existing EmployeeIDSetup dropdown)
+    const jobCodes = [
+      ['Hourly 1'],
+      ['Hourly 2'],
+      ['Salary 1'],
+      ['Salary 2'],
+      ['Supervisor'],
+      ['Manager']
+    ];
+    sheet.getRange(2, 2, jobCodes.length, 1).setValues(jobCodes);
+    
+    // Add example data for other columns (user will replace with real data)
+    const exampleSites = [
+      ['Toronto Office'],
+      ['Calgary Site'],
+      ['Vancouver Warehouse']
+    ];
+    
+    const exampleJRs = [
+      ['Project Manager'],
+      ['Site Supervisor'],
+      ['Field Coordinator']
+    ];
+    
+    const exampleJobNumbers = [
+      ['12345'],
+      ['67890'],
+      ['11111']
+    ];
+    
+    sheet.getRange(2, 1, exampleSites.length, 1).setValues(exampleSites);
+    sheet.getRange(2, 3, exampleJRs.length, 1).setValues(exampleJRs);
+    sheet.getRange(2, 4, exampleJobNumbers.length, 1).setValues(exampleJobNumbers);
+    
+    // Auto-resize columns
+    sheet.autoResizeColumns(1, 4);
+    
+    // Freeze header row
+    sheet.setFrozenRows(1);
+    
+    Logger.log('✅ Data_Lookup sheet created successfully!');
+    Logger.log('   - Job Codes pre-populated from existing dropdown');
+    Logger.log('   - Example data added - replace with your actual data');
+    Logger.log('   - Simplified to 4 columns: Sites, Job Codes, JRs, Job Numbers');
+    
+  } catch (error) {
+    Logger.log('❌ Error creating Data_Lookup sheet: ' + error.toString());
+  }
+}

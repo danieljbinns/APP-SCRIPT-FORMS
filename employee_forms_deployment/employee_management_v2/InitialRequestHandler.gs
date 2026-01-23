@@ -48,24 +48,30 @@ function submitInitialRequest(formData) {
     const employeeName = formData.firstName + ' ' + formData.lastName;
     updateWorkflow(workflowId, 'In Progress', 'ID Setup Needed', employeeName);
     
+    
     Logger.log('[SUCCESS] Form submitted: Workflow ID: ' + workflowId + ', Form ID: ' + formId);
     
-    // Send initial emails
+    // Send initial emails with full context
     const idSetupUrl = buildFormUrl('id_setup', { wf: workflowId });
     
-    sendFormEmail({
-      to: CONFIG.EMAILS.SITEDOCS,
-      subject: 'New Employee ID Setup Required',
-      body: 'A new employee request has been submitted.\\n\\nEmployee: ' + employeeName + '\\nHire Date: ' + formData.hireDate + '\\nWorkflow ID: ' + workflowId + '\\n\\nPlease complete the Employee ID Setup form:\\n' + idSetupUrl,
-      formUrl: idSetupUrl,
-      displayName: 'Team Group Companies - Employee Onboarding'
-    });
-    
-    sendFormEmail({
-      to: formData.requesterEmail,
-      subject: 'Employee Request Submitted - ' + workflowId,
-      body: 'Your employee request has been submitted successfully.\\n\\nEmployee: ' + employeeName + '\\nWorkflow ID: ' + workflowId + '\\n\\nTrack status here:\\n' + buildFormUrl('dashboard'),
-      displayName: 'Team Group Companies - Employee Onboarding'
+    sendInitialRequestEmails({
+      requestId: workflowId,
+      employeeName: employeeName,
+      jobTitle: formData.positionTitle, // HR Job Title (Text)
+      siteName: formData.siteName,
+      hireDate: formData.hireDate,
+      managerName: formData.reportingManagerName,
+      managerEmail: formData.reportingManagerEmail,
+      requesterEmail: formData.requesterEmail,
+      requestDate: new Date().toLocaleDateString(),
+      employmentType: formData.employmentType,
+      employeeType: formData.employeeType,
+      newHireOrRehire: formData.newHireOrRehire,
+      systemAccess: formData.systemAccess,
+      systems: formData.systems,
+      equipment: formData.equipment,
+      employeeIdSetupUrl: idSetupUrl,
+      siteDocsEmail: CONFIG.EMAILS.SITEDOCS
     });
     
     return {
@@ -136,4 +142,32 @@ function formatInitialRequestData(data) {
     data.plan306090 || '',
     data.comments || ''
   ];
+}
+
+/**
+ * Get current user's details for auto-populating requester fields
+ * @returns {Object} {email, name}
+ */
+function getCurrentUserDetails() {
+  try {
+    const email = Session.getActiveUser().getEmail();
+    let name = '';
+    
+    // Try to get name from Directory API
+    try {
+      const user = AdminDirectory.Users.get(email);
+      name = user.name.fullName;
+    } catch (e) {
+      // Fallback if Directory API fails or user not found
+      Logger.log('Could not fetch user name from directory: ' + e.toString());
+    }
+    
+    return {
+      email: email,
+      name: name
+    };
+  } catch (error) {
+    Logger.log('Error getting current user details: ' + error.toString());
+    return { email: '', name: '' };
+  }
 }

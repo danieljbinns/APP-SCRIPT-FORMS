@@ -22,6 +22,17 @@ function serveSpecialist(workflowId, dept) {
   template.formId = '';
   template.department = dept || 'general';
   
+  // Reuse IT Context Logic to get full request details for specialist forms
+  // This allows specialist forms to show employee details header properly
+  let requestData = {};
+  if (typeof getITContextData === 'function') {
+    requestData = getITContextData(workflowId);
+  } else {
+    // Fallback if IT function not available in this scope (should act as library)
+    requestData = { employeeName: 'Loading...' }; 
+  }
+  template.requestData = requestData;
+  
   return template.evaluate()
     .setTitle('Specialist Setup - ' + dept)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);

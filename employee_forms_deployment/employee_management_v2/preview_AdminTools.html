@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Super Admin Tools</title>
+    <!-- Dark Mode Theme -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0c0c0c;
+            --card: #1a1a1a;
+            --text: #fff;
+            --muted: #a0a0a0;
+            --brand: #EB1C2D;
+            --border: #333;
+            --input: #000;
+            --terminal-bg: #0f172a;
+            --terminal-text: #38bdf8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            height: 100vh;
+        }
+
+        /* LAYOUT */
+        .sidebar {
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        h2 {
+            margin: 0 0 15px 0;
+            font-size: 1.1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* BUTTONS */
+        .btn-tool {
+            background: #222;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            padding: 15px;
+            text-align: left;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-tool:hover {
+            background: #333;
+            color: white;
+            border-color: #555;
+        }
+
+        .btn-tool i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .btn-action {
+            background: var(--brand);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* TERMINAL */
+        .terminal {
+            background: var(--terminal-bg);
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .term-line {
+            margin-bottom: 5px;
+        }
+
+        .prompt {
+            color: #22c55e;
+            margin-right: 8px;
+        }
+
+        .cmd-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-family: inherit;
+            font-size: inherit;
+            flex-grow: 1;
+            outline: none;
+        }
+
+        /* FORMS */
+        label {
+            display: block;
+            color: var(--muted);
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+
+        input {
+            background: var(--input);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .audit-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #333;
+            font-size: 0.9rem;
+        }
+
+        .audit-row:hover {
+            background: #222;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <div style="font-weight:700; font-size:1.2rem; margin-bottom:10px;">Super Admin</div>
+        <button class="btn-tool" onclick="scrollToId('gam')"><i class="fa-solid fa-terminal"></i> GAM Console</button>
+        <button class="btn-tool" onclick="scrollToId('impersonate')"><i class="fa-solid fa-user-secret"></i>
+            Impersonation</button>
+        <button class="btn-tool" onclick="scrollToId('audit')"><i class="fa-solid fa-envelope-open-text"></i> Mail
+            Audit</button>
+        <button class="btn-tool" onclick="scrollToId('config')"><i class="fa-solid fa-gears"></i> System Config</button>
+    </div>
+
+    <div class="main">
+
+        <!-- SECTION: GAM CONSOLE -->
+        <div id="gam" class="card">
+            <h2>
+                <span><i class="fa-solid fa-terminal"></i> Cloud Shell / GAM</span>
+                <span style="font-size:0.8rem; color:var(--muted)">v6.12-beta</span>
+            </h2>
+            <div class="terminal" id="terminalOutput">
+                <div class="term-line"><span class="prompt">admin@console:~$</span> gam info user
+                    jane.doe@robinsonsolutions.com</div>
+                <div class="term-line" style="color:var(--muted)">User: jane.doe@robinsonsolutions.com</div>
+                <div class="term-line" style="color:var(--muted)"> OU: /Employees/Operations</div>
+                <div class="term-line" style="color:var(--muted)"> Licenses: G Suite Business</div>
+                <div class="term-line" style="color:var(--muted)"> 2FA: Enforced</div>
+                <div class="term-line"> </div>
+                <div class="term-line" style="display:flex;">
+                    <span class="prompt">admin@console:~$</span>
+                    <input type="text" class="cmd-input" placeholder="Enter command..." onkeydown="handleCmd(event)">
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: IMPERSONATION -->
+        <div id="impersonate" class="card">
+            <h2><i class="fa-solid fa-user-secret"></i> User Impersonation</h2>
+            <p style="color:var(--muted); font-size:0.9rem;">Generate a temporary OAuth delegation token to view the
+                workspace as another user.</p>
+
+            <div style="display:flex; gap:10px; align-items: flex-end;">
+                <div style="flex-grow:1">
+                    <label>Target User Email</label>
+                    <input type="email" value="jane.doe@robinsonsolutions.com">
+                </div>
+                <div style="width:150px">
+                    <label>Duration</label>
+                    <input type="text" value="15 Minutes" readonly style="color:#aaa;">
+                </div>
+                <button class="btn-action"
+                    onclick="alert('Generating Delegation Token...\n\nOpening Incognito Window...')">Launch
+                    Session</button>
+            </div>
+        </div>
+
+        <!-- SECTION: MAIL AUDIT -->
+        <div id="audit" class="card">
+            <h2><i class="fa-solid fa-magnifying-glass"></i> Email Investigation (Metadata)</h2>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <input type="text" placeholder="Sender or Recipient..." style="flex-grow:1;">
+                <input type="date" style="width:150px;">
+                <button class="btn-action" style="background:#333;">Search</button>
+            </div>
+
+            <div style="background:#111; border:1px solid #333; border-radius:4px;">
+                <div class="audit-row" style="background:#222; font-weight:600; color:white;">
+                    <span style="width:150px;">Time</span>
+                    <span style="flex-grow:1;">Subject</span>
+                    <span style="width:200px;">Sender</span>
+                    <span style="width:80px;">Status</span>
+                </div>
+                <!-- Mock Data -->
+                <div class="audit-row">
+                    <span style="color:var(--muted); width:150px;">Today 10:42 AM</span>
+                    <span style="flex-grow:1;">Re: Final Project Delivery</span>
+                    <span style="width:200px;">external@client.com</span>
+                    <span style="color:#22c55e;">Delivered</span>
+                </div>
+                <div class="audit-row">
+                    <span style="color:var(--muted); width:150px;">Today 09:15 AM</span>
+                    <span style="flex-grow:1;">Suspicious Login Attempt</span>
+                    <span style="width:200px;">no-reply@google.com</span>
+                    <span style="color:#ef4444;">Flagged</span>
+                </div>
+                <div class="audit-row">
+                    <span style="color:var(--muted); width:150px;">Yesterday 4:00 PM</span>
+                    <span style="flex-grow:1;">Welcome to the team!</span>
+                    <span style="width:200px;">hr@robinsonsolutions.com</span>
+                    <span style="color:#22c55e;">Delivered</span>
+                </div>
+            </div>
+
+            <button class="btn-action" style="background:#333; margin-top:15px; border:1px solid #555;">
+                <i class="fa-solid fa-file-export"></i> Export Investigation Report
+            </button>
+        </div>
+
+        <!-- SECTION: SYSTEM CONFIGURATION -->
+        <div id="config" class="card">
+            <h2>
+                <span><i class="fa-solid fa-gears"></i> System Configuration</span>
+                <button class="btn-action" style="font-size:0.8rem; padding:4px 10px;"
+                    onclick="alert('Settings Saved to ScriptProperties')">Save Changes</button>
+            </h2>
+            <p style="color:var(--muted); font-size:0.9rem;">Manage global email routing and permission groups
+                dynamically.</p>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <!-- Permission Groups -->
+                <div>
+                    <h3 style="font-size:0.9rem; color:#aaa; border-bottom:1px solid #333; padding-bottom:5px;">
+                        Permission Groups</h3>
+                    <div style="margin-bottom:10px;">
+                        <label>Master Admin Group (SuperUser)</label>
+                        <input type="text" value="admin-access@robinsonsolutions.com">
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <label>All Forms Access Group (Auditor)</label>
+                        <input type="text" value="forms-access@robinsonsolutions.com">
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <label>HR Team Group</label>
+                        <input type="text" value="hr-team@robinsonsolutions.com">
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <label>IT Team Group</label>
+                        <input type="text" value="it-team@robinsonsolutions.com">
+                    </div>
+                </div>
+
+                <!-- Email Routing -->
+                <div>
+                    <h3 style="font-size:0.9rem; color:#aaa; border-bottom:1px solid #333; padding-bottom:5px;">Email
+                        Notification Routing</h3>
+                    <div style="margin-bottom:10px;">
+                        <label>HR Form Target</label>
+                        <input type="email" value="dbinns@robinsonsolutions.com">
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <label>IT Form Target</label>
+                        <input type="email" value="dbinns@robinsonsolutions.com">
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <label>SiteDocs Specialist</label>
+                        <input type="email" value="dbinns@robinsonsolutions.com">
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <label>System Notifications</label>
+                        <input type="email" value="dbinns@robinsonsolutions.com">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function scrollToId(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function handleCmd(e) {
+            if (e.key === 'Enter') {
+                const val = e.target.value;
+                const term = document.getElementById('terminalOutput');
+
+                // Add old line
+                const line = document.createElement('div');
+                line.className = 'term-line';
+                line.innerHTML = `<span class="prompt">admin@console:~$</span> ${val}`;
+                term.insertBefore(line, e.target.parentElement);
+
+                // Add response (Mock)
+                const resp = document.createElement('div');
+                resp.className = 'term-line';
+                resp.style.color = "#aaa";
+                resp.innerText = "Executing '" + val + "' on Google APIs... Success (200 OK)";
+                term.insertBefore(resp, e.target.parentElement);
+
+                // Clear input
+                e.target.value = '';
+                e.target.scrollIntoView();
+            }
+        }
+    </script>
+
+</body>
+
+</html>

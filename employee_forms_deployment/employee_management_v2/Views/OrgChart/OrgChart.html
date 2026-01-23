@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background: #f8fafc;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+      .toolbar {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      h1 { margin: 0; font-size: 1.25rem; color: #1e293b; }
+      
+      #chart_div {
+        flex-grow: 1;
+        overflow: auto;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+      }
+
+      /* Overriding Google Charts default styles for a cleaner look */
+      .google-visualization-orgchart-node {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        background: white !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+        padding: 10px !important;
+        font-family: 'Inter', sans-serif !important;
+      }
+      .google-visualization-orgchart-lineleft { border-left: 2px solid #cbd5e1 !important; }
+      .google-visualization-orgchart-lineright { border-right: 2px solid #cbd5e1 !important; }
+      .google-visualization-orgchart-linebottom { border-bottom: 2px solid #cbd5e1 !important; }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <h1>Organization Chart</h1>
+      <button onclick="window.print()" style="padding:8px 16px; background:#2563eb; color:white; border:none; border-radius:4px; cursor:pointer;">Export PDF</button>
+    </div>
+    
+    <div id="chart_div">Loading Chart...</div>
+
+    <script>
+      google.charts.load('current', {packages:["orgchart"]});
+      google.charts.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+        // In real app: google.script.run.withSuccessHandler(render).getOrgChartData();
+        // Mocking for prototype:
+        const mockData = [
+          [{v:'ceo@robinsonsolutions.com', f:'<div style="font-weight:600">Alice CEO</div><div style="color:#64748b">CEO</div>'}, '', 'CEO'],
+          [{v:'cto@robinsonsolutions.com', f:'<div style="font-weight:600">Bob CTO</div><div style="color:#64748b">CTO</div>'}, 'ceo@robinsonsolutions.com', 'CTO'],
+          [{v:'cfo@robinsonsolutions.com', f:'<div style="font-weight:600">Charlie CFO</div><div style="color:#64748b">CFO</div>'}, 'ceo@robinsonsolutions.com', 'CFO'],
+          [{v:'it@robinsonsolutions.com', f:'<div style="font-weight:600">Dave IT</div><div style="color:#64748b">IT Manager</div>'}, 'cto@robinsonsolutions.com', 'IT Manager'],
+          [{v:'dev@robinsonsolutions.com', f:'<div style="font-weight:600">Frank Dev</div><div style="color:#64748b">Developer</div>'}, 'it@robinsonsolutions.com', 'Developer']
+        ];
+        
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Name');
+        data.addColumn('string', 'Manager');
+        data.addColumn('string', 'ToolTip');
+
+        data.addRows(mockData);
+
+        var chart = new google.visualization.OrgChart(document.getElementById('chart_div'));
+        chart.draw(data, {'allowHtml':true, 'size': 'medium'});
+      }
+    </script>
+  </body>
+</html>

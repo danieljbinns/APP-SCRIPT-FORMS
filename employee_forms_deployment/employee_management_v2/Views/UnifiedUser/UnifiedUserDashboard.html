@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Unified Identity 360</title>
+    <!-- Dark Mode Styling -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0c0c0c;
+            --card: #1a1a1a;
+            --text: #fff;
+            --muted: #a0a0a0;
+            --brand: #EB1C2D;
+            --border: #333;
+            --success: #00c853;
+            --warning: #ffab00;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* HEADER / PROFILE */
+        .profile-header {
+            display: flex;
+            gap: 20px;
+            align-items: start;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            background: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #666;
+            border: 2px solid var(--card);
+            overflow: hidden;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-info h1 {
+            margin: 0 0 5px 0;
+            font-size: 1.5rem;
+        }
+
+        .meta-row {
+            display: flex;
+            gap: 20px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: #333;
+            color: #fff;
+        }
+
+        .status-badge.active {
+            background: rgba(0, 200, 83, 0.2);
+            color: var(--success);
+        }
+
+        .status-badge.term {
+            background: rgba(235, 28, 45, 0.2);
+            color: var(--brand);
+        }
+
+        /* ALERTS */
+        .alert-box {
+            background: rgba(235, 28, 45, 0.1);
+            border: 1px solid var(--brand);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #ff8a80;
+        }
+
+        .alert-box i {
+            font-size: 1.2rem;
+        }
+
+        .alert-box strong {
+            color: var(--brand);
+        }
+
+        /* GAP ANALYSIS / ORPHAN CHECK */
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: white;
+            border-left: 3px solid var(--brand);
+            padding-left: 10px;
+        }
+
+        /* ACCOUNT MATRIX */
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .matrix-table th {
+            text-align: left;
+            padding: 15px;
+            background: #222;
+            color: var(--muted);
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .matrix-table td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .matrix-table tr:hover {
+            background: #222;
+        }
+
+        .sys-icon {
+            width: 20px;
+            text-align: center;
+            margin-right: 8px;
+            color: var(--muted);
+        }
+
+        /* DATA PILLS */
+        .pill {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        .pill.green {
+            background: rgba(0, 255, 0, 0.1);
+            color: var(--success);
+        }
+
+        .pill.red {
+            background: rgba(255, 0, 0, 0.1);
+            color: var(--brand);
+        }
+
+        .pill.gray {
+            background: #333;
+            color: #aaa;
+        }
+
+        .pill.warn {
+            background: rgba(255, 171, 0, 0.1);
+            color: var(--warning);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- PROFILE HEADER -->
+    <div class="profile-header">
+        <div class="avatar">
+            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile">
+        </div>
+        <div class="profile-info">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <h1>John Doe</h1>
+                <span class="status-badge active">Active Employee</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-item"><i class="fa-solid fa-id-badge"></i> EMP-1092</span>
+                <span class="meta-item"><i class="fa-solid fa-building"></i> Operations</span>
+                <span class="meta-item"><i class="fa-solid fa-briefcase"></i> Site Supervisor</span>
+                <span class="meta-item"><i class="fa-solid fa-user-tie"></i> Reports to: Sarah Smith</span>
+            </div>
+            <div class="meta-row" style="color:var(--text); font-size:0.8rem; margin-top:10px;">
+                <span class="meta-item"><i class="fa-regular fa-clock"></i> Last Seen: 12 mins ago (Google)</span>
+                <span class="meta-item"><i class="fa-solid fa-calendar-check"></i> Hired: Jan 15, 2024</span>
+            </div>
+        </div>
+        <div style="margin-left:auto;">
+            <button
+                style="background:var(--brand); color:white; border:none; padding:10px 20px; border-radius:4px; font-weight:600; cursor:pointer;">
+                <i class="fa-solid fa-pencil"></i> Edit Profile
+            </button>
+        </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="alert-box">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+            <strong>Action Required: Identity Gaps Detected</strong><br>
+            <span style="font-size:0.9rem; opacity:0.8;">1 Critical Gap (Missing Account) • 1 Potential Orphaned
+                Account</span>
+        </div>
+        <button
+            style="margin-left:auto; background:transparent; border:1px solid var(--brand); color:var(--brand); padding:6px 12px; border-radius:4px; cursor:pointer;">Fix
+            All</button>
+    </div>
+
+    <!-- ACCOUNT MATRIX -->
+    <div class="section-title">Connected Systems & Access (The 360&deg; View)</div>
+
+    <table class="matrix-table">
+        <thead>
+            <tr>
+                <th>System / Application</th>
+                <th>Account Status</th>
+                <th>Role / License</th>
+                <th>Last Login</th>
+                <th>Gap Analysis</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- ADP -->
+            <tr>
+                <td><i class="fa-solid fa-id-card sys-icon"></i> ADP Workforce</td>
+                <td><span class="pill green">Active</span></td>
+                <td>Standard User</td>
+                <td>Today, 8:45 AM</td>
+                <td><span class="pill green"><i class="fa-solid fa-check"></i> Synced</span></td>
+                <td><i class="fa-solid fa-ellipsis-vertical" style="color:#666; cursor:pointer;"></i></td>
+            </tr>
+
+            <!-- GOOGLE -->
+            <tr>
+                <td><i class="fa-brands fa-google sys-icon"></i> Google Workspace</td>
+                <td><span class="pill green">Active</span></td>
+                <td>Business Standard</td>
+                <td>12 mins ago</td>
+                <td><span class="pill green"><i class="fa-solid fa-check"></i> Synced</span></td>
+                <td><i class="fa-solid fa-ellipsis-vertical" style="color:#666; cursor:pointer;"></i></td>
+            </tr>
+
+            <!-- SITEDOCS (MISSING GAP) -->
+            <tr>
+                <td><i class="fa-solid fa-hard-hat sys-icon"></i> SiteDocs</td>
+                <td><span class="pill red">Missing</span></td>
+                <td>--</td>
+                <td>--</td>
+                <td><span class="pill red"><i class="fa-solid fa-ban"></i> GAP: Should be Active</span></td>
+                <td><button
+                        style="background:#333; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;">Create</button>
+                </td>
+            </tr>
+
+            <!-- FLEETIO -->
+            <tr>
+                <td><i class="fa-solid fa-truck sys-icon"></i> Fleetio</td>
+                <td><span class="pill green">Active</span></td>
+                <td>Driver</td>
+                <td>2 days ago</td>
+                <td><span class="pill green"><i class="fa-solid fa-check"></i> Synced</span></td>
+                <td><i class="fa-solid fa-ellipsis-vertical" style="color:#666; cursor:pointer;"></i></td>
+            </tr>
+
+            <!-- OLD SYSTEM (ORPHAN) -->
+            <tr>
+                <td><i class="fa-solid fa-ghost sys-icon"></i> Legacy Portal</td>
+                <td><span class="pill warn" style="color:var(--warning)">Active (Orphan)</span></td>
+                <td>Admin</td>
+                <td>45 days ago</td>
+                <td><span class="pill warn"><i class="fa-solid fa-trash"></i> Missed Delete?</span></td>
+                <td><button
+                        style="background:var(--brand); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;">Revoke</button>
+                </td>
+            </tr>
+
+            <!-- CROWDSTRIKE -->
+            <tr>
+                <td><i class="fa-solid fa-shield-halved sys-icon"></i> CrowdStrike</td>
+                <td><span class="pill green">Installed</span></td>
+                <td>Endpoint Protection</td>
+                <td>Real-time</td>
+                <td><span class="pill green">Protected</span></td>
+                <td><i class="fa-solid fa-ellipsis-vertical" style="color:#666; cursor:pointer;"></i></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="margin-top:20px; display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+        <div style="background:var(--card); padding:20px; border-radius:8px; border:1px solid var(--border);">
+            <div class="section-title" style="border:none; padding:0; margin-bottom:10px;">Security Context</div>
+            <div class="meta-item" style="margin-bottom:8px;"><i class="fa-solid fa-key"></i> 2FA Status: <span
+                    class="pill green">Enforced</span></div>
+            <div class="meta-item" style="margin-bottom:8px;"><i class="fa-solid fa-lock"></i> Password Age: 42 Days
+            </div>
+            <div class="meta-item"><i class="fa-solid fa-globe"></i> Last IP: 192.168.1.42 (Canada)</div>
+        </div>
+
+        <div style="background:var(--card); padding:20px; border-radius:8px; border:1px solid var(--border);">
+            <div class="section-title" style="border:none; padding:0; margin-bottom:10px;">Recent Audit Log</div>
+            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:5px;">Today 10:00 AM - Password Changed
+            </div>
+            <div style="font-size:0.85rem; color:var(--muted); margin-bottom:5px;">Yesterday 4:00 PM - Added to Group
+                'Managers'</div>
+            <div style="font-size:0.85rem; color:var(--muted);">Jan 15 - Account Provisioned</div>
+        </div>
+    </div>
+
+</body>
+
+</html>

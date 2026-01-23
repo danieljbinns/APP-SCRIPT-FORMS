@@ -399,11 +399,19 @@
                         </span>
                     </div>
                     <div class="info-row">
-                        <span class="label">Position:</span>
+                        <span class="label">Job Title:</span>
                         <span class="value">
-                            <?= requestData.position ?>
+                            <?= requestData.jobTitle ?>
                         </span>
                     </div>
+                    <? if (requestData.jrTitle) { ?>
+                    <div class="info-row">
+                        <span class="label">JR Title:</span>
+                        <span class="value">
+                            <?= requestData.jrTitle ?>
+                        </span>
+                    </div>
+                    <? } ?>
                     <div class="info-row">
                         <span class="label">Site:</span>
                         <span class="value">
@@ -428,6 +436,15 @@
                             <?= requestData.emailRequested ?>
                         </span>
                     </div>
+
+                    <!-- Hidden fields for pre-population -->
+                    <input type="hidden" id="ctx_computerType" value="<?= requestData.computerType || '' ?>">
+                    <input type="hidden" id="ctx_requestedDomains" value="<?= requestData.requestedDomains || '' ?>">
+                    <input type="hidden" id="ctx_bossJobSites" value="<?= requestData.bossJobSites || '' ?>">
+                    <input type="hidden" id="ctx_bossCostSheet" value="<?= requestData.bossCostSheet || '' ?>">
+                    <input type="hidden" id="ctx_bossCostSheetJobs" value="<?= requestData.bossCostSheetJobs || '' ?>">
+                    <input type="hidden" id="ctx_bossTripReports" value="<?= requestData.bossTripReports || '' ?>">
+                    <input type="hidden" id="ctx_bossGrievances" value="<?= requestData.bossGrievances || '' ?>">
                 </div>
 
                 <!-- From Employee Setup (Form 2) -->
@@ -683,6 +700,48 @@
     </div>
 
     <script>
+        // Pre-population Logic
+        window.addEventListener('DOMContentLoaded', function () {
+            // 1. Email Username (First.Last)
+            const employeeName = "<?= requestData.employeeName ?>";
+            if (employeeName) {
+                const parts = employeeName.split(' ');
+                if (parts.length >= 2) {
+                    const username = (parts[0] + '.' + parts[parts.length - 1]).toLowerCase();
+                    document.getElementById('emailUsername').value = username;
+                }
+            }
+
+            // 2. Email Domain
+            const requestedDomains = document.getElementById('ctx_requestedDomains').value;
+            const domainSelect = document.getElementById('emailDomain');
+            if (requestedDomains && requestedDomains.includes('robinsonsolutions.com')) {
+                domainSelect.value = '@robinsonsolutions.com';
+            } else if (requestedDomains && requestedDomains.includes('team-group.com')) {
+                domainSelect.value = '@team-group.com';
+            }
+
+            // 3. Computer Type
+            const compType = document.getElementById('ctx_computerType').value;
+            if (compType) {
+                const compSelect = document.getElementById('computerType');
+                // Map values if needed, otherwise sets exact match
+                if (compType === 'Laptop (Windows)') compSelect.value = 'Windows PC';
+                else if (compType === 'Desktop (Windows)') compSelect.value = 'Windows PC';
+                else if (compType.includes('Mac')) compSelect.value = 'Mac';
+                else if (compType.includes('Chromebook')) compSelect.value = 'Chromebook';
+            }
+
+            // 4. BOSS / Jonas Checkboxes Logic could be added here if we had checkboxes on IT form
+            // currently IT form has Radios for access. We can default them to Yes if request data exists?
+            const bossSites = document.getElementById('ctx_bossJobSites').value;
+            if (bossSites) {
+                // If any BOSS sites requested, default BOSS Access to Yes
+                const bossYes = document.querySelector('input[name="BOSS_Access"][value="Yes"]');
+                if (bossYes) bossYes.checked = true;
+            }
+        });
+
         document.getElementById('taskForm').addEventListener('submit', function (e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');

@@ -34,8 +34,9 @@ function getHRVerificationData(workflowId) {
           firstName: mainData[i][10] || '',
           lastName: mainData[i][12] || '',
           position: mainData[i][14] || '',
+          jrTitle: mainData[i][46] || '', // Col 46 is JR Assign
           siteName: mainData[i][15] || '',
-          hireDate: mainData[i][6] || '',
+          hireDate: mainData[i][6] ? Utilities.formatDate(new Date(mainData[i][6]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
           managerName: mainData[i][18] || '',
           managerEmail: mainData[i][17] || '',
           employmentType: mainData[i][9] || '',
@@ -79,7 +80,9 @@ function submitHRVerification(formData) {
     const lastNameCol = headers.indexOf('Last Name');
     const managerNameCol = headers.indexOf('Reporting Manager Name');
     const managerEmailCol = headers.indexOf('Reporting Manager Email');
-    const jrTitleCol = headers.indexOf('Position/JR Title');
+    const siteNameCol = headers.indexOf('Site/Office Location');
+    const jrTitleCol = headers.indexOf('Position/JR Title'); // Col 14 (Now map to jobTitle)
+    const jrAssignCol = headers.indexOf('JR Assign'); // Col 46 (Now map to jrTitle)
     
     let employmentType = '';
     let systemAccess = '';
@@ -91,7 +94,9 @@ function submitHRVerification(formData) {
         if (lastNameCol !== -1) mainSheet.getRange(i + 1, lastNameCol + 1).setValue(formData.lastName);
         if (managerNameCol !== -1) mainSheet.getRange(i + 1, managerNameCol + 1).setValue(formData.managerName);
         if (managerEmailCol !== -1) mainSheet.getRange(i + 1, managerEmailCol + 1).setValue(formData.managerEmail);
-        if (jrTitleCol !== -1) mainSheet.getRange(i + 1, jrTitleCol + 1).setValue(formData.jrTitle);
+        if (siteNameCol !== -1) mainSheet.getRange(i + 1, siteNameCol + 1).setValue(formData.siteName);
+        if (jrTitleCol !== -1) mainSheet.getRange(i + 1, jrTitleCol + 1).setValue(formData.jobTitle);
+        if (jrAssignCol !== -1) mainSheet.getRange(i + 1, jrAssignCol + 1).setValue(formData.jrTitle);
         
         employmentType = mainData[i][9] || '';
         systemAccess = mainData[i][19] || '';
@@ -114,28 +119,44 @@ function submitHRVerification(formData) {
     resultsSheet.appendRow([
       workflowId, formId, new Date(), formData.adpAssociateId,
       formData.firstName + ' ' + formData.lastName,
-      formData.managerName, formData.managerEmail, formData.jrTitle,
+      formData.managerName, formData.managerEmail, 
+      formData.jobTitle + ' / ' + formData.jrTitle, // Store combined in verification results logs
       formData.notes || '', Session.getActiveUser().getEmail()
     ]);
     
+    const actingUser = Session.getActiveUser().getEmail();
+    
+    // CRITICAL: Ensure sheet updates are committed before reading context/sending email
+    SpreadsheetApp.flush();
+    
+    // Get context and OVERRIDE job title with the verified one from this form submission
+    // This ensures downstream emails have the fresh, verified data even if sheet read is stale
+    const context = getWorkflowContext(workflowId);
+    if (context) {
+      context.jobTitle = formData.jobTitle; // Override Job Title
+      context.jrTitle = formData.jrTitle;   // Override JR Title
+    }
+    
     if (employmentType === 'Hourly' && systemAccess === 'No') {
-      updateWorkflow(workflowId, 'Complete', 'HR Verification Complete');
+      updateWorkflow(workflowId, 'Complete', 'HR Verification Complete', '', actingUser);
       sendFormEmail({
         to: requesterEmail,
-        subject: 'Employee Onboarding Complete - ' + formData.firstName + ' ' + formData.lastName,
-        body: 'Employee onboarding has been completed.\\n\\nEmployee: ' + formData.firstName + ' ' + formData.lastName + '\\nADP ID: ' + formData.adpAssociateId + '\\nPosition: ' + formData.jrTitle + '\\nWorkflow ID: ' + workflowId + '\\n\\nAll required setup steps have been completed for this hourly employee.',
-        displayName: 'Team Group Companies - Employee Onboarding'
+        subject: 'Employee Onboarding Complete',
+        body: 'The onboarding process has been completed successfully. All required setup steps have been finished for this hourly employee.',
+        displayName: 'Team Group Companies - Employee Onboarding',
+        contextData: context
       });
       Logger.log('[SUCCESS] Completion email sent to requester (Hourly/No System Access)');
     } else {
-      updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed');
+      updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed', '', actingUser);
       const itUrl = buildFormUrl('it_setup', { wf: workflowId });
       sendFormEmail({
         to: CONFIG.EMAILS.IT,
-        subject: 'HR Verified: IT Setup Required - ' + formData.firstName + ' ' + formData.lastName,
-        body: 'HR has verified the details and assigned an ADP ID.\\n\\nEmployee: ' + formData.firstName + ' ' + formData.lastName + '\\nADP ID: ' + formData.adpAssociateId + '\\nPosition: ' + formData.jrTitle + '\\nWorkflow ID: ' + workflowId + '\\n\\nPlease complete the IT setup form.',
+        subject: 'HR Verified: IT Setup Required',
+        body: 'HR has verified the employee details and assigned an ADP ID.\n\nPlease complete the IT setup form using the button below.',
         formUrl: itUrl,
-        displayName: 'Team Group Companies - Employee Onboarding'
+        displayName: 'Team Group Companies - Employee Onboarding',
+        contextData: context
       });
       Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)');
     }

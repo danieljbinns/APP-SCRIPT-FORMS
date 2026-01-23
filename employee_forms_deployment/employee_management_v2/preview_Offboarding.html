@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>PREVIEW: Offboarding Request</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --brand-red-hover: #c41522;
+            --border-color: #333;
+            --input-bg: #000;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            width: 500px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-top: 5px solid var(--brand-red);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--brand-red);
+            /* Keep red for destructive action context */
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--input-bg);
+            color: var(--text-main);
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .checklist {
+            margin-top: 15px;
+            background: #2a0000;
+            /* Dark Red tint */
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #500;
+        }
+
+        .checkbox-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .btn-danger {
+            background: var(--brand-red);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 25px;
+        }
+
+        .btn-danger:hover {
+            background: var(--brand-red-hover);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h2>Offboarding Request</h2>
+        <p style="color:var(--text-muted); font-size:0.9rem;">Initiate the departure process for an employee.</p>
+
+        <label>Employee</label>
+        <input type="text" value="John Doe (EMP-1024)" readonly style="background:#333; border-color:#444; color:#aaa;">
+
+        <label>Last Working Day</label>
+        <input type="date" style="color-scheme: dark;">
+
+        <label>Reason for Departure</label>
+        <select>
+            <option>Voluntary Resignation</option>
+            <option>Involuntary Termination</option>
+            <option>Contract End</option>
+        </select>
+
+        <div class="checklist">
+            <strong><i class="fa-solid fa-box-open"></i> Asset Return Checklist</strong>
+            <p style="font-size:0.8rem; margin-top:5px; color:#fda4af;">Check items to be retrieved by IT:</p>
+            <div class="checkbox-item"><input type="checkbox" checked> Laptop</div>
+            <div class="checkbox-item"><input type="checkbox" checked> Phone</div>
+            <div class="checkbox-item"><input type="checkbox"> Credit Card</div>
+            <div class="checkbox-item"><input type="checkbox"> Uniforms</div>
+        </div>
+
+        <button class="btn-danger" onclick="submit()">Submit Termination Request</button>
+    </div>
+
+    <script>
+        function submit() {
+            const btn = document.querySelector('.btn-danger');
+            if (confirm("Are you sure? This will trigger access revocation workflows.")) {
+                btn.textContent = "Processing...";
+                btn.disabled = true;
+                setTimeout(() => {
+                    alert("Offboarding Workflow Started.\n\n- IT Notified (Revoke Access)\n- HR Notified (Final Pay)\n- Cards Cancelled");
+                    btn.textContent = "Submitted";
+                }, 1000);
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Asset & Device Command Center</title>
+    <!-- Dark Mode Theme -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --success: #00c853;
+            --warning: #ffab00;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .stat-card h3 {
+            margin: 0 0 5px 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .stat-card .trend {
+            font-size: 0.8rem;
+        }
+
+        .trend.up {
+            color: var(--success);
+        }
+
+        .trend.down {
+            color: var(--brand-red);
+        }
+
+        .device-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            text-align: left;
+            padding: 15px;
+            background: #222;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            font-size: 0.9rem;
+        }
+
+        tr:hover {
+            background: #222;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-ok {
+            background: rgba(0, 200, 83, 0.1);
+            color: var(--success);
+        }
+
+        .status-warn {
+            background: rgba(255, 171, 0, 0.1);
+            color: var(--warning);
+        }
+
+        .status-crit {
+            background: rgba(235, 28, 45, 0.1);
+            color: var(--brand-red);
+        }
+
+        .source-icon {
+            margin-right: 5px;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div>
+            <h1>Device & Security Command</h1>
+            <span style="color:var(--text-muted)">Unified view: Google MDM • CrowdStrike • Hexnode</span>
+        </div>
+        <div>
+            <button
+                style="background:var(--brand-red); color:white; border:none; padding:10px 20px; border-radius:4px;">Sync
+                All</button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Endpoints</h3>
+            <div class="value">1,240</div>
+            <span class="trend up"><i class="fa-solid fa-arrow-up"></i> 12 this week</span>
+        </div>
+        <div class="stat-card">
+            <h3>Compliant</h3>
+            <div class="value" style="color:var(--success)">98.2%</div>
+            <span class="trend up">Target Met</span>
+        </div>
+        <div class="stat-card">
+            <h3>Vulnerabilities</h3>
+            <div class="value" style="color:var(--warning)">42</div>
+            <span class="trend down">Requires Patching</span>
+        </div>
+        <div class="stat-card">
+            <h3>Critical Alerts</h3>
+            <div class="value" style="color:var(--brand-red)">3</div>
+            <span class="trend down">CrowdStrike Blocked</span>
+        </div>
+    </div>
+
+    <table class="device-table">
+        <thead>
+            <tr>
+                <th>Device Name</th>
+                <th>User</th>
+                <th>OS / Type</th>
+                <th>Google MDM</th>
+                <th>CrowdStrike</th>
+                <th>Hexnode</th>
+                <th>Last Check-in</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>LPT-EXEC-01</td>
+                <td>Alice CEO</td>
+                <td><i class="fa-brands fa-apple"></i> macOS 14.1</td>
+                <td><span class="status-badge status-ok"><i class="fa-solid fa-check"></i> Synced</span></td>
+                <td><span class="status-badge status-ok"><i class="fa-solid fa-shield-halved"></i> Protected</span></td>
+                <td><span class="status-badge status-ok">Compliant</span></td>
+                <td>2 mins ago</td>
+            </tr>
+            <tr>
+                <td>WIN-FIN-04</td>
+                <td>Charlie CFO</td>
+                <td><i class="fa-brands fa-windows"></i> Win 11 Pro</td>
+                <td><span class="status-badge status-ok">Synced</span></td>
+                <td><span class="status-badge status-warn"><i class="fa-solid fa-triangle-exclamation"></i> Update
+                        Req</span></td>
+                <td><span class="status-badge status-ok">Compliant</span></td>
+                <td>1 hour ago</td>
+            </tr>
+            <tr>
+                <td>TAB-SITE-22</td>
+                <td>Field Ops</td>
+                <td><i class="fa-brands fa-android"></i> Android 14</td>
+                <td><span class="status-badge status-ok">Managed</span></td>
+                <td><span class="status-badge" style="color:#666">N/A</span></td>
+                <td><span class="status-badge status-crit"><i class="fa-solid fa-ban"></i> Non-Compliant</span></td>
+                <td>4 days ago</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+
+</html>

@@ -9,10 +9,11 @@ const CONFIG = {
   // GOOGLE RESOURCES
   // ==========================================================================
   
-  SPREADSHEET_ID: '1ytpifjHlCmZHRUaLuAAG0HzYu-5GSlCDnzifNfvvc3w',
+  SPREADSHEET_ID: '1kGjw8e-uIehaBemlsRZ4Yq1QrYOWkJvWzhKbgfl4Pxo',
   SHARED_DRIVE_ID: '0AOOOWlqzpUNVUk9PVA',
-  MAIN_FOLDER_ID: '1Ofm_zSlkDSc1jp_dWfbEfer81KSaon7E',
-  DEPLOYMENT_URL: 'https://script.google.com/a/macros/robinsonsolutions.com/s/AKfycbzpYfZvZ2irw_DVe24NgFGyNcad2XiX5jTQOO9m0wQIWxo3oln9LjDttuoXDBjjVhZ3/exec',
+  MAIN_FOLDER_ID: '1vBZVuzXmSatnLGiqhU7QoS0zBK2NGDQE',
+  DEPLOYMENT_URL: 'https://script.google.com/a/macros/robinsonsolutions.com/s/AKfycbwG4af-acrXjjDfEZBahHn2X1lMEhkLGC1PSubgPoqUdXNQlcaoH23tzUzd0Fp8MNFD/exec', // V1 Production - Deployed 2026-01-20
+  ALLOWED_DOMAINS: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com'],
   
   // ==========================================================================
   // SHEET NAMES
@@ -29,7 +30,14 @@ const CONFIG = {
     FLEETIO_RESULTS: 'Fleetio Results',
     JONAS_RESULTS: 'JONAS Results',
     SITEDOCS_RESULTS: 'SiteDocs Results',
-    REVIEW_306090_RESULTS: '30-60-90 Review Results'
+    REVIEW_306090_RESULTS: '30-60-90 Review Results',
+    // Reference Data for Lookups
+    REFERENCE_SITES: 'Reference_Sites',
+    REFERENCE_JOB_CODES: 'Reference_JobCodes',
+    REFERENCE_MANAGERS: 'Reference_Managers',
+    REFERENCE_REQUESTERS: 'Reference_Requesters',
+    REFERENCE_JRS: 'Reference_JRs',
+    REFERENCE_JOBS_JONAS: 'Reference_JobsJonas'
   },
   
   // ==========================================================================

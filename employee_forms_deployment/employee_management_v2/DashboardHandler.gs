@@ -29,28 +29,36 @@ function getDashboardData() {
     const headers = data[0];
     const rows = data.slice(1);
     
-    // Map to objects for easier consumption on client side
-    const workflows = rows.map(row => {
-      return {
-        id: row[0],
-        type: row[1],
-        name: row[2],
-        initiator: row[3],
-        status: row[4],
-        // Convert dates to ISO strings to avoid serialization issues
-        created: row[5] instanceof Date ? row[5].toISOString() : String(row[5]),
-        updated: row[6] instanceof Date ? row[6].toISOString() : String(row[6]),
-        step: row[7],
-        employee: row[8]
-      };
+    // Map to objects and Filter based on Access Control
+    const userEmail = Session.getActiveUser().getEmail();
+    
+    // We filter rows first or check inside map. Filter first is safer for serialization.
+    const accessibleWorkflows = rows.map(row => {
+        // Construct basic object first to pass to access control (needs structure)
+        return {
+           id: row[0],
+           type: row[1],
+           name: row[2],
+           initiator: row[3],
+           status: row[4],
+           created: row[5] instanceof Date ? row[5].toISOString() : String(row[5]),
+           updated: row[6] instanceof Date ? row[6].toISOString() : String(row[6]),
+           step: row[7],
+           employee: row[8],
+           requesterEmail: row[3] // Important for Requester checks
+        };
+    }).filter(wf => {
+        // Use the centralized permission logic
+        return AccessControlService.canAccessWorkflow(userEmail, wf);
     }).reverse(); // Show newest first
     
     const result = {
       success: true,
-      workflows: workflows
+      workflows: accessibleWorkflows,
+      currentUser: userEmail
     };
     
-    Logger.log('Returning dashboard data: ' + workflows.length + ' records');
+    Logger.log('Returning dashboard data: ' + accessibleWorkflows.length + ' records');
     return result;
     
   } catch (error) {

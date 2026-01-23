@@ -226,34 +226,22 @@
 
                 <form id="hrVerificationForm">
                     <div class="section-title">Request Context</div>
-                    <div class="grid">
-                        <div class="form-group">
-                            <label>Request ID</label>
-                            <div class="read-only-box">
-                                <?= workflowId ?>
-                            </div>
-                            <input type="hidden" name="workflowId" value="<?= workflowId ?>">
-                            <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
-                        </div>
-                        <div class="form-group">
-                            <label>Employee ID</label>
-                            <div class="read-only-box">
-                                <?= requestData.internalEmployeeId || 'PENDING' ?>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Hidden Request Context -->
+                    <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+                    <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+                    <input type="hidden" name="internalEmployeeId" value="<?= requestData.internalEmployeeId || 'PENDING' ?>">
 
                     <div class="grid">
                         <div class="form-group">
+                        <div class="form-group">
                             <label>Site</label>
-                            <div class="read-only-box">
-                                <?= requestData.siteName || 'N/A' ?>
-                            </div>
+                            <input type="text" name="siteName" value="<?= requestData.siteName || '' ?>">
+                        </div>
                         </div>
                         <div class="form-group">
                             <label>Hire Date</label>
                             <div class="read-only-box">
-                                <?= requestData.hireDate || 'N/A' ?>
+                                <?= requestData.hireDate ? requestData.hireDate.toString().replace('00:00:00 GMT-0500 (Eastern Standard Time)', '').replace('00:00:00 GMT-0400 (Eastern Daylight Time)', '').trim() : 'N/A' ?>
                             </div>
                         </div>
                     </div>
@@ -282,12 +270,17 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Job Title (HR Title) <span class="required">*</span></label>
+                        <input type="text" name="jobTitle" value="<?= requestData.position ?>" required>
+                    </div>
+
+                    <div class="form-group">
                         <label>JR Title (Verified Position) <span class="required">*</span></label>
-                        <input type="text" name="jrTitle" value="<?= requestData.position ?>" required>
-                        <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
-                            Original Title:
-                            <?= requestData.position ?>
-                        </p>
+                        <select name="jrTitle" id="jrTitle"
+                            data-original-value="<?= requestData.jrTitle || requestData.position ?>" required
+                            style="width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; color: white; font-size: 15px;">
+                            <option value="">Loading titles...</option>
+                        </select>
                     </div>
 
                     <div class="section-title">ADP Assignment</div>
@@ -308,7 +301,7 @@
             </div>
 
             <div id="success-content" style="display: none; text-align: center; padding: 40px 0;">
-                <div class="success-icon">[DONE]</div>
+                <div class="success-icon">✓</div>
                 <h2>Verification Complete</h2>
                 <p class="subtitle">The records have been updated and IT has been notified to proceed.</p>
                 <button class="btn btn-primary" style="max-width: 200px; margin-top: 24px;"
@@ -323,6 +316,44 @@
     </div>
 
     <script>
+        // Load JRs on startup
+        window.addEventListener('DOMContentLoaded', function () {
+            google.script.run
+                .withSuccessHandler(function (jrs) {
+                    const select = document.getElementById('jrTitle');
+                    const originalValue = select.getAttribute('data-original-value');
+
+                    select.innerHTML = '<option value="">-- Select Verified Title --</option>';
+
+                    if (jrs && jrs.length) {
+                        jrs.forEach(function (jr) {
+                            const option = document.createElement('option');
+                            option.value = jr;
+                            option.textContent = jr;
+                            if (jr === originalValue) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                        });
+                    }
+
+                    // If original value isn't in the list, add it as a selected option to preserve it
+                    if (originalValue && (!jrs || !jrs.includes(originalValue))) {
+                        const option = document.createElement('option');
+                        option.value = originalValue;
+                        option.textContent = originalValue + ' (Original)';
+                        option.selected = true;
+                        select.appendChild(option);
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    console.error('Failed to load JRs', err);
+                    const select = document.getElementById('jrTitle');
+                    select.innerHTML = '<option value="">Error loading titles</option>';
+                })
+                .getJRsList();
+        });
+
         document.getElementById('hrVerificationForm').onsubmit = function (e) {
             e.preventDefault();
 
@@ -338,7 +369,9 @@
                 lastName: this.lastName.value,
                 managerName: this.managerName.value,
                 managerEmail: this.managerEmail.value,
+                jobTitle: this.jobTitle.value,
                 jrTitle: this.jrTitle.value,
+                siteName: this.siteName.value,
                 adpAssociateId: this.adpAssociateId.value,
                 notes: this.notes.value
             };

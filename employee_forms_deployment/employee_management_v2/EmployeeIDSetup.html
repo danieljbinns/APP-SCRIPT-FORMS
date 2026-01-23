@@ -290,9 +290,45 @@
                         </span>
                     </div>
                     <div class="info-item">
-                        <span class="label">Position:</span>
+                        <span class="label">Job Title:</span>
                         <span class="value">
                             <?= requestData.position ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">JR Title:</span>
+                        <span class="value">
+                            <?= requestData.jrTitle || 'N/A' ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Site:</span>
+                        <span class="value">
+                            <?= requestData.siteName ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Start Date:</span>
+                        <span class="value">
+                            <?= requestData.hireDate ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Employment Type:</span>
+                        <span class="value">
+                            <?= requestData.employmentType ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Employee Type:</span>
+                        <span class="value">
+                            <?= requestData.employeeType ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Status:</span>
+                        <span class="value">
+                            <?= requestData.newHireOrRehire ?>
                         </span>
                     </div>
                     <div class="info-item">
@@ -308,9 +344,15 @@
                         </span>
                     </div>
                     <div class="info-item">
+                        <span class="label">Requested By:</span>
+                        <span class="value">
+                            <?= requestData.requesterEmail ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
                         <span class="label">Systems Selected:</span>
                         <span class="value">
-                            <?= requestData.systemsSelected ?>
+                            <?= requestData.systemsSelected || 'None' ?>
                         </span>
                     </div>
                 </div>

@@ -39,12 +39,17 @@ function getIDSetupRequestData(workflowId) {
           employeeName: data[i][10] + ' ' + data[i][12],
           firstName: data[i][10],
           lastName: data[i][12],
-          hireDate: data[i][6],
+          hireDate: data[i][6] ? Utilities.formatDate(new Date(data[i][6]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
           position: data[i][14],
+          jrTitle: data[i][46] || '',
           siteName: data[i][15],
+          jobSiteNumber: data[i][16] || '',
           managerName: data[i][18],
           managerEmail: data[i][17],
           requesterEmail: data[i][5],
+          employmentType: data[i][9] || '',
+          employeeType: data[i][8] || '',
+          newHireOrRehire: data[i][7] || '',
           systemsSelected: data[i][20],
           siteDocsAccess: data[i][20] && data[i][20].includes('SiteDocs')
         };
@@ -59,8 +64,37 @@ function getIDSetupRequestData(workflowId) {
 }
 
 function generateEmployeeId() {
-  const timestamp = new Date().getTime();
-  return 'EMP-' + timestamp.toString().slice(-6);
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
+    
+    if (!sheet || sheet.getLastRow() <= 1) {
+      // No previous IDs, start at 30000
+      return '30000';
+    }
+    
+    // Get all employee IDs from column D (Internal Employee ID)
+    const data = sheet.getRange(2, 4, sheet.getLastRow() - 1, 1).getValues();
+    let maxId = 29999; // Start below 30000
+    
+    data.forEach(row => {
+      const id = row[0];
+      if (id && !isNaN(id)) {
+        const numId = parseInt(id);
+        if (numId > maxId) {
+          maxId = numId;
+        }
+      }
+    });
+    
+    return String(maxId + 1);
+    
+  } catch (error) {
+    Logger.log('Error generating employee ID: ' + error.toString());
+    // Fallback to timestamp-based if there's an error
+    const timestamp = new Date().getTime();
+    return  '30' + timestamp.toString().slice(-3);
+  }
 }
 
 function generateDssUsername(firstName, lastName) {
@@ -97,7 +131,8 @@ function submitEmployeeIDSetup(formData) {
       formData.setupNotes || '', Session.getActiveUser().getEmail()
     ]);
     
-    updateWorkflow(workflowId, 'In Progress', 'ID Setup Complete');
+    const actingUser = Session.getActiveUser().getEmail();
+    updateWorkflow(workflowId, 'In Progress', 'ID Setup Complete', '', actingUser);
     
     triggerNextStepFromIDSetup(workflowId, formData);
     
@@ -136,14 +171,18 @@ function triggerNextStepFromIDSetup(workflowId, setupData) {
   
   Logger.log('Routing from ID Setup: Type=' + employmentType + ', SystemAccess=' + systemAccess);
   
+  // Get workflow context for email
+  const context = getWorkflowContext(workflowId);
+  
   if (employmentType === 'Hourly' && systemAccess === 'No') {
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
-      subject: 'HR Verification Required (Final Step) - ' + requestData.employeeName,
-      body: 'Employee ID setup has been completed for an hourly employee with no system access.\\n\\nEmployee: ' + requestData.employeeName + '\\nWorkflow ID: ' + workflowId + '\\n\\nPlease verify employee information and assign ADP Associate ID. This is the final step - no IT setup is required.',
+      subject: 'HR Verification Required (Final Step)',
+      body: 'Employee ID setup has been completed for an hourly employee with no system access.\n\nPlease verify employee information and assign ADP Associate ID using the button below. This is the final step - no IT setup is required.',
       formUrl: hrUrl,
-      displayName: 'Team Group Companies - Employee Onboarding'
+      displayName: 'Team Group Companies - Employee Onboarding',
+      contextData: context
     });
     Logger.log('[SUCCESS] HR Verification email sent (Hourly/No System Access - Final Step)');
     
@@ -151,10 +190,11 @@ function triggerNextStepFromIDSetup(workflowId, setupData) {
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
-      subject: 'HR Verification Required - ' + requestData.employeeName,
-      body: 'Employee ID setup has been completed.\\n\\nEmployee: ' + requestData.employeeName + '\\nWorkflow ID: ' + workflowId + '\\n\\nPlease verify employee information and assign ADP Associate ID. IT setup will be triggered after HR verification.',
+      subject: 'HR Verification Required',
+      body: 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be triggered after HR verification.',
       formUrl: hrUrl,
-      displayName: 'Team Group Companies - Employee Onboarding'
+      displayName: 'Team Group Companies - Employee Onboarding',
+      contextData: context
     });
     Logger.log('[SUCCESS] HR Verification email sent (Salary/System Access path - IT will follow)');
   }

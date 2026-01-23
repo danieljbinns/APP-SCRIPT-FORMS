@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dashboard V.Next</title>
+    <!-- MOCKED GOOGLE SCRIPT RUN -->
+    <script>
+        var google = {
+            script: {
+                run: {
+                    withSuccessHandler: function (func) {
+                        this.successCallback = func;
+                        return this;
+                    },
+                    withFailureHandler: function (func) {
+                        return this;
+                    },
+                    getDashboardDataVNext: function () {
+                        // MOCK DATA for Prototype
+                        const mockData = {
+                            rows: [
+                                {
+                                    id: "WF-1024",
+                                    name: "John Smith",
+                                    status: "Active",
+                                    stage: "IT Setup",
+                                    dateCreated: new Date(Date.now() - 4 * 86400000).toISOString(), // 4 days old (should be red)
+                                    timeOpenDays: 4
+                                },
+                                {
+                                    id: "WF-1025",
+                                    name: "Sarah Jones",
+                                    status: "Pending",
+                                    stage: "HR Verify",
+                                    dateCreated: new Date(Date.now() - 1 * 86400000).toISOString(),
+                                    timeOpenDays: 1
+                                },
+                                {
+                                    id: "WF-1026",
+                                    name: "Mike Ross",
+                                    status: "Complete",
+                                    stage: "Deployed",
+                                    dateCreated: new Date(Date.now() - 10 * 86400000).toISOString(),
+                                    timeOpenDays: 10
+                                }
+                            ]
+                        };
+
+                        // Simulate network delay
+                        setTimeout(() => {
+                            this.successCallback(mockData);
+                        }, 600);
+                    },
+                    updateWorkflowField: function (id, field, val) {
+                        console.log("Mock Update:", id, field, val);
+                    },
+                    resendStageEmail: function (id, stage) {
+                        console.log("Mock Email Resend:", id, stage);
+                    }
+                }
+            }
+        };
+    </script>
+
+    <!-- INJECT THE REAL FILE CONTENT -->
+    <!-- In a real deployment, this would be the actual HTML file. 
+         For local preview, we copy/paste or link. 
+         However, sticking to the styling request, let's ensure the CSS is inline here or linked correctly.
+         I will paste the DashboardVNext content here but update the CSS to match Dark Mode. -->
+
+    <style>
+        /* DARK THEME OVERRIDE */
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --border-color: #333;
+        }
+
+        body {
+            font-family: sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .toolbar {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .btn {
+            background: var(--brand-red);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+        }
+
+        th {
+            text-align: left;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-muted);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Conditional Formatting Classes */
+        .late-row {
+            border-left: 4px solid var(--brand-red);
+            background: rgba(235, 28, 45, 0.05);
+        }
+
+        .editable {
+            border-bottom: 1px dashed #666;
+            cursor: pointer;
+        }
+
+        .editable:hover {
+            color: var(--brand-red);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #222;
+            padding: 30px;
+            border: 1px solid #444;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 300px;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #000;
+            color: white;
+            border: 1px solid #444;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 90;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="toolbar">
+        <h2>Dashboard V.Next</h2>
+        <button class="btn" onclick="refresh()">Refresh Data</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Employee</th>
+                <th>Status</th>
+                <th>Stage</th>
+                <th>Time Open</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- Data Injected Here -->
+        </tbody>
+    </table>
+
+    <div class="overlay" onclick="closeModal()"></div>
+    <div class="modal" id="editModal">
+        <h3>Edit Field</h3>
+        <input type="text" id="editInput">
+        <button class="btn" onclick="saveEdit()">Save</button>
+    </div>
+
+    <script>
+        // CLIENT SIDE LOGIC
+
+        let currentEdit = null;
+
+        function refresh() {
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
+            google.script.run.withSuccessHandler(render).getDashboardDataVNext();
+        }
+
+        function render(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            data.rows.forEach(row => {
+                const tr = document.createElement('tr');
+                if (row.timeOpenDays > 3 && row.status !== 'Complete') {
+                    tr.classList.add('late-row');
+                }
+
+                tr.innerHTML = `
+                    <td>${row.id}</td>
+                    <td class="editable" onclick="edit('${row.id}', 'name', '${row.name}')">${row.name}</td>
+                    <td>${row.status}</td>
+                    <td>${row.stage}</td>
+                    <td>${row.timeOpenDays} Days</td>
+                    <td><button style="background:none; border:1px solid #555; color:#aaa; cursor:pointer;" onclick="resend('${row.id}')">Resend Email</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function edit(id, field, val) {
+            currentEdit = { id, field };
+            document.getElementById('editInput').value = val;
+            document.querySelector('.overlay').style.display = 'block';
+            document.querySelector('.modal').style.display = 'block';
+        }
+
+        function saveEdit() {
+            const val = document.getElementById('editInput').value;
+            // Optimistic update
+            google.script.run.updateWorkflowField(currentEdit.id, currentEdit.field, val);
+            closeModal();
+            refresh(); // In real app, just update DOM
+        }
+
+        function closeModal() {
+            document.querySelector('.overlay').style.display = 'none';
+            document.querySelector('.modal').style.display = 'none';
+        }
+
+        function resend(id) {
+            if (confirm("Resend notification email?")) {
+                google.script.run.resendStageEmail(id, "CURRENT");
+                alert("Email queued.");
+            }
+        }
+
+        // Init
+        refresh();
+    </script>
+</body>
+
+</html>

@@ -404,20 +404,7 @@
           Before proceeding, please confirm all recruiting requirements have been met.
         </p>
 
-        <details class="requirements-toggle">
-          <summary>What are the recruiting requirements?</summary>
-          <div class="requirements-content">
-            <p><strong>To be defined:</strong></p>
-            <ul>
-              <li>Requirement 1</li>
-              <li>Requirement 2</li>
-              <li>Requirement 3</li>
-            </ul>
-            <p style="margin-top: 1rem;">
-              <em>Contact HR for questions about these requirements.</em>
-            </p>
-          </div>
-        </details>
+
 
         <button type="button" class="confirm-button" onclick="confirmGatekeeper()">
           ✓ Yes, all requirements are met
@@ -452,8 +439,8 @@
 
             <div class="form-field">
               <label>Requester Email <span class="required">*</span></label>
-              <input type="email" name="requesterEmail" id="requesterEmail" required
-                placeholder="Type to search Google Directory..." autocomplete="off">
+              <input type="email" name="requesterEmail" id="requesterEmail" required placeholder="Enter email address"
+                autocomplete="off">
               <!-- TODO BACKEND: Implement Google Directory autocomplete lookup
                    - Type-ahead search as user types
                    - Search Google Workspace directory
@@ -463,8 +450,7 @@
 
             <div class="form-field">
               <label>Requester Name <span class="required">*</span></label>
-              <input type="text" name="requesterName" id="requesterName" required
-                placeholder="Auto-filled from lookup or enter manually">
+              <input type="text" name="requesterName" id="requesterName" required>
               <!-- Auto-populated from directory lookup
                    If email not found: user must enter name manually
                    Field becomes editable when email is not in directory -->
@@ -557,49 +543,37 @@
 
           <div class="form-row">
             <div class="form-field">
-              <label>Position / JR Title <span class="required">*</span></label>
-              <input type="text" name="position" required>
+              <label>Job Title <span class="required">*</span></label>
+              <input type="text" name="position" id="position"
+                placeholder="Enter position title (e.g. Operations Manager)" required autocomplete="off">
             </div>
 
             <div class="form-field">
               <label>Site Name <span class="required">*</span></label>
               <select name="siteName" id="siteName" required>
-                <option value="">-- Please Select --</option>
-                <option value="GM CAMI Assembly" data-job-number="CAMI-001">GM CAMI Assembly</option>
-                <option value="GM Canada PDC's" data-job-number="PDC-CAN">GM Canada PDC's</option>
-                <option value="GM Edmonton PDC" data-job-number="PDC-EDM">GM Edmonton PDC</option>
-                <option value="GM Lansing Delta Township Assembly" data-job-number="LDT-001">GM Lansing Delta Township
-                  Assembly</option>
-                <option value="GM Lansing Grand River Assembly" data-job-number="LGR-001">GM Lansing Grand River
-                  Assembly</option>
-                <option value="GM Montréal PDC" data-job-number="PDC-MTL">GM Montréal PDC</option>
-                <option value="GM Oshawa Assembly" data-job-number="OSH-001">GM Oshawa Assembly</option>
-                <option value="GM Oshawa TR220 HKB" data-job-number="TR220-HKB">GM Oshawa TR220 HKB</option>
-                <option value="GM Oshawa TR230 PPS" data-job-number="TR230-PPS">GM Oshawa TR230 PPS</option>
-                <option value="GM OShawa TR240 C-MT" data-job-number="TR240-CMT">GM OShawa TR240 C-MT</option>
-                <option value="GM Vancouver PDC" data-job-number="PDC-VAN">GM Vancouver PDC</option>
-                <option value="GM Woodstock PDC" data-job-number="PDC-WDS">GM Woodstock PDC</option>
+                <option value="">Loading sites...</option>
               </select>
             </div>
 
             <div class="form-field">
               <label>Job Site Number <span class="required">*</span></label>
-              <input type="text" name="jobSiteNumber" id="jobSiteNumber" required>
+              <select name="jobSiteNumber" id="jobSiteNumber" required>
+                <option value="">Loading job numbers...</option>
+              </select>
             </div>
           </div>
 
           <div class="form-row-2">
             <div class="form-field">
-              <label>Reporting Manager Email</label>
-              <input type="email" name="managerEmail" id="managerEmail" placeholder="Type to search Google Directory..."
+              <label>Reporting Manager Email <span class="required">*</span></label>
+              <input type="email" name="managerEmail" id="managerEmail" placeholder="Enter manager email" required
                 autocomplete="off">
               <!-- TODO BACKEND: Implement Google Directory autocomplete lookup -->
             </div>
 
             <div class="form-field">
-              <label>Reporting Manager Name</label>
-              <input type="text" name="managerName" id="managerName"
-                placeholder="Auto-filled from lookup or enter manually">
+              <label>Reporting Manager Name <span class="required">*</span></label>
+              <input type="text" name="managerName" id="managerName" placeholder="Enter manager name" required>
               <!-- Auto-populated from directory lookup -->
             </div>
           </div>
@@ -904,10 +878,9 @@
 
             <div class="form-field">
               <label>Job Site(s) To Be Assigned</label>
-              <select name="bossJobSites" multiple size="5"
+              <select name="bossJobSites" id="bossJobSites" multiple size="5"
                 style="width: 100%; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                <option value="">-- Select Job Site(s) (Hold Ctrl/Cmd for multiple) --</option>
-                <!-- TODO BACKEND: Populate from job sites data lookup -->
+                <option value="">Loading sites...</option>
               </select>
               <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Hold
                 Ctrl (Windows) or Cmd (Mac) to select multiple sites</small>
@@ -932,10 +905,9 @@
             <div id="costSheetJobs" style="display: none;">
               <div class="form-field">
                 <label>Job Number(s) for Cost Sheet</label>
-                <select name="costSheetJobNumbers" multiple size="4"
+                <select name="costSheetJobNumbers" id="costSheetJobNumbers" multiple size="4"
                   style="width: 100%; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                  <option value="">-- Select Job Number(s) (Hold Ctrl/Cmd for multiple) --</option>
-                  <!-- TODO BACKEND: Populate from job numbers data lookup -->
+                  <option value="">Loading job numbers...</option>
                 </select>
                 <small
                   style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Hold
@@ -980,10 +952,9 @@
 
             <div class="form-field">
               <label>Job Number(s) To Be Assigned</label>
-              <select name="jonasJobNumbers" multiple size="4"
+              <select name="jonasJobNumbers" id="jonasJobNumbers" multiple size="4"
                 style="width: 100%; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                <option value="">-- Select Job Number(s) (Hold Ctrl/Cmd for multiple) --</option>
-                <!-- TODO BACKEND: Populate from same job numbers data lookup as BOSS cost sheet -->
+                <option value="">Loading job numbers...</option>
               </select>
               <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Hold
                 Ctrl (Windows) or Cmd (Mac) to select multiple job numbers</small>
@@ -1059,7 +1030,104 @@
     </div>
   </div>
 
+  <!-- Datalists for Autocomplete -->
+  <datalist id="managersList"></datalist>
+  <datalist id="requestersList"></datalist>
+  <datalist id="jrsList"></datalist>
+  <datalist id="jobNumbersList"></datalist>
+
   <script>
+    // Load autocomplete data on page load
+
+    // Auto-populate requester email with current user (Session only, no Directory API)
+    // Load autocomplete data on page load
+    // Load autocomplete data on page load
+    // Load autocomplete data on page load
+    window.addEventListener('DOMContentLoaded', function () {
+
+      // Helper to populate select elements
+      function populateSelect(elementId, items, placeholder = '-- Please Select --', isMulti = false) {
+        const select = document.getElementById(elementId);
+        if (!select) return;
+
+        select.innerHTML = '';
+
+        if (!isMulti) {
+          const defaultOpt = document.createElement('option');
+          defaultOpt.value = '';
+          defaultOpt.textContent = placeholder;
+          select.appendChild(defaultOpt);
+        }
+
+        if (items && items.length > 0) {
+          items.forEach(function (item) {
+            const option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+            select.appendChild(option);
+          });
+        } else {
+          const option = document.createElement('option');
+          option.textContent = 'No data found';
+          select.appendChild(option);
+        }
+      }
+
+      // 1. Current User Email
+      google.script.run
+        .withSuccessHandler(function (email) {
+          if (email) {
+            document.getElementById('requesterEmail').value = email;
+          }
+        })
+        .withFailureHandler(console.error)
+        .getCurrentUserEmail();
+
+      // 2. Sites List (Populates 'siteName' and 'bossJobSites')
+      google.script.run
+        .withSuccessHandler(function (sites) {
+          console.log('✅ Loaded ' + (sites ? sites.length : 0) + ' sites');
+          populateSelect('siteName', sites);
+          populateSelect('bossJobSites', sites, '', true);
+        })
+        .withFailureHandler(console.error)
+        .getSitesList();
+
+      // 3. JRs List (Populates 'position' and 'jrAssignment')
+      google.script.run
+        .withSuccessHandler(function (jrs) {
+          console.log('✅ Loaded ' + (jrs ? jrs.length : 0) + ' JRs');
+          populateSelect('position', jrs);
+          // Also populate the JR Assignment picker manually if helper targeted by ID doesn't work (it has name only)
+          const jrAssignment = document.querySelector('[name="jrAssignment"]');
+          if (jrAssignment) {
+            jrAssignment.innerHTML = '<option value="">-- Select JR --</option>';
+            if (jrs && jrs.length) {
+              jrs.forEach(jr => {
+                const opt = document.createElement('option');
+                opt.value = jr;
+                opt.textContent = jr;
+                jrAssignment.appendChild(opt);
+              });
+            }
+          }
+        })
+        .withFailureHandler(console.error)
+        .getJRsList();
+
+      // 4. Job Numbers List (Populates 'jobSiteNumber', 'costSheetJobNumbers', 'jonasJobNumbers')
+      google.script.run
+        .withSuccessHandler(function (jobs) {
+          console.log('✅ Loaded ' + (jobs ? jobs.length : 0) + ' Job Numbers');
+          populateSelect('jobSiteNumber', jobs);
+          populateSelect('costSheetJobNumbers', jobs, '', true);
+          populateSelect('jonasJobNumbers', jobs, '', true);
+        })
+        .withFailureHandler(console.error)
+        .getJobNumbersList();
+    });
+
+    // Utility Functions
     // Pre-load form in background on page load
     document.addEventListener('DOMContentLoaded', function () {
       // Form content is loaded, just hidden - ready immediately
@@ -1172,7 +1240,7 @@
 
               document.querySelector('[name="comments"]').value = 'Test submission - automated prefill';
 
-              alert('✅ Test data prefilled! Review and submit.');
+              console.log('Test data prefilled successfully');
             }, 100);
           }, 100);
         }, 100);
@@ -1361,13 +1429,16 @@
       const siteSelect = document.getElementById('siteName');
       const jobNumberInput = document.getElementById('jobSiteNumber');
 
-      const selectedOption = siteSelect.options[siteSelect.selectedIndex];
-      const jobNumber = selectedOption.getAttribute('data-job-number');
+      // Safety check
+      if (!siteSelect || !jobNumberInput) return;
 
-      if (jobNumber) {
-        jobNumberInput.value = jobNumber;
+      const selectedOption = siteSelect.options[siteSelect.selectedIndex];
+      // Only try to get attribute if option exists and has it
+      if (selectedOption && selectedOption.hasAttribute('data-job-number')) {
+        jobNumberInput.value = selectedOption.getAttribute('data-job-number');
       } else {
-        jobNumberInput.value = '';
+        // Don't clear it, just leave it as is so user can manually type or select from new lookup
+        // jobNumberInput.value = ''; 
       }
     }
 
