@@ -93,7 +93,10 @@ function updateWorkflow(workflowId, status, currentStep, employeeName) {
         if (employeeNameCol !== -1 && employeeName) workflowsSheet.getRange(i + 1, employeeNameCol + 1).setValue(employeeName);
         
         Logger.log('[SUCCESS] Updated workflow: ' + workflowId + ' -> ' + status);
-        return true;
+    // Sync to Initial Requests sheet as well (if found)
+    syncStatusToRequestSheet(ss, workflowId, status);
+    
+    return true;
       }
     }
     
@@ -103,6 +106,44 @@ function updateWorkflow(workflowId, status, currentStep, employeeName) {
   } catch (error) {
     Logger.log('[ERROR] Failed to update workflow: ' + error.toString());
     return false;
+  }
+}
+
+/**
+ * Helper to sync status back to Initial Requests sheet
+ */
+function syncStatusToRequestSheet(ss, workflowId, status) {
+  try {
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
+    if (!sheet) return;
+    
+    // Check headers for 'Status' column
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    let statusColIndex = headers.indexOf('Status');
+    
+    // If not found, try 'Current Status'
+    if (statusColIndex === -1) statusColIndex = headers.indexOf('Current Status');
+    
+    // If still not found, we generally shouldn't just append randomly, 
+    // but the user expects it. Let's assume if it's missing we can't update it safely without risking overwriting data.
+    // However, if we want to be helpful, we could log it.
+    if (statusColIndex === -1) {
+       Logger.log('No Status column found in Initial Requests sheet');
+       return;
+    }
+    
+    // Find row
+    const data = sheet.getDataRange().getValues();
+    // Assuming ID is Col A (0)
+    for (let i = 1; i < data.length; i++) {
+        if (data[i][0] === workflowId) {
+            sheet.getRange(i + 1, statusColIndex + 1).setValue(status);
+            Logger.log('Synced status to Initial Requests sheet');
+            break;
+        }
+    }
+  } catch (e) {
+    Logger.log('Error syncing status to requests: ' + e.toString());
   }
 }
 

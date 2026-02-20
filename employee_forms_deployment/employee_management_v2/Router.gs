@@ -7,7 +7,7 @@ function doGet(e) {
   try {
     const userEmail = Session.getActiveUser().getEmail();
     const form = e.parameter.form;
-    const workflowId = e.parameter.wf || '';
+    const workflowId = e.parameter.wf || e.parameter.id || '';
 
     // DEFAULT LANDING LOGIC
     if (!e.parameter.form) {
@@ -24,26 +24,37 @@ function doGet(e) {
         if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return serveDashboard();
         
+      case 'workflow_map':
+        return serveWorkflowMap();
+
+      case 'request_details':
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
+        return serveRequestDetails(workflowId);
+
+      case 'data_manager':
+        // Admin access check (reusing dashboard access for now)
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
+        return serveDataManager();
+
+        
       case 'id_setup':
         // Allow domain users - typically accessed via email link
-        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
+        // Access check removed as requested
         return serveIDSetup(workflowId);
         
       case 'hr_verification':
         // Allow domain users - typically accessed via email link
-        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
+        // Access check removed as requested
         return serveHRVerification(workflowId);
         
       case 'it_setup':
         // Allow domain users - typically accessed via email link
-        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
+        // Access check removed as requested
         return serveITSetup(workflowId);
         
       case 'specialist':
-        // Specialists might need granular token access later, but for now check generic specialist?
-        // Or simply rely on the fact they have the link? 
-        // Let's enforce domain at minimum.
-        if (!userEmail.endsWith('@' + CONFIG.DOMAIN)) return serveAccessDenied();
+        // Specialist queue
+        // Access check removed as requested
         const dept = e.parameter.dept || '';
         return serveSpecialist(workflowId, dept);
         
@@ -60,7 +71,12 @@ function doGet(e) {
  * Get the base URL for this web app (for form links)
  */
 function getBaseUrl() {
-  return CONFIG.DEPLOYMENT_URL || ScriptApp.getService().getUrl();
+  // Prefer dynamic URL to avoid hardcoding issues, fall back to config if needed (e.g. simple triggers)
+  try {
+    return ScriptApp.getService().getUrl();
+  } catch (e) {
+    return CONFIG.DEPLOYMENT_URL;
+  }
 }
 
 /**

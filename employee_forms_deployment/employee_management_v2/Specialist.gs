@@ -75,6 +75,53 @@ function submitSpecialistForm(formData) {
     
     Logger.log('[SUCCESS] Specialist form submitted: ' + dept + ' for ' + workflowId);
     
+    // Notify Requester
+    try {
+        // We need to fetch requester email. 
+        // Reuse getITContextData logic if available since we don't have it passed in formData
+        let requesterEmail = null;
+        let employeeName = 'Employee';
+        
+        if (typeof getITContextData === 'function') {
+           const ctx = getITContextData(workflowId);
+           if (ctx.success) {
+             requesterEmail = ctx.requesterEmail; // Fixed: Use true Requester Email, not new user email
+             employeeName = ctx.employeeName;
+           }
+        }
+        
+        const recipients = [];
+        if (requesterEmail) recipients.push(requesterEmail);
+        
+        // Try to get manager email from IT Context if possible
+        let managerEmail = null;
+        if (typeof getITContextData === 'function') {
+           const ctx = getITContextData(workflowId);
+           if (ctx.success && ctx.managerEmail) {
+              managerEmail = ctx.managerEmail;
+           }
+        }
+        if (managerEmail && managerEmail !== requesterEmail) recipients.push(managerEmail);
+
+        if (recipients.length > 0) {
+             let friendlyDept = dept.charAt(0).toUpperCase() + dept.slice(1);
+             if (dept === 'creditcard') { friendlyDept = 'Credit Card'; } // Fix space
+             
+             sendFormEmail({
+               to: recipients.join(','),
+               subject: `${friendlyDept} Setup Complete: ${employeeName}`,
+               body: `${friendlyDept} setup has been completed for ${employeeName}.\n\n` +
+                     `Notes: ${formData.notes || 'None'}\n\n`,
+                     // `View full request details using the button below.`,
+               // formUrl: getBaseUrl() + '?form=request_details&id=' + workflowId,
+               formUrl: '',
+               displayName: 'Onboarding System'
+             });
+        }
+    } catch (e) {
+      Logger.log('Error notifying requester for specialist: ' + e.toString());
+    }
+    
     return {
       success: true,
       message: 'Specialist setup completed successfully'

@@ -1,7 +1,7 @@
 # Project Status & Roadmap
 
-**Date:** 2026-01-16
-**Version:** V23
+**Date:** 2026-02-20
+**Version:** V24
 **Architecture:** V2 (Consolidated Single-Project)
 
 ---
@@ -37,8 +37,14 @@ These are intentional design choices or current constraints:
 
 1. **Generic Specialist Forms**: The 6 specialist forms currently use a standardized "Confirm Complete + Notes" interface. They do **not** capture specific fields (e.g., `Card Type` for Credit Cards, `Driver License` for Fleetio) as these were replaced with the simpler confirmation model for V2 launch.
 2. **No "Edit" Workflow**: Once a form is submitted, data is written to the results sheet. There is no UI to "Edit" a previous submission (must be done in Google Sheets directly).
-3. **Security Model**: Relies on "Execute as Me, Access: Anyone". Security is primarily "obsecurity" via the Workflow ID hash in the URL. There is no extensive RBAC (Role Based Access Control) beyond separation of duties via email routing.
-4. **Dashboard Scaling**: The dashboard loads *all* workflows (last 500 rows). As the dataset searches 10,000+ rows, pagination logic will be needed.
+3. **Security Model**: Implements Role-Based Access Control (RBAC) via Google Groups.
+
+* **Global Admins/IT**: Access controlled by `grp.forms.it@team-group.com`.
+* **HR**: Access controlled by `grp.forms.hr@team-group.com`.
+* **Individuals**: Requesters and Managers have visibility limited to their specific workflows.
+* **Service Bypasses**: Hardcoded bypasses for system accounts and lead developer.
+
+1. **Dashboard Scaling**: The dashboard loads *all* workflows (last 500 rows). As the dataset searches 10,000+ rows, pagination logic will be needed.
 
 ---
 
@@ -46,15 +52,15 @@ These are intentional design choices or current constraints:
 
 ### High Priority
 
-- [ ] **Customize Specialist Forms**: Re-introduce specific fields for Credit Cards and Fleetio if "Confirm Complete" proves insufficient for business needs.
+* [ ] **Customize Specialist Forms**: Re-introduce specific fields for Credit Cards and Fleetio if "Confirm Complete" proves insufficient for business needs.
 * [ ] **Email Polish**: Enhance email templates with better branding or HTML layouts (currently functional but basic).
 
 ### Medium Priority
 
-- [ ] **Dashboard Enhancements**: Add "Date Range" filters and CSV export.
+* [ ] **Dashboard Enhancements**: Add "Date Range" filters and CSV export.
 * [ ] **Retry Logic**: Add a "Resend Email" button on the Dashboard for stuck workflows.
 
 ### Low Priority / Future
 
-- [ ] **Google Admin Integration**: Automate actual Google Workspace account creation (currently manual IT task).
+* [ ] **Google Admin Integration**: Automate actual Google Workspace account creation (currently manual IT task).
 * [ ] **ADP Integration**: Automate ADP ID creation via API (currently manual HR task).

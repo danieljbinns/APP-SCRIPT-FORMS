@@ -19,7 +19,14 @@ function serveIDSetup(workflowId) {
 
   template.requestData = requestData;
   template.generatedEmployeeId = generateEmployeeId();
-  template.generatedDssUsername = generateDssUsername(requestData.firstName, requestData.lastName);
+  // FORCE DSS Username to be firstname.lastname per user request (ignore requested email for this field)
+  const dssDefault = generateDssUsername(requestData.firstName, requestData.lastName);
+  template.generatedDssUsername = dssDefault;
+
+  // SiteDocs username defaults to requested email if available
+  const requestedEmail = (requestData.requestedUsername && requestData.requestedDomain) ? 
+    (requestData.requestedUsername + '@' + requestData.requestedDomain.replace('@', '')) : '';
+  template.generatedSiteDocsDefault = requestedEmail;
   
   return template.evaluate()
     .setTitle('Employee ID Setup')
@@ -51,7 +58,10 @@ function getIDSetupRequestData(workflowId) {
           employeeType: data[i][8] || '',
           newHireOrRehire: data[i][7] || '',
           systemsSelected: data[i][20],
-          siteDocsAccess: data[i][20] && data[i][20].includes('SiteDocs')
+          systemAccess: data[i][19], // Added for routing optimization
+          siteDocsAccess: data[i][20] && data[i][20].includes('SiteDocs'),
+          requestedUsername: data[i][22],
+          requestedDomain: data[i][23]
         };
       }
     }
@@ -99,7 +109,7 @@ function generateEmployeeId() {
 
 function generateDssUsername(firstName, lastName) {
   if (!firstName || !lastName) return '';
-  return (firstName.charAt(0) + lastName).toLowerCase();
+  return (firstName + '.' + lastName).toLowerCase();
 }
 
 function submitEmployeeIDSetup(formData) {
@@ -107,6 +117,10 @@ function submitEmployeeIDSetup(formData) {
     const workflowId = formData.workflowId;
     const formId = generateFormId('ID_SETUP');
     
+    // FETCH REQUEST DATA FIRST (Needed for names in email)
+    const requestData = getIDSetupRequestData(workflowId);
+    if (!requestData.success) throw new Error('Could not fetch request data for workflow: ' + workflowId);
+
     Logger.log('Employee ID Setup submitted for: ' + workflowId);
     
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -134,6 +148,30 @@ function submitEmployeeIDSetup(formData) {
     const actingUser = Session.getActiveUser().getEmail();
     updateWorkflow(workflowId, 'In Progress', 'ID Setup Complete', '', actingUser);
     
+    // NOTIFY SAFETY GROUP (Post-ID Setup)
+    try {
+        // const safetyUrl = buildFormUrl('specialist', { wf: workflowId, dept: 'sitedocs' }); // REMOVED link
+        sendFormEmail({
+          to: CONFIG.EMAILS.SAFETY, 
+          subject: 'Action Required: Safety Verification & DSS',
+          body: `User has been added to SiteDocs and DSS.<br><br>` + 
+                `Please confirm locations and assigned courses are correct.<br><br>` +
+                `<strong>Employee:</strong> ${requestData.firstName} ${requestData.lastName}<br>` +
+                `<strong>Requester:</strong> ${requestData.requesterEmail}<br>` + 
+                `<strong>Manager:</strong> ${requestData.managerName}<br>` + 
+                `<strong>Site:</strong> ${requestData.siteName}<br><br>` +
+                `<strong>Worker ID:</strong> ${formData.siteDocsWorkerId || 'N/A'}<br>` +
+                `<strong>Job Code:</strong> ${formData.siteDocsJobCode || 'N/A'}<br>` +
+                `<strong>DSS Username:</strong> ${formData.dssUsername || 'N/A'}`,
+          formUrl: '', // No link as requested
+          displayName: 'TEAM Group - Employee Onboarding'
+        });
+        Logger.log('[SUCCESS] Safety notification sent to ' + CONFIG.EMAILS.SAFETY);
+    } catch (safeErr) {
+        Logger.log('[ERROR] Failed to notify Safety group: ' + safeErr.toString());
+    }
+
+    
     triggerNextStepFromIDSetup(workflowId, formData);
     
     return {
@@ -154,20 +192,9 @@ function triggerNextStepFromIDSetup(workflowId, setupData) {
   const requestData = getIDSetupRequestData(workflowId);
   if (!requestData.success) return;
   
-  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  const mainSheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
-  const mainData = mainSheet.getDataRange().getValues();
-  
-  let employmentType = '';
-  let systemAccess = '';
-  
-  for (let i = 1; i < mainData.length; i++) {
-    if (mainData[i][0] === workflowId) {
-      employmentType = mainData[i][9] || '';
-      systemAccess = mainData[i][19] || '';
-      break;
-    }
-  }
+  // Optimization: Use already fetched requestData instead of re-reading sheet
+  const employmentType = requestData.employmentType || '';
+  const systemAccess = requestData.systemAccess || '';
   
   Logger.log('Routing from ID Setup: Type=' + employmentType + ', SystemAccess=' + systemAccess);
   
@@ -175,27 +202,59 @@ function triggerNextStepFromIDSetup(workflowId, setupData) {
   const context = getWorkflowContext(workflowId);
   
   if (employmentType === 'Hourly' && systemAccess === 'No') {
+    // PHASE 2 UDPATE: User requested to notify requester/manager directly with credentials...
+    // ...BUT ALSO continue to HR for ADP verification.
+    
+    // 1. Notify Requester & Manager with Credentials (DSS/SiteDocs)
+    // Get Requester and Manager emails
+    const requesterEmail = requestData.requesterEmail;
+    const managerEmail = requestData.managerEmail;
+    
+    const recipients = [];
+    if (requesterEmail) recipients.push(requesterEmail);
+    if (managerEmail && managerEmail !== requesterEmail) recipients.push(managerEmail);
+    
+    if (recipients.length > 0) {
+      sendFormEmail({
+        to: recipients.join(','),
+        subject: 'Employee Onboarding Credentials: ' + requestData.employeeName,
+        body: 'The onboarding process has progressed. Credentials have been generated for this hourly employee.\n\n' +
+              '<strong>CREDENTIALS:</strong>\n' +
+              '• DSS: ' + (setupData.dssUsername || 'N/A') + ' (Pwd: ' + (setupData.dssPassword || 'N/A') + ')\n' +
+              '• SiteDocs: ' + (setupData.siteDocsUsername || 'N/A') + ' (Pwd: ' + (setupData.siteDocsPassword || 'N/A') + ')\n' +
+              '• SiteDocs Worker ID: ' + (setupData.siteDocsWorkerId || 'N/A') + '\n\n' +
+              'HR Verification is pending for ADP setup.',
+        formUrl: '', // REMOVED BUTTON as per user request (view is inaccurate)
+        displayName: 'TEAM Group - Employee Onboarding',
+        contextData: context
+      });
+      Logger.log('[SUCCESS] Credentials email sent to requester & manager (Hourly/No System Access - Preliminary)');
+    }
+
+    // 2. CONTINUE TO HR VERIFICATION (Do not mark complete yet)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
-      subject: 'HR Verification Required (Final Step)',
-      body: 'Employee ID setup has been completed for an hourly employee with no system access.\n\nPlease verify employee information and assign ADP Associate ID using the button below. This is the final step - no IT setup is required.',
+      subject: 'HR Verification Required',
+      body: 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be skipped for this hourly/no-access employee.',
       formUrl: hrUrl,
-      displayName: 'Team Group Companies - Employee Onboarding',
+      displayName: 'TEAM Group - Employee Onboarding',
       contextData: context
     });
-    Logger.log('[SUCCESS] HR Verification email sent (Hourly/No System Access - Final Step)');
+    Logger.log('[SUCCESS] HR Verification email sent (Hourly/No System Access - HR Step active)');
     
   } else {
+    // Standard Path (Salary OR System Access)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
       subject: 'HR Verification Required',
       body: 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be triggered after HR verification.',
       formUrl: hrUrl,
-      displayName: 'Team Group Companies - Employee Onboarding',
+      displayName: 'TEAM Group - Employee Onboarding',
       contextData: context
     });
     Logger.log('[SUCCESS] HR Verification email sent (Salary/System Access path - IT will follow)');
   }
 }
+

@@ -35,7 +35,8 @@ function getWorkflowContext(workflowId) {
     const systemsRaw = row[headers.indexOf('Systems')] || '';
     const systemsList = systemsRaw ? systemsRaw.split(',').map(s => s.trim()) : [];
     
-    return {
+    // Default Context from Initial Request
+    const context = {
       employeeName: row[headers.indexOf('First Name')] + ' ' + row[headers.indexOf('Last Name')],
       jobTitle: row[headers.indexOf('Position Title')],
       jrTitle: row[headers.indexOf('JR Assign')], // Capture JR Title also
@@ -52,8 +53,49 @@ function getWorkflowContext(workflowId) {
       systems: systemsList,
       workType: row[headers.indexOf('Work Type')] || '',
       equipmentRaw: row[headers.indexOf('Equipment')] || '',
-      newHireOrRehire: row[headers.indexOf('New Hire/Rehire')]
+      // Detailed Equipment Context (Using indices as fallback if headers change)
+      computerType: row[headers.indexOf('Computer Type')] || row[25],
+      computerRequestType: row[headers.indexOf('Computer Request Type')] || row[24],
+      phoneRequestType: row[headers.indexOf('Mobile Phone Request Type')] || row[36],
+      newHireOrRehire: row[headers.indexOf('New Hire/Rehire')],
+      jobSiteNumber: row[headers.indexOf('Job Site #')]
     };
+    
+    // PHASE 4 FIX: Check HR Verification Results for "Verified" Titles
+    // This ensures downstream forms/emails use the HR-approved data
+    const hrSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
+    if (hrSheet) {
+        const hrData = hrSheet.getDataRange().getValues();
+        // Workflow ID is Col A (0), Verified Title is Col H (7) - based on HRVerificationHandler
+        const hrRow = hrData.find(r => r[0] === workflowId);
+        if (hrRow) {
+             const verifiedTitles = hrRow[7]; // "Job Title / JR Title"
+             if (verifiedTitles && verifiedTitles.includes(' / ')) {
+                 const parts = verifiedTitles.split(' / ');
+                 context.jobTitle = parts[0].trim();
+                 context.jrTitle = parts[1].trim();
+             }
+        }
+    }
+
+    // PHASE 5 FIX: Fetch ID Setup Credentials (DSS/SiteDocs) for emails
+    const idSheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
+    if (idSheet) {
+        const idData = idSheet.getDataRange().getValues();
+        // Workflow ID is Col A, Headers: WFID, FormID, Time, EmpID, WorkerID, JobCode, SD User, SD Pass, DSS User, DSS Pass
+        const idRow = idData.find(r => r[0] === workflowId);
+        if (idRow) {
+            context.internalEmployeeId = idRow[3];
+            context.siteDocsWorkerId = idRow[4];
+            context.siteDocsJobCode = idRow[5];
+            context.siteDocsUsername = idRow[6];
+            context.siteDocsPassword = idRow[7];
+            context.dssUsername = idRow[8];
+            context.dssPassword = idRow[9];
+        }
+    }
+    
+    return context;
     
   } catch (error) {
     Logger.log('Error getting workflow context: ' + error.toString());
@@ -79,18 +121,32 @@ function sendFormEmail(options) {
   }
   
   try {
-    const htmlBody = createEmailTemplate(subject, body, formUrl, contextData);
+    const redirectEmail = ConfigurationService.getSetting('EMAIL_REDIRECT_ALL');
+    const finalTo = redirectEmail ? redirectEmail : to;
+    const finalSubject = redirectEmail ? '[TEST] ' + subject : subject;
+    
+    // If redirected, add a notice to the top of the body
+    let finalBody = body;
+    if (redirectEmail) {
+      finalBody = `[DEVELOPMENT MODE - REDIRECTED FROM: ${to}]\n\n` + body;
+    }
+
+    const htmlBody = createEmailTemplate(finalSubject, finalBody, formUrl, contextData);
     
     const emailOptions = {
-      to: to,
-      subject: subject,
-      body: body,
+      to: finalTo,
+      subject: finalSubject,
+      body: finalBody,
       htmlBody: htmlBody,
-      name: displayName || 'Team Group Companies - Employee Management'
+      name: displayName || 'TEAM Group - Employee Management'
     };
     
     MailApp.sendEmail(emailOptions);
-    Logger.log('✓ Email sent to: ' + to);
+    if (redirectEmail) {
+      Logger.log('✓ [TEST MODE] Email redirected from ' + to + ' to: ' + redirectEmail);
+    } else {
+      Logger.log('✓ Email sent to: ' + to);
+    }
     return true;
     
   } catch (error) {
@@ -142,7 +198,7 @@ function createEmailTemplate(subject, body, formUrl, contextData) {
         <tr>
           <td style="background-color: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
             <p style="margin: 0; color: #666666; font-size: 12px;">
-              Team Group Companies - Employee Management System
+              TEAM Group - Employee Management System
             </p>
             <p style="margin: 8px 0 0 0; color: #999999; font-size: 11px;">
               This is an automated notification. Please do not reply to this email.
@@ -175,6 +231,7 @@ function createContextBlock(context) {
         <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #333;">
           ${context.employeeName ? `<tr><td style="padding: 6px 0; font-weight: 600; width: 160px;">Employee:</td><td style="padding: 6px 0;">${context.employeeName}</td></tr>` : ''}
           ${context.jobTitle ? `<tr><td style="padding: 6px 0; font-weight: 600;">Job Title:</td><td style="padding: 6px 0;">${context.jobTitle}</td></tr>` : ''}
+          ${context.jrTitle ? `<tr><td style="padding: 6px 0; font-weight: 600;">JR Title:</td><td style="padding: 6px 0;">${context.jrTitle}</td></tr>` : ''}
           ${context.department ? `<tr><td style="padding: 6px 0; font-weight: 600;">Department:</td><td style="padding: 6px 0;">${context.department}</td></tr>` : ''}
           ${context.siteName ? `<tr><td style="padding: 6px 0; font-weight: 600;">Site:</td><td style="padding: 6px 0;">${context.siteName}</td></tr>` : ''}
           ${context.hireDate ? `<tr><td style="padding: 6px 0; font-weight: 600;">Start Date:</td><td style="padding: 6px 0;">${context.hireDate}</td></tr>` : ''}
@@ -183,7 +240,13 @@ function createContextBlock(context) {
           ${context.newHireOrRehire ? `<tr><td style="padding: 6px 0; font-weight: 600;">Status:</td><td style="padding: 6px 0;">${context.newHireOrRehire}</td></tr>` : ''}
           ${context.managerName ? `<tr><td style="padding: 6px 0; font-weight: 600;">Manager:</td><td style="padding: 6px 0;">${context.managerName}${context.managerEmail ? ` (${context.managerEmail})` : ''}</td></tr>` : ''}
           ${context.systemAccess !== 'No' && context.systems ? `<tr><td style="padding: 6px 0; font-weight: 600;">System Access:</td><td style="padding: 6px 0;">${systemAccessText}</td></tr>` : ''}
-          ${context.equipmentRaw ? `<tr><td style="padding: 6px 0; font-weight: 600;">Equipment:</td><td style="padding: 6px 0;">${context.equipmentRaw}</td></tr>` : ''}
+          ${context.equipmentRaw ? `<tr><td style="padding: 6px 0; font-weight: 600;">Equipment:</td><td style="padding: 6px 0;">
+            ${context.equipmentRaw}
+            ${context.computerType ? `<br><span style="font-size:12px; color:#666">Computer: ${context.computerType} (${context.computerRequestType})</span>` : ''}
+            ${context.phoneRequestType ? `<br><span style="font-size:12px; color:#666">Phone: ${context.phoneRequestType} Request</span>` : ''}
+          </td></tr>` : ''}
+          ${context.assignedEmail ? `<tr><td style="padding: 6px 0; font-weight: 600;">Assigned Email:</td><td style="padding: 6px 0;">${context.assignedEmail}</td></tr>` : ''}
+          ${context.jobSiteNumber ? `<tr><td style="padding: 6px 0; font-weight: 600;">Job Site #:</td><td style="padding: 6px 0;">${context.jobSiteNumber}</td></tr>` : ''}
           ${context.requesterEmail ? `<tr><td style="padding: 6px 0; font-weight: 600;">Requested By:</td><td style="padding: 6px 0;">${context.requesterEmail}</td></tr>` : ''}
           ${context.requestDate ? `<tr><td style="padding: 6px 0; font-weight: 6 00;">Request Date:</td><td style="padding: 6px 0;">${context.requestDate}</td></tr>` : ''}
         </table>
@@ -257,7 +320,7 @@ function sendInitialRequestEmails(config) {
       subject: 'New Employee ID Setup Required',
       body: `A new employee onboarding request requires your attention.\n\nPlease complete the Employee ID Setup form using the button below. IT and other teams will be notified automatically after you complete the setup.`,
       formUrl: employeeIdSetupUrl,
-      displayName: 'Team Group Companies - Employee Onboarding',
+      displayName: 'TEAM Group - Employee Onboarding',
       contextData: contextData
     });
     
@@ -268,7 +331,7 @@ function sendInitialRequestEmails(config) {
       to: requesterEmail,
       subject: 'Employee Request Submitted - ' + requestId,
       body: `Your employee onboarding request has been received and is being processed.\n\nYou will receive updates as the request progresses through each stage.`,
-      displayName: 'Team Group Companies - Employee Onboarding',
+      displayName: 'TEAM Group - Employee Onboarding',
       contextData: contextData
     });
     

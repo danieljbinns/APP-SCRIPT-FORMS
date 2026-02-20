@@ -53,6 +53,10 @@ function getHRVerificationData(workflowId) {
       for (let j = 1; j < idData.length; j++) {
         if (idData[j][0] === workflowId) {
           result.internalEmployeeId = idData[j][3] || 'PENDING';
+          result.siteDocsUsername = idData[j][6];
+          result.siteDocsPassword = idData[j][7];
+          result.dssUsername = idData[j][8];
+          result.dssPassword = idData[j][9];
           break;
         }
       }
@@ -81,7 +85,7 @@ function submitHRVerification(formData) {
     const managerNameCol = headers.indexOf('Reporting Manager Name');
     const managerEmailCol = headers.indexOf('Reporting Manager Email');
     const siteNameCol = headers.indexOf('Site/Office Location');
-    const jrTitleCol = headers.indexOf('Position/JR Title'); // Col 14 (Now map to jobTitle)
+    const jrTitleCol = headers.indexOf('Position Title'); // Col 14 - Fixed header name match
     const jrAssignCol = headers.indexOf('JR Assign'); // Col 46 (Now map to jrTitle)
     
     let employmentType = '';
@@ -139,14 +143,27 @@ function submitHRVerification(formData) {
     
     if (employmentType === 'Hourly' && systemAccess === 'No') {
       updateWorkflow(workflowId, 'Complete', 'HR Verification Complete', '', actingUser);
+      const recipients = [requesterEmail];
+      if (formData.managerEmail && formData.managerEmail !== requesterEmail) {
+        recipients.push(formData.managerEmail);
+      }
+      
       sendFormEmail({
-        to: requesterEmail,
-        subject: 'Employee Onboarding Complete',
-        body: 'The onboarding process has been completed successfully. All required setup steps have been finished for this hourly employee.',
-        displayName: 'Team Group Companies - Employee Onboarding',
+        to: recipients.join(','),
+        subject: 'Onboarding Complete - ' + (formData.firstName + ' ' + formData.lastName) + ' (ADP: ' + formData.adpAssociateId + ')',
+        // Include credentials in the completion email
+        body: 'The onboarding process has been completed successfully. All required setup steps have been finished for this hourly employee.\n\n' +
+              'Verified ADP ID: ' + formData.adpAssociateId + '\n\n' +
+              '<strong>CREDENTIALS:</strong>\n' +
+              '• DSS: ' + (context.dssUsername || 'N/A') + ' (Pwd: ' + (context.dssPassword || 'N/A') + ')\n' +
+              '• SiteDocs: ' + (context.siteDocsUsername || 'N/A') + ' (Pwd: ' + (context.siteDocsPassword || 'N/A') + ')\n\n' +
+              'You can view the full request details using the button below.',
+        displayName: 'TEAM Group - Employee Onboarding',
+        // Update URL to request details - REMOVED BUTTON as per user request
+        formUrl: '', 
         contextData: context
       });
-      Logger.log('[SUCCESS] Completion email sent to requester (Hourly/No System Access)');
+      Logger.log('[SUCCESS] Completion email sent to requester & manager (Hourly/No System Access)');
     } else {
       updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed', '', actingUser);
       const itUrl = buildFormUrl('it_setup', { wf: workflowId });
@@ -155,7 +172,7 @@ function submitHRVerification(formData) {
         subject: 'HR Verified: IT Setup Required',
         body: 'HR has verified the employee details and assigned an ADP ID.\n\nPlease complete the IT setup form using the button below.',
         formUrl: itUrl,
-        displayName: 'Team Group Companies - Employee Onboarding',
+        displayName: 'TEAM Group - Employee Onboarding',
         contextData: context
       });
       Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)');

@@ -9,10 +9,10 @@ const CONFIG = {
   // GOOGLE RESOURCES
   // ==========================================================================
   
-  SPREADSHEET_ID: '1kGjw8e-uIehaBemlsRZ4Yq1QrYOWkJvWzhKbgfl4Pxo',
-  SHARED_DRIVE_ID: '0AOOOWlqzpUNVUk9PVA',
-  MAIN_FOLDER_ID: '1vBZVuzXmSatnLGiqhU7QoS0zBK2NGDQE',
-  DEPLOYMENT_URL: 'https://script.google.com/a/macros/robinsonsolutions.com/s/AKfycbwG4af-acrXjjDfEZBahHn2X1lMEhkLGC1PSubgPoqUdXNQlcaoH23tzUzd0Fp8MNFD/exec', // V1 Production - Deployed 2026-01-20
+  get SPREADSHEET_ID() { return ConfigurationService.getSetting('SPREADSHEET_ID'); },
+  get SHARED_DRIVE_ID() { return ConfigurationService.getSetting('SHARED_DRIVE_ID'); },
+  get MAIN_FOLDER_ID() { return ConfigurationService.getSetting('MAIN_FOLDER_ID'); },
+  get DEPLOYMENT_URL() { return ConfigurationService.getSetting('DEPLOYMENT_URL'); },
   ALLOWED_DOMAINS: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com'],
   
   // ==========================================================================
@@ -44,7 +44,7 @@ const CONFIG = {
   // BRANDING
   // ==========================================================================
   
-  COMPANY_NAME: 'Team Group Companies',
+  COMPANY_NAME: 'TEAM Group',
   LOGO_URL: 'https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png',
   
   // ==========================================================================
@@ -52,16 +52,15 @@ const CONFIG = {
   // ==========================================================================
   
   EMAILS: {
-    HR: 'dbinns@robinsonsolutions.com',
-    IT: 'dbinns@robinsonsolutions.com',
-    SITEDOCS: 'dbinns@robinsonsolutions.com',
-    FLEETIO: 'dbinns@robinsonsolutions.com',
-    CREDIT_CARD: 'dbinns@robinsonsolutions.com',
-    BUSINESS_CARDS: 'dbinns@robinsonsolutions.com',
-    REVIEW_306090_JR: 'dbinns@robinsonsolutions.com',
-    ADP: 'dbinns@robinsonsolutions.com',
-    JONAS: 'dbinns@robinsonsolutions.com',
-    NOTIFICATIONS: 'dbinns@robinsonsolutions.com'
+    HR: 'grp.forms.hr@team-group.com',
+    IT: 'grp.forms.it@team-group.com',
+    IDSETUP: 'grp.forms.idsetup@team-group.com',
+    FLEETIO: 'grp.forms.fleetio@team-group.com',
+    CREDIT_CARD: 'grp.forms.creditcard@team-group.com',
+    BUSINESS_CARDS: 'davelangohr@team-group.com',
+    REVIEW_306090_JR: 'grp.forms.review306090@team-group.com',
+    JONAS: 'grp.forms.jonas@team-group.com',
+    SAFETY: 'grp.forms.safety@team-group.com'
   }
   
 };

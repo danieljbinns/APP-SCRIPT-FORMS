@@ -437,6 +437,34 @@
                         </span>
                     </div>
 
+                    <div class="info-row">
+                        <span class="label">BOSS Committees:</span>
+                        <span class="value">
+                            <?= requestData.bossJobSites || 'None' ?>
+                        </span>
+                    </div>
+                    <? if (requestData.bossCostSheet === 'Yes') { ?>
+                    <div class="info-row">
+                        <span class="label">Cost Sheet:</span>
+                        <span class="value">
+                            Yes (Jobs:
+                            <?= requestData.bossCostSheetJobs || 'None' ?>)
+                        </span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.bossTripReports === 'Yes') { ?>
+                    <div class="info-row">
+                        <span class="label">Trip Reports:</span>
+                        <span class="value">Yes</span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.bossGrievances === 'Yes') { ?>
+                    <div class="info-row">
+                        <span class="label">Grievances:</span>
+                        <span class="value">Yes</span>
+                    </div>
+                    <? } ?>
+
                     <!-- Hidden fields for pre-population -->
                     <input type="hidden" id="ctx_computerType" value="<?= requestData.computerType || '' ?>">
                     <input type="hidden" id="ctx_requestedDomains" value="<?= requestData.requestedDomains || '' ?>">
@@ -513,6 +541,7 @@
                             <option value="">-- Select Domain --</option>
                             <option value="@team-group.com">@team-group.com</option>
                             <option value="@robinsonsolutions.com">@robinsonsolutions.com</option>
+                            <option value="@industrialappliedtech.com">@industrialappliedtech.com</option>
                         </select>
                     </div>
                 </div>
@@ -543,8 +572,8 @@
 
                 <div class="form-row-3">
                     <div class="form-group">
-                        <label for="computerMake">Make:</label>
-                        <input type="text" id="computerMake" name="Computer_Make">
+                        <label for="computerMake">Serial Number:</label>
+                        <input type="text" id="computerMake" name="Computer_Serial">
                     </div>
 
                     <div class="form-group">
@@ -621,6 +650,49 @@
                                 <input type="radio" name="BOSS_Access" value="No" required>
                                 <span>No</span>
                             </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>BOSS Access Details (Requested by Manager):</label>
+                        <div class="context-section"
+                            style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); padding: 15px; border-radius: 6px;">
+
+                            <!-- Committees -->
+                            <div style="margin-bottom: 10px;">
+                                <strong style="color: var(--text-muted); font-size: 0.9em;">Committees to
+                                    Assign:</strong>
+                                <div style="margin-top: 5px; color: var(--text-main);">
+                                    <?!= requestData.bossJobSites ? requestData.bossJobSites.split(',').map(s => '• ' + s.trim()).join('<br>') : 'None' ?>
+                                </div>
+                            </div>
+
+                            <!-- Cost Sheets -->
+                            <div style="margin-bottom: 10px;">
+                                <strong style="color: var(--text-muted); font-size: 0.9em;">Cost Sheet Job
+                                    Numbers:</strong>
+                                <div style="margin-top: 5px; color: var(--text-main);">
+                                    <?!= requestData.bossCostSheetJobs ? requestData.bossCostSheetJobs.split(',').map(s => '• ' + s.trim()).join('<br>') : 'None' ?>
+                                </div>
+                            </div>
+
+                            <!-- Flags -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                                <div>
+                                    <strong style="color: var(--text-muted); font-size: 0.9em;">Trip Reports:</strong>
+                                    <span
+                                        style="color: <?= requestData.bossTripReports === 'Yes' ? 'var(--brand-red)' : 'var(--text-main)' ?>; font-weight: bold;">
+                                        <?= requestData.bossTripReports || 'No' ?>
+                                    </span>
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-muted); font-size: 0.9em;">Grievances:</strong>
+                                    <span
+                                        style="color: <?= requestData.bossGrievances === 'Yes' ? 'var(--brand-red)' : 'var(--text-main)' ?>; font-weight: bold;">
+                                        <?= requestData.bossGrievances || 'No' ?>
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -757,7 +829,9 @@
             google.script.run
                 .withSuccessHandler(res => {
                     if (res.success) {
-                        status.innerHTML = '<div class="success">' + res.message + '</div>';
+                        status.innerHTML = '<div class="success">' + res.message + '<br><br>' +
+                            '<button class="btn-submit" style="width:auto; padding: 10px 20px; font-size: 14px; margin-top:10px;" onclick="window.open(\'' + "<?= getBaseUrl() ?>?form=dashboard" + '\', \'_top\')">Return to Dashboard</button>' +
+                            '</div>';
                         document.getElementById('taskForm').style.display = 'none';
                     } else {
                         status.innerHTML = '<div class="error">Error: ' + res.message + '</div>';

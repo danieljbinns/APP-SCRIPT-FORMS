@@ -10,16 +10,24 @@ var ConfigurationService = (function() {
   // --- Defaults (from Config.gs) ---
   var DEFAULTS = {
     // Permission Groups
-    'GROUP_MASTER_ADMIN': 'admin-access@robinsonsolutions.com',
-    'GROUP_ALL_FORMS': 'forms-access@robinsonsolutions.com',
-    'GROUP_HR': 'hr-team@robinsonsolutions.com',
-    'GROUP_IT': 'it-team@robinsonsolutions.com',
+    'GROUP_MASTER_ADMIN': 'grp.forms.it@team-group.com',
+    'GROUP_ALL_FORMS': 'grp.forms.it@team-group.com',
+    'GROUP_HR': 'grp.forms.hr@team-group.com',
+    'GROUP_IT': 'grp.forms.it@team-group.com',
     
     // Routing Emails
-    'EMAIL_HR': 'dbinns@robinsonsolutions.com',
-    'EMAIL_IT': 'dbinns@robinsonsolutions.com',
-    'EMAIL_SITEDOCS': 'dbinns@robinsonsolutions.com',
-    'EMAIL_NOTIFICATIONS': 'dbinns@robinsonsolutions.com'
+    'EMAIL_HR': 'grp.forms.hr@team-group.com',
+    'EMAIL_IT': 'grp.forms.it@team-group.com',
+    'EMAIL_IDSETUP': 'grp.forms.idsetup@team-group.com',
+    'EMAIL_SAFETY': 'grp.forms.safety@team-group.com',
+    'EMAIL_NOTIFICATIONS': 'grp.forms.it@team-group.com',
+    'EMAIL_REDIRECT_ALL': '', // Set this to an email in Script Properties to redirect ALL outbound mail
+    
+    // Resource IDs (Override in Script Properties for Staging/Test)
+    'SPREADSHEET_ID': '1kGjw8e-uIehaBemlsRZ4Yq1QrYOWkJvWzhKbgfl4Pxo',
+    'MAIN_FOLDER_ID': '1vBZVuzXmSatnLGiqhU7QoS0zBK2NGDQE',
+    'SHARED_DRIVE_ID': '0AOOOWlqzpUNVUk9PVA',
+    'DEPLOYMENT_URL': 'https://script.google.com/a/macros/robinsonsolutions.com/s/AKfycbzBuUzj2DOW9ZcRPsfSoE9zVO-eMVWGj8dCaEW1i-X2rcdMBcWWBrHLoX5dn0Zf05Sm3w/exec'
   };
 
   /**

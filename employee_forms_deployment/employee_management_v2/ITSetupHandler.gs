@@ -40,8 +40,10 @@ function getITContextData(workflowId) {
           jrTitle: mainData[i][46],  // JR Title (Lookup)
           siteName: mainData[i][15],
           managerName: mainData[i][18],
+          managerEmail: mainData[i][17], // Added for notifications
+          requesterEmail: mainData[i][5], // Requester Email (Col 6, Index 5)
           employmentType: mainData[i][9],
-          emailRequested: mainData[i][19],
+          emailRequested: mainData[i][22] + (mainData[i][23] ? '@' + mainData[i][23].replace('@', '') : ''),
           // Additional Context for Pre-populating IT Form
           computerType: mainData[i][25], // Col 25 = Computer Type
           requestedDomains: mainData[i][23], // Col 23 = Google Domain
@@ -53,12 +55,11 @@ function getITContextData(workflowId) {
           jonasJobNumbers: mainData[i][44], // Col 44 = Jonas Job #s
           creditCardUSA: mainData[i][30], // Col 30 = CC USA Yes/No
           creditCardLimitUSA: mainData[i][31],
-          creditCardCanada: mainData[i][32],
-          creditCardLimitCanada: mainData[i][33],
-          creditCardHomeDepot: mainData[i][34],
+          creditCardLimitCanada: mainData[i][32],
           creditCardLimitHomeDepot: mainData[i][35],
           businessCards: mainData[i][20] && mainData[i][20].includes('Business Cards') ? 'Yes' : 'No',
           fleetioAccess: mainData[i][20] && mainData[i][20].includes('Fleetio') ? 'Yes' : 'No',
+          jobSiteNumber: mainData[i][16], // Col 16 = Job Site #
         };
         break;
       }
@@ -72,7 +73,11 @@ function getITContextData(workflowId) {
         if (idData[j][0] === workflowId) {
           context.internalEmployeeId = idData[j][3];
           context.siteDocsWorkerId = idData[j][4];
+          context.siteDocsJobCode = idData[j][5];
+          context.siteDocsUsername = idData[j][6];
+          context.siteDocsPassword = idData[j][7];
           context.dssUsername = idData[j][8];
+          context.dssPassword = idData[j][9];
           break;
         }
       }
@@ -98,7 +103,7 @@ function submitITSetup(formData) {
       itSheet = ss.insertSheet(CONFIG.SHEETS.IT_RESULTS);
       itSheet.appendRow([
         'Workflow ID', 'Form ID', 'Submission Timestamp', 'Email Created', 'Assigned Email', 'Email Password',
-        'Computer Assigned', 'Computer Make', 'Computer Model', 'Computer Type',
+        'Computer Assigned', 'Computer Serial', 'Computer Model', 'Computer Type',
         'Phone Assigned', 'Phone Carrier', 'Phone Model', 'Phone Number', 'Phone VM Password',
         'BOSS Access', 'Incidents Access', 'CAA Access', 'Delivery App Access', 'Net Promoter Access',
         'IT Notes', 'Submitted By'
@@ -108,22 +113,86 @@ function submitITSetup(formData) {
     
     const assignedEmail = formData.Email_Username ? (formData.Email_Username + formData.Email_Domain) : 'N/A';
     
-    itSheet.appendRow([
-      workflowId, formId, new Date(), formData.Email_Created, assignedEmail, formData.Email_Temp_Password || 'N/A',
-      formData.Computer_Assigned, formData.Computer_Make || 'N/A', formData.Computer_Model || 'N/A', formData.Computer_Type || 'N/A',
-      formData.Phone_Assigned, formData.Phone_Carrier || 'N/A', formData.Phone_Model || 'N/A', formData.Phone_Number || 'N/A', formData.Phone_VM_Password || 'N/A',
-      formData.BOSS_Access, formData.Incidents_Access, formData.CAA_Access, formData.Delivery_App_Access, formData.Net_Promoter_Score_Access,
-      formData.IT_Notes || '', Session.getActiveUser().getEmail()
-    ]);
+    const rowData = [
+      workflowId, 
+      formId, 
+      new Date(), 
+      formData.Email_Created, 
+      assignedEmail, 
+      formData.Email_Temp_Password || 'N/A',
+      formData.Computer_Assigned, 
+      formData.Computer_Serial || 'N/A', 
+      formData.Computer_Model || 'N/A', 
+      formData.Computer_Type || 'N/A',
+      formData.Phone_Assigned, 
+      formData.Phone_Carrier || 'N/A', 
+      formData.Phone_Model || 'N/A', 
+      formData.Phone_Number || 'N/A', 
+      formData.Phone_VM_Password || 'N/A',
+      formData.BOSS_Access, 
+      formData.Incidents_Access, 
+      formData.CAA_Access, 
+      formData.Delivery_App_Access, 
+      formData.Net_Promoter_Score_Access,
+      formData.IT_Notes || '', 
+      Session.getActiveUser().getEmail()
+    ];
+    
+    itSheet.appendRow(rowData);
+    Logger.log('Appended row to IT Results: ' + JSON.stringify(rowData));
     
     const actingUser = Session.getActiveUser().getEmail();
     updateWorkflow(workflowId, 'In Progress', 'Specialist Forms Needed', '', actingUser);
     
     triggerSpecialists(workflowId, formData);
+
+    // Notify Requester
+    try {
+      const context = getITContextData(workflowId);
+      if (context.success && context.emailRequested) { // requester email is stored in emailRequested field?
+         // accessing mainData[i][19] might be Requester Email? 
+         // Let's check getITContextData mapping:
+         // emailRequested: mainData[i][19] -> wait, col 19 is 'Requester Email' in Initial Requests?
+         // Let's assume standard field is used.
+         // Actually, let's use sendFormEmail generically.
+         
+           const requesterEmail = context.requesterEmail; // Fixed: Use correct field
+           
+           const recipients = [requesterEmail];
+           // Attempt to get manager email if available in context
+           if (context.managerEmail && context.managerEmail !== requesterEmail) {
+             recipients.push(context.managerEmail);
+           }
+
+           if (recipients.length > 0) {
+             sendFormEmail({
+               to: recipients.join(','),
+               subject: 'IT Setup Complete: ' + context.employeeName,
+               body: `Good news! IT Setup has been completed for ${context.employeeName}.\n\n` +
+                     `<strong>CREDENTIALS:</strong>\n` +
+                     `• Email: ${assignedEmail} (Pwd: ${formData.Email_Temp_Password || 'N/A'})\n` +
+                     `• DSS: ${context.dssUsername || 'N/A'} (Pwd: ${context.dssPassword || 'N/A'})\n` +
+                     `• SiteDocs: ${context.siteDocsUsername || 'N/A'} (Pwd: ${context.siteDocsPassword || 'N/A'})\n` + 
+                     `• SiteDocs Worker ID: ${context.siteDocsWorkerId || 'N/A'}\n\n` +
+                     `<strong>EQUIPMENT:</strong>\n` +
+                     `• Computer: ${formData.Computer_Assigned} (${formData.Computer_Serial || 'N/A'})\n` +
+                     `• Phone: ${formData.Phone_Assigned} (${formData.Phone_Number || 'N/A'})\n` +
+                     `• Phone VM Pin: ${formData.Phone_VM_Password || 'N/A'}\n\n` +
+                     `Specialist requests (Credit Cards, Jonas, etc.) have been triggered parallel to this.`,
+               // formUrl: getBaseUrl() + '?form=request_details&id=' + workflowId, // BUTTON REMOVED per user request
+        formUrl: '',
+        displayName: 'Onboarding System'
+             });
+             Logger.log('Notified ' + recipients.join(', ') + ' of IT completion');
+           }
+      }
+    } catch (e) {
+      Logger.log('Error notifying requester: ' + e.toString());
+    }
     
     return {
       success: true,
-      message: 'IT Setup results saved successfully'
+      message: 'IT Setup results saved successfully. Requester and Specialists have been notified. You may now close this window or return to the dashboard.'
     };
     
   } catch (error) {
@@ -186,28 +255,26 @@ function triggerSpecialists(workflowId, itData) {
   specialists.push({
     email: CONFIG.EMAILS.REVIEW_306090_JR,
     subject: 'Action Required: 30/60/90 Reviews & JR Confirmation',
-    body: `Employee onboarding complete by IT.\n\nHR Approved Title: ${context.jobTitle}\nJR Title: ${context.jrTitle || 'None Assigned'}\n\nPlease proceed with 30/60/90 plan setup.`,
+    body: `Employee onboarding has been completed by IT. The employee has been assigned the email address: <strong>${assignedEmail}</strong>.<br><br>` + 
+          `Please proceed with the 30/60/90 plan setup and JR confirmation for this employee. Additional request details are provided in the table below.`,
     param: 'review'
   });
   
-  // 5. Jonas
+    // 5. Jonas
   // Check if Jonas access was requested OR specific job numbers provided
   if (context.jonasJobNumbers && context.jonasJobNumbers.length > 0) {
+    // Format job numbers: One per line
+    const safeJobNumbers = context.jonasJobNumbers.toString().split(',').map(s => s.trim()).filter(s => s).join('<br>• ');
+    
     specialists.push({
       email: CONFIG.EMAILS.JONAS,
       subject: 'Action Required: Jonas Account Setup',
-      body: `New employee requires Jonas access.\n\nRequested Job Numbers: ${context.jonasJobNumbers}\n\nEmail: ${assignedEmail}`,
+      body: `New employee requires Jonas access.<br><br><strong>Requested Job Numbers:</strong><br>• ${safeJobNumbers}<br><br>Email: ${assignedEmail}`,
       param: 'jonas'
     });
   }
   
-  // 6. SiteDocs (Always check)
-  specialists.push({
-    email: CONFIG.EMAILS.SITEDOCS,
-    subject: 'Action Required: SiteDocs & DSS Verification',
-    body: `User has been added to SiteDocs and DSS.\n\nPlease confirm locations and assigned courses are correct.\n\nWorker ID: ${context.siteDocsWorkerId || 'N/A'}\nJob Code: ${context.siteDocsJobCode || 'N/A'}\nDSS Username: ${context.dssUsername || 'N/A'}`,
-    param: 'sitedocs'
-  });
+
 
   // Send all emails
   specialists.forEach(spec => {
@@ -217,7 +284,7 @@ function triggerSpecialists(workflowId, itData) {
       subject: spec.subject,
       body: spec.body, // This body content is injected into the rich template
       formUrl: specUrl,
-      displayName: 'Team Group Companies - Onboarding',
+      displayName: 'TEAM Group - Employee Onboarding',
       contextData: context // Pass full context for the rich table
     });
   });

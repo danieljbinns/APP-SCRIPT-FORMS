@@ -42,8 +42,27 @@ A premium, dark-mode portal for tracking every hire:
 - **Compatibility**: All UI code is refactored for 100% compatibility with the Google Apps Script sandbox (no modern string literals or non-ASCII characters).
 - **Security**: Forms track the identity of the staff member (`Session.getActiveUser()`).
 - **Reliability**: Navigation uses the authoritative Public Macro URL to prevent "Iframe Escape" errors.
+- **Permissions**: Visibility is restricted based on your role:
+  - **Managers & Requesters**: Can see only the employees they are personally involved with.
+  - **Admin, IT, & HR Teams**: Have full visibility into all active requests across the organization via Google Group membership (`grp.forms.it@team-group.com` and `grp.forms.hr@team-group.com`).
 
 ---
+
+### Version 24 Release (Current)
+
+- **Security Upgrade**: Aligned all permission groups with `@team-group.com` mailing lists.
+- **Visibility Fix**: Corrected data mapping so Requesters and Managers can see their specific requests on the dashboard.
+- **Email Enhancements**: Added **Assigned Email** and **Job Site #** to the specialist notification emails (specifically for the 30/60/90 review team).
+
+### Version 19 Release (Previous)
+
+- **Critical Fix**: Resolved a syntax error in the Dashboard ("Unexpected token") that prevented the details view from loading.
+
+### Version 18 Release (Previous)
+
+- **Bug Fix**: Fixed "BOSS Committees" dropdown incorrectly showing the "Sites" list (Column A). It now correctly shows only the "Committees" list (Column F) as intended.
+
+### Version 16 Release (Previous)
 
 ## 📖 Deployment Guide
 
