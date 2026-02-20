@@ -53,6 +53,8 @@ A premium, dark-mode portal for tracking every hire:
 - **Security Upgrade**: Aligned all permission groups with `@team-group.com` mailing lists.
 - **Visibility Fix**: Corrected data mapping so Requesters and Managers can see their specific requests on the dashboard.
 - **Email Enhancements**: Added **Assigned Email** and **Job Site #** to the specialist notification emails (specifically for the 30/60/90 review team).
+- **Environment Isolation**: Established a "Staging" environment with a dedicated Git branch and Google Apps Script project.
+- **Master Email Redirect**: Implemented a global switch (`EMAIL_REDIRECT_ALL`) to safely redirect all system emails to a test address during development.
 
 ### Version 19 Release (Previous)
 

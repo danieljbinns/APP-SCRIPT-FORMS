@@ -75,7 +75,7 @@ Current Deployment Folder: `employee_forms_deployment/`
 - [x] **Fix Dashboard Visibility**: Fixed requester/manager mapping for filtered views.
 - [x] **Update 30/60/90 Email**: Added Employee Email and Job # to specialist notifications.
 - [x] **Master Email Redirect**: Added a global switch for safe environment testing.
-- [/] **Staging Environment Setup**: Planning environment isolation and parallel sync.
+- [x] **Staging Environment Setup**: Established Dev/Staging/Main branches and isolated staging project.
 - [ ] **Unified Dashboard (VNext)**: Plan implementation.
 - [ ] **Asset Manager**: Plan implementation.
 - [ ] **Org Chart**: Plan implementation.
