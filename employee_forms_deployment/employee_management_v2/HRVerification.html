@@ -229,14 +229,15 @@
                     <!-- Hidden Request Context -->
                     <input type="hidden" name="workflowId" value="<?= workflowId ?>">
                     <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
-                    <input type="hidden" name="internalEmployeeId" value="<?= requestData.internalEmployeeId || 'PENDING' ?>">
+                    <input type="hidden" name="internalEmployeeId"
+                        value="<?= requestData.internalEmployeeId || 'PENDING' ?>">
 
                     <div class="grid">
                         <div class="form-group">
-                        <div class="form-group">
-                            <label>Site</label>
-                            <input type="text" name="siteName" value="<?= requestData.siteName || '' ?>">
-                        </div>
+                            <div class="form-group">
+                                <label>Site</label>
+                                <input type="text" name="siteName" value="<?= requestData.siteName || '' ?>">
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Hire Date</label>
@@ -304,8 +305,11 @@
                 <div class="success-icon">✓</div>
                 <h2>Verification Complete</h2>
                 <p class="subtitle">The records have been updated and IT has been notified to proceed.</p>
-                <button class="btn btn-primary" style="max-width: 200px; margin-top: 24px;"
-                    onclick="window.close()">Close Window</button>
+                <div style="margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                    <button class="btn btn-primary" style="max-width: 200px;"
+                        onclick="window.open('<?= getBaseUrl() ?>?form=dashboard', '_top')">Return to Dashboard</button>
+                    <p style="color: #888; font-size: 13px;">You may now close this window.</p>
+                </div>
             </div>
         </div>
     </div>

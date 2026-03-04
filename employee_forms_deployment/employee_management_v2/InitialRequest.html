@@ -418,9 +418,7 @@
           Complete all required fields to submit a new employee request.
         </p>
         <div style="text-align: center; margin-bottom: 20px;">
-          <button type="button" onclick="prefillTestData()"
-            style="background: #3B82F6; color: white; border: none; padding: 8px 20px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600;">🚀
-            Prefill Test Data</button>
+          <!-- Prefill button removed per user request -->
         </div>
 
         <hr>
@@ -469,9 +467,8 @@
               <label>Hire Date <span class="required">*</span></label>
               <input type="date" name="hireDate" id="hireDate" required onchange="checkHireDate()">
               <div id="hireDateWarning"
-                style="display: none; margin-top: 0.5rem; padding: 0.75rem; background: #FEF3C7; border-left: 4px solid #F59E0B; color: #92400E; border-radius: 4px; font-size: 0.9rem;">
-                <strong>⚠️ Notice:</strong> Processing typically requires 3 business days. If this request is
-                time-sensitive, please contact IT directly to expedite.
+                style="display: none; margin-top: 0.5rem; padding: 0.5rem; background: #FEF3C7; border-left: 4px solid #F59E0B; color: #92400E; border-radius: 4px; font-size: 0.8rem;">
+                <strong>⚠️ Notice:</strong> &lt; 3 business days. Please contact IT to expedite.
               </div>
             </div>
 
@@ -702,9 +699,6 @@
                   <option value="industrialappliedtech.com">industrialappliedtech.com</option>
                   <option value="stgroup.ca">stgroup.ca</option>
                 </select>
-                <small
-                  style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Will
-                  auto-select based on manager's domain</small>
               </div>
             </div>
           </div>
@@ -733,7 +727,8 @@
                 <label>Computer Type Requested</label>
                 <div class="radio-group">
                   <label>
-                    <input type="radio" name="computerType" value="Chromebook" checked>
+                    <input type="radio" name="computerType" value="Chromebook" checked
+                      onchange="toggleOffice365Question()">
                     <span class="radio-button">Chromebook</span>
                   </label>
                   <label>
@@ -808,7 +803,7 @@
                   <span>USA Credit Card</span>
                 </label>
                 <div style="margin-top: 0.5rem;">
-                  <input type="text" name="creditCardLimitUSA" placeholder="Limit (e.g., $5,000)"
+                  <input type="text" name="creditCardLimitUSA" placeholder="Monthly Limit (e.g., $1,000)"
                     style="width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
                 </div>
               </div>
@@ -820,7 +815,7 @@
                   <span>Canada Credit Card</span>
                 </label>
                 <div style="margin-top: 0.5rem;">
-                  <input type="text" name="creditCardLimitCanada" placeholder="Limit (e.g., $5,000 CAD)"
+                  <input type="text" name="creditCardLimitCanada" placeholder="Monthly Limit (e.g., $1,000 CAD)"
                     style="width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
                 </div>
               </div>
@@ -832,7 +827,7 @@
                   <span>Home Depot Credit Card</span>
                 </label>
                 <div style="margin-top: 0.5rem;">
-                  <input type="text" name="creditCardLimitHomeDepot" placeholder="Limit (e.g., $2,500)"
+                  <input type="text" name="creditCardLimitHomeDepot" placeholder="Monthly Limit (e.g., $1,000)"
                     style="width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
                 </div>
               </div>
@@ -877,7 +872,7 @@
             <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">BOSS System Details</h3>
 
             <div class="form-field">
-              <label>Job Site(s) To Be Assigned</label>
+              <label>Committee(s) To Be Assigned</label>
               <select name="bossJobSites" id="bossJobSites" multiple size="5"
                 style="width: 100%; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
                 <option value="">Loading sites...</option>
@@ -1088,7 +1083,7 @@
         .withSuccessHandler(function (sites) {
           console.log('✅ Loaded ' + (sites ? sites.length : 0) + ' sites');
           populateSelect('siteName', sites);
-          populateSelect('bossJobSites', sites, '', true);
+          // populateSelect('bossJobSites', sites, '', true); // REMOVED: Conflict with Committees (Col F)
         })
         .withFailureHandler(console.error)
         .getSitesList();
@@ -1120,11 +1115,29 @@
         .withSuccessHandler(function (jobs) {
           console.log('✅ Loaded ' + (jobs ? jobs.length : 0) + ' Job Numbers');
           populateSelect('jobSiteNumber', jobs);
-          populateSelect('costSheetJobNumbers', jobs, '', true);
-          populateSelect('jonasJobNumbers', jobs, '', true);
+          // populateSelect('costSheetJobNumbers', jobs, '', true); // REMOVED: Now handled by separate call below (Col E)
+          populateSelect('jonasJobNumbers', jobs, '', true); // "JONAS ... should be same as job site number lookup" -> Column D
         })
         .withFailureHandler(console.error)
-        .getJobNumbersList();
+        .getJobNumbersList(); // Column D
+
+      // 5. BOSS Cost Sheets (Column E)
+      google.script.run
+        .withSuccessHandler(function (sheets) {
+          console.log('✅ Loaded ' + (sheets ? sheets.length : 0) + ' Cost Sheets');
+          populateSelect('costSheetJobNumbers', sheets, '', true);
+        })
+        .withFailureHandler(console.error)
+        .getBossCostSheetsList(); // Column E
+
+      // 6. BOSS Committees (Column F)
+      google.script.run
+        .withSuccessHandler(function (committees) {
+          console.log('✅ Loaded ' + (committees ? committees.length : 0) + ' Committees');
+          populateSelect('bossJobSites', committees, '', true);
+        })
+        .withFailureHandler(console.error)
+        .getBossJobSitesList(); // Column F
     });
 
     // Utility Functions
@@ -1390,13 +1403,20 @@
 
     // Toggle Office 365 license question
     function toggleOffice365Question() {
-      const computerType = document.querySelector('[name="computerType"]:checked');
+      // PHASE 4 FIX: Ensure we check the current state explicitly
+      // Get the checked radio button
+      const computerTypeRadio = document.querySelector('input[name="computerType"]:checked');
       const office365Question = document.getElementById('office365Question');
 
-      if (computerType && (computerType.value === 'Windows' || computerType.value === 'Mac')) {
+      console.log('Toggle 365 called. Computer Type:', computerTypeRadio ? computerTypeRadio.value : 'None');
+
+      if (computerTypeRadio && (computerTypeRadio.value === 'Windows' || computerTypeRadio.value === 'Mac')) {
         office365Question.style.display = 'block';
       } else {
         office365Question.style.display = 'none';
+        // Optional: uncheck 365 option if hidden to prevent submitting hidden data
+        const checked365 = document.querySelector('[name="office365Required"]:checked');
+        if (checked365) checked365.checked = false;
       }
     }
 
@@ -1518,7 +1538,7 @@
                       <strong>Request ID: ${response.requestId || response.workflowId}</strong>
                     </p>
                     <div style="margin-top: 30px;">
-                      <a href="${response.formUrl || 'javascript:location.reload()'}" style="background-color: var(--brand-red); color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Submit Another Request</a>
+                      <a href="${response.scriptUrl}?form=initial_request" target="_top" style="background-color: var(--brand-red); color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Submit Another Request</a>
                     </div>
                   </div>
                 `;

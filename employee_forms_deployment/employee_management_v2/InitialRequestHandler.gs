@@ -71,14 +71,15 @@ function submitInitialRequest(formData) {
       systems: formData.systems,
       equipment: formData.equipment,
       employeeIdSetupUrl: idSetupUrl,
-      siteDocsEmail: CONFIG.EMAILS.SITEDOCS
+      siteDocsEmail: CONFIG.EMAILS.IDSETUP
     });
     
     return {
       success: true,
       workflowId: workflowId,
       formId: formId,
-      message: 'Request submitted successfully'
+      message: 'Request submitted successfully',
+      scriptUrl: ScriptApp.getService().getUrl()
     };
     
   } catch (error) {
