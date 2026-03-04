@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Form & Logic Planner</title>
+    <!-- Include SortableJS for drag and drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --surface-active: #475569;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --action-color: #8b5cf6;
+            --action-hover: #7c3aed;
+            --logic-color: #f59e0b;
+            --logic-hover: #d97706;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --border-light: #475569;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button.btn-action {
+            background-color: var(--action-color);
+        }
+
+        button.btn-action:hover {
+            background-color: var(--action-hover);
+        }
+
+        button.btn-logic {
+            background-color: var(--logic-color);
+        }
+
+        button.btn-logic:hover {
+            background-color: var(--logic-hover);
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.outline {
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        button.outline:hover {
+            background-color: var(--surface-hover);
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar for tools/palettes */
+        .sidebar {
+            width: 320px;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            border-right: 1px solid var(--border);
+            padding-right: 10px;
+        }
+
+        .palette-section {
+            background-color: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .palette-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .palette-list {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 50px;
+        }
+
+        /* Main Workspace area */
+        .workspace-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            /* in case of smaller screens */
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background-color: var(--surface-hover);
+            color: var(--text);
+        }
+
+        .tab.active {
+            background-color: var(--surface);
+            border-color: var(--border);
+            color: var(--primary);
+            position: relative;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background-color: var(--surface);
+        }
+
+        .flow-canvas {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .workflow-view {
+            display: none;
+            min-height: 100%;
+        }
+
+        .workflow-view.active {
+            display: block;
+        }
+
+        /* Items / Nodes styling */
+        .node-container {
+            margin-bottom: 8px;
+        }
+
+        .node {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            transition: border-color 0.2s;
+        }
+
+        .node-header {
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            cursor: grab;
+        }
+
+        .node-header:active {
+            cursor: grabbing;
+        }
+
+        .node:hover>.node-header {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Types of nodes */
+        .node.type-field>.node-header {
+            border-left: 4px solid var(--primary);
+        }
+
+        .node.type-action>.node-header {
+            border-left: 4px solid var(--action-color);
+        }
+
+        .node.type-logic>.node-header {
+            border-left: 4px solid var(--logic-color);
+        }
+
+        .node-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .node-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .node-type-label {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: var(--surface-active);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+        }
+
+        .node-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .node-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .node:hover>.node-header .node-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover {
+            background-color: var(--surface-hover);
+            color: var(--text);
+        }
+
+        .action-btn.delete:hover {
+            color: var(--danger);
+        }
+
+        /* Nested / Branching structures */
+        .node-children {
+            padding: 10px;
+            padding-left: 30px;
+            border-top: 1px dashed var(--border-light);
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 0 0 6px 6px;
+            min-height: 40px;
+        }
+
+        /* Empty state for drop zones */
+        .node-children:empty::after,
+        .flow-canvas .workflow-view:empty::after {
+            content: 'Drag items here...';
+            display: block;
+            text-align: center;
+            padding: 10px;
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.85rem;
+            border: 1px dashed var(--border-light);
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Sortable JS classes */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: var(--surface-active) !important;
+        }
+
+        .sortable-drag {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+            cursor: grabbing !important;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background-color: var(--surface);
+            border-radius: 8px;
+            width: 450px;
+            max-width: 90%;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            transform: translateY(20px);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0;
+        }
+
+        .modal-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .form-group input,
+        .form-group select {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        #exportResult {
+            width: 100%;
+            height: 200px;
+            background-color: var(--bg-color);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: monospace;
+            resize: vertical;
+            box-sizing: border-box;
+            display: none;
+            margin-top: 10px;
+        }
+
+        /* specific to branching logic */
+        .branch-btn {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            background: var(--surface-hover);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 8px;
+            align-self: flex-start;
+        }
+
+        .branch-btn:hover {
+            background: var(--surface-active);
+        }
+
+        .collapse-btn {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            text-align: left;
+            margin-right: 5px;
+        }
+
+        .node.collapsed .node-children {
+            display: none;
+        }
+
+        .node.collapsed .collapse-btn::before {
+            content: '▶';
+        }
+
+        .node:not(.collapsed) .collapse-btn::before {
+            content: '▼';
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div>
+            <h1>Unified Workflow Logic Planner</h1>
+            <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.9rem;">
+                Combine form questions and backend actions into nested logical branches.
+            </p>
+        </div>
+        <div class="controls">
+            <button class="outline" onclick="openModal('field')">+ New Field</button>
+            <button class="btn-logic" onclick="openModal('logic')">+ New Branch/Logic</button>
+            <button class="btn-action" onclick="openModal('action')">+ New Action</button>
+            <button onclick="exportConfig()">Export JSON Tree</button>
+        </div>
+    </header>
+
+    <textarea id="exportResult" readonly></textarea>
+
+    <div class="main-container">
+        <!-- Sidebar Palettes -->
+        <div class="sidebar">
+            <div class="palette-section">
+                <div class="palette-header">
+                    <span>Questions / Fields</span>
+                </div>
+                <div class="palette-list" id="palette-fields"></div>
+            </div>
+
+            <div class="palette-section">
+                <div class="palette-header">
+                    <span>Logic Blocks (If/Then)</span>
+                </div>
+                <div class="palette-list" id="palette-logic"></div>
+            </div>
+
+            <div class="palette-section">
+                <div class="palette-header">
+                    <span>Backend Actions</span>
+                </div>
+                <div class="palette-list" id="palette-actions"></div>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="workspace-area">
+            <div class="tabs">
+                <div class="tab" onclick="switchTab('newhire')">New Hire (Example)</div>
+                <div class="tab active" onclick="switchTab('position')">Position / Title Change</div>
+                <div class="tab" onclick="switchTab('location')">Location Change</div>
+                <div class="tab" onclick="switchTab('termination')">Termination</div>
+            </div>
+
+            <div class="flow-canvas">
+                <div class="workflow-view" id="canvas-newhire"></div>
+                <div class="workflow-view active" id="canvas-position"></div>
+                <div class="workflow-view" id="canvas-location"></div>
+                <div class="workflow-view" id="canvas-termination"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Node Modal -->
+    <div class="modal-overlay" id="nodeModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Edit Node</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="nodeId">
+                <input type="hidden" id="nodeCategory"> <!-- field, action, logic -->
+
+                <div class="form-group">
+                    <label id="titleLabel" for="nodeTitle">Title / Name</label>
+                    <input type="text" id="nodeTitle" placeholder="e.g. New Job Title or Send HR Email">
+                </div>
+
+                <div class="form-group" id="typeGroup">
+                    <label id="typeLabel" for="nodeType">Type / Category</label>
+                    <select id="nodeType">
+                        <!-- Populated dynamically based on category -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label id="descLabel" for="nodeDesc">Note / Condition / Details</label>
+                    <input type="text" id="nodeDesc" placeholder="e.g. Optional instructions or condition logic">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="outline" onclick="closeModal()">Cancel</button>
+                <button onclick="saveNode()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let uniqueIdCounter = 1;
+        const generateId = () => 'node_' + Date.now() + '_' + (uniqueIdCounter++);
+
+        // Type configuration
+        const typeOptions = {
+            field: [
+                { val: 'Text Input', label: 'Text Input' },
+                { val: 'Date', label: 'Date' },
+                { val: 'Dropdown', label: 'Dropdown (Select)' },
+                { val: 'Radio', label: 'Radio Buttons' },
+                { val: 'Checkbox', label: 'Checkbox (Yes/No)' }
+            ],
+            action: [
+                { val: 'Email', label: 'Email Notification' },
+                { val: 'Ticket', label: 'IT Ticket' },
+                { val: 'Approval', label: 'Requires Approval' },
+                { val: 'SystemUpdate', label: 'Database Update' }
+            ],
+            logic: [
+                { val: 'IfCondition', label: 'If Condition Then...' },
+                { val: 'WorkflowGroup', label: 'Form Section / Group' }
+            ]
+        };
+
+        // DOM Elements
+        const modalOverlay = document.getElementById('nodeModalOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const iId = document.getElementById('nodeId');
+        const iCategory = document.getElementById('nodeCategory');
+        const iTitle = document.getElementById('nodeTitle');
+        const iType = document.getElementById('nodeType');
+        const iDesc = document.getElementById('nodeDesc');
+
+        // State maps
+        let nodeDataStore = {}; // id -> data object
+
+        // Initialization data
+        const initialPalettes = {
+            'palette-fields': [
+                { cat: 'field', title: 'Requester Name', type: 'Text Input', desc: '' },
+                { cat: 'field', title: 'Effective Date', type: 'Date', desc: '' },
+                { cat: 'field', title: 'System Access Needed?', type: 'Radio', desc: 'Yes/No' },
+                { cat: 'field', title: 'Add Systems', type: 'Checkbox', desc: 'Checklist of apps' }
+            ],
+            'palette-logic': [
+                { cat: 'logic', title: 'If System Access = Yes', type: 'IfCondition', desc: 'Runs inner items only if true' },
+                { cat: 'logic', title: 'Form Group Region', type: 'WorkflowGroup', desc: 'Group form questions together' }
+            ],
+            'palette-actions': [
+                { cat: 'action', title: 'Create IT Ticket', type: 'Ticket', desc: 'Spiceworks/SysAid' },
+                { cat: 'action', title: 'Send JR Email', type: 'Email', desc: 'To HR/Recruitment' }
+            ]
+        };
+
+        const initialWorkflows = {
+            'canvas-newhire': [
+                { category: 'field', title: 'Requester Name', type: 'Text Input' },
+                { category: 'field', title: 'Requester Email', type: 'Text Input' },
+                { category: 'field', title: 'Hire Date', type: 'Date' },
+                { category: 'field', title: 'Employee Name', type: 'Text Input' },
+                { category: 'field', title: 'Position / Job Title', type: 'Text Input' },
+                { category: 'field', title: 'Reporting Manager Name', type: 'Text Input' },
+                {
+                    category: 'logic', title: 'If: System Access Needed = Yes', type: 'IfCondition', children: [
+                        { category: 'field', title: 'Add Systems (Checklist)', type: 'Checkbox' },
+                        { category: 'field', title: 'Google Account Request?', type: 'Checkbox' },
+                        { category: 'action', title: 'Create IT Ticket: Systems', type: 'Ticket', desc: 'Creates ticket to grant access' }
+                    ]
+                },
+                {
+                    category: 'logic', title: 'If: Equipment Needed = Yes', type: 'IfCondition', children: [
+                        { category: 'field', title: 'Add Equipment (Checklist)', type: 'Checkbox' },
+                        { category: 'action', title: 'Create IT Ticket: Equipment', type: 'Ticket', desc: 'Purchase/Assign Equipment' }
+                    ]
+                },
+                { category: 'action', title: 'Require HR Verification', type: 'Approval', desc: 'Sends to HR for approval before actions' }
+            ],
+            'canvas-position': [
+                { category: 'field', title: 'Requester Name', type: 'Text Input' },
+                { category: 'field', title: 'Requester Email', type: 'Text Input' },
+                { category: 'field', title: 'Effective Date of Change', type: 'Date' },
+                { category: 'field', title: 'Employee Name', type: 'Text Input' },
+                {
+                    category: 'logic', title: 'If: New Job Title', type: 'IfCondition', children: [
+                        { category: 'field', title: 'New Job Title', type: 'Text Input' },
+                        { category: 'action', title: 'Send JR Email', type: 'Email', desc: 'Send to HR/Recruitment' }
+                    ]
+                },
+                {
+                    category: 'logic', title: 'If: New Manager', type: 'IfCondition', children: [
+                        { category: 'field', title: 'New Manager Name', type: 'Text Input' },
+                        { category: 'action', title: 'Send Email to New Manager', type: 'Email', desc: 'Notify/Approval Email' }
+                    ]
+                },
+                {
+                    category: 'logic', title: 'If: Direct Reports are changing', type: 'IfCondition', children: [
+                        { category: 'field', title: 'Reassign Direct Reports To (Name)', type: 'Text Input' },
+                        { category: 'action', title: 'Update Reporting Structure', type: 'SystemUpdate', desc: 'HR/IT updates org chart' }
+                    ]
+                },
+                {
+                    category: 'logic', title: 'If: System Access Change Needed', type: 'IfCondition', children: [
+                        { category: 'field', title: 'Add Systems (Checklist)', type: 'Checkbox' },
+                        { category: 'field', title: 'Remove Systems (Checklist)', type: 'Checkbox' },
+                        { category: 'action', title: 'Create IT Ticket: Systems Update', type: 'Ticket' }
+                    ]
+                },
+                { category: 'action', title: 'Update Master AppSheet DB', type: 'SystemUpdate', desc: 'When workflow completes' }
+            ],
+            'canvas-location': [
+                { category: 'field', title: 'Requester Name', type: 'Text Input' },
+                { category: 'field', title: 'Effective Date of Change', type: 'Date' },
+                { category: 'field', title: 'Employee Name', type: 'Text Input' },
+                {
+                    category: 'logic', title: 'If: New Site/Location', type: 'IfCondition', children: [
+                        { category: 'field', title: 'New Site/Location', type: 'Dropdown' }
+                    ]
+                },
+                {
+                    category: 'logic', title: 'If: New Job Title', type: 'IfCondition', children: [
+                        { category: 'field', title: 'New Job Title', type: 'Text Input' },
+                        { category: 'action', title: 'Send JR Email', type: 'Email', desc: 'Send to HR/Recruitment' }
+                    ]
+                },
+                {
+                    category: 'logic', title: 'If: System Access Change Needed', type: 'IfCondition', children: [
+                        { category: 'field', title: 'Add Systems (Checklist)', type: 'Checkbox' },
+                        { category: 'action', title: 'Create IT Ticket: Systems Update', type: 'Ticket' }
+                    ]
+                },
+                { category: 'action', title: 'Update Master AppSheet DB', type: 'SystemUpdate' }
+            ],
+            'canvas-termination': [
+                { category: 'field', title: 'Requester Name', type: 'Text Input' },
+                { category: 'field', title: 'Effective Date of Change', type: 'Date' },
+                { category: 'field', title: 'Employee Name', type: 'Text Input' },
+                {
+                    category: 'logic', title: 'If: Has Direct Reports', type: 'IfCondition', children: [
+                        { category: 'field', title: 'Reassign Direct Reports To (Name)', type: 'Text Input' },
+                        { category: 'action', title: 'Update Reporting Structure', type: 'SystemUpdate' }
+                    ]
+                },
+                {
+                    category: 'logic', title: 'If: Deactivate Systems', type: 'IfCondition', children: [
+                        { category: 'field', title: 'Deactivate All Systems', type: 'Checkbox' },
+                        { category: 'action', title: 'Create URGENT Ticket: Deactivate ALL', 'type': 'Ticket' }
+                    ]
+                },
+                {
+                    category: 'logic', title: 'If: Return Equipment', type: 'IfCondition', children: [
+                        { category: 'field', title: 'Return Equipment (Checklist)', type: 'Checkbox' },
+                        { category: 'field', title: 'Collect Keys/Access Cards', type: 'Checkbox' },
+                        { category: 'action', title: 'Create IT Ticket: Collect Equipment', type: 'Ticket' }
+                    ]
+                },
+                { category: 'action', title: 'Send Payroll Notification', type: 'Email', desc: 'Final pay instructions' },
+                { category: 'action', title: 'Update Master AppSheet DB (Inactive)', type: 'SystemUpdate' }
+            ]
+        };
+
+        // Create a node object and store it
+        function createNodeData(category, title, type, desc, id = null) {
+            id = id || generateId();
+            const data = { id, category, title, type, desc, isPalette: false };
+            nodeDataStore[id] = data;
+            return data;
+        }
+
+        // Render HTML for a node
+        function renderNodeDOM(data, isPalette = false) {
+            const el = document.createElement('div');
+            el.className = `node-container`;
+            el.dataset.id = data.id;
+
+            // Define interior HTML
+            const hasChildren = data.category === 'logic';
+            const collapseBtn = hasChildren ? `<button class="collapse-btn" onclick="toggleCollapse(this)"></button>` : '';
+
+            let labelMap = { field: 'Field', action: 'Action', logic: 'Logic' };
+
+            el.innerHTML = `
+                <div class="node type-${data.category}">
+                    <div class="node-header">
+                        <div style="display: flex; align-items: flex-start; max-width: 80%;">
+                            ${collapseBtn}
+                            <div class="node-content">
+                                <div class="node-title">
+                                    ${data.title}
+                                    <span class="node-type-label">${data.type}</span>
+                                </div>
+                                ${data.desc ? `<div class="node-desc">${data.desc}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="node-actions">
+                            <button class="action-btn" onclick="editNode('${data.id}')" title="Edit">✎</button>
+                            ${!isPalette ? `<button class="action-btn delete" onclick="deleteNode(this)" title="Delete">✕</button>` : ''}
+                        </div>
+                    </div>
+                    ${hasChildren && !isPalette ? `<div class="node-children"></div>` : ''}
+                </div>
+            `;
+            return el;
+        }
+
+        function toggleCollapse(btn) {
+            btn.closest('.node').classList.toggle('collapsed');
+        }
+
+        // Setup Sortable instances
+        const sortableInstances = [];
+
+        function initSortable(el, isPalette = false) {
+            const opts = {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                fallbackOnBody: true,
+                swapThreshold: 0.65,
+                group: {
+                    name: 'unified',
+                    pull: isPalette ? 'clone' : true,
+                    put: !isPalette
+                },
+                onClone: function (evt) {
+                },
+                onEnd: function (evt) {
+                    if (evt.pullMode === 'clone') {
+                        // The item was dropped into a canvas.
+                        const newEl = evt.item;
+                        const originalId = evt.clone.dataset.id;
+                        const originalData = nodeDataStore[originalId];
+
+                        if (originalData) {
+                            const newData = createNodeData(
+                                originalData.category,
+                                originalData.title,
+                                originalData.type,
+                                originalData.desc
+                            );
+
+                            // Re-render
+                            const replacementDom = renderNodeDOM(newData, false);
+                            newEl.parentNode.replaceChild(replacementDom, newEl);
+
+                            // Make child container sortable
+                            if (newData.category === 'logic') {
+                                const childrenContainer = replacementDom.querySelector('.node-children');
+                                if (childrenContainer) initSortable(childrenContainer, false);
+                            }
+                        }
+                    } else if (evt.item.dataset.id && evt.from === evt.to && evt.pullMode === 'clone') {
+                        // dropped back onto palette
+                        evt.item.remove();
+                    }
+                }
+            };
+
+            sortableInstances.push(new Sortable(el, opts));
+        }
+
+        function buildTreeDOM(nodeListArray) {
+            const fragment = document.createDocumentFragment();
+            nodeListArray.forEach(item => {
+                const data = createNodeData(item.category, item.title, item.type, item.desc || '');
+                const el = renderNodeDOM(data, false);
+
+                if (item.children && item.children.length > 0) {
+                    const childrenContainer = el.querySelector('.node-children');
+                    if (childrenContainer) {
+                        childrenContainer.appendChild(buildTreeDOM(item.children));
+                    }
+                }
+                fragment.appendChild(el);
+            });
+            return fragment;
+        }
+
+        // Initialize tool
+        function initialize() {
+            // Setup Palettes
+            ['palette-fields', 'palette-logic', 'palette-actions'].forEach(id => {
+                const el = document.getElementById(id);
+                initSortable(el, true);
+
+                if (initialPalettes[id]) {
+                    initialPalettes[id].forEach(item => {
+                        const data = createNodeData(item.cat, item.title, item.type, item.desc);
+                        el.appendChild(renderNodeDOM(data, true));
+                    });
+                }
+            });
+
+            // Setup main canvases iteratively using tree building
+            ['canvas-newhire', 'canvas-position', 'canvas-location', 'canvas-termination'].forEach(id => {
+                const el = document.getElementById(id);
+
+                if (initialWorkflows[id]) {
+                    el.appendChild(buildTreeDOM(initialWorkflows[id]));
+                }
+
+                initSortable(el, false);
+
+                // Initialize Sortable on all deeply-nested node-children that were just appended
+                el.querySelectorAll('.node-children').forEach(childEl => {
+                    initSortable(childEl, false);
+                });
+            });
+        }
+
+        // Modals / Editing
+        function populateTypeDropdown(category) {
+            iType.innerHTML = '';
+            const opts = typeOptions[category] || [];
+            opts.forEach(o => {
+                iType.innerHTML += `<option value="${o.val}">${o.label}</option>`;
+            });
+        }
+
+        function openModal(category, nodeId = null) {
+            if (nodeId) {
+                // Editing existing
+                const data = nodeDataStore[nodeId];
+                if (!data) return;
+
+                modalTitle.textContent = `Edit ${data.category.charAt(0).toUpperCase() + data.category.slice(1)}`;
+                iId.value = data.id;
+                iCategory.value = data.category;
+
+                populateTypeDropdown(data.category);
+                iTitle.value = data.title;
+                iType.value = data.type;
+                iDesc.value = data.desc;
+            } else {
+                // Creating new from palette header button
+                modalTitle.textContent = `New ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+                iId.value = '';
+                iCategory.value = category;
+
+                populateTypeDropdown(category);
+                iTitle.value = '';
+                iDesc.value = '';
+            }
+            modalOverlay.classList.add('active');
+            iTitle.focus();
+        }
+
+        function closeModal() {
+            modalOverlay.classList.remove('active');
+        }
+
+        function saveNode() {
+            const id = iId.value;
+            const category = iCategory.value;
+            const title = iTitle.value.trim();
+            const type = iType.value;
+            const desc = iDesc.value.trim();
+
+            if (!title) return alert('Title is required');
+
+            if (id) {
+                // Update existing
+                const data = nodeDataStore[id];
+                data.title = title;
+                data.type = type;
+                data.desc = desc;
+
+                document.querySelectorAll(`[data-id="${id}"]`).forEach(el => {
+                    const isPalette = el.closest('.palette-list') !== null;
+                    const newDom = renderNodeDOM(data, isPalette);
+
+                    if (data.category === 'logic' && !isPalette) {
+                        const oldChildren = el.querySelector('.node-children');
+                        if (oldChildren) {
+                            const newChildren = newDom.querySelector('.node-children');
+                            if (newChildren) {
+                                while (oldChildren.firstChild) {
+                                    newChildren.appendChild(oldChildren.firstChild);
+                                }
+                                initSortable(newChildren, false);
+                            }
+                        }
+                    }
+                    el.parentNode.replaceChild(newDom, el);
+                });
+
+            } else {
+                // Add new to appropriate palette
+                const data = createNodeData(category, title, type, desc);
+                let targetId = '';
+                if (category === 'field') targetId = 'palette-fields';
+                if (category === 'logic') targetId = 'palette-logic';
+                if (category === 'action') targetId = 'palette-actions';
+
+                const container = document.getElementById(targetId);
+                container.insertBefore(renderNodeDOM(data, true), container.firstChild);
+            }
+
+            closeModal();
+        }
+
+        window.editNode = function (id) {
+            openModal(null, id);
+        }
+
+        window.deleteNode = function (btn) {
+            const container = btn.closest('.node-container');
+            const data = nodeDataStore[container.dataset.id];
+
+            const childrenBox = container.querySelector('.node-children');
+            if (childrenBox && childrenBox.children.length > 0) {
+                if (!confirm(`This will delete the logic block AND its ${childrenBox.children.length} nested items. Are you sure?`)) {
+                    return;
+                }
+            } else {
+                if (!confirm('Delete this item?')) return;
+            }
+
+            container.remove();
+        }
+
+        // Tabs
+        window.switchTab = function (tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.workflow-view').forEach(v => v.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(`canvas-${tabId}`).classList.add('active');
+        }
+
+        // Export logic to JSON recursively
+        function buildTreeData(containerEl) {
+            const children = Array.from(containerEl.children);
+            const data = [];
+
+            children.forEach(childEl => {
+                if (!childEl.classList.contains('node-container')) return;
+
+                const id = childEl.dataset.id;
+                const nodeData = nodeDataStore[id];
+                if (!nodeData) return;
+
+                const nodeObj = {
+                    category: nodeData.category,
+                    title: nodeData.title,
+                    type: nodeData.type,
+                    desc: nodeData.desc || null
+                };
+
+                if (nodeData.category === 'logic') {
+                    const childrenBox = childEl.querySelector('.node-children');
+                    if (childrenBox) {
+                        nodeObj.children = buildTreeData(childrenBox);
+                    } else {
+                        nodeObj.children = [];
+                    }
+                }
+
+                data.push(nodeObj);
+            });
+
+            return data;
+        }
+
+        window.exportConfig = function () {
+            const config = {
+                newhire: buildTreeData(document.getElementById('canvas-newhire')),
+                position: buildTreeData(document.getElementById('canvas-position')),
+                location: buildTreeData(document.getElementById('canvas-location')),
+                termination: buildTreeData(document.getElementById('canvas-termination'))
+            };
+
+            const resultEl = document.getElementById('exportResult');
+            resultEl.style.display = 'block';
+            resultEl.value = JSON.stringify(config, null, 2);
+            resultEl.select();
+        }
+
+        // Run setup
+        initialize();
+    </script>
+</body>
+
+</html>
