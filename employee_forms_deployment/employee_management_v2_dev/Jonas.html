@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>JONAS Setup</title>
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --border-color: #333;
+        }
+
+        body {
+            font-family: -apple-system, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--brand-red);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .read-only-box {
+            background: #252525;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            color: white;
+            font-family: monospace;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: white;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: var(--brand-red);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        #loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--brand-red);
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" id="mainContainer">
+        <h1>JONAS Setup</h1>
+        <p class="subtitle">Please confirm this setup task is complete.</p>
+
+        <!-- Request Details Panel -->
+        <div
+            style="background: #151515; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+            <h3
+                style="margin-top:0; margin-bottom: 15px; color: var(--brand-red); font-size: 14px; text-transform: uppercase;">
+                Request Details</h3>
+            <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: var(--text-muted);">
+                <div><strong>Employee:</strong>
+                    <?= requestData.employeeName || '-' ?>
+                </div>
+                <div><strong>Start Date:</strong>
+                    <?= requestData.hireDate || '-' ?>
+                </div>
+                <div><strong>Job Title:</strong>
+                    <?= requestData.jobTitle || '-' ?>
+                </div>
+                <div><strong>Manager:</strong>
+                    <?= requestData.managerName || '-' ?>
+                </div>
+                <div><strong>Site:</strong>
+                    <?= requestData.siteName || '-' ?>
+                </div>
+                <div><strong>Requested JR:</strong>
+                    <?= requestData.jrTitle || '-' ?>
+                </div>
+            </div>
+
+            <? if(requestData.systems && requestData.systems.length > 0) { ?>
+            <div style="margin-top: 15px; font-size: 13px; color: var(--text-muted);">
+                <strong>Systems Requested:</strong>
+                <?= requestData.systems.join(', ') ?>
+            </div>
+            <? } ?>
+        </div>
+
+        <form id="specialistForm">
+            <div class="form-group">
+                <label>Workflow ID</label>
+                <div class="read-only-box">
+                    <?= workflowId ?>
+                </div>
+                <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+                <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+                <input type="hidden" name="department" value="jonas">
+            </div>
+
+            <div class="form-group">
+                <label>Confirmation Notes (Optional)</label>
+                <textarea name="notes" rows="4"
+                    placeholder="Enter any specific details, confirmation codes, or notes..."></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn">Confirm Complete</button>
+        </form>
+    </div>
+
+    <div id="success-screen" style="display:none; text-align: center; padding: 40px;">
+        <div style="font-size: 48px; margin-bottom: 20px;">✅</div>
+        <h2>Setup Complete</h2>
+        <p style="color: #a0a0a0; margin-top: 10px;">Thank you for completing this task.</p>
+        <button onclick="window.close()" style="max-width: 200px; margin-top: 20px;">Close Window</button>
+    </div>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div style="color: white; margin-top: 15px;">Saving...</div>
+    </div>
+
+    <script>
+        document.getElementById('specialistForm').onsubmit = function (e) {
+            e.preventDefault();
+            document.getElementById('loading-overlay').style.display = 'flex';
+            document.getElementById('submitBtn').disabled = true;
+
+            const form = this;
+            const data = {
+                workflowId: form.workflowId.value,
+                department: form.department.value,
+                notes: form.notes.value
+            };
+
+            google.script.run
+                .withSuccessHandler(function () {
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    document.getElementById('mainContainer').style.display = 'none';
+                    document.getElementById('success-screen').style.display = 'block';
+                })
+                .withFailureHandler(function (err) {
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    document.getElementById('submitBtn').disabled = false;
+                    alert('Error: ' + err.message);
+                })
+                .submitSpecialistForm(data);
+        };
+    </script>
+</body>
+
+</html>
