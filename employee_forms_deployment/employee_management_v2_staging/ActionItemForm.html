@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Action Item:
+        <?= task.TaskName ?>
+    </title>
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+            --border-color: #333;
+            --success: #00c853;
+            --warning: #ffab00;
+            --danger: #f44336;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            color: var(--brand-red);
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin: 8px 0 0;
+            font-size: 14px;
+        }
+
+        .ticket-info {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .info-row {
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+        }
+
+        .label {
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .value {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .checklist-section {
+            margin-bottom: 24px;
+        }
+
+        .checklist-section h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--brand-red);
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .checklist-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .checklist-table th {
+            text-align: left;
+            padding: 12px;
+            color: var(--text-muted);
+            font-size: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .checklist-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .item-name {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .audit-info {
+            font-size: 10px;
+            color: var(--text-muted);
+            display: block;
+        }
+
+        select.status-select {
+            background: var(--input-bg);
+            color: white;
+            border: 1px solid var(--input-border);
+            padding: 6px;
+            border-radius: 4px;
+            width: 130px;
+        }
+
+        select.status-select.collected {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        select.status-select.not-returned {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        input.serial-input,
+        textarea.item-comment {
+            background: var(--input-bg);
+            color: white;
+            border: 1px solid var(--input-border);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        textarea.item-comment {
+            margin-top: 5px;
+            min-height: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+            margin-top: 20px;
+        }
+
+        textarea#notes {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            padding: 12px;
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-primary {
+            background: var(--brand-red);
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .status-open {
+            background: rgba(235, 28, 45, 0.1);
+            color: var(--brand-red);
+            border: 1px solid var(--brand-red);
+        }
+
+        .status-closed {
+            background: rgba(0, 200, 83, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card" id="formCard">
+            <div class="header">
+                <span class="status-badge <?= task.Status === 'Open' ? 'status-open' : 'status-closed' ?>">
+                    <?= task.Status ?>
+                </span>
+                <h1>
+                    <?= task.TaskName ?>
+                </h1>
+                <p>Action Item #
+                    <?= task.TaskID ?>
+                </p>
+            </div>
+
+            <div class="ticket-info">
+                <div class="info-row"><span class="label">Workflow ID</span><span class="value">
+                        <?= task.WorkflowID ?>
+                    </span></div>
+                <? if (context) { ?>
+                <? if (context.employeeName) { ?>
+                <div class="info-row"><span class="label">Employee</span><span class="value">
+                        <?= context.employeeName ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.hireDate) { ?>
+                <div class="info-row"><span class="label">Effective Date</span><span class="value">
+                        <?= context.hireDate ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.managerName) { ?>
+                <div class="info-row"><span class="label">Manager</span><span class="value">
+                        <?= context.managerName ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.reason) { ?>
+                <div class="info-row"><span class="label">Reason</span><span class="value">
+                        <?= context.reason ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.siteName) { ?>
+                <div class="info-row"><span class="label">Site Name</span><span class="value">
+                        <?= context.siteName ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.requesterEmail) { ?>
+                <div class="info-row"><span class="label">Requester</span><span class="value" style="font-size:11px;">
+                        <?= context.requesterEmail ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.originalComments) { ?>
+                <div class="info-row" style="border-top:1px dashed #444; margin-top:10px; padding-top:10px;">
+                    <span class="label">Request Comments</span>
+                    <span class="value" style="font-style:italic; color:#ddd;">
+                        <?= context.originalComments ?>
+                    </span>
+                </div>
+                <? } ?>
+                <? } ?>
+                <div class="info-row"><span class="label">Category</span><span class="value">
+                        <?= task.Category ?>
+                    </span></div>
+                <div class="info-row"><span class="label">Assigned To</span><span class="value">
+                        <?= task.AssignedTo ?>
+                    </span></div>
+            </div>
+
+            <div class="checklist-section">
+                <h3>Verification Checklist</h3>
+                <table class="checklist-table">
+                    <thead>
+                        <tr>
+                            <th>Item Details</th>
+                            <th width="150">Status</th>
+                            <th>Comments / Data</th>
+                        </tr>
+                    </thead>
+                    <tbody id="checklistBody">
+                        <!-- Items will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="form-group">
+                <label style="display:block; margin-bottom:8px; font-size:13px; color:var(--text-muted)">General Action
+                    Notes</label>
+                <textarea id="notes" rows="3"
+                    placeholder="Enter any general notes or overall confirmation details..."><?= task.Notes ?></textarea>
+            </div>
+
+            <? if (task.Status === 'Open') { ?>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="saveDraft()" id="draftBtn">Save Progress</button>
+                <button class="btn btn-primary" onclick="finalComplete()" id="completeBtn">Mark Task Finalized</button>
+            </div>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 15px; text-align: center;">
+                Saving progress records your email and timestamp for each changed item.
+            </p>
+            <? } else { ?>
+            <div style="text-align: center; color: var(--success); padding-top: 10px;">
+                <strong>✓ Task Finalized on
+                    <?= task.CompletedDate instanceof Date ? task.CompletedDate.toLocaleDateString() : task.CompletedDate ?>
+                </strong>
+            </div>
+            <? } ?>
+        </div>
+    </div>
+
+    <script>
+        const taskId = "<?= task.TaskID ?>";
+        const taskCategory = "<?= task.Category ?>";
+        const taskDescription = <?= JSON.stringify(task.Description) ?>;
+        const taskDraftRaw = <?!= task.Draft ? JSON.stringify(task.Draft) : 'null' ?>;
+        const isClosed = "<?= task.Status ?>" === "Closed";
+        const contextObj = <?!= typeof context !== 'undefined' && context ? JSON.stringify(context) : 'null' ?>;
+        const context = (typeof contextObj === 'string') ? JSON.parse(contextObj) : contextObj;
+
+        let userEmail = "";
+        let taskDraft = { items: {} };
+
+        try {
+            if (taskDraftRaw) {
+                const parsed = (typeof taskDraftRaw === 'string') ? JSON.parse(taskDraftRaw) : taskDraftRaw;
+                if (typeof parsed === 'object' && parsed !== null) {
+                    // Backwards compatibility for old draft format (array of checked items)
+                    if (Array.isArray(parsed.checkedItems)) {
+                        parsed.checkedItems.forEach(name => {
+                            taskDraft.items[name] = { status: 'Collected' };
+                        });
+                    } else if (parsed.items) {
+                        taskDraft = parsed;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Draft Parse Error:', e);
+        }
+
+        // Helper to parse items consistently
+        function getChecklistItems() {
+            if (!taskDescription) return [];
+
+            let items = [];
+            try {
+                // Determine if the description is a JSON array string
+                // Example: '["Laptop", "Phone", "Set Vacation Responder: \"Goodbye\""]'
+                let isJson = false;
+                let trimmedDesc = taskDescription.trim();
+
+                // If it's single-quoted by GAS, swap it (though JSON.parse usually expects double)
+                if ((trimmedDesc.startsWith('[') && trimmedDesc.endsWith(']')) ||
+                    (trimmedDesc.startsWith('"[') && trimmedDesc.endsWith(']"'))) {
+                    isJson = true;
+                }
+
+                if (isJson) {
+                    try {
+                        // Sometimes google wraps the whole JSON string in extra quotes
+                        if (trimmedDesc.startsWith('"[')) {
+                            trimmedDesc = trimmedDesc.substring(1, trimmedDesc.length - 1);
+                            // Unescape \" inside the stringified JSON
+                            trimmedDesc = trimmedDesc.replace(/\\"/g, '"');
+                        }
+
+                        items = JSON.parse(trimmedDesc);
+
+                        // Fallback just in case parsing yielded a string instead of array
+                        if (typeof items === 'string') {
+                            items = JSON.parse(items);
+                        }
+
+                    } catch (jsonErr) {
+                        console.error('Failed to parse JSON, falling back:', jsonErr);
+                        isJson = false;
+                    }
+                }
+
+                // Fallback for legacy items that used commas or test delimiters
+                if (!isJson) {
+                    let delimiter = trimmedDesc.includes('|~|') ? '|~|' : ',';
+                    if (trimmedDesc.includes('\\n') && !trimmedDesc.includes('|~|')) delimiter = '\\n';
+                    else if (trimmedDesc.includes('\n') && !trimmedDesc.includes('|~|')) delimiter = '\n';
+
+                    items = trimmedDesc.split(delimiter);
+                }
+
+                // Final cleanup for both paths (remove blanks, 'n/a', trim quotes from edge case old data)
+                items = items.map(s => String(s).trim())
+                    .map(s => s.replace(/^["']|["']$/g, '').trim())
+                    .filter(s => s && s.toLowerCase() !== 'n/a' && s !== 'null');
+
+            } catch (e) {
+                console.error('Overall Parse Error:', e);
+            }
+            return items;
+        }
+
+        function initChecklist() {
+            const body = document.getElementById('checklistBody');
+            const items = getChecklistItems();
+
+            if (items.length === 0) {
+                body.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted); text-align:center;">No checklist items identified.</td></tr>';
+                return;
+            }
+
+            items.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+                const saved = taskDraft.items[item] || { status: 'Pending', comments: '', serial: '' };
+
+                const itemLower = item.toLowerCase();
+                const isComputer = itemLower.includes('computer') || itemLower.includes('laptop') || itemLower.includes('tablet');
+                const isPhone = itemLower.includes('mobile phone') || (itemLower.includes('phone') && !itemLower.includes('system'));
+
+                const serialHtml = isComputer ? `
+                    <div style="margin-top:8px;">
+                        <label style="font-size:10px; color:var(--text-muted);">Serial Number:</label>
+                        <input type="text" class="serial-input" value="${saved.serial || ''}" placeholder="Enter Serial/Svc Tag" ${isClosed ? 'disabled' : ''} onchange="updateItemData('${item}', 'serial', this.value)">
+                    </div>
+                ` : '';
+
+                const phoneHtml = (isPhone && context && context.empPhone) ? `
+                    <div style="margin-top:4px; font-size:12px; color:var(--brand-red); font-weight:bold;">
+                        Number: ${context.empPhone}
+                    </div>
+                ` : '';
+
+                const auditHtml = saved.by ? `<span class="audit-info">By: ${saved.by} | ${new Date(saved.at).toLocaleString()}</span>` : '';
+
+                // Only show Not Returned for Assets
+                const isAssetTask = taskCategory === 'Assets';
+                const notReturnedHtml = isAssetTask ? `<option value="Not Returned" ${saved.status === 'Not Returned' ? 'selected' : ''}>Not Returned</option>` : '';
+
+                tr.innerHTML = `
+                    <td>
+                        <span class="item-name">${item}</span>
+                        ${phoneHtml}
+                        ${auditHtml}
+                    </td>
+                    <td>
+                        <select class="status-select ${saved.status === 'Collected' ? 'collected' : (saved.status === 'Not Returned' ? 'not-returned' : '')}" 
+                                onchange="onStatusChange('${item}', this)" ${isClosed ? 'disabled' : ''}>
+                            <option value="Pending" ${saved.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                            <option value="Collected" ${saved.status === 'Collected' || saved.status === 'Complete' ? 'selected' : ''}>${isAssetTask ? 'Collected' : 'Complete'}</option>
+                            ${notReturnedHtml}
+                        </select>
+                    </td>
+                    <td>
+                        <textarea class="item-comment" placeholder="Add specific comments..." ${isClosed ? 'disabled' : ''} onchange="updateItemData('${item}', 'comments', this.value)">${saved.comments || ''}</textarea>
+                        ${serialHtml}
+                    </td>
+                `;
+
+                body.appendChild(tr);
+            });
+        }
+
+        function onStatusChange(name, el) {
+            // Update class for styling
+            el.className = 'status-select';
+            if (el.value === 'Collected') el.classList.add('collected');
+            if (el.value === 'Not Returned') el.classList.add('not-returned');
+
+            updateItemData(name, 'status', el.value);
+
+            // Auto-stamp
+            if (el.value !== 'Pending') {
+                taskDraft.items[name].by = userEmail;
+                taskDraft.items[name].at = new Date().toISOString();
+
+                // Refresh rendering of audit info (simple approach: full redraw or find element)
+                // For now, it will show up after "Save Progress" or on next page load.
+            }
+        }
+
+        function updateItemData(name, field, value) {
+            if (!taskDraft.items[name]) taskDraft.items[name] = { status: 'Pending' };
+            taskDraft.items[name][field] = value;
+
+            // If they modify serial or comments, also record who/when
+            taskDraft.items[name].by = userEmail;
+            taskDraft.items[name].at = new Date().toISOString();
+        }
+
+        function saveDraft() {
+            const btn = document.getElementById('draftBtn');
+            const notes = document.getElementById('notes').value;
+            const draft = JSON.stringify(taskDraft);
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            google.script.run
+                .withSuccessHandler(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Save Progress';
+                    // Optional: Refresh labels to show audit trail
+                    location.reload();
+                })
+                .saveActionItemDraft(taskId, notes, draft);
+        }
+
+        function finalComplete() {
+            const items = getChecklistItems();
+
+            // Check if any visible item in the DOM is still "Pending"
+            const selects = document.querySelectorAll('.status-select');
+            let pendingCount = 0;
+            selects.forEach(s => { if (s.value === 'Pending') pendingCount++; });
+
+            if (pendingCount > 0) {
+                alert('All items must be marked as either "Collected" or "Not Returned" before finalizing.');
+                return;
+            }
+
+            // Specific check for "Not Returned" comments
+            let missingComments = false;
+            selects.forEach(s => {
+                if (s.value === 'Not Returned') {
+                    const row = s.closest('tr');
+                    const comment = row.querySelector('.item-comment').value.trim();
+                    if (!comment) missingComments = true;
+                }
+            });
+
+            if (missingComments) {
+                alert('Please add a comment for any items marked as "Not Returned".');
+                return;
+            }
+
+            if (!confirm('Finalize this action item? This will notify HR and lock the record.')) return;
+
+            const btn = document.getElementById('completeBtn');
+            const notes = document.getElementById('notes').value;
+
+            btn.disabled = true;
+            btn.textContent = 'Finalizing...';
+
+            // Save draft one last time as part of closure to ensure audit trail is up to date
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        document.getElementById('formCard').innerHTML = `
+                            <div style="text-align:center; padding:40px;">
+                                <h1 style="color:var(--success)">✓ Task Finalized</h1>
+                                <p style="color:var(--text-muted)">All checklist data and audit logs have been recorded.</p>
+                                <button class="btn btn-secondary" onclick="window.close()" style="margin-top:20px; width:auto">Close Window</button>
+                            </div>
+                        `;
+                    }
+                })
+                .closeActionItemWithNotes(taskId, notes, JSON.stringify(taskDraft));
+        }
+
+        window.onload = initChecklist;
+    </script>
+</body>
+
+</html>

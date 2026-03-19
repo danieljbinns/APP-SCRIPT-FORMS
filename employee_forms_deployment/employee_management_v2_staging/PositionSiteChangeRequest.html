@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Position / Site Change Request</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --brand-red: #EB1C2D;
+            --brand-red-hover: #c41522;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+            --border-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            max-height: 60px;
+        }
+
+        #form-container {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+        }
+
+        h2 {
+            color: var(--brand-red);
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 2rem 0 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: var(--text-main);
+            font-size: 1.1rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .required {
+            color: var(--brand-red);
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="email"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+        }
+
+        select[multiple] {
+            height: 120px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 0;
+            margin-top: 10px;
+            border: 2px solid var(--input-border);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--input-bg);
+        }
+
+        .radio-group label {
+            flex: 1;
+            position: relative;
+            margin: 0;
+            border: none;
+        }
+
+        .radio-group label:not(:last-child) {
+            border-right: 1px solid var(--input-border);
+        }
+
+        .radio-group input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .radio-button {
+            display: block;
+            padding: 12px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .radio-group input[type="radio"]:checked+.radio-button {
+            background: var(--brand-red);
+            color: white;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 10px;
+            accent-color: var(--brand-red);
+            width: 20px;
+            height: 20px;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 1.2rem;
+            font-size: 1.1rem;
+            background-color: var(--brand-red);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 2rem;
+        }
+
+        button[type="submit"]:hover {
+            background-color: var(--brand-red-hover);
+        }
+
+        .logic-section {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            border-left: 2px solid var(--brand-red);
+            background: rgba(235, 28, 45, 0.05);
+        }
+
+        .help-text {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+                class="logo">
+        </div>
+
+        <div id="form-container">
+            <h1>Employee Change Status Request</h1>
+            <form id="changeForm">
+
+                <h2>Requester Information</h2>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Requester Email <span class="required">*</span></label>
+                        <input type="email" id="reqEmail" name="reqEmail" readonly style="background:#333;">
+                    </div>
+                    <div class="form-field">
+                        <label>Requester Name <span class="required">*</span></label>
+                        <input type="text" name="reqName" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Date Requested</label>
+                        <input type="date" name="reqDate" value="<?= new Date().toISOString().split('T')[0] ?>">
+                    </div>
+                </div>
+
+                <h2>Employee Information</h2>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>First Name <span class="required">*</span></label>
+                        <input type="text" name="firstName" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Last Name <span class="required">*</span></label>
+                        <input type="text" name="lastName" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Employee ID <span class="required">*</span></label>
+                        <input type="text" name="empID" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Effective Date of Change <span class="required">*</span></label>
+                        <input type="date" name="effDate" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Site Name <span class="required">*</span></label>
+                        <select name="siteName" id="siteName" required>
+                            <option value="">Select Site...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <h2>Type of Change</h2>
+                <div class="checkbox-group">
+                    <label class="checkbox-label"><input type="checkbox" name="changeType" value="Site Transfer"
+                            onchange="toggleSec('site_sec', this)"><span>Site Transfer</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="changeType" value="Position Change"
+                            onchange="toggleSec('pos_sec', this)"><span>Position/Job Title Change</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="changeType" value="Classification"
+                            onchange="toggleSec('class_sec', this)"><span>Classification Change (Hr/Sal)</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="changeType" value="Manager Change"
+                            onchange="toggleSec('mgr_sec', this)"><span>Reporting Manager Change</span></label>
+                </div>
+
+                <!-- Conditional Sections for Type of Change -->
+                <div id="site_sec" class="logic-section">
+                    <h3>Site Transfer</h3>
+                    <div class="form-row">
+                        <div class="form-field"><label>Current Site</label><select name="siteOld"
+                                class="site-list"></select></div>
+                        <div class="form-field"><label>New Site</label><select name="siteNew"
+                                class="site-list"></select></div>
+                    </div>
+                </div>
+
+                <div id="pos_sec" class="logic-section">
+                    <h3>Position Change</h3>
+                    <div class="form-row">
+                        <div class="form-field"><label>Current Title</label><input type="text" name="titleOld"></div>
+                        <div class="form-field"><label>New Title</label><input type="text" name="titleNew"></div>
+                    </div>
+                </div>
+
+                <div id="class_sec" class="logic-section">
+                    <h3>Classification Change</h3>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Current Classification</label>
+                            <div class="radio-group"><label><input type="radio" name="classOld" value="Hourly"><span
+                                        class="radio-button">Hourly</span></label><label><input type="radio"
+                                        name="classOld" value="Salary"><span class="radio-button">Salary</span></label>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label>New Classification</label>
+                            <div class="radio-group"><label><input type="radio" name="classNew" value="Hourly"><span
+                                        class="radio-button">Hourly</span></label><label><input type="radio"
+                                        name="classNew" value="Salary"><span class="radio-button">Salary</span></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="mgr_sec" class="logic-section">
+                    <h3>Reporting Manager Change</h3>
+                    <div class="form-row">
+                        <div class="form-field"><label>Old Manager</label><input type="text" name="mgrOld"></div>
+                        <div class="form-field"><label>New Manager Name</label><input type="text" name="mgrNewName">
+                        </div>
+                        <div class="form-field"><label>New Manager Email</label><input type="email" name="mgrNewEmail">
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Reporting Management</h2>
+                <div class="form-field">
+                    <label>Did employee have direct reports? <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="hadReports" value="Yes" required
+                                onchange="toggleSec('reassign_logic', this)"><span
+                                class="radio-button">Yes</span></label>
+                        <label><input type="radio" name="hadReports" value="No"
+                                onchange="toggleSec('reassign_logic', this)"><span
+                                class="radio-button">No</span></label>
+                    </div>
+                    <div id="reassign_logic" class="logic-section">
+                        <label>Reassign PREVIOUS Reports To <span class="required">*</span></label>
+                        <input type="text" name="oldReportsTo">
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>Is employee gaining NEW direct reports? <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="gainingReports" value="Yes" required
+                                onchange="toggleSec('gain_logic', this)"><span class="radio-button">Yes</span></label>
+                        <label><input type="radio" name="gainingReports" value="No"
+                                onchange="toggleSec('gain_logic', this)"><span class="radio-button">No</span></label>
+                    </div>
+                    <div id="gain_logic" class="logic-section">
+                        <label>Who were these reports reporting to before? <span class="required">*</span></label>
+                        <input type="text" name="newReportsFrom">
+                    </div>
+                </div>
+
+                <h2>System Access</h2>
+                <div class="form-field">
+                    <label>Existing Google Account? <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="hasGoogle" value="Yes" required
+                                onchange="toggleSec('google_email_sec', this)"><span
+                                class="radio-button">Yes</span></label>
+                        <label><input type="radio" name="hasGoogle" value="No"
+                                onchange="toggleSec('google_email_sec', this)"><span
+                                class="radio-button">No</span></label>
+                    </div>
+                    <div id="google_email_sec" class="logic-section" style="border:none; padding:0;">
+                        <label>Existing Email Address <span class="required">*</span></label>
+                        <input type="email" name="existingEmail">
+                    </div>
+                </div>
+
+                <h3>NEW System Access Needed</h3>
+                <div class="checkbox-group">
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="BOSS"
+                            onchange="toggleSec('boss_sec', this)"><span>BOSS</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Jonas"
+                            onchange="toggleSec('jonas_sec', this)"><span>Jonas Purchasing</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="DSS"><span>DSS</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys"
+                            value="Fleetio"><span>Fleetio</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="SiteDocs"><span>SiteDocs
+                            (Portal Access)</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Google Account"
+                            onchange="toggleSec('new_google_sec', this)"><span>New Google Account</span></label>
+                </div>
+
+                <div id="boss_sec" class="logic-section">
+                    <h3>BOSS Access Details</h3>
+                    <div class="form-field">
+                        <label>Committee(s) to be Assigned</label>
+                        <select name="bossComm" id="bossComm" multiple></select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Cost Sheet Module Access?</label>
+                            <div class="radio-group"><label><input type="radio" name="bossCost" value="Yes"
+                                        onchange="toggleSec('boss_cost_sec', this)"><span
+                                        class="radio-button">Yes</span></label><label><input type="radio"
+                                        name="bossCost" value="No" onchange="toggleSec('boss_cost_sec', this)"><span
+                                        class="radio-button">No</span></label></div>
+                        </div>
+                    </div>
+                    <div id="boss_cost_sec" class="logic-section">
+                        <label>Job Number(s) for Cost Sheet</label>
+                        <select name="bossCostJobs" id="bossCostJobs" multiple></select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field"><label>Trip Reports Access?</label>
+                            <div class="radio-group"><label><input type="radio" name="bossTrip" value="Yes"><span
+                                        class="radio-button">Yes</span></label><label><input type="radio"
+                                        name="bossTrip" value="No"><span class="radio-button">No</span></label></div>
+                        </div>
+                        <div class="form-field"><label>Counselling/Grievances Access?</label>
+                            <div class="radio-group"><label><input type="radio" name="bossGriev" value="Yes"><span
+                                        class="radio-button">Yes</span></label><label><input type="radio"
+                                        name="bossGriev" value="No"><span class="radio-button">No</span></label></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="jonas_sec" class="logic-section">
+                    <h3>Jonas Access Details</h3>
+                    <label>Job Number(s) to be Assigned</label>
+                    <select name="jonasJobs" id="jonasJobs" multiple></select>
+                </div>
+
+                <div id="new_google_sec" class="logic-section">
+                    <h3>New Google Account Setup</h3>
+                    <div class="form-row">
+                        <div class="form-field"><label>Requested Email</label><input type="text" name="googleEmail"
+                                placeholder="firstname.lastname"></div>
+                        <div class="form-field"><label>Domain</label><select name="googleDomain">
+                                <option>team-group.com</option>
+                                <option>robinsonsolutions.com</option>
+                                <option>industrialappliedtech.com</option>
+                                <option>stgroup.ca</option>
+                            </select></div>
+                    </div>
+                </div>
+
+                <h2>JR & Training</h2>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>JR Required?</label>
+                        <div class="radio-group"><label><input type="radio" name="jrReq" value="Yes"
+                                    onchange="toggleSec('jr_sec', this)"><span
+                                    class="radio-button">Yes</span></label><label><input type="radio" name="jrReq"
+                                    value="No" onchange="toggleSec('jr_sec', this)"><span
+                                    class="radio-button">No</span></label></div>
+                    </div>
+                    <div class="form-field">
+                        <label>30-60-90 Plan Required?</label>
+                        <div class="radio-group"><label><input type="radio" name="plan306090" value="Yes"><span
+                                    class="radio-button">Yes</span></label><label><input type="radio" name="plan306090"
+                                    value="No"><span class="radio-button">No</span></label></div>
+                    </div>
+                </div>
+                <div id="jr_sec" class="logic-section">
+                    <label>Select JR Title to Assign</label>
+                    <select name="jrTitle" id="jrTitle">
+                        <option>-- Select JR --</option>
+                    </select>
+                </div>
+
+                <h2>Equipment Request</h2>
+                <div class="checkbox-group">
+                    <label class="checkbox-label"><input type="checkbox" name="equip" value="Computer"
+                            onchange="toggleSec('comp_sec', this)"><span>Computer</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="equip" value="Mobile Phone"
+                            onchange="toggleSec('phone_sec', this)"><span>Mobile Phone</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="equip" value="Credit Card"
+                            onchange="toggleSec('cc_sec', this)"><span>Credit Card</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="equip"
+                            value="Digital Business Cards"><span>Digital Business Cards</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="equip"
+                            value="SiteDocs Tablet"><span>SiteDocs Tablet</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="equip"
+                            value="Vehicle"><span>Vehicle</span></label>
+                </div>
+
+                <div id="comp_sec" class="logic-section">
+                    <h3>Computer Request</h3>
+                    <div class="radio-group"><label><input type="radio" name="compLogic" value="New Request"
+                                onchange="toggleComp()"><span class="radio-button">New
+                                Request</span></label><label><input type="radio" name="compLogic" value="Reassignment"
+                                onchange="toggleComp()"><span class="radio-button">Reassignment</span></label></div>
+                    <div id="comp_new" style="display:none; margin-top:15px;">
+                        <label>Computer Type</label>
+                        <div class="radio-group"><label><input type="radio" name="compType" value="Chromebook"><span
+                                    class="radio-button">Chromebook</span></label><label><input type="radio"
+                                    name="compType" value="Windows"><span
+                                    class="radio-button">Windows</span></label><label><input type="radio"
+                                    name="compType" value="Mac"><span class="radio-button">Mac</span></label></div>
+                        <label style="margin-top:15px;">Office 365 License Needed?</label>
+                        <div class="radio-group"><label><input type="radio" name="o365" value="Yes"><span
+                                    class="radio-button">Yes</span></label><label><input type="radio" name="o365"
+                                    value="No"><span class="radio-button">No</span></label></div>
+                    </div>
+                    <div id="comp_re" style="display:none; margin-top:15px;">
+                        <div class="form-row">
+                            <div class="form-field"><label>Previous User</label><input type="text" name="compPrevUser">
+                            </div>
+                            <div class="form-field"><label>Serial Number</label><input type="text" name="compSN"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="phone_sec" class="logic-section">
+                    <h3>Phone Request</h3>
+                    <div class="radio-group"><label><input type="radio" name="phoneLogic" value="New Request"
+                                onchange="togglePhone()"><span class="radio-button">New
+                                Request</span></label><label><input type="radio" name="phoneLogic" value="Reassignment"
+                                onchange="togglePhone()"><span class="radio-button">Reassignment</span></label></div>
+                    <div id="phone_re" style="display:none; margin-top:15px;">
+                        <div class="form-row">
+                            <div class="form-field"><label>Previous User</label><input type="text" name="phonePrevUser">
+                            </div>
+                            <div class="form-field"><label>Previous Number</label><input type="text"
+                                    name="phonePrevNum"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="cc_sec" class="logic-section">
+                    <h3>Credit Card Request</h3>
+                    <div class="form-row">
+                        <div class="form-field"><label>USA Card?</label>
+                            <div class="radio-group"><label><input type="radio" name="ccUSA" value="Yes"
+                                        onchange="toggleSec('cc_usa_limit', this)"><span
+                                        class="radio-button">Yes</span></label><label><input type="radio" name="ccUSA"
+                                        value="No" onchange="toggleSec('cc_usa_limit', this)"><span
+                                        class="radio-button">No</span></label></div>
+                        </div>
+                        <div id="cc_usa_limit" class="form-field" style="display:none;"><label>USA Limit</label><input
+                                type="text" name="ccUSALim"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field"><label>Canada Card?</label>
+                            <div class="radio-group"><label><input type="radio" name="ccCAN" value="Yes"
+                                        onchange="toggleSec('cc_can_limit', this)"><span
+                                        class="radio-button">Yes</span></label><label><input type="radio" name="ccCAN"
+                                        value="No" onchange="toggleSec('cc_can_limit', this)"><span
+                                        class="radio-button">No</span></label></div>
+                        </div>
+                        <div id="cc_can_limit" class="form-field" style="display:none;"><label>CAN Limit</label><input
+                                type="text" name="ccCANLim"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field"><label>Home Depot Card?</label>
+                            <div class="radio-group"><label><input type="radio" name="ccHD" value="Yes"
+                                        onchange="toggleSec('cc_hd_limit', this)"><span
+                                        class="radio-button">Yes</span></label><label><input type="radio" name="ccHD"
+                                        value="No" onchange="toggleSec('cc_hd_limit', this)"><span
+                                        class="radio-button">No</span></label></div>
+                        </div>
+                        <div id="cc_hd_limit" class="form-field" style="display:none;"><label>HD Limit</label><input
+                                type="text" name="ccHDLim"></div>
+                    </div>
+                </div>
+
+                <h2>Access Removal</h2>
+                <div class="form-field">
+                    <label>OLD System Access to Remove</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="rem"
+                                value="ADP"><span>ADP</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem"
+                                value="BOSS"><span>BOSS</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem"
+                                value="CAA"><span>CAA</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem"
+                                value="Delivery"><span>Delivery</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem"
+                                value="Fleetio"><span>Fleetio</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem"
+                                value="Google Account"><span>Google Account</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem"
+                                value="SiteDocs"><span>SiteDocs</span></label>
+                    </div>
+                </div>
+
+                <h2>Logistics</h2>
+                <div class="form-field"><label>Rationale / Additional Comments</label><textarea
+                        name="comments"></textarea></div>
+                <div class="form-field"><label>Upload Supporting Docs</label><input type="file" name="attachment"></div>
+
+                <button type="submit">Submit Change Request</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleSec(id, element) {
+            const section = document.getElementById(id);
+            if (!section) return;
+            if (element.type === 'checkbox') {
+                section.style.display = element.checked ? 'block' : 'none';
+            } else if (element.type === 'radio') {
+                section.style.display = element.value === 'Yes' ? 'block' : 'none';
+                const input = section.querySelector('input, select');
+                if (input) input.required = (element.value === 'Yes');
+            }
+        }
+
+        function toggleComp() {
+            const val = document.querySelector('input[name="compLogic"]:checked').value;
+            document.getElementById('comp_new').style.display = val === 'New Request' ? 'block' : 'none';
+            document.getElementById('comp_re').style.display = val === 'Reassignment' ? 'block' : 'none';
+        }
+
+        function togglePhone() {
+            const val = document.querySelector('input[name="phoneLogic"]:checked').value;
+            document.getElementById('phone_re').style.display = val === 'Reassignment' ? 'block' : 'none';
+        }
+
+        // Form Submission Logic
+        document.getElementById('changeForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            const formData = {};
+            const standardElements = this.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]), select, textarea');
+            standardElements.forEach(el => {
+                if (el.name) formData[el.name] = el.value;
+            });
+
+            // Handle Checkboxes (Groups)
+            const checkboxes = this.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                if (cb.name) {
+                    if (!formData[cb.name]) formData[cb.name] = [];
+                    if (cb.checked) formData[cb.name].push(cb.value);
+                }
+            });
+
+            // Handle Radios
+            const radios = this.querySelectorAll('input[type="radio"]:checked');
+            radios.forEach(r => {
+                if (r.name) formData[r.name] = r.value;
+            });
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    if (response.success) {
+                        document.getElementById('form-container').innerHTML = `
+                            <div style="text-align:center; padding:40px;">
+                                <h2 style="color:var(--brand-red);">✓ Request Submitted</h2>
+                                <p>Workflow ID: <strong>${response.workflowId}</strong></p>
+                                <p>${response.message}</p>
+                                <button onclick="resetForm()" style="margin-top:20px; background:var(--brand-red); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">Submit Another</button>
+                            </div>
+                        `;
+                    } else {
+                        alert('Error: ' + response.message);
+                        btn.disabled = false;
+                        btn.textContent = 'Submit Change Request';
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    alert('Critical Error: ' + err.message);
+                    btn.disabled = false;
+                    btn.textContent = 'Submit Change Request';
+                })
+                .submitPositionChangeRequest(formData);
+        });
+
+        // Dynamic Populators
+        google.script.run.withSuccessHandler(function (data) {
+            const sites = document.querySelectorAll('.site-list, #siteName');
+            sites.forEach(s => data.sites.forEach(site => {
+                const opt = document.createElement('option'); opt.value = site; opt.textContent = site; s.appendChild(opt);
+            }));
+            data.committees.forEach(c => {
+                const opt = document.createElement('option'); opt.value = c; opt.textContent = c; document.getElementById('bossComm').appendChild(opt);
+            });
+            data.jobs.forEach(j => {
+                const opt = document.createElement('option'); opt.value = j; opt.textContent = j;
+                document.getElementById('bossCostJobs').appendChild(opt.cloneNode(true));
+                document.getElementById('jonasJobs').appendChild(opt.cloneNode(true));
+            });
+            data.jrs.forEach(jr => {
+                const opt = document.createElement('option'); opt.value = jr; opt.textContent = jr; document.getElementById('jrTitle').appendChild(opt);
+            });
+        }).getInitialFormData();
+
+        google.script.run.withSuccessHandler(function (email) {
+            document.getElementById('reqEmail').value = email;
+        }).getCurrentUserEmail();
+
+        function resetForm() {
+            google.script.run
+                .withSuccessHandler(function (url) {
+                    window.open(url + '?form=position_site_change', '_top');
+                })
+                .getBaseUrl();
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>End of Employment Request</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --brand-red: #EB1C2D;
+            --brand-red-hover: #c41522;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+            --border-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            max-height: 60px;
+        }
+
+        #form-container {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+        }
+
+        h2 {
+            color: var(--brand-red);
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 2rem 0 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: var(--text-main);
+            font-size: 1.1rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .required {
+            color: var(--brand-red);
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="email"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+        }
+
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 0;
+            margin-top: 10px;
+            border: 2px solid var(--input-border);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--input-bg);
+        }
+
+        .radio-group label {
+            flex: 1;
+            position: relative;
+            margin: 0;
+            border: none;
+        }
+
+        .radio-group label:not(:last-child) {
+            border-right: 1px solid var(--input-border);
+        }
+
+        .radio-group input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .radio-button {
+            display: block;
+            padding: 12px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .radio-group input[type="radio"]:checked+.radio-button {
+            background: var(--brand-red);
+            color: white;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 10px;
+            accent-color: var(--brand-red);
+            width: 20px;
+            height: 20px;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 1.2rem;
+            font-size: 1.1rem;
+            background-color: var(--brand-red);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 2rem;
+        }
+
+        button[type="submit"]:hover {
+            background-color: var(--brand-red-hover);
+        }
+
+        .logic-section {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            border-left: 2px solid var(--brand-red);
+            background: rgba(235, 28, 45, 0.05);
+        }
+
+        .help-text {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        /* Toggle/Gatekeeper Styles */
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .toggle-label input {
+            display: none;
+        }
+
+        .toggle-label:has(input:checked) {
+            background: rgba(235, 28, 45, 0.1);
+            border-color: var(--brand-red);
+            color: var(--brand-red);
+        }
+
+        .toggle-label:has(input:checked)::before {
+            content: "✓ ";
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+                class="logo">
+        </div>
+
+        <div id="form-container">
+            <h1>End of Employment Request</h1>
+            <form id="terminationForm">
+
+                <h2>Requester Information</h2>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Requester Email <span class="required">*</span></label>
+                        <input type="email" name="reqEmail" id="reqEmail" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Requester Name <span class="required">*</span></label>
+                        <input type="text" name="reqName" required>
+                    </div>
+                </div>
+
+                <h2>Employee Information</h2>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Employee Name <span class="required">*</span></label>
+                        <input type="text" name="empName" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Employee ID <span class="required">*</span></label>
+                        <input type="text" name="empID" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Does employee have a work email?</label>
+                        <label class="toggle-label"><input type="checkbox"
+                                onchange="toggleSec('email_sec', this)"><span>Has Work Email</span></label>
+                    </div>
+                    <div class="form-field">
+                        <label>Does employee have a mobile phone?</label>
+                        <label class="toggle-label"><input type="checkbox"
+                                onchange="toggleSec('phone_sec', this)"><span>Has Mobile Phone</span></label>
+                    </div>
+                    <div class="form-field">
+                        <label>Does employee have a computer?</label>
+                        <label class="toggle-label"><input type="checkbox"
+                                onchange="toggleSec('equip_note', this)"><span>Has Computer</span></label>
+                    </div>
+                </div>
+
+                <div id="email_sec" class="logic-section" style="margin-top:0;">
+                    <div class="form-field">
+                        <label>Current Work Email <span class="required">*</span></label>
+                        <input type="email" name="empWorkEmail" placeholder="employee@team-group.com">
+                    </div>
+                </div>
+                <div id="phone_sec" class="logic-section" style="margin-top:0;">
+                    <div class="form-field">
+                        <label>Mobile Phone Number <span class="required">*</span></label>
+                        <input type="text" name="empPhone" placeholder="Cell number">
+                    </div>
+                </div>
+                <div id="equip_note" class="logic-section" style="margin-top:0;">
+                    <div class="form-field">
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Note: Specific asset details (Serial
+                            Numbers, etc) will be collected by the manager during physical equipment retrieval after
+                            approval.</p>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Manager Name <span class="required">*</span></label>
+                        <input type="text" name="managerName" placeholder="Direct Manager's Name" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Manager Email <span class="required">*</span></label>
+                        <input type="email" name="managerEmail" placeholder="manager@team-group.com" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Site Name <span class="required">*</span></label>
+                        <select name="siteName" id="siteName" required>
+                            <option value="">Select Site...</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Hourly or Salary <span class="required">*</span></label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="empType" value="Hourly" required><span
+                                    class="radio-button">Hourly</span></label>
+                            <label><input type="radio" name="empType" value="Salary"><span
+                                    class="radio-button">Salary</span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Termination Details</h2>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Effective Date of Termination <span class="required">*</span></label>
+                        <input type="date" name="termDate" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Reason for Leaving <span class="required">*</span></label>
+                        <select name="reason" id="reason" required onchange="handleReasonChange()">
+                            <option value="">-- Select Reason --</option>
+                            <option value="Terminated">Terminated</option>
+                            <option value="Resigned">Resigned</option>
+                            <option value="Retired">Retired</option>
+                            <option value="Deceased">Deceased</option>
+                            <option value="End of contract">End of contract</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="hr_approval_sec" class="logic-section">
+                    <label>Has HR Approved this Termination? <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="hr_approved" value="Yes"><span
+                                class="radio-button">Yes</span></label>
+                        <label><input type="radio" name="hr_approved" value="No"><span
+                                class="radio-button">No</span></label>
+                    </div>
+                </div>
+
+                <div class="form-field" style="margin-top:20px;">
+                    <label>Does employee have direct reports? <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="has_reports" value="Yes" required
+                                onchange="toggleSec('reports_logic', this)"><span
+                                class="radio-button">Yes</span></label>
+                        <label><input type="radio" name="has_reports" value="No"
+                                onchange="toggleSec('reports_logic', this)"><span class="radio-button">No</span></label>
+                    </div>
+                    <div id="reports_logic" class="logic-section">
+                        <label>Who will these reports report to? <span class="required">*</span></label>
+                        <input type="text" name="reports_to_new" placeholder="Enter name or email of new manager">
+                    </div>
+                </div>
+
+                <h2>Systems & Systems Access</h2>
+                <div class="form-field">
+                    <label>HR Systems</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="ADP Supervisor Access"><span>ADP Supervisor Access</span></label>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>IT Systems</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="BOSS"><span>BOSS</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="CAA"><span>CAA</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="Delivery"><span>Delivery</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="systems" value="Google Account"
+                                onchange="toggleSec('google_logic', this)"><span>Google Account</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="Incidents"><span>Incidents</span></label>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>Fleet Systems</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="Fleetio"><span>Fleetio</span></label>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>Finance/Purchasing Systems</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="Jonas Purchasing"><span>Jonas Purchasing</span></label>
+                    </div>
+                </div>
+
+                <div id="google_logic" class="logic-section">
+                    <h3>Google Account Offboarding</h3>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Email Forwarding To</label>
+                            <input type="text" id="google_forward" name="google_forward"
+                                placeholder="Enter recipient email" onchange="updateVacationResponder(this.value)">
+                            <div class="help-text">Who should emails be forwarded to?</div>
+                        </div>
+                        <div class="form-field">
+                            <label>Transfer Drive Files To</label>
+                            <input type="text" name="google_files" placeholder="Enter recipient email">
+                            <div class="help-text">Who gets access to their Google Drive files?</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Delegated Inbox Access To</label>
+                            <input type="text" name="google_delegate">
+                        </div>
+                        <div class="form-field">
+                            <label>Keep Account Active For</label>
+                            <select name="google_duration">
+                                <option value="Default 1 Month then delete">Default 1 Month then delete</option>
+                                <option value="Longer (Specify in notes)">Longer (Specify in notes)</option>
+                                <option value="Delete Immediately (No forwarding/access)">Delete Immediately (No
+                                    forwarding/access)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label>Vacation Responder Message</label>
+                        <textarea id="google_vacation" name="google_vacation"
+                            placeholder="e.g. xxx is no longer with TEAM group. Please contact...">Please be advised I am no longer with the company. Please contact [RECIPIENT] for assistance.</textarea>
+                    </div>
+                </div>
+
+                <h2>Equipment Return</h2>
+                <div class="form-field">
+                    <label>Equipment to be Returned</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="equip"
+                                value="Computer/Laptop"><span>Computer/Laptop</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="equip"
+                                value="Mobile Phone"><span>Mobile Phone</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="equip"
+                                value="Tablet"><span>Tablet</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="equip"
+                                value="Credit Card"><span>Credit Card</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="equip"
+                                value="Vehicle and Keys"><span>Vehicle and Keys</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="equip"
+                                value="Building Access Card/Keys"><span>Building Access Card/Keys</span></label>
+                    </div>
+                </div>
+
+                <h2>Documentation & Logistics</h2>
+                <div class="form-field">
+                    <label>Upload Documentation</label>
+                    <input type="file" name="attachment">
+                    <div class="help-text">HR requires documentation for all end of employment actions please include
+                        the proper documentation</div>
+                </div>
+
+                <div class="form-field">
+                    <label>Additional Comments / Notes</label>
+                    <textarea name="comments"></textarea>
+                </div>
+
+                <button type="submit">Submit End of Employment Request</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleSec(id, element) {
+            const section = document.getElementById(id);
+            let isChecked = false;
+
+            if (element.type === 'radio') {
+                isChecked = (element.value === 'Yes');
+            } else {
+                isChecked = element.checked;
+            }
+
+            section.style.display = isChecked ? 'block' : 'none';
+
+            // Handle required attribute for all inputs within the section
+            const inputs = section.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.required = isChecked;
+            });
+        }
+
+        function handleReasonChange() {
+            const reason = document.getElementById('reason').value;
+            const hrSec = document.getElementById('hr_approval_sec');
+            const inputs = hrSec.querySelectorAll('input');
+
+            if (reason === 'Terminated') {
+                hrSec.style.display = 'block';
+                inputs.forEach(i => i.required = true);
+            } else {
+                hrSec.style.display = 'none';
+                inputs.forEach(i => i.required = false);
+            }
+        }
+
+        function updateVacationResponder(email) {
+            const textarea = document.getElementById('google_vacation');
+            if (email && email.trim() !== '') {
+                textarea.value = `Please be advised I am no longer with the company. Please contact ${email} for assistance.`;
+            } else {
+                textarea.value = `Please be advised I am no longer with the company. Please contact [RECIPIENT] for assistance.`;
+            }
+        }
+
+        // Form Submission Logic
+        document.getElementById('terminationForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            // Removed manual parsing; passing the raw form object to Apps Script natively
+            // to support file uploads.
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    if (response.success) {
+                        document.getElementById('form-container').innerHTML = `
+                            <div style="text-align:center; padding:40px;">
+                                <h1 style="color:var(--success-green);">✓ Submission Successful</h1>
+                                <p>Workflow ID: <strong>${response.workflowId}</strong></p>
+                                <p>${response.message}</p>
+                                <button onclick="resetForm()" class="btn btn-primary" style="margin-top:20px; width:auto; padding:10px 20px;">Submit Another</button>
+                            </div>
+                        `;
+                    } else {
+                        alert('Error: ' + response.message);
+                        btn.disabled = false;
+                        btn.textContent = 'Submit Termination Request';
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    alert('Critical Error: ' + err.message);
+                    btn.disabled = false;
+                    btn.textContent = 'Submit Termination Request';
+                })
+                .submitTerminationRequest(this);
+        });
+
+        // Dynamic Populators
+        google.script.run.withSuccessHandler(function (data) {
+            const siteSelect = document.getElementById('siteName');
+            data.sites.forEach(site => {
+                const opt = document.createElement('option');
+                opt.value = site; opt.textContent = site;
+                siteSelect.appendChild(opt);
+            });
+        }).getInitialFormData();
+
+        google.script.run.withSuccessHandler(function (email) {
+            document.getElementById('reqEmail').value = email;
+        }).getCurrentUserEmail();
+
+        function resetForm() {
+            google.script.run
+                .withSuccessHandler(function (url) {
+                    window.open(url + '?form=termination_request', '_top');
+                })
+                .getBaseUrl();
+        }
+    </script>
+</body>
+
+</html>
