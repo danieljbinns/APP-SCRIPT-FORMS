@@ -460,7 +460,7 @@
             { id: 'f_m_phone', label: 'Mobile Phone Number', type: 'text', logic: 'Only if Has Mobile Phone is checked' },
             { id: 'f_comp_gate', label: 'Does employee have a computer?', type: 'checkboxes', options: ['Has Computer'] },
             //{ id: 'f_comp_serial', label: 'Computer Serial Number', type: 'text', logic: 'Only if Has Computer is checked' },
-            { id: 'f_reason', label: 'Reason for Leaving', type: 'radio', options: ['Terminated', 'Resigned', 'Retired', 'Deceased', 'End of contract'], required: true },
+            { id: 'f_reason', label: 'Reason for Leaving', type: 'radio', options: ['Deceased', 'End of contract', 'Resigned', 'Retired', 'Terminated'], required: true },
             { id: 'f_hr_approved', label: 'Has HR Approved this Termination?', type: 'radio', options: ['Yes', 'No'], required: true, logic: 'Only shows if Reason is Terminated' },
             { id: 'f_site', label: 'Site Name', type: 'text', required: true },
             { id: 'f_type', label: 'Hourly or Salary', type: 'radio', options: ['Hourly', 'Salary'], required: true },

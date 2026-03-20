@@ -30,7 +30,7 @@ function submitPositionChangeRequest(formData) {
       formData.reqName,
       formData.reqEmail,
       formData.firstName + ' ' + formData.lastName,
-      formData.empID,
+      'N/A', // Previously empID
       formData.effDate,
       formData.siteName,
       changes,

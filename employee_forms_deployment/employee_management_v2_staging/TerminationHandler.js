@@ -29,7 +29,7 @@ function submitTerminationRequest(formData) {
       formData.reqName,
       formData.reqEmail,
       formData.empName,
-      formData.empID,
+      'N/A', // Previously empID
       formData.empType || '',
       formData.empWorkEmail || 'N/A',
       formData.empPhone || 'N/A',
@@ -241,7 +241,7 @@ function submitTerminationApproval(formData) {
       sendFormEmail({
         to: 'payroll@team-group.com',
         subject: `End of Employment Approved: ${termData.employeeName}`,
-        body: `HR has approved the end of employment for ${termData.employeeName}.<br><br><b>Employee:</b> ${termData.employeeName} (${termData.empID})<br><b>Termination Date:</b> ${termData.termDate}<br><b>Manager:</b> ${termData.managerName}<br><b>Site:</b> ${termData.siteName}`,
+        body: `HR has approved the end of employment for ${termData.employeeName}.<br><br><b>Employee:</b> ${termData.employeeName}<br><b>Termination Date:</b> ${termData.termDate}<br><b>Manager:</b> ${termData.managerName}<br><b>Site:</b> ${termData.siteName}`,
         formUrl: ''
       });
       
