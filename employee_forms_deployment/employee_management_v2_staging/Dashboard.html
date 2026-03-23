@@ -65,13 +65,18 @@
             margin-bottom: 20px;
         }
 
-        input.search-box {
+        input.search-box, select.search-box {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: white;
             padding: 10px 15px;
             border-radius: 6px;
             width: 300px;
+        }
+
+        select.search-box {
+            width: auto;
+            cursor: pointer;
         }
 
         button.refresh-btn {
@@ -88,11 +93,16 @@
         }
 
         button.action-btn {
-            padding: 8px 16px;
+            display: inline-block;
+            padding: 5px 10px;
             border-radius: 4px;
             border: none;
             cursor: pointer;
             font-weight: 600;
+            color: white;
+            background: #444;
+            font-size: 12px;
+            white-space: nowrap;
         }
 
         button.bump-btn {
@@ -274,14 +284,35 @@
                 <a href="<?= getBaseUrl() ?>?form=workflow_map" class="action-link"
                     style="margin-right: 15px; color: #fff; background: #333; padding: 10px 15px; border-radius: 6px; text-decoration: none;">View
                     Process Map</a>
-                <a href="<?= getBaseUrl() ?>?form=initial_request" class="action-link"
+                <a href="<?= getBaseUrl() ?>" class="action-link"
                     style="background: var(--brand-red); color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none;">+
                     New Request</a>
             </div>
         </header>
 
-        <div class="controls">
+        <div class="controls" style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
             <input type="text" id="searchInput" class="search-box" placeholder="Search employee, requester...">
+            
+            <select id="typeFilter" class="search-box" style="width: 150px; cursor: pointer;">
+                <option value="ALL">All Types</option>
+                <option value="ONBOARDING">New Hires</option>
+                <option value="EOE">End of Employment</option>
+            </select>
+            
+            <select id="statusFilter" class="search-box" style="width: 180px; cursor: pointer;">
+                <option value="ALL">All Statuses</option>
+                <option value="PENDING">Action Required</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+            </select>
+
+            <select id="sortSelect" class="search-box" style="width: 150px; cursor: pointer;">
+                <option value="DATE_DESC">Newest First</option>
+                <option value="DATE_ASC">Oldest First</option>
+                <option value="NAME_ASC">Name (A-Z)</option>
+                <option value="STATUS">Status Sort</option>
+            </select>
+
             <button class="refresh-btn" onclick="loadData()">Refresh</button>
         </div>
 
@@ -357,6 +388,12 @@
         let filteredWorkflows = []; // For search + pagination combo
         let currentWorkflowId = null;
 
+        // Filtering and Sorting State
+        let currentSort = 'DATE_DESC';
+        let currentTypeFilter = 'ALL';
+        let currentStatusFilter = 'ALL';
+        let searchTerm = '';
+
         // Pagination State
         const ITEMS_PER_PAGE = 25;
         let currentPage = 1;
@@ -380,9 +417,7 @@
                 return;
             }
             allWorkflows = response.workflows;
-            filteredWorkflows = [...allWorkflows]; // Initialize
-            currentPage = 1; // Reset to page 1 on fresh load
-            renderTable();
+            applyFiltersAndSort(); // Triggers sorting and initially setting filteredWorkflows
         }
 
         // Helper to safely format dates
@@ -422,7 +457,8 @@
                         (wf.status === 'Pending' ? 'pending' : 'in-progress'));
 
                 const typeBadge = wf.type === 'End of Employment' ?
-                    '<span style="background:var(--brand-red); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">EOE</span>' : '';
+                    '<span style="background:var(--brand-red); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">EOE</span>' :
+                    (wf.type === 'Onboarding' ? '<span style="background:var(--info); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">NEW HIRE</span>' : '');
 
                 html += '<tr onclick="openDetails(\'' + wf.id + '\', \'' + wf.type + '\')">' +
                     '<td>' + typeBadge + '<strong>' + (wf.employee || 'Pending Name') + '</strong></td>' +
@@ -475,18 +511,72 @@
             document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
         }
 
-        // Search
+        // Setup Search and Filter Event Listeners
         document.getElementById('searchInput').addEventListener('input', function (e) {
-            const term = e.target.value.toLowerCase();
-            filteredWorkflows = allWorkflows.filter(wf =>
-                (wf.employee && wf.employee.toLowerCase().includes(term)) ||
-                (wf.requesterName && wf.requesterName.toLowerCase().includes(term)) ||
-                (wf.initiator && wf.initiator.toLowerCase().includes(term)) ||
-                (wf.id && wf.id.toLowerCase().includes(term))
-            );
-            currentPage = 1; // Reset to page 1 on search
-            renderTable();
+            searchTerm = e.target.value.toLowerCase();
+            applyFiltersAndSort();
         });
+        document.getElementById('typeFilter').addEventListener('change', function (e) {
+            currentTypeFilter = e.target.value;
+            applyFiltersAndSort();
+        });
+        document.getElementById('statusFilter').addEventListener('change', function (e) {
+            currentStatusFilter = e.target.value;
+            applyFiltersAndSort();
+        });
+        document.getElementById('sortSelect').addEventListener('change', function (e) {
+            currentSort = e.target.value;
+            applyFiltersAndSort();
+        });
+
+        function applyFiltersAndSort() {
+            // 1. Filter
+            filteredWorkflows = allWorkflows.filter(wf => {
+                // Search Text
+                const matchesSearch = !searchTerm || 
+                    (wf.employee && wf.employee.toLowerCase().includes(searchTerm)) ||
+                    (wf.requesterName && wf.requesterName.toLowerCase().includes(searchTerm)) ||
+                    (wf.initiator && wf.initiator.toLowerCase().includes(searchTerm)) ||
+                    (wf.id && wf.id.toLowerCase().includes(searchTerm));
+                
+                if (!matchesSearch) return false;
+
+                // Type Dropdown
+                if (currentTypeFilter === 'ONBOARDING' && wf.type !== 'Onboarding') return false;
+                if (currentTypeFilter === 'EOE' && wf.type !== 'End of Employment') return false;
+
+                // Status Dropdown
+                if (currentStatusFilter === 'COMPLETED' && wf.status !== 'Completed') return false;
+                if (currentStatusFilter === 'CANCELLED' && wf.status !== 'Cancelled') return false;
+                if (currentStatusFilter === 'PENDING' && (wf.status === 'Completed' || wf.status === 'Cancelled')) return false;
+
+                return true;
+            });
+
+            // 2. Sort
+            filteredWorkflows.sort((a, b) => {
+                if (currentSort === 'NAME_ASC') {
+                    return (a.employee || '').localeCompare(b.employee || '');
+                } else if (currentSort === 'STATUS') {
+                    return (a.status || '').localeCompare(b.status || '');
+                } else if (currentSort === 'DATE_ASC') {
+                    const dateA = new Date(a.dateRequested).getTime();
+                    const dateB = new Date(b.dateRequested).getTime();
+                    if (!isNaN(dateA) && !isNaN(dateB)) return dateA - dateB;
+                    return (a.id || '').localeCompare(b.id || '');
+                } else {
+                    // DATE_DESC (Default)
+                    const dateA = new Date(a.dateRequested).getTime();
+                    const dateB = new Date(b.dateRequested).getTime();
+                    if (!isNaN(dateA) && !isNaN(dateB)) return dateB - dateA;
+                    // Fallback to ID sorting Desc
+                    return (b.id || '').localeCompare(a.id || '');
+                }
+            });
+
+            currentPage = 1; // Reset to page 1 on new filter/search
+            renderTable();
+        }
 
         // Modal Functions
         function openDetails(id, type) {
@@ -502,7 +592,7 @@
                 '</div>';
 
             // Request full details from backend
-            if (type === 'Termination') {
+            if (type === 'End of Employment' || type === 'Termination' || id.startsWith('TERM_')) {
                 google.script.run
                     .withSuccessHandler(renderModalDetails)
                     .withFailureHandler(err => {
@@ -621,12 +711,19 @@
                     var actionBtn = '-';
 
                     if (!isComplete && !isNA && item.target) {
-                        actionBtn = '<button class="action-btn" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
-                        actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="openFormForWorkflow(\'' + item.target + '\', \'' + details.id + '\')">View Form</button>';
+                        if (item.tid) {
+                            // EOE Action Item — route to the specific Action Item form via tid
+                            actionBtn = '<button class="action-btn" style="background: #444;" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
+                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                        } else {
+                            actionBtn = '<button class="action-btn" style="background: #444;" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
+                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="openFormForWorkflow(\'' + item.target + '\', \'' + details.id + '\')">View Form</button>';
+                        }
                     } else if (isComplete && item.target) {
-                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openFullPage()">View Data</button>';
+                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + item.target + '\')">View Data</button>';
                     } else if (isComplete && item.name === 'Initial Request') {
-                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openFormForWorkflow(\'initial_request\', \'' + details.id + '\')">View Data</button>';
+                        var targetForm = details.type === 'End of Employment' ? 'termination_request' : 'initial_request';
+                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + targetForm + '\')">View Data</button>';
                     }
 
                     html +=
@@ -689,6 +786,12 @@
                 }
             }
         });
+
+        function openStepDataView(target) {
+            if (currentWorkflowId) {
+                window.open(SERVER_BASE_URL + '?form=request_details&id=' + currentWorkflowId + '&vd=' + target, '_blank');
+            }
+        }
 
         function openFullPage() {
             if (currentWorkflowId) {

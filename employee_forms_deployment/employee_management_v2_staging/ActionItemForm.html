@@ -139,23 +139,55 @@
             display: block;
         }
 
-        select.status-select {
+        .status-btn-group {
+            display: flex;
             background: var(--input-bg);
-            color: white;
             border: 1px solid var(--input-border);
-            padding: 6px;
-            border-radius: 4px;
-            width: 130px;
+            border-radius: 6px;
+            overflow: hidden;
+            width: fit-content;
         }
 
-        select.status-select.collected {
-            border-color: var(--success);
-            color: var(--success);
+        .status-btn {
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            border-right: 1px solid var(--input-border);
         }
 
-        select.status-select.not-returned {
-            border-color: var(--danger);
-            color: var(--danger);
+        .status-btn:last-child {
+            border-right: none;
+        }
+
+        .status-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+        }
+
+        .status-btn.active.pending {
+            background: var(--warning);
+            color: black;
+        }
+
+        .status-btn.active.complete {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-btn.active.not-returned {
+            background: var(--danger);
+            color: white;
+        }
+
+        .status-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
         }
 
         input.serial-input,
@@ -367,10 +399,10 @@
     <script>
         const taskId = "<?= task.TaskID ?>";
         const taskCategory = "<?= task.Category ?>";
-        const taskDescription = <?= JSON.stringify(task.Description) ?>;
+        const taskDescription = <?= JSON.stringify(task.Description || '') ?>;
         const taskDraftRaw = <?!= task.Draft ? JSON.stringify(task.Draft) : 'null' ?>;
         const isClosed = "<?= task.Status ?>" === "Closed";
-        const contextObj = <?!= typeof context !== 'undefined' && context ? JSON.stringify(context) : 'null' ?>;
+        const contextObj = <?!= (typeof context !== 'undefined' && context) ? JSON.stringify(context) : 'null' ?>;
         const context = (typeof contextObj === 'string') ? JSON.parse(contextObj) : contextObj;
 
         let userEmail = "";
@@ -394,61 +426,49 @@
             console.error('Draft Parse Error:', e);
         }
 
-        // Helper to parse items consistently
         function getChecklistItems() {
             if (!taskDescription) return [];
 
             let items = [];
             try {
-                // Determine if the description is a JSON array string
-                // Example: '["Laptop", "Phone", "Set Vacation Responder: \"Goodbye\""]'
-                let isJson = false;
-                let trimmedDesc = taskDescription.trim();
-
-                // If it's single-quoted by GAS, swap it (though JSON.parse usually expects double)
-                if ((trimmedDesc.startsWith('[') && trimmedDesc.endsWith(']')) ||
-                    (trimmedDesc.startsWith('"[') && trimmedDesc.endsWith(']"'))) {
-                    isJson = true;
-                }
-
-                if (isJson) {
+                let current = taskDescription.trim();
+                
+                // Recursively parse if it's double-stringified
+                let attempts = 0;
+                while (attempts < 3 && typeof current === 'string' && (current.startsWith('[') || current.startsWith('"{') || current.startsWith('"['))) {
                     try {
-                        // Sometimes google wraps the whole JSON string in extra quotes
-                        if (trimmedDesc.startsWith('"[')) {
-                            trimmedDesc = trimmedDesc.substring(1, trimmedDesc.length - 1);
-                            // Unescape \" inside the stringified JSON
-                            trimmedDesc = trimmedDesc.replace(/\\"/g, '"');
+                        let next = JSON.parse(current);
+                        if (next === current) break;
+                        current = next;
+                        attempts++;
+                    } catch (e) {
+                        if (current.startsWith('"[') && current.endsWith(']"')) {
+                            current = current.substring(1, current.length - 1).replace(/\\"/g, '"');
+                            continue;
                         }
-
-                        items = JSON.parse(trimmedDesc);
-
-                        // Fallback just in case parsing yielded a string instead of array
-                        if (typeof items === 'string') {
-                            items = JSON.parse(items);
-                        }
-
-                    } catch (jsonErr) {
-                        console.error('Failed to parse JSON, falling back:', jsonErr);
-                        isJson = false;
+                        break;
                     }
                 }
 
-                // Fallback for legacy items that used commas or test delimiters
-                if (!isJson) {
-                    let delimiter = trimmedDesc.includes('|~|') ? '|~|' : ',';
-                    if (trimmedDesc.includes('\\n') && !trimmedDesc.includes('|~|')) delimiter = '\\n';
-                    else if (trimmedDesc.includes('\n') && !trimmedDesc.includes('|~|')) delimiter = '\n';
-
-                    items = trimmedDesc.split(delimiter);
+                if (Array.isArray(current)) {
+                    items = current;
+                } else if (typeof current === 'string') {
+                    let delimiter = current.includes('|~|') ? '|~|' : ',';
+                    if (current.includes('\\n') && !current.includes('|~|')) delimiter = '\\n';
+                    else if (current.includes('\n') && !current.includes('|~|')) delimiter = '\n';
+                    items = current.split(delimiter);
                 }
 
-                // Final cleanup for both paths (remove blanks, 'n/a', trim quotes from edge case old data)
-                items = items.map(s => String(s).trim())
-                    .map(s => s.replace(/^["']|["']$/g, '').trim())
-                    .filter(s => s && s.toLowerCase() !== 'n/a' && s !== 'null');
+                // Cleanup items - remove leading/trailing brackets/quotes but keep internal ones
+                items = items.map(s => {
+                    let str = String(s).trim();
+                    // Remove outer brackets and quotes that often wrapper the whole list element incorrectly
+                    str = str.replace(/^[\["']+|[\]"']+$/g, '').trim();
+                    return str;
+                }).filter(s => s && s.toLowerCase() !== 'n/a' && s !== 'null');
 
             } catch (e) {
-                console.error('Overall Parse Error:', e);
+                console.error('getChecklistItems Error:', e);
             }
             return items;
         }
@@ -473,7 +493,7 @@
                 const serialHtml = isComputer ? `
                     <div style="margin-top:8px;">
                         <label style="font-size:10px; color:var(--text-muted);">Serial Number:</label>
-                        <input type="text" class="serial-input" value="${saved.serial || ''}" placeholder="Enter Serial/Svc Tag" ${isClosed ? 'disabled' : ''} onchange="updateItemData('${item}', 'serial', this.value)">
+                        <input type="text" class="serial-input" value="${saved.serial || ''}" placeholder="Enter Serial/Svc Tag" ${isClosed ? 'disabled' : ''} onchange="updateItemData(this, 'serial', this.value)">
                     </div>
                 ` : '';
 
@@ -484,10 +504,7 @@
                 ` : '';
 
                 const auditHtml = saved.by ? `<span class="audit-info">By: ${saved.by} | ${new Date(saved.at).toLocaleString()}</span>` : '';
-
-                // Only show Not Returned for Assets
                 const isAssetTask = taskCategory === 'Assets';
-                const notReturnedHtml = isAssetTask ? `<option value="Not Returned" ${saved.status === 'Not Returned' ? 'selected' : ''}>Not Returned</option>` : '';
 
                 tr.innerHTML = `
                     <td>
@@ -496,15 +513,17 @@
                         ${auditHtml}
                     </td>
                     <td>
-                        <select class="status-select ${saved.status === 'Collected' ? 'collected' : (saved.status === 'Not Returned' ? 'not-returned' : '')}" 
-                                onchange="onStatusChange('${item}', this)" ${isClosed ? 'disabled' : ''}>
-                            <option value="Pending" ${saved.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                            <option value="Collected" ${saved.status === 'Collected' || saved.status === 'Complete' ? 'selected' : ''}>${isAssetTask ? 'Collected' : 'Complete'}</option>
-                            ${notReturnedHtml}
-                        </select>
+                        <div class="status-btn-group" data-item="${encodeURIComponent(item)}">
+                            <button class="status-btn pending ${saved.status === 'Pending' ? 'active' : ''}" 
+                                onclick="onStatusChange('Pending', this)" ${isClosed ? 'disabled' : ''}>Pending</button>
+                            <button class="status-btn complete ${(saved.status === 'Collected' || saved.status === 'Complete') ? 'active' : ''}" 
+                                onclick="onStatusChange('${isAssetTask ? 'Collected' : 'Complete'}', this)" ${isClosed ? 'disabled' : ''}>${isAssetTask ? 'Collected' : 'Complete'}</button>
+                            ${isAssetTask ? `<button class="status-btn not-returned ${saved.status === 'Not Returned' ? 'active' : ''}" 
+                                onclick="onStatusChange('Not Returned', this)" ${isClosed ? 'disabled' : ''}>Not Returned</button>` : ''}
+                        </div>
                     </td>
                     <td>
-                        <textarea class="item-comment" placeholder="Add specific comments..." ${isClosed ? 'disabled' : ''} onchange="updateItemData('${item}', 'comments', this.value)">${saved.comments || ''}</textarea>
+                        <textarea class="item-comment" placeholder="Add specific comments..." ${isClosed ? 'disabled' : ''} onchange="updateItemData(this, 'comments', this.value)">${saved.comments || ''}</textarea>
                         ${serialHtml}
                     </td>
                 `;
@@ -513,29 +532,26 @@
             });
         }
 
-        function onStatusChange(name, el) {
-            // Update class for styling
-            el.className = 'status-select';
-            if (el.value === 'Collected') el.classList.add('collected');
-            if (el.value === 'Not Returned') el.classList.add('not-returned');
+        function onStatusChange(status, btn) {
+            const group = btn.parentElement;
+            const name = decodeURIComponent(group.getAttribute('data-item'));
+            
+            group.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
 
-            updateItemData(name, 'status', el.value);
-
-            // Auto-stamp
-            if (el.value !== 'Pending') {
-                taskDraft.items[name].by = userEmail;
-                taskDraft.items[name].at = new Date().toISOString();
-
-                // Refresh rendering of audit info (simple approach: full redraw or find element)
-                // For now, it will show up after "Save Progress" or on next page load.
-            }
+            if (!taskDraft.items[name]) taskDraft.items[name] = { status: 'Pending' };
+            taskDraft.items[name].status = status;
+            taskDraft.items[name].by = userEmail;
+            taskDraft.items[name].at = new Date().toISOString();
         }
 
-        function updateItemData(name, field, value) {
+        function updateItemData(el, field, value) {
+            const row = el.closest('tr');
+            const group = row.querySelector('.status-btn-group');
+            const name = decodeURIComponent(group.getAttribute('data-item'));
+
             if (!taskDraft.items[name]) taskDraft.items[name] = { status: 'Pending' };
             taskDraft.items[name][field] = value;
-
-            // If they modify serial or comments, also record who/when
             taskDraft.items[name].by = userEmail;
             taskDraft.items[name].at = new Date().toISOString();
         }
@@ -560,26 +576,30 @@
 
         function finalComplete() {
             const items = getChecklistItems();
-
-            // Check if any visible item in the DOM is still "Pending"
-            const selects = document.querySelectorAll('.status-select');
+            
+            // Check taskDraft state for completeness
             let pendingCount = 0;
-            selects.forEach(s => { if (s.value === 'Pending') pendingCount++; });
+            items.forEach(item => {
+                const saved = taskDraft.items[item];
+                if (!saved || saved.status === 'Pending') {
+                    pendingCount++;
+                }
+            });
 
             if (pendingCount > 0) {
-                alert('All items must be marked as either "Collected" or "Not Returned" before finalizing.');
+                alert('All items must be marked as either "Collected", "Complete", or "Not Returned" before finalizing.');
                 return;
             }
 
             // Specific check for "Not Returned" comments
             let missingComments = false;
-            selects.forEach(s => {
-                if (s.value === 'Not Returned') {
-                    const row = s.closest('tr');
-                    const comment = row.querySelector('.item-comment').value.trim();
-                    if (!comment) missingComments = true;
+            for (let itemName in taskDraft.items) {
+                const itemData = taskDraft.items[itemName];
+                if (itemData.status === 'Not Returned' && (!itemData.comments || !itemData.comments.trim())) {
+                    missingComments = true;
+                    break;
                 }
-            });
+            }
 
             if (missingComments) {
                 alert('Please add a comment for any items marked as "Not Returned".');

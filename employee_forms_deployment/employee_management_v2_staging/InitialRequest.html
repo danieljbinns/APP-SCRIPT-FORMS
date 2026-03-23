@@ -466,7 +466,7 @@
           <div class="form-row">
             <div class="form-field">
               <label>Hire Date <span class="required">*</span></label>
-              <input type="date" name="hireDate" id="hireDate" required onchange="checkHireDate()">
+              <input type="date" name="hireDate" id="hireDate" required onclick="this.showPicker()" onchange="checkHireDate()">
               <div id="hireDateWarning"
                 style="display: none; margin-top: 0.5rem; padding: 0.5rem; background: #FEF3C7; border-left: 4px solid #F59E0B; color: #92400E; border-radius: 4px; font-size: 0.8rem;">
                 <strong>⚠️ Notice:</strong> &lt; 3 business days. Please contact IT to expedite.

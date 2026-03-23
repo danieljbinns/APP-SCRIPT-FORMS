@@ -51,23 +51,41 @@ function syncWorkflowState(workflowId) {
       dateRequested: '', items: {} 
     };
     
-    const foundReq = reqSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
+    const isTerm = workflowId.startsWith('TERM_');
+    const lookupSheetName = isTerm ? CONFIG.SHEETS.TERMINATIONS : CONFIG.SHEETS.INITIAL_REQUESTS;
+    const lookupSheet = ss.getSheetByName(lookupSheetName);
+    
+    const foundReq = lookupSheet ? lookupSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (foundReq) {
-      const row = reqSheet.getRange(foundReq.getRow(), 1, 1, reqSheet.getLastColumn()).getValues()[0];
-      reqInfo = {
-        requesterName: row[4] || 'Unknown',
-        requesterEmail: row[5] || '',
-        managerEmail: row[17] || '',
-        dateRequested: row[3] instanceof Date ? row[3].toLocaleDateString() : String(row[3] || ''),
-        items: {
-          jonas: (row[44] && row[44].toString().length > 0),
-          creditCard: (row[30] === 'Yes' || row[32] === 'Yes' || row[34] === 'Yes'),
-          fleetio: (row[20] && row[20].includes('Fleetio')),
-          businessCards: (row[20] && row[20].includes('Business Cards')),
-          siteDocs: ((row[20] && row[20].includes('SiteDocs')) || (row[21] && row[21].includes('SiteDocs Tablet'))),
-          review: (row[47] === 'Yes')
-        }
-      };
+      const row = lookupSheet.getRange(foundReq.getRow(), 1, 1, lookupSheet.getLastColumn()).getValues()[0];
+      if (isTerm) {
+        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | ... | Manager Name | Manager Email
+        reqInfo = {
+          requesterName: row[3] || 'Unknown',
+          requesterEmail: row[4] || '',
+          managerEmail: row[15] || '',
+          dateRequested: row[2] instanceof Date ? row[2].toLocaleDateString() : String(row[2] || ''),
+          items: {
+             // For EOE, we don't have the same "specialist" items map, but we can detect if approval is done
+             isTerm: true
+          }
+        };
+      } else {
+        reqInfo = {
+          requesterName: row[4] || 'Unknown',
+          requesterEmail: row[5] || '',
+          managerEmail: row[17] || '',
+          dateRequested: row[3] instanceof Date ? row[3].toLocaleDateString() : String(row[3] || ''),
+          items: {
+            jonas: (row[44] && row[44].toString().length > 0),
+            creditCard: (row[30] === 'Yes' || row[32] === 'Yes' || row[34] === 'Yes'),
+            fleetio: (row[20] && row[20].includes('Fleetio')),
+            businessCards: (row[20] && row[20].includes('Business Cards')),
+            siteDocs: ((row[20] && row[20].includes('SiteDocs')) || (row[21] && row[21].includes('SiteDocs Tablet'))),
+            review: (row[47] === 'Yes')
+          }
+        };
+      }
     }
     
     // 2. Determine Pre-Calculated Status String
