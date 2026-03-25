@@ -3,7 +3,9 @@
  */
 
 function serveTerminationRequest() {
-  return HtmlService.createHtmlOutputFromFile('TerminationRequest')
+  const template = HtmlService.createTemplateFromFile('TerminationRequest');
+  template.referenceData = JSON.stringify(getInitialFormData());
+  return template.evaluate()
     .setTitle('End of Employment Request')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -241,7 +243,15 @@ function submitTerminationApproval(formData) {
       sendFormEmail({
         to: 'payroll@team-group.com',
         subject: `End of Employment Approved: ${termData.employeeName}`,
-        body: `HR has approved the end of employment for ${termData.employeeName}.<br><br><b>Employee:</b> ${termData.employeeName}<br><b>Termination Date:</b> ${termData.termDate}<br><b>Manager:</b> ${termData.managerName}<br><b>Site:</b> ${termData.siteName}`,
+        body: `HR has approved the end of employment for ${termData.employeeName}.<br><br>` +
+              `<b>Employee:</b> ${termData.employeeName}<br>` +
+              `<b>Termination Date:</b> ${termData.termDate}<br>` +
+              `<b>Manager:</b> ${termData.managerName}<br>` +
+              `<b>Site:</b> ${termData.siteName}<br>` +
+              `<b>Employee Type:</b> ${termData.employeeType || 'N/A'}<br>` +
+              `<b>Has Direct Reports:</b> ${termData.hasReports || 'N/A'}<br>` +
+              `<b>Reason:</b> ${termData.reason || 'N/A'}<br>` +
+              `<b>HR Notes:</b> ${notes || 'None'}<br>`,
         formUrl: ''
       });
       

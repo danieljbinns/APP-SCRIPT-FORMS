@@ -32,7 +32,7 @@
 
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 900px;
         }
 
         .card {
@@ -137,6 +137,41 @@
             height: 18px;
         }
 
+        .status-btn-group {
+            display: flex;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            overflow: hidden;
+            width: fit-content;
+            margin-top: 8px;
+        }
+
+        .status-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: 0.2s;
+            border-right: 1px solid var(--input-border);
+        }
+
+        .status-btn:last-child {
+            border-right: none;
+        }
+
+        .status-btn.active {
+            background: var(--brand-red);
+            color: white;
+        }
+
+        .status-btn:not(.active):hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
         .btn {
             width: 100%;
             padding: 14px;
@@ -187,6 +222,21 @@
                 <div class="info-row"><span class="info-label">Reason:</span><span>
                         <?= requestData.reason ?>
                     </span></div>
+                <? if (requestData.empPhone && requestData.empPhone !== 'N/A') { ?>
+                <div class="info-row"><span class="info-label">Assigned Phone:</span><span>
+                        <?= requestData.empPhone ?>
+                    </span></div>
+                <? } ?>
+                <? if (requestData.systems && requestData.systems !== 'N/A') { ?>
+                <div class="info-row"><span class="info-label">System Access:</span><span>
+                        <?= requestData.systems ?>
+                    </span></div>
+                <? } ?>
+                <? if (requestData.eqToReturn && requestData.eqToReturn !== 'N/A') { ?>
+                <div class="info-row"><span class="info-label">Equipment to Return:</span><span>
+                        <?= requestData.eqToReturn ?>
+                    </span></div>
+                <? } ?>
                 <div class="info-row"><span class="info-label">Direct Reports:</span><span>
                         <?= requestData.hasReports === 'Yes' ? 'Yes, routing to ' + requestData.reportsToNew : 'No' ?>
                     </span></div>
@@ -200,10 +250,11 @@
 
                 <div class="form-group">
                     <label>HR Decision</label>
-                    <select name="decision" required>
-                        <option value="Approved">Approve Termination</option>
-                        <option value="Rejected">Reject / Need Info</option>
-                    </select>
+                    <input type="hidden" name="decision" id="decisionInput" value="Approved" required>
+                    <div class="status-btn-group">
+                        <button type="button" class="status-btn active" id="btnApproved" onclick="setDecision('Approved')">Approve Termination</button>
+                        <button type="button" class="status-btn" id="btnRejected" onclick="setDecision('Rejected')">Reject / Need Info</button>
+                    </div>
                 </div>
 
                 <div class="section-title" style="display: none;">Follow-up Actions</div>
@@ -230,6 +281,16 @@
     </div>
 
     <script>
+        function setDecision(value) {
+            document.getElementById('decisionInput').value = value;
+            document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
+            if (value === 'Approved') {
+                document.getElementById('btnApproved').classList.add('active');
+            } else {
+                document.getElementById('btnRejected').classList.add('active');
+            }
+        }
+
         document.getElementById('approvalForm').onsubmit = function (e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');

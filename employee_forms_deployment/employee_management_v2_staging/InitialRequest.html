@@ -384,6 +384,21 @@
       text-align: center;
       margin-top: 1rem;
     }
+    input[type="date"] {
+      position: relative;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      height: auto;
+      color: transparent;
+      background: transparent;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -438,21 +453,14 @@
 
             <div class="form-field">
               <label>Requester Email <span class="required">*</span></label>
-              <input type="email" name="requesterEmail" id="requesterEmail" required placeholder="Enter email address"
-                autocomplete="off">
-              <!-- TODO BACKEND: Implement Google Directory autocomplete lookup
-                   - Type-ahead search as user types
-                   - Search Google Workspace directory
-                   - Auto-populate requesterName from selected result
-                   - If not found: allow any email value to be entered -->
+              <input type="email" name="requesterEmail" id="requesterEmail" required readonly
+                placeholder="Auto-filling details..." autocomplete="off">
             </div>
 
             <div class="form-field">
               <label>Requester Name <span class="required">*</span></label>
-              <input type="text" name="requesterName" id="requesterName" required>
-              <!-- Auto-populated from directory lookup
-                   If email not found: user must enter name manually
-                   Field becomes editable when email is not in directory -->
+              <input type="text" name="requesterName" id="requesterName" required readonly
+                placeholder="Auto-filling details...">
             </div>
           </div>
         </div>
@@ -466,7 +474,7 @@
           <div class="form-row">
             <div class="form-field">
               <label>Hire Date <span class="required">*</span></label>
-              <input type="date" name="hireDate" id="hireDate" required onclick="this.showPicker()" onchange="checkHireDate()">
+              <input type="date" name="hireDate" id="hireDate" required onchange="checkHireDate()">
               <div id="hireDateWarning"
                 style="display: none; margin-top: 0.5rem; padding: 0.5rem; background: #FEF3C7; border-left: 4px solid #F59E0B; color: #92400E; border-radius: 4px; font-size: 0.8rem;">
                 <strong>⚠️ Notice:</strong> &lt; 3 business days. Please contact IT to expedite.
@@ -564,15 +572,14 @@
           <div class="form-row-2">
             <div class="form-field">
               <label>Reporting Manager Email <span class="required">*</span></label>
-              <input type="email" name="managerEmail" id="managerEmail" placeholder="Enter manager email" required
-                autocomplete="off">
-              <!-- TODO BACKEND: Implement Google Directory autocomplete lookup -->
+              <input type="email" name="managerEmail" id="managerEmail" placeholder="Start typing manager name or email..." required
+                autocomplete="off" pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+              <span class="domain-hint">Must be @team-group.com, @robinsonsolutions.com, etc.</span>
             </div>
 
             <div class="form-field">
               <label>Reporting Manager Name <span class="required">*</span></label>
-              <input type="text" name="managerName" id="managerName" placeholder="Enter manager name" required>
-              <!-- Auto-populated from directory lookup -->
+              <input type="text" name="managerName" id="managerName" placeholder="Auto-fills on selection" required readonly>
             </div>
           </div>
 
@@ -1032,13 +1039,8 @@
   <datalist id="jrsList"></datalist>
   <datalist id="jobNumbersList"></datalist>
 
+  <?!= include('DirectoryAutocomplete') ?>
   <script>
-    // Load autocomplete data on page load
-
-    // Auto-populate requester email with current user (Session only, no Directory API)
-    // Load autocomplete data on page load
-    // Load autocomplete data on page load
-    // Load autocomplete data on page load
     window.addEventListener('DOMContentLoaded', function () {
 
       // Helper to populate select elements
@@ -1069,76 +1071,64 @@
         }
       }
 
-      // 1. Current User Email
+      // 1. Current User Details
       google.script.run
-        .withSuccessHandler(function (email) {
-          if (email) {
-            document.getElementById('requesterEmail').value = email;
+        .withSuccessHandler(function (user) {
+          if (user && user.email) {
+            document.getElementById('requesterEmail').value = user.email;
+            document.getElementById('requesterName').value = user.name || 'Unknown User';
           }
         })
         .withFailureHandler(console.error)
-        .getCurrentUserEmail();
+        .getCurrentUserDetails();
 
-      // 2. Sites List (Populates 'siteName' and 'bossJobSites')
-      google.script.run
-        .withSuccessHandler(function (sites) {
-          console.log('✅ Loaded ' + (sites ? sites.length : 0) + ' sites');
-          populateSelect('siteName', sites);
-          // populateSelect('bossJobSites', sites, '', true); // REMOVED: Conflict with Committees (Col F)
-        })
-        .withFailureHandler(console.error)
-        .getSitesList();
+      // Initialize Directory Autocomplete for Manager fields
+      DirectoryAutocomplete.setup({
+        inputSelector: '#managerEmail',
+        nameInputSelector: '#managerName'
+      });
 
-      // 3. JRs List (Populates 'position' and 'jrAssignment')
-      google.script.run
-        .withSuccessHandler(function (jrs) {
-          console.log('✅ Loaded ' + (jrs ? jrs.length : 0) + ' JRs');
-          populateSelect('position', jrs);
-          // Also populate the JR Assignment picker manually if helper targeted by ID doesn't work (it has name only)
-          const jrAssignment = document.querySelector('[name="jrAssignment"]');
-          if (jrAssignment) {
-            jrAssignment.innerHTML = '<option value="">-- Select JR --</option>';
-            if (jrs && jrs.length) {
-              jrs.forEach(jr => {
-                const opt = document.createElement('option');
-                opt.value = jr;
-                opt.textContent = jr;
-                jrAssignment.appendChild(opt);
-              });
-            }
+      // Evaluate Synchronous Backend Injection
+      const INJECTED_REF_DATA = <?!= typeof referenceData !== 'undefined' ? referenceData : 'null' ?>;
+      
+      const populateAll = function (refData) {
+        console.log('✅ Synchronously Loaded Unified Reference Payload');
+        
+        // 1. Sites
+        populateSelect('siteName', refData.sites);
+        
+        // 2. JRs
+        populateSelect('position', refData.jrs);
+        const jrAssignment = document.querySelector('[name="jrAssignment"]');
+        if (jrAssignment) {
+          jrAssignment.innerHTML = '<option value="">-- Select JR --</option>';
+          if (refData.jrs && refData.jrs.length) {
+            refData.jrs.forEach(jr => {
+              const opt = document.createElement('option');
+              opt.value = jr; opt.textContent = jr;
+              jrAssignment.appendChild(opt);
+            });
           }
-        })
-        .withFailureHandler(console.error)
-        .getJRsList();
+        }
+        
+        // 3. Job Numbers (Column D)
+        populateSelect('jobSiteNumber', refData.jobNumbers);
+        populateSelect('jonasJobNumbers', refData.jobNumbers, '', true);
+        
+        // 4. BOSS Cost Sheets (Column E)
+        populateSelect('costSheetJobNumbers', refData.jobs, '', true);
+        
+        // 5. BOSS Committees (Column F)
+        populateSelect('bossJobSites', refData.committees, '', true);
+      };
 
-      // 4. Job Numbers List (Populates 'jobSiteNumber', 'costSheetJobNumbers', 'jonasJobNumbers')
-      google.script.run
-        .withSuccessHandler(function (jobs) {
-          console.log('✅ Loaded ' + (jobs ? jobs.length : 0) + ' Job Numbers');
-          populateSelect('jobSiteNumber', jobs);
-          // populateSelect('costSheetJobNumbers', jobs, '', true); // REMOVED: Now handled by separate call below (Col E)
-          populateSelect('jonasJobNumbers', jobs, '', true); // "JONAS ... should be same as job site number lookup" -> Column D
-        })
-        .withFailureHandler(console.error)
-        .getJobNumbersList(); // Column D
-
-      // 5. BOSS Cost Sheets (Column E)
-      google.script.run
-        .withSuccessHandler(function (sheets) {
-          console.log('✅ Loaded ' + (sheets ? sheets.length : 0) + ' Cost Sheets');
-          populateSelect('costSheetJobNumbers', sheets, '', true);
-        })
-        .withFailureHandler(console.error)
-        .getBossCostSheetsList(); // Column E
-
-      // 6. BOSS Committees (Column F)
-      google.script.run
-        .withSuccessHandler(function (committees) {
-          console.log('✅ Loaded ' + (committees ? committees.length : 0) + ' Committees');
-          populateSelect('bossJobSites', committees, '', true);
-        })
-        .withFailureHandler(console.error)
-        .getBossJobSitesList(); // Column F
+      if (INJECTED_REF_DATA) {
+        populateAll(INJECTED_REF_DATA);
+      } else {
+        console.error('❌ Failed to inject serverData, synchronous population aborted.');
+        // Traditional fallback
+        google.script.run.withSuccessHandler(populateAll).getInitialFormData();
+      }
     });
 
     // Utility Functions

@@ -3,7 +3,9 @@
  */
 
 function servePositionSiteChange() {
-  return HtmlService.createHtmlOutputFromFile('PositionSiteChangeRequest')
+  const template = HtmlService.createTemplateFromFile('PositionSiteChangeRequest');
+  template.referenceData = JSON.stringify(getInitialFormData());
+  return template.evaluate()
     .setTitle('Position / Site Change Request')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -37,7 +39,7 @@ function submitPositionChangeRequest(formData) {
       (formData.siteOld || 'N/A') + ' -> ' + (formData.siteNew || 'N/A'),
       (formData.titleOld || 'N/A') + ' -> ' + (formData.titleNew || 'N/A'),
       (formData.classOld || 'N/A') + ' -> ' + (formData.classNew || 'N/A'),
-      (formData.mgrOld || 'N/A') + ' -> ' + (formData.mgrNewName || 'N/A') + ' (' + (formData.mgrNewEmail || 'N/A') + ')',
+      (formData.mgrOldName || 'N/A') + ' (' + (formData.mgrOldEmail || 'N/A') + ') -> ' + (formData.mgrNewName || 'N/A') + ' (' + (formData.mgrNewEmail || 'N/A') + ')',
       formData.oldReportsTo || 'N/A',
       formData.newReportsFrom || 'N/A',
       (formData.existingEmail || 'N/A') + ' -> ' + (formData.googleEmail ? formData.googleEmail + '@' + formData.googleDomain : 'N/A'),
@@ -100,12 +102,17 @@ function getPositionChangeData(workflowId) {
     workflowId: data[0],
     employeeName: data[5],
     empID: data[6],
-    effDate: data[7] ? Utilities.formatDate(new Date(data[7]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+    effDate: data[7] ? (data[7] instanceof Date ? Utilities.formatDate(new Date(data[7]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[7]) : '',
     siteName: data[8],
     changes: data[9],
+    siteTransfer: data[10],
+    titleChange: data[11],
+    classChange: data[12],
+    managerChange: data[13],
     systems: data[17],
     equipment: data[18],
-    requesterEmail: data[4]
+    requesterEmail: data[4],
+    comments: data[20]
   };
 }
 

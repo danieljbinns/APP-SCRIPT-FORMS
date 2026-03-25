@@ -32,6 +32,9 @@ var AccessControlService = (function() {
   function isGroupMember(userEmail, groupEmail) {
     if (!userEmail || !groupEmail) return false;
     
+    // Support for individual specialist emails (non-groups)
+    if (userEmail.toLowerCase() === groupEmail.toLowerCase()) return true;
+    
     try {
       var hasMember = AdminDirectory.Members.hasMember(groupEmail, userEmail);
       return hasMember.isMember;

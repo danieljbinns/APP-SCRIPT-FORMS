@@ -36,7 +36,7 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
         }
 
         .card {
@@ -313,9 +313,24 @@
                         <?= context.employeeName ?>
                     </span></div>
                 <? } ?>
+                <? if (context.jobTitle) { ?>
+                <div class="info-row"><span class="label">Job Title</span><span class="value">
+                        <?= context.jobTitle ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.jrTitle) { ?>
+                <div class="info-row"><span class="label">JR Title</span><span class="value">
+                        <?= context.jrTitle ?>
+                    </span></div>
+                <? } ?>
                 <? if (context.hireDate) { ?>
                 <div class="info-row"><span class="label">Effective Date</span><span class="value">
                         <?= context.hireDate ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.siteName) { ?>
+                <div class="info-row"><span class="label">Site</span><span class="value">
+                        <?= context.siteName ?>
                     </span></div>
                 <? } ?>
                 <? if (context.managerName) { ?>
@@ -328,9 +343,16 @@
                         <?= context.reason ?>
                     </span></div>
                 <? } ?>
-                <? if (context.siteName) { ?>
-                <div class="info-row"><span class="label">Site Name</span><span class="value">
-                        <?= context.siteName ?>
+                <? if (context.systems && context.systems.length > 0) { ?>
+                <div class="info-row" style="grid-column: span 2;"><span class="label">All Requested Systems</span><span
+                        class="value">
+                        <?= Array.isArray(context.systems) ? context.systems.join(', ') : context.systems ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.equipmentRaw) { ?>
+                <div class="info-row" style="grid-column: span 2;"><span class="label">Full Equipment Request</span><span
+                        class="value">
+                        <?= context.equipmentRaw ?>
                     </span></div>
                 <? } ?>
                 <? if (context.requesterEmail) { ?>

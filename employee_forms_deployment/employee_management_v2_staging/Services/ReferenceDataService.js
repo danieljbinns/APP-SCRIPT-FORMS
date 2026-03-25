@@ -183,7 +183,8 @@ function getInitialFormData() {
     sites: getSitesList(),
     committees: getBossJobSitesList(),
     jobs: getBossCostSheetsList(), // Using Column E for Jonas/BOSS sub-fields
-    jrs: getJRsList()
+    jrs: getJRsList(),
+    jobNumbers: getJobNumbersList() // Column D
   };
 }
 

@@ -3,7 +3,9 @@
  */
 
 function serveInitialRequest() {
-  return HtmlService.createHtmlOutputFromFile('InitialRequest')
+  const template = HtmlService.createTemplateFromFile('InitialRequest');
+  template.referenceData = JSON.stringify(getInitialFormData());
+  return template.evaluate()
     .setTitle('New Employee Request')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -149,26 +151,4 @@ function formatInitialRequestData(data) {
  * Get current user's details for auto-populating requester fields
  * @returns {Object} {email, name}
  */
-function getCurrentUserDetails() {
-  try {
-    const email = Session.getActiveUser().getEmail();
-    let name = '';
-    
-    // Try to get name from Directory API
-    try {
-      const user = AdminDirectory.Users.get(email);
-      name = user.name.fullName;
-    } catch (e) {
-      // Fallback if Directory API fails or user not found
-      Logger.log('Could not fetch user name from directory: ' + e.toString());
-    }
-    
-    return {
-      email: email,
-      name: name
-    };
-  } catch (error) {
-    Logger.log('Error getting current user details: ' + error.toString());
-    return { email: '', name: '' };
-  }
-}
+

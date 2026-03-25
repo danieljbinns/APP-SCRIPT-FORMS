@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Change Field Planner</title>
+    <!-- Include SortableJS for drag and drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .column {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .column-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .count-badge {
+            background-color: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .field-list {
+            padding: 15px;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .field-item {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: grab;
+            transition: border-color 0.2s;
+        }
+
+        .field-item:hover {
+            border-color: var(--primary);
+        }
+
+        .field-item:active {
+            cursor: grabbing;
+        }
+
+        .field-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .field-name {
+            font-weight: 500;
+        }
+
+        .field-type {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .field-note {
+            font-size: 0.75rem;
+            color: var(--success);
+            font-style: italic;
+        }
+
+        .field-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover {
+            background-color: var(--surface-hover);
+            color: var(--text);
+        }
+
+        .action-btn.delete:hover {
+            color: var(--danger);
+        }
+
+        /* Sortable JS classes */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: var(--surface-hover) !important;
+        }
+
+        .sortable-drag {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+            cursor: grabbing !important;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background-color: var(--surface);
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+            border: 1px solid var(--border);
+            transform: translateY(20px);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .modal-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .form-group input,
+        .form-group select {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        #exportResult {
+            width: 100%;
+            height: 200px;
+            background-color: var(--bg-color);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: monospace;
+            resize: vertical;
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div>
+            <h1>Status Change Field Planner</h1>
+            <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.9rem;">Plan the fields needed for each
+                type of status change form.</p>
+        </div>
+        <div class="controls">
+            <button onclick="openFieldModal()">+ New Field</button>
+            <button onclick="exportConfig()" style="background-color: var(--success);">Export Config</button>
+        </div>
+    </header>
+    <textarea id="exportResult" readonly></textarea>
+    <div class="main-container">
+        <div class="column">
+            <div class="column-header">
+                <span>Available Fields</span>
+                <span class="count-badge" id="count-available">0</span>
+            </div>
+            <div class="field-list" id="list-available"></div>
+        </div>
+        <div class="column">
+            <div class="column-header">
+                <span>Position / Title Change</span>
+                <span class="count-badge" id="count-position">0</span>
+            </div>
+            <div class="field-list" id="list-position"></div>
+        </div>
+        <div class="column">
+            <div class="column-header">
+                <span>Location Change</span>
+                <span class="count-badge" id="count-location">0</span>
+            </div>
+            <div class="field-list" id="list-location"></div>
+        </div>
+        <div class="column">
+            <div class="column-header">
+                <span>End of Employment</span>
+                <span class="count-badge" id="count-termination">0</span>
+            </div>
+            <div class="field-list" id="list-termination"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="fieldModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Field</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="fieldId">
+                <div class="form-group">
+                    <label>Field Name</label>
+                    <input type="text" id="fieldName" placeholder="e.g. New Manager Name">
+                </div>
+                <div class="form-group">
+                    <label>Field Type</label>
+                    <select id="fieldType">
+                        <option value="Text Input">Text Input</option>
+                        <option value="Long Text">Long Text (Paragraph)</option>
+                        <option value="Dropdown">Dropdown (Select)</option>
+                        <option value="Checkbox">Checkbox</option>
+                        <option value="Radio">Radio Buttons</option>
+                        <option value="Date">Date Picker</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Note / Comment</label>
+                    <input type="text" id="fieldNote" placeholder="e.g. Only if applicable">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button style="background: transparent; border: 1px solid var(--border); color: var(--text);"
+                    onclick="closeModal()">Cancel</button>
+                <button onclick="saveField()">Save Field</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let fieldIdCounter = 1;
+
+        function createFieldObj(name, type, note = '') {
+            return { id: 'field_' + (fieldIdCounter++), name, type, note };
+        }
+
+        const baseFields = [
+            createFieldObj('Requester Name', 'Text Input'),
+            createFieldObj('Effective Date', 'Date'),
+            createFieldObj('Employee Name', 'Text Input'),
+            createFieldObj('System Access Needed?', 'Radio', 'Yes/No'),
+            createFieldObj('Add Systems', 'Checkbox', 'Checklist'),
+            createFieldObj('Remove Systems', 'Checkbox', 'Checklist'),
+            createFieldObj('Equipment Needed?', 'Radio', 'Yes/No'),
+            createFieldObj('New Job Title', 'Text Input'),
+            createFieldObj('New Manager', 'Text Input'),
+            createFieldObj('Reassign Direct Reports To', 'Text Input'),
+            createFieldObj('Return Equipment Checklist', 'Checkbox')
+        ];
+
+        const initialLists = {
+            'list-available': baseFields,
+            'list-position': [
+                createFieldObj('Requester Name', 'Text Input'),
+                createFieldObj('Effective Date', 'Date'),
+                createFieldObj('Employee Name', 'Text Input'),
+                createFieldObj('New Job Title', 'Text Input', 'If changing'),
+                createFieldObj('New Manager', 'Text Input', 'If changing'),
+                createFieldObj('Reassign Direct Reports To', 'Text Input', 'If manager changes'),
+                createFieldObj('System Access Needed?', 'Radio', 'Yes/No for additions'),
+                createFieldObj('Equipment Needed?', 'Radio', 'Yes/No for new equipment')
+            ],
+            'list-location': [
+                createFieldObj('Requester Name', 'Text Input'),
+                createFieldObj('Effective Date', 'Date'),
+                createFieldObj('Employee Name', 'Text Input'),
+                createFieldObj('New Site/Location', 'Dropdown'),
+                createFieldObj('System Access Needed?', 'Radio', 'Yes/No for site-specific apps')
+            ],
+            'list-termination': [
+                createFieldObj('Requester Name', 'Text Input'),
+                createFieldObj('Effective Date', 'Date'),
+                createFieldObj('Employee Name', 'Text Input'),
+                createFieldObj('Reassign Direct Reports To', 'Text Input', 'Required if manager'),
+                createFieldObj('Deactivate All Systems', 'Checkbox'),
+                createFieldObj('Return Equipment Checklist', 'Checkbox')
+            ]
+        };
+
+        function renderField(field, listId) {
+            const list = document.getElementById(listId);
+            const div = document.createElement('div');
+            div.className = 'field-item';
+            div.dataset.id = field.id;
+            div.dataset.name = field.name;
+            div.dataset.type = field.type;
+            div.dataset.note = field.note || '';
+
+            const noteHtml = field.note ? `<span class="field-note">Note: ${field.note}</span>` : '';
+
+            div.innerHTML = `
+                <div class="field-info">
+                    <span class="field-name">${field.name}</span>
+                    <span class="field-type">${field.type}</span>
+                    ${noteHtml}
+                </div>
+                <div class="field-actions">
+                    <button class="action-btn" onclick="editField('${field.id}')" title="Edit">✎</button>
+                    <button class="action-btn delete" onclick="deleteField(this)" title="Delete">✕</button>
+                </div>
+            `;
+            list.appendChild(div);
+        }
+
+        function init() {
+            Object.keys(initialLists).forEach(listId => {
+                initialLists[listId].forEach(f => renderField(f, listId));
+
+                new Sortable(document.getElementById(listId), {
+                    group: { name: 'shared', pull: listId === 'list-available' ? 'clone' : true, put: true },
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    onEnd: function (evt) { updateCounts(); }
+                });
+            });
+            updateCounts();
+        }
+
+        function updateCounts() {
+            ['list-available', 'list-position', 'list-location', 'list-termination'].forEach(id => {
+                document.getElementById('count-' + id.split('-')[1]).innerText = document.getElementById(id).children.length;
+            });
+        }
+
+        function openFieldModal(id = null) {
+            const modal = document.getElementById('fieldModal');
+            document.getElementById('modalTitle').innerText = id ? 'Edit Field' : 'Add New Field';
+
+            if (id) {
+                const el = document.querySelector(`[data-id="${id}"]`);
+                document.getElementById('fieldId').value = id;
+                document.getElementById('fieldName').value = el.dataset.name;
+                document.getElementById('fieldType').value = el.dataset.type;
+                document.getElementById('fieldNote').value = el.dataset.note || '';
+            } else {
+                document.getElementById('fieldId').value = '';
+                document.getElementById('fieldName').value = '';
+                document.getElementById('fieldType').value = 'Text Input';
+                document.getElementById('fieldNote').value = '';
+            }
+            modal.classList.add('active');
+            document.getElementById('fieldName').focus();
+        }
+
+        function closeModal() { document.getElementById('fieldModal').classList.remove('active'); }
+
+        window.editField = function (id) { openFieldModal(id); }
+
+        window.deleteField = function (btn) {
+            if (confirm('Remove this field?')) {
+                btn.closest('.field-item').remove();
+                updateCounts();
+            }
+        }
+
+        function saveField() {
+            const id = document.getElementById('fieldId').value;
+            const name = document.getElementById('fieldName').value.trim();
+            const type = document.getElementById('fieldType').value;
+            const note = document.getElementById('fieldNote').value.trim();
+
+            if (!name) return alert('Name is required');
+
+            if (id) {
+                const el = document.querySelector(`[data-id="${id}"]`);
+                el.dataset.name = name;
+                el.dataset.type = type;
+                el.dataset.note = note;
+                const noteHtml = note ? `<span class="field-note">Note: ${note}</span>` : '';
+                el.querySelector('.field-info').innerHTML = `<span class="field-name">${name}</span><span class="field-type">${type}</span>${noteHtml}`;
+            } else {
+                renderField(createFieldObj(name, type, note), 'list-available');
+            }
+            closeModal();
+            updateCounts();
+        }
+
+        function exportConfig() {
+            const config = {};
+            ['list-position', 'list-location', 'list-termination'].forEach(id => {
+                const arr = [];
+                Array.from(document.getElementById(id).children).forEach(el => {
+                    arr.push({ name: el.dataset.name, type: el.dataset.type, note: el.dataset.note });
+                });
+                config[id.replace('list-', '')] = arr;
+            });
+            const res = document.getElementById('exportResult');
+            res.style.display = 'block';
+            res.value = JSON.stringify(config, null, 2);
+            res.select();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

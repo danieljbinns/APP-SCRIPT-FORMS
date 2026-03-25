@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Onboarding Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --border-color: #333;
+            --success: #00c853;
+            --warning: #ffab00;
+            --info: #2196f3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            height: 40px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input.search-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            width: 300px;
+        }
+
+        button.refresh-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button.refresh-btn:hover {
+            background: #333;
+        }
+
+        button.action-btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button.bump-btn {
+            background: var(--info);
+            color: white;
+        }
+
+        button.cancel-btn {
+            background: #d32f2f;
+            color: white;
+        }
+
+        /* Table */
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 15px;
+            background: #252525;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: #222;
+            cursor: pointer;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge.in-progress {
+            background: rgba(255, 171, 0, 0.2);
+            color: var(--warning);
+        }
+
+        .badge.completed {
+            background: rgba(0, 200, 83, 0.2);
+            color: var(--success);
+        }
+
+        .badge.pending {
+            background: rgba(255, 171, 0, 0.2);
+            color: var(--warning);
+        }
+
+        .badge.cancelled {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        a.action-link {
+            color: var(--brand-red);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            width: 1000px;
+            max-width: 95vw;
+            max-height: 90vh;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .detail-item label {
+            color: var(--text-muted);
+            font-size: 12px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .detail-item div {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .section-header {
+            color: var(--brand-red);
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+                    class="logo">
+                <h1>
+                    <?= environment === 'PROD' ? '' : environment + ' - ' ?>Onboarding Dashboard
+                </h1>
+            </div>
+            <div
+                style="font-size: 11px; color: var(--warning); border: 1px solid var(--warning); padding: 5px; border-radius: 4px; margin-right: auto; margin-left: 20px;">
+                <strong>Source:</strong>
+                <?= spreadsheetId ?>
+            </div>
+            <div>
+                <a href="<?= getBaseUrl() ?>?form=workflow_map" class="action-link"
+                    style="margin-right: 15px; color: #fff; background: #333; padding: 10px 15px; border-radius: 6px; text-decoration: none;">View
+                    Process Map</a>
+                <a href="<?= getBaseUrl() ?>?form=initial_request" class="action-link"
+                    style="background: var(--brand-red); color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none;">+
+                    New Request</a>
+            </div>
+        </header>
+
+        <div class="controls">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search employee, requester...">
+            <button class="refresh-btn" onclick="loadData()">Refresh</button>
+        </div>
+
+        <div class="table-container">
+            <table id="workflowTable">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Status</th>
+                        <th>Current Action Pending</th>
+                        <th>Requester</th>
+                        <th>Date Requested</th>
+                        <th>Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="6" style="text-align:center; padding: 40px;">Loading requests...</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="paginationControls"
+                style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#252525; border-top:1px solid var(--border-color);">
+                <div id="pageInfo" style="color:var(--text-muted); font-size:14px;">Showing 0 to 0 of 0 entries</div>
+                <div style="display:flex; gap:10px;">
+                    <button id="btnPrevPage" class="action-btn"
+                        style="background:#444; color:white; padding:6px 12px; font-weight:normal;"
+                        onclick="changePage(-1)" disabled>Previous</button>
+                    <button id="btnNextPage" class="action-btn"
+                        style="background:#444; color:white; padding:6px 12px; font-weight:normal;"
+                        onclick="changePage(1)" disabled>Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="detailsModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Request Details</h2>
+                <button onclick="closeModal()"
+                    style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body" id="modalContent">
+                <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+                    <div style="font-size: 24px;">⌛</div>
+                    <div style="margin-top: 10px;">Loading full timeline...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="action-btn" style="background:var(--info); color:white; margin-right:auto;"
+                    onclick="openFullPage()">View Full Data Page &rarr;</button>
+                <button id="btnCancel" class="action-btn cancel-btn" onclick="cancelCurrentRequest()">Cancel Entire
+                    Request</button>
+                <button class="action-btn" style="background:#555; color:white;" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use server-injected Base URL
+        var SERVER_BASE_URL = "<?= baseUrl ?>";
+
+        // Set dynamic URLs on load
+        window.onload = function () {
+            // var headerBtn = document.getElementById('headerFullScreenBtn');
+            // if (headerBtn) headerBtn.href = SERVER_BASE_URL + '?form=dashboard';
+        };
+
+        document.addEventListener('DOMContentLoaded', loadData);
+        let allWorkflows = [];
+        let filteredWorkflows = []; // For search + pagination combo
+        let currentWorkflowId = null;
+
+        // Pagination State
+        const ITEMS_PER_PAGE = 25;
+        let currentPage = 1;
+
+        function loadData() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
+            google.script.run.withSuccessHandler(displayData).withFailureHandler(showError).getDashboardData();
+        }
+
+        function displayData(responseStr) {
+            let response = null;
+            try {
+                response = typeof responseStr === 'string' ? JSON.parse(responseStr) : responseStr;
+            } catch (e) {
+                showError('Data parsing error: ' + e.message);
+                return;
+            }
+            if (!response || !response.success) {
+                showError(response ? response.message : 'No data');
+                return;
+            }
+            allWorkflows = response.workflows;
+            filteredWorkflows = [...allWorkflows]; // Initialize
+            currentPage = 1; // Reset to page 1 on fresh load
+            renderTable();
+        }
+
+        // Helper to safely format dates
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr; // Return original if parse fails
+            return d.toLocaleDateString();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+
+            // Calculate Pagination
+            const totalItems = filteredWorkflows.length;
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+
+            // Boundary checks
+            if (currentPage < 1) currentPage = 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+
+            const currentData = filteredWorkflows.slice(startIndex, endIndex);
+
+            if (currentData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
+                updatePaginationUI(0, 0, 0);
+                return;
+            }
+
+            let html = '';
+            currentData.forEach(wf => {
+                const statusClass = wf.status === 'Completed' ? 'completed' :
+                    (wf.status === 'Cancelled' ? 'cancelled' :
+                        (wf.status === 'Pending' ? 'pending' : 'in-progress'));
+
+                const typeBadge = wf.type === 'Termination' ?
+                    '<span style="background:var(--brand-red); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">TERM</span>' : '';
+
+                html += '<tr onclick="openDetails(\'' + wf.id + '\', \'' + wf.type + '\')">' +
+                    '<td>' + typeBadge + '<strong>' + (wf.employee || 'Pending Name') + '</strong></td>' +
+                    '<td><span class="badge ' + statusClass + '">' + wf.status + '</span></td>' +
+                    '<td style="color: ' + (wf.step.includes('Pending:') ? '#ffab00' : '#a0a0a0') + '">' + wf.step + '</td>' +
+                    '<td>' +
+                    '<div>' + wf.requesterName + '</div>' +
+                    '<div style="font-size: 11px; color:#666;">' + wf.initiator + '</div>' +
+                    '</td>' +
+                    '<td>' + wf.dateRequested + '</td>' +
+                    '<td>' + wf.lastUpdated + '</td>' +
+                    '</tr>';
+            });
+            tbody.innerHTML = html;
+
+            // Update Page Status
+            updatePaginationUI(startIndex + 1, endIndex, totalItems);
+        }
+
+        function updatePaginationUI(start, end, total) {
+            const info = document.getElementById('pageInfo');
+            const btnPrev = document.getElementById('btnPrevPage');
+            const btnNext = document.getElementById('btnNextPage');
+
+            if (total === 0) {
+                info.innerText = 'Showing 0 to 0 of 0 entries';
+                btnPrev.disabled = true;
+                btnNext.disabled = true;
+                return;
+            }
+
+            info.innerText = `Showing ${start} to ${end} of ${total} entries`;
+
+            const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+            btnPrev.disabled = currentPage === 1;
+            btnNext.disabled = currentPage === totalPages || totalPages === 0;
+
+            btnPrev.style.opacity = btnPrev.disabled ? "0.5" : "1";
+            btnNext.style.opacity = btnNext.disabled ? "0.5" : "1";
+            btnPrev.style.cursor = btnPrev.disabled ? "default" : "pointer";
+            btnNext.style.cursor = btnNext.disabled ? "default" : "pointer";
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            renderTable();
+        }
+
+        function showError(msg) {
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
+        }
+
+        // Search
+        document.getElementById('searchInput').addEventListener('input', function (e) {
+            const term = e.target.value.toLowerCase();
+            filteredWorkflows = allWorkflows.filter(wf =>
+                (wf.employee && wf.employee.toLowerCase().includes(term)) ||
+                (wf.requesterName && wf.requesterName.toLowerCase().includes(term)) ||
+                (wf.initiator && wf.initiator.toLowerCase().includes(term)) ||
+                (wf.id && wf.id.toLowerCase().includes(term))
+            );
+            currentPage = 1; // Reset to page 1 on search
+            renderTable();
+        });
+
+        // Modal Functions
+        function openDetails(id, type) {
+            currentWorkflowId = id;
+            document.getElementById('detailsModal').style.display = 'flex';
+            document.getElementById('modalTitle').innerText = (type === 'Termination' ? 'Termination Details: ' : 'Request Details: ') + id;
+
+            // Show loading state first
+            document.getElementById('modalContent').innerHTML =
+                '<div style="text-align: center; color: var(--text-muted); padding: 40px;">' +
+                '<div style="font-size: 24px;">⌛</div>' +
+                '<div style="margin-top: 10px;">Fetching detailed status...</div>' +
+                '</div>';
+
+            // Request full details from backend
+            if (type === 'Termination') {
+                google.script.run
+                    .withSuccessHandler(renderModalDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('modalContent').innerHTML = '<div style="color:red; padding:20px;">Error loading details: ' + err.message + '</div>';
+                    })
+                    .getTerminationDetails(id);
+            } else {
+                google.script.run
+                    .withSuccessHandler(renderModalDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('modalContent').innerHTML = '<div style="color:red; padding:20px;">Error loading details: ' + err.message + '</div>';
+                    })
+                    .getRequestDetails(id);
+            }
+        }
+
+        function renderModalDetails(details) {
+            if (!details || !details.success) {
+                const msg = details ? details.message : 'Unknown error (null response)';
+                document.getElementById('modalContent').innerHTML = '<div style="color:red; padding:20px;">Error: ' + msg + '</div>';
+                return;
+            }
+
+            const r = details.requestData || {};
+            const checklist = details.checklist || [];
+
+            // --- Stepper Logic ---
+            const isTermination = checklist.some(c => c.name === 'Termination Request');
+            let stepperHtml = '';
+
+            if (!isTermination) {
+                // Define standard steps order
+                const steps = ["Initial Request", "ID Setup", "HR Verification", "IT Setup"];
+                // See if we have specialists
+                const hasSpecialists = checklist.some(c => !steps.includes(c.name));
+                if (hasSpecialists) steps.push("Specialists");
+
+                // Calculate active step
+                let activeIndex = -1;
+
+                // Map checklist items to standard steps logic
+                const statusMap = {};
+                checklist.forEach(c => {
+                    let key = c.name;
+                    if (key.includes("Jonas") || key.includes("Credit") || key.includes("Fleet") || key.includes("SiteDocs")) key = "Specialists";
+                    if (!statusMap[key]) statusMap[key] = c.status;
+                    // If any specialist is pending, the whole blocks is pending
+                    if (key === "Specialists" && c.status !== "Complete") statusMap[key] = "Pending";
+                });
+
+                stepperHtml = '<div style="display:flex; justify-content:space-between; margin-bottom: 30px; position:relative;">';
+
+                // Background line
+                stepperHtml += '<div style="position:absolute; top:12px; left:0; right:0; height:2px; background:#333; z-index:0;"></div>';
+
+                steps.forEach((step, idx) => {
+                    let status = statusMap[step] || 'Pending';
+                    // If previous is pending, this is likely pending too.
+                    // Status mapping from checklist names to stepper names
+                    if (step === "Specialists" && statusMap["Specialists"]) status = statusMap["Specialists"];
+
+                    // Color logic
+                    let color = '#333'; // Default
+                    let textColor = '#666';
+                    if (status === 'Complete') { color = 'var(--success)'; textColor = '#fff'; }
+                    else if (status === 'Pending' && (idx === 0 || statusMap[steps[idx - 1]] === 'Complete')) { color = 'var(--warning)'; textColor = '#fff'; } // Active
+
+                    stepperHtml +=
+                        '<div style="z-index:1; text-align:center; background:var(--card-bg); padding:0 10px;">' +
+                        '<div style="width:24px; height:24px; background:' + color + '; border-radius:50%; margin:0 auto 5px; line-height:24px; font-size:12px; font-weight:bold; color:black;">' + (idx + 1) + '</div>' +
+                        '<div style="font-size:12px; color:' + textColor + '; font-weight:500;">' + step + '</div>' +
+                        '</div>';
+                });
+                stepperHtml += '</div>';
+            }
+
+
+
+            var html = stepperHtml +
+                '<div class="detail-grid">' +
+                '<div class="detail-item"><label>Employee Name</label><div>' + (r['First Name'] || '') + ' ' + (r['Last Name'] || '') + '</div></div>' +
+                '<div class="detail-item"><label>Job Title</label><div>' + (r['Position/JR Title'] || r['Position Title'] || r['Job Title'] || r['Position'] || '-') + '</div></div>' +
+                '<div class="detail-item"><label>Site</label><div>' + (r['Site/Office Location'] || r['Site Name'] || r['Site'] || r['Location'] || '-') + '</div></div>' +
+                '<div class="detail-item"><label>Start Date</label><div>' + formatDate(r['Hire/Start Date'] || r['Hire Date'] || r['Start Date']) + '</div></div>' +
+                '</div>' +
+                '<h3 class="section-header">Status</h3>' +
+                '<table style="width:100%; border-collapse: collapse; margin-top: 10px;">' +
+                '<thead>' +
+                '<tr style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-size: 13px;">' +
+                '<th style="padding: 10px; text-align: left;">Step / Form</th>' +
+                '<th style="padding: 10px; text-align: left;">Status</th>' +
+                '<th style="padding: 10px; text-align: left;">Completed By</th>' +
+                '<th style="padding: 10px; text-align: left;">Timestamp</th>' +
+                '<th style="padding: 10px; text-align: right;">Action</th>' +
+                '</tr>' +
+                '</thead>' +
+                '<tbody>';
+
+            if (checklist && checklist.length > 0) {
+                details.checklist.forEach(function (item) {
+                    var isComplete = item.status === 'Complete';
+                    var isPending = item.status === 'Pending';
+                    var isNA = item.status === 'N/A' || item.status === 'Skipped';
+
+                    var statusColor = isComplete ? 'var(--success)' : (isPending ? 'var(--warning)' : (isNA ? '#666' : 'var(--warning)'));
+                    var statusIcon = isComplete ? '&#10003;' : (isNA ? '&empty;' : '&#8987;');
+                    var badge = '<span style="display:inline-flex; align-items:center; gap:5px; color:' + statusColor + '; font-weight:600;">' + statusIcon + ' ' + item.status + '</span>';
+
+                    var actionBtn = '-';
+
+                    if (!isComplete && !isNA && item.target) {
+                        actionBtn = '<button class="action-btn" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
+                    } else if (isComplete && item.target) {
+                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openFullPage()">View</button>';
+                    } else if (isComplete && item.name === 'Initial Request') {
+                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openFullPage()">View</button>';
+                    }
+
+                    // Append Admin Testing Links
+                    if (details.isAdmin && item.target && !isNA) {
+                        actionBtn += '&nbsp;<button class="action-btn" style="background:var(--brand-red); color:white; font-size: 11px; padding: 4px 10px;" onclick="openAdminForm(\'' + item.target + '\', \'' + details.id + '\')">Open Form</button>';
+                    }
+
+                    html +=
+                        '<tr style="border-bottom: 1px solid #333; background-color: ' + (item.status === 'Cancelled' ? '#ffffff; color: #000' : 'transparent') + '">' +
+                        '<td style="padding: 12px 10px;">' + item.name + '</td>' +
+                        '<td style="padding: 12px 10px;">' + badge + '</td>' +
+                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#ccc') + ';">' + (item.by || '-') + '</td>' +
+                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#888') + ';">' + (item.time === 'undefined' ? '-' : item.time) + '</td>' +
+                        '<td style="padding: 12px 10px; text-align: right;">' + actionBtn + '</td>' +
+                        '</tr>';
+                });
+            } else {
+                html += '<tr><td colspan="5" style="padding:20px; text-align:center; color:#888;">No step history available.</td></tr>';
+            }
+
+            html +=
+                '</tbody>' +
+                '</table>';
+
+
+
+            document.getElementById('modalContent').innerHTML = html;
+        }
+
+        function openAdminForm(target, id) {
+            let formName = target;
+            let query = '?wf=' + id;
+
+            // Map simple targets to form route names
+            if (target === 'id_setup') formName = 'id_setup';
+            if (target === 'hr_verification') formName = 'hr_verification';
+            if (target === 'it_setup') formName = 'it_setup';
+            if (['jonas', 'creditcard', 'fleetio', 'businesscards', 'sitedocs', 'review'].includes(target)) {
+                formName = 'specialist';
+                query += '&dept=' + target;
+            }
+
+            const url = SERVER_BASE_URL + '?form=' + formName + '&' + query.replace('?', '');
+            window.open(url, '_blank');
+        }
+
+        function closeModal() {
+            document.getElementById('detailsModal').style.display = 'none';
+            currentWorkflowId = null;
+        }
+
+        // Close modal when clicking outside of it
+        document.getElementById('detailsModal').addEventListener('click', function (event) {
+            if (event.target === this) {
+                closeModal();
+            }
+        });
+
+        // Close modal on Escape key press
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('detailsModal');
+                if (modal.style.display === 'flex') {
+                    closeModal();
+                }
+            }
+        });
+
+        function openFullPage() {
+            if (currentWorkflowId) {
+                window.open('<?= getBaseUrl() ?>?form=request_details&id=' + currentWorkflowId, '_blank');
+            }
+        }
+
+        function bumpSpecific(target) {
+            if (!confirm('Send a reminder email for this specific step?')) return;
+
+            // Find the button to show loading
+            // Simpler just to show global loading for MVP or toast
+            // google.script.run...
+
+            google.script.run
+                .withSuccessHandler(res => {
+                    alert(res.message);
+                })
+                .bumpRequest(currentWorkflowId, target);
+        }
+
+        function cancelCurrentRequest() {
+            if (!confirm('Are you sure you want to CANCEL this request? This cannot be undone.')) return;
+
+            const btn = document.getElementById('btnCancel');
+            btn.innerText = 'Cancelling...';
+            btn.disabled = true;
+
+            google.script.run
+                .withSuccessHandler(res => {
+                    alert(res.message);
+                    btn.innerText = 'Cancel Request';
+                    btn.disabled = false;
+                    closeModal();
+                    loadData(); // Refresh list
+                })
+                .cancelRequest(currentWorkflowId);
+        }
+    </script>
+</body>
+
+</html>
+```

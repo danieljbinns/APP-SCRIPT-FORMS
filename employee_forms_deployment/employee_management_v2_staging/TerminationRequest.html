@@ -246,7 +246,22 @@
             content: "✓ ";
             font-weight: bold;
         }
-    </style>
+    input[type="date"] {
+      position: relative;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      height: auto;
+      color: transparent;
+      background: transparent;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
@@ -264,11 +279,11 @@
                 <div class="form-row">
                     <div class="form-field">
                         <label>Requester Email <span class="required">*</span></label>
-                        <input type="email" name="reqEmail" id="reqEmail" required>
+                        <input type="email" name="reqEmail" id="reqEmail" required readonly placeholder="Auto-filling details...">
                     </div>
                     <div class="form-field">
                         <label>Requester Name <span class="required">*</span></label>
-                        <input type="text" name="reqName" required>
+                        <input type="text" name="reqName" id="reqName" required readonly placeholder="Auto-filling details...">
                     </div>
                 </div>
 
@@ -319,12 +334,12 @@
                 </div>
                 <div class="form-row">
                     <div class="form-field">
-                        <label>Manager Name <span class="required">*</span></label>
-                        <input type="text" name="managerName" placeholder="Direct Manager's Name" required>
+                        <label>Manager Email <span class="required">*</span></label>
+                        <input type="email" name="managerEmail" id="managerEmail" placeholder="manager@team-group.com" required>
                     </div>
                     <div class="form-field">
-                        <label>Manager Email <span class="required">*</span></label>
-                        <input type="email" name="managerEmail" placeholder="manager@team-group.com" required>
+                        <label>Manager Name <span class="required">*</span></label>
+                        <input type="text" name="managerName" id="managerName" placeholder="Auto-fills on selection" required readonly>
                     </div>
                 </div>
                 <div class="form-row">
@@ -349,7 +364,7 @@
                 <div class="form-row">
                     <div class="form-field">
                         <label>Effective Date of Termination <span class="required">*</span></label>
-                        <input type="date" name="termDate" required onclick="this.showPicker()">
+                        <input type="date" name="termDate" required>
                     </div>
                     <div class="form-field">
                         <label>Reason for Leaving <span class="required">*</span></label>
@@ -385,7 +400,9 @@
                     </div>
                     <div id="reports_logic" class="logic-section">
                         <label>Who will these reports report to? <span class="required">*</span></label>
-                        <input type="text" name="reports_to_new" placeholder="Enter name or email of new manager">
+                        <input type="text" name="reports_to_new" id="reports_to_new" placeholder="Start typing name or email..." 
+                            pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                        <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
                     </div>
                 </div>
 
@@ -435,20 +452,26 @@
                     <div class="form-row">
                         <div class="form-field">
                             <label>Email Forwarding To</label>
-                            <input type="text" id="google_forward" name="google_forward"
-                                placeholder="Enter recipient email" onchange="updateVacationResponder(this.value)">
+                            <input type="email" id="google_forward" name="google_forward"
+                                placeholder="Start typing name or email..." onchange="updateVacationResponder(this.value)"
+                                pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                            <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
                             <div class="help-text">Who should emails be forwarded to?</div>
                         </div>
                         <div class="form-field">
                             <label>Transfer Drive Files To</label>
-                            <input type="text" name="google_files" placeholder="Enter recipient email">
+                            <input type="email" id="google_files" name="google_files" placeholder="Start typing name or email..."
+                                pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                            <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
                             <div class="help-text">Who gets access to their Google Drive files?</div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-field">
                             <label>Delegated Inbox Access To</label>
-                            <input type="text" name="google_delegate">
+                            <input type="email" id="google_delegate" name="google_delegate" placeholder="Start typing name or email..."
+                                pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                            <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
                         </div>
                         <div class="form-field">
                             <label>Keep Account Active For</label>
@@ -546,6 +569,9 @@
                 textarea.value = `Please be advised I am no longer with the company. Please contact [RECIPIENT] for assistance.`;
             }
         }
+    </script>
+    <?!= include('DirectoryAutocomplete') ?>
+        <script>
 
         // Form Submission Logic
         document.getElementById('terminationForm').addEventListener('submit', function (e) {
@@ -582,19 +608,47 @@
                 .submitTerminationRequest(this);
         });
 
-        // Dynamic Populators
-        google.script.run.withSuccessHandler(function (data) {
-            const siteSelect = document.getElementById('siteName');
-            data.sites.forEach(site => {
-                const opt = document.createElement('option');
-                opt.value = site; opt.textContent = site;
-                siteSelect.appendChild(opt);
-            });
-        }).getInitialFormData();
+        // Setup Autocomplete for multiple fields
+        DirectoryAutocomplete.setup({ inputSelector: '#managerEmail', nameInputSelector: '#managerName' });
+        DirectoryAutocomplete.setup({ inputSelector: '#reports_to_new' });
+        DirectoryAutocomplete.setup({ inputSelector: '#google_forward' });
+        DirectoryAutocomplete.setup({ inputSelector: '#google_files' });
+        DirectoryAutocomplete.setup({ inputSelector: '#google_delegate' });
 
-        google.script.run.withSuccessHandler(function (email) {
-            document.getElementById('reqEmail').value = email;
-        }).getCurrentUserEmail();
+        // Dynamic Populators
+        const populateFormDropdowns = function (data) {
+            const sites = document.querySelectorAll('#siteOld, #siteNew');
+            sites.forEach(s => data.sites.forEach(site => {
+                const opt = document.createElement('option'); opt.value = site; opt.textContent = site; s.appendChild(opt);
+            }));
+            const departments = document.querySelectorAll('#deptOld, #deptNew');
+            if (data.departments) {
+                departments.forEach(d => data.departments.forEach(dept => {
+                    const opt = document.createElement('option'); opt.value = dept; opt.textContent = dept; d.appendChild(opt);
+                }));
+            }
+        };
+
+        const INJECTED_REF_DATA = <?!= typeof referenceData !== 'undefined' ? referenceData : 'null' ?>;
+        if (INJECTED_REF_DATA) {
+            populateFormDropdowns(INJECTED_REF_DATA);
+        } else {
+            google.script.run.withSuccessHandler(populateFormDropdowns).getInitialFormData();
+        }
+
+        // 1. Current User Details
+        google.script.run.withSuccessHandler(function (user) {
+            if (user && user.email) {
+                document.getElementById('reqEmail').value = user.email;
+                document.getElementById('reqName').value = user.name || 'Unknown User';
+            }
+        }).getCurrentUserDetails();
+
+        // Initialize Autocomplete for multiple fields
+        DirectoryAutocomplete.setup({ inputSelector: '#reports_to_new' });
+        DirectoryAutocomplete.setup({ inputSelector: '#google_forward' });
+        DirectoryAutocomplete.setup({ inputSelector: '#google_files' });
+        DirectoryAutocomplete.setup({ inputSelector: '#google_delegate' });
 
         function resetForm() {
             google.script.run

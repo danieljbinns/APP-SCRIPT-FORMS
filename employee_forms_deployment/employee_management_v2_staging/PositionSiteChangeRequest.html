@@ -223,7 +223,22 @@
             font-size: 0.8rem;
             margin-top: 4px;
         }
-    </style>
+      input[type="date"] {
+      position: relative;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      height: auto;
+      color: transparent;
+      background: transparent;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
@@ -241,11 +256,11 @@
                 <div class="form-row">
                     <div class="form-field">
                         <label>Requester Email <span class="required">*</span></label>
-                        <input type="email" id="reqEmail" name="reqEmail" readonly style="background:#333;">
+                        <input type="email" id="reqEmail" name="reqEmail" readonly placeholder="Auto-filling details...">
                     </div>
                     <div class="form-field">
                         <label>Requester Name <span class="required">*</span></label>
-                        <input type="text" name="reqName" required>
+                        <input type="text" id="reqName" name="reqName" readonly placeholder="Auto-filling details...">
                     </div>
                     <div class="form-field">
                         <label>Date Requested</label>
@@ -332,10 +347,20 @@
                 <div id="mgr_sec" class="logic-section">
                     <h3>Reporting Manager Change</h3>
                     <div class="form-row">
-                        <div class="form-field"><label>Old Manager</label><input type="text" name="mgrOld"></div>
-                        <div class="form-field"><label>New Manager Name</label><input type="text" name="mgrNewName">
+                        <div class="form-field">
+                            <label>Old Manager Email</label>
+                            <input type="email" name="mgrOldEmail" id="mgrOldEmail" placeholder="Start typing name or email..." 
+                                pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                            <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
                         </div>
-                        <div class="form-field"><label>New Manager Email</label><input type="email" name="mgrNewEmail">
+                        <div class="form-field"><label>Old Manager Name</label><input type="text" name="mgrOldName" id="mgrOldName" placeholder="Auto-fills on selection" readonly></div>
+                        <div class="form-field">
+                            <label>New Manager Email</label>
+                            <input type="email" name="mgrNewEmail" id="mgrNewEmail" placeholder="Start typing name or email..." 
+                                pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                            <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
+                        </div>
+                        <div class="form-field"><label>New Manager Name</label><input type="text" name="mgrNewName" id="mgrNewName" placeholder="Auto-fills on selection" readonly>
                         </div>
                     </div>
                 </div>
@@ -353,7 +378,9 @@
                     </div>
                     <div id="reassign_logic" class="logic-section">
                         <label>Reassign PREVIOUS Reports To <span class="required">*</span></label>
-                        <input type="text" name="oldReportsTo">
+                        <input type="email" name="oldReportsTo" id="oldReportsTo" placeholder="Start typing name or email..."
+                            pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                        <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
                     </div>
                 </div>
 
@@ -367,7 +394,9 @@
                     </div>
                     <div id="gain_logic" class="logic-section">
                         <label>Who were these reports reporting to before? <span class="required">*</span></label>
-                        <input type="text" name="newReportsFrom">
+                        <input type="email" name="newReportsFrom" id="newReportsFrom" placeholder="Start typing name or email..."
+                            pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                        <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
                     </div>
                 </div>
 
@@ -384,7 +413,9 @@
                     </div>
                     <div id="google_email_sec" class="logic-section" style="border:none; padding:0;">
                         <label>Existing Email Address <span class="required">*</span></label>
-                        <input type="email" name="existingEmail">
+                        <input type="email" name="existingEmail" id="existingEmail" placeholder="Start typing name or email..."
+                            pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                        <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
                     </div>
                 </div>
 
@@ -608,6 +639,7 @@
         </div>
     </div>
 
+    <?!= include('DirectoryAutocomplete') ?>
     <script>
         function toggleSec(id, element) {
             const section = document.getElementById(id);
@@ -685,8 +717,21 @@
                 .submitPositionChangeRequest(formData);
         });
 
+        // Setup Autocomplete for multiple fields
+        DirectoryAutocomplete.setup({ 
+            inputSelector: '#mgrNewEmail',
+            nameInputSelector: '#mgrNewName'
+        });
+        DirectoryAutocomplete.setup({ 
+            inputSelector: '#mgrOldEmail',
+            nameInputSelector: '#mgrOldName'
+        });
+        DirectoryAutocomplete.setup({ inputSelector: '#oldReportsTo' });
+        DirectoryAutocomplete.setup({ inputSelector: '#newReportsFrom' });
+        DirectoryAutocomplete.setup({ inputSelector: '#existingEmail' });
+
         // Dynamic Populators
-        google.script.run.withSuccessHandler(function (data) {
+        const populateFormDropdowns = function (data) {
             const sites = document.querySelectorAll('.site-list, #siteName');
             sites.forEach(s => data.sites.forEach(site => {
                 const opt = document.createElement('option'); opt.value = site; opt.textContent = site; s.appendChild(opt);
@@ -702,11 +747,29 @@
             data.jrs.forEach(jr => {
                 const opt = document.createElement('option'); opt.value = jr; opt.textContent = jr; document.getElementById('jrTitle').appendChild(opt);
             });
-        }).getInitialFormData();
+        };
 
-        google.script.run.withSuccessHandler(function (email) {
-            document.getElementById('reqEmail').value = email;
-        }).getCurrentUserEmail();
+        const INJECTED_REF_DATA = <?!= typeof referenceData !== 'undefined' ? referenceData : 'null' ?>;
+        if (INJECTED_REF_DATA) {
+            populateFormDropdowns(INJECTED_REF_DATA);
+        } else {
+            google.script.run.withSuccessHandler(populateFormDropdowns).getInitialFormData();
+        }
+
+        // 1. Current User Details
+        google.script.run.withSuccessHandler(function (user) {
+            if (user && user.email) {
+                document.getElementById('reqEmail').value = user.email;
+                document.getElementById('reqName').value = user.name || 'Unknown User';
+            }
+        }).getCurrentUserDetails();
+
+        // Initialize Autocomplete for multiple fields
+        DirectoryAutocomplete.setup({ inputSelector: '#mgrNewEmail', nameInputSelector: '#mgrNewName' });
+        DirectoryAutocomplete.setup({ inputSelector: '#mgrOldEmail', nameInputSelector: '#mgrOldName' });
+        DirectoryAutocomplete.setup({ inputSelector: '#oldReportsTo' });
+        DirectoryAutocomplete.setup({ inputSelector: '#newReportsFrom' });
+        DirectoryAutocomplete.setup({ inputSelector: '#existingEmail' });
 
         function resetForm() {
             google.script.run

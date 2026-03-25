@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>System Demo Walkthrough</title>
+    <style>
+        /* DARK MODE BRAND THEME */
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --brand-red-hover: #c41522;
+            --border-color: #333;
+            --success: #00c853;
+            --warning: #ffab00;
+            --info: #2196f3;
+            --sidebar-width: 280px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .brand {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #000;
+        }
+
+        .brand img {
+            height: 30px;
+        }
+
+        .brand span {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #fff;
+        }
+
+        .nav-scroll {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .nav-group-title {
+            padding: 15px 20px 5px 20px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--brand-red);
+            /* Brand Red for headers */
+            font-weight: 700;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: rgba(235, 28, 45, 0.1);
+            /* Red tint */
+            color: white;
+            border-left-color: var(--brand-red);
+        }
+
+        /* MAIN CONTENT */
+        .main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-color);
+        }
+
+        /* IFRAME WRAPPER */
+        .iframe-container {
+            flex-grow: 1;
+            background: var(--bg-color);
+            /* Match background so no white flashes */
+            position: relative;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* FEEDBACK DRAWER */
+        .feedback-drawer {
+            height: 250px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--brand-red);
+            /* Red border to pop */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .feedback-header {
+            padding: 15px 25px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #111;
+        }
+
+        .feedback-content {
+            padding: 20px 25px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            /* Two columns for questions */
+            gap: 20px;
+        }
+
+        .question-box {
+            /* container needed for grid layout */
+        }
+
+        .question-box label {
+            display: block;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        textarea {
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            resize: none;
+            font-family: inherit;
+        }
+
+        textarea:focus {
+            outline: 1px solid var(--brand-red);
+            border-color: var(--brand-red);
+        }
+
+        .btn-primary {
+            background: var(--brand-red);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-primary:hover {
+            background: var(--brand-red-hover);
+        }
+
+        /* Icons via FontAwesome CDN */
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="brand">
+            <!-- Using the logo URL found in their forms -->
+            <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+                alt="Logo">
+            <span>V.Next Pilot</span>
+        </div>
+
+        <div class="nav-scroll">
+            <div class="nav-group-title">Core Operations (V2.1)</div>
+            <div class="nav-item active" onclick="loadDemo(this, 'preview_DashboardVNext.html', 'dashboard')">
+                <i class="fa-solid fa-list-check"></i> Admin Dashboard
+            </div>
+            <div class="nav-item" onclick="loadDemo(this, 'Views/DashboardVNext/UserProfile.html', 'user_profile')">
+                <i class="fa-solid fa-mobile-screen"></i> User Confirmation
+            </div>
+
+            <div class="nav-group-title">Unified Identity (V3)</div>
+            <div class="nav-item" onclick="loadDemo(this, 'preview_UnifiedUserDashboard.html', 'unified')">
+                <i class="fa-solid fa-id-card"></i> 360&deg; User View
+            </div>
+            <div class="nav-item" onclick="loadDemo(this, 'preview_GoogleCreation.html', 'google')">
+                <i class="fa-brands fa-google"></i> Workspace Wizard
+            </div>
+
+            <div class="nav-group-title">Lifecycle (V4)</div>
+            <div class="nav-item" onclick="loadDemo(this, 'preview_Offboarding.html', 'offboard')">
+                <i class="fa-solid fa-user-xmark"></i> Offboarding
+            </div>
+
+            <div class="nav-group-title">Blue Sky (V5)</div>
+            <div class="nav-item" onclick="loadDemo(this, 'preview_AssetManager.html', 'assets')">
+                <i class="fa-solid fa-server"></i> Asset Command
+            </div>
+            <div class="nav-item" onclick="loadDemo(this, 'preview_OrgChart.html', 'org')">
+                <i class="fa-solid fa-sitemap"></i> Live Org Chart
+            </div>
+
+            <div class="nav-group-title" style="color:#2196f3;">Super Admin</div>
+            <div class="nav-item" onclick="loadDemo(this, 'preview_AdminTools.html', 'admin_tools')">
+                <i class="fa-solid fa-terminal"></i> GAM & Impersonation
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div class="main">
+        <div class="iframe-container">
+            <iframe id="demoFrame" src="preview_DashboardVNext.html"></iframe>
+        </div>
+
+        <!-- FEEDBACK DRAWER -->
+        <div class="feedback-drawer">
+            <div class="feedback-header">
+                <div>
+                    <h3 style="font-size:1rem; margin-bottom:4px;">Reviewing: <span id="reviewTitle"
+                            style="color:var(--brand-red)">Admin Dashboard</span></h3>
+                    <span style="font-size:0.8rem; color:var(--text-muted)">Please provide your thoughts on this
+                        module.</span>
+                </div>
+                <button class="btn-primary" onclick="saveFeedback()">Submit Feedback</button>
+            </div>
+            <div class="feedback-content" id="questionArea">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // FEEDBACK QUESTIONS DATABASE
+        const questions = {
+            'dashboard': [
+                "Does the Dark Mode formatting match expectations?",
+                "Try editing a row. Is the 'Direct Edit' flow intuitive for admins?",
+                "Are the conditional formatting rules (Red > 3 days) visible enough?",
+                "What other columns would you add to this grid?"
+            ],
+            'user_profile': [
+                "Is the mobile-responsive layout working for you?",
+                "Does this confirmation step cover all hardware items?"
+            ],
+            'unified': [
+                "Is the 'Single Pane' view showing the right systems?",
+                "Would you use the 'Create Account' buttons here versus the main form?"
+            ],
+            'google': [
+                "Does the 'Template User' logic simplify your workflow?",
+                "Is the OU Picker granular enough?"
+            ],
+            'offboard': [
+                "Is the 'Reverse Workflow' concept (Revoke Access -> Collect) sound?",
+                "Do you need a 'Hold for Legal' feature?"
+            ],
+            'assets': [
+                "Is the License Utilization visual clear (Red/Green)?",
+                "Would you use this scanner for QR codes?"
+            ],
+            'org': [
+                "Is the hierarchy display accurate to your structure?",
+                "Would you share this view with all employees?"
+            ],
+            'admin_tools': [
+                "Do you need full command line access or just preset scripts?",
+                "For Impersonation, what logging/audit trail is required?",
+                "Is the Mail Audit metadata view sufficient for investigations?"
+            ]
+        };
+
+        // INIT
+        loadQuestions('dashboard');
+
+        function loadDemo(el, url, key) {
+            // Nav State
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+
+            // Iframe Source
+            // We append a query param just to force refresh if needed, usually not strictly necessary
+            const frame = document.getElementById('demoFrame');
+            frame.src = url;
+
+            // Feedback Header
+            document.getElementById('reviewTitle').innerText = el.innerText;
+
+            // Questions
+            loadQuestions(key);
+        }
+
+        function loadQuestions(key) {
+            const area = document.getElementById('questionArea');
+            area.innerHTML = ''; // clear
+
+            const qList = questions[key] || ["General Feedback?"];
+
+            qList.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'question-box';
+                div.innerHTML = `
+            <label><i class="fa-regular fa-comment-dots"></i> ${q}</label>
+            <textarea rows="3" placeholder="Your feedback..."></textarea>
+          `;
+                area.appendChild(div);
+            });
+        }
+
+        function saveFeedback() {
+            const btn = document.querySelector('.btn-primary');
+            const old = btn.innerText;
+            btn.innerText = "SAVED ✓";
+            btn.style.backgroundColor = "#00c853"; // Success Green
+            setTimeout(() => {
+                btn.innerText = old;
+                btn.style.backgroundColor = ""; // revert to CSS var
+            }, 2000);
+        }
+    </script>
+</body>
+
+</html>

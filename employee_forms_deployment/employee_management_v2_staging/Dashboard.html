@@ -641,11 +641,32 @@
                     });
                 } else if (isEOE) {
                     steps = ["Initial Request", "Approval", "Assets", "Systems"];
+                    
+                    // Pre-fill N/A for conditionally generated items so they don't default to pending
+                    statusMap["Assets"] = "N/A";
+                    statusMap["Systems"] = "N/A";
+                    
                     checklist.forEach(c => {
                         let key = c.name;
-                        if (key === "Asset Collection") key = "Assets";
-                        if (key === "IT Systems Deactivation") key = "Systems";
-                        if (!statusMap[key]) statusMap[key] = c.status;
+                        // Map asset categories
+                        if (key === "Asset Collection" || key === "Assets") {
+                            if (statusMap["Assets"] === "N/A" || statusMap["Assets"] === "Complete") {
+                                statusMap["Assets"] = c.status; // Pending overwrites N/A or Complete
+                            }
+                        }
+                        
+                        // Map all deactivation action items to "Systems"
+                        else if (['IT', 'HR', 'Fleet', 'Finance', 'Deactivation', 'IT Systems Deactivation'].includes(key)) {
+                            // If ANY systems item is pending, the stepper shows Pending
+                            if (c.status === "Pending") {
+                                statusMap["Systems"] = "Pending";
+                            } else if (statusMap["Systems"] === "N/A") {
+                                statusMap["Systems"] = c.status; // e.g. Complete
+                            }
+                        } else {
+                            // Fallback for Initial Request and Approval
+                            if (!statusMap[key]) statusMap[key] = c.status;
+                        }
                     });
                 }
 

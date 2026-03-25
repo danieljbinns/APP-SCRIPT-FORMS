@@ -8,6 +8,7 @@ function serveDashboard() {
   template.baseUrl = getBaseUrl(); // Pass server-side URL to client
   template.spreadsheetId = CONFIG.SPREADSHEET_ID; // Pass active Sheet ID
   template.environment = typeof ENVIRONMENT !== 'undefined' ? ENVIRONMENT : 'PROD';
+
   return template.evaluate()
     .setTitle('Employee Onboarding Dashboard')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -89,6 +90,25 @@ function getDashboardData() {
       };
     }).filter(wf => AccessControlService.canAccessWorkflow(userEmail, wf));
 
+    // Create Master Workflow Status Map
+    const workflowsSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+    let wfMap = {};
+    if (workflowsSheet) {
+      const wData = workflowsSheet.getDataRange().getValues();
+      const headers = wData[0];
+      const idIdx = headers.indexOf('Workflow ID');
+      const statusIdx = headers.indexOf('Status');
+      const stepIdx = headers.indexOf('Current Step');
+      if (idIdx !== -1) {
+        for (let i = 1; i < wData.length; i++) {
+           wfMap[String(wData[i][idIdx] || '')] = {
+             status: statusIdx !== -1 ? String(wData[i][statusIdx] || '') : '',
+             step: stepIdx !== -1 ? String(wData[i][stepIdx] || '') : ''
+           };
+        }
+      }
+    }
+
     // 2. Fetch Terminations
     const termSheet = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
     if (termSheet) {
@@ -101,6 +121,19 @@ function getDashboardData() {
 
           let statusStr = row[16] ? 'Approved' : 'Pending Approval';
           let stepStr = row[16] ? 'Action Items Pending' : 'HR Approval Needed';
+
+          if (wfMap[wfId]) {
+              if (wfMap[wfId].status === 'Complete') {
+                  statusStr = 'Complete';
+                  stepStr = wfMap[wfId].step || 'All Actions Completed';
+              } else if (wfMap[wfId].status === 'Rejected') {
+                  statusStr = 'Rejected';
+                  stepStr = wfMap[wfId].step || 'Rejected';
+              } else if (wfMap[wfId].status === 'Cancelled') {
+                  statusStr = 'Cancelled';
+                  stepStr = wfMap[wfId].step || 'Cancelled';
+              }
+          }
 
           flows.push({
             id: String(row[0] || ''),
@@ -533,8 +566,9 @@ function getStepResultData(workflowId, stepTarget) {
         const descColIdx = aiHdrs.indexOf('Description');
         const statColIdx = aiHdrs.indexOf('Status');
         const assignColIdx = aiHdrs.indexOf('Assigned To');
-             const closedByColIdx = aiHdrs.indexOf('Closed By');
-             const completedDateColIdx = aiHdrs.indexOf('Completed Date');
+        const closedByColIdx = aiHdrs.indexOf('Closed By');
+        const completedDateColIdx = aiHdrs.indexOf('Completed Date');
+        const notesColIdx = aiHdrs.indexOf('Notes');
  
              const result = {};
              let taskNum = 1;

@@ -38,7 +38,7 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             padding: 40px 20px;
         }
 
@@ -247,12 +247,60 @@
                         </span>
                     </div>
                     <? } ?>
-                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
                         <span style="color: var(--text-muted);">Site:</span>
                         <span>
                             <?= requestData.siteName ?>
                         </span>
                     </div>
+                    <? if (requestData.employmentType) { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Employment Type:</span>
+                        <span>
+                            <?= requestData.employmentType ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.employeeType) { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Employee Type:</span>
+                        <span>
+                            <?= requestData.employeeType ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.newHireOrRehire) { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Status:</span>
+                        <span>
+                            <?= requestData.newHireOrRehire ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.jobSiteNumber) { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Job Site #:</span>
+                        <span>
+                            <?= requestData.jobSiteNumber ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.systemAccess && requestData.systemAccess !== 'No') { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Systems:</span>
+                        <span>
+                            <?= Array.isArray(requestData.systems) ? requestData.systems.join(', ') : requestData.systems ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.equipmentRaw) { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Equipment:</span>
+                        <span>
+                            <?= requestData.equipmentRaw ?>
+                        </span>
+                    </div>
+                    <? } ?>
                 </div>
 
                 <form id="hrVerificationForm">

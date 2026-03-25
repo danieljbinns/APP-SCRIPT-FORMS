@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Position / Site Change Form Builder</title>
+    <!-- Include SortableJS for drag and drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        /* Dark Mode Theme from InitialRequest.html */
+        :root {
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --text-dark: #374151;
+            --brand-red: #EB1C2D;
+            --brand-red-hover: #c41522;
+            --input-bg: #ffffff;
+            --input-border: #d1d5db;
+            --border-color: #e5e7eb;
+            --success-green: #0f9d58;
+            --builder-bg: #f9fafb;
+            --surface: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+            background-color: var(--builder-bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Builder Controls Sidebar */
+        .builder-sidebar {
+            width: 320px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            overflow-y: auto;
+        }
+
+        .builder-sidebar h2 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .builder-btn {
+            background-color: var(--brand-red);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .builder-btn:hover {
+            background-color: var(--brand-red-hover);
+        }
+
+        .builder-btn.outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        .builder-btn.outline:hover {
+            background: var(--input-border);
+        }
+
+        #exportResult {
+            width: 100%;
+            height: 150px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--success-green);
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            resize: vertical;
+            display: none;
+        }
+
+        /* The Live Form View */
+        .form-preview-area {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background-color: var(--bg-color);
+        }
+
+        #form-container {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: var(--text-main);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border-color);
+            margin: 20px 0;
+        }
+
+        /* Draggable Wrappers */
+        .draggable-wrapper {
+            background: var(--card-bg);
+            padding: 20px 25px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            position: relative;
+        }
+
+        .draggable-wrapper:hover {
+            border-color: var(--brand-red);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .drag-handle {
+            cursor: grab;
+            color: var(--text-muted);
+            padding: 10px 5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .draggable-wrapper:hover .drag-handle {
+            opacity: 1;
+        }
+
+        .draggable-wrapper .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .toggle-include {
+            margin-top: 12px;
+            accent-color: var(--brand-red);
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .field-content {
+            flex: 1;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+
+        .field-content label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+            font-size: 0.95rem;
+        }
+
+        .logic-badge {
+            display: inline-block;
+            background: #e1f5fe;
+            color: #0277bd;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            border: 1px solid #b3e5fc;
+        }
+
+        /* Section Header Styling */
+        .draggable-wrapper[data-type="header"] {
+            background: rgba(220, 38, 38, 0.1);
+            border-left: 4px solid var(--brand-red);
+            margin-top: 30px;
+            padding: 15px;
+        }
+
+        .draggable-wrapper[data-type="header"] label {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--brand-red);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0;
+        }
+
+        .draggable-wrapper[data-type="header"] .field-preview {
+            display: none;
+        }
+
+        .draggable-wrapper[data-type="header"] .inclusion-check {
+            display: none;
+        }
+
+        .draggable-wrapper.excluded .field-content {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .draggable-wrapper.excluded {
+            border-color: rgba(235, 28, 45, 0.3);
+        }
+
+        /* Form Controls Styling (from Live Form) */
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .required {
+            color: var(--brand-red);
+        }
+
+        input[type="text"],
+        input[type="date"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        input[type="file"] {
+            border: 1px dashed var(--input-border);
+            padding: 20px;
+            text-align: center;
+            cursor: not-allowed;
+            width: 100%;
+            color: var(--text-muted);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 0;
+            margin-top: 10px;
+            border: 2px solid var(--input-border);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--input-bg);
+        }
+
+        .radio-group label {
+            flex: 1;
+            position: relative;
+            margin: 0;
+        }
+
+        .radio-group label:not(:last-child) {
+            border-right: 1px solid var(--input-border);
+        }
+
+        .radio-button {
+            display: block;
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            text-align: center;
+            cursor: pointer;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            accent-color: var(--brand-red);
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--brand-red);
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0;
+            padding: 10px;
+        }
+
+        .draggable-wrapper:hover .delete-btn {
+            opacity: 1;
+        }
+
+        /* Sortable JS state */
+        .sortable-ghost {
+            opacity: 0.3;
+            background: var(--input-bg);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background-color: var(--surface);
+            border-radius: 8px;
+            width: 400px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            transform: translateY(20px);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="builder-sidebar">
+        <h2>Change Builder</h2>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:10px;">
+            Finalize fields for Site Transfers, Job Title changes, or Salary updates.
+        </p>
+
+        <button class="builder-btn" onclick="openModal()">+ Add Custom Field</button>
+
+        <hr>
+
+        <button class="builder-btn" onclick="exportForm()">Export Design JSON</button>
+
+        <textarea id="exportResult" readonly></textarea>
+
+        <div style="margin-top: auto; font-size: 0.75rem; color: var(--text-muted);">
+            <p>• Drag ☰ to reorder</p>
+            <p>• Checkbox to include/exclude</p>
+            <p>• ✕ to delete field</p>
+        </div>
+    </div>
+
+    <div class="form-preview-area">
+        <div id="form-container">
+            <h1>Employee Change Status Request</h1>
+            <p style="text-align:center; color:var(--text-muted); margin-bottom:20px;">
+                Use this form for Site/Location Transfers, Position/Title Changes, or Compensation updates.
+            </p>
+            <hr>
+            <div id="sortable-canvas">
+                <!-- Fields will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Field Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <h2>Add Custom Field</h2>
+            <div class="form-group">
+                <label>Field Label</label>
+                <input type="text" id="newFieldName" placeholder="e.g. Current Site">
+            </div>
+            <div class="form-group">
+                <label>Field Type</label>
+                <select id="newFieldType">
+                    <option value="text">Text Input</option>
+                    <option value="textarea">Multi-line Text (Comments)</option>
+                    <option value="header">Section Header</option>
+                    <option value="date">Date Picker</option>
+                    <option value="radio">Radio Options (Yes/No)</option>
+                    <option value="checkboxes">Checkbox Group</option>
+                    <option value="select">Dropdown (Single Select)</option>
+                    <option value="multiselect">List (Multi-select)</option>
+                    <option value="file">File Upload</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="builder-btn outline" onclick="closeModal()">Cancel</button>
+                <button class="builder-btn" onclick="addField()">Add to Form</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        let fieldCounter = 1;
+
+        // Default fields for Position / Site Change
+        const defaultFields = [
+            { id: 'h_req', label: 'Requester Information', type: 'header' },
+            { id: 'f_req_email', label: 'Requester Email', type: 'text', required: true, placeholder: 'Enter email address' },
+            { id: 'f_req_name', label: 'Requester Name', type: 'text', required: true },
+            { id: 'f_req_date', label: 'Date Requested', type: 'date', required: true, logic: 'Readonly, defaults to today' },
+
+            { id: 'h_emp', label: 'Employee Information', type: 'header' },
+            { id: 'f_hire_date', label: 'Effective Date of Change / Hire Date', type: 'date', required: true },
+            { id: 'f_emp_id', label: 'Employee ID', type: 'text', required: true, placeholder: 'Enter numeric ID' },
+            { id: 'f_emp_first', label: 'First Name', type: 'text', required: true },
+            { id: 'f_emp_mid', label: 'Middle Name', type: 'text' },
+            { id: 'f_emp_last', label: 'Last Name', type: 'text', required: true },
+            { id: 'f_emp_pref', label: 'Preferred Name', type: 'text' },
+
+            { id: 'f_change_type', label: 'Type of Change', type: 'checkboxes', options: ['Site/Location Transfer', 'Position/Job Title Change', 'Classification Change (Hr/Sal)', 'Reporting Manager Change', 'Rate/Salary Change'], required: true },
+
+            { id: 'f_class_from', label: 'Current Classification', type: 'radio', options: ['Hourly', 'Salary'], logic: 'Only if Classification Change checked' },
+            { id: 'f_class_to', label: 'New Classification / Hourly or Salary', type: 'radio', options: ['Hourly', 'Salary'], logic: 'Only if Classification Change checked' },
+
+            { id: 'f_site_from', label: 'Current Site', type: 'select', options: ['Loading sites...'], logic: 'Only if Site Transfer checked' },
+            { id: 'f_site_to', label: 'New Site', type: 'select', options: ['Loading sites...'], logic: 'Only if Site Transfer checked' },
+
+            { id: 'f_title_from', label: 'Current Job Title', type: 'text', logic: 'Only if Position Change checked' },
+            { id: 'f_title_to', label: 'New Job Title', type: 'text', placeholder: 'Enter position title (e.g. Operations Manager)', logic: 'Only if Position Change checked' },
+
+            { id: 'f_had_reports', label: 'Did employee have direct reports?', type: 'radio', options: ['Yes', 'No'], required: true },
+            { id: 'f_old_reports_to', label: 'Reassign PREVIOUS Reports To', type: 'text', logic: 'Only if "Had Reports" is Yes' },
+
+            { id: 'f_get_reports', label: 'Is employee gaining NEW direct reports?', type: 'radio', options: ['Yes', 'No'], required: true },
+            { id: 'f_new_reports_from', label: 'Who were these reports reporting to before?', type: 'text', logic: 'Only if "Gaining Reports" is Yes' },
+
+            { id: 'f_manager_change', label: 'Is the Reporting Manager changing?', type: 'radio', options: ['Yes', 'No'] },
+            { id: 'f_old_manager', label: 'Current Reporting Manager', type: 'text', placeholder: 'Enter manager name', logic: 'Only if Manager Change is Yes' },
+            { id: 'f_new_manager_email', label: 'New Reporting Manager Email', type: 'text', placeholder: 'Enter manager email', logic: 'Only if Manager Change is Yes' },
+            { id: 'f_new_manager_name', label: 'New Reporting Manager Name', type: 'text', placeholder: 'Enter manager name', logic: 'Only if Manager Change is Yes' },
+
+            { id: 'h_sys', label: 'System Access', type: 'header' },
+            { id: 'f_has_google', label: 'Does employee have an existing Google account?', type: 'radio', options: ['Yes', 'No'], required: true },
+            { id: 'f_existing_email', label: 'Existing Google Email Address', type: 'text', logic: 'If Existing Google account is Yes' },
+
+            { id: 'f_sys_add', label: 'NEW System Access Needed', type: 'checkboxes', options: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'DSS', 'Fleetio', 'Google Account', 'Incidents', 'Jonas Purchasing', 'Net Promoter Score', 'SiteDocs (Portal Access)'] },
+            { id: 'f_boss_comm', label: 'Committee(s) To Be Assigned', type: 'multiselect', options: ['Loading committees...'], logic: 'Only if BOSS checked' },
+            { id: 'f_boss_cost', label: 'Cost Sheet Module Access?', type: 'radio', options: ['Yes', 'No'], logic: 'Only if BOSS checked' },
+            { id: 'f_boss_cost_jobs', label: 'Job Number(s) for Cost Sheet', type: 'multiselect', options: ['Loading job numbers...'], logic: 'If Cost Sheet Access is Yes' },
+            { id: 'f_boss_trip', label: 'Trip Reports Access?', type: 'radio', options: ['Yes', 'No'], logic: 'Only if BOSS checked' },
+            { id: 'f_boss_griev', label: 'Corrective Counselling and Grievances Module Access?', type: 'radio', options: ['Yes', 'No'], logic: 'Only if BOSS checked' },
+            { id: 'f_jonas_jobs', label: 'Job Number(s) To Be Assigned (Jonas)', type: 'multiselect', options: ['Loading job numbers...'], logic: 'Only if Jonas checked' },
+
+            { id: 'f_jr_req', label: 'JR Required?', type: 'radio', options: ['Yes', 'No'] },
+            { id: 'f_jr_assign', label: 'Select JR Title to Assign', type: 'select', options: ['-- Select JR --'], logic: 'If JR Required is Yes' },
+            { id: 'f_306090', label: '30-60-90 Day Plan Required?', type: 'radio', options: ['Yes', 'No'] },
+
+            { id: 'f_google_email', label: 'Requested Email Address', type: 'text', logic: 'Only if Google Account checked', placeholder: 'firstname.lastname', help: 'Default format: firstname.lastname' },
+            { id: 'f_google_domain', label: 'Email Domain', type: 'radio', options: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com', 'stgroup.ca'], logic: 'Only if Google Account checked' },
+
+            { id: 'h_equip', label: 'Equipment', type: 'header' },
+            { id: 'f_equip_new', label: 'NEW Equipment Required', type: 'checkboxes', options: ['Computer', 'Credit Card', 'Mobile Phone', 'Digital Business Cards', 'SiteDocs Tablet', 'Vehicle'] },
+
+            { id: 'f_cc_usa', label: 'USA Credit Card Needed?', type: 'radio', options: ['Yes', 'No'], logic: 'Only if Credit Card checked' },
+            { id: 'f_cc_usa_limit', label: 'USA Monthly Limit', type: 'text', placeholder: 'Monthly Limit (e.g., $1,000)', logic: 'If USA CC is Yes' },
+            { id: 'f_cc_can', label: 'Canada Credit Card Needed?', type: 'radio', options: ['Yes', 'No'], logic: 'Only if Credit Card checked' },
+            { id: 'f_cc_can_limit', label: 'Canada Monthly Limit', type: 'text', placeholder: 'Monthly Limit (e.g., $1,000 CAD)', logic: 'If Canada CC is Yes' },
+            { id: 'f_cc_hd', label: 'Home Depot Credit Card Needed?', type: 'radio', options: ['Yes', 'No'], logic: 'Only if Credit Card checked' },
+            { id: 'f_cc_hd_limit', label: 'Home Depot Monthly Limit', type: 'text', placeholder: 'Monthly Limit (e.g., $1,000)', logic: 'If Home Depot CC is Yes' },
+
+            { id: 'f_phone_logic', label: 'Phone Request Type', type: 'radio', options: ['New Request', 'Reassignment'], logic: 'Only if Mobile Phone checked' },
+            { id: 'f_phone_reassign_user', label: 'Previous User Name', type: 'text', logic: 'If Reassignment selected' },
+            { id: 'f_phone_reassign_num', label: 'Previous Phone Number', type: 'text', logic: 'If Reassignment selected' },
+
+            { id: 'f_comp_logic', label: 'Computer Request Type', type: 'radio', options: ['New Request', 'Reassignment'], logic: 'Only if Computer checked' },
+            { id: 'f_comp_type', label: 'Computer Type Requested', type: 'radio', options: ['Chromebook', 'Windows', 'Mac'], logic: 'If New Request selected', help: 'Chromebook is default. Windows/Mac require IT Director approval.' },
+            { id: 'f_o365', label: 'Office 365 License Required?', type: 'radio', options: ['Yes', 'No'], logic: 'Only if Windows/Mac selected' },
+
+            { id: 'f_comp_reassign_user', label: 'Previous User Name', type: 'text', logic: 'If Reassignment selected' },
+            { id: 'f_comp_reassign_type', label: 'Previous Computer Type', type: 'select', options: ['Chromebook', 'Windows', 'Mac'], logic: 'If Reassignment selected' },
+            { id: 'f_comp_reassign_sn', label: 'Serial Number (if known)', type: 'text', logic: 'If Reassignment selected' },
+
+            { id: 'f_sys_rem', label: 'OLD System Access to Remove', type: 'checkboxes', options: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'Fleetio', 'Google Account', 'Incidents', 'Jonas Purchasing', 'Net Promoter Score', 'SiteDocs'] },
+
+            { id: 'f_comments', label: 'Additional Comments / Rationale', type: 'textarea' },
+            { id: 'f_upload', label: 'Upload Supporting Docs', type: 'file', help: 'Offer letter, promotion memo, etc.' }
+        ];
+
+        const canvas = document.getElementById('sortable-canvas');
+
+        // Render a field block
+        function renderFieldBlock(field) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'draggable-wrapper';
+            wrapper.dataset.id = field.id;
+            wrapper.dataset.label = field.label;
+            wrapper.dataset.type = field.type;
+
+            let fieldHtml = '';
+            const reqHtml = field.required ? '<span class="required">*</span>' : '';
+            const helpHtml = field.help ? `<small style="color:var(--text-muted); display:block; margin-top:4px; font-size:0.8rem;">${field.help}</small>` : '';
+            const logicHtml = field.logic ? `<div class="logic-badge">Logic: ${field.logic}</div>` : '';
+
+            if (field.type === 'text') {
+                const ph = field.placeholder || `Enter ${field.label}`;
+                fieldHtml = `<label>${field.label} ${reqHtml}</label><input type="text" placeholder="${ph}" readonly>${helpHtml}`;
+            } else if (field.type === 'textarea') {
+                fieldHtml = `<label>${field.label} ${reqHtml}</label><textarea readonly placeholder="Enter ${field.label}"></textarea>${helpHtml}`;
+            } else if (field.type === 'date') {
+                fieldHtml = `<label>${field.label} ${reqHtml}</label><input type="date" readonly>${helpHtml}`;
+            } else if (field.type === 'file') {
+                fieldHtml = `<label>${field.label} ${reqHtml}</label><div style="border:1px dashed var(--input-border); padding:20px; text-align:center; color:var(--text-muted); border-radius:6px;">Upload File</div>${helpHtml}`;
+            } else if (field.type === 'radio') {
+                let optsHtml = (field.options || ['Yes', 'No']).map(opt => `
+                    <label><input type="radio"><span class="radio-button">${opt}</span></label>
+                `).join('');
+                fieldHtml = `
+                    <label>${field.label} ${reqHtml}</label>
+                    <div class="radio-group" style="pointer-events: none;">
+                        ${optsHtml}
+                    </div>${helpHtml}
+                `;
+            } else if (field.type === 'checkboxes') {
+                let optsHtml = (field.options || ['Option 1', 'Option 2']).map(opt => `
+                    <label class="checkbox-label" style="pointer-events: none;">
+                        <input type="checkbox"><span>${opt}</span>
+                    </label>
+                `).join('');
+                fieldHtml = `
+                    <label>${field.label} ${reqHtml}</label>
+                    <div class="checkbox-group">${optsHtml}</div>${helpHtml}
+                `;
+            } else if (field.type === 'select') {
+                let optsHtml = (field.options || ['Option 1']).map(opt => `<option>${opt}</option>`).join('');
+                fieldHtml = `
+                    <label>${field.label} ${reqHtml}</label>
+                    <select disabled><option value="">-- Select --</option>${optsHtml}</select>${helpHtml}
+                `;
+            } else if (field.type === 'multiselect') {
+                let optsHtml = (field.options || ['Option 1']).map(opt => `<option>${opt}</option>`).join('');
+                fieldHtml = `
+                    <label>${field.label} ${reqHtml}</label>
+                    <select multiple disabled style="height:100px;">${optsHtml}</select>${helpHtml}
+                `;
+            } else if (field.type === 'header') {
+                fieldHtml = `<div style="border-bottom: 2px solid var(--brand-red); margin-bottom: 15px;"></div>`;
+            }
+
+            wrapper.innerHTML = `
+                <div class="drag-handle" title="Drag to reorder">☰</div>
+                <input type="checkbox" class="toggle-include" checked title="Include in form" onchange="toggleInclude(this)">
+                <div class="field-content">
+                    ${logicHtml}
+                    ${fieldHtml}
+                </div>
+                <button class="delete-btn" onclick="deleteField(this)" title="Delete Field">✕</button>
+            `;
+
+            canvas.appendChild(wrapper);
+        }
+
+        // Initialize Sortable
+        new Sortable(canvas, {
+            animation: 150,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost'
+        });
+
+        // Initialize default fields
+        defaultFields.forEach(renderFieldBlock);
+
+        // Toggle inclusion state
+        window.toggleInclude = function (checkbox) {
+            const wrapper = checkbox.closest('.draggable-wrapper');
+            if (checkbox.checked) {
+                wrapper.classList.remove('excluded');
+            } else {
+                wrapper.classList.add('excluded');
+            }
+        };
+
+        window.deleteField = function (btn) {
+            if (confirm("Remove this field completely?")) {
+                btn.closest('.draggable-wrapper').remove();
+            }
+        };
+
+        // Modal logic
+        window.openModal = function () {
+            document.getElementById('newFieldName').value = '';
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('newFieldName').focus();
+        };
+
+        window.closeModal = function () {
+            document.getElementById('addModal').classList.remove('active');
+        };
+
+        window.addField = function () {
+            const name = document.getElementById('newFieldName').value.trim();
+            const type = document.getElementById('newFieldType').value;
+
+            if (!name) return alert("Please enter a field name.");
+
+            renderFieldBlock({
+                id: 'custom_' + (fieldCounter++),
+                label: name,
+                type: type,
+                required: false
+            });
+
+            closeModal();
+        };
+
+        // Export Function
+        window.exportForm = function () {
+            const wrappers = Array.from(canvas.querySelectorAll('.draggable-wrapper'));
+            const finalFields = wrappers.map(w => {
+                const included = w.querySelector('.toggle-include').checked;
+                return {
+                    id: w.dataset.id,
+                    label: w.dataset.label,
+                    type: w.dataset.type,
+                    included: included
+                };
+            });
+
+            const result = {
+                formType: "Position / Site Change Request",
+                fields: finalFields.filter(f => f.included) // only export the checked ones
+            };
+
+            const txt = document.getElementById('exportResult');
+            txt.style.display = 'block';
+            txt.value = JSON.stringify(result, null, 2);
+            txt.select();
+        };
+    </script>
+</body>
+
+</html>

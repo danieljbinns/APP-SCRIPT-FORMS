@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Action Item:
+        <?= task.TaskName ?>
+    </title>
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+            --border-color: #333;
+            --success: #00c853;
+            --warning: #ffab00;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            color: var(--brand-red);
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin: 8px 0 0;
+            font-size: 14px;
+        }
+
+        .ticket-info {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .label {
+            color: var(--text-muted);
+        }
+
+        .value {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .checklist-section {
+            margin-bottom: 24px;
+        }
+
+        .checklist-section h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--brand-red);
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .checklist-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-color);
+        }
+
+        .checklist-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            accent-color: var(--brand-red);
+            cursor: pointer;
+        }
+
+        .checklist-item span {
+            font-size: 15px;
+            flex-grow: 1;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        textarea {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            padding: 12px;
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-primary {
+            background: var(--brand-red);
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .status-open {
+            background: rgba(235, 28, 45, 0.1);
+            color: var(--brand-red);
+            border: 1px solid var(--brand-red);
+        }
+
+        .status-closed {
+            background: rgba(0, 200, 83, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card" id="formCard">
+            <div class="header">
+                <span class="status-badge <?= task.Status === 'Open' ? 'status-open' : 'status-closed' ?>">
+                    <?= task.Status ?>
+                </span>
+                <h1>
+                    <?= task.TaskName ?>
+                </h1>
+                <p>Action Item #
+                    <?= task.TaskID ?>
+                </p>
+            </div>
+
+            <div class="ticket-info">
+                <div class="info-row"><span class="label">Workflow ID</span><span class="value">
+                        <?= task.WorkflowID ?>
+                    </span></div>
+                <? if (context) { ?>
+                <? if (context.employeeName) { ?>
+                <div class="info-row"><span class="label">Employee</span><span class="value">
+                        <?= context.employeeName ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.hireDate) { ?>
+                <div class="info-row"><span class="label">Effective Date</span><span class="value">
+                        <?= context.hireDate ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.managerName) { ?>
+                <div class="info-row"><span class="label">Manager</span><span class="value">
+                        <?= context.managerName ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.reason) { ?>
+                <div class="info-row"><span class="label">Reason</span><span class="value">
+                        <?= context.reason ?>
+                    </span></div>
+                <? } ?>
+                <? } ?>
+                <div class="info-row"><span class="label">Category</span><span class="value">
+                        <?= task.Category ?>
+                    </span></div>
+                <div class="info-row"><span class="label">Assigned To</span><span class="value">
+                        <?= task.AssignedTo ?>
+                    </span></div>
+            </div>
+
+            <div class="checklist-section">
+                <h3>Checklist</h3>
+                <div id="checklistContainer">
+                    <!-- Items will be injected here -->
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label style="display:block; margin-bottom:8px; font-size:13px; color:var(--text-muted)">Operational
+                    Notes</label>
+                <textarea id="notes" rows="3"
+                    placeholder="Enter any notes or confirmation details..."><?= task.Notes ?></textarea>
+            </div>
+
+            <? if (task.Status === 'Open') { ?>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="saveDraft()" id="draftBtn">Save Draft</button>
+                <button class="btn btn-primary" onclick="finalComplete()" id="completeBtn">Complete Task</button>
+            </div>
+            <? } else { ?>
+            <div style="text-align: center; color: var(--success); padding-top: 10px;">
+                <strong>✓ Task Finalized on
+                    <?= task.CompletedDate instanceof Date ? task.CompletedDate.toLocaleDateString() : task.CompletedDate ?>
+                </strong>
+            </div>
+            <? } ?>
+        </div>
+    </div>
+
+    <script>
+        const taskId = "<?= task.TaskID ?>";
+        const taskDescription = <?= JSON.stringify(task.Description) ?>;
+        const taskDraftRaw = <?!= task.Draft ? JSON.stringify(task.Draft) : 'null' ?>;
+        const isClosed = "<?= task.Status ?>" === "Closed";
+
+        let taskDraft = null;
+        try {
+            if (taskDraftRaw) {
+                // Handle various formats (stringified JSON vs object)
+                taskDraft = (typeof taskDraftRaw === 'string') ? JSON.parse(taskDraftRaw) : taskDraftRaw;
+                // If it was double-stringified (happens in some Sheet versioning)
+                if (typeof taskDraft === 'string') taskDraft = JSON.parse(taskDraft);
+            }
+        } catch (e) {
+            console.error('Draft Parse Error:', e, taskDraftRaw);
+        }
+
+        function initChecklist() {
+            const container = document.getElementById('checklistContainer');
+            let items = [];
+
+            try {
+                // Task description should contain the comma-separated or JSON list of tasks
+                items = taskDescription.split(',').map(s => s.trim()).filter(s => s && s !== 'N/A');
+            } catch (e) { console.error(e); }
+
+            if (items.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted); font-size:14px; font-style:italic;">No checklist items identified.</p>';
+            }
+
+            items.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'checklist-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="item_${idx}" data-name="${item}" ${isClosed ? 'disabled checked' : ''}>
+                    <span>${item}</span>
+                `;
+
+                // If it's a draft, check the ones that were saved
+                if (taskDraft && taskDraft.checkedItems && taskDraft.checkedItems.includes(item)) {
+                    div.querySelector('input').checked = true;
+                }
+
+                if (!isClosed) {
+                    div.onclick = (e) => {
+                        if (e.target.tagName !== 'INPUT') {
+                            const cb = div.querySelector('input');
+                            cb.checked = !cb.checked;
+                        }
+                    };
+                }
+                container.appendChild(div);
+            });
+        }
+
+        function getDraftData() {
+            const checkboxes = document.querySelectorAll('#checklistContainer input');
+            const checkedItems = [];
+            checkboxes.forEach(cb => {
+                if (cb.checked) checkedItems.push(cb.getAttribute('data-name'));
+            });
+            return { checkedItems: checkedItems };
+        }
+
+        function saveDraft() {
+            const btn = document.getElementById('draftBtn');
+            const notes = document.getElementById('notes').value;
+            const draft = JSON.stringify(getDraftData());
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            google.script.run
+                .withSuccessHandler(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Save Draft';
+                    // Notification logic could go here
+                })
+                .saveActionItemDraft(taskId, notes, draft);
+        }
+
+        function finalComplete() {
+            const checkboxes = document.querySelectorAll('#checklistContainer input');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+            if (checkboxes.length > 0 && !allChecked) {
+                alert('Please check off all items before completing the task.');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to close this task? This will notify HR.')) return;
+
+            const btn = document.getElementById('completeBtn');
+            const notes = document.getElementById('notes').value;
+
+            btn.disabled = true;
+            btn.textContent = 'Closing...';
+
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        document.getElementById('formCard').innerHTML = `
+                            <div style="text-align:center; padding:40px;">
+                                <h1 style="color:var(--success)">✓ Task Completed</h1>
+                                <p style="color:var(--text-muted)">The action items have been logged and closed.</p>
+                                <button class="btn btn-secondary" onclick="window.close()" style="margin-top:20px; width:auto">Close Window</button>
+                            </div>
+                        `;
+                    }
+                })
+                .closeActionItemWithNotes(taskId, notes);
+        }
+
+        window.onload = initChecklist;
+    </script>
+</body>
+
+</html>

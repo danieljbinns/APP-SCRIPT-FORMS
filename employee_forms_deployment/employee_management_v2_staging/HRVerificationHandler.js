@@ -26,44 +26,28 @@ function getHRVerificationData(workflowId) {
     const mainData = mainSheet.getDataRange().getValues();
     let result = { success: false, message: 'Workflow ID not found' };
     
-    for (let i = 1; i < mainData.length; i++) {
-      if (mainData[i][0] === workflowId) {
-        result = {
-          success: true,
-          workflowId: workflowId,
-          firstName: mainData[i][10] || '',
-          lastName: mainData[i][12] || '',
-          position: mainData[i][14] || '',
-          jrTitle: mainData[i][46] || '', // Col 46 is JR Assign
-          siteName: mainData[i][15] || '',
-          hireDate: mainData[i][6] ? Utilities.formatDate(new Date(mainData[i][6]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
-          managerName: mainData[i][18] || '',
-          managerEmail: mainData[i][17] || '',
-          requesterEmail: mainData[i][5] || '',
-          employmentType: mainData[i][9] || '',
-          internalEmployeeId: ''
-        };
-        break;
-      }
+    const context = getWorkflowContext(workflowId);
+    if (context) {
+      result = {
+        ...result,
+        ...context,
+        success: true,
+        firstName: context.employeeName ? context.employeeName.split(' ')[0] : '',
+        lastName: context.employeeName ? context.employeeName.split(' ').slice(1).join(' ') : '',
+        position: context.jobTitle,
+        jrTitle: context.jrTitle,
+        siteName: context.siteName,
+        hireDate: context.hireDate ? (context.hireDate instanceof Date ? Utilities.formatDate(context.hireDate, Session.getScriptTimeZone(), 'yyyy-MM-dd') : context.hireDate) : '',
+        managerName: context.managerName,
+        managerEmail: context.managerEmail,
+        requesterEmail: context.requesterEmail,
+        employmentType: context.employmentType
+      };
     }
     
     if (!result.success) return result;
     
-    if (idSheet) {
-      const idData = idSheet.getDataRange().getValues();
-      for (let j = 1; j < idData.length; j++) {
-        if (idData[j][0] === workflowId) {
-          result.internalEmployeeId = idData[j][3] || 'PENDING';
-          result.siteDocsUsername = idData[j][6];
-          result.siteDocsPassword = idData[j][7];
-          result.dssUsername = idData[j][8];
-          result.dssPassword = idData[j][9];
-          break;
-        }
-      }
-    }
-    
-    return JSON.parse(JSON.stringify(result));
+    return result;
     
   } catch (error) {
     Logger.log('Error fetching verification data: ' + error.toString());
