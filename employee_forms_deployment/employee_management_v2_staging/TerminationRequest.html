@@ -617,7 +617,7 @@
 
         // Dynamic Populators
         const populateFormDropdowns = function (data) {
-            const sites = document.querySelectorAll('#siteOld, #siteNew');
+            const sites = document.querySelectorAll('#siteName');
             sites.forEach(s => data.sites.forEach(site => {
                 const opt = document.createElement('option'); opt.value = site; opt.textContent = site; s.appendChild(opt);
             }));

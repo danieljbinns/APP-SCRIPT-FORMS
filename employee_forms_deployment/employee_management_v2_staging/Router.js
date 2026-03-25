@@ -18,6 +18,10 @@ function doGet(e) {
       case 'initial_request':
         // Anyone in domain can start a request
         return serveInitialRequest();
+        
+      case 'equipment_request':
+        // Anyone in domain can request hardware/software
+        return serveEquipmentRequest();
 
       case 'dashboard':
         // Dashboard has internal filtering, but we can double check general access

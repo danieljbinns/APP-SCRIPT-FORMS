@@ -92,7 +92,13 @@ function initializeSystem() {
       'Employee Name', 'Employee ID', 'Effective Date', 'Current Site', 'Change Types', 
       'Site Transfer (Old -> New)', 'Title Change (Old -> New)', 'Classification (Old -> New)', 
       'Manager Change (Old -> New Email)', 'Reassign Old Reports', 'Gain New Reports',
-      'Account Setup (Existing -> New Plan)', 'New Systems', 'Equipment Request', 'Access Removal', 'Comments'
+    ]);
+
+    // 7b. Initialize Equipment Requests
+    initSheet(ss, CONFIG.SHEETS.EQUIPMENT_REQUESTS, [
+      'Timestamp', 'Workflow ID', 'Form ID', 'Requester Name', 'Requester Email', 
+      'Employee First Name', 'Employee Last Name', 'Site Name', 'Job Title', 'Manager Name', 'Manager Email',
+      'Equipment Requested', 'Systems Requested', 'Comments'
     ]);
 
     // 8. Initialize Approval & Collection Results

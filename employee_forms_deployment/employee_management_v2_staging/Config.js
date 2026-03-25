@@ -25,6 +25,7 @@ const CONFIG = {
     WORKFLOWS: 'Workflows',
     DASHBOARD_VIEW: 'Dashboard_View', // Flat, pre-calculated table for instant UI rendering
     INITIAL_REQUESTS: 'Initial Requests',
+    EQUIPMENT_REQUESTS: 'Equipment_Requests',
     ID_SETUP_RESULTS: 'ID Setup Results',
     HR_VERIFICATION_RESULTS: 'HR Verification Results',
     IT_RESULTS: 'IT Results',

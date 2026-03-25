@@ -72,7 +72,7 @@ function getDashboardData() {
           jonas: (row[44] && row[44].toString().length > 0), // Jonas requested
           creditCard: (row[30] === 'Yes' || row[32] === 'Yes' || row[34] === 'Yes'),
           fleetio: (row[20] && row[20].includes('Fleetio')),
-          businessCards: (row[20] && row[20].includes('Business Cards')),
+          businessCards: (row[21] && row[21].includes('Business Cards')),
           siteDocs: ((row[20] && row[20].includes('SiteDocs')) || (row[21] && row[21].includes('SiteDocs Tablet'))),
           review: (row[47] === 'Yes')
         }
@@ -424,7 +424,7 @@ function getRequestDetails(workflowId) {
      
      // Business Cards
      const bcData = checkSheet(CONFIG.SHEETS.BUSINESS_CARDS_RESULTS, 'business_cards');
-     if (!sysAccess.includes('Business Cards') && bcData.status === 'Pending') {
+     if (!eqp.includes('Business Cards') && bcData.status === 'Pending') {
          bcData.status = 'N/A';
      }
      checklist.push({ name: "Business Cards", target: "businesscards", ...bcData });

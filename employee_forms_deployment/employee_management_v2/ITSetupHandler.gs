@@ -57,7 +57,7 @@ function getITContextData(workflowId) {
           creditCardLimitUSA: mainData[i][31],
           creditCardLimitCanada: mainData[i][32],
           creditCardLimitHomeDepot: mainData[i][35],
-          businessCards: mainData[i][20] && mainData[i][20].includes('Business Cards') ? 'Yes' : 'No',
+          businessCards: mainData[i][21] && mainData[i][21].includes('Business Cards') ? 'Yes' : 'No',
           fleetioAccess: mainData[i][20] && mainData[i][20].includes('Fleetio') ? 'Yes' : 'No',
           jobSiteNumber: mainData[i][16], // Col 16 = Job Site #
         };

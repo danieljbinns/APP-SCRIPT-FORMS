@@ -429,7 +429,7 @@ function getRequestDetails(workflowId) {
 
     // Business Cards
     const bcData = checkSheet(CONFIG.SHEETS.BUSINESS_CARDS_RESULTS, 'business_cards');
-    if (!sysAccess.includes('Business Cards') && bcData.status === 'Pending') {
+    if (!eqp.includes('Business Cards') && bcData.status === 'Pending') {
       bcData.status = 'N/A';
     }
     checklist.push({ name: "Business Cards", target: "businesscards", ...bcData });
