@@ -86,6 +86,7 @@ function getDashboardData() {
         managerEmail: String(row[9] || ''),
         requestedItems: items,
         pendingItems: [], // Legacy compat
+        hireDate: row[11] instanceof Date ? row[11].toLocaleDateString() : String(row[11] || ''), // D4
         type: isTerm ? 'End of Employment' : 'Onboarding'
       };
     }).filter(wf => AccessControlService.canAccessWorkflow(userEmail, wf));
@@ -156,10 +157,16 @@ function getDashboardData() {
 
     flows.reverse(); // Latest first based on combined array
 
+    // D2: Pass permission flag so UI can show/hide the edit hire date button
+    const canEditDates = AccessControlService.canAccessForm(userEmail, 'HR') ||
+                         AccessControlService.canAccessForm(userEmail, 'IT') ||
+                         AccessControlService.isAdmin(userEmail);
+
     return JSON.stringify({
       success: true,
       workflows: flows,
-      currentUser: userEmail
+      currentUser: userEmail,
+      canEditDates: canEditDates
     });
 
   } catch (error) {
@@ -240,6 +247,45 @@ function bumpRequest(workflowId, targetStep) {
 
   } catch (error) {
     return { success: false, message: error.message };
+  }
+}
+
+/**
+ * D2: Update the hire date for a workflow (HR, IT, and Admin only)
+ */
+function updateHireDate(workflowId, newDateStr) {
+  try {
+    const userEmail = Session.getActiveUser().getEmail();
+    if (!AccessControlService.canAccessForm(userEmail, 'HR') &&
+        !AccessControlService.canAccessForm(userEmail, 'IT') &&
+        !AccessControlService.isAdmin(userEmail)) {
+      return { success: false, message: 'Permission denied. Only HR, IT, or Admin can edit hire dates.' };
+    }
+
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
+    if (!sheet) return { success: false, message: 'Initial Requests sheet not found.' };
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const wfIdCol = headers.indexOf('Workflow ID');
+    const hireDateCol = headers.indexOf('Hire Date');
+
+    if (wfIdCol === -1 || hireDateCol === -1) return { success: false, message: 'Required columns not found.' };
+
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][wfIdCol]) === workflowId) {
+        sheet.getRange(i + 1, hireDateCol + 1).setValue(new Date(newDateStr));
+        SpreadsheetApp.flush();
+        syncWorkflowState(workflowId);
+        Logger.log('[D2] Hire date updated for ' + workflowId + ' to ' + newDateStr + ' by ' + userEmail);
+        return { success: true, message: 'Start date updated successfully.' };
+      }
+    }
+    return { success: false, message: 'Workflow not found in Initial Requests.' };
+  } catch (e) {
+    Logger.log('[D2] updateHireDate error: ' + e.toString());
+    return { success: false, message: e.message };
   }
 }
 
@@ -443,7 +489,7 @@ function getRequestDetails(workflowId) {
 
     // 30/60/90
     const reviewData = checkSheet(CONFIG.SHEETS.REVIEW_306090_RESULTS, 'review');
-    if (!(reqRow && reqRow[47] === 'Yes') && reviewData.status === 'Pending') {
+    if (!(r['30/60/90'] === 'Yes') && reviewData.status === 'Pending') {
       reviewData.status = 'N/A';
     }
     checklist.push({ name: "30/60/90 Review", target: "review", ...reviewData });

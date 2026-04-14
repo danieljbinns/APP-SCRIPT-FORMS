@@ -46,7 +46,8 @@ function submitPositionChangeRequest(formData) {
       systems,
       equipment,
       removal,
-      formData.comments || ''
+      formData.comments || '',
+      formData.department || ''
     ];
     
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGES, rowData);
@@ -184,7 +185,29 @@ function submitPositionChangeApproval(formData) {
       }
       
       updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Change Processed');
-      
+
+      // E3: Notify payroll after HR approves a status change
+      sendFormEmail({
+        to: CONFIG.EMAILS.PAYROLL,
+        subject: `Status Change Approved: ${changeData.employeeName}`,
+        body: `HR has approved a status change for ${changeData.employeeName}.<br><br>` +
+              `<b>Employee:</b> ${changeData.employeeName}<br>` +
+              `<b>Effective Date:</b> ${changeData.effDate}<br>` +
+              `<b>Changes:</b> ${changeData.changes || 'N/A'}<br>` +
+              `<b>Site:</b> ${changeData.siteName}<br>` +
+              `<b>Site Transfer:</b> ${changeData.siteTransfer || 'N/A'}<br>` +
+              `<b>Title Change:</b> ${changeData.titleChange || 'N/A'}<br>` +
+              `<b>Classification:</b> ${changeData.classChange || 'N/A'}<br>` +
+              `<b>Manager Change:</b> ${changeData.managerChange || 'N/A'}<br>` +
+              `<b>HR Notes:</b> ${notes || 'None'}<br>`,
+        formUrl: '',
+        contextData: {
+          employeeName: changeData.employeeName,
+          siteName: changeData.siteName,
+          hireDate: changeData.effDate
+        }
+      });
+
       return { success: true, message: `Position change approved. ${tasksCreated} action items generated.` };
     } else {
       updateWorkflow(workflowId, 'Rejected', 'Rejected by HR');

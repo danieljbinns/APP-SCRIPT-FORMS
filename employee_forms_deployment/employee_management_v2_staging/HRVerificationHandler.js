@@ -132,35 +132,71 @@ function submitHRVerification(formData) {
       if (formData.managerEmail && formData.managerEmail !== requesterEmail) {
         recipients.push(formData.managerEmail);
       }
-      
+
+      // E5: Build Google Calendar link for hourly employee start date
+      let calendarLinkHtml = '';
+      if (context && context.hireDate) {
+        try {
+          const startDate = context.hireDate instanceof Date ? context.hireDate : new Date(context.hireDate);
+          const dateStr = Utilities.formatDate(startDate, Session.getScriptTimeZone(), 'yyyyMMdd');
+          const calTitle = encodeURIComponent((formData.firstName + ' ' + formData.lastName) + ' - Start Date');
+          const calDetails = encodeURIComponent('Site: ' + (context.siteName || '') + ' | ADP ID: ' + formData.adpAssociateId);
+          const calUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + calTitle + '&dates=' + dateStr + '/' + dateStr + '&details=' + calDetails;
+          calendarLinkHtml = '<br><br><a href="' + calUrl + '" style="display:inline-block; padding:10px 20px; background:#4285f4; color:#ffffff; text-decoration:none; border-radius:6px; font-weight:600;">📅 Add Start Date to Calendar</a>';
+        } catch (calErr) {
+          Logger.log('Could not build calendar link: ' + calErr.message);
+        }
+      }
+
       sendFormEmail({
         to: recipients.join(','),
         subject: 'Onboarding Complete - ' + (formData.firstName + ' ' + formData.lastName) + ' (ADP: ' + formData.adpAssociateId + ')',
-        // Include credentials in the completion email
         body: 'The onboarding process has been completed successfully. All required setup steps have been finished for this hourly employee.\n\n' +
               'Verified ADP ID: ' + formData.adpAssociateId + '\n\n' +
               '<strong>CREDENTIALS:</strong>\n' +
               '• DSS: ' + (context.dssUsername || 'N/A') + ' (Pwd: ' + (context.dssPassword || 'N/A') + ')\n' +
               '• SiteDocs: ' + (context.siteDocsUsername || 'N/A') + ' (Pwd: ' + (context.siteDocsPassword || 'N/A') + ')\n\n' +
-              'You can view the full request details using the button below.',
+              'You can view the full request details using the button below.' +
+              calendarLinkHtml,
         displayName: 'TEAM Group - Employee Onboarding',
-        // Update URL to request details - REMOVED BUTTON as per user request
-        formUrl: '', 
+        formUrl: '',
         contextData: context
       });
       Logger.log('[SUCCESS] Completion email sent to requester & manager (Hourly/No System Access)');
     } else {
       updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed', '', actingUser);
       const itUrl = buildFormUrl('it_setup', { wf: workflowId });
+
+      // E2: CC payroll if ADP Supervisor access is required
+      const systemsList = Array.isArray(context && context.systems) ? context.systems : [];
+      const hasAdpSupervisor = systemsList.some(s => String(s).toLowerCase().includes('adp supervisor'));
+      const itRecipients = hasAdpSupervisor ? CONFIG.EMAILS.IT + ',' + CONFIG.EMAILS.PAYROLL : CONFIG.EMAILS.IT;
+
       sendFormEmail({
-        to: CONFIG.EMAILS.IT,
+        to: itRecipients,
         subject: 'HR Verified: IT Setup Required',
         body: 'HR has verified the employee details and assigned an ADP ID.\n\nPlease complete the IT setup form using the button below.',
         formUrl: itUrl,
         displayName: 'TEAM Group - Employee Onboarding',
         contextData: context
       });
-      Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)');
+      Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)' + (hasAdpSupervisor ? ' — CC: Payroll (ADP Supervisor required)' : ''));
+
+      // E3: Notify payroll for salary new hires after HR confirmation
+      sendFormEmail({
+        to: CONFIG.EMAILS.PAYROLL,
+        subject: 'New Salary Hire: HR Verified - ' + formData.firstName + ' ' + formData.lastName,
+        body: 'HR has completed verification for a new salary employee. IT setup is now in progress.<br><br>' +
+              '<b>Employee:</b> ' + formData.firstName + ' ' + formData.lastName + '<br>' +
+              '<b>ADP ID:</b> ' + formData.adpAssociateId + '<br>' +
+              '<b>Job Title:</b> ' + (formData.jobTitle || 'N/A') + '<br>' +
+              '<b>JR Title:</b> ' + (formData.jrTitle || 'N/A') + '<br>' +
+              '<b>Site:</b> ' + (context ? context.siteName : 'N/A') + '<br>' +
+              '<b>Start Date:</b> ' + (context ? context.hireDate : 'N/A') + '<br>',
+        formUrl: '',
+        contextData: context
+      });
+      Logger.log('[SUCCESS] Payroll notification sent for salary new hire.');
     }
     
     return {

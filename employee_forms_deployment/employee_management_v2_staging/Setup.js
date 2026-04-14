@@ -26,8 +26,8 @@ function initializeSystem() {
     // 1b. Initialize Dashboard View Sheet (Flat, instantaneous UI read model)
     initSheet(ss, CONFIG.SHEETS.DASHBOARD_VIEW, [
       'Workflow ID', 'Employee Name', 'Global Status', 'Granular Step Details',
-      'Requester Name', 'Requester Email', 'Initiator Email', 'Date Requested', 
-      'Last Updated', 'Manager Email', 'Requested Items JSON'
+      'Requester Name', 'Requester Email', 'Initiator Email', 'Date Requested',
+      'Last Updated', 'Manager Email', 'Requested Items JSON', 'Hire Date'
     ]);
     
     // 2. Initialize Initial Requests
@@ -41,7 +41,7 @@ function initializeSystem() {
       'Office 365', 'CC USA', 'Limit USA', 'CC CAN', 'Limit CAN', 'CC HD', 'Limit HD',
       'Phone Req', 'Prev User', 'Prev Number', 'BOSS Sites', 'BOSS Cost Sheet',
       'BOSS Jobs', 'BOSS Trip', 'BOSS Grievances', 'Jonas Job #s', 'JR Req', 'JR Assign',
-      '30/60/90', 'Comments', 'Status'
+      '30/60/90', 'Comments', 'ADP Sites', 'Department', 'Purchasing Sites', 'Status'
     ]);
     
     // 3. Initialize ID Setup Results
@@ -84,7 +84,7 @@ function initializeSystem() {
       'Employee Name', 'Employee ID', 'Employee Type', 'Work Email', 'Phone', 'Computer Serial', 
       'Site', 'Term Date', 'Reason', 'Manager Name', 'Manager Email', 'HR Approved Status', 'Has Reports', 'Reassign Reports To', 
       'Systems to Deactivate', 'Email Forwarding', 'Drive Files Transfer', 'Inbox Delegate', 'Account Duration', 'Vacation Responder Auto Reply',
-      'Equipment to Return', 'Comments'
+      'Equipment to Return', 'Comments', 'Last Day Worked'
     ]);
     
     initSheet(ss, CONFIG.SHEETS.POSITION_CHANGES, [
@@ -92,6 +92,7 @@ function initializeSystem() {
       'Employee Name', 'Employee ID', 'Effective Date', 'Current Site', 'Change Types', 
       'Site Transfer (Old -> New)', 'Title Change (Old -> New)', 'Classification (Old -> New)', 
       'Manager Change (Old -> New Email)', 'Reassign Old Reports', 'Gain New Reports',
+      'Google Account', 'Systems Added', 'Equipment', 'Removed Access', 'Comments', 'Department'
     ]);
 
     // 7b. Initialize Equipment Requests

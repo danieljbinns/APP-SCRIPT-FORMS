@@ -27,6 +27,12 @@ function serveSpecialist(workflowId, dept) {
   let requestData = {};
   if (typeof getITContextData === 'function') {
     requestData = getITContextData(workflowId);
+    if (typeof getWorkflowContext === 'function') {
+      const wfContext = getWorkflowContext(workflowId);
+      if (wfContext) {
+        requestData = Object.assign({}, requestData, wfContext);
+      }
+    }
   } else {
     // Fallback if IT function not available in this scope (should act as library)
     requestData = { employeeName: 'Loading...' }; 

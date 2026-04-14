@@ -307,12 +307,17 @@
 
                 <!-- Conditional Sections for Type of Change -->
                 <div id="site_sec" class="logic-section">
-                    <h3>Site Transfer</h3>
+                    <h3>Site Transfer / Department Change</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Same site is valid — use this section for department-only changes. Select the same site for both fields and enter the new department below.</p>
                     <div class="form-row">
                         <div class="form-field"><label>Current Site</label><select name="siteOld"
                                 class="site-list"></select></div>
                         <div class="form-field"><label>New Site</label><select name="siteNew"
                                 class="site-list"></select></div>
+                    </div>
+                    <div class="form-field" style="margin-top: 10px;">
+                        <label>New Department <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span></label>
+                        <input type="text" name="department" placeholder="e.g. Operations, Finance, Field Services">
                     </div>
                 </div>
 
@@ -432,6 +437,15 @@
                             (Portal Access)</span></label>
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="Google Account"
                             onchange="toggleSec('new_google_sec', this)"><span>New Google Account</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Central Purchasing"
+                            id="centralPurchasingAccess" onchange="toggleCentralPurchasing()"><span>Central Purchasing Required</span></label>
+                    <!-- Central Purchasing Sites sub-section (I6) -->
+                    <div id="purchasingSitesSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Required Purchasing Sites <span style="color: var(--brand-red);">*</span></label>
+                        <div id="purchasingSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
                 </div>
 
                 <div id="boss_sec" class="logic-section">
@@ -730,12 +744,30 @@
         DirectoryAutocomplete.setup({ inputSelector: '#newReportsFrom' });
         DirectoryAutocomplete.setup({ inputSelector: '#existingEmail' });
 
+        // I6: Toggle Central Purchasing sites panel
+        function toggleCentralPurchasing() {
+            const checked = document.getElementById('centralPurchasingAccess') && document.getElementById('centralPurchasingAccess').checked;
+            document.getElementById('purchasingSitesSection').style.display = checked ? 'block' : 'none';
+        }
+
         // Dynamic Populators
         const populateFormDropdowns = function (data) {
             const sites = document.querySelectorAll('.site-list, #siteName');
             sites.forEach(s => data.sites.forEach(site => {
                 const opt = document.createElement('option'); opt.value = site; opt.textContent = site; s.appendChild(opt);
             }));
+
+            // I6: Populate Central Purchasing sites checkboxes
+            const purchasingContainer = document.getElementById('purchasingSitesCheckboxes');
+            if (purchasingContainer && data.sites && data.sites.length) {
+                purchasingContainer.innerHTML = '';
+                data.sites.forEach(function(site) {
+                    const label = document.createElement('label');
+                    label.className = 'checkbox-label';
+                    label.innerHTML = '<input type="checkbox" name="purchasingSites" value="' + site + '"> ' + site;
+                    purchasingContainer.appendChild(label);
+                });
+            }
             data.committees.forEach(c => {
                 const opt = document.createElement('option'); opt.value = c; opt.textContent = c; document.getElementById('bossComm').appendChild(opt);
             });

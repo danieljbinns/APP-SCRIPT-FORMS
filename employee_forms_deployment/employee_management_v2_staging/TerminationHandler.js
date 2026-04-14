@@ -51,7 +51,8 @@ function submitTerminationRequest(formData) {
       formData.google_duration || 'N/A',
       formData.google_vacation || 'N/A',
       equipment,
-      formData.comments || ''
+      formData.comments || '',
+      formData.lastDayWorked || ''
     ];
     
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATIONS, rowData);
@@ -98,7 +99,30 @@ function submitTerminationRequest(formData) {
     }
 
     sendFormEmail(emailConfig);
-    
+
+    // E3: Notify payroll at the same time HR receives the request
+    sendFormEmail({
+      to: CONFIG.EMAILS.PAYROLL,
+      subject: `End of Employment Submitted: ${formData.empName}`,
+      body: `A new end of employment request has been submitted for ${formData.empName} and is pending HR approval.<br><br>` +
+            `<b>Employee:</b> ${formData.empName}<br>` +
+            `<b>Site:</b> ${formData.siteName}<br>` +
+            `<b>Employee Type:</b> ${formData.empType || 'N/A'}<br>` +
+            `<b>Termination Date:</b> ${formData.termDate}<br>` +
+            `<b>Last Day Worked:</b> ${formData.lastDayWorked || 'N/A'}<br>` +
+            `<b>Manager:</b> ${formData.managerName || 'N/A'}<br>` +
+            `<b>Reason:</b> ${formData.reason || 'N/A'}<br>`,
+      formUrl: '',
+      contextData: {
+        employeeName: formData.empName,
+        siteName: formData.siteName,
+        employmentType: formData.empType,
+        hireDate: formData.termDate,
+        managerName: formData.managerName,
+        managerEmail: formData.managerEmail
+      }
+    });
+
     return { success: true, workflowId: workflowId, message: 'Termination request submitted and sent to HR for approval.' };
   } catch (error) {
     Logger.log('[ERROR] Termination submission error: ' + error.toString());
@@ -142,7 +166,8 @@ function getTerminationData(workflowId) {
       duration: data[23],
       vacation: data[24]
     },
-    originalComments: data[26]
+    originalComments: data[26],
+    lastDayWorked: data[27] ? (data[27] instanceof Date ? Utilities.formatDate(new Date(data[27]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[27]) : ''
   };
 }
 
@@ -240,19 +265,31 @@ function submitTerminationApproval(formData) {
       
       updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Processing');
       
+      // E4: Payroll approval notification with direct reports and last day worked info
       sendFormEmail({
-        to: 'payroll@team-group.com',
+        to: CONFIG.EMAILS.PAYROLL,
         subject: `End of Employment Approved: ${termData.employeeName}`,
         body: `HR has approved the end of employment for ${termData.employeeName}.<br><br>` +
               `<b>Employee:</b> ${termData.employeeName}<br>` +
               `<b>Termination Date:</b> ${termData.termDate}<br>` +
+              `<b>Last Day Worked:</b> ${termData.lastDayWorked || 'N/A'}<br>` +
               `<b>Manager:</b> ${termData.managerName}<br>` +
               `<b>Site:</b> ${termData.siteName}<br>` +
-              `<b>Employee Type:</b> ${termData.employeeType || 'N/A'}<br>` +
+              `<b>Employee Type:</b> ${termData.empType || 'N/A'}<br>` +
               `<b>Has Direct Reports:</b> ${termData.hasReports || 'N/A'}<br>` +
+              `<b>Reports Reassigned To:</b> ${termData.reportsToNew || 'N/A'}<br>` +
               `<b>Reason:</b> ${termData.reason || 'N/A'}<br>` +
               `<b>HR Notes:</b> ${notes || 'None'}<br>`,
-        formUrl: ''
+        formUrl: '',
+        contextData: {
+          employeeName: termData.employeeName,
+          siteName: termData.siteName,
+          employmentType: termData.empType,
+          hireDate: termData.termDate,
+          managerName: termData.managerName,
+          managerEmail: termData.managerEmail,
+          reason: termData.reason
+        }
       });
       
       return { success: true, message: `End of employment approved. ${tasksCreated} checklists generated.` };

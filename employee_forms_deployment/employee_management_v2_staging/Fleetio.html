@@ -134,6 +134,41 @@
         <h1>Fleetio Setup</h1>
         <p class="subtitle">Please confirm this setup task is complete.</p>
 
+        <!-- Request Details Panel -->
+        <div
+            style="background: #151515; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+            <h3
+                style="margin-top:0; margin-bottom: 15px; color: var(--brand-red); font-size: 14px; text-transform: uppercase;">
+                Request Details</h3>
+            <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: var(--text-muted);">
+                <div><strong>Employee:</strong>
+                    <?= requestData.employeeName || '-' ?>
+                </div>
+                <div><strong>Start Date:</strong>
+                    <?= requestData.hireDate || '-' ?>
+                </div>
+                <div><strong>Job Title:</strong>
+                    <?= requestData.jobTitle || '-' ?>
+                </div>
+                <div><strong>Manager:</strong>
+                    <?= requestData.managerName || '-' ?>
+                </div>
+                <div><strong>Site:</strong>
+                    <?= requestData.siteName || '-' ?>
+                </div>
+                <div><strong>Requested JR:</strong>
+                    <?= requestData.jrTitle || '-' ?>
+                </div>
+            </div>
+            <? if(requestData.systems && requestData.systems.length > 0) { ?>
+            <div style="margin-top: 15px; font-size: 13px; color: var(--text-muted);">
+                <strong>Systems Requested:</strong>
+                <?= requestData.systems.join(', ') ?>
+            </div>
+            <? } ?>
+        </div>
+
         <form id="specialistForm">
             <div class="form-group">
                 <label>Workflow ID</label>

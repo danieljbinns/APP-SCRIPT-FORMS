@@ -324,13 +324,14 @@
                         <th>Status</th>
                         <th>Current Action Pending</th>
                         <th>Requester</th>
+                        <th>Start Date</th>
                         <th>Date Requested</th>
                         <th>Last Updated</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="6" style="text-align:center; padding: 40px;">Loading requests...</td>
+                        <td colspan="7" style="text-align:center; padding: 40px;">Loading requests...</td>
                     </tr>
                 </tbody>
             </table>
@@ -366,6 +367,8 @@
             <div class="modal-footer">
                 <button class="action-btn" style="background:var(--info); color:white; margin-right:auto;"
                     onclick="openFullPage()">View Full Data Page &rarr;</button>
+                <button id="btnEditDate" class="action-btn" style="display:none; background:#555; color:white;"
+                    onclick="editHireDate()">Edit Start Date</button>
                 <button id="btnCancel" class="action-btn cancel-btn" onclick="cancelCurrentRequest()">Cancel Entire
                     Request</button>
                 <button class="action-btn" style="background:#555; color:white;" onclick="closeModal()">Close</button>
@@ -387,6 +390,7 @@
         let allWorkflows = [];
         let filteredWorkflows = []; // For search + pagination combo
         let currentWorkflowId = null;
+        let canEditDates = false; // D2: set from server response
 
         // Filtering and Sorting State
         let currentSort = 'DATE_DESC';
@@ -400,7 +404,7 @@
 
         function loadData() {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
             google.script.run.withSuccessHandler(displayData).withFailureHandler(showError).getDashboardData();
         }
 
@@ -417,6 +421,7 @@
                 return;
             }
             allWorkflows = response.workflows;
+            canEditDates = !!response.canEditDates; // D2
             applyFiltersAndSort(); // Triggers sorting and initially setting filteredWorkflows
         }
 
@@ -445,7 +450,7 @@
             const currentData = filteredWorkflows.slice(startIndex, endIndex);
 
             if (currentData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
                 updatePaginationUI(0, 0, 0);
                 return;
             }
@@ -468,6 +473,7 @@
                     '<div>' + wf.requesterName + '</div>' +
                     '<div style="font-size: 11px; color:#666;">' + wf.initiator + '</div>' +
                     '</td>' +
+                    '<td>' + (wf.hireDate || '-') + '</td>' +
                     '<td>' + wf.dateRequested + '</td>' +
                     '<td>' + wf.lastUpdated + '</td>' +
                     '</tr>';
@@ -508,7 +514,7 @@
         }
 
         function showError(msg) {
-            document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
         }
 
         // Setup Search and Filter Event Listeners
@@ -583,6 +589,9 @@
             currentWorkflowId = id;
             document.getElementById('detailsModal').style.display = 'flex';
             document.getElementById('modalTitle').innerText = (type === 'End of Employment' ? 'End of Employment Details: ' : 'Request Details: ') + id;
+            // D2: Show edit date button for onboarding workflows if user has permission
+            const editBtn = document.getElementById('btnEditDate');
+            if (editBtn) editBtn.style.display = (canEditDates && type !== 'End of Employment') ? 'inline-block' : 'none';
 
             // Show loading state first
             document.getElementById('modalContent').innerHTML =
@@ -836,6 +845,36 @@
 
         function openFormForWorkflow(formName, id) {
             window.open('<?= getBaseUrl() ?>?form=' + formName + '&id=' + id + '&wf=' + id, '_blank');
+        }
+
+        // D2: Edit hire/start date (HR, IT, Admin only)
+        function editHireDate() {
+            const newDate = prompt('Enter new start date (YYYY-MM-DD):');
+            if (!newDate) return;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+                alert('Invalid date format. Please use YYYY-MM-DD.');
+                return;
+            }
+            const btn = document.getElementById('btnEditDate');
+            btn.innerText = 'Saving...';
+            btn.disabled = true;
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    btn.innerText = 'Edit Start Date';
+                    btn.disabled = false;
+                    if (res.success) {
+                        alert('Start date updated successfully.');
+                        loadData();
+                    } else {
+                        alert('Error: ' + res.message);
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    btn.innerText = 'Edit Start Date';
+                    btn.disabled = false;
+                    alert('Error: ' + err.message);
+                })
+                .updateHireDate(currentWorkflowId, newDate);
         }
 
         function cancelCurrentRequest() {

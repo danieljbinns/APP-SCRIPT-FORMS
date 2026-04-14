@@ -141,9 +141,18 @@ function sendFormEmail(options) {
   }
   
   try {
+    // E1: Auto-prepend [EmploymentType | Site] to subject when contextData provides those fields
+    let enrichedSubject = subject;
+    if (contextData && (contextData.employmentType || contextData.siteName)) {
+      const parts = [];
+      if (contextData.employmentType) parts.push(contextData.employmentType);
+      if (contextData.siteName) parts.push(contextData.siteName);
+      if (parts.length > 0) enrichedSubject = '[' + parts.join(' | ') + '] ' + subject;
+    }
+
     const redirectEmail = ConfigurationService.getSetting('EMAIL_REDIRECT_ALL');
     const finalTo = redirectEmail ? redirectEmail : to;
-    const finalSubject = redirectEmail ? '[TEST] ' + subject : subject;
+    const finalSubject = redirectEmail ? '[TEST] ' + enrichedSubject : enrichedSubject;
     
     // If redirected, add a notice to the top of the body
     let finalBody = body;

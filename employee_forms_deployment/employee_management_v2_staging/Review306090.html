@@ -14,6 +14,7 @@
             --text-muted: #a0a0a0;
             --brand-red: #EB1C2D;
             --border-color: #333;
+            --input-bg: #2a2a2a;
         }
 
         body {
@@ -118,7 +119,7 @@
             border-radius: 50%;
             border-top-color: var(--brand-red);
             animation: spin 1s linear infinite;
-            mb: 15px;
+            margin-bottom: 15px;
         }
 
         @keyframes spin {
@@ -134,6 +135,41 @@
         <h1>Review 30/60/90 Setup</h1>
         <p class="subtitle">Please confirm this setup task is complete.</p>
 
+        <!-- Request Details Panel -->
+        <div
+            style="background: #151515; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+            <h3
+                style="margin-top:0; margin-bottom: 15px; color: var(--brand-red); font-size: 14px; text-transform: uppercase;">
+                Request Details</h3>
+            <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: var(--text-muted);">
+                <div><strong>Employee:</strong>
+                    <?= requestData.employeeName || '-' ?>
+                </div>
+                <div><strong>Start Date:</strong>
+                    <?= requestData.hireDate || '-' ?>
+                </div>
+                <div><strong>Job Title:</strong>
+                    <?= requestData.jobTitle || '-' ?>
+                </div>
+                <div><strong>Manager:</strong>
+                    <?= requestData.managerName || '-' ?>
+                </div>
+                <div><strong>Site:</strong>
+                    <?= requestData.siteName || '-' ?>
+                </div>
+                <div><strong>Requested JR:</strong>
+                    <?= requestData.jrTitle || '-' ?>
+                </div>
+            </div>
+            <? if(requestData.systems && requestData.systems.length > 0) { ?>
+            <div style="margin-top: 15px; font-size: 13px; color: var(--text-muted);">
+                <strong>Systems Requested:</strong>
+                <?= requestData.systems.join(', ') ?>
+            </div>
+            <? } ?>
+        </div>
+
         <form id="specialistForm">
             <div class="form-group">
                 <label>Workflow ID</label>
@@ -143,6 +179,26 @@
                 <input type="hidden" name="workflowId" value="<?= workflowId ?>">
                 <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
                 <input type="hidden" name="department" value="review">
+            </div>
+
+            <div class="form-group">
+                <label>JR Title (Confirm Requested JR) <span style="color:var(--brand-red);">*</span></label>
+                <select name="jrTitle" id="jrTitle"
+                    data-original-value="<?= requestData.jrTitle || requestData.position ?>" required
+                    style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); box-sizing: border-box;">
+                    <option value="">Loading titles...</option>
+                </select>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">
+                    Requested JR: <strong>
+                        <?= requestData.jrTitle || 'None' ?>
+                    </strong>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>30/60/90 Document Link</label>
+                <input type="url" name="documentLink" placeholder="https://docs.google.com/..."
+                    style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); box-sizing: border-box;">
             </div>
 
             <div class="form-group">
@@ -168,6 +224,43 @@
     </div>
 
     <script>
+        // Load JRs on startup
+        window.addEventListener('DOMContentLoaded', function () {
+            google.script.run
+                .withSuccessHandler(function (jrs) {
+                    const select = document.getElementById('jrTitle');
+                    const originalValue = select.getAttribute('data-original-value');
+
+                    select.innerHTML = '<option value="">-- Select Confirmed Title --</option>';
+
+                    if (jrs && jrs.length) {
+                        jrs.forEach(function (jr) {
+                            const option = document.createElement('option');
+                            option.value = jr;
+                            option.textContent = jr;
+                            if (jr === originalValue) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                        });
+                    }
+
+                    if (originalValue && (!jrs || !jrs.includes(originalValue))) {
+                        const option = document.createElement('option');
+                        option.value = originalValue;
+                        option.textContent = originalValue + ' (Original Requested)';
+                        option.selected = true;
+                        select.appendChild(option);
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    console.error('Failed to load JRs', err);
+                    const select = document.getElementById('jrTitle');
+                    select.innerHTML = '<option value="">Error loading titles</option>';
+                })
+                .getJRsList();
+        });
+
         document.getElementById('specialistForm').onsubmit = function (e) {
             e.preventDefault();
             document.getElementById('loading-overlay').style.display = 'flex';
@@ -177,7 +270,9 @@
             const data = {
                 workflowId: form.workflowId.value,
                 department: form.department.value,
-                notes: form.notes.value
+                notes: form.notes.value,
+                documentLink: form.documentLink.value,
+                jrTitle: form.jrTitle.value
             };
 
             google.script.run
