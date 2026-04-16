@@ -513,9 +513,9 @@ function sendBatchEmails(emailList) {
  * @param {string} config.siteDocsEmail - SITEDOCS team email address
  */
 function sendInitialRequestEmails(config) {
-  const { requestId, employeeName, hireDate, requesterEmail, employeeIdSetupUrl, siteDocsEmail, 
-          jobTitle, siteName, managerName, managerEmail, requestDate, employmentType, employeeType, 
-          newHireOrRehire, systemAccess, systems, equipment } = config;
+  const { requestId, employeeName, hireDate, requesterEmail, employeeIdSetupUrl, siteDocsEmail,
+          jobTitle, siteName, managerName, managerEmail, requestDate, employmentType, employeeType,
+          newHireOrRehire, systemAccess, systems, equipment, department } = config;
   
   Logger.log('Sending initial request emails for: ' + requestId);
   
@@ -535,7 +535,8 @@ function sendInitialRequestEmails(config) {
     newHireOrRehire: newHireOrRehire,
     systemAccess: systemAccess,
     systems: Array.isArray(systems) ? systems : (systems ? systems.split(',').map(s => s.trim()) : []),
-    equipmentRaw: Array.isArray(equipment) ? equipment.join(', ') : equipment
+    equipmentRaw: Array.isArray(equipment) ? equipment.join(', ') : equipment,
+    department: department || ''
   };
   
   try {

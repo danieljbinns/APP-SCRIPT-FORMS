@@ -59,7 +59,7 @@ function submitInitialRequest(formData) {
     sendInitialRequestEmails({
       requestId: workflowId,
       employeeName: employeeName,
-      jobTitle: formData.positionTitle, // HR Job Title (Text)
+      jobTitle: formData.positionTitle,
       siteName: formData.siteName,
       hireDate: formData.hireDate,
       managerName: formData.reportingManagerName,
@@ -72,6 +72,7 @@ function submitInitialRequest(formData) {
       systemAccess: formData.systemAccess,
       systems: formData.systems,
       equipment: formData.equipment,
+      department: formData.department || '',
       employeeIdSetupUrl: idSetupUrl,
       siteDocsEmail: CONFIG.EMAILS.IDSETUP
     });
@@ -91,12 +92,16 @@ function submitInitialRequest(formData) {
               '<b>Manager:</b> ' + (formData.reportingManagerName || 'N/A') + '<br>',
         formUrl: '',
         contextData: {
+          workflowType: 'New Hire',
           employeeName: employeeName,
           siteName: formData.siteName,
           hireDate: formData.hireDate,
           employmentType: formData.employmentType,
+          employeeType: formData.employeeType,
+          department: formData.department || '',
           managerName: formData.reportingManagerName,
-          managerEmail: formData.reportingManagerEmail
+          managerEmail: formData.reportingManagerEmail,
+          requesterEmail: formData.requesterEmail
         }
       });
     }
