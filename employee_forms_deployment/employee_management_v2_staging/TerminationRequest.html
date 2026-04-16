@@ -637,7 +637,7 @@
         if (INJECTED_REF_DATA) {
             populateFormDropdowns(INJECTED_REF_DATA);
         } else {
-            google.script.run.withSuccessHandler(populateFormDropdowns).getInitialFormData();
+            google.script.run.withSuccessHandler(populateFormDropdowns).withFailureHandler(console.error).getInitialFormData();
         }
 
         // 1. Current User Details
@@ -646,7 +646,7 @@
                 document.getElementById('reqEmail').value = user.email;
                 document.getElementById('reqName').value = user.name || 'Unknown User';
             }
-        }).getCurrentUserDetails();
+        }).withFailureHandler(console.error).getCurrentUserDetails();
 
         // Initialize Autocomplete for multiple fields
         DirectoryAutocomplete.setup({ inputSelector: '#reports_to_new' });
@@ -659,6 +659,7 @@
                 .withSuccessHandler(function (url) {
                     window.open(url + '?form=termination_request', '_top');
                 })
+                .withFailureHandler(function(err) { alert('Error: ' + err.message); })
                 .getBaseUrl();
         }
     </script>

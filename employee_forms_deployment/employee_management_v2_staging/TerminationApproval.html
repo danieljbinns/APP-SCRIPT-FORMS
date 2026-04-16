@@ -315,6 +315,7 @@
                         btn.textContent = 'Process Approval';
                     }
                 })
+                .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Process Approval'; alert('Error: ' + err.message); })
                 .submitTerminationApproval(formData);
         }
     </script>

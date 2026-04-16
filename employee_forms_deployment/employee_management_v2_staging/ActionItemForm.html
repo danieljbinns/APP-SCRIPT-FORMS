@@ -593,6 +593,7 @@
                     // Optional: Refresh labels to show audit trail
                     location.reload();
                 })
+                .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Save Progress'; alert('Error saving: ' + err.message); })
                 .saveActionItemDraft(taskId, notes, draft);
         }
 
@@ -649,6 +650,7 @@
                         `;
                     }
                 })
+                .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Finalize'; alert('Error: ' + err.message); })
                 .closeActionItemWithNotes(taskId, notes, JSON.stringify(taskDraft));
         }
 

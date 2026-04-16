@@ -251,6 +251,7 @@
                         btn.textContent = 'Confirm Collection Receipt';
                     }
                 })
+                .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Confirm Collection Receipt'; alert('Error: ' + err.message); })
                 .submitAssetRetrieval(formData);
         }
     </script>

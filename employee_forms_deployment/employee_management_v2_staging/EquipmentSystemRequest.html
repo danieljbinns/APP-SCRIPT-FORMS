@@ -1020,7 +1020,7 @@
       } else {
         console.error('❌ Failed to inject serverData, synchronous population aborted.');
         // Traditional fallback
-        google.script.run.withSuccessHandler(populateAll).getInitialFormData();
+        google.script.run.withSuccessHandler(populateAll).withFailureHandler(console.error).getInitialFormData();
       }
     });
 

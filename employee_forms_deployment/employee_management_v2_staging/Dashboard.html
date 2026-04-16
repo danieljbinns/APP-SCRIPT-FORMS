@@ -846,6 +846,7 @@
                 .withSuccessHandler(res => {
                     alert(res.message);
                 })
+                .withFailureHandler(function(err) { alert('Error: ' + err.message); })
                 .bumpRequest(currentWorkflowId, target);
         }
 
@@ -898,6 +899,7 @@
                     closeModal();
                     loadData(); // Refresh list
                 })
+                .withFailureHandler(function(err) { btn.innerText = 'Cancel Request'; btn.disabled = false; alert('Error: ' + err.message); })
                 .cancelRequest(currentWorkflowId);
         }
     </script>

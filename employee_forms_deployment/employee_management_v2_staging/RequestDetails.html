@@ -691,7 +691,7 @@
 
         function bump(target) {
             if (!confirm('Send reminder email?')) return;
-            google.script.run.withSuccessHandler(alert).bumpRequest(workflowId, target);
+            google.script.run.withSuccessHandler(alert).withFailureHandler(function(err) { alert('Error: ' + err.message); }).bumpRequest(workflowId, target);
         }
 
         function viewStepData(stepType) {
