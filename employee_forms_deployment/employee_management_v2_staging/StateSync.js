@@ -59,13 +59,14 @@ function syncWorkflowState(workflowId) {
     if (foundReq) {
       const row = lookupSheet.getRange(foundReq.getRow(), 1, 1, lookupSheet.getLastColumn()).getValues()[0];
       if (isTerm) {
-        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | ... | Term Date[12] | Manager Name[14] | Manager Email[15]
+        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | ... | Site[11] | Term Date[12] | Manager Name[14] | Manager Email[15]
         reqInfo = {
           requesterName: row[3] || 'Unknown',
           requesterEmail: row[4] || '',
           managerEmail: row[15] || '',
           dateRequested: row[2] instanceof Date ? row[2].toLocaleDateString() : String(row[2] || ''),
           hireDate: row[12] instanceof Date ? row[12].toLocaleDateString() : String(row[12] || ''), // Term Date
+          site: String(row[11] || ''),
           items: {
              // For EOE, we don't have the same "specialist" items map, but we can detect if approval is done
              isTerm: true
@@ -78,6 +79,7 @@ function syncWorkflowState(workflowId) {
           managerEmail: row[17] || '',
           dateRequested: row[3] instanceof Date ? row[3].toLocaleDateString() : String(row[3] || ''),
           hireDate: row[6] instanceof Date ? row[6].toLocaleDateString() : String(row[6] || ''), // Hire Date
+          site: String(row[15] || ''), // Site Name
           items: {
             jonas: (row[44] && row[44].toString().length > 0),
             creditCard: (row[30] === 'Yes' || row[32] === 'Yes' || row[34] === 'Yes'),
@@ -128,11 +130,11 @@ function syncWorkflowState(workflowId) {
     }
     
     // 3. Prepare the flat row for the View sheet
-    // Headers: Workflow ID | Employee Name | Global Status | Granular Step Details | Requester Name | Requester Email | Initiator Email | Date Requested | Last Updated | Manager Email | Requested Items JSON
+    // Headers: Workflow ID | Employee Name | Global Status | Granular Step Details | Requester Name | Requester Email | Initiator Email | Date Requested | Last Updated | Manager Email | Requested Items JSON | Start/Term Date | Site
     const lastUpdated = wfRow[6] instanceof Date ? wfRow[6].toLocaleString() : String(wfRow[6]);
     const initEmail = wfRow[3];
     const empName = wfRow[8];
-    
+
     const outputRow = [
       workflowId,
       empName,
@@ -145,13 +147,14 @@ function syncWorkflowState(workflowId) {
       lastUpdated,
       reqInfo.managerEmail,
       JSON.stringify(reqInfo.items),
-      reqInfo.hireDate || '' // D4: Start/Effective Date
+      reqInfo.hireDate || '',  // col 11: Start/Effective Date
+      reqInfo.site || ''       // col 12: Site
     ];
 
     // 4. Overwrite or Append to Dashboard_View
     const foundView = viewSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
     if (foundView) {
-      viewSheet.getRange(foundView.getRow(), 1, 1, 12).setValues([outputRow]);
+      viewSheet.getRange(foundView.getRow(), 1, 1, 13).setValues([outputRow]);
     } else {
       viewSheet.appendRow(outputRow);
     }

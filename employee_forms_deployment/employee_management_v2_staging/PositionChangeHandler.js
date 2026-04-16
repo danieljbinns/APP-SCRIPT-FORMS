@@ -54,7 +54,8 @@ function submitPositionChangeRequest(formData) {
     if (!sheetSuccess) throw new Error('Failed to record position change in sheet');
     
     updateWorkflow(workflowId, 'In Progress', 'HR Approval Needed', formData.firstName + ' ' + formData.lastName);
-    
+    syncWorkflowState(workflowId);
+
     // Notification ONLY to HR
     const approvalUrl = buildFormUrl('position_change_approval', { wf: workflowId });
     
@@ -185,6 +186,7 @@ function submitPositionChangeApproval(formData) {
       }
       
       updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Change Processed');
+      syncWorkflowState(workflowId);
 
       // E3: Notify payroll after HR approves a status change
       sendFormEmail({
@@ -211,6 +213,7 @@ function submitPositionChangeApproval(formData) {
       return { success: true, message: `Position change approved. ${tasksCreated} action items generated.` };
     } else {
       updateWorkflow(workflowId, 'Rejected', 'Rejected by HR');
+      syncWorkflowState(workflowId);
       return { success: true, message: 'Position change rejected.' };
     }
   } catch (e) {

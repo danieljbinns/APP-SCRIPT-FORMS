@@ -143,7 +143,8 @@ function submitITSetup(formData) {
     
     const actingUser = Session.getActiveUser().getEmail();
     updateWorkflow(workflowId, 'In Progress', 'Specialist Forms Needed', '', actingUser);
-    
+    syncWorkflowState(workflowId);
+
     triggerSpecialists(workflowId, formData);
 
     // Notify Requester

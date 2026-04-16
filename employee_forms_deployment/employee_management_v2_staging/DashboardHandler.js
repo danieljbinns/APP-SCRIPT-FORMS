@@ -51,28 +51,28 @@ function getDashboardData() {
     const viewSheet = ss.getSheetByName(CONFIG.SHEETS.DASHBOARD_VIEW);
 
     if (!viewSheet) {
-      return { success: false, message: 'Dashboard_View sheet not found. Please run Setup.' };
+      return JSON.stringify({ success: false, message: 'Dashboard_View sheet not found. Please run Setup.' });
     }
 
     const userEmail = Session.getActiveUser().getEmail();
 
-    // Read the flat materialized view (Extremely Fast)
-    const data = viewSheet.getDataRange().getValues();
+    // Resolve role ONCE — replaces per-row AdminDirectory + PropertiesService API calls
+    const accessFlags = AccessControlService.getUserAccessFlags(userEmail);
+    const isFullAccess = accessFlags.isFullAccess;
+    const canEditDates = accessFlags.canEditDates;
+    const userEmailLower = userEmail.toLowerCase();
 
+    // Read the flat materialized view — single bulk read
+    const data = viewSheet.getDataRange().getValues();
     if (data.length <= 1) {
-      return { success: true, workflows: [], currentUser: userEmail };
+      return JSON.stringify({ success: true, workflows: [], currentUser: userEmail, canEditDates: canEditDates });
     }
 
-    const viewRows = data.slice(1);
-
-    const flows = viewRows.map(row => {
-      // Map headers to expected JSON structure:
-      // Force strings to avoid [Ljava.lang.Object; serialization failures over HtmlService boundary
+    const flows = data.slice(1).map(row => {
       let items = {};
-      try { if (row[10]) items = JSON.parse(String(row[10])); } catch (e) { }
-
+      try { if (row[10]) items = JSON.parse(String(row[10])); } catch (e) {}
       const workflowId = String(row[0] || '');
-      const isTerm = workflowId.startsWith('TERM_');
+      const isTerm = workflowId.startsWith('TERM_') || workflowId.startsWith('CHANGE_');
       return {
         id: workflowId,
         employee: String(row[1] || ''),
@@ -85,13 +85,20 @@ function getDashboardData() {
         lastUpdated: row[8] instanceof Date ? row[8].toLocaleString() : String(row[8] || ''),
         managerEmail: String(row[9] || ''),
         requestedItems: items,
-        pendingItems: [], // Legacy compat
-        hireDate: row[11] instanceof Date ? row[11].toLocaleDateString() : String(row[11] || ''), // D4
-        type: isTerm ? 'End of Employment' : 'Onboarding'
+        pendingItems: [],
+        hireDate: row[11] instanceof Date ? row[11].toLocaleDateString() : String(row[11] || ''),
+        site: String(row[12] || ''),
+        type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Position Change' : 'Onboarding')
       };
-    }).filter(wf => AccessControlService.canAccessWorkflow(userEmail, wf));
+    }).filter(wf => {
+      if (isFullAccess) return true;
+      return wf.requesterEmail.toLowerCase() === userEmailLower ||
+             wf.managerEmail.toLowerCase() === userEmailLower;
+    });
 
-    // Create Master Workflow Status Map
+    // Termination fallback — catches pre-existing terminations not yet in Dashboard_View.
+    // New terminations land in Dashboard_View via syncWorkflowState in TerminationHandler.
+    const flowIds = new Set(flows.map(f => f.id));
     const workflowsSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
     let wfMap = {};
     if (workflowsSheet) {
@@ -102,51 +109,50 @@ function getDashboardData() {
       const stepIdx = headers.indexOf('Current Step');
       if (idIdx !== -1) {
         for (let i = 1; i < wData.length; i++) {
-           wfMap[String(wData[i][idIdx] || '')] = {
-             status: statusIdx !== -1 ? String(wData[i][statusIdx] || '') : '',
-             step: stepIdx !== -1 ? String(wData[i][stepIdx] || '') : ''
-           };
+          wfMap[String(wData[i][idIdx] || '')] = {
+            status: statusIdx !== -1 ? String(wData[i][statusIdx] || '') : '',
+            step:   stepIdx   !== -1 ? String(wData[i][stepIdx]   || '') : ''
+          };
         }
       }
     }
 
-    // 2. Fetch Terminations
     const termSheet = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
     if (termSheet) {
       const termData = termSheet.getDataRange().getValues();
       if (termData.length > 1) {
-        const termRows = termData.slice(1);
-        termRows.forEach(row => {
+        termData.slice(1).forEach(row => {
           const wfId = String(row[0] || '');
-          if (!wfId || flows.some(f => f.id === wfId)) return; // Skip duplicates or empty rows
+          if (!wfId || flowIds.has(wfId)) return;
+
+          // Apply access filter to fallback rows
+          const reqEmail = String(row[4] || '').toLowerCase();
+          const mgrEmail = String(row[15] || '').toLowerCase();
+          if (!isFullAccess && reqEmail !== userEmailLower && mgrEmail !== userEmailLower) return;
 
           let statusStr = row[16] ? 'Approved' : 'Pending Approval';
-          let stepStr = row[16] ? 'Action Items Pending' : 'HR Approval Needed';
+          let stepStr   = row[16] ? 'Action Items Pending' : 'HR Approval Needed';
 
           if (wfMap[wfId]) {
-              if (wfMap[wfId].status === 'Complete') {
-                  statusStr = 'Complete';
-                  stepStr = wfMap[wfId].step || 'All Actions Completed';
-              } else if (wfMap[wfId].status === 'Rejected') {
-                  statusStr = 'Rejected';
-                  stepStr = wfMap[wfId].step || 'Rejected';
-              } else if (wfMap[wfId].status === 'Cancelled') {
-                  statusStr = 'Cancelled';
-                  stepStr = wfMap[wfId].step || 'Cancelled';
-              }
+            if      (wfMap[wfId].status === 'Complete')   { statusStr = 'Complete';   stepStr = wfMap[wfId].step || 'All Actions Completed'; }
+            else if (wfMap[wfId].status === 'Rejected')   { statusStr = 'Rejected';   stepStr = wfMap[wfId].step || 'Rejected'; }
+            else if (wfMap[wfId].status === 'Cancelled')  { statusStr = 'Cancelled';  stepStr = wfMap[wfId].step || 'Cancelled'; }
+            else if (wfMap[wfId].status === 'In Progress') { stepStr  = wfMap[wfId].step || stepStr; } // B3 fix
           }
 
           flows.push({
-            id: String(row[0] || ''),
-            employee: String(row[5] || ''),
-            status: statusStr,
-            step: stepStr,
-            requesterName: String(row[3] || ''), // row[3] is reqName in Terminations
-            requesterEmail: String(row[4] || ''),
-            initiator: String(row[4] || '-'), // row[4] is reqEmail in Terminations
+            id: wfId,
+            employee:      String(row[5]  || ''),
+            status:        statusStr,
+            step:          stepStr,
+            requesterName: String(row[3]  || ''),
+            requesterEmail:String(row[4]  || ''),
+            initiator:     String(row[4]  || '-'),
             dateRequested: row[2] instanceof Date ? row[2].toLocaleDateString() : String(row[2] || ''),
-            lastUpdated: row[2] instanceof Date ? row[2].toLocaleString() : String(row[2] || ''),
-            managerEmail: String(row[15] || ''),
+            lastUpdated:   row[2] instanceof Date ? row[2].toLocaleString()     : String(row[2] || ''),
+            managerEmail:  String(row[15] || ''),
+            hireDate:      row[12] instanceof Date ? row[12].toLocaleDateString() : String(row[12] || ''),
+            site:          String(row[11] || ''),
             requestedItems: {},
             pendingItems: [],
             type: 'End of Employment'
@@ -155,19 +161,9 @@ function getDashboardData() {
       }
     }
 
-    flows.reverse(); // Latest first based on combined array
+    flows.reverse();
 
-    // D2: Pass permission flag so UI can show/hide the edit hire date button
-    const canEditDates = AccessControlService.canAccessForm(userEmail, 'HR') ||
-                         AccessControlService.canAccessForm(userEmail, 'IT') ||
-                         AccessControlService.isAdmin(userEmail);
-
-    return JSON.stringify({
-      success: true,
-      workflows: flows,
-      currentUser: userEmail,
-      canEditDates: canEditDates
-    });
+    return JSON.stringify({ success: true, workflows: flows, currentUser: userEmail, canEditDates: canEditDates });
 
   } catch (error) {
     Logger.log('Dashboard Error: ' + error.toString());

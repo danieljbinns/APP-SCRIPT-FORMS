@@ -160,11 +160,46 @@ var AccessControlService = (function() {
     return false;
   }
 
+  /**
+   * Resolves all access flags for a user in a single pass.
+   * Call this ONCE per request instead of canAccessWorkflow per row.
+   * Returns { isFullAccess, canEditDates }
+   * @param {string} userEmail
+   * @returns {{isFullAccess: boolean, canEditDates: boolean}}
+   */
+  function getUserAccessFlags(userEmail) {
+    if (!userEmail) return { isFullAccess: false, canEditDates: false };
+    var conf = getConfig();
+
+    // ADMIN_EMAILS check is pure JS — no API call
+    if (CONFIG.ADMIN_EMAILS.indexOf(userEmail) !== -1) return { isFullAccess: true, canEditDates: true };
+
+    // Group checks — short-circuit as early as possible
+    if (isGroupMember(userEmail, conf.MASTER_ADMIN_GROUP)) return { isFullAccess: true, canEditDates: true };
+    if (isGroupMember(userEmail, conf.ALL_FORMS_GROUP))    return { isFullAccess: true, canEditDates: true };
+    if (isGroupMember(userEmail, conf.HR_GROUP))           return { isFullAccess: true, canEditDates: true };
+    if (isGroupMember(userEmail, conf.IT_GROUP))           return { isFullAccess: true, canEditDates: true };
+    if (isGroupMember(userEmail, conf.PAYROLL_GROUP))      return { isFullAccess: true, canEditDates: false };
+
+    // Specialist groups — full visibility, no date editing
+    if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_IDSETUP')))  return { isFullAccess: true, canEditDates: false };
+    if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_SAFETY')))   return { isFullAccess: true, canEditDates: false };
+    if (isGroupMember(userEmail, CONFIG.EMAILS.FLEETIO))          return { isFullAccess: true, canEditDates: false };
+    if (isGroupMember(userEmail, CONFIG.EMAILS.CREDIT_CARD))      return { isFullAccess: true, canEditDates: false };
+    if (isGroupMember(userEmail, CONFIG.EMAILS.BUSINESS_CARDS))   return { isFullAccess: true, canEditDates: false };
+    if (isGroupMember(userEmail, CONFIG.EMAILS.REVIEW_306090_JR)) return { isFullAccess: true, canEditDates: false };
+    if (isGroupMember(userEmail, CONFIG.EMAILS.JONAS))            return { isFullAccess: true, canEditDates: false };
+
+    // Manager/requester — sees only their own workflows, no date editing
+    return { isFullAccess: false, canEditDates: false };
+  }
+
   return {
     canAccessDashboard: canAccessDashboard,
     canAccessForm: canAccessForm,
     canAccessWorkflow: canAccessWorkflow,
-    isAdmin: isAdmin
+    isAdmin: isAdmin,
+    getUserAccessFlags: getUserAccessFlags
   };
 
 })();
