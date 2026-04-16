@@ -87,7 +87,16 @@ function submitPositionChangeRequest(formData) {
       formUrl: approvalUrl,
       contextData: finalContext
     });
-    
+
+    // Notify payroll at same time as HR — same email and form access (payroll handles approval for some locations)
+    sendFormEmail({
+      to: CONFIG.EMAILS.PAYROLL,
+      subject: 'HR Approval Required',
+      body: `A new position/site change request has been submitted for ${formData.firstName} ${formData.lastName}. HR approval is required to proceed.`,
+      formUrl: approvalUrl,
+      contextData: finalContext
+    });
+
     return { success: true, workflowId: workflowId, message: 'Change request submitted and sent to HR for approval.' };
   } catch (error) {
     Logger.log('[ERROR] Position change submission error: ' + error.toString());

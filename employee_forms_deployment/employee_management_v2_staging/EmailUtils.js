@@ -24,15 +24,21 @@ function buildEmailSubject(action, contextData, opts) {
   var workflowType   = contextData.workflowType || '';
   var employmentType = contextData.employmentType || contextData.empType || '';
 
+  // EXPEDITE: Hourly employees that still require system access follow the full HR->IT path.
+  // Flag this in the subject so HR/Payroll don't treat them as standard hourly (skip-IT) cases.
+  var isExpedite = employmentType === 'Hourly' && contextData.systemAccess && contextData.systemAccess !== 'No';
+
   // Tag: Status Change uses change types in tag; others use employment type
   var tag;
   if (workflowType === 'Status Change') {
     var changeTypes = contextData.changeTypes || '';
-    tag = '[Status Change' + (changeTypes ? ': ' + changeTypes : '') + ']';
+    tag = '[Status Change' + (changeTypes ? ': ' + changeTypes : '') +
+          (employmentType ? ' | ' + employmentType : '') +
+          (isExpedite ? ' | EXPEDITE' : '') + ']';
   } else {
     tag = workflowType
-      ? '[' + workflowType + (employmentType ? ' | ' + employmentType : '') + ']'
-      : (employmentType ? '[' + employmentType + ']' : '');
+      ? '[' + workflowType + (employmentType ? ' | ' + employmentType : '') + (isExpedite ? ' | EXPEDITE' : '') + ']'
+      : (employmentType ? '[' + employmentType + (isExpedite ? ' | EXPEDITE' : '') + ']' : '');
   }
 
   // Date label based on workflow type

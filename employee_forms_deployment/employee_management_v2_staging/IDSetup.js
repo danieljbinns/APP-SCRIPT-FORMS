@@ -271,28 +271,48 @@ function triggerNextStepFromIDSetup(workflowId, setupData) {
 
     // 2. CONTINUE TO HR VERIFICATION (Do not mark complete yet)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
+    const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be skipped for this hourly/no-access employee.';
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
       subject: 'HR Verification Required',
-      body: 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be skipped for this hourly/no-access employee.',
+      body: hrBody,
       formUrl: hrUrl,
       displayName: 'TEAM Group - Employee Onboarding',
       contextData: context
     });
-    Logger.log('[SUCCESS] HR Verification email sent (Hourly/No System Access - HR Step active)');
-    
+    // Notify payroll at same time as HR — same email and form access
+    sendFormEmail({
+      to: CONFIG.EMAILS.PAYROLL,
+      subject: 'HR Verification Required',
+      body: hrBody,
+      formUrl: hrUrl,
+      displayName: 'TEAM Group - Employee Onboarding',
+      contextData: context
+    });
+    Logger.log('[SUCCESS] HR Verification email sent to HR + Payroll (Hourly/No System Access - HR Step active)');
+
   } else {
     // Standard Path (Salary OR System Access)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
+    const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be triggered after HR verification.';
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
       subject: 'HR Verification Required',
-      body: 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be triggered after HR verification.',
+      body: hrBody,
       formUrl: hrUrl,
       displayName: 'TEAM Group - Employee Onboarding',
       contextData: context
     });
-    Logger.log('[SUCCESS] HR Verification email sent (Salary/System Access path - IT will follow)');
+    // Notify payroll at same time as HR — same email and form access
+    sendFormEmail({
+      to: CONFIG.EMAILS.PAYROLL,
+      subject: 'HR Verification Required',
+      body: hrBody,
+      formUrl: hrUrl,
+      displayName: 'TEAM Group - Employee Onboarding',
+      contextData: context
+    });
+    Logger.log('[SUCCESS] HR Verification email sent to HR + Payroll (Salary/System Access path - IT will follow)');
   }
 }
 

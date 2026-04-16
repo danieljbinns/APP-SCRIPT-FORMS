@@ -103,28 +103,13 @@ function submitTerminationRequest(formData) {
 
     sendFormEmail(emailConfig);
 
-    // E3: Notify payroll at the same time HR receives the request
+    // Notify payroll at the same time as HR — same email and form access (payroll handles approval for some locations)
     sendFormEmail({
       to: CONFIG.EMAILS.PAYROLL,
-      subject: 'Request Submitted',
-      body: `A new end of employment request has been submitted for ${formData.empName} and is pending HR approval.<br><br>` +
-            `<b>Employee:</b> ${formData.empName}<br>` +
-            `<b>Site:</b> ${formData.siteName}<br>` +
-            `<b>Employee Type:</b> ${formData.empType || 'N/A'}<br>` +
-            `<b>Termination Date:</b> ${formData.termDate}<br>` +
-            `<b>Last Day Worked:</b> ${formData.lastDayWorked || 'N/A'}<br>` +
-            `<b>Manager:</b> ${formData.managerName || 'N/A'}<br>` +
-            `<b>Reason:</b> ${formData.reason || 'N/A'}<br>`,
-      formUrl: '',
-      contextData: {
-        workflowType: 'Termination',
-        employeeName: formData.empName,
-        siteName: formData.siteName,
-        employmentType: formData.empType,
-        hireDate: formData.termDate,
-        managerName: formData.managerName,
-        managerEmail: formData.managerEmail
-      }
+      subject: 'HR Approval Required',
+      body: `A new end of employment request has been submitted for ${formData.empName} and requires your approval to proceed.`,
+      formUrl: approvalUrl,
+      contextData: finalContext
     });
 
     return { success: true, workflowId: workflowId, message: 'Termination request submitted and sent to HR for approval.' };
