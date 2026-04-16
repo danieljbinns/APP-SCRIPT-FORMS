@@ -495,7 +495,7 @@ function getRequestDetails(workflowId) {
     checklist.push({ name: "30/60/90 Review", target: "review", ...reviewData });
 
     const userEmail = Session.getActiveUser().getEmail();
-    context.isAdmin = (userEmail === 'dbinns@team-group.com' || userEmail === 'dbinns@robinsonsolutions.com');
+    context.isAdmin = AccessControlService.isAdmin(userEmail);
 
     context.checklist = checklist;
     return context;

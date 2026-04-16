@@ -18,6 +18,7 @@ var AccessControlService = (function() {
       ALL_FORMS_GROUP: ConfigurationService.getSetting('GROUP_ALL_FORMS'),
       HR_GROUP: ConfigurationService.getSetting('GROUP_HR'),
       IT_GROUP: ConfigurationService.getSetting('GROUP_IT'),
+      PAYROLL_GROUP: ConfigurationService.getSetting('EMAIL_PAYROLL') || 'payroll@team-group.com',
       ALLOWED_DOMAINS: CONFIG.ALLOWED_DOMAINS
     };
   }
@@ -48,19 +49,37 @@ var AccessControlService = (function() {
 
   /**
    * Determines if the user can view the Unified Dashboard.
-   * @param {string} userEmail 
+   * Any authenticated user is allowed in — data is filtered by canAccessWorkflow.
+   * Group checks grant full unfiltered access; all others see only their own workflows.
+   * @param {string} userEmail
    * @returns {boolean}
    */
   function canAccessDashboard(userEmail) {
+    if (!userEmail) return false;
     var conf = getConfig();
-    // 1. Check Master Admin or All Forms Group
+
+    // Admins and broad-access groups
+    if (isAdmin(userEmail)) return true;
     if (isGroupMember(userEmail, conf.MASTER_ADMIN_GROUP)) return true;
     if (isGroupMember(userEmail, conf.ALL_FORMS_GROUP)) return true;
-    
-    // 2. Check if user is from any allowed domain (They get filtered data by default)
-    if (conf.ALLOWED_DOMAINS.some(domain => userEmail.endsWith('@' + domain))) return true;
 
-    return false;
+    // Department groups — full visibility, filtered by canAccessWorkflow
+    if (isGroupMember(userEmail, conf.HR_GROUP)) return true;
+    if (isGroupMember(userEmail, conf.IT_GROUP)) return true;
+    if (isGroupMember(userEmail, conf.PAYROLL_GROUP)) return true;
+
+    // Specialist groups
+    if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_IDSETUP'))) return true;
+    if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_SAFETY'))) return true;
+    if (isGroupMember(userEmail, CONFIG.EMAILS.FLEETIO)) return true;
+    if (isGroupMember(userEmail, CONFIG.EMAILS.CREDIT_CARD)) return true;
+    if (isGroupMember(userEmail, CONFIG.EMAILS.BUSINESS_CARDS)) return true;
+    if (isGroupMember(userEmail, CONFIG.EMAILS.REVIEW_306090_JR)) return true;
+    if (isGroupMember(userEmail, CONFIG.EMAILS.JONAS)) return true;
+
+    // Any authenticated user may enter — canAccessWorkflow filters their data.
+    // Managers and requestors from any domain will see only their own requests.
+    return true;
   }
 
   /**
@@ -77,9 +96,9 @@ var AccessControlService = (function() {
 
     switch (formType) {
       case 'HR':
-        return isGroupMember(userEmail, conf.HR_GROUP);
+        return isGroupMember(userEmail, conf.HR_GROUP) || isGroupMember(userEmail, conf.PAYROLL_GROUP);
       case 'IT':
-        return isGroupMember(userEmail, conf.IT_GROUP); 
+        return isGroupMember(userEmail, conf.IT_GROUP) || isGroupMember(userEmail, conf.PAYROLL_GROUP);
       case 'SPECIALIST':
         // Logic: Check if user was the recipient of the email?
         // This is harder to validate purely by group. 
@@ -98,8 +117,8 @@ var AccessControlService = (function() {
       if (!workflow) return false;
       var conf = getConfig();
       
-      // Service Account Exception - can see all workflows
-      if (userEmail === 'no-reply@team-group.com' || userEmail === 'dbinns@robinsonsolutions.com') return true;
+      // Admin Exception - can see all workflows
+      if (isAdmin(userEmail)) return true;
       
       // Admins & Super Users
       if (isGroupMember(userEmail, conf.MASTER_ADMIN_GROUP)) return true;
@@ -111,9 +130,10 @@ var AccessControlService = (function() {
       // The Manager defined in the workflow
       if (workflow.managerEmail && workflow.managerEmail.toLowerCase() === userEmail.toLowerCase()) return true;
 
-      // HR/IT if relevant to their work (simplified for now)
+      // HR/IT/Payroll have full workflow visibility
       if (isGroupMember(userEmail, conf.HR_GROUP)) return true;
       if (isGroupMember(userEmail, conf.IT_GROUP)) return true;
+      if (isGroupMember(userEmail, conf.PAYROLL_GROUP)) return true;
 
       // Make sure anyone in a group that receives forms can see the whole board
       if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_IDSETUP'))) return true;
@@ -135,7 +155,7 @@ var AccessControlService = (function() {
   function isAdmin(userEmail) {
     if (!userEmail) return false;
     var conf = getConfig();
-    if (userEmail === 'no-reply@team-group.com' || userEmail === 'dbinns@robinsonsolutions.com' || userEmail === 'dbinns@team-group.com') return true;
+    if (CONFIG.ADMIN_EMAILS.indexOf(userEmail) !== -1) return true;
     if (isGroupMember(userEmail, conf.MASTER_ADMIN_GROUP)) return true;
     return false;
   }
