@@ -291,8 +291,12 @@ function cancelRequest(workflowId) {
     const user = Session.getActiveUser().getEmail();
     Logger.log(`Cancel requested for ${workflowId} by ${user}`);
 
-    // Update status to Cancelled
+    if (!AccessControlService.isAdmin(user)) {
+      return { success: false, message: 'Permission denied. Only admins can cancel requests.' };
+    }
+
     updateWorkflow(workflowId, 'Cancelled', 'Request Cancelled', '');
+    syncWorkflowState(workflowId);
 
     return { success: true, message: 'Request cancelled successfully' };
   } catch (error) {
@@ -316,7 +320,8 @@ function getRequestDetails(workflowId) {
     if (!reqSheet) return { success: false, message: 'Initial Requests sheet missing' };
 
     const isTerm = workflowId.startsWith('TERM_');
-    const lookupSheetName = isTerm ? CONFIG.SHEETS.TERMINATIONS : CONFIG.SHEETS.INITIAL_REQUESTS;
+    const isChange = workflowId.startsWith('CHANGE_');
+    const lookupSheetName = isTerm ? CONFIG.SHEETS.TERMINATIONS : (isChange ? CONFIG.SHEETS.POSITION_CHANGES : CONFIG.SHEETS.INITIAL_REQUESTS);
     const lookupSheet = ss.getSheetByName(lookupSheetName);
     
     const foundReq = lookupSheet ? lookupSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
@@ -406,7 +411,7 @@ function getRequestDetails(workflowId) {
       name: "Initial Request",
       status: "Complete",
       by: r['Requester Email'] || 'Unknown',
-      time: r['Submission Timestamp'] instanceof Date ? r['Submission Timestamp'].toLocaleString() : String(r['Submission Timestamp'])
+      time: r['Submission Timestamp'] ? (r['Submission Timestamp'] instanceof Date ? r['Submission Timestamp'].toLocaleString() : String(r['Submission Timestamp'])) : ''
     });
 
     // -- Stage 2: ID Setup --
@@ -503,6 +508,7 @@ function getRequestDetails(workflowId) {
     context.isAdmin = AccessControlService.isAdmin(userEmail);
 
     context.checklist = checklist;
+    context.type = isChange ? 'Position Change' : 'Onboarding';
     return context;
 
   } catch (e) {
@@ -522,8 +528,7 @@ function getStepResultData(workflowId, stepTarget) {
     switch (stepTarget) {
       case 'initial_request': sheetName = CONFIG.SHEETS.INITIAL_REQUESTS; break;
       case 'termination_request': {
-        const tss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-        const tSh = tss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
+        const tSh = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
         if (!tSh) return {};
         const tFound = tSh.getRange("A:A").createTextFinder(workflowId.trim()).matchEntireCell(false).findNext();
         if (!tFound) return {};

@@ -297,6 +297,7 @@
                 <option value="ALL">All Types</option>
                 <option value="ONBOARDING">New Hires</option>
                 <option value="EOE">End of Employment</option>
+                <option value="CHANGE">Position Change</option>
             </select>
             
             <select id="statusFilter" class="search-box" style="width: 180px; cursor: pointer;">
@@ -382,10 +383,6 @@
         var SERVER_BASE_URL = "<?= baseUrl ?>";
 
         // Set dynamic URLs on load
-        window.onload = function () {
-            // var headerBtn = document.getElementById('headerFullScreenBtn');
-            // if (headerBtn) headerBtn.href = SERVER_BASE_URL + '?form=dashboard';
-        };
 
         document.addEventListener('DOMContentLoaded', loadData);
         let allWorkflows = [];
@@ -405,7 +402,7 @@
 
         function loadData() {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
             google.script.run.withSuccessHandler(displayData).withFailureHandler(showError).getDashboardData();
         }
 
@@ -451,7 +448,7 @@
             const currentData = filteredWorkflows.slice(startIndex, endIndex);
 
             if (currentData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
                 updatePaginationUI(0, 0, 0);
                 return;
             }
@@ -466,9 +463,7 @@
                     '<span style="background:var(--brand-red); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">EOE</span>' :
                     (wf.type === 'Onboarding' ? '<span style="background:var(--info); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">NEW HIRE</span>' : '');
 
-                const dateLabel = wf.type === 'End of Employment' ? (wf.hireDate || '-') :
-                                  (wf.type === 'Position Change' ? (wf.hireDate || '-') :
-                                  (wf.hireDate || '-'));
+                const dateLabel = wf.hireDate || '-';
 
                 html += '<tr onclick="openDetails(\'' + wf.id + '\', \'' + wf.type + '\')">' +
                     '<td>' + typeBadge + '<strong>' + (wf.employee || 'Pending Name') + '</strong></td>' +
@@ -520,13 +515,15 @@
         }
 
         function showError(msg) {
-            document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
         }
 
         // Setup Search and Filter Event Listeners
+        let searchDebounce;
         document.getElementById('searchInput').addEventListener('input', function (e) {
             searchTerm = e.target.value.toLowerCase();
-            applyFiltersAndSort();
+            clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(applyFiltersAndSort, 150);
         });
         document.getElementById('typeFilter').addEventListener('change', function (e) {
             currentTypeFilter = e.target.value;
@@ -556,6 +553,7 @@
                 // Type Dropdown
                 if (currentTypeFilter === 'ONBOARDING' && wf.type !== 'Onboarding') return false;
                 if (currentTypeFilter === 'EOE' && wf.type !== 'End of Employment') return false;
+                if (currentTypeFilter === 'CHANGE' && wf.type !== 'Position Change') return false;
 
                 // Status Dropdown
                 if (currentStatusFilter === 'COMPLETED' && wf.status !== 'Completed') return false;
@@ -566,23 +564,17 @@
             });
 
             // 2. Sort
+            const dateMs = {};
+            filteredWorkflows.forEach(wf => { const t = new Date(wf.dateRequested).getTime(); dateMs[wf.id] = isNaN(t) ? 0 : t; });
             filteredWorkflows.sort((a, b) => {
                 if (currentSort === 'NAME_ASC') {
                     return (a.employee || '').localeCompare(b.employee || '');
                 } else if (currentSort === 'STATUS') {
                     return (a.status || '').localeCompare(b.status || '');
                 } else if (currentSort === 'DATE_ASC') {
-                    const dateA = new Date(a.dateRequested).getTime();
-                    const dateB = new Date(b.dateRequested).getTime();
-                    if (!isNaN(dateA) && !isNaN(dateB)) return dateA - dateB;
-                    return (a.id || '').localeCompare(b.id || '');
+                    return (dateMs[a.id] - dateMs[b.id]) || (a.id || '').localeCompare(b.id || '');
                 } else {
-                    // DATE_DESC (Default)
-                    const dateA = new Date(a.dateRequested).getTime();
-                    const dateB = new Date(b.dateRequested).getTime();
-                    if (!isNaN(dateA) && !isNaN(dateB)) return dateB - dateA;
-                    // Fallback to ID sorting Desc
-                    return (b.id || '').localeCompare(a.id || '');
+                    return (dateMs[b.id] - dateMs[a.id]) || (b.id || '').localeCompare(a.id || '');
                 }
             });
 
@@ -650,7 +642,7 @@
 
                     checklist.forEach(c => {
                         let key = c.name;
-                        if (key.includes("Jonas") || key.includes("Credit") || key.includes("Fleet") || key.includes("SiteDocs")) key = "Specialists";
+                        if (key.includes("Jonas") || key.includes("Credit") || key.includes("Fleet") || key.includes("SiteDocs") || key.includes("Business") || key.includes("30") || key.includes("Central")) key = "Specialists";
                         if (!statusMap[key]) statusMap[key] = c.status;
                         if (key === "Specialists" && c.status !== "Complete") statusMap[key] = "Pending";
                     });
