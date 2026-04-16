@@ -24,7 +24,8 @@ function submitPositionChangeRequest(formData) {
     const systems = Array.isArray(formData.sys) ? formData.sys.join(', ') : '';
     const equipment = Array.isArray(formData.equip) ? formData.equip.join(', ') : '';
     const removal = Array.isArray(formData.rem) ? formData.rem.join(', ') : '';
-    
+    const purchasingSites = Array.isArray(formData.purchasingSites) ? formData.purchasingSites.join(', ') : (formData.purchasingSites || '');
+
     const rowData = [
       formData.workflowId,
       formData.formId,
@@ -47,7 +48,8 @@ function submitPositionChangeRequest(formData) {
       equipment,
       removal,
       formData.comments || '',
-      formData.department || ''
+      formData.department || '',
+      purchasingSites       // index 22
     ];
     
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGES, rowData);
@@ -133,7 +135,8 @@ function getPositionChangeData(workflowId) {
     equipment: data[18],
     requesterEmail: data[4],
     comments: data[20],
-    department: data[21] || ''
+    department: data[21] || '',
+    purchasingSites: data[22] || ''
   };
 }
 
@@ -174,6 +177,7 @@ function submitPositionChangeApproval(formData) {
         managerNewEmail: mgrNewEmail,
         systems: changeData.systems,
         equipmentRaw: changeData.equipment,
+        purchasingSites: changeData.purchasingSites || '',
         credentialNote: 'Credentials on file — verify with IDSETUP if role or site requires updates.'
       };
 
@@ -200,12 +204,26 @@ function submitPositionChangeApproval(formData) {
       // 2. If IT action needed (systems or equipment)
       if (nextSteps && nextSteps.includes('IT')) {
         const itTasks = [];
-        const systems = changeData.systems ? changeData.systems.split(', ') : [];
-        systems.forEach(sys => {
+        const allSystems = changeData.systems ? changeData.systems.split(', ') : [];
+
+        // Central Purchasing is handled by Jonas team — filter it out of IT loop
+        const itSystems = allSystems.filter(s => s !== 'Central Purchasing');
+        const cpSystems = allSystems.filter(s => s === 'Central Purchasing');
+
+        itSystems.forEach(sys => {
           const tid = ActionItemService.createActionItem(workflowId, 'IT', `Setup ${sys}`, `Provision access for ${changeData.employeeName}`, CONFIG.EMAILS.IT);
           itTasks.push({ name: `Setup ${sys}`, url: buildFormUrl('action_item_view', { tid: tid }) });
           tasksCreated++;
         });
+
+        // Central Purchasing → Jonas team
+        if (cpSystems.length > 0 || changeData.purchasingSites) {
+          const cpDesc = 'Update Central Purchasing access for ' + changeData.employeeName +
+            (changeData.purchasingSites ? ' — Sites: ' + changeData.purchasingSites : '');
+          const cpTid = ActionItemService.createActionItem(workflowId, 'Purchasing', 'Central Purchasing Update', cpDesc, CONFIG.EMAILS.JONAS);
+          itTasks.push({ name: 'Central Purchasing Update', url: buildFormUrl('action_item_view', { tid: cpTid }) });
+          tasksCreated++;
+        }
 
         const assets = changeData.equipment ? changeData.equipment.split(', ') : [];
         assets.forEach(asset => {

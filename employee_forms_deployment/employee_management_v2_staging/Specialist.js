@@ -12,6 +12,7 @@ function serveSpecialist(workflowId, dept) {
     'businesscards': 'BusinessCards',
     'fleetio': 'Fleetio',
     'jonas': 'Jonas',
+    'centralpurchasing': 'CentralPurchasing',
     'sitedocs': 'SiteDocs',
     'review': 'Review306090'
   };
@@ -58,6 +59,7 @@ function submitSpecialistForm(formData) {
       'businesscards': CONFIG.SHEETS.BUSINESS_CARDS_RESULTS,
       'fleetio': CONFIG.SHEETS.FLEETIO_RESULTS,
       'jonas': CONFIG.SHEETS.JONAS_RESULTS,
+      'centralpurchasing': CONFIG.SHEETS.CENTRAL_PURCHASING_RESULTS,
       'sitedocs': CONFIG.SHEETS.SITEDOCS_RESULTS,
       'review': CONFIG.SHEETS.REVIEW_306090_RESULTS
     };

@@ -215,10 +215,10 @@ function submitTerminationApproval(formData) {
         tasksCreated++;
       }
 
-      // Jonas/Finance Group
-      const financeItems = selectedSystems.filter(s => s === 'Jonas Purchasing');
+      // Jonas/Finance Group (Jonas Purchasing + Central Purchasing — same team, same email)
+      const financeItems = selectedSystems.filter(s => s === 'Jonas Purchasing' || s === 'Central Purchasing');
       if (financeItems.length > 0) {
-        const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Jonas Purchasing Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
+        const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Jonas/Purchasing Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
         sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Finance Action Required', tid, termData, financeItems);
         tasksCreated++;
       }

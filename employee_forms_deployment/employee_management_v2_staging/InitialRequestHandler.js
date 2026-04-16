@@ -77,35 +77,6 @@ function submitInitialRequest(formData) {
       siteDocsEmail: CONFIG.EMAILS.IDSETUP
     });
     
-    // I6: Notify Central Purchasing if that access was requested
-    const systemsList = Array.isArray(formData.systems) ? formData.systems : [];
-    if (systemsList.includes('Central Purchasing')) {
-      const purchasingSitesList = Array.isArray(formData.purchasingSites) ? formData.purchasingSites.join(', ') : 'N/A';
-      sendFormEmail({
-        to: CONFIG.EMAILS.PURCHASING,
-        subject: 'Central Purchasing Access Required',
-        body: 'A new employee onboarding request includes Central Purchasing access for ' + employeeName + '.<br><br>' +
-              '<b>Employee:</b> ' + employeeName + '<br>' +
-              '<b>Site:</b> ' + formData.siteName + '<br>' +
-              '<b>Start Date:</b> ' + formData.hireDate + '<br>' +
-              '<b>Purchasing Sites:</b> ' + purchasingSitesList + '<br>' +
-              '<b>Manager:</b> ' + (formData.reportingManagerName || 'N/A') + '<br>',
-        formUrl: '',
-        contextData: {
-          workflowType: 'New Hire',
-          employeeName: employeeName,
-          siteName: formData.siteName,
-          hireDate: formData.hireDate,
-          employmentType: formData.employmentType,
-          employeeType: formData.employeeType,
-          department: formData.department || '',
-          managerName: formData.reportingManagerName,
-          managerEmail: formData.reportingManagerEmail,
-          requesterEmail: formData.requesterEmail
-        }
-      });
-    }
-
     return {
       success: true,
       workflowId: workflowId,

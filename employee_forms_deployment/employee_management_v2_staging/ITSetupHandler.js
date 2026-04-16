@@ -61,6 +61,7 @@ function getITContextData(workflowId) {
           fleetioAccess: mainData[i][20] && mainData[i][20].includes('Fleetio') ? 'Yes' : 'No',
           jobSiteNumber: mainData[i][16], // Col 16 = Job Site #
           department: headers.indexOf('Department') !== -1 ? mainData[i][headers.indexOf('Department')] : '',
+          purchasingSites: mainData[i][51] || '', // Col 51 = Purchasing Sites (joined)
           workflowType: 'New Hire'
         };
         break;
@@ -296,6 +297,20 @@ function triggerSpecialists(workflowId, itData) {
             '<b>Login Email:</b> ' + assignedEmail + '<br>' +
             '<b>Job Numbers:</b><br>• ' + safeJobNumbers + '<br>',
       param: 'jonas'
+    });
+  }
+
+  // 6. Central Purchasing — uses same Jonas team email, only if sites were selected
+  if (context.purchasingSites && context.purchasingSites.toString().trim().length > 0) {
+    const safeSites = context.purchasingSites.toString().split(',').map(s => s.trim()).filter(s => s).join('<br>• ');
+    specialists.push({
+      email: CONFIG.EMAILS.JONAS,
+      subject: 'Central Purchasing Access Required',
+      body: empLine +
+            '<b>Action:</b> Set up Central Purchasing access for this employee at the listed sites and complete the form below.<br><br>' +
+            '<b>Login Email:</b> ' + assignedEmail + '<br>' +
+            '<b>Purchasing Sites:</b><br>• ' + safeSites + '<br>',
+      param: 'centralpurchasing'
     });
   }
 

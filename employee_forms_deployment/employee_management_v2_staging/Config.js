@@ -34,6 +34,7 @@ const CONFIG = {
     BUSINESS_CARDS_RESULTS: 'Business Cards Results',
     FLEETIO_RESULTS: 'Fleetio Results',
     JONAS_RESULTS: 'JONAS Results',
+    CENTRAL_PURCHASING_RESULTS: 'Central Purchasing Results',
     SITEDOCS_RESULTS: 'SiteDocs Results',
     REVIEW_306090_RESULTS: '30-60-90 Review Results',
     TERMINATION_APPROVALS: 'Termination Approval Results',
