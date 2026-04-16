@@ -222,17 +222,16 @@ function submitPositionChangeApproval(formData) {
         contextData: changeContext
       });
 
-      // 4. Notify Safety for site transfers (new location = new orientation/courses)
-      if (changeData.siteTransfer && changeData.siteTransfer.indexOf('N/A') === -1) {
-        sendFormEmail({
-          to: CONFIG.EMAILS.SAFETY,
-          subject: 'Safety Verification Required',
-          body: 'A site transfer has been approved for ' + changeData.employeeName + '. Please verify and update SiteDocs locations and assigned safety courses for the new site.',
-          formUrl: '',
-          displayName: 'TEAM Group - Employee Management',
-          contextData: changeContext
-        });
-      }
+      // 4. Always notify Safety — position/site changes affect BOSS records, courses, and locations.
+      // IDSETUP handles system updates first; Safety notified here since there is no IDSETUP completion event for status changes.
+      sendFormEmail({
+        to: CONFIG.EMAILS.SAFETY,
+        subject: 'Safety Verification Required',
+        body: 'A status change has been approved for ' + changeData.employeeName + '. Please verify SiteDocs locations, assigned safety courses, and BOSS records reflect the updated position/site.',
+        formUrl: '',
+        displayName: 'TEAM Group - Employee Management',
+        contextData: changeContext
+      });
 
       updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Change Processed');
       syncWorkflowState(workflowId);
