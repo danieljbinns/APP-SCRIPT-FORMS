@@ -263,6 +263,17 @@ function submitPositionChangeApproval(formData) {
         contextData: changeContext
       });
 
+      // Notify requester (and new manager if different) that the change has been approved
+      const scRecipients = [changeData.requesterEmail];
+      if (mgrNewEmail && mgrNewEmail !== changeData.requesterEmail) scRecipients.push(mgrNewEmail);
+      sendFormEmail({
+        to: scRecipients.join(','),
+        subject: 'Status Change Approved',
+        body: `HR has approved the status change for ${changeData.employeeName}. All relevant teams have been notified and any required action items have been assigned.${notes ? '<br><br><b>HR Notes:</b> ' + notes : ''}`,
+        formUrl: '',
+        contextData: changeContext
+      });
+
       return { success: true, message: `Position change approved. ${tasksCreated} action items generated.` };
     } else {
       updateWorkflow(workflowId, 'Rejected', 'Rejected by HR');

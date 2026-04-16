@@ -249,26 +249,33 @@ function submitTerminationApproval(formData) {
       });
 
       // 2. CONSOLIDATED ASSET CHECKLIST (Manager/Requester)
+      const termRecipients = [termData.requesterEmail];
+      if (termData.managerEmail && termData.managerEmail !== termData.requesterEmail) termRecipients.push(termData.managerEmail);
+      const termApprovalContext = { ...termData, workflowType: 'Termination', employmentType: termData.empType, hireDate: termData.termDate, equipmentRaw: termData.eqToReturn };
+
       if (collectAssets) {
         const rawAssets = termData.eqToReturn || '';
         let assets = rawAssets ? rawAssets.split(',').map(s => s.trim()).filter(s => s && s !== 'N/A') : [];
         if (assets.length === 0) assets = ['Building Access Card/Keys']; // Default if none selected
 
-        if (assets.length > 0) {
-          const tid = ActionItemService.createActionItem(workflowId, 'Assets', `Asset Collection Checklist - ${termData.employeeName}`, JSON.stringify(assets), termData.requesterEmail);
-          
-          const recipients = [termData.requesterEmail];
-          if (termData.managerEmail && termData.managerEmail !== termData.requesterEmail) recipients.push(termData.managerEmail);
-
-          sendFormEmail({
-            to: recipients.join(','),
-            subject: 'Asset Collection Required',
-            body: `HR has approved the end of employment for ${termData.employeeName}. Please collect the following assets and record their status using the button below.`,
-            formUrl: buildFormUrl('action_item_view', { tid: tid }),
-            contextData: { ...termData, workflowType: 'Termination', employmentType: termData.empType, hireDate: termData.termDate, equipmentRaw: termData.eqToReturn }
-          });
-          tasksCreated++;
-        }
+        const tid = ActionItemService.createActionItem(workflowId, 'Assets', `Asset Collection Checklist - ${termData.employeeName}`, JSON.stringify(assets), termData.requesterEmail);
+        sendFormEmail({
+          to: termRecipients.join(','),
+          subject: 'Asset Collection Required',
+          body: `HR has approved the end of employment for ${termData.employeeName}. Please collect the following assets and record their status using the button below.`,
+          formUrl: buildFormUrl('action_item_view', { tid: tid }),
+          contextData: termApprovalContext
+        });
+        tasksCreated++;
+      } else {
+        // No assets — still notify requester/manager that termination was approved
+        sendFormEmail({
+          to: termRecipients.join(','),
+          subject: 'Termination Approved',
+          body: `HR has approved the end of employment for ${termData.employeeName}. All offboarding steps have been initiated.${notes ? '<br><br><b>HR Notes:</b> ' + notes : ''}`,
+          formUrl: '',
+          contextData: termApprovalContext
+        });
       }
       
       updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Processing');
