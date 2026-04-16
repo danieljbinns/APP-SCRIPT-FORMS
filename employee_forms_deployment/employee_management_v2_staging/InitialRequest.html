@@ -773,7 +773,7 @@
                 <label>Computer Type Requested</label>
                 <div class="radio-group">
                   <label>
-                    <input type="radio" name="computerType" value="Chromebook" checked
+                    <input type="radio" name="computerType" value="Chromebook"
                       onchange="toggleOffice365Question()">
                     <span class="radio-button">Chromebook</span>
                   </label>
@@ -1592,6 +1592,58 @@
         department: formData.get('department'),
         purchasingSites: formData.getAll('purchasingSites')
       };
+
+      // Clear fields that belong to hidden sections so stale DOM defaults don't leak into the sheet.
+      // FormData includes ALL inputs regardless of display:none, so we enforce here.
+      if (data.systemAccess !== 'Yes') {
+        data.systems = [];
+        data.equipment = [];
+      }
+      if (!data.equipment.includes('Computer')) {
+        data.computerRequestType = '';
+        data.computerType = '';
+        data.computerPreviousUser = '';
+        data.computerPreviousType = '';
+        data.computerSerialNumber = '';
+        data.office365Required = '';
+      } else if (data.computerRequestType !== 'New') {
+        // Reassignment path — clear new-computer-only fields
+        data.computerType = '';
+        data.office365Required = '';
+      } else if (data.computerRequestType !== 'Reassignment') {
+        // New path — clear reassignment-only fields
+        data.computerPreviousUser = '';
+        data.computerPreviousType = '';
+        data.computerSerialNumber = '';
+      }
+      if (!data.equipment.includes('Mobile Phone')) {
+        data.phoneRequestType = '';
+        data.phonePreviousUser = '';
+        data.phonePreviousNumber = '';
+      }
+      if (!data.equipment.includes('Credit Card')) {
+        data.creditCardUSA = '';
+        data.creditCardLimitUSA = '';
+        data.creditCardCanada = '';
+        data.creditCardLimitCanada = '';
+        data.creditCardHomeDepot = '';
+        data.creditCardLimitHomeDepot = '';
+      }
+      var bossChecked = data.systems && data.systems.includes('BOSS');
+      if (!bossChecked) {
+        data.bossJobSites = '';
+        data.bossCostSheet = '';
+        data.bossCostSheetJobs = '';
+        data.bossTripReports = '';
+        data.bossGrievances = '';
+      }
+      if (!data.systems || !data.systems.includes('Jonas Purchasing')) {
+        data.jonasJobNumbers = '';
+      }
+      if (!data.systems || !data.systems.includes('Google Account')) {
+        data.googleEmail = '';
+        data.googleDomain = '';
+      }
 
       // Call server-side function
       console.log('Submitting data to server...', data);

@@ -38,36 +38,59 @@ function getIDSetupRequestData(workflowId) {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
     const data = sheet.getDataRange().getValues();
-    
-    for (let i = 1; i < data.length; i++) {
+    const headers = data[0];
+
+    // Use header-based lookup so column shifts don't silently corrupt reads
+    var col = {};
+    var colNames = [
+      'Workflow ID', 'Requester Email', 'Hire Date', 'New Hire/Rehire',
+      'Employee Type', 'Employment Type', 'First Name', 'Last Name',
+      'Position Title', 'JR Assign', 'Site Name', 'Job Site #',
+      'Manager Email', 'Manager Name', 'System Access', 'Systems',
+      'Google Email', 'Google Domain'
+    ];
+    colNames.forEach(function(name) {
+      col[name] = headers.indexOf(name);
+    });
+
+    function get(row, name) {
+      return col[name] !== -1 ? row[col[name]] : '';
+    }
+
+    for (var i = 1; i < data.length; i++) {
       if (data[i][0] === workflowId) {
+        var row = data[i];
+        var firstName = get(row, 'First Name');
+        var lastName  = get(row, 'Last Name');
+        var hireDateRaw = get(row, 'Hire Date');
+        var systemsRaw  = get(row, 'Systems');
         return {
           success: true,
-          employeeName: data[i][10] + ' ' + data[i][12],
-          firstName: data[i][10],
-          lastName: data[i][12],
-          hireDate: data[i][6] ? Utilities.formatDate(new Date(data[i][6]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
-          position: data[i][14],
-          jrTitle: data[i][46] || '',
-          siteName: data[i][15],
-          jobSiteNumber: data[i][16] || '',
-          managerName: data[i][18],
-          managerEmail: data[i][17],
-          requesterEmail: data[i][5],
-          employmentType: data[i][9] || '',
-          employeeType: data[i][8] || '',
-          newHireOrRehire: data[i][7] || '',
-          systemsSelected: data[i][20],
-          systemAccess: data[i][19], // Added for routing optimization
-          siteDocsAccess: data[i][20] && data[i][20].includes('SiteDocs'),
-          requestedUsername: data[i][22],
-          requestedDomain: data[i][23]
+          employeeName: firstName + ' ' + lastName,
+          firstName: firstName,
+          lastName: lastName,
+          hireDate: hireDateRaw ? Utilities.formatDate(new Date(hireDateRaw), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+          position: get(row, 'Position Title'),
+          jrTitle: get(row, 'JR Assign') || '',
+          siteName: get(row, 'Site Name'),
+          jobSiteNumber: get(row, 'Job Site #') || '',
+          managerName: get(row, 'Manager Name'),
+          managerEmail: get(row, 'Manager Email'),
+          requesterEmail: get(row, 'Requester Email'),
+          employmentType: get(row, 'Employment Type') || '',
+          employeeType: get(row, 'Employee Type') || '',
+          newHireOrRehire: get(row, 'New Hire/Rehire') || '',
+          systemsSelected: systemsRaw,
+          systemAccess: get(row, 'System Access'),
+          siteDocsAccess: systemsRaw && systemsRaw.includes('SiteDocs'),
+          requestedUsername: get(row, 'Google Email'),
+          requestedDomain: get(row, 'Google Domain')
         };
       }
     }
-    
+
     return { success: false, message: 'Workflow ID not found' };
-    
+
   } catch (error) {
     return { success: false, message: error.message };
   }
@@ -147,7 +170,8 @@ function submitEmployeeIDSetup(formData) {
     
     const actingUser = Session.getActiveUser().getEmail();
     updateWorkflow(workflowId, 'In Progress', 'ID Setup Complete', '', actingUser);
-    
+    syncWorkflowState(workflowId);
+
     // NOTIFY SAFETY GROUP (Post-ID Setup)
     try {
         // const safetyUrl = buildFormUrl('specialist', { wf: workflowId, dept: 'sitedocs' }); // REMOVED link

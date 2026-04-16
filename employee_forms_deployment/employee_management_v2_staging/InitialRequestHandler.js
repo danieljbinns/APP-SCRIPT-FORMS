@@ -49,8 +49,8 @@ function submitInitialRequest(formData) {
     // Update workflow with employee name
     const employeeName = formData.firstName + ' ' + formData.lastName;
     updateWorkflow(workflowId, 'In Progress', 'ID Setup Needed', employeeName);
-    
-    
+    syncWorkflowState(workflowId);
+
     Logger.log('[SUCCESS] Form submitted: Workflow ID: ' + workflowId + ', Form ID: ' + formId);
     
     // Send initial emails with full context

@@ -128,6 +128,7 @@ function submitHRVerification(formData) {
     
     if (employmentType === 'Hourly' && systemAccess === 'No') {
       updateWorkflow(workflowId, 'Complete', 'HR Verification Complete', '', actingUser);
+      syncWorkflowState(workflowId);
       const recipients = [requesterEmail];
       if (formData.managerEmail && formData.managerEmail !== requesterEmail) {
         recipients.push(formData.managerEmail);
@@ -165,6 +166,7 @@ function submitHRVerification(formData) {
       Logger.log('[SUCCESS] Completion email sent to requester & manager (Hourly/No System Access)');
     } else {
       updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed', '', actingUser);
+      syncWorkflowState(workflowId);
       const itUrl = buildFormUrl('it_setup', { wf: workflowId });
 
       // E2: CC payroll if ADP Supervisor access is required
