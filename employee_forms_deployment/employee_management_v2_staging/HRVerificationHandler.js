@@ -127,8 +127,10 @@ function submitHRVerification(formData) {
       context.adpAssociateId = formData.adpAssociateId; // Inject ADP ID for context block
     }
     
+    const verifiedName = formData.firstName + ' ' + formData.lastName;
+
     if (employmentType === 'Hourly' && systemAccess === 'No') {
-      updateWorkflow(workflowId, 'Complete', 'HR Verification Complete', '', actingUser);
+      updateWorkflow(workflowId, 'Complete', 'HR Verification Complete', verifiedName, actingUser);
       syncWorkflowState(workflowId);
       const recipients = [requesterEmail];
       if (formData.managerEmail && formData.managerEmail !== requesterEmail) {
@@ -166,7 +168,7 @@ function submitHRVerification(formData) {
       });
       Logger.log('[SUCCESS] Completion email sent to requester & manager (Hourly/No System Access)');
     } else {
-      updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed', '', actingUser);
+      updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed', verifiedName, actingUser);
       syncWorkflowState(workflowId);
       const itUrl = buildFormUrl('it_setup', { wf: workflowId });
 
