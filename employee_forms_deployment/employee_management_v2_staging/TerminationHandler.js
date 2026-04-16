@@ -61,7 +61,8 @@ function submitTerminationRequest(formData) {
     Logger.log(`[TerminationHandler] Recorded request for ${formData.empName}. Equipment: ${equipment}`);
     
     updateWorkflow(workflowId, 'In Progress', 'HR Approval Needed', formData.empName);
-    
+    syncWorkflowState(workflowId);
+
     // Notification ONLY to HR initially
     const approvalUrl = buildFormUrl('termination_approval', { wf: workflowId });
     
@@ -264,7 +265,8 @@ function submitTerminationApproval(formData) {
       }
       
       updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Processing');
-      
+      syncWorkflowState(workflowId);
+
       // E4: Payroll approval notification with direct reports and last day worked info
       sendFormEmail({
         to: CONFIG.EMAILS.PAYROLL,
@@ -295,7 +297,8 @@ function submitTerminationApproval(formData) {
       return { success: true, message: `End of employment approved. ${tasksCreated} checklists generated.` };
     } else {
       updateWorkflow(workflowId, 'Rejected', 'Rejected by HR');
-      
+      syncWorkflowState(workflowId);
+
       // Notify Requester & Manager of Rejection
       const termData = getTerminationData(workflowId);
       const recipients = [termData.requesterEmail];

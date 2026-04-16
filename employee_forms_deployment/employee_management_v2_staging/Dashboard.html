@@ -324,14 +324,15 @@
                         <th>Status</th>
                         <th>Current Action Pending</th>
                         <th>Requester</th>
-                        <th>Start Date</th>
+                        <th>Site</th>
+                        <th>Date</th>
                         <th>Date Requested</th>
                         <th>Last Updated</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="7" style="text-align:center; padding: 40px;">Loading requests...</td>
+                        <td colspan="8" style="text-align:center; padding: 40px;">Loading requests...</td>
                     </tr>
                 </tbody>
             </table>
@@ -465,6 +466,10 @@
                     '<span style="background:var(--brand-red); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">EOE</span>' :
                     (wf.type === 'Onboarding' ? '<span style="background:var(--info); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">NEW HIRE</span>' : '');
 
+                const dateLabel = wf.type === 'End of Employment' ? (wf.hireDate || '-') :
+                                  (wf.type === 'Position Change' ? (wf.hireDate || '-') :
+                                  (wf.hireDate || '-'));
+
                 html += '<tr onclick="openDetails(\'' + wf.id + '\', \'' + wf.type + '\')">' +
                     '<td>' + typeBadge + '<strong>' + (wf.employee || 'Pending Name') + '</strong></td>' +
                     '<td><span class="badge ' + statusClass + '">' + wf.status + '</span></td>' +
@@ -473,7 +478,8 @@
                     '<div>' + wf.requesterName + '</div>' +
                     '<div style="font-size: 11px; color:#666;">' + wf.initiator + '</div>' +
                     '</td>' +
-                    '<td>' + (wf.hireDate || '-') + '</td>' +
+                    '<td style="font-size:12px;">' + (wf.site || '-') + '</td>' +
+                    '<td>' + dateLabel + '</td>' +
                     '<td>' + wf.dateRequested + '</td>' +
                     '<td>' + wf.lastUpdated + '</td>' +
                     '</tr>';
