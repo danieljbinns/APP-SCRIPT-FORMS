@@ -78,7 +78,30 @@ function submitSpecialistForm(formData) {
       workflowId, formId, new Date(),
       formData.details || JSON.stringify(formData), formData.notes || '', Session.getActiveUser().getEmail()
     ]);
-    
+
+    // 30/60/90: write confirmed JR title back to HR verification results so
+    // getWorkflowContext picks up the authoritative value for all downstream emails/dashboard
+    if (dept === 'review' && formData.jrTitle) {
+      try {
+        const hrSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
+        if (hrSheet) {
+          const hrData = hrSheet.getDataRange().getValues();
+          for (let i = 1; i < hrData.length; i++) {
+            if (hrData[i][0] === workflowId) {
+              // Col H (index 7) stores "Job Title / JR Title" — preserve job title, update JR
+              const existing = String(hrData[i][7] || '');
+              const jobTitle = existing.includes(' / ') ? existing.split(' / ')[0].trim() : existing;
+              hrSheet.getRange(i + 1, 8).setValue(jobTitle + ' / ' + formData.jrTitle);
+              Logger.log('[30/60/90] Confirmed JR title written back: ' + formData.jrTitle);
+              break;
+            }
+          }
+        }
+      } catch (jrErr) {
+        Logger.log('[30/60/90] Error writing back JR title: ' + jrErr.toString());
+      }
+    }
+
     Logger.log('[SUCCESS] Specialist form submitted: ' + dept + ' for ' + workflowId);
     
     // Notify Requester
