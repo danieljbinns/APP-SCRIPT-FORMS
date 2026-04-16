@@ -64,6 +64,7 @@ function submitPositionChangeRequest(formData) {
     const finalContext = {
       ...wfContext,
       workflowType: 'Status Change',
+      department: formData.department || '',
       employeeName: formData.firstName + ' ' + formData.lastName,
       siteName: formData.siteNew || formData.siteName,
       jobTitle: (formData.titleOld || 'N/A') + ' -> ' + (formData.titleNew || 'N/A'),
@@ -131,7 +132,8 @@ function getPositionChangeData(workflowId) {
     systems: data[17],
     equipment: data[18],
     requesterEmail: data[4],
-    comments: data[20]
+    comments: data[20],
+    department: data[21] || ''
   };
 }
 
@@ -157,6 +159,7 @@ function submitPositionChangeApproval(formData) {
       const mgrNewEmail = mgrMatches.length > 1 ? mgrMatches[1].replace(/[()]/g, '') : mgrOldEmail;
       const changeContext = {
         workflowType: 'Status Change',
+        department: changeData.department || '',
         employeeName: changeData.employeeName,
         siteName: changeData.siteName,
         hireDate: changeData.effDate,

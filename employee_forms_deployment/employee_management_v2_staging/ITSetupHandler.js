@@ -23,10 +23,11 @@ function getITContextData(workflowId) {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const mainSheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
     const idSetupSheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
-    
+
     const mainData = mainSheet.getDataRange().getValues();
+    const headers = mainData[0];
     let context = { success: false, message: 'Workflow ID not found' };
-    
+
     for (let i = 1; i < mainData.length; i++) {
       if (mainData[i][0] === workflowId) {
         context = {
@@ -59,6 +60,7 @@ function getITContextData(workflowId) {
           businessCards: mainData[i][21] && mainData[i][21].includes('Business Cards') ? 'Yes' : 'No',
           fleetioAccess: mainData[i][20] && mainData[i][20].includes('Fleetio') ? 'Yes' : 'No',
           jobSiteNumber: mainData[i][16], // Col 16 = Job Site #
+          department: headers.indexOf('Department') !== -1 ? mainData[i][headers.indexOf('Department')] : '',
           workflowType: 'New Hire'
         };
         break;

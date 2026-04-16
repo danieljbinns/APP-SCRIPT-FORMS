@@ -47,7 +47,7 @@ function getIDSetupRequestData(workflowId) {
       'Employee Type', 'Employment Type', 'First Name', 'Last Name',
       'Position Title', 'JR Assign', 'Site Name', 'Job Site #',
       'Manager Email', 'Manager Name', 'System Access', 'Systems',
-      'Google Email', 'Google Domain'
+      'Google Email', 'Google Domain', 'Department'
     ];
     colNames.forEach(function(name) {
       col[name] = headers.indexOf(name);
@@ -84,7 +84,8 @@ function getIDSetupRequestData(workflowId) {
           systemAccess: get(row, 'System Access'),
           siteDocsAccess: systemsRaw && systemsRaw.includes('SiteDocs'),
           requestedUsername: get(row, 'Google Email'),
-          requestedDomain: get(row, 'Google Domain')
+          requestedDomain: get(row, 'Google Domain'),
+          department: get(row, 'Department') || ''
         };
       }
     }
@@ -195,6 +196,7 @@ function submitEmployeeIDSetup(formData) {
             managerName: requestData.managerName,
             managerEmail: requestData.managerEmail,
             requesterEmail: requestData.requesterEmail,
+            department: requestData.department || '',
             internalEmployeeId: formData.internalEmployeeId,
             dssUsername: formData.dssUsername,
             dssPassword: formData.dssPassword,
