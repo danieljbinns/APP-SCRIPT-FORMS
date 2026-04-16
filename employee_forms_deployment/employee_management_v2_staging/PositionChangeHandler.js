@@ -63,6 +63,7 @@ function submitPositionChangeRequest(formData) {
     const wfContext = getWorkflowContext(workflowId) || {};
     const finalContext = {
       ...wfContext,
+      workflowType: 'Status Change',
       employeeName: formData.firstName + ' ' + formData.lastName,
       siteName: formData.siteName,
       jobTitle: `${formData.titleOld || 'N/A'} -> ${formData.titleNew || 'N/A'}`,
@@ -74,7 +75,7 @@ function submitPositionChangeRequest(formData) {
 
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
-      subject: `HR Approval Required: Status Change - ${formData.firstName} ${formData.lastName}`,
+      subject: 'HR Approval Required',
       body: `A new position/site change request has been submitted for ${formData.firstName} ${formData.lastName}. HR approval is required to proceed.`,
       formUrl: approvalUrl,
       contextData: finalContext
@@ -149,9 +150,9 @@ function submitPositionChangeApproval(formData) {
         // Notify Receiving Manager
         sendFormEmail({
           to: receivingManagerEmail,
-          subject: `Action Required: Incoming Transfer - ${changeData.employeeName}`,
+          subject: 'Incoming Transfer Action Required',
           body: `HR has approved a status change for ${changeData.employeeName}. You have been assigned an action item to prepare for their arrival:<br><br><a href="${buildFormUrl('action_item_view', { tid: tid })}">Incoming Transfer Setup Task</a>`,
-          contextData: changeData
+          contextData: { ...changeData, workflowType: 'Status Change', hireDate: changeData.effDate }
         });
       }
       
@@ -178,9 +179,9 @@ function submitPositionChangeApproval(formData) {
           const taskLinks = itTasks.map(t => `<a href="${t.url}">${t.name}</a>`).join('<br>');
           sendFormEmail({
             to: CONFIG.EMAILS.IT,
-            subject: `IT Action Required: Status Change Tasks - ${changeData.employeeName}`,
+            subject: 'IT Action Required',
             body: `HR has approved a status change for ${changeData.employeeName}. Below are the individual action items that require closure:<br><br>${taskLinks}`,
-            contextData: changeData
+            contextData: { ...changeData, workflowType: 'Status Change', hireDate: changeData.effDate }
           });
         }
       }
@@ -191,7 +192,7 @@ function submitPositionChangeApproval(formData) {
       // E3: Notify payroll after HR approves a status change
       sendFormEmail({
         to: CONFIG.EMAILS.PAYROLL,
-        subject: `Status Change Approved: ${changeData.employeeName}`,
+        subject: 'Status Change Approved',
         body: `HR has approved a status change for ${changeData.employeeName}.<br><br>` +
               `<b>Employee:</b> ${changeData.employeeName}<br>` +
               `<b>Effective Date:</b> ${changeData.effDate}<br>` +
@@ -204,6 +205,7 @@ function submitPositionChangeApproval(formData) {
               `<b>HR Notes:</b> ${notes || 'None'}<br>`,
         formUrl: '',
         contextData: {
+          workflowType: 'Status Change',
           employeeName: changeData.employeeName,
           siteName: changeData.siteName,
           hireDate: changeData.effDate

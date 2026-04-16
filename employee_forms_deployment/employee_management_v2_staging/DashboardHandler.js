@@ -220,16 +220,16 @@ function bumpRequest(workflowId, targetStep) {
           if (map[formType]) specificUrl = buildFormUrl('specialist', { wf: workflowId, dept: map[formType] });
         }
 
+        var bumpContext = getWorkflowContext(workflowId) || {};
         sendFormEmail({
           to: recipient,
-          subject: subject + ': ' + (workflowId || ''),
-          body: `ACTION REQUIRED: ${formType}\n\n` +
-            `A request for ${formType} regarding employee onboarding is pending your action.\n\n` +
-            `Request ID: ${workflowId}\n` +
-            `\nPlease complete this task using the link below:\n\n` +
-            `Link: ${specificUrl}`,
+          subject: formType + ' Required',
+          body: 'ACTION REQUIRED: ' + formType + '\n\n' +
+            'A request for ' + formType + ' is pending your action. Please complete this task using the link below.',
           formUrl: specificUrl,
-          displayName: 'TEAM Group - Onboarding'
+          displayName: 'TEAM Group - Onboarding',
+          contextData: bumpContext,
+          subjectOpts: { isReminder: true, requestDate: new Date() }
         });
         return { success: true, message: `Reminder sent to ${recipient}` };
       } catch (emailErr) {

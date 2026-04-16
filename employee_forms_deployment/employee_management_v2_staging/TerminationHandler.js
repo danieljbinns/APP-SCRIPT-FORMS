@@ -70,6 +70,7 @@ function submitTerminationRequest(formData) {
     const wfContext = getWorkflowContext(workflowId) || {};
     const finalContext = {
       ...wfContext,
+      workflowType: 'Termination',
       employeeName: formData.empName,
       siteName: formData.siteName,
       managerName: formData.managerName,
@@ -85,7 +86,7 @@ function submitTerminationRequest(formData) {
 
     const emailConfig = {
       to: CONFIG.EMAILS.HR,
-      subject: `HR Approval Required: End of Employment - ${formData.empName}`,
+      subject: 'HR Approval Required',
       body: `A new end of employment request has been submitted for ${formData.empName} and requires your approval to proceed.`,
       formUrl: approvalUrl,
       contextData: finalContext
@@ -104,7 +105,7 @@ function submitTerminationRequest(formData) {
     // E3: Notify payroll at the same time HR receives the request
     sendFormEmail({
       to: CONFIG.EMAILS.PAYROLL,
-      subject: `End of Employment Submitted: ${formData.empName}`,
+      subject: 'Request Submitted',
       body: `A new end of employment request has been submitted for ${formData.empName} and is pending HR approval.<br><br>` +
             `<b>Employee:</b> ${formData.empName}<br>` +
             `<b>Site:</b> ${formData.siteName}<br>` +
@@ -115,6 +116,7 @@ function submitTerminationRequest(formData) {
             `<b>Reason:</b> ${formData.reason || 'N/A'}<br>`,
       formUrl: '',
       contextData: {
+        workflowType: 'Termination',
         employeeName: formData.empName,
         siteName: formData.siteName,
         employmentType: formData.empType,
@@ -207,7 +209,7 @@ function submitTerminationApproval(formData) {
       
       if (itItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'IT', `IT Systems Deactivation - ${termData.employeeName}`, JSON.stringify(itItems), CONFIG.EMAILS.IT);
-        sendActionItemEmail(CONFIG.EMAILS.IT, `IT Action Required: End of Employment - ${termData.employeeName}`, tid, termData);
+        sendActionItemEmail(CONFIG.EMAILS.IT, 'IT Action Required', tid, termData);
         tasksCreated++;
       }
 
@@ -215,7 +217,7 @@ function submitTerminationApproval(formData) {
       const hrItems = selectedSystems.filter(s => s === 'ADP Supervisor Access');
       if (hrItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'HR', `HR Systems Deactivation - ${termData.employeeName}`, JSON.stringify(hrItems), CONFIG.EMAILS.HR);
-        sendActionItemEmail(CONFIG.EMAILS.HR, `HR Action Required: End of Employment - ${termData.employeeName}`, tid, termData);
+        sendActionItemEmail(CONFIG.EMAILS.HR, 'HR Action Required', tid, termData);
         tasksCreated++;
       }
 
@@ -223,7 +225,7 @@ function submitTerminationApproval(formData) {
       const fleetItems = selectedSystems.filter(s => s === 'Fleetio');
       if (fleetItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'Fleet', `Fleet Systems Deactivation - ${termData.employeeName}`, JSON.stringify(fleetItems), CONFIG.EMAILS.FLEETIO);
-        sendActionItemEmail(CONFIG.EMAILS.FLEETIO, `Fleet Action Required: End of Employment - ${termData.employeeName}`, tid, termData);
+        sendActionItemEmail(CONFIG.EMAILS.FLEETIO, 'Fleet Action Required', tid, termData);
         tasksCreated++;
       }
 
@@ -231,14 +233,14 @@ function submitTerminationApproval(formData) {
       const financeItems = selectedSystems.filter(s => s === 'Jonas Purchasing');
       if (financeItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Jonas Purchasing Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
-        sendActionItemEmail(CONFIG.EMAILS.JONAS, `Finance Action Required: End of Employment - ${termData.employeeName}`, tid, termData);
+        sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Finance Action Required', tid, termData);
         tasksCreated++;
       }
 
       // Employee Deactivation Group (SiteDocs, DSS, BOSS WIS) - Always Mandatory
       const deactItems = ['SiteDocs', 'DSS User', 'BOSS WIS Module'];
       const tidDeact = ActionItemService.createActionItem(workflowId, 'Deactivation', `Employee Deactivation - ${termData.employeeName}`, JSON.stringify(deactItems), CONFIG.EMAILS.IDSETUP);
-      sendActionItemEmail(CONFIG.EMAILS.IDSETUP, `Action Required: Employee Deactivation - ${termData.employeeName}`, tidDeact, termData);
+      sendActionItemEmail(CONFIG.EMAILS.IDSETUP, 'Employee Deactivation Required', tidDeact, termData);
       tasksCreated++;
 
       // 2. CONSOLIDATED ASSET CHECKLIST (Manager/Requester)
@@ -255,10 +257,10 @@ function submitTerminationApproval(formData) {
 
           sendFormEmail({
             to: recipients.join(','),
-            subject: `Action Required: Asset Collection Checklist - ${termData.employeeName}`,
+            subject: 'Asset Collection Required',
             body: `HR has approved the end of employment for ${termData.employeeName}. Please collect the following assets and record their status using the button below.`,
             formUrl: buildFormUrl('action_item_view', { tid: tid }),
-            contextData: { ...termData, hireDate: termData.termDate, equipmentRaw: termData.eqToReturn }
+            contextData: { ...termData, workflowType: 'Termination', hireDate: termData.termDate, equipmentRaw: termData.eqToReturn }
           });
           tasksCreated++;
         }
@@ -270,7 +272,7 @@ function submitTerminationApproval(formData) {
       // E4: Payroll approval notification with direct reports and last day worked info
       sendFormEmail({
         to: CONFIG.EMAILS.PAYROLL,
-        subject: `End of Employment Approved: ${termData.employeeName}`,
+        subject: 'Termination Approved',
         body: `HR has approved the end of employment for ${termData.employeeName}.<br><br>` +
               `<b>Employee:</b> ${termData.employeeName}<br>` +
               `<b>Termination Date:</b> ${termData.termDate}<br>` +
@@ -284,6 +286,7 @@ function submitTerminationApproval(formData) {
               `<b>HR Notes:</b> ${notes || 'None'}<br>`,
         formUrl: '',
         contextData: {
+          workflowType: 'Termination',
           employeeName: termData.employeeName,
           siteName: termData.siteName,
           employmentType: termData.empType,
@@ -306,9 +309,9 @@ function submitTerminationApproval(formData) {
 
       sendFormEmail({
           to: recipients.join(','),
-          subject: `Rejected: End of Employment - ${termData.employeeName}`,
+          subject: 'Termination Rejected',
           body: `The end of employment request for ${termData.employeeName} has been rejected by HR.<br><br><b>Notes:</b> ${notes || 'No notes provided.'}`,
-          contextData: { ...termData, hireDate: termData.termDate }
+          contextData: { ...termData, workflowType: 'Termination', hireDate: termData.termDate }
       });
 
       return { success: true, message: 'End of employment rejected. Notification sent to requester.' };
@@ -330,6 +333,7 @@ function sendActionItemEmail(to, subject, tid, termData) {
     formUrl: buildFormUrl('action_item_view', { tid: tid }),
     contextData: {
         ...termData,
+        workflowType: 'Termination',
         hireDate: termData.termDate,
         equipmentRaw: termData.eqToReturn,
         systems: termData.systems

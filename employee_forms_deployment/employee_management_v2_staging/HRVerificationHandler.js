@@ -151,7 +151,7 @@ function submitHRVerification(formData) {
 
       sendFormEmail({
         to: recipients.join(','),
-        subject: 'Onboarding Complete - ' + (formData.firstName + ' ' + formData.lastName) + ' (ADP: ' + formData.adpAssociateId + ')',
+        subject: 'Onboarding Complete',
         body: 'The onboarding process has been completed successfully. All required setup steps have been finished for this hourly employee.\n\n' +
               'Verified ADP ID: ' + formData.adpAssociateId + '\n\n' +
               '<strong>CREDENTIALS:</strong>\n' +
@@ -176,7 +176,7 @@ function submitHRVerification(formData) {
 
       sendFormEmail({
         to: itRecipients,
-        subject: 'HR Verified: IT Setup Required',
+        subject: 'IT Setup Required',
         body: 'HR has verified the employee details and assigned an ADP ID.\n\nPlease complete the IT setup form using the button below.',
         formUrl: itUrl,
         displayName: 'TEAM Group - Employee Onboarding',
@@ -187,7 +187,7 @@ function submitHRVerification(formData) {
       // E3: Notify payroll for salary new hires after HR confirmation
       sendFormEmail({
         to: CONFIG.EMAILS.PAYROLL,
-        subject: 'New Salary Hire: HR Verified - ' + formData.firstName + ' ' + formData.lastName,
+        subject: 'HR Verified',
         body: 'HR has completed verification for a new salary employee. IT setup is now in progress.<br><br>' +
               '<b>Employee:</b> ' + formData.firstName + ' ' + formData.lastName + '<br>' +
               '<b>ADP ID:</b> ' + formData.adpAssociateId + '<br>' +

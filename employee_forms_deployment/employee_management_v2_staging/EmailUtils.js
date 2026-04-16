@@ -4,6 +4,72 @@
  */
 
 /**
+ * Builds the canonical email subject for all system emails.
+ * This is the single source of truth for subject format — modify here to change globally.
+ *
+ * Format:
+ *   [WorkflowType | EmploymentType] Action: Employee Name | Site | DateLabel: YYYY-MM-DD | managerEmail
+ * Reminder prefix:
+ *   REMINDER [Requested: YYYY-MM-DD]: [WorkflowType | EmploymentType] Action: Employee Name | ...
+ *
+ * @param {string} action - The action verb phrase only, no employee name (e.g. 'HR Approval Required')
+ * @param {Object} contextData - Workflow context: workflowType, employmentType, employeeName, siteName, hireDate, managerEmail
+ * @param {Object} [opts] - Optional: { isReminder: true, requestDate: Date }
+ * @returns {string}
+ */
+function buildEmailSubject(action, contextData, opts) {
+  if (!contextData) return action;
+  opts = opts || {};
+
+  var workflowType = contextData.workflowType || '';
+  var employmentType = contextData.employmentType || '';
+  var tag = workflowType
+    ? '[' + workflowType + (employmentType ? ' | ' + employmentType : '') + ']'
+    : (employmentType ? '[' + employmentType + ']' : '');
+
+  // Date label based on workflow type
+  var dateLabel = '';
+  if (workflowType === 'New Hire')         dateLabel = 'Start Date';
+  else if (workflowType === 'Termination') dateLabel = 'Termination Date';
+  else if (workflowType === 'Status Change') dateLabel = 'Effective Date';
+
+  var dateStr = '';
+  var dateValue = contextData.hireDate || '';
+  if (dateValue) {
+    try {
+      var d = dateValue instanceof Date ? dateValue : new Date(String(dateValue));
+      if (!isNaN(d.getTime())) dateStr = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    } catch (e) { dateStr = String(dateValue).substring(0, 10); }
+  }
+
+  var employeeName = contextData.employeeName || '';
+  var site         = contextData.siteName || '';
+  var manager      = contextData.managerEmail || '';
+
+  // Assemble core: [Tag] Action: Name | Site | DateLabel: Date | Manager
+  var core = (tag ? tag + ' ' : '') + action + (employeeName ? ': ' + employeeName : '');
+  var parts = [core];
+  if (site)                       parts.push(site);
+  if (dateLabel && dateStr)       parts.push(dateLabel + ': ' + dateStr);
+  if (manager)                    parts.push(manager);
+
+  var subject = parts.join(' | ');
+
+  if (opts.isReminder) {
+    var reqStr = '';
+    if (opts.requestDate) {
+      try {
+        var rd = opts.requestDate instanceof Date ? opts.requestDate : new Date(String(opts.requestDate));
+        if (!isNaN(rd.getTime())) reqStr = Utilities.formatDate(rd, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      } catch (e) { reqStr = String(opts.requestDate).substring(0, 10); }
+    }
+    subject = 'REMINDER [Requested: ' + reqStr + ']: ' + subject;
+  }
+
+  return subject;
+}
+
+/**
  * Helper function to build context data from workflow
  * Fetches initial request data to include in subsequent emails
  * @param {string} workflowId - Workflow ID
@@ -18,6 +84,7 @@ function getWorkflowContext(workflowId) {
       const termData = typeof getTerminationData === 'function' ? getTerminationData(workflowId) : null;
       if (termData) {
         return {
+          workflowType: 'Termination',
           employeeName: termData.employeeName,
           siteName: termData.siteName,
           managerName: termData.managerName,
@@ -57,6 +124,7 @@ function getWorkflowContext(workflowId) {
     
     // Default Context from Initial Request
     const context = {
+      workflowType: (workflowId && workflowId.indexOf('CHANGE_') === 0) ? 'Status Change' : 'New Hire',
       employeeName: row[headers.indexOf('First Name')] + ' ' + row[headers.indexOf('Last Name')],
       jobTitle: row[headers.indexOf('Position Title')],
       jrTitle: row[headers.indexOf('JR Assign')], // Capture JR Title also
@@ -133,22 +201,16 @@ function getWorkflowContext(workflowId) {
  * @param {string} [options.displayName] - Optional sender display name
  */
 function sendFormEmail(options) {
-  const { to, subject, body, formUrl, displayName, contextData } = options;
-  
+  const { to, subject, body, formUrl, displayName, contextData, subjectOpts } = options;
+
   if (!to || !subject || !body) {
     Logger.log('❌ Email missing required fields');
     return false;
   }
-  
+
   try {
-    // E1: Auto-prepend [EmploymentType | Site] to subject when contextData provides those fields
-    let enrichedSubject = subject;
-    if (contextData && (contextData.employmentType || contextData.siteName)) {
-      const parts = [];
-      if (contextData.employmentType) parts.push(contextData.employmentType);
-      if (contextData.siteName) parts.push(contextData.siteName);
-      if (parts.length > 0) enrichedSubject = '[' + parts.join(' | ') + '] ' + subject;
-    }
+    // E1: Build standardized subject — canonical format defined in buildEmailSubject()
+    var enrichedSubject = buildEmailSubject(subject, contextData, subjectOpts);
 
     const redirectEmail = ConfigurationService.getSetting('EMAIL_REDIRECT_ALL');
     const finalTo = redirectEmail ? redirectEmail : to;
@@ -339,6 +401,7 @@ function sendInitialRequestEmails(config) {
   
   // Build comprehensive context data for emails
   const contextData = {
+    workflowType: 'New Hire',
     employeeName: employeeName,
     jobTitle: jobTitle,
     siteName: siteName,
@@ -359,8 +422,8 @@ function sendInitialRequestEmails(config) {
     // 1. Email to SITEDOCS team for Employee ID Setup
     sendFormEmail({
       to: siteDocsEmail,
-      subject: 'New Employee ID Setup Required',
-      body: `A new employee onboarding request requires your attention.\n\nPlease complete the Employee ID Setup form using the button below. IT and other teams will be notified automatically after you complete the setup.`,
+      subject: 'ID Setup Required',
+      body: 'A new employee onboarding request requires your attention.\n\nPlease complete the Employee ID Setup form using the button below. IT and other teams will be notified automatically after you complete the setup.',
       formUrl: employeeIdSetupUrl,
       displayName: 'TEAM Group - Employee Onboarding',
       contextData: contextData
@@ -371,8 +434,8 @@ function sendInitialRequestEmails(config) {
     // 2. Confirmation to requester
     sendFormEmail({
       to: requesterEmail,
-      subject: 'Employee Request Submitted - ' + requestId,
-      body: `Your employee onboarding request has been received and is being processed.\n\nYou will receive updates as the request progresses through each stage.`,
+      subject: 'Request Submitted',
+      body: 'Your employee onboarding request has been received and is being processed.\n\nYou will receive updates as the request progresses through each stage.',
       displayName: 'TEAM Group - Employee Onboarding',
       contextData: contextData
     });

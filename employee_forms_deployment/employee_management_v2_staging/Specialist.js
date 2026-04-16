@@ -112,16 +112,16 @@ function submitSpecialistForm(formData) {
         if (recipients.length > 0) {
              let friendlyDept = dept.charAt(0).toUpperCase() + dept.slice(1);
              if (dept === 'creditcard') { friendlyDept = 'Credit Card'; } // Fix space
-             
+
+             var specContext = (typeof getWorkflowContext === 'function') ? (getWorkflowContext(workflowId) || {}) : {};
+
              sendFormEmail({
                to: recipients.join(','),
-               subject: `${friendlyDept} Setup Complete: ${employeeName}`,
-               body: `${friendlyDept} setup has been completed for ${employeeName}.\n\n` +
-                     `Notes: ${formData.notes || 'None'}\n\n`,
-                     // `View full request details using the button below.`,
-               // formUrl: getBaseUrl() + '?form=request_details&id=' + workflowId,
+               subject: friendlyDept + ' Setup Complete',
+               body: friendlyDept + ' setup has been completed for ' + employeeName + '.\n\nNotes: ' + (formData.notes || 'None') + '\n\n',
                formUrl: '',
-               displayName: 'Onboarding System'
+               displayName: 'Onboarding System',
+               contextData: specContext
              });
         }
     } catch (e) {

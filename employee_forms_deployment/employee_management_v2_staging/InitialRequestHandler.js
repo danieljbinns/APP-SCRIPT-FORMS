@@ -82,7 +82,7 @@ function submitInitialRequest(formData) {
       const purchasingSitesList = Array.isArray(formData.purchasingSites) ? formData.purchasingSites.join(', ') : 'N/A';
       sendFormEmail({
         to: CONFIG.EMAILS.PURCHASING,
-        subject: 'Central Purchasing Access Required: ' + employeeName,
+        subject: 'Central Purchasing Access Required',
         body: 'A new employee onboarding request includes Central Purchasing access for ' + employeeName + '.<br><br>' +
               '<b>Employee:</b> ' + employeeName + '<br>' +
               '<b>Site:</b> ' + formData.siteName + '<br>' +

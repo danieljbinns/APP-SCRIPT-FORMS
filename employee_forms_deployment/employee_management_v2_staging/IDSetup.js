@@ -176,19 +176,24 @@ function submitEmployeeIDSetup(formData) {
     try {
         // const safetyUrl = buildFormUrl('specialist', { wf: workflowId, dept: 'sitedocs' }); // REMOVED link
         sendFormEmail({
-          to: CONFIG.EMAILS.SAFETY, 
-          subject: 'Action Required: Safety Verification & DSS',
-          body: `User has been added to SiteDocs and DSS.<br><br>` + 
-                `Please confirm locations and assigned courses are correct.<br><br>` +
-                `<strong>Employee:</strong> ${requestData.firstName} ${requestData.lastName}<br>` +
-                `<strong>Requester:</strong> ${requestData.requesterEmail}<br>` + 
-                `<strong>Manager:</strong> ${requestData.managerName}<br>` + 
-                `<strong>Site:</strong> ${requestData.siteName}<br><br>` +
-                `<strong>Worker ID:</strong> ${formData.siteDocsWorkerId || 'N/A'}<br>` +
-                `<strong>Job Code:</strong> ${formData.siteDocsJobCode || 'N/A'}<br>` +
-                `<strong>DSS Username:</strong> ${formData.dssUsername || 'N/A'}`,
-          formUrl: '', // No link as requested
-          displayName: 'TEAM Group - Employee Onboarding'
+          to: CONFIG.EMAILS.SAFETY,
+          subject: 'Safety Verification Required',
+          body: 'User has been added to SiteDocs and DSS.<br><br>' +
+                'Please confirm locations and assigned courses are correct.<br><br>' +
+                '<strong>Worker ID:</strong> ' + (formData.siteDocsWorkerId || 'N/A') + '<br>' +
+                '<strong>Job Code:</strong> ' + (formData.siteDocsJobCode || 'N/A') + '<br>' +
+                '<strong>DSS Username:</strong> ' + (formData.dssUsername || 'N/A'),
+          formUrl: '',
+          displayName: 'TEAM Group - Employee Onboarding',
+          contextData: {
+            workflowType: 'New Hire',
+            employeeName: requestData.employeeName,
+            siteName: requestData.siteName,
+            hireDate: requestData.hireDate,
+            employmentType: requestData.employmentType,
+            managerEmail: requestData.managerEmail,
+            requesterEmail: requestData.requesterEmail
+          }
         });
         Logger.log('[SUCCESS] Safety notification sent to ' + CONFIG.EMAILS.SAFETY);
     } catch (safeErr) {
@@ -241,7 +246,7 @@ function triggerNextStepFromIDSetup(workflowId, setupData) {
     if (recipients.length > 0) {
       sendFormEmail({
         to: recipients.join(','),
-        subject: 'Employee Onboarding Credentials: ' + requestData.employeeName,
+        subject: 'Credentials Ready',
         body: 'The onboarding process has progressed. Credentials have been generated for this hourly employee.\n\n' +
               '<strong>CREDENTIALS:</strong>\n' +
               '• DSS: ' + (setupData.dssUsername || 'N/A') + ' (Pwd: ' + (setupData.dssPassword || 'N/A') + ')\n' +

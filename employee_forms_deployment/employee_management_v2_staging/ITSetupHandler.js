@@ -60,6 +60,7 @@ function getITContextData(workflowId) {
           businessCards: mainData[i][21] && mainData[i][21].includes('Business Cards') ? 'Yes' : 'No',
           fleetioAccess: mainData[i][20] && mainData[i][20].includes('Fleetio') ? 'Yes' : 'No',
           jobSiteNumber: mainData[i][16], // Col 16 = Job Site #
+          workflowType: 'New Hire'
         };
         break;
       }
@@ -168,7 +169,7 @@ function submitITSetup(formData) {
            if (recipients.length > 0) {
              sendFormEmail({
                to: recipients.join(','),
-               subject: 'IT Setup Complete: ' + context.employeeName,
+               subject: 'IT Setup Complete',
                body: `Good news! IT Setup has been completed for ${context.employeeName}.\n\n` +
                      `<strong>CREDENTIALS:</strong>\n` +
                      `• Email: ${assignedEmail} (Pwd: ${formData.Email_Temp_Password || 'N/A'})\n` +
@@ -226,7 +227,7 @@ function triggerSpecialists(workflowId, itData) {
     
     specialists.push({
       email: CONFIG.EMAILS.CREDIT_CARD,
-      subject: 'Action Required: Credit Card Setup',
+      subject: 'Credit Card Setup Required',
       body: `New employee requires credit card(s):\n\n${ccDetails}\nEmployee has been assigned email: ${assignedEmail}`,
       param: 'creditcard'
     });
@@ -236,7 +237,7 @@ function triggerSpecialists(workflowId, itData) {
   if (context.businessCards === 'Yes') {
     specialists.push({
       email: CONFIG.EMAILS.BUSINESS_CARDS,
-      subject: 'Action Required: Business Cards Order',
+      subject: 'Business Cards Required',
       body: `New employee requires business cards.\n\nTitle: ${context.jrTitle || context.jobTitle}\nEmail: ${assignedEmail}\nPhone: ${context.phoneNumber || 'N/A'}`,
       param: 'businesscards'
     });
@@ -246,7 +247,7 @@ function triggerSpecialists(workflowId, itData) {
   if (context.fleetioAccess === 'Yes') {
     specialists.push({
       email: CONFIG.EMAILS.FLEETIO,
-      subject: 'Action Required: Fleetio Account Setup',
+      subject: 'Fleetio Access Required',
       body: `New employee requires Fleetio access.\n\nEmail: ${assignedEmail}\nSite: ${context.siteName}`,
       param: 'fleetio'
     });
@@ -255,7 +256,7 @@ function triggerSpecialists(workflowId, itData) {
   // 4. JR & 30/60/90 Reviews (Always sent for salary/office staff)
   specialists.push({
     email: CONFIG.EMAILS.REVIEW_306090_JR,
-    subject: 'Action Required: 30/60/90 Reviews & JR Confirmation',
+    subject: '30/60/90 Review Required',
     body: `Employee onboarding has been completed by IT. The employee has been assigned the email address: <strong>${assignedEmail}</strong>.<br><br>` + 
           `Please proceed with the 30/60/90 plan setup and JR confirmation for this employee. Additional request details are provided in the table below.`,
     param: 'review'
@@ -269,7 +270,7 @@ function triggerSpecialists(workflowId, itData) {
     
     specialists.push({
       email: CONFIG.EMAILS.JONAS,
-      subject: 'Action Required: Jonas Account Setup',
+      subject: 'Jonas Access Required',
       body: `New employee requires Jonas access.<br><br><strong>Requested Job Numbers:</strong><br>• ${safeJobNumbers}<br><br>Email: ${assignedEmail}`,
       param: 'jonas'
     });
