@@ -35,7 +35,6 @@ function getITContextData(workflowId) {
           firstName: mainData[i][10],
           lastName: mainData[i][12],
           hireDate: mainData[i][6],
-          hireDate: mainData[i][6],
           jobTitle: mainData[i][14], // Job Title (Text)
           jrTitle: mainData[i][46],  // JR Title (Lookup)
           siteName: mainData[i][15],
@@ -148,45 +147,31 @@ function submitITSetup(formData) {
 
     triggerSpecialists(workflowId, formData);
 
-    // Notify Requester
+    // Notify Requester + Manager
     try {
       const context = getITContextData(workflowId);
-      if (context.success && context.emailRequested) { // requester email is stored in emailRequested field?
-         // accessing mainData[i][19] might be Requester Email? 
-         // Let's check getITContextData mapping:
-         // emailRequested: mainData[i][19] -> wait, col 19 is 'Requester Email' in Initial Requests?
-         // Let's assume standard field is used.
-         // Actually, let's use sendFormEmail generically.
-         
-           const requesterEmail = context.requesterEmail; // Fixed: Use correct field
-           
-           const recipients = [requesterEmail];
-           // Attempt to get manager email if available in context
-           if (context.managerEmail && context.managerEmail !== requesterEmail) {
-             recipients.push(context.managerEmail);
-           }
+      if (context.success) {
+        // Inject IT result data so the context block shows assigned email and credentials
+        context.assignedEmail = assignedEmail;
 
-           if (recipients.length > 0) {
-             sendFormEmail({
-               to: recipients.join(','),
-               subject: 'IT Setup Complete',
-               body: `Good news! IT Setup has been completed for ${context.employeeName}.\n\n` +
-                     `<strong>CREDENTIALS:</strong>\n` +
-                     `• Email: ${assignedEmail} (Pwd: ${formData.Email_Temp_Password || 'N/A'})\n` +
-                     `• DSS: ${context.dssUsername || 'N/A'} (Pwd: ${context.dssPassword || 'N/A'})\n` +
-                     `• SiteDocs: ${context.siteDocsUsername || 'N/A'} (Pwd: ${context.siteDocsPassword || 'N/A'})\n` + 
-                     `• SiteDocs Worker ID: ${context.siteDocsWorkerId || 'N/A'}\n\n` +
-                     `<strong>EQUIPMENT:</strong>\n` +
-                     `• Computer: ${formData.Computer_Assigned} (${formData.Computer_Serial || 'N/A'})\n` +
-                     `• Phone: ${formData.Phone_Assigned} (${formData.Phone_Number || 'N/A'})\n` +
-                     `• Phone VM Pin: ${formData.Phone_VM_Password || 'N/A'}\n\n` +
-                     `Specialist requests (Credit Cards, Jonas, etc.) have been triggered parallel to this.`,
-               // formUrl: getBaseUrl() + '?form=request_details&id=' + workflowId, // BUTTON REMOVED per user request
-        formUrl: '',
-        displayName: 'Onboarding System'
-             });
-             Logger.log('Notified ' + recipients.join(', ') + ' of IT completion');
-           }
+        const requesterEmail = context.requesterEmail;
+        const recipients = [requesterEmail];
+        if (context.managerEmail && context.managerEmail !== requesterEmail) {
+          recipients.push(context.managerEmail);
+        }
+
+        if (recipients.length > 0) {
+          sendFormEmail({
+            to: recipients.join(','),
+            subject: 'IT Setup Complete',
+            body: 'IT setup has been completed for ' + context.employeeName + '. Credentials and equipment details are listed below. ' +
+                  'Specialist requests (Credit Cards, Jonas, etc.) have been triggered in parallel.',
+            formUrl: '',
+            displayName: 'Onboarding System',
+            contextData: context
+          });
+          Logger.log('Notified ' + recipients.join(', ') + ' of IT completion');
+        }
       }
     } catch (e) {
       Logger.log('Error notifying requester: ' + e.toString());

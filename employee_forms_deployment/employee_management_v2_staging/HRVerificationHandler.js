@@ -118,12 +118,13 @@ function submitHRVerification(formData) {
     // CRITICAL: Ensure sheet updates are committed before reading context/sending email
     SpreadsheetApp.flush();
     
-    // Get context and OVERRIDE job title with the verified one from this form submission
+    // Get context and OVERRIDE verified fields from this form submission
     // This ensures downstream emails have the fresh, verified data even if sheet read is stale
     const context = getWorkflowContext(workflowId);
     if (context) {
-      context.jobTitle = formData.jobTitle; // Override Job Title
-      context.jrTitle = formData.jrTitle;   // Override JR Title
+      context.jobTitle = formData.jobTitle;           // Override Job Title
+      context.jrTitle = formData.jrTitle;             // Override JR Title
+      context.adpAssociateId = formData.adpAssociateId; // Inject ADP ID for context block
     }
     
     if (employmentType === 'Hourly' && systemAccess === 'No') {
@@ -184,17 +185,11 @@ function submitHRVerification(formData) {
       });
       Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)' + (hasAdpSupervisor ? ' — CC: Payroll (ADP Supervisor required)' : ''));
 
-      // E3: Notify payroll for salary new hires after HR confirmation
+      // Notify payroll for salary/expedite new hires after HR verification
       sendFormEmail({
         to: CONFIG.EMAILS.PAYROLL,
         subject: 'HR Verified',
-        body: 'HR has completed verification for a new salary employee. IT setup is now in progress.<br><br>' +
-              '<b>Employee:</b> ' + formData.firstName + ' ' + formData.lastName + '<br>' +
-              '<b>ADP ID:</b> ' + formData.adpAssociateId + '<br>' +
-              '<b>Job Title:</b> ' + (formData.jobTitle || 'N/A') + '<br>' +
-              '<b>JR Title:</b> ' + (formData.jrTitle || 'N/A') + '<br>' +
-              '<b>Site:</b> ' + (context ? context.siteName : 'N/A') + '<br>' +
-              '<b>Start Date:</b> ' + (context ? context.hireDate : 'N/A') + '<br>',
+        body: 'HR has completed verification for ' + formData.firstName + ' ' + formData.lastName + '. ADP ID assigned: ' + formData.adpAssociateId + '. IT setup is now in progress.',
         formUrl: '',
         contextData: context
       });

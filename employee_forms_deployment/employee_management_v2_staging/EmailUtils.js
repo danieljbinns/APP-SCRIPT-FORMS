@@ -188,14 +188,15 @@ function getWorkflowContext(workflowId) {
       jobSiteNumber: row[headers.indexOf('Job Site #')]
     };
     
-    // PHASE 4 FIX: Check HR Verification Results for "Verified" Titles
+    // PHASE 4 FIX: Check HR Verification Results for verified titles and ADP ID
     // This ensures downstream forms/emails use the HR-approved data
     const hrSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
     if (hrSheet) {
         const hrData = hrSheet.getDataRange().getValues();
-        // Workflow ID is Col A (0), Verified Title is Col H (7) - based on HRVerificationHandler
+        // Workflow ID is Col A (0), ADP ID is Col D (3), Verified Title is Col H (7)
         const hrRow = hrData.find(r => r[0] === workflowId);
         if (hrRow) {
+             if (hrRow[3]) context.adpAssociateId = hrRow[3]; // ADP Associate ID
              const verifiedTitles = hrRow[7]; // "Job Title / JR Title"
              if (verifiedTitles && verifiedTitles.includes(' / ')) {
                  const parts = verifiedTitles.split(' / ');
@@ -438,6 +439,7 @@ function createContextBlock(context) {
       '<div style="font-weight:600;color:#EB1C2D;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Credentials</div>' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#333;">' +
       (context.internalEmployeeId ? '<tr><td style="padding:3px 0;font-weight:600;width:160px;">Employee ID:</td><td style="padding:3px 0;">' + context.internalEmployeeId + '</td></tr>' : '') +
+      (context.adpAssociateId ? '<tr><td style="padding:3px 0;font-weight:600;">ADP Associate ID:</td><td style="padding:3px 0;">' + context.adpAssociateId + '</td></tr>' : '') +
       (context.assignedEmail ? '<tr><td style="padding:3px 0;font-weight:600;">Assigned Email:</td><td style="padding:3px 0;">' + context.assignedEmail + '</td></tr>' : '') +
       (context.dssUsername ? '<tr><td style="padding:3px 0;font-weight:600;">DSS:</td><td style="padding:3px 0;">' + context.dssUsername + ' / Pwd: ' + (context.dssPassword || 'N/A') + '</td></tr>' : '') +
       (context.siteDocsUsername ? '<tr><td style="padding:3px 0;font-weight:600;">SiteDocs:</td><td style="padding:3px 0;">' + context.siteDocsUsername + ' / Pwd: ' + (context.siteDocsPassword || 'N/A') + '</td></tr>' : '') +
