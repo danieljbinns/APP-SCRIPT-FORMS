@@ -192,91 +192,125 @@ function submitITSetup(formData) {
 
 function triggerSpecialists(workflowId, itData) {
   const assignedEmail = itData.Email_Username ? (itData.Email_Username + itData.Email_Domain) : '[Pending]';
-  
-  // Get full context data again to ensure we have all initial request info
+
+  // Get full context and inject IT result fields
   const context = getITContextData(workflowId);
-  
-  // Add IT Result data to context for emails
   context.assignedEmail = assignedEmail;
   context.computerAssigned = itData.Computer_Assigned;
   context.computerType = itData.Computer_Type;
   context.phoneAssigned = itData.Phone_Assigned;
   context.phoneNumber = itData.Phone_Number;
-  
+
+  // Specialist context: full employee/site/manager/systems info, credentials stripped
+  // (specialists don't need DSS/SiteDocs passwords — assigned email and ID are sufficient)
+  const specContext = Object.assign({}, context);
+  delete specContext.dssPassword;
+  delete specContext.siteDocsPassword;
+  delete specContext.siteDocsUsername;
+  delete specContext.dssUsername;
+  delete specContext.siteDocsWorkerId;
+  delete specContext.siteDocsJobCode;
+
+  // Shared employee summary prepended to every specialist body
+  const empLine =
+    '<b>Employee:</b> ' + context.employeeName +
+    (context.department ? ' | <b>Dept:</b> ' + context.department : '') +
+    '<br>' +
+    '<b>Site:</b> ' + (context.siteName || 'N/A') +
+    (context.jobSiteNumber ? ' (Job #' + context.jobSiteNumber + ')' : '') +
+    ' | <b>Start Date:</b> ' + (context.hireDate || 'N/A') +
+    '<br>' +
+    '<b>Manager:</b> ' + (context.managerName || 'N/A') +
+    (context.managerEmail ? ' (' + context.managerEmail + ')' : '') +
+    '<br>' +
+    '<b>Assigned Email:</b> ' + assignedEmail +
+    '<br><br>';
+
   const specialists = [];
-  
-  // 1. Credit Card Specialist
+
+  // 1. Credit Card
   if (context.creditCardUSA === 'Yes' || context.creditCardCanada === 'Yes' || context.creditCardHomeDepot === 'Yes') {
-    let ccDetails = '';
-    if (context.creditCardUSA === 'Yes') ccDetails += `• USA Card (Limit: ${context.creditCardLimitUSA || 'Standard'})\n`;
-    if (context.creditCardCanada === 'Yes') ccDetails += `• Canada Card (Limit: ${context.creditCardLimitCanada || 'Standard'})\n`;
-    if (context.creditCardHomeDepot === 'Yes') ccDetails += `• Home Depot Card (Limit: ${context.creditCardLimitHomeDepot || 'Standard'})\n`;
-    
+    let ccLines = '';
+    if (context.creditCardUSA === 'Yes')       ccLines += '• USA Card — Limit: ' + (context.creditCardLimitUSA || 'Standard') + '<br>';
+    if (context.creditCardCanada === 'Yes')    ccLines += '• Canada Card — Limit: ' + (context.creditCardLimitCanada || 'Standard') + '<br>';
+    if (context.creditCardHomeDepot === 'Yes') ccLines += '• Home Depot Card — Limit: ' + (context.creditCardLimitHomeDepot || 'Standard') + '<br>';
+
     specialists.push({
       email: CONFIG.EMAILS.CREDIT_CARD,
       subject: 'Credit Card Setup Required',
-      body: `New employee requires credit card(s):\n\n${ccDetails}\nEmployee has been assigned email: ${assignedEmail}`,
+      body: empLine +
+            '<b>Action:</b> Set up the following credit card(s) for this employee and complete the form below.<br><br>' +
+            ccLines,
       param: 'creditcard'
     });
   }
-  
+
   // 2. Business Cards
   if (context.businessCards === 'Yes') {
     specialists.push({
       email: CONFIG.EMAILS.BUSINESS_CARDS,
       subject: 'Business Cards Required',
-      body: `New employee requires business cards.\n\nTitle: ${context.jrTitle || context.jobTitle}\nEmail: ${assignedEmail}\nPhone: ${context.phoneNumber || 'N/A'}`,
+      body: empLine +
+            '<b>Action:</b> Order business cards for this employee and complete the form below.<br><br>' +
+            '<b>Print Name/Title:</b> ' + (context.jrTitle || context.jobTitle || 'N/A') + '<br>' +
+            '<b>Email on Card:</b> ' + assignedEmail + '<br>' +
+            '<b>Phone on Card:</b> ' + (context.phoneNumber || 'N/A') + '<br>',
       param: 'businesscards'
     });
   }
-  
+
   // 3. Fleetio
   if (context.fleetioAccess === 'Yes') {
     specialists.push({
       email: CONFIG.EMAILS.FLEETIO,
       subject: 'Fleetio Access Required',
-      body: `New employee requires Fleetio access.\n\nEmail: ${assignedEmail}\nSite: ${context.siteName}`,
+      body: empLine +
+            '<b>Action:</b> Create a Fleetio account for this employee and complete the form below.<br><br>' +
+            '<b>Login Email:</b> ' + assignedEmail + '<br>' +
+            '<b>Site:</b> ' + (context.siteName || 'N/A') + '<br>',
       param: 'fleetio'
     });
   }
-  
-  // 4. JR & 30/60/90 Reviews (Always sent for salary/office staff)
-  specialists.push({
-    email: CONFIG.EMAILS.REVIEW_306090_JR,
-    subject: '30/60/90 Review Required',
-    body: `Employee onboarding has been completed by IT. The employee has been assigned the email address: <strong>${assignedEmail}</strong>.<br><br>` + 
-          `Please proceed with the 30/60/90 plan setup and JR confirmation for this employee. Additional request details are provided in the table below.`,
-    param: 'review'
-  });
-  
-    // 5. Jonas
-  // Check if Jonas access was requested OR specific job numbers provided
-  if (context.jonasJobNumbers && context.jonasJobNumbers.length > 0) {
-    // Format job numbers: One per line
+
+  // 4. 30/60/90 Review — salary/non-hourly employees only
+  if (context.employmentType !== 'Hourly') {
+    specialists.push({
+      email: CONFIG.EMAILS.REVIEW_306090_JR,
+      subject: '30/60/90 Review Required',
+      body: empLine +
+            '<b>Action:</b> Set up the 30/60/90 day review plan and confirm JR assignment for this employee.<br><br>' +
+            '<b>Job Title:</b> ' + (context.jobTitle || 'N/A') + '<br>' +
+            '<b>JR Title:</b> ' + (context.jrTitle || 'N/A') + '<br>',
+      param: 'review'
+    });
+  }
+
+  // 5. Jonas — only if job numbers were provided
+  if (context.jonasJobNumbers && context.jonasJobNumbers.toString().trim().length > 0) {
     const safeJobNumbers = context.jonasJobNumbers.toString().split(',').map(s => s.trim()).filter(s => s).join('<br>• ');
-    
     specialists.push({
       email: CONFIG.EMAILS.JONAS,
       subject: 'Jonas Access Required',
-      body: `New employee requires Jonas access.<br><br><strong>Requested Job Numbers:</strong><br>• ${safeJobNumbers}<br><br>Email: ${assignedEmail}`,
+      body: empLine +
+            '<b>Action:</b> Provision Jonas access for this employee using the job numbers below and complete the form.<br><br>' +
+            '<b>Login Email:</b> ' + assignedEmail + '<br>' +
+            '<b>Job Numbers:</b><br>• ' + safeJobNumbers + '<br>',
       param: 'jonas'
     });
   }
-  
 
-
-  // Send all emails
+  // Send all
   specialists.forEach(spec => {
     const specUrl = buildFormUrl('specialist', { wf: workflowId, dept: spec.param });
     sendFormEmail({
       to: spec.email,
       subject: spec.subject,
-      body: spec.body, // This body content is injected into the rich template
+      body: spec.body,
       formUrl: specUrl,
       displayName: 'TEAM Group - Employee Onboarding',
-      contextData: context // Pass full context for the rich table
+      contextData: specContext
     });
   });
-  
-  Logger.log('[SUCCESS] Specialist emails sent for: ' + workflowId);
+
+  Logger.log('[SUCCESS] Specialist emails sent (' + specialists.length + ') for: ' + workflowId);
 }

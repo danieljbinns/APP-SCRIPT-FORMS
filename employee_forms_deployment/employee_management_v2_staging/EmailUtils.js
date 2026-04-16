@@ -222,6 +222,14 @@ function getWorkflowContext(workflowId) {
             context.dssPassword = idRow[9];
         }
     }
+
+    // Fetch assigned email from IT Results (Col E = assignedEmail)
+    const itSheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
+    if (itSheet) {
+        const itData = itSheet.getDataRange().getValues();
+        const itRow = itData.find(r => r[0] === workflowId);
+        if (itRow) context.assignedEmail = itRow[4];
+    }
     
     return context;
     
