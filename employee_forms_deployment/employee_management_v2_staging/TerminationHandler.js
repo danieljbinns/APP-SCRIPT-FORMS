@@ -244,6 +244,24 @@ function submitTerminationApproval(formData) {
       sendActionItemEmail(CONFIG.EMAILS.IDSETUP, 'Employee Deactivation Required', tidDeact, termData, deactItems);
       tasksCreated++;
 
+      // Safety — always notify on termination to remove from SiteDocs and update BOSS records
+      sendFormEmail({
+        to: CONFIG.EMAILS.SAFETY,
+        subject: 'Employee Termination - Safety Offboarding Required',
+        body: 'HR has approved the end of employment for ' + termData.employeeName + '. Please remove this employee from SiteDocs and update BOSS records accordingly.',
+        formUrl: '',
+        displayName: 'TEAM Group - Employee Management',
+        contextData: {
+          ...termData,
+          workflowType: 'Termination',
+          employmentType: termData.empType,
+          hireDate: termData.termDate,
+          lastDayWorked: termData.lastDayWorked,
+          hasReports: termData.hasReports,
+          reportsToNew: termData.reportsToNew
+        }
+      });
+
       // 2. CONSOLIDATED ASSET CHECKLIST (Manager/Requester)
       if (collectAssets) {
         const rawAssets = termData.eqToReturn || '';
