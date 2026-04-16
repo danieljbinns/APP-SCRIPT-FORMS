@@ -391,11 +391,23 @@ function createContextBlock(context) {
   // Status Change-specific rows
   var changeRows = '';
   if (workflowType === 'Status Change') {
+    // Normalize change field display: identical sides or N/A -> N/A shows "Unchanged"
+    var nc = function(val) {
+      if (val === undefined || val === null) return null;
+      var v = String(val).trim();
+      if (!v || v === 'N/A -> N/A' || v === 'N/A (N/A) -> N/A (N/A)') return 'Unchanged';
+      var idx = v.indexOf(' -> ');
+      if (idx !== -1 && v.substring(0, idx).trim() === v.substring(idx + 4).trim()) return 'Unchanged';
+      return v;
+    };
+    var stVal = nc(context.siteTransfer);
+    var tcVal = nc(context.titleChange);
+    var ccVal = nc(context.classChange);
     changeRows =
       (context.changeTypes ? '<tr><td style="padding:4px 0;font-weight:600;width:160px;">Changes:</td><td style="padding:4px 0;">' + context.changeTypes + '</td></tr>' : '') +
-      (context.siteTransfer && context.siteTransfer.indexOf('N/A') === -1 ? '<tr><td style="padding:4px 0;font-weight:600;">Site Transfer:</td><td style="padding:4px 0;">' + context.siteTransfer + '</td></tr>' : '') +
-      (context.titleChange && context.titleChange.indexOf('N/A') === -1 ? '<tr><td style="padding:4px 0;font-weight:600;">Title Change:</td><td style="padding:4px 0;">' + context.titleChange + '</td></tr>' : '') +
-      (context.classChange && context.classChange.indexOf('N/A') === -1 ? '<tr><td style="padding:4px 0;font-weight:600;">Classification:</td><td style="padding:4px 0;">' + context.classChange + '</td></tr>' : '') +
+      (stVal !== null ? '<tr><td style="padding:4px 0;font-weight:600;">Site Transfer:</td><td style="padding:4px 0;">' + stVal + '</td></tr>' : '') +
+      (tcVal !== null ? '<tr><td style="padding:4px 0;font-weight:600;">Title Change:</td><td style="padding:4px 0;">' + tcVal + '</td></tr>' : '') +
+      (ccVal !== null ? '<tr><td style="padding:4px 0;font-weight:600;">Classification:</td><td style="padding:4px 0;">' + ccVal + '</td></tr>' : '') +
       (context.managerChange ? '<tr><td style="padding:4px 0;font-weight:600;">Manager Change:</td><td style="padding:4px 0;">' + context.managerChange + '</td></tr>' : '');
   }
 
@@ -413,9 +425,9 @@ function createContextBlock(context) {
     } catch (e) { /* ignore parse errors */ }
   }
 
-  // Credentials section (shown when any credential field is present)
+  // Credentials section (shown when any credential field or a credentialNote is present)
   var credRows = '';
-  if (context.dssUsername || context.siteDocsUsername || context.assignedEmail || context.internalEmployeeId) {
+  if (context.dssUsername || context.siteDocsUsername || context.assignedEmail || context.internalEmployeeId || context.credentialNote) {
     credRows = '<tr><td colspan="2" style="padding:12px 0 4px 0;">' +
       '<div style="font-weight:600;color:#EB1C2D;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Credentials</div>' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#333;">' +
@@ -424,6 +436,7 @@ function createContextBlock(context) {
       (context.dssUsername ? '<tr><td style="padding:3px 0;font-weight:600;">DSS:</td><td style="padding:3px 0;">' + context.dssUsername + ' / Pwd: ' + (context.dssPassword || 'N/A') + '</td></tr>' : '') +
       (context.siteDocsUsername ? '<tr><td style="padding:3px 0;font-weight:600;">SiteDocs:</td><td style="padding:3px 0;">' + context.siteDocsUsername + ' / Pwd: ' + (context.siteDocsPassword || 'N/A') + '</td></tr>' : '') +
       (context.siteDocsWorkerId ? '<tr><td style="padding:3px 0;font-weight:600;">SiteDocs Worker ID:</td><td style="padding:3px 0;">' + context.siteDocsWorkerId + '</td></tr>' : '') +
+      (context.credentialNote ? '<tr><td colspan="2" style="padding:4px 0;color:#666;font-style:italic;">' + context.credentialNote + '</td></tr>' : '') +
       '</table></td></tr>';
   }
 

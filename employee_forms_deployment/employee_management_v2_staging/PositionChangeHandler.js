@@ -161,7 +161,8 @@ function submitPositionChangeApproval(formData) {
         managerOldEmail: mgrOldEmail,
         managerNewEmail: mgrNewEmail,
         systems: changeData.systems,
-        equipmentRaw: changeData.equipment
+        equipmentRaw: changeData.equipment,
+        credentialNote: 'Credentials on file — verify with IDSETUP if role or site requires updates.'
       };
 
       // 1. If Transfer, create Action Item for Receiving Manager
