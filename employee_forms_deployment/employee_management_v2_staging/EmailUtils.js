@@ -21,16 +21,24 @@ function buildEmailSubject(action, contextData, opts) {
   if (!contextData) return action;
   opts = opts || {};
 
-  var workflowType = contextData.workflowType || '';
-  var employmentType = contextData.employmentType || '';
-  var tag = workflowType
-    ? '[' + workflowType + (employmentType ? ' | ' + employmentType : '') + ']'
-    : (employmentType ? '[' + employmentType + ']' : '');
+  var workflowType   = contextData.workflowType || '';
+  var employmentType = contextData.employmentType || contextData.empType || '';
+
+  // Tag: Status Change uses change types in tag; others use employment type
+  var tag;
+  if (workflowType === 'Status Change') {
+    var changeTypes = contextData.changeTypes || '';
+    tag = '[Status Change' + (changeTypes ? ': ' + changeTypes : '') + ']';
+  } else {
+    tag = workflowType
+      ? '[' + workflowType + (employmentType ? ' | ' + employmentType : '') + ']'
+      : (employmentType ? '[' + employmentType + ']' : '');
+  }
 
   // Date label based on workflow type
   var dateLabel = '';
-  if (workflowType === 'New Hire')         dateLabel = 'Start Date';
-  else if (workflowType === 'Termination') dateLabel = 'Termination Date';
+  if (workflowType === 'New Hire')           dateLabel = 'Start Date';
+  else if (workflowType === 'Termination')   dateLabel = 'Termination Date';
   else if (workflowType === 'Status Change') dateLabel = 'Effective Date';
 
   var dateStr = '';
@@ -46,12 +54,37 @@ function buildEmailSubject(action, contextData, opts) {
   var site         = contextData.siteName || '';
   var manager      = contextData.managerEmail || '';
 
-  // Assemble core: [Tag] Action: Name | Site | DateLabel: Date | Manager
   var core = (tag ? tag + ' ' : '') + action + (employeeName ? ': ' + employeeName : '');
   var parts = [core];
-  if (site)                       parts.push(site);
-  if (dateLabel && dateStr)       parts.push(dateLabel + ': ' + dateStr);
-  if (manager)                    parts.push(manager);
+
+  if (workflowType === 'Status Change') {
+    // Site: prefer siteTransfer (old -> new), fall back to siteName
+    var siteTransfer = contextData.siteTransfer || '';
+    if (siteTransfer && siteTransfer.indexOf('N/A') === -1) parts.push(siteTransfer);
+    else if (site) parts.push(site);
+    // Classification / employment type change (old -> new)
+    var classChange = contextData.classChange || '';
+    if (classChange && classChange.indexOf('N/A') === -1) parts.push(classChange);
+    else if (employmentType) parts.push(employmentType);
+    // Date
+    if (dateLabel && dateStr) parts.push(dateLabel + ': ' + dateStr);
+    // Manager: show old -> new if both present and different
+    var managerOld = contextData.managerOldEmail || '';
+    var managerNew = contextData.managerNewEmail || manager;
+    if (managerOld && managerNew && managerOld !== managerNew) parts.push(managerOld + ' -> ' + managerNew);
+    else if (managerNew) parts.push(managerNew);
+  } else if (workflowType === 'Termination') {
+    if (site) parts.push(site);
+    if (dateLabel && dateStr) parts.push(dateLabel + ': ' + dateStr);
+    var reason = contextData.reason || '';
+    if (reason) parts.push(reason);
+    if (manager) parts.push(manager);
+  } else {
+    // New Hire and default
+    if (site) parts.push(site);
+    if (dateLabel && dateStr) parts.push(dateLabel + ': ' + dateStr);
+    if (manager) parts.push(manager);
+  }
 
   var subject = parts.join(' | ');
 
@@ -315,44 +348,110 @@ function createEmailTemplate(subject, body, formUrl, contextData) {
  */
 function createContextBlock(context) {
   if (!context) return '';
-  
-  // Build system access summary from systems array or string
-  let systemAccessText = 'None';
+
+  var workflowType = context.workflowType || '';
+
+  // System access summary
+  var systemAccessText = 'None';
   if (context.systems) {
-    if (Array.isArray(context.systems)) {
-      systemAccessText = context.systems.length > 0 ? context.systems.join(', ') : 'None';
-    } else if (typeof context.systems === 'string') {
-      systemAccessText = context.systems || 'None';
-    }
+    systemAccessText = Array.isArray(context.systems)
+      ? (context.systems.length > 0 ? context.systems.join(', ') : 'None')
+      : (String(context.systems) || 'None');
   }
-  
+
+  // Dynamic date label based on workflow type
+  var dateLabel = 'Date';
+  if (workflowType === 'New Hire')           dateLabel = 'Start Date';
+  else if (workflowType === 'Termination')   dateLabel = 'Termination Date';
+  else if (workflowType === 'Status Change') dateLabel = 'Effective Date';
+
+  // Employment type with fallback for termination (termData uses empType field)
+  var employmentType = context.employmentType || context.empType || '';
+
+  // Format hireDate for display
+  var hireDateDisplay = '';
+  if (context.hireDate) {
+    try {
+      var hd = context.hireDate instanceof Date ? context.hireDate : new Date(String(context.hireDate));
+      hireDateDisplay = !isNaN(hd.getTime())
+        ? Utilities.formatDate(hd, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+        : String(context.hireDate).substring(0, 10);
+    } catch (e) { hireDateDisplay = String(context.hireDate).substring(0, 10); }
+  }
+
+  // Termination-specific rows (highlighted in red)
+  var termRows = '';
+  if (workflowType === 'Termination') {
+    termRows =
+      (context.lastDayWorked ? '<tr><td style="padding:4px 0;font-weight:600;width:160px;color:#c00;">Last Day Worked:</td><td style="padding:4px 0;">' + context.lastDayWorked + '</td></tr>' : '') +
+      (context.hasReports ? '<tr><td style="padding:4px 0;font-weight:600;color:#c00;">Has Direct Reports:</td><td style="padding:4px 0;">' + context.hasReports + '</td></tr>' : '') +
+      (context.reportsToNew && context.reportsToNew !== 'N/A' ? '<tr><td style="padding:4px 0;font-weight:600;color:#c00;">Reports Reassigned To:</td><td style="padding:4px 0;">' + context.reportsToNew + '</td></tr>' : '');
+  }
+
+  // Status Change-specific rows
+  var changeRows = '';
+  if (workflowType === 'Status Change') {
+    changeRows =
+      (context.changeTypes ? '<tr><td style="padding:4px 0;font-weight:600;width:160px;">Changes:</td><td style="padding:4px 0;">' + context.changeTypes + '</td></tr>' : '') +
+      (context.siteTransfer && context.siteTransfer.indexOf('N/A') === -1 ? '<tr><td style="padding:4px 0;font-weight:600;">Site Transfer:</td><td style="padding:4px 0;">' + context.siteTransfer + '</td></tr>' : '') +
+      (context.titleChange && context.titleChange.indexOf('N/A') === -1 ? '<tr><td style="padding:4px 0;font-weight:600;">Title Change:</td><td style="padding:4px 0;">' + context.titleChange + '</td></tr>' : '') +
+      (context.classChange && context.classChange.indexOf('N/A') === -1 ? '<tr><td style="padding:4px 0;font-weight:600;">Classification:</td><td style="padding:4px 0;">' + context.classChange + '</td></tr>' : '') +
+      (context.managerChange ? '<tr><td style="padding:4px 0;font-weight:600;">Manager Change:</td><td style="padding:4px 0;">' + context.managerChange + '</td></tr>' : '');
+  }
+
+  // Checklist items section
+  var checklistRows = '';
+  if (context.checklistItems) {
+    try {
+      var items = Array.isArray(context.checklistItems) ? context.checklistItems : JSON.parse(String(context.checklistItems));
+      if (items && items.length > 0) {
+        var itemsHtml = items.map(function(item) { return '<li style="padding:2px 0;">' + item + '</li>'; }).join('');
+        checklistRows = '<tr><td colspan="2" style="padding:12px 0 4px 0;">' +
+          '<div style="font-weight:600;color:#EB1C2D;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Action Items</div>' +
+          '<ul style="margin:0;padding-left:20px;color:#333;">' + itemsHtml + '</ul></td></tr>';
+      }
+    } catch (e) { /* ignore parse errors */ }
+  }
+
+  // Credentials section (shown when any credential field is present)
+  var credRows = '';
+  if (context.dssUsername || context.siteDocsUsername || context.assignedEmail || context.internalEmployeeId) {
+    credRows = '<tr><td colspan="2" style="padding:12px 0 4px 0;">' +
+      '<div style="font-weight:600;color:#EB1C2D;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Credentials</div>' +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#333;">' +
+      (context.internalEmployeeId ? '<tr><td style="padding:3px 0;font-weight:600;width:160px;">Employee ID:</td><td style="padding:3px 0;">' + context.internalEmployeeId + '</td></tr>' : '') +
+      (context.assignedEmail ? '<tr><td style="padding:3px 0;font-weight:600;">Assigned Email:</td><td style="padding:3px 0;">' + context.assignedEmail + '</td></tr>' : '') +
+      (context.dssUsername ? '<tr><td style="padding:3px 0;font-weight:600;">DSS:</td><td style="padding:3px 0;">' + context.dssUsername + ' / Pwd: ' + (context.dssPassword || 'N/A') + '</td></tr>' : '') +
+      (context.siteDocsUsername ? '<tr><td style="padding:3px 0;font-weight:600;">SiteDocs:</td><td style="padding:3px 0;">' + context.siteDocsUsername + ' / Pwd: ' + (context.siteDocsPassword || 'N/A') + '</td></tr>' : '') +
+      (context.siteDocsWorkerId ? '<tr><td style="padding:3px 0;font-weight:600;">SiteDocs Worker ID:</td><td style="padding:3px 0;">' + context.siteDocsWorkerId + '</td></tr>' : '') +
+      '</table></td></tr>';
+  }
+
   return `
     <tr>
       <td style="padding: 20px 30px; background-color: #f8f9fa; border-bottom: 1px solid #e0e0e0;">
         <h3 style="margin: 0 0 15px 0; color: #EB1C2D; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Request Details</h3>
         <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #333;">
-          ${context.requesterEmail ? `<tr><td style="padding: 6px 0; font-weight: 600; width: 160px;">Submitted By:</td><td style="padding: 6px 0;">${context.requesterEmail}</td></tr>` : ''}
-          ${context.employeeName ? `<tr><td style="padding: 6px 0; font-weight: 600;">Employee:</td><td style="padding: 6px 0;">${context.employeeName}</td></tr>` : ''}
-          ${context.jobTitle ? `<tr><td style="padding: 6px 0; font-weight: 600;">Job Title:</td><td style="padding: 6px 0;">${context.jobTitle}</td></tr>` : ''}
-          ${context.jrTitle ? `<tr><td style="padding: 6px 0; font-weight: 600;">JR Title:</td><td style="padding: 6px 0;">${context.jrTitle}</td></tr>` : ''}
-          ${context.department ? `<tr><td style="padding: 6px 0; font-weight: 600;">Department:</td><td style="padding: 6px 0;">${context.department}</td></tr>` : ''}
-          ${context.siteName ? `<tr><td style="padding: 6px 0; font-weight: 600;">Site:</td><td style="padding: 6px 0;">${context.siteName}</td></tr>` : ''}
-          ${context.hireDate ? `<tr><td style="padding: 6px 0; font-weight: 600;">Effective Date:</td><td style="padding: 6px 0;">${context.hireDate}</td></tr>` : ''}
-          ${context.employmentType ? `<tr><td style="padding: 6px 0; font-weight: 600;">Employment Type:</td><td style="padding: 6px 0;">${context.employmentType}</td></tr>` : ''}
-          ${context.employeeType ? `<tr><td style="padding: 6px 0; font-weight: 600;">Employee Type:</td><td style="padding: 6px 0;">${context.employeeType}</td></tr>` : ''}
-          ${context.newHireOrRehire ? `<tr><td style="padding: 6px 0; font-weight: 600;">Status:</td><td style="padding: 6px 0;">${context.newHireOrRehire}</td></tr>` : ''}
-          ${context.reason ? `<tr><td style="padding: 6px 0; font-weight: 600;">Reason:</td><td style="padding: 6px 0;">${context.reason}</td></tr>` : ''}
-          ${context.managerName ? `<tr><td style="padding: 6px 0; font-weight: 600;">Manager:</td><td style="padding: 6px 0;">${context.managerName}${context.managerEmail ? ` (${context.managerEmail})` : ''}</td></tr>` : ''}
-          ${context.systemAccess !== 'No' && context.systems ? `<tr><td style="padding: 6px 0; font-weight: 600;">System Access:</td><td style="padding: 6px 0;">${systemAccessText}</td></tr>` : ''}
-          ${context.equipmentRaw ? `<tr><td style="padding: 6px 0; font-weight: 600;">Equipment:</td><td style="padding: 6px 0;">
-            ${context.equipmentRaw}
-            ${context.computerType ? `<br><span style="font-size:12px; color:#666">Computer: ${context.computerType} (${context.computerRequestType})</span>` : ''}
-            ${context.phoneRequestType ? `<br><span style="font-size:12px; color:#666">Phone: ${context.phoneRequestType} Request</span>` : ''}
-          </td></tr>` : ''}
-          ${context.assignedEmail ? `<tr><td style="padding: 6px 0; font-weight: 600;">Assigned Email:</td><td style="padding: 6px 0;">${context.assignedEmail}</td></tr>` : ''}
-          ${context.jobSiteNumber ? `<tr><td style="padding: 6px 0; font-weight: 600;">Job Site #:</td><td style="padding: 6px 0;">${context.jobSiteNumber}</td></tr>` : ''}
-          ${context.requesterEmail ? `<tr><td style="padding: 6px 0; font-weight: 600;">Requested By:</td><td style="padding: 6px 0;">${context.requesterEmail}</td></tr>` : ''}
-          ${context.requestDate ? `<tr><td style="padding: 6px 0; font-weight: 6 00;">Request Date:</td><td style="padding: 6px 0;">${context.requestDate}</td></tr>` : ''}
+          ${context.employeeName ? `<tr><td style="padding:6px 0;font-weight:600;width:160px;">Employee:</td><td style="padding:6px 0;">${context.employeeName}</td></tr>` : ''}
+          ${context.jobTitle ? `<tr><td style="padding:6px 0;font-weight:600;">Job Title:</td><td style="padding:6px 0;">${context.jobTitle}</td></tr>` : ''}
+          ${context.jrTitle ? `<tr><td style="padding:6px 0;font-weight:600;">JR Title:</td><td style="padding:6px 0;">${context.jrTitle}</td></tr>` : ''}
+          ${context.department ? `<tr><td style="padding:6px 0;font-weight:600;">Department:</td><td style="padding:6px 0;">${context.department}</td></tr>` : ''}
+          ${context.siteName ? `<tr><td style="padding:6px 0;font-weight:600;">Site:</td><td style="padding:6px 0;">${context.siteName}</td></tr>` : ''}
+          ${hireDateDisplay ? `<tr><td style="padding:6px 0;font-weight:600;">${dateLabel}:</td><td style="padding:6px 0;">${hireDateDisplay}</td></tr>` : ''}
+          ${employmentType ? `<tr><td style="padding:6px 0;font-weight:600;">Employment Type:</td><td style="padding:6px 0;">${employmentType}</td></tr>` : ''}
+          ${context.employeeType ? `<tr><td style="padding:6px 0;font-weight:600;">Employee Type:</td><td style="padding:6px 0;">${context.employeeType}</td></tr>` : ''}
+          ${context.newHireOrRehire ? `<tr><td style="padding:6px 0;font-weight:600;">Status:</td><td style="padding:6px 0;">${context.newHireOrRehire}</td></tr>` : ''}
+          ${context.reason ? `<tr><td style="padding:6px 0;font-weight:600;">Reason:</td><td style="padding:6px 0;">${context.reason}</td></tr>` : ''}
+          ${context.managerName ? `<tr><td style="padding:6px 0;font-weight:600;">Manager:</td><td style="padding:6px 0;">${context.managerName}${context.managerEmail ? ' (' + context.managerEmail + ')' : ''}</td></tr>` : ''}
+          ${context.systemAccess !== 'No' && context.systems ? `<tr><td style="padding:6px 0;font-weight:600;">System Access:</td><td style="padding:6px 0;">${systemAccessText}</td></tr>` : ''}
+          ${context.equipmentRaw ? `<tr><td style="padding:6px 0;font-weight:600;">Equipment:</td><td style="padding:6px 0;">${context.equipmentRaw}${context.computerType ? '<br><span style="font-size:12px;color:#666">Computer: ' + context.computerType + (context.computerRequestType ? ' (' + context.computerRequestType + ')' : '') + '</span>' : ''}${context.phoneRequestType ? '<br><span style="font-size:12px;color:#666">Phone: ' + context.phoneRequestType + ' Request</span>' : ''}</td></tr>` : ''}
+          ${context.jobSiteNumber ? `<tr><td style="padding:6px 0;font-weight:600;">Job Site #:</td><td style="padding:6px 0;">${context.jobSiteNumber}</td></tr>` : ''}
+          ${context.requesterEmail ? `<tr><td style="padding:6px 0;font-weight:600;">Requested By:</td><td style="padding:6px 0;">${context.requesterEmail}</td></tr>` : ''}
+          ${context.requestDate ? `<tr><td style="padding:6px 0;font-weight:600;">Request Date:</td><td style="padding:6px 0;">${context.requestDate}</td></tr>` : ''}
+          ${termRows}
+          ${changeRows}
+          ${checklistRows}
+          ${credRows}
         </table>
       </td>
     </tr>

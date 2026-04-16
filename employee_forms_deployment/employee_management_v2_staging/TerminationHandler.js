@@ -77,8 +77,9 @@ function submitTerminationRequest(formData) {
       managerEmail: formData.managerEmail,
       requestDate: new Date().toLocaleDateString(),
       requesterEmail: formData.reqEmail,
-      hireDate: formData.termDate, // Rendering Term Date on Start Date line
+      hireDate: formData.termDate,
       employmentType: formData.empType,
+      lastDayWorked: formData.lastDayWorked || '',
       reason: formData.reason,
       equipmentRaw: equipment,
       systems: systems
@@ -209,7 +210,7 @@ function submitTerminationApproval(formData) {
       
       if (itItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'IT', `IT Systems Deactivation - ${termData.employeeName}`, JSON.stringify(itItems), CONFIG.EMAILS.IT);
-        sendActionItemEmail(CONFIG.EMAILS.IT, 'IT Action Required', tid, termData);
+        sendActionItemEmail(CONFIG.EMAILS.IT, 'IT Action Required', tid, termData, itItems);
         tasksCreated++;
       }
 
@@ -217,7 +218,7 @@ function submitTerminationApproval(formData) {
       const hrItems = selectedSystems.filter(s => s === 'ADP Supervisor Access');
       if (hrItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'HR', `HR Systems Deactivation - ${termData.employeeName}`, JSON.stringify(hrItems), CONFIG.EMAILS.HR);
-        sendActionItemEmail(CONFIG.EMAILS.HR, 'HR Action Required', tid, termData);
+        sendActionItemEmail(CONFIG.EMAILS.HR, 'HR Action Required', tid, termData, hrItems);
         tasksCreated++;
       }
 
@@ -225,7 +226,7 @@ function submitTerminationApproval(formData) {
       const fleetItems = selectedSystems.filter(s => s === 'Fleetio');
       if (fleetItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'Fleet', `Fleet Systems Deactivation - ${termData.employeeName}`, JSON.stringify(fleetItems), CONFIG.EMAILS.FLEETIO);
-        sendActionItemEmail(CONFIG.EMAILS.FLEETIO, 'Fleet Action Required', tid, termData);
+        sendActionItemEmail(CONFIG.EMAILS.FLEETIO, 'Fleet Action Required', tid, termData, fleetItems);
         tasksCreated++;
       }
 
@@ -233,14 +234,14 @@ function submitTerminationApproval(formData) {
       const financeItems = selectedSystems.filter(s => s === 'Jonas Purchasing');
       if (financeItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Jonas Purchasing Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
-        sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Finance Action Required', tid, termData);
+        sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Finance Action Required', tid, termData, financeItems);
         tasksCreated++;
       }
 
       // Employee Deactivation Group (SiteDocs, DSS, BOSS WIS) - Always Mandatory
       const deactItems = ['SiteDocs', 'DSS User', 'BOSS WIS Module'];
       const tidDeact = ActionItemService.createActionItem(workflowId, 'Deactivation', `Employee Deactivation - ${termData.employeeName}`, JSON.stringify(deactItems), CONFIG.EMAILS.IDSETUP);
-      sendActionItemEmail(CONFIG.EMAILS.IDSETUP, 'Employee Deactivation Required', tidDeact, termData);
+      sendActionItemEmail(CONFIG.EMAILS.IDSETUP, 'Employee Deactivation Required', tidDeact, termData, deactItems);
       tasksCreated++;
 
       // 2. CONSOLIDATED ASSET CHECKLIST (Manager/Requester)
@@ -260,7 +261,7 @@ function submitTerminationApproval(formData) {
             subject: 'Asset Collection Required',
             body: `HR has approved the end of employment for ${termData.employeeName}. Please collect the following assets and record their status using the button below.`,
             formUrl: buildFormUrl('action_item_view', { tid: tid }),
-            contextData: { ...termData, workflowType: 'Termination', hireDate: termData.termDate, equipmentRaw: termData.eqToReturn }
+            contextData: { ...termData, workflowType: 'Termination', employmentType: termData.empType, hireDate: termData.termDate, equipmentRaw: termData.eqToReturn }
           });
           tasksCreated++;
         }
@@ -293,7 +294,11 @@ function submitTerminationApproval(formData) {
           hireDate: termData.termDate,
           managerName: termData.managerName,
           managerEmail: termData.managerEmail,
-          reason: termData.reason
+          reason: termData.reason,
+          lastDayWorked: termData.lastDayWorked,
+          hasReports: termData.hasReports,
+          reportsToNew: termData.reportsToNew,
+          requesterEmail: termData.requesterEmail
         }
       });
       
@@ -311,7 +316,7 @@ function submitTerminationApproval(formData) {
           to: recipients.join(','),
           subject: 'Termination Rejected',
           body: `The end of employment request for ${termData.employeeName} has been rejected by HR.<br><br><b>Notes:</b> ${notes || 'No notes provided.'}`,
-          contextData: { ...termData, workflowType: 'Termination', hireDate: termData.termDate }
+          contextData: { ...termData, workflowType: 'Termination', employmentType: termData.empType, hireDate: termData.termDate }
       });
 
       return { success: true, message: 'End of employment rejected. Notification sent to requester.' };
@@ -325,18 +330,23 @@ function submitTerminationApproval(formData) {
 /**
  * Helper to send action item emails
  */
-function sendActionItemEmail(to, subject, tid, termData) {
+function sendActionItemEmail(to, subject, tid, termData, items) {
   sendFormEmail({
     to: to,
     subject: subject,
-    body: `HR has approved the end of employment for ${termData.employeeName}. Please complete the following checklist using the button below.`,
+    body: 'HR has approved the end of employment for ' + termData.employeeName + '. Please complete the following checklist using the button below.',
     formUrl: buildFormUrl('action_item_view', { tid: tid }),
     contextData: {
         ...termData,
         workflowType: 'Termination',
+        employmentType: termData.empType,
         hireDate: termData.termDate,
         equipmentRaw: termData.eqToReturn,
-        systems: termData.systems
+        systems: termData.systems,
+        lastDayWorked: termData.lastDayWorked,
+        hasReports: termData.hasReports,
+        reportsToNew: termData.reportsToNew,
+        checklistItems: items || null
     }
   });
 }

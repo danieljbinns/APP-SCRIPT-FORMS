@@ -65,12 +65,19 @@ function submitPositionChangeRequest(formData) {
       ...wfContext,
       workflowType: 'Status Change',
       employeeName: formData.firstName + ' ' + formData.lastName,
-      siteName: formData.siteName,
-      jobTitle: `${formData.titleOld || 'N/A'} -> ${formData.titleNew || 'N/A'}`,
-      hireDate: formData.effDate, // Event date
+      siteName: formData.siteNew || formData.siteName,
+      jobTitle: (formData.titleOld || 'N/A') + ' -> ' + (formData.titleNew || 'N/A'),
+      hireDate: formData.effDate,
       requestDate: new Date().toLocaleDateString(),
       requesterEmail: formData.reqEmail,
-      department: changes // Using change type summary in department slot for quick glance
+      changeTypes: changes,
+      siteTransfer: (formData.siteOld && formData.siteNew) ? formData.siteOld + ' -> ' + formData.siteNew : '',
+      titleChange: (formData.titleOld || formData.titleNew) ? (formData.titleOld || 'N/A') + ' -> ' + (formData.titleNew || 'N/A') : '',
+      classChange: (formData.classOld || formData.classNew) ? (formData.classOld || 'N/A') + ' -> ' + (formData.classNew || 'N/A') : '',
+      managerChange: (formData.mgrOldName || 'N/A') + ' (' + (formData.mgrOldEmail || 'N/A') + ') -> ' + (formData.mgrNewName || 'N/A') + ' (' + (formData.mgrNewEmail || 'N/A') + ')',
+      managerEmail: formData.mgrNewEmail || '',
+      managerOldEmail: formData.mgrOldEmail || '',
+      managerNewEmail: formData.mgrNewEmail || ''
     };
 
     sendFormEmail({
@@ -134,31 +141,51 @@ function submitPositionChangeApproval(formData) {
     if (decision === 'Approved') {
       const changeData = getPositionChangeData(workflowId);
       let tasksCreated = 0;
-      
+
+      // Build enriched context for all approval emails — parse manager emails from stored string
+      const mgrMatches = (changeData.managerChange || '').match(/\(([^)@\s]+@[^)]+)\)/g) || [];
+      const mgrOldEmail = mgrMatches.length > 0 ? mgrMatches[0].replace(/[()]/g, '') : '';
+      const mgrNewEmail = mgrMatches.length > 1 ? mgrMatches[1].replace(/[()]/g, '') : mgrOldEmail;
+      const changeContext = {
+        workflowType: 'Status Change',
+        employeeName: changeData.employeeName,
+        siteName: changeData.siteName,
+        hireDate: changeData.effDate,
+        requesterEmail: changeData.requesterEmail,
+        changeTypes: changeData.changes,
+        siteTransfer: changeData.siteTransfer,
+        titleChange: changeData.titleChange,
+        classChange: changeData.classChange,
+        managerChange: changeData.managerChange,
+        managerEmail: mgrNewEmail,
+        managerOldEmail: mgrOldEmail,
+        managerNewEmail: mgrNewEmail,
+        systems: changeData.systems,
+        equipmentRaw: changeData.equipment
+      };
+
       // 1. If Transfer, create Action Item for Receiving Manager
       if (isTransfer && receivingManagerEmail) {
         const description = `Prepare for transfer of ${changeData.employeeName} to your group. Eff Date: ${changeData.effDate}`;
         const tid = ActionItemService.createActionItem(
-          workflowId, 
-          'Manager', 
-          'Incoming Transfer Setup', 
-          description, 
+          workflowId,
+          'Manager',
+          'Incoming Transfer Setup',
+          description,
           receivingManagerEmail
         );
         tasksCreated++;
-        
-        // Notify Receiving Manager
+
         sendFormEmail({
           to: receivingManagerEmail,
           subject: 'Incoming Transfer Action Required',
           body: `HR has approved a status change for ${changeData.employeeName}. You have been assigned an action item to prepare for their arrival:<br><br><a href="${buildFormUrl('action_item_view', { tid: tid })}">Incoming Transfer Setup Task</a>`,
-          contextData: { ...changeData, workflowType: 'Status Change', hireDate: changeData.effDate }
+          contextData: changeContext
         });
       }
-      
+
       // 2. If IT action needed (systems or equipment)
       if (nextSteps && nextSteps.includes('IT')) {
-        // Create granular IT tasks based on request
         const itTasks = [];
         const systems = changeData.systems ? changeData.systems.split(', ') : [];
         systems.forEach(sys => {
@@ -173,23 +200,44 @@ function submitPositionChangeApproval(formData) {
           itTasks.push({ name: `Provision ${asset}`, url: buildFormUrl('action_item_view', { tid: tid }) });
           tasksCreated++;
         });
-        
-        // Notify IT
+
         if (itTasks.length > 0) {
           const taskLinks = itTasks.map(t => `<a href="${t.url}">${t.name}</a>`).join('<br>');
           sendFormEmail({
             to: CONFIG.EMAILS.IT,
             subject: 'IT Action Required',
             body: `HR has approved a status change for ${changeData.employeeName}. Below are the individual action items that require closure:<br><br>${taskLinks}`,
-            contextData: { ...changeData, workflowType: 'Status Change', hireDate: changeData.effDate }
+            contextData: changeContext
           });
         }
       }
-      
+
+      // 3. Notify IDSETUP to update BOSS / DSS / SiteDocs for new site or position
+      sendFormEmail({
+        to: CONFIG.EMAILS.IDSETUP,
+        subject: 'System Records Update Required',
+        body: 'A status change has been approved for ' + changeData.employeeName + '. Please update BOSS, DSS, and SiteDocs records to reflect the new site and/or position.',
+        formUrl: '',
+        displayName: 'TEAM Group - Employee Management',
+        contextData: changeContext
+      });
+
+      // 4. Notify Safety for site transfers (new location = new orientation/courses)
+      if (changeData.siteTransfer && changeData.siteTransfer.indexOf('N/A') === -1) {
+        sendFormEmail({
+          to: CONFIG.EMAILS.SAFETY,
+          subject: 'Safety Verification Required',
+          body: 'A site transfer has been approved for ' + changeData.employeeName + '. Please verify and update SiteDocs locations and assigned safety courses for the new site.',
+          formUrl: '',
+          displayName: 'TEAM Group - Employee Management',
+          contextData: changeContext
+        });
+      }
+
       updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Change Processed');
       syncWorkflowState(workflowId);
 
-      // E3: Notify payroll after HR approves a status change
+      // Notify payroll
       sendFormEmail({
         to: CONFIG.EMAILS.PAYROLL,
         subject: 'Status Change Approved',
@@ -198,18 +246,9 @@ function submitPositionChangeApproval(formData) {
               `<b>Effective Date:</b> ${changeData.effDate}<br>` +
               `<b>Changes:</b> ${changeData.changes || 'N/A'}<br>` +
               `<b>Site:</b> ${changeData.siteName}<br>` +
-              `<b>Site Transfer:</b> ${changeData.siteTransfer || 'N/A'}<br>` +
-              `<b>Title Change:</b> ${changeData.titleChange || 'N/A'}<br>` +
-              `<b>Classification:</b> ${changeData.classChange || 'N/A'}<br>` +
-              `<b>Manager Change:</b> ${changeData.managerChange || 'N/A'}<br>` +
               `<b>HR Notes:</b> ${notes || 'None'}<br>`,
         formUrl: '',
-        contextData: {
-          workflowType: 'Status Change',
-          employeeName: changeData.employeeName,
-          siteName: changeData.siteName,
-          hireDate: changeData.effDate
-        }
+        contextData: changeContext
       });
 
       return { success: true, message: `Position change approved. ${tasksCreated} action items generated.` };
