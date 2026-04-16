@@ -195,6 +195,7 @@ function bumpRequest(workflowId, targetStep) {
       case 'hr_verification': recipient = CONFIG.EMAILS.HR || 'HR Team'; formType = 'HR Verification'; break;
       case 'it_setup': recipient = CONFIG.EMAILS.IT || 'IT Team'; formType = 'IT Setup'; break;
       case 'jonas': recipient = CONFIG.EMAILS.JONAS; formType = 'Jonas Setup'; break;
+      case 'centralpurchasing': recipient = CONFIG.EMAILS.JONAS; formType = 'Central Purchasing Setup'; break;
       case 'credit_card': recipient = CONFIG.EMAILS.CREDIT_CARD; formType = 'Credit Card Setup'; break;
       case 'fleetio': recipient = CONFIG.EMAILS.FLEETIO; formType = 'Fleetio Setup'; break;
       case 'business_cards': recipient = CONFIG.EMAILS.BUSINESS_CARDS; formType = 'Business Cards'; break;
@@ -211,10 +212,10 @@ function bumpRequest(workflowId, targetStep) {
         if (formType === 'ID Setup') specificUrl = buildFormUrl('id_setup', { id: workflowId });
         else if (formType === 'HR Verification') specificUrl = buildFormUrl('hr_verification', { id: workflowId });
         else if (formType === 'IT Setup') specificUrl = buildFormUrl('it_setup', { id: workflowId });
-        else if (['Jonas Setup', 'Credit Card Setup', 'Fleetio Setup', 'Business Cards', 'SiteDocs Setup', '30/60/90 Setup'].includes(formType)) {
+        else if (['Jonas Setup', 'Central Purchasing Setup', 'Credit Card Setup', 'Fleetio Setup', 'Business Cards', 'SiteDocs Setup', '30/60/90 Setup'].includes(formType)) {
           // Extract param from switch above or re-map
           const map = {
-            'Jonas Setup': 'jonas', 'Credit Card Setup': 'creditcard', 'Fleetio Setup': 'fleetio',
+            'Jonas Setup': 'jonas', 'Central Purchasing Setup': 'centralpurchasing', 'Credit Card Setup': 'creditcard', 'Fleetio Setup': 'fleetio',
             'Business Cards': 'businesscards', 'SiteDocs Setup': 'sitedocs', '30/60/90 Setup': 'review'
           };
           if (map[formType]) specificUrl = buildFormUrl('specialist', { wf: workflowId, dept: map[formType] });
@@ -490,6 +491,14 @@ function getRequestDetails(workflowId) {
     }
     checklist.push({ name: "30/60/90 Review", target: "review", ...reviewData });
 
+    // Central Purchasing
+    const cpData = checkSheet(CONFIG.SHEETS.CENTRAL_PURCHASING_RESULTS, 'centralpurchasing');
+    const purchasingSites = r['Purchasing Sites'] || '';
+    if (!purchasingSites.toString().trim().length && cpData.status === 'Pending') {
+      cpData.status = 'N/A';
+    }
+    checklist.push({ name: "Central Purchasing", target: "centralpurchasing", ...cpData });
+
     const userEmail = Session.getActiveUser().getEmail();
     context.isAdmin = AccessControlService.isAdmin(userEmail);
 
@@ -637,6 +646,7 @@ function getStepResultData(workflowId, stepTarget) {
       case 'hr_verification': sheetName = CONFIG.SHEETS.HR_VERIFICATION_RESULTS; break;
       case 'it_setup': sheetName = CONFIG.SHEETS.IT_RESULTS; break;
       case 'jonas': sheetName = CONFIG.SHEETS.JONAS_RESULTS; break;
+      case 'centralpurchasing': sheetName = CONFIG.SHEETS.CENTRAL_PURCHASING_RESULTS; break;
       case 'credit_card': sheetName = CONFIG.SHEETS.CREDIT_CARD_RESULTS; break;
       case 'fleetio': sheetName = CONFIG.SHEETS.FLEETIO_RESULTS; break;
       case 'business_cards': sheetName = CONFIG.SHEETS.BUSINESS_CARDS_RESULTS; break;

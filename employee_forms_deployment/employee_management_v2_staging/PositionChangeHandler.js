@@ -208,15 +208,23 @@ function submitPositionChangeApproval(formData) {
         const itTasks = [];
         const allSystems = changeData.systems ? changeData.systems.split(', ') : [];
 
-        // Central Purchasing is handled by Jonas team — filter it out of IT loop
-        const itSystems = allSystems.filter(s => s !== 'Central Purchasing');
+        // Jonas Purchasing and Central Purchasing are handled by Jonas team — filter out of IT loop
+        const itSystems = allSystems.filter(s => s !== 'Central Purchasing' && s !== 'Jonas Purchasing');
         const cpSystems = allSystems.filter(s => s === 'Central Purchasing');
+        const jonasSystems = allSystems.filter(s => s === 'Jonas Purchasing');
 
         itSystems.forEach(sys => {
           const tid = ActionItemService.createActionItem(workflowId, 'IT', `Setup ${sys}`, `Provision access for ${changeData.employeeName}`, CONFIG.EMAILS.IT);
           itTasks.push({ name: `Setup ${sys}`, url: buildFormUrl('action_item_view', { tid: tid }) });
           tasksCreated++;
         });
+
+        // Jonas Purchasing → Jonas team
+        if (jonasSystems.length > 0) {
+          const jTid = ActionItemService.createActionItem(workflowId, 'Purchasing', 'Jonas Purchasing Update', 'Update Jonas Purchasing access for ' + changeData.employeeName, CONFIG.EMAILS.JONAS);
+          itTasks.push({ name: 'Jonas Purchasing Update', url: buildFormUrl('action_item_view', { tid: jTid }) });
+          tasksCreated++;
+        }
 
         // Central Purchasing → Jonas team
         if (cpSystems.length > 0 || changeData.purchasingSites) {

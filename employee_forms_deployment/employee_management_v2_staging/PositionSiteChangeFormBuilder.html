@@ -511,7 +511,7 @@
             { id: 'f_has_google', label: 'Does employee have an existing Google account?', type: 'radio', options: ['Yes', 'No'], required: true },
             { id: 'f_existing_email', label: 'Existing Google Email Address', type: 'text', logic: 'If Existing Google account is Yes' },
 
-            { id: 'f_sys_add', label: 'NEW System Access Needed', type: 'checkboxes', options: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'DSS', 'Fleetio', 'Google Account', 'Incidents', 'Jonas Purchasing', 'Net Promoter Score', 'SiteDocs (Portal Access)'] },
+            { id: 'f_sys_add', label: 'NEW System Access Needed', type: 'checkboxes', options: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'DSS', 'Fleetio', 'Google Account', 'Incidents', 'Jonas Purchasing', 'Central Purchasing', 'Net Promoter Score', 'SiteDocs (Portal Access)'] },
             { id: 'f_boss_comm', label: 'Committee(s) To Be Assigned', type: 'multiselect', options: ['Loading committees...'], logic: 'Only if BOSS checked' },
             { id: 'f_boss_cost', label: 'Cost Sheet Module Access?', type: 'radio', options: ['Yes', 'No'], logic: 'Only if BOSS checked' },
             { id: 'f_boss_cost_jobs', label: 'Job Number(s) for Cost Sheet', type: 'multiselect', options: ['Loading job numbers...'], logic: 'If Cost Sheet Access is Yes' },
@@ -548,7 +548,7 @@
             { id: 'f_comp_reassign_type', label: 'Previous Computer Type', type: 'select', options: ['Chromebook', 'Windows', 'Mac'], logic: 'If Reassignment selected' },
             { id: 'f_comp_reassign_sn', label: 'Serial Number (if known)', type: 'text', logic: 'If Reassignment selected' },
 
-            { id: 'f_sys_rem', label: 'OLD System Access to Remove', type: 'checkboxes', options: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'Fleetio', 'Google Account', 'Incidents', 'Jonas Purchasing', 'Net Promoter Score', 'SiteDocs'] },
+            { id: 'f_sys_rem', label: 'OLD System Access to Remove', type: 'checkboxes', options: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'Fleetio', 'Google Account', 'Incidents', 'Jonas Purchasing', 'Central Purchasing', 'Net Promoter Score', 'SiteDocs'] },
 
             { id: 'f_comments', label: 'Additional Comments / Rationale', type: 'textarea' },
             { id: 'f_upload', label: 'Upload Supporting Docs', type: 'file', help: 'Offer letter, promotion memo, etc.' }

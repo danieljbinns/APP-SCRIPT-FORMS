@@ -580,6 +580,18 @@
               <span>Jonas Purchasing</span>
             </label>
             <label class="checkbox-label">
+              <input type="checkbox" name="systems" value="Central Purchasing" id="centralPurchasingAccess" onchange="toggleSections()">
+              <span>Central Purchasing</span>
+            </label>
+            <!-- Central Purchasing Sites sub-section -->
+            <div id="purchasingSitesSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+              <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Required Purchasing Sites <span class="required">*</span></label>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Select all sites this employee needs Central Purchasing access for.</p>
+              <div id="purchasingSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+            <label class="checkbox-label">
               <input type="checkbox" name="systems" value="Net Promoter Score" onchange="toggleSections()">
               <span>Net Promoter Score</span>
             </label>
@@ -1010,6 +1022,18 @@
         
         // 4. BOSS Cost Sheets (Column E)
         populateSelect('costSheetJobNumbers', refData.jobs, '', true);
+
+        // 5. Central Purchasing Sites
+        const cpContainer = document.getElementById('purchasingSitesCheckboxes');
+        if (cpContainer && refData.sites && refData.sites.length) {
+          cpContainer.innerHTML = '';
+          refData.sites.forEach(function(site) {
+            const label = document.createElement('label');
+            label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
+            label.innerHTML = '<input type="checkbox" name="purchasingSites" value="' + site + '" style="accent-color: var(--brand-red);"> ' + site;
+            cpContainer.appendChild(label);
+          });
+        }
         
         // 5. BOSS Committees (Column F)
         populateSelect('bossJobSites', refData.committees, '', true);
@@ -1221,6 +1245,10 @@
       const jonasDetails = document.getElementById('jonasDetailsSection');
       jonasDetails.style.display = jonasChecked ? 'block' : 'none';
 
+      // Check if Central Purchasing is checked
+      const cpEl = document.getElementById('centralPurchasingAccess');
+      document.getElementById('purchasingSitesSection').style.display = (cpEl && cpEl.checked) ? 'block' : 'none';
+
       // Check if Google Account is checked
       const googleChecked = document.querySelector('[name="systems"][value="Google Account"]').checked;
       const googleDetails = document.getElementById('googleAccountDetailsSection');
@@ -1388,6 +1416,7 @@
         bossTripReports: formData.get('bossTripReports'),
         bossGrievances: formData.get('bossGrievance'),
         jonasJobNumbers: formData.getAll('jonasJobNumbers').join(', '),
+        purchasingSites: formData.getAll('purchasingSites'),
         jrRequired: formData.get('jrRequired'),
         jrAssignment: formData.get('jrAssignment'),
         plan306090: formData.get('plan306090'),
