@@ -17,7 +17,7 @@ function manuallySyncAllWorkflows() {
   
   for (let i = 1; i < data.length; i++) {
     const wfId = data[i][0];
-    if (wfId) {
+    if (wfId && String(wfId).trim() !== '') {
       syncWorkflowState(wfId);
     }
   }
