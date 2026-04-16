@@ -256,6 +256,7 @@ function submitTerminationApproval(formData) {
           workflowType: 'Termination',
           employmentType: termData.empType,
           hireDate: termData.termDate,
+          equipmentRaw: termData.eqToReturn,
           lastDayWorked: termData.lastDayWorked,
           hasReports: termData.hasReports,
           reportsToNew: termData.reportsToNew

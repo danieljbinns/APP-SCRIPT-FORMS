@@ -178,21 +178,30 @@ function submitEmployeeIDSetup(formData) {
         sendFormEmail({
           to: CONFIG.EMAILS.SAFETY,
           subject: 'Safety Verification Required',
-          body: 'User has been added to SiteDocs and DSS.<br><br>' +
-                'Please confirm locations and assigned courses are correct.<br><br>' +
-                '<strong>Worker ID:</strong> ' + (formData.siteDocsWorkerId || 'N/A') + '<br>' +
-                '<strong>Job Code:</strong> ' + (formData.siteDocsJobCode || 'N/A') + '<br>' +
-                '<strong>DSS Username:</strong> ' + (formData.dssUsername || 'N/A'),
+          body: 'Employee has been added to SiteDocs and DSS. Please confirm locations and assigned courses are correct.',
           formUrl: '',
           displayName: 'TEAM Group - Employee Onboarding',
           contextData: {
             workflowType: 'New Hire',
             employeeName: requestData.employeeName,
+            jobTitle: requestData.position,
+            jrTitle: requestData.jrTitle,
             siteName: requestData.siteName,
+            jobSiteNumber: requestData.jobSiteNumber,
             hireDate: requestData.hireDate,
             employmentType: requestData.employmentType,
+            employeeType: requestData.employeeType,
+            newHireOrRehire: requestData.newHireOrRehire,
+            managerName: requestData.managerName,
             managerEmail: requestData.managerEmail,
-            requesterEmail: requestData.requesterEmail
+            requesterEmail: requestData.requesterEmail,
+            internalEmployeeId: formData.internalEmployeeId,
+            dssUsername: formData.dssUsername,
+            dssPassword: formData.dssPassword,
+            siteDocsUsername: formData.siteDocsUsername || '',
+            siteDocsPassword: formData.siteDocsPassword || '',
+            siteDocsWorkerId: formData.siteDocsWorkerId,
+            siteDocsJobCode: formData.siteDocsJobCode
           }
         });
         Logger.log('[SUCCESS] Safety notification sent to ' + CONFIG.EMAILS.SAFETY);
