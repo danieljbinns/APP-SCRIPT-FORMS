@@ -142,7 +142,7 @@ Current Deployment Folder: `employee_forms_deployment/`
 
 ---
 
-## Phase 9: Dashboard Deep Dive Fixes [COMPLETE — D1 pending]
+## Phase 9: Dashboard Deep Dive Fixes [COMPLETE]
 
 > All fixes verified present in `employee_management_v2_staging/` as of 2026-04-17. D1 is cosmetic and still open.
 
@@ -165,7 +165,7 @@ Current Deployment Folder: `employee_forms_deployment/`
 
 ### Group D: Polish / UX
 
-- [ ] **D1 — "Date" column renders identically for all three workflow types** — OPEN. All three branches in the date label conditional still return `(wf.hireDate || '-')` — no differentiation between Start Date / Term Date / Effective Date. Column header also static.
+- [x] **D1 — "Date" column renders identically for all three workflow types** — Fixed: `#dateColHeader` th updated dynamically in `applyFiltersAndSort()` — shows "Start Date" (ONBOARDING), "Term Date" (EOE), "Effective Date" (CHANGE), or "Date" (ALL).
 - [x] **D2 — Type filter has no "Position Change" option** — Fixed: "Position Change" option present in `#typeFilter` dropdown.
 - [x] **D3 — Loading and error messages don't span the full table width** — Fixed: placeholder rows use `colspan="8"`.
 - [x] **D4 — Empty `window.onload` block with a commented-out line** — Fixed: block no longer present in `Dashboard.html`.

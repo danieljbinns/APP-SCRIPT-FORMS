@@ -326,7 +326,7 @@
                         <th>Current Action Pending</th>
                         <th>Requester</th>
                         <th>Site</th>
-                        <th>Date</th>
+                        <th id="dateColHeader">Date</th>
                         <th>Date Requested</th>
                         <th>Last Updated</th>
                     </tr>
@@ -568,6 +568,15 @@
 
                 return true;
             });
+
+            // Update date column header to match active type filter
+            const dateColHeader = document.getElementById('dateColHeader');
+            if (dateColHeader) {
+                if (currentTypeFilter === 'ONBOARDING') dateColHeader.textContent = 'Start Date';
+                else if (currentTypeFilter === 'EOE') dateColHeader.textContent = 'Term Date';
+                else if (currentTypeFilter === 'CHANGE') dateColHeader.textContent = 'Effective Date';
+                else dateColHeader.textContent = 'Date';
+            }
 
             // 2. Sort
             const dateMs = {};

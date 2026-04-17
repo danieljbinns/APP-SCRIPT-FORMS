@@ -17,17 +17,9 @@
 
 ---
 
-## Part 1 — Phase 9: One Remaining Open Item
+## Part 1 — Phase 9: All Items Complete
 
-Phase 9 is complete except for **D1**, which is cosmetic. All critical, logic, performance, and security fixes are verified present in staging.
-
-### D1 — "Date" column label doesn't differentiate by workflow type *(Low priority / cosmetic)*
-
-**How to see it:** Look at the dashboard table. The "Date" column header is always "Date" regardless of whether you're viewing new hires, terminations, or position changes. The value also always pulls from `hireDate` — so for a termination, the column shows the start date instead of the term date.
-
-**Impact:** Confusing when viewing a mixed list of workflow types. No data is wrong, just mislabelled.
-
-**Fix when ready:** Make the date value and column header context-aware per workflow type (Start Date / Term Date / Effective Date). Currently all three branches in the date label conditional are identical.
+All 13 Phase 9 items are verified fixed in staging. No open bugs.
 
 ---
 
