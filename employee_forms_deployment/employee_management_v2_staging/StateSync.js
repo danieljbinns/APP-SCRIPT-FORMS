@@ -56,7 +56,8 @@ function syncWorkflowState(workflowId) {
     const lookupSheetName = isTerm ? CONFIG.SHEETS.TERMINATIONS : (isChange ? CONFIG.SHEETS.POSITION_CHANGES : CONFIG.SHEETS.INITIAL_REQUESTS);
     const lookupSheet = ss.getSheetByName(lookupSheetName);
 
-    const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(v || '');
+    const tz = Session.getScriptTimeZone();
+    const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd') : String(v || '').replace(/-/g, '/');
 
     const foundReq = lookupSheet ? lookupSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (foundReq) {

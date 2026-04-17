@@ -552,19 +552,6 @@
             applyFiltersAndSort();
         });
 
-        function parseDateMs(str) {
-            if (!str) return 0;
-            const d = new Date(str);
-            if (!isNaN(d.getTime())) return d.getTime();
-            // fallback: M/D/YYYY or MM/DD/YYYY
-            const p = str.split('/');
-            if (p.length === 3) {
-                const d2 = new Date(Number(p[2]), Number(p[0]) - 1, Number(p[1]));
-                if (!isNaN(d2.getTime())) return d2.getTime();
-            }
-            return 0;
-        }
-
         function applyFiltersAndSort() {
             // 1. Filter
             filteredWorkflows = allWorkflows.filter(wf => {
@@ -590,18 +577,16 @@
                 return true;
             });
 
-            // 2. Sort
-            const dateMs = {};
-            filteredWorkflows.forEach(wf => { dateMs[wf.id] = parseDateMs(wf.dateRequested); });
+            // 2. Sort — dateRequested is yyyy/MM/dd so plain string compare is chronological
             filteredWorkflows.sort((a, b) => {
                 if (currentSort === 'NAME_ASC') {
                     return (a.employee || '').localeCompare(b.employee || '');
                 } else if (currentSort === 'STATUS') {
                     return (a.status || '').localeCompare(b.status || '');
                 } else if (currentSort === 'DATE_ASC') {
-                    return (dateMs[a.id] - dateMs[b.id]) || (a.id || '').localeCompare(b.id || '');
+                    return (a.dateRequested || '').localeCompare(b.dateRequested || '');
                 } else {
-                    return (dateMs[b.id] - dateMs[a.id]) || (b.id || '').localeCompare(a.id || '');
+                    return (b.dateRequested || '').localeCompare(a.dateRequested || '');
                 }
             });
 

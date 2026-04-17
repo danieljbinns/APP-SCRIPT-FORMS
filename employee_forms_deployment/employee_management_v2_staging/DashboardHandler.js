@@ -68,11 +68,14 @@ function getDashboardData() {
       return JSON.stringify({ success: true, workflows: [], currentUser: userEmail, canEditDates: canEditDates });
     }
 
+    const tz = Session.getScriptTimeZone();
+    const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd') : String(v || '').replace(/-/g, '/');
+    const fmtDateTime = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd HH:mm') : String(v || '').replace(/-/g, '/');
+
     const flows = data.slice(1).map(row => {
       let items = {};
       try { if (row[10]) items = JSON.parse(String(row[10])); } catch (e) {}
       const workflowId = String(row[0] || '');
-      const isTerm = workflowId.startsWith('TERM_') || workflowId.startsWith('CHANGE_');
       return {
         id: workflowId,
         employee: String(row[1] || ''),
@@ -81,12 +84,12 @@ function getDashboardData() {
         requesterName: String(row[4] || ''),
         requesterEmail: String(row[5] || ''),
         initiator: String(row[5] || row[6] || '-'),
-        dateRequested: row[7] instanceof Date ? row[7].toLocaleDateString() : String(row[7] || ''),
-        lastUpdated: row[8] instanceof Date ? row[8].toLocaleString() : String(row[8] || ''),
+        dateRequested: fmtDate(row[7]),
+        lastUpdated: fmtDateTime(row[8]),
         managerEmail: String(row[9] || ''),
         requestedItems: items,
         pendingItems: [],
-        hireDate: row[11] instanceof Date ? row[11].toLocaleDateString() : String(row[11] || ''),
+        hireDate: fmtDate(row[11]),
         site: String(row[12] || ''),
         empType: String(row[13] || ''),
         type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Position Change' : 'Onboarding')
@@ -150,10 +153,10 @@ function getDashboardData() {
             requesterName: String(row[3]  || ''),
             requesterEmail:String(row[4]  || ''),
             initiator:     String(row[4]  || '-'),
-            dateRequested: row[2] instanceof Date ? row[2].toLocaleDateString() : String(row[2] || ''),
-            lastUpdated:   row[2] instanceof Date ? row[2].toLocaleString()     : String(row[2] || ''),
+            dateRequested: fmtDate(row[2]),
+            lastUpdated:   fmtDateTime(row[2]),
             managerEmail:  String(row[15] || ''),
-            hireDate:      row[12] instanceof Date ? row[12].toLocaleDateString() : String(row[12] || ''),
+            hireDate:      fmtDate(row[12]),
             site:          String(row[11] || ''),
             requestedItems: {},
             pendingItems: [],
