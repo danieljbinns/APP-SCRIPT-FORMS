@@ -176,16 +176,35 @@ function getAllReferenceData() {
 }
 
 /**
- * Unified data fetch for Termination and Position Change forms
+ * Unified data fetch for Termination and Position Change forms.
+ * Reads Data_Lookup sheet ONCE and extracts all columns in a single pass.
  */
 function getInitialFormData() {
-  return {
-    sites: getSitesList(),
-    committees: getBossJobSitesList(),
-    jobs: getBossCostSheetsList(), // Using Column E for Jonas/BOSS sub-fields
-    jrs: getJRsList(),
-    jobNumbers: getJobNumbersList() // Column D
-  };
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Data_Lookup');
+    if (!sheet) return { sites: [], committees: [], jobs: [], jrs: [], jobNumbers: [] };
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const rows = data.slice(1);
+    const jrsIdx = headers.indexOf('JRs');
+
+    const extract = (colIdx) => rows
+      .map(r => r[colIdx])
+      .filter(v => v !== undefined && v !== null && String(v).trim() !== '');
+
+    return {
+      sites:       extract(0),                             // Column A
+      jobNumbers:  extract(3),                             // Column D
+      jobs:        extract(4),                             // Column E (Boss Cost Sheets)
+      committees:  extract(5),                             // Column F (Boss Job Sites)
+      jrs:         jrsIdx >= 0 ? extract(jrsIdx) : []
+    };
+  } catch (e) {
+    Logger.log('Error in getInitialFormData: ' + e.toString());
+    return { sites: [], committees: [], jobs: [], jrs: [], jobNumbers: [] };
+  }
 }
 
 /**

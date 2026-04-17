@@ -492,9 +492,9 @@
                     '<div style="font-size: 11px; color:#666;">' + escapeHtml(wf.initiator) + '</div>' +
                     '</td>' +
                     '<td style="font-size:12px;">' + escapeHtml(wf.site || '-') + '</td>' +
-                    '<td style="font-size:12px;">' + escapeHtml(startDate) + '</td>' +
-                    '<td style="font-size:12px;">' + escapeHtml(effectiveDate) + '</td>' +
-                    '<td>' + escapeHtml(wf.dateRequested) + '</td>' +
+                    '<td style="font-size:12px;">' + escapeHtml(formatDate(startDate)) + '</td>' +
+                    '<td style="font-size:12px;">' + escapeHtml(formatDate(effectiveDate)) + '</td>' +
+                    '<td>' + escapeHtml(formatDate(wf.dateRequested)) + '</td>' +
                     '<td>' + escapeHtml(wf.lastUpdated) + '</td>' +
                     '</tr>';
             });

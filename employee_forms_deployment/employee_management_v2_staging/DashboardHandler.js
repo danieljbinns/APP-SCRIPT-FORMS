@@ -69,8 +69,22 @@ function getDashboardData() {
     }
 
     const tz = Session.getScriptTimeZone();
-    const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd') : String(v || '').replace(/-/g, '/');
-    const fmtDateTime = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd HH:mm') : String(v || '').replace(/-/g, '/');
+    const fmtDate = (v) => {
+      if (v instanceof Date) return Utilities.formatDate(v, tz, 'yyyy/MM/dd');
+      const s = String(v || '');
+      if (!s) return '';
+      if (/^\d{4}\/\d{2}\/\d{2}/.test(s)) return s;  // already yyyy/MM/dd
+      try { const d = new Date(s.replace(/-/g, '/')); if (!isNaN(d.getTime())) return Utilities.formatDate(d, tz, 'yyyy/MM/dd'); } catch(e) {}
+      return s;
+    };
+    const fmtDateTime = (v) => {
+      if (v instanceof Date) return Utilities.formatDate(v, tz, 'yyyy/MM/dd HH:mm');
+      const s = String(v || '');
+      if (!s) return '';
+      if (/^\d{4}\/\d{2}\/\d{2}/.test(s)) return s;  // already yyyy/MM/dd ...
+      try { const d = new Date(s.replace(/-/g, '/')); if (!isNaN(d.getTime())) return Utilities.formatDate(d, tz, 'yyyy/MM/dd HH:mm'); } catch(e) {}
+      return s;
+    };
 
     const flows = data.slice(1).map(row => {
       let items = {};

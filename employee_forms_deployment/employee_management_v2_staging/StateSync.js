@@ -58,6 +58,7 @@ function syncWorkflowState(workflowId) {
 
     const tz = Session.getScriptTimeZone();
     const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd') : String(v || '').replace(/-/g, '/');
+    const fmtDateTime = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd HH:mm') : String(v || '').replace(/-/g, '/');
 
     const foundReq = lookupSheet ? lookupSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (foundReq) {
@@ -148,7 +149,7 @@ function syncWorkflowState(workflowId) {
     
     // 3. Prepare the flat row for the View sheet
     // Headers: Workflow ID | Employee Name | Global Status | Granular Step Details | Requester Name | Requester Email | Initiator Email | Date Requested | Last Updated | Manager Email | Requested Items JSON | Start/Term Date | Site
-    const lastUpdated = wfRow[6] instanceof Date ? wfRow[6].toLocaleString() : String(wfRow[6]);
+    const lastUpdated = fmtDateTime(wfRow[6]);
     const initEmail = wfRow[3];
     const empName = wfRow[8];
 
