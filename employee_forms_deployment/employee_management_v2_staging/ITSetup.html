@@ -824,7 +824,16 @@
             status.innerHTML = '<div class="status-info">Submitting setup results...</div>';
 
             const formData = {};
-            new FormData(e.target).forEach((value, key) => { formData[key] = value; });
+            const fd = new FormData(e.target);
+            // Use getAll so repeated keys (checkboxes, multi-selects) are captured as comma-separated
+            const seen = new Set();
+            fd.forEach((value, key) => {
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    const all = fd.getAll(key);
+                    formData[key] = all.length > 1 ? all.join(',') : value;
+                }
+            });
 
             google.script.run
                 .withSuccessHandler(res => {
