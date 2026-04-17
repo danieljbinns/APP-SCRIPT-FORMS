@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staging Test Plan — Monday 2026-04-20</title>
+  <style>
+    :root {
+      --bg: #0c0c0c; --card: #1a1a1a; --text: #ffffff; --muted: #a0a0a0;
+      --red: #EB1C2D; --green: #00c853; --warn: #ffab00; --border: #333;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 32px 20px; }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+    .section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+    .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--red); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 18px; }
+    .item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #222; }
+    .item:last-child { border-bottom: none; }
+    .item input[type="checkbox"] { margin-top: 3px; accent-color: var(--red); width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+    .item label { font-size: 14px; cursor: pointer; line-height: 1.5; }
+    .item label .note { display: block; font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+    .badge-new { background: var(--green); color: #000; }
+    .badge-fix { background: var(--warn); color: #000; }
+    .badge-qa { background: #2255cc; color: #fff; }
+    .progress { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .progress span { color: var(--green); font-weight: 700; }
+    .prereq { background: #1c1c10; border: 1px solid var(--warn); border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; color: var(--warn); }
+    .prereq strong { display: block; margin-bottom: 4px; }
+    summary { cursor: pointer; font-size: 13px; color: var(--muted); margin-top: 8px; }
+    details { margin-top: 6px; }
+    details p { font-size: 12px; color: #666; padding: 8px 0 0 0; line-height: 1.6; }
+    textarea { width: 100%; background: #111; border: 1px solid #333; border-radius: 6px; color: var(--muted); font-size: 12px; padding: 8px; margin-top: 6px; resize: vertical; }
+    .actions { margin-top: 24px; display: flex; gap: 12px; }
+    .btn { padding: 10px 20px; border-radius: 6px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--red); color: #fff; }
+    .btn-secondary { background: #2a2a2a; color: var(--muted); border: 1px solid #444; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Staging Test Plan</h1>
+  <p class="subtitle">Monday 2026-04-20 &nbsp;·&nbsp; Branch: staging &nbsp;·&nbsp; Script: 1A_EPPk…ShM5YfW-w</p>
+
+  <div class="prereq">
+    <strong>⚠ Before starting</strong>
+    Run <code>manuallySyncAllWorkflows()</code> from the GCP console to rewrite all Dashboard_View rows with corrected yyyy/MM/dd dates. Do this once before any dashboard checks below.
+  </div>
+
+  <!-- SECTION 1: Verify This Week's Fixes -->
+  <div class="section">
+    <div class="section-title">1 — Verify This Week's Fixes</div>
+
+    <div class="item">
+      <input type="checkbox" id="c1a">
+      <label for="c1a">
+        <span>Dashboard: all dates show <strong>yyyy/MM/dd</strong> format (no M/D/YYYY)</span>
+        <span class="badge badge-fix">FIX</span>
+        <span class="note">Check Start Date, Effective Date, Date Requested, Last Updated columns across all rows.</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1b">
+      <label for="c1b">
+        <span>Dashboard: date sort (newest first / oldest first) works correctly</span>
+        <span class="badge badge-fix">FIX</span>
+        <span class="note">2026/04/17 should sort after 2026/02/12 etc. No December-before-February weirdness.</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1c">
+      <label for="c1c">
+        <span>Initial Request form loads fast (&lt; 2s to full dropdowns)</span>
+        <span class="badge badge-fix">FIX</span>
+        <span class="note">Was slow due to 5× Data_Lookup reads. Now 1×. Hard-reload and time it.</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1d">
+      <label for="c1d">
+        <span>Termination Request form loads fast (&lt; 2s to full dropdowns)</span>
+        <span class="badge badge-fix">FIX</span>
+        <span class="note">Was broken by createHtmlOutputFromFile not processing scriptlets → blank dropdowns. Now uses template injection.</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1e">
+      <label for="c1e">
+        <span>Position / Site Change form loads fast (&lt; 2s to full dropdowns)</span>
+        <span class="badge badge-fix">FIX</span>
+        <span class="note">Same root cause as Termination. Verify Sites, JRs, Job Numbers, Committees all populate.</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1f">
+      <label for="c1f">
+        <span>HRVerification: hire date is editable and carries over correctly to dashboard</span>
+        <span class="badge badge-fix">FIX</span>
+        <span class="note">Test editing the hire date on the form and confirm Dashboard Start Date reflects the new value.</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c1g">
+      <label for="c1g">
+        <span>Manager name/email carry over from Initial Request → HR Verification form</span>
+        <span class="badge badge-fix">FIX</span>
+        <span class="note">Was broken by wrong column name lookup. Confirm manager fields pre-populate.</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Continue New Hire QA (Salary path) -->
+  <div class="section">
+    <div class="section-title">2 — Continue New Hire QA — Salary / System Access Path</div>
+
+    <div class="item">
+      <input type="checkbox" id="c2a">
+      <label for="c2a">
+        <span>Submit a Salary new hire with System Access = Yes</span>
+        <span class="badge badge-qa">QA</span>
+        <span class="note">Should route: Initial → ID Setup → HR Verification → IT Setup → Specialists as needed.</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c2b">
+      <label for="c2b">
+        <span>IT Setup email received and IT form opens correctly</span>
+        <span class="badge badge-qa">QA</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c2c">
+      <label for="c2c">
+        <span>Complete IT Setup form and verify Dashboard step updates</span>
+        <span class="badge badge-qa">QA</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c2d">
+      <label for="c2d">
+        <span>Specialist forms (Jonas / Credit Card / SiteDocs etc.) route and complete correctly</span>
+        <span class="badge badge-qa">QA</span>
+        <span class="note">Verify only required specialists are shown as Pending. N/A for non-requested ones.</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c2e">
+      <label for="c2e">
+        <span>Workflow reaches Completed status and completion email sent</span>
+        <span class="badge badge-qa">QA</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Termination Flow QA -->
+  <div class="section">
+    <div class="section-title">3 — Termination Flow QA</div>
+
+    <div class="item">
+      <input type="checkbox" id="c3a">
+      <label for="c3a">
+        <span>Submit a Termination request end-to-end</span>
+        <span class="badge badge-qa">QA</span>
+        <span class="note">Verify form fields, site dropdown, confirmation email, Dashboard_View row.</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c3b">
+      <label for="c3b">
+        <span>Termination appears on Dashboard with correct Effective Date (not Start Date)</span>
+        <span class="badge badge-qa">QA</span>
+        <span class="note">Effective Date column should show term date; Start Date column should show N/A.</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c3c">
+      <label for="c3c">
+        <span>HR Approval step routes and completes</span>
+        <span class="badge badge-qa">QA</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Position Change Flow QA -->
+  <div class="section">
+    <div class="section-title">4 — Position / Site Change Flow QA</div>
+
+    <div class="item">
+      <input type="checkbox" id="c4a">
+      <label for="c4a">
+        <span>Submit a Position / Site Change request end-to-end</span>
+        <span class="badge badge-qa">QA</span>
+      </label>
+    </div>
+
+    <div class="item">
+      <input type="checkbox" id="c4b">
+      <label for="c4b">
+        <span>Appears on Dashboard as Position Change type with correct Effective Date</span>
+        <span class="badge badge-qa">QA</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="section">
+    <div class="section-title">Notes</div>
+    <textarea rows="5" placeholder="Paste bugs, observations, or open questions here..."></textarea>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" onclick="saveProgress()">Save Progress</button>
+    <button class="btn btn-secondary" onclick="clearAll()">Clear All</button>
+    <span class="progress" id="progressText"></span>
+  </div>
+</div>
+
+<script>
+  const KEY = 'monday_test_plan_2026_04_20';
+
+  function saveProgress() {
+    const state = {};
+    document.querySelectorAll('input[type=checkbox]').forEach(cb => { state[cb.id] = cb.checked; });
+    state['notes'] = document.querySelector('textarea').value;
+    localStorage.setItem(KEY, JSON.stringify(state));
+    updateProgress();
+    const btn = document.querySelector('.btn-primary');
+    btn.textContent = 'Saved ✓'; setTimeout(() => { btn.textContent = 'Save Progress'; }, 1500);
+  }
+
+  function clearAll() {
+    if (!confirm('Clear all checkboxes?')) return;
+    document.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
+    document.querySelector('textarea').value = '';
+    localStorage.removeItem(KEY);
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const all = document.querySelectorAll('input[type=checkbox]');
+    const done = [...all].filter(cb => cb.checked).length;
+    document.getElementById('progressText').innerHTML = '<span>' + done + '</span> / ' + all.length + ' complete';
+  }
+
+  // Auto-save on any change
+  document.addEventListener('change', saveProgress);
+
+  // Load saved state on open
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem(KEY);
+    if (saved) {
+      const state = JSON.parse(saved);
+      document.querySelectorAll('input[type=checkbox]').forEach(cb => { if (state[cb.id]) cb.checked = true; });
+      if (state['notes']) document.querySelector('textarea').value = state['notes'];
+    }
+    updateProgress();
+  });
+</script>
+</body>
+</html>
