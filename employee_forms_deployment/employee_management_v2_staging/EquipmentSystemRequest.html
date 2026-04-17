@@ -1003,7 +1003,6 @@
         populateSelect('siteName', refData.sites);
         
         // 2. JRs
-        populateSelect('position', refData.jrs);
         const jrAssignment = document.querySelector('[name="jrAssignment"]');
         if (jrAssignment) {
           jrAssignment.innerHTML = '<option value="">-- Select JR --</option>';
@@ -1182,61 +1181,6 @@
       }
     }
 
-    // Handle employment type change - auto-enable System Access for salary employees
-    function handleEmploymentTypeChange() {
-      const employmentType = document.querySelector('[name="employmentType"]:checked');
-
-      if (employmentType && employmentType.value === 'Salary') {
-        // Auto-select System Access "Yes" for salary employees
-        const systemAccessYes = document.getElementById('systemAccessYes');
-        if (systemAccessYes) {
-          systemAccessYes.checked = true;
-          toggleSystemAccess(); // Show the section
-        }
-
-        // Auto-check ADP Supervisor Access for salary employees
-        const adpSupervisorAccess = document.getElementById('adpSupervisorAccess');
-        if (adpSupervisorAccess) {
-          adpSupervisorAccess.checked = true;
-        }
-      }
-    }
-
-    // Check hire date and show warning if less than 3 business days
-    function checkHireDate() {
-      const hireDateInput = document.getElementById('hireDate');
-      const warningDiv = document.getElementById('hireDateWarning');
-      const requestDateInput = document.querySelector('[name="dateRequested"]');
-
-      if (!hireDateInput.value || !requestDateInput.value) {
-        warningDiv.style.display = 'none';
-        return;
-      }
-
-      const hireDate = new Date(hireDateInput.value);
-      const requestDate = new Date(requestDateInput.value);
-
-      // Calculate business days between dates
-      let businessDays = 0;
-      let currentDate = new Date(requestDate);
-
-      while (currentDate < hireDate) {
-        currentDate.setDate(currentDate.getDate() + 1);
-        const dayOfWeek = currentDate.getDay();
-        // Count if not Saturday (6) or Sunday (0)
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-          businessDays++;
-        }
-      }
-
-      // Show warning if less than 3 business days
-      if (businessDays < 3) {
-        warningDiv.style.display = 'block';
-      } else {
-        warningDiv.style.display = 'none';
-      }
-    }
-
     // Toggle detail sections based on system checkboxes
     function toggleSections() {
       // Check if BOSS is checked
@@ -1338,18 +1282,6 @@
       }
     }
 
-    // Toggle JR picker
-    function toggleJRPicker() {
-      const jr = document.querySelector('[name="jrRequired"]:checked');
-      const jrPicker = document.getElementById('jrPicker');
-
-      if (jr && jr.value === 'Yes') {
-        jrPicker.style.display = 'block';
-      } else {
-        jrPicker.style.display = 'none';
-      }
-    }
-
     // Auto-fill job number based on site selection
     function autoFillJobNumber() {
       const siteSelect = document.getElementById('siteName');
@@ -1385,10 +1317,6 @@
         middleName: formData.get('middleName'),
         lastName: formData.get('lastName'),
         preferredName: formData.get('preferredName'),
-        hireDate: formData.get('hireDate'),
-        newHireOrRehire: formData.get('hireType'),
-        employeeType: formData.get('employeeType'),
-        employmentType: formData.get('employmentType'),
         siteName: formData.get('siteName'),
         jobSiteNumber: formData.get('jobSiteNumber'),
         positionTitle: formData.get('position'),

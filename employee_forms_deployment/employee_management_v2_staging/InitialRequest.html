@@ -1176,7 +1176,6 @@
         });
         
         // 2. JRs
-        populateSelect('position', refData.jrs);
         const jrAssignment = document.querySelector('[name="jrAssignment"]');
         if (jrAssignment) {
           jrAssignment.innerHTML = '<option value="">-- Select JR --</option>';
@@ -1244,92 +1243,6 @@
       }
     });
 
-    // Prefill test data for quick testing
-    function prefillTestData() {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 5);
-      const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-      // Requester info
-      document.querySelector('[name="requesterName"]').value = 'Dan Binns';
-      document.querySelector('[name="requesterEmail"]').value = 'dbinns@robinsonsolutions.com';
-
-      // Employee info
-      document.querySelector('[name="hireDate"]').value = tomorrowStr;
-      document.querySelector('[name="hireType"][value="New Hire"]').checked = true;
-      document.querySelector('[name="employeeType"][value="Direct Hire"]').checked = true;
-      document.querySelector('[name="employmentType"][value="Salary"]').checked = true;
-      handleEmploymentTypeChange(); // Trigger auto-selections
-
-      document.querySelector('[name="firstName"]').value = 'John';
-      document.querySelector('[name="lastName"]').value = 'Smith';
-      document.querySelector('[name="preferredName"]').value = 'Johnny';
-      document.querySelector('[name="position"]').value = 'Project Manager';
-
-      document.querySelector('[name="siteName"]').value = 'GM CAMI Assembly';
-      autoFillJobNumber();
-
-      document.querySelector('[name="managerEmail"]').value = 'dbinns@team-group.com';
-      document.querySelector('[name="managerName"]').value = 'Dan Binns';
-
-      // System access - Yes
-      document.querySelector('[name="systemAccess"][value="Yes"]').checked = true;
-      toggleSystemAccess();
-
-      // Select some systems
-      setTimeout(() => {
-        document.querySelector('[name="systems"][value="Google Account"]').checked = true;
-        document.querySelector('[name="systems"][value="BOSS"]').checked = true;
-        toggleSections();
-
-        // Select some equipment
-        document.querySelector('[name="equipment"][value="Computer"]').checked = true;
-        document.querySelector('[name="equipment"][value="Mobile Phone"]').checked = true;
-        document.querySelector('[name="equipment"][value="Credit Card"]').checked = true;
-        toggleEquipmentDetails();
-
-        // Fill Google details
-        setTimeout(() => {
-          document.querySelector('[name="googleDomain"]').value = 'team-group.com';
-
-          // Computer details
-          document.querySelector('[name="computerRequestType"][value="New"]').checked = true;
-          toggleComputerReassignFields();
-
-          setTimeout(() => {
-            document.querySelector('[name="computerType"][value="Chromebook"]').checked = true;
-
-            // Phone details
-            document.querySelector('[name="phoneRequestType"][value="New"]').checked = true;
-            togglePhoneReassignFields();
-
-            // Credit card
-            document.querySelector('[name="creditCardUSA"]').checked = true;
-            document.querySelector('[name="creditCardLimitUSA"]').value = '$5,000';
-
-            // BOSS details
-            document.querySelector('[name="bossCostSheet"][value="Yes"]').checked = true;
-            toggleCostSheetJobs();
-
-            setTimeout(() => {
-              document.querySelector('[name="bossTripReports"][value="No"]').checked = true;
-              document.querySelector('[name="bossGrievance"][value="No"]').checked = true;
-
-              // JR and 30-60-90
-              document.querySelector('[name="jrRequired"][value="Yes"]').checked = true;
-              toggleJRPicker();
-              document.querySelector('[name="plan306090"][value="Yes"]').checked = true;
-
-              document.querySelector('[name="comments"]').value = 'Test submission - automated prefill';
-
-              console.log('Test data prefilled successfully');
-            }, 100);
-          }, 100);
-        }, 100);
-      }, 100);
-    }
-
-    // Confirm gatekeeper and show main form
     function confirmGatekeeper() {
       // No loading delay - form is already loaded in background
       document.getElementById('gatekeeperSection').style.display = 'none';
@@ -1618,7 +1531,7 @@
         // Reassignment path — clear new-computer-only fields
         data.computerType = '';
         data.office365Required = '';
-      } else if (data.computerRequestType !== 'Reassignment') {
+      } else {
         // New path — clear reassignment-only fields
         data.computerPreviousUser = '';
         data.computerPreviousType = '';

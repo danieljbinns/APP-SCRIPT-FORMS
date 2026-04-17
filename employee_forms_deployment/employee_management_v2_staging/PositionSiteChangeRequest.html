@@ -668,14 +668,17 @@
         }
 
         function toggleComp() {
-            const val = document.querySelector('input[name="compLogic"]:checked').value;
+            const checked = document.querySelector('input[name="compLogic"]:checked');
+            if (!checked) return;
+            const val = checked.value;
             document.getElementById('comp_new').style.display = val === 'New Request' ? 'block' : 'none';
             document.getElementById('comp_re').style.display = val === 'Reassignment' ? 'block' : 'none';
         }
 
         function togglePhone() {
-            const val = document.querySelector('input[name="phoneLogic"]:checked').value;
-            document.getElementById('phone_re').style.display = val === 'Reassignment' ? 'block' : 'none';
+            const checked = document.querySelector('input[name="phoneLogic"]:checked');
+            if (!checked) return;
+            document.getElementById('phone_re').style.display = checked.value === 'Reassignment' ? 'block' : 'none';
         }
 
         // Form Submission Logic
@@ -795,13 +798,6 @@
                 document.getElementById('reqName').value = user.name || 'Unknown User';
             }
         }).withFailureHandler(console.error).getCurrentUserDetails();
-
-        // Initialize Autocomplete for multiple fields
-        DirectoryAutocomplete.setup({ inputSelector: '#mgrNewEmail', nameInputSelector: '#mgrNewName' });
-        DirectoryAutocomplete.setup({ inputSelector: '#mgrOldEmail', nameInputSelector: '#mgrOldName' });
-        DirectoryAutocomplete.setup({ inputSelector: '#oldReportsTo' });
-        DirectoryAutocomplete.setup({ inputSelector: '#newReportsFrom' });
-        DirectoryAutocomplete.setup({ inputSelector: '#existingEmail' });
 
         function resetForm() {
             google.script.run
