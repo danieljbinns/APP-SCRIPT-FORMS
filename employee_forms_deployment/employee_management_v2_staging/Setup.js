@@ -27,7 +27,8 @@ function initializeSystem() {
     initSheet(ss, CONFIG.SHEETS.DASHBOARD_VIEW, [
       'Workflow ID', 'Employee Name', 'Global Status', 'Granular Step Details',
       'Requester Name', 'Requester Email', 'Initiator Email', 'Date Requested',
-      'Last Updated', 'Manager Email', 'Requested Items JSON', 'Hire Date'
+      'Last Updated', 'Manager Email', 'Requested Items JSON', 'Hire Date',
+      'Site', 'Employment Type'
     ]);
     
     // 2. Initialize Initial Requests
@@ -77,6 +78,7 @@ function initializeSystem() {
     initSheet(ss, CONFIG.SHEETS.JONAS_RESULTS, specialistHeaders);
     initSheet(ss, CONFIG.SHEETS.SITEDOCS_RESULTS, specialistHeaders);
     initSheet(ss, CONFIG.SHEETS.REVIEW_306090_RESULTS, specialistHeaders);
+    initSheet(ss, CONFIG.SHEETS.CENTRAL_PURCHASING_RESULTS, specialistHeaders);
     
     // 7. Initialize Termination & Change Status Sheets
     initSheet(ss, CONFIG.SHEETS.TERMINATIONS, [
