@@ -278,6 +278,35 @@ Current Deployment Folder: `employee_forms_deployment/`
 
 ---
 
+## Prod Hotfixes — Uncommitted [ACTION REQUIRED]
+
+> Three files in `employee_management_v2/` (prod) have local changes that were never committed. These appear to be live hotfixes applied directly. They must be reviewed, committed, and then evaluated for back-porting to staging.
+
+### Files with uncommitted changes
+
+- **`employee_management_v2/Dashboard.html`**
+  - Added "Type" column to dashboard table (colspan updated from 6 → 7 throughout)
+  - Displays `empType` badge per row (e.g. "Direct Hire", "Contractor")
+  - Fixed status class bug: `'Complete'` was not matching the `completed` CSS class — now handles both `'Complete'` and `'Completed'`
+
+- **`employee_management_v2/DashboardHandler.gs`**
+  - Looks up `Employment Type` column from Initial Requests sheet by header name and propagates it as `empType` into dashboard row data
+  - **Cancelled workflows now filtered out of dashboard by default** — `wf.status !== 'Cancelled'` added to the filter chain
+
+- **`employee_management_v2/Services/AccessControlService.gs`**
+  - Added `isAdmin(userEmail)` function to prod (staging already had this from Phase 8; prod was missing it)
+  - Added individual email match to `isGroupMember()` — allows specialist emails that are not Google Groups to resolve correctly
+  - Exported `isAdmin` from the module
+
+### Action items
+
+- [ ] Commit these three files to `staging` branch under a `hotfix(prod):` commit message
+- [ ] Verify staging already has equivalent logic (isAdmin exists; empType column and cancelled-filter may not)
+- [ ] If staging is missing any of these changes, apply them to `employee_management_v2_staging/` as well
+- [ ] Add to Phase 8 testing checklist: cancelled workflows should not appear in the dashboard for any user role
+
+---
+
 ## Phase 11: Access Control Cleanup [PLANNED - FUTURE]
 
 - [ ] Consolidate `MASTER_ADMIN_GROUP` (Google Group) and `ADMIN_EMAILS` (hardcoded list) into a single admin access mechanism
