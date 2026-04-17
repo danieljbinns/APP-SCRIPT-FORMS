@@ -327,14 +327,15 @@
                         <th>Current Action Pending</th>
                         <th>Requester</th>
                         <th>Site</th>
-                        <th id="dateColHeader">Date</th>
+                        <th>Start Date</th>
+                        <th>Effective Date</th>
                         <th>Date Requested</th>
                         <th>Last Updated</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="9" style="text-align:center; padding: 40px;">Loading requests...</td>
+                        <td colspan="10" style="text-align:center; padding: 40px;">Loading requests...</td>
                     </tr>
                 </tbody>
             </table>
@@ -408,7 +409,7 @@
 
         function loadData() {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
             google.script.run.withSuccessHandler(displayData).withFailureHandler(showError).getDashboardData();
         }
 
@@ -454,7 +455,7 @@
             const currentData = filteredWorkflows.slice(startIndex, endIndex);
 
             if (currentData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
                 updatePaginationUI(0, 0, 0);
                 return;
             }
@@ -469,7 +470,9 @@
                     '<span style="background:var(--brand-red); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">EOE</span>' :
                     (wf.type === 'Onboarding' ? '<span style="background:var(--info); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">NEW HIRE</span>' : '');
 
-                const dateLabel = wf.hireDate || '-';
+                const isOnboarding = wf.type === 'Onboarding';
+                const startDate = isOnboarding ? (wf.hireDate || '-') : 'N/A';
+                const effectiveDate = isOnboarding ? 'N/A' : (wf.hireDate || '-');
                 const stepColor = (wf.step && wf.step.includes('Pending:')) ? '#ffab00' : '#a0a0a0';
 
                 const empTypeBadge = wf.empType ? '<span style="background:#333; color:#ccc; padding: 2px 6px; border-radius: 4px; font-size: 10px;">' + escapeHtml(wf.empType) + '</span>' : '-';
@@ -484,7 +487,8 @@
                     '<div style="font-size: 11px; color:#666;">' + escapeHtml(wf.initiator) + '</div>' +
                     '</td>' +
                     '<td style="font-size:12px;">' + escapeHtml(wf.site || '-') + '</td>' +
-                    '<td>' + escapeHtml(dateLabel) + '</td>' +
+                    '<td style="font-size:12px;">' + escapeHtml(startDate) + '</td>' +
+                    '<td style="font-size:12px;">' + escapeHtml(effectiveDate) + '</td>' +
                     '<td>' + escapeHtml(wf.dateRequested) + '</td>' +
                     '<td>' + escapeHtml(wf.lastUpdated) + '</td>' +
                     '</tr>';
@@ -525,7 +529,7 @@
         }
 
         function showError(msg) {
-            document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
         }
 
         // Setup Search and Filter Event Listeners
@@ -547,6 +551,19 @@
             currentSort = e.target.value;
             applyFiltersAndSort();
         });
+
+        function parseDateMs(str) {
+            if (!str) return 0;
+            const d = new Date(str);
+            if (!isNaN(d.getTime())) return d.getTime();
+            // fallback: M/D/YYYY or MM/DD/YYYY
+            const p = str.split('/');
+            if (p.length === 3) {
+                const d2 = new Date(Number(p[2]), Number(p[0]) - 1, Number(p[1]));
+                if (!isNaN(d2.getTime())) return d2.getTime();
+            }
+            return 0;
+        }
 
         function applyFiltersAndSort() {
             // 1. Filter
@@ -573,18 +590,9 @@
                 return true;
             });
 
-            // Update date column header to match active type filter
-            const dateColHeader = document.getElementById('dateColHeader');
-            if (dateColHeader) {
-                if (currentTypeFilter === 'ONBOARDING') dateColHeader.textContent = 'Start Date';
-                else if (currentTypeFilter === 'EOE') dateColHeader.textContent = 'Term Date';
-                else if (currentTypeFilter === 'CHANGE') dateColHeader.textContent = 'Effective Date';
-                else dateColHeader.textContent = 'Date';
-            }
-
             // 2. Sort
             const dateMs = {};
-            filteredWorkflows.forEach(wf => { const t = new Date(wf.dateRequested).getTime(); dateMs[wf.id] = isNaN(t) ? 0 : t; });
+            filteredWorkflows.forEach(wf => { dateMs[wf.id] = parseDateMs(wf.dateRequested); });
             filteredWorkflows.sort((a, b) => {
                 if (currentSort === 'NAME_ASC') {
                     return (a.employee || '').localeCompare(b.employee || '');

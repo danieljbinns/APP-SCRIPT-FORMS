@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staging QA Checklist — Employee Forms v2</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      background: #f4f5f7;
+      color: #172b4d;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      color: #6b778c;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+
+    .progress-bar-wrap {
+      background: #dfe1e6;
+      border-radius: 4px;
+      height: 8px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #36b37e;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .progress-label {
+      font-size: 12px;
+      color: #6b778c;
+      margin-bottom: 24px;
+    }
+
+    .links-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .links-bar a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      background: #0052cc;
+      color: #fff;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .links-bar a:hover { background: #0747a6; }
+    .links-bar a.green { background: #36b37e; }
+    .links-bar a.green:hover { background: #006644; }
+    .links-bar a.purple { background: #6554c0; }
+    .links-bar a.purple:hover { background: #403294; }
+
+    section {
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 2px solid transparent;
+    }
+
+    .section-header:hover { background: #f4f5f7; }
+
+    .section-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .badge-setup    { background: #ffab00; color: #fff; }
+    .badge-deploy   { background: #0052cc; color: #fff; }
+    .badge-ac       { background: #6554c0; color: #fff; }
+    .badge-data     { background: #ff5630; color: #fff; }
+    .badge-dash     { background: #36b37e; color: #fff; }
+    .badge-sync     { background: #00b8d9; color: #fff; }
+    .badge-integrity{ background: #ff7452; color: #fff; }
+    .badge-batch    { background: #57d9a3; color: #172b4d; }
+    .badge-p10      { background: #8777d9; color: #fff; }
+    .badge-error    { background: #bf2600; color: #fff; }
+    .badge-signoff  { background: #172b4d; color: #fff; }
+
+    .section-title {
+      font-weight: 600;
+      font-size: 15px;
+      flex: 1;
+    }
+
+    .section-progress {
+      font-size: 12px;
+      color: #6b778c;
+      white-space: nowrap;
+    }
+
+    .chevron {
+      font-size: 11px;
+      color: #6b778c;
+      transition: transform 0.2s;
+    }
+
+    .section-body {
+      padding: 0 18px 18px;
+    }
+
+    .section-body.collapsed { display: none; }
+
+    .subsection {
+      margin-top: 16px;
+    }
+
+    .subsection-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b778c;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #ebecf0;
+    }
+
+    .check-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f4f5f7;
+    }
+
+    .check-item:last-child { border-bottom: none; }
+
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .check-row input[type="checkbox"] {
+      margin-top: 2px;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+      accent-color: #36b37e;
+    }
+
+    .check-label {
+      flex: 1;
+      line-height: 1.5;
+    }
+
+    .check-label.done {
+      text-decoration: line-through;
+      color: #97a0af;
+    }
+
+    .check-id {
+      font-size: 11px;
+      font-weight: 700;
+      color: #6b778c;
+      background: #f4f5f7;
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-right: 4px;
+    }
+
+    .pass-fail {
+      display: flex;
+      gap: 6px;
+      margin-left: 26px;
+    }
+
+    .pass-fail label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #6b778c;
+    }
+
+    .pass-fail input[type="radio"] { accent-color: #36b37e; cursor: pointer; }
+    .pass-fail input[type="radio"].fail-radio { accent-color: #ff5630; }
+
+    textarea.notes {
+      width: 100%;
+      margin-left: 26px;
+      width: calc(100% - 26px);
+      margin-top: 4px;
+      padding: 6px 8px;
+      border: 1px solid #dfe1e6;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 36px;
+      color: #172b4d;
+      background: #fafbfc;
+    }
+
+    textarea.notes:focus {
+      outline: none;
+      border-color: #4c9aff;
+      background: #fff;
+    }
+
+    textarea.notes::placeholder { color: #b3bac5; }
+
+    .info-box {
+      background: #e6f4ff;
+      border-left: 3px solid #4c9aff;
+      border-radius: 0 4px 4px 0;
+      padding: 10px 12px;
+      margin: 10px 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .warn-box {
+      background: #fffae6;
+      border-left: 3px solid #ffab00;
+      border-radius: 0 4px 4px 0;
+      padding: 10px 12px;
+      margin: 10px 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    a { color: #0052cc; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    code {
+      background: #f4f5f7;
+      border: 1px solid #dfe1e6;
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .sign-off-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .sign-off-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: #f4f5f7;
+      border-radius: 4px;
+    }
+
+    .sign-off-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #36b37e;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .sign-off-item label { cursor: pointer; line-height: 1.4; }
+
+    #promote-btn {
+      display: block;
+      margin: 20px auto 0;
+      padding: 12px 32px;
+      background: #36b37e;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #promote-btn:hover { background: #006644; }
+    #promote-btn:disabled { background: #b3bac5; cursor: not-allowed; }
+
+    .save-bar {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .save-bar button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #save-btn { background: #0052cc; color: #fff; }
+    #save-btn:hover { background: #0747a6; }
+    #reset-btn { background: #ff5630; color: #fff; }
+    #reset-btn:hover { background: #bf2600; }
+    #save-status { font-size: 12px; color: #6b778c; align-self: center; }
+  </style>
+</head>
+<body>
+
+<h1>Staging QA Checklist — Employee Forms v2</h1>
+<p class="subtitle">Work top to bottom. Save progress in browser (localStorage). Last saved: <span id="last-saved">never</span></p>
+
+<div class="progress-bar-wrap">
+  <div class="progress-bar-fill" id="progress-fill"></div>
+</div>
+<div class="progress-label" id="progress-label">0 / 0 items checked</div>
+
+<div class="links-bar">
+  <a href="https://script.google.com/a/macros/robinsonsolutions.com/s/AKfycbzBuUzj2DOW9ZcRPsfSoE9zVO-eMVWGj8dCaEW1i-X2rcdMBcWWBrHLoX5dn0Zf05Sm3w/exec" target="_blank" class="green">🚀 Staging Web App</a>
+  <a href="https://docs.google.com/spreadsheets/d/1o2KulGLhpClbvbkYG-VqsaOJNQfAcpVZgRtc-FKpuAw" target="_blank">📊 Staging Spreadsheet</a>
+  <a href="https://script.google.com/d/1A_EPPkI6QW3o39pGuNd74EbLGtqewtByCSi_SBludhLIyn_ShM5YfW-w/edit" target="_blank" class="purple">⚙️ Apps Script Editor</a>
+</div>
+
+<!-- ===================== SECTION 0: SETUP ===================== -->
+<section id="sec-setup">
+  <div class="section-header" onclick="toggleSection('setup')">
+    <span class="section-badge badge-setup">0</span>
+    <span class="section-title">Setup — Run Before Anything Else</span>
+    <span class="section-progress" id="prog-setup">0/0</span>
+    <span class="chevron" id="chev-setup">▼</span>
+  </div>
+  <div class="section-body" id="body-setup">
+
+    <div class="info-box">Run <code>initializeSystem()</code> in the Apps Script editor before opening the web app. This creates all required sheets.</div>
+
+    <div class="subsection">
+      <div class="subsection-title">Apps Script Editor</div>
+
+      <div class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="s0-1" onchange="update()" />
+          <label class="check-label" for="s0-1">Open <a href="https://script.google.com/d/1A_EPPkI6QW3o39pGuNd74EbLGtqewtByCSi_SBludhLIyn_ShM5YfW-w/edit" target="_blank">Apps Script Editor</a> and run <code>initializeSystem()</code> — check execution log for errors</label>
+        </div>
+        <textarea class="notes" placeholder="Notes / errors seen..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="s0-2" onchange="update()" />
+          <label class="check-label" for="s0-2">In Project Settings → Script Properties, confirm <code>SPREADSHEET_ID</code> = <code>1o2KulGLhpClbvbkYG-VqsaOJNQfAcpVZgRtc-FKpuAw</code> (staging sheet, not prod)</label>
+        </div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Spreadsheet — Confirm Sheets Exist</div>
+      <div class="info-box">Open the <a href="https://docs.google.com/spreadsheets/d/1o2KulGLhpClbvbkYG-VqsaOJNQfAcpVZgRtc-FKpuAw" target="_blank">Staging Spreadsheet</a> and verify these tabs exist with red header rows.</div>
+
+      <div class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="s0-3" onchange="update()" />
+          <label class="check-label" for="s0-3">Core sheets present: <code>Workflows</code>, <code>Dashboard_View</code>, <code>Initial Requests</code>, <code>Terminations</code>, <code>Position Changes</code>, <code>Action Items</code></label>
+        </div>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="s0-4" onchange="update()" />
+          <label class="check-label" for="s0-4">Result sheets present: <code>ID Setup Results</code>, <code>HR Verification Results</code>, <code>IT Results</code>, <code>Credit Card Results</code>, <code>Business Cards Results</code>, <code>Fleetio Results</code>, <code>JONAS Results</code>, <code>SiteDocs Results</code>, <code>30-60-90 Review Results</code>, <code>Central Purchasing Results</code></label>
+        </div>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="s0-5" onchange="update()" />
+          <label class="check-label" for="s0-5"><code>Dashboard_View</code> has 14 columns including col 13 = <code>Site</code>, col 14 = <code>Employment Type</code></label>
+        </div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="s0-6" onchange="update()" />
+          <label class="check-label" for="s0-6"><code>Data_Lookup</code> sheet has real Sites, JRs, and Job Numbers populated (not just example data)</label>
+        </div>
+        <textarea class="notes" placeholder="Add real data if only example placeholders are there..."></textarea>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== SECTION 1: DEPLOYMENT ===================== -->
+<section id="sec-deploy">
+  <div class="section-header" onclick="toggleSection('deploy')">
+    <span class="section-badge badge-deploy">1</span>
+    <span class="section-title">Deployment Check</span>
+    <span class="section-progress" id="prog-deploy">0/0</span>
+    <span class="chevron" id="chev-deploy">▼</span>
+  </div>
+  <div class="section-body collapsed" id="body-deploy">
+    <div class="info-box">Open <a href="https://script.google.com/a/macros/robinsonsolutions.com/s/AKfycbzBuUzj2DOW9ZcRPsfSoE9zVO-eMVWGj8dCaEW1i-X2rcdMBcWWBrHLoX5dn0Zf05Sm3w/exec" target="_blank">Staging Web App</a> in your browser.</div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="d1" onchange="update()" />
+        <label class="check-label" for="d1">Landing page loads — your name/email appears in top bar (not "Loading..." or "Not signed in")</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-d1" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-d1" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="d2" onchange="update()" />
+        <label class="check-label" for="d2">Dashboard loads — table appears (may be empty, should not be an error)</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-d2" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-d2" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 2: ACCESS CONTROL ===================== -->
+<section id="sec-ac">
+  <div class="section-header" onclick="toggleSection('ac')">
+    <span class="section-badge badge-ac">2</span>
+    <span class="section-title">Access Control (AC-1 to AC-7)</span>
+    <span class="section-progress" id="prog-ac">0/0</span>
+    <span class="chevron" id="chev-ac">▼</span>
+  </div>
+  <div class="section-body collapsed" id="body-ac">
+    <div class="info-box">Sign in as each account and verify dashboard visibility and edit rights. An empty dashboard is fine — the test is <em>what you can and can't do</em>, not whether data is present.</div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="ac1" onchange="update()" />
+        <label class="check-label" for="ac1"><span class="check-id">AC-1</span> <strong>Admin</strong> — sign in as <code>davelangohr@team-group.com</code> → Dashboard loads, all rows visible, date edit enabled</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-ac1" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-ac1" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="ac2" onchange="update()" />
+        <label class="check-label" for="ac2"><span class="check-id">AC-2</span> <strong>Admin alt</strong> — sign in as <code>dbinns@robinsonsolutions.com</code> → same as AC-1</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-ac2" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-ac2" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="ac3" onchange="update()" />
+        <label class="check-label" for="ac3"><span class="check-id">AC-3</span> <strong>Payroll</strong> — sign in as <code>payroll@team-group.com</code> → all workflows visible, date edit <strong>not</strong> available</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-ac3" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-ac3" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="ac4" onchange="update()" />
+        <label class="check-label" for="ac4"><span class="check-id">AC-4</span> <strong>HR group member</strong> — sign in as any HR group member → all workflows visible, date edit available</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-ac4" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-ac4" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Account used..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="ac5" onchange="update()" />
+        <label class="check-label" for="ac5"><span class="check-id">AC-5</span> <strong>IT group member</strong> — sign in as any IT group member → all workflows visible, date edit available</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-ac5" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-ac5" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Account used..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="ac6" onchange="update()" />
+        <label class="check-label" for="ac6"><span class="check-id">AC-6</span> <strong>Non-primary domain manager</strong> — sign in as a manager without group membership → Dashboard loads, only their own submitted requests visible</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-ac6" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-ac6" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Account used..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="ac7" onchange="update()" />
+        <label class="check-label" for="ac7"><span class="check-id">AC-7</span> <strong>Unknown user</strong> — sign in with a valid account with no group/role → Dashboard loads, zero rows shown (not an error)</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-ac7" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-ac7" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Account used..."></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 3: SUBMIT TEST DATA ===================== -->
+<section id="sec-data">
+  <div class="section-header" onclick="toggleSection('data')">
+    <span class="section-badge badge-data">3</span>
+    <span class="section-title">Submit Test Data — Do All of These Before Dashboard Testing</span>
+    <span class="section-progress" id="prog-data">0/0</span>
+    <span class="chevron" id="chev-data">▼</span>
+  </div>
+  <div class="section-body collapsed" id="body-data">
+    <div class="warn-box">Submit all the test cases below before moving to Section 4 (Dashboard Display). Use a full-access admin account for submissions.</div>
+
+    <div class="subsection">
+      <div class="subsection-title">New Hire Submissions</div>
+
+      <div class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="td1" onchange="update()" />
+          <label class="check-label" for="td1"><strong>New hire A — full options:</strong> Employment Type = "Full Time", System Access = Yes, Computer checked + type selected, Credit Card checked, BOSS checked with multiple job sites. Note the Workflow ID.</label>
+        </div>
+        <textarea class="notes" placeholder="Workflow ID: "></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="td2" onchange="update()" />
+          <label class="check-label" for="td2"><strong>New hire B — system access = No:</strong> System Access unchecked. Computer unchecked. CC unchecked. BOSS unchecked. Note the Workflow ID.</label>
+        </div>
+        <textarea class="notes" placeholder="Workflow ID: "></textarea>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Termination Submission</div>
+
+      <div class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="td3" onchange="update()" />
+          <label class="check-label" for="td3"><strong>Submit a termination</strong> — use an employee with no phone and no laptop assigned (for Chunk 4 / TerminationApproval test). Note the Workflow ID.</label>
+        </div>
+        <textarea class="notes" placeholder="Workflow ID: "></textarea>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Position Change Submission</div>
+
+      <div class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="td4" onchange="update()" />
+          <label class="check-label" for="td4"><strong>Submit a position change.</strong> Note the Workflow ID.</label>
+        </div>
+        <textarea class="notes" placeholder="Workflow ID: "></textarea>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Cancellation Test</div>
+
+      <div class="check-item">
+        <div class="check-row">
+          <input type="checkbox" id="td5" onchange="update()" />
+          <label class="check-label" for="td5"><strong>Cancel one request</strong> — cancel any pending workflow so you can verify it disappears from the dashboard (DD-8).</label>
+        </div>
+        <textarea class="notes" placeholder="Workflow ID cancelled: "></textarea>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 4: DASHBOARD DISPLAY ===================== -->
+<section id="sec-dash">
+  <div class="section-header" onclick="toggleSection('dash')">
+    <span class="section-badge badge-dash">4</span>
+    <span class="section-title">Dashboard Display (DD-1 to DD-9)</span>
+    <span class="section-progress" id="prog-dash">0/0</span>
+    <span class="chevron" id="chev-dash">▼</span>
+  </div>
+  <div class="section-body collapsed" id="body-dash">
+    <div class="info-box">Sign in as a full-access admin. Use the workflows submitted in Section 3.</div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="dd1" onchange="update()" />
+        <label class="check-label" for="dd1"><span class="check-id">DD-1</span> New hire row — Site column populated, Start Date column populated</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-dd1" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-dd1" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="dd2" onchange="update()" />
+        <label class="check-label" for="dd2"><span class="check-id">DD-2</span> Termination row — Site column populated, Term Date column populated</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-dd2" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-dd2" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="dd3" onchange="update()" />
+        <label class="check-label" for="dd3"><span class="check-id">DD-3</span> Position change row — Type shows "Position Change", effective date shown</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-dd3" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-dd3" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="dd4" onchange="update()" />
+        <label class="check-label" for="dd4"><span class="check-id">DD-4</span> In-progress termination — approve the termination (don't action it yet), then check Dashboard — Status shows intermediate state (not blank)</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-dd4" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-dd4" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="dd5" onchange="update()" />
+        <label class="check-label" for="dd5"><span class="check-id">DD-5</span> Dashboard load speed — noticeably faster than pre-Phase-8 with 20+ workflows present</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-dd5" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-dd5" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Approx load time..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="dd6" onchange="update()" />
+        <label class="check-label" for="dd6"><span class="check-id">DD-6</span> Employment Type column — new hire row shows grey badge with employment type value (e.g. "Full Time")</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-dd6" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-dd6" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="dd7" onchange="update()" />
+        <label class="check-label" for="dd7"><span class="check-id">DD-7</span> Emp Type on termination/position change rows — Type column shows <code>-</code> (not applicable)</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-dd7" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-dd7" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="dd8" onchange="update()" />
+        <label class="check-label" for="dd8"><span class="check-id">DD-8</span> Cancelled workflows hidden — refresh Dashboard, cancelled row no longer appears for any user role</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-dd8" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-dd8" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row">
+        <input type="checkbox" id="dd9" onchange="update()" />
+        <label class="check-label" for="dd9"><span class="check-id">DD-9</span> Complete status badge — find a workflow with status "Complete" (not "Completed") — green badge renders, not yellow/orange</label>
+      </div>
+      <div class="pass-fail">
+        <label><input type="radio" name="pf-dd9" value="pass" /> Pass</label>
+        <label><input type="radio" name="pf-dd9" value="fail" class="fail-radio" /> Fail</label>
+      </div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 5: SYNC WORKFLOW STATE ===================== -->
+<section id="sec-sync">
+  <div class="section-header" onclick="toggleSection('sync')">
+    <span class="section-badge badge-sync">5</span>
+    <span class="section-title">syncWorkflowState — Dashboard_View Stays Current</span>
+    <span class="section-progress" id="prog-sync">0/0</span>
+    <span class="chevron" id="chev-sync">▼</span>
+  </div>
+  <div class="section-body collapsed" id="body-sync">
+    <div class="info-box">After each action, immediately check the Dashboard row — it should update without a manual sync.</div>
+
+    <div class="subsection">
+      <div class="subsection-title">New Hire Flow</div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="sw1" onchange="update()" /><label class="check-label" for="sw1">Submit new hire → row shows <strong>"ID Setup Needed"</strong></label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-sw1" value="pass" /> Pass</label><label><input type="radio" name="pf-sw1" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="sw2" onchange="update()" /><label class="check-label" for="sw2">Complete ID Setup → row shows <strong>"ID Setup Complete"</strong></label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-sw2" value="pass" /> Pass</label><label><input type="radio" name="pf-sw2" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="sw3" onchange="update()" /><label class="check-label" for="sw3">Complete HR Verification (hourly, no system access) → row shows <strong>"Complete"</strong></label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-sw3" value="pass" /> Pass</label><label><input type="radio" name="pf-sw3" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="sw4" onchange="update()" /><label class="check-label" for="sw4">Complete HR Verification (salary, system access needed) → row shows <strong>"IT Setup Needed"</strong></label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-sw4" value="pass" /> Pass</label><label><input type="radio" name="pf-sw4" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="sw5" onchange="update()" /><label class="check-label" for="sw5">Complete IT Setup → row shows <strong>"Specialist Forms Needed"</strong> with pending list in step column</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-sw5" value="pass" /> Pass</label><label><input type="radio" name="pf-sw5" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Termination Flow</div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="sw6" onchange="update()" /><label class="check-label" for="sw6">Submit termination → row shows <strong>"HR Approval Needed"</strong></label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-sw6" value="pass" /> Pass</label><label><input type="radio" name="pf-sw6" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="sw7" onchange="update()" /><label class="check-label" for="sw7">Approve termination → row shows <strong>"Action Items Pending"</strong></label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-sw7" value="pass" /> Pass</label><label><input type="radio" name="pf-sw7" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="sw8" onchange="update()" /><label class="check-label" for="sw8">Reject a separate termination → row shows <strong>"Rejected"</strong></label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-sw8" value="pass" /> Pass</label><label><input type="radio" name="pf-sw8" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Position Change Flow</div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="sw9" onchange="update()" /><label class="check-label" for="sw9">Submit position change → row shows <strong>"HR Approval Needed"</strong></label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-sw9" value="pass" /> Pass</label><label><input type="radio" name="pf-sw9" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="sw10" onchange="update()" /><label class="check-label" for="sw10">Approve position change → row shows <strong>"Action Items Pending"</strong> or <strong>"Change Processed"</strong></label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-sw10" value="pass" /> Pass</label><label><input type="radio" name="pf-sw10" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="sw11" onchange="update()" /><label class="check-label" for="sw11">Reject a separate position change → row shows <strong>"Rejected"</strong></label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-sw11" value="pass" /> Pass</label><label><input type="radio" name="pf-sw11" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 6: FORM DATA INTEGRITY ===================== -->
+<section id="sec-integrity">
+  <div class="section-header" onclick="toggleSection('integrity')">
+    <span class="section-badge badge-integrity">6</span>
+    <span class="section-title">Form Data Integrity</span>
+    <span class="section-progress" id="prog-integrity">0/0</span>
+    <span class="chevron" id="chev-integrity">▼</span>
+  </div>
+  <div class="section-body collapsed" id="body-integrity">
+    <div class="info-box">Check the <a href="https://docs.google.com/spreadsheets/d/1o2KulGLhpClbvbkYG-VqsaOJNQfAcpVZgRtc-FKpuAw" target="_blank">Staging Spreadsheet</a> <code>Initial Requests</code> sheet after each submission to verify column values.</div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="fi1" onchange="update()" /><label class="check-label" for="fi1">New hire with <strong>System Access = No</strong> → <code>systems</code> and <code>equipment</code> columns blank in sheet</label></div>
+      <div class="pass-fail"><label><input type="radio" name="pf-fi1" value="pass" /> Pass</label><label><input type="radio" name="pf-fi1" value="fail" class="fail-radio" /> Fail</label></div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="fi2" onchange="update()" /><label class="check-label" for="fi2">New hire with <strong>Computer unchecked</strong> → <code>computerType</code> column blank (not "Chromebook")</label></div>
+      <div class="pass-fail"><label><input type="radio" name="pf-fi2" value="pass" /> Pass</label><label><input type="radio" name="pf-fi2" value="fail" class="fail-radio" /> Fail</label></div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="fi3" onchange="update()" /><label class="check-label" for="fi3">New hire with <strong>Computer checked + type selected</strong> → <code>computerType</code> correctly captured in sheet</label></div>
+      <div class="pass-fail"><label><input type="radio" name="pf-fi3" value="pass" /> Pass</label><label><input type="radio" name="pf-fi3" value="fail" class="fail-radio" /> Fail</label></div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="fi4" onchange="update()" /><label class="check-label" for="fi4">New hire with <strong>Credit Card unchecked</strong> → all CC limit columns blank in sheet</label></div>
+      <div class="pass-fail"><label><input type="radio" name="pf-fi4" value="pass" /> Pass</label><label><input type="radio" name="pf-fi4" value="fail" class="fail-radio" /> Fail</label></div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="fi5" onchange="update()" /><label class="check-label" for="fi5">New hire with <strong>BOSS unchecked</strong> → all BOSS detail columns blank in sheet</label></div>
+      <div class="pass-fail"><label><input type="radio" name="pf-fi5" value="pass" /> Pass</label><label><input type="radio" name="pf-fi5" value="fail" class="fail-radio" /> Fail</label></div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 7: BATCH SYNC ===================== -->
+<section id="sec-batch">
+  <div class="section-header" onclick="toggleSection('batch')">
+    <span class="section-badge badge-batch">7</span>
+    <span class="section-title">Batch Sync</span>
+    <span class="section-progress" id="prog-batch">0/0</span>
+    <span class="chevron" id="chev-batch">▼</span>
+  </div>
+  <div class="section-body collapsed" id="body-batch">
+    <div class="info-box">Run from the <a href="https://script.google.com/d/1A_EPPkI6QW3o39pGuNd74EbLGtqewtByCSi_SBludhLIyn_ShM5YfW-w/edit" target="_blank">Apps Script Editor</a>.</div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="bs1" onchange="update()" /><label class="check-label" for="bs1">Add 3 empty rows to the bottom of the <code>Workflows</code> sheet</label></div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="bs2" onchange="update()" /><label class="check-label" for="bs2">Run <code>manuallySyncAllWorkflows()</code> from Apps Script editor</label></div>
+      <div class="pass-fail"><label><input type="radio" name="pf-bs2" value="pass" /> Pass</label><label><input type="radio" name="pf-bs2" value="fail" class="fail-radio" /> Fail</label></div>
+      <textarea class="notes" placeholder="Notes / errors in log..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="bs3" onchange="update()" /><label class="check-label" for="bs3">No errors thrown, no blank entries written to <code>Dashboard_View</code></label></div>
+      <div class="pass-fail"><label><input type="radio" name="pf-bs3" value="pass" /> Pass</label><label><input type="radio" name="pf-bs3" value="fail" class="fail-radio" /> Fail</label></div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="bs4" onchange="update()" /><label class="check-label" for="bs4"><strong>empType backfill</strong> — after sync, confirm Employment Type column (col 14) is populated for all existing rows in <code>Dashboard_View</code></label></div>
+      <div class="pass-fail"><label><input type="radio" name="pf-bs4" value="pass" /> Pass</label><label><input type="radio" name="pf-bs4" value="fail" class="fail-radio" /> Fail</label></div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 8: PHASE 10 HTML AUDIT ===================== -->
+<section id="sec-p10">
+  <div class="section-header" onclick="toggleSection('p10')">
+    <span class="section-badge badge-p10">8</span>
+    <span class="section-title">Phase 10 — HTML Audit Smoke Tests</span>
+    <span class="section-progress" id="prog-p10">0/0</span>
+    <span class="chevron" id="chev-p10">▼</span>
+  </div>
+  <div class="section-body collapsed" id="body-p10">
+
+    <div class="subsection">
+      <div class="subsection-title">Chunk 1 — XSS Fixes</div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c1a" onchange="update()" /><label class="check-label" for="c1a"><strong>DirectoryAutocomplete</strong> — type 3+ chars in any manager email field (InitialRequest, TerminationRequest, or PositionSiteChangeRequest) → dropdown appears, name/email shown as plain text (not rendered HTML). Test with a name containing <code>&lt;</code> or <code>"</code> if possible.</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c1a" value="pass" /> Pass</label><label><input type="radio" name="pf-c1a" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c1b" onchange="update()" /><label class="check-label" for="c1b"><strong>Dashboard renderTable</strong> — no JavaScript errors in browser console when dashboard loads with data. Rows with unusual characters in names/statuses render safely.</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c1b" value="pass" /> Pass</label><label><input type="radio" name="pf-c1b" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Console errors seen..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c1c" onchange="update()" /><label class="check-label" for="c1c"><strong>ActionItemForm</strong> — open any active action item form → form loads with populated <code>userEmail</code> (not blank). Complete a checklist item → audit trail shows your email as author.</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c1c" value="pass" /> Pass</label><label><input type="radio" name="pf-c1c" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Chunk 2 — Broken Form Submissions</div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c2a" onchange="update()" /><label class="check-label" for="c2a"><strong>TerminationRequest</strong> — submit a termination → form submits successfully (no silent failure), sheet receives all fields. File attachment field shows informational message (expected).</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c2a" value="pass" /> Pass</label><label><input type="radio" name="pf-c2a" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c2b" onchange="update()" /><label class="check-label" for="c2b"><strong>HRVerification</strong> — submit HR verification for a new hire → <code>formId</code> captured in sheet, correct workflow step triggered</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c2b" value="pass" /> Pass</label><label><input type="radio" name="pf-c2b" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c2c" onchange="update()" /><label class="check-label" for="c2c"><strong>EmployeeIDSetup</strong> — complete an ID setup → <code>formId</code> appears in sheet data</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c2c" value="pass" /> Pass</label><label><input type="radio" name="pf-c2c" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c2d" onchange="update()" /><label class="check-label" for="c2d"><strong>CentralPurchasing</strong> — submit a confirmation → <code>formId</code> captured in sheet</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c2d" value="pass" /> Pass</label><label><input type="radio" name="pf-c2d" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Chunk 3 — Silent Success/Failure Handlers</div>
+      <div class="info-box">For each form: submit normally → confirm success screen. To test failure: temporarily break the handler function, resubmit → confirm error alert appears and submit button re-enables (success screen should NOT appear).</div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c3a" onchange="update()" /><label class="check-label" for="c3a"><strong>Jonas</strong> — success screen on submit; error alert + button re-enables on failure</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c3a" value="pass" /> Pass</label><label><input type="radio" name="pf-c3a" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c3b" onchange="update()" /><label class="check-label" for="c3b"><strong>CreditCard</strong> — success screen on submit; error alert + button re-enables on failure</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c3b" value="pass" /> Pass</label><label><input type="radio" name="pf-c3b" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c3c" onchange="update()" /><label class="check-label" for="c3c"><strong>Fleetio</strong> — success screen on submit; error alert + button re-enables on failure</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c3c" value="pass" /> Pass</label><label><input type="radio" name="pf-c3c" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c3d" onchange="update()" /><label class="check-label" for="c3d"><strong>BusinessCards</strong> — success screen on submit; error alert + button re-enables on failure</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c3d" value="pass" /> Pass</label><label><input type="radio" name="pf-c3d" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c3e" onchange="update()" /><label class="check-label" for="c3e"><strong>SiteDocs</strong> — success screen on submit; error alert + button re-enables on failure</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c3e" value="pass" /> Pass</label><label><input type="radio" name="pf-c3e" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c3f" onchange="update()" /><label class="check-label" for="c3f"><strong>CentralPurchasing</strong> — success screen on submit; error alert + button re-enables on failure</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c3f" value="pass" /> Pass</label><label><input type="radio" name="pf-c3f" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c3g" onchange="update()" /><label class="check-label" for="c3g"><strong>Review306090</strong> — success screen on submit; error alert + button re-enables on failure</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c3g" value="pass" /> Pass</label><label><input type="radio" name="pf-c3g" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Chunk 4 — Broken Data</div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c4a" onchange="update()" /><label class="check-label" for="c4a"><strong>TerminationApproval</strong> — open a pending termination approval for an employee with no phone and no laptop → "Collect Assets" checkbox is <strong>unchecked</strong> by default (was always checked before due to <code>|| true</code> bug)</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c4a" value="pass" /> Pass</label><label><input type="radio" name="pf-c4a" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c4b" onchange="update()" /><label class="check-label" for="c4b"><strong>ITSetup</strong> — submit IT setup for a new hire with <strong>multiple BOSS job sites selected</strong> → all selected sites appear in the sheet (not just the last one)</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c4b" value="pass" /> Pass</label><label><input type="radio" name="pf-c4b" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Chunk 5 — Dead/Stale Code</div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c5a" onchange="update()" /><label class="check-label" for="c5a"><strong>InitialRequest</strong> — submit new hire selecting a Computer type → <code>computerType</code> captured correctly in sheet</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c5a" value="pass" /> Pass</label><label><input type="radio" name="pf-c5a" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c5b" onchange="update()" /><label class="check-label" for="c5b"><strong>EquipmentSystemRequest</strong> — submit the form → sheet does <strong>not</strong> receive <code>hireDate</code>, <code>newHireOrRehire</code>, <code>employeeType</code>, or <code>employmentType</code> columns (should be absent, not null)</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c5b" value="pass" /> Pass</label><label><input type="radio" name="pf-c5b" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c5c" onchange="update()" /><label class="check-label" for="c5c"><strong>PositionSiteChangeRequest</strong> — load the form, without selecting any Computer or Phone option trigger any other field change → no JavaScript errors in console (null dereference guard)</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c5c" value="pass" /> Pass</label><label><input type="radio" name="pf-c5c" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Console errors seen..."></textarea>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">Chunk 6 — Visual / UX Polish</div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c6a" onchange="update()" /><label class="check-label" for="c6a"><strong>TerminationFormBuilder</strong> — open the form builder, edit a field → modal has visible dark background (not transparent). Delete buttons show red text (not invisible).</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c6a" value="pass" /> Pass</label><label><input type="radio" name="pf-c6a" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c6b" onchange="update()" /><label class="check-label" for="c6b"><strong>LandingPage</strong> — temporarily break <code>getCurrentUserEmail</code> (or go offline) → user email area shows "Not signed in" instead of staying on "Loading..."</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c6b" value="pass" /> Pass</label><label><input type="radio" name="pf-c6b" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c6c" onchange="update()" /><label class="check-label" for="c6c"><strong>DataManager</strong> — open Data Manager, click a delete button → button disables and shows "..." while in progress. Re-enables if the delete fails.</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c6c" value="pass" /> Pass</label><label><input type="radio" name="pf-c6c" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+
+      <div class="check-item">
+        <div class="check-row"><input type="checkbox" id="c6d" onchange="update()" /><label class="check-label" for="c6d"><strong>StatusChangeApproval</strong> — open a pending status change approval, leave "Site Transfer" unchecked and submit → check Apps Script logs: <code>receivingManagerEmail</code> should be blank string (not a stale email value)</label></div>
+        <div class="pass-fail"><label><input type="radio" name="pf-c6d" value="pass" /> Pass</label><label><input type="radio" name="pf-c6d" value="fail" class="fail-radio" /> Fail</label></div>
+        <textarea class="notes" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 9: ERROR HANDLING ===================== -->
+<section id="sec-error">
+  <div class="section-header" onclick="toggleSection('error')">
+    <span class="section-badge badge-error">9</span>
+    <span class="section-title">Error Handling</span>
+    <span class="section-progress" id="prog-error">0/0</span>
+    <span class="chevron" id="chev-error">▼</span>
+  </div>
+  <div class="section-body collapsed" id="body-error">
+    <div class="warn-box">These require temporarily breaking a server function in the <a href="https://script.google.com/d/1A_EPPkI6QW3o39pGuNd74EbLGtqewtByCSi_SBludhLIyn_ShM5YfW-w/edit" target="_blank">Apps Script Editor</a>. Remember to revert after each test.</div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="eh1" onchange="update()" /><label class="check-label" for="eh1"><strong>InitialRequest submit error</strong> — break <code>submitInitialRequest</code>, attempt submit → error alert appears, submit button re-enables</label></div>
+      <div class="pass-fail"><label><input type="radio" name="pf-eh1" value="pass" /> Pass</label><label><input type="radio" name="pf-eh1" value="fail" class="fail-radio" /> Fail</label></div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="eh2" onchange="update()" /><label class="check-label" for="eh2"><strong>TerminationApproval error</strong> — break <code>submitTerminationApproval</code> → error alert appears, button re-enables</label></div>
+      <div class="pass-fail"><label><input type="radio" name="pf-eh2" value="pass" /> Pass</label><label><input type="radio" name="pf-eh2" value="fail" class="fail-radio" /> Fail</label></div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+
+    <div class="check-item">
+      <div class="check-row"><input type="checkbox" id="eh3" onchange="update()" /><label class="check-label" for="eh3"><strong>ActionItemForm finalize error</strong> — break <code>finalCompleteRequest</code> → error alert appears, "Finalizing..." button re-enables (success screen does <strong>not</strong> appear)</label></div>
+      <div class="pass-fail"><label><input type="radio" name="pf-eh3" value="pass" /> Pass</label><label><input type="radio" name="pf-eh3" value="fail" class="fail-radio" /> Fail</label></div>
+      <textarea class="notes" placeholder="Notes..."></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SECTION 10: SIGN-OFF ===================== -->
+<section id="sec-signoff">
+  <div class="section-header" onclick="toggleSection('signoff')">
+    <span class="section-badge badge-signoff">✓</span>
+    <span class="section-title">Sign-Off — Promote Staging → Production</span>
+    <span class="section-progress" id="prog-signoff">0/0</span>
+    <span class="chevron" id="chev-signoff">▼</span>
+  </div>
+  <div class="section-body collapsed" id="body-signoff">
+    <div class="warn-box">Do not promote until all items below are checked. Once promoted, prod users are on the new code.</div>
+
+    <div class="sign-off-grid">
+      <div class="sign-off-item">
+        <input type="checkbox" id="so1" onchange="update()" />
+        <label for="so1">All Sections 0–9 complete with no open failures</label>
+      </div>
+      <div class="sign-off-item">
+        <input type="checkbox" id="so2" onchange="update()" />
+        <label for="so2">No regressions observed in forms not covered above</label>
+      </div>
+      <div class="sign-off-item">
+        <input type="checkbox" id="so3" onchange="update()" />
+        <label for="so3">Apps Script execution log shows no unhandled exceptions during any test run</label>
+      </div>
+      <div class="sign-off-item">
+        <input type="checkbox" id="so4" onchange="update()" />
+        <label for="so4"><code>clasp push</code> run for <strong>both</strong> staging and prod folders before promotion</label>
+      </div>
+    </div>
+
+    <button id="promote-btn" disabled onclick="confirmPromote()">Ready to Promote to Production</button>
+  </div>
+</section>
+
+<div class="save-bar">
+  <span id="save-status"></span>
+  <button id="save-btn" onclick="saveState()">💾 Save</button>
+  <button id="reset-btn" onclick="resetState()">🗑 Reset</button>
+</div>
+
+<script>
+  const STORAGE_KEY = 'staging_qa_v2';
+
+  const sections = ['setup','deploy','ac','data','dash','sync','integrity','batch','p10','error','signoff'];
+
+  function toggleSection(id) {
+    const body = document.getElementById('body-' + id);
+    const chev = document.getElementById('chev-' + id);
+    const collapsed = body.classList.toggle('collapsed');
+    chev.textContent = collapsed ? '▶' : '▼';
+  }
+
+  function update() {
+    const allBoxes = document.querySelectorAll('input[type="checkbox"]');
+    const total = allBoxes.length;
+    const checked = Array.from(allBoxes).filter(c => c.checked).length;
+
+    document.getElementById('progress-fill').style.width = (total ? (checked / total * 100) : 0) + '%';
+    document.getElementById('progress-label').textContent = checked + ' / ' + total + ' items checked';
+
+    sections.forEach(id => {
+      const sec = document.getElementById('sec-' + id);
+      if (!sec) return;
+      const boxes = sec.querySelectorAll('input[type="checkbox"]');
+      const secTotal = boxes.length;
+      const secChecked = Array.from(boxes).filter(c => c.checked).length;
+      const prog = document.getElementById('prog-' + id);
+      if (prog) prog.textContent = secChecked + '/' + secTotal;
+    });
+
+    // Style checked labels
+    allBoxes.forEach(cb => {
+      const label = document.querySelector('label[for="' + cb.id + '"]');
+      if (label) label.classList.toggle('done', cb.checked);
+    });
+
+    // Enable promote button only when all sign-off boxes checked
+    const soBoxes = document.querySelectorAll('[id^="so"]');
+    const allSo = Array.from(soBoxes).every(c => c.checked);
+    document.getElementById('promote-btn').disabled = !allSo;
+  }
+
+  function saveState() {
+    const state = {};
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      state['cb_' + cb.id] = cb.checked;
+    });
+    document.querySelectorAll('input[type="radio"]').forEach(r => {
+      if (r.checked) state['radio_' + r.name] = r.value;
+    });
+    document.querySelectorAll('textarea').forEach((ta, i) => {
+      state['ta_' + i] = ta.value;
+    });
+    // Save section collapsed state
+    sections.forEach(id => {
+      const body = document.getElementById('body-' + id);
+      if (body) state['sec_' + id] = body.classList.contains('collapsed');
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const now = new Date().toLocaleTimeString();
+    document.getElementById('last-saved').textContent = now;
+    document.getElementById('save-status').textContent = 'Saved ' + now;
+    setTimeout(() => document.getElementById('save-status').textContent = '', 3000);
+  }
+
+  function loadState() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      if (state['cb_' + cb.id] !== undefined) cb.checked = state['cb_' + cb.id];
+    });
+    document.querySelectorAll('input[type="radio"]').forEach(r => {
+      if (state['radio_' + r.name] === r.value) r.checked = true;
+    });
+    document.querySelectorAll('textarea').forEach((ta, i) => {
+      if (state['ta_' + i] !== undefined) ta.value = state['ta_' + i];
+    });
+    sections.forEach(id => {
+      const body = document.getElementById('body-' + id);
+      const chev = document.getElementById('chev-' + id);
+      if (body && state['sec_' + id] !== undefined) {
+        body.classList.toggle('collapsed', state['sec_' + id]);
+        if (chev) chev.textContent = state['sec_' + id] ? '▶' : '▼';
+      }
+    });
+    update();
+  }
+
+  function resetState() {
+    if (!confirm('Reset all checkboxes, pass/fail selections, and notes? This cannot be undone.')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+
+  function confirmPromote() {
+    if (confirm('Promote staging to production? Make sure clasp push has been run on both folders.')) {
+      alert('Go for it. Run clasp push on employee_management_v2 (prod) then create a new versioned deployment.');
+    }
+  }
+
+  // Auto-save on any input change
+  document.addEventListener('change', saveState);
+  document.addEventListener('input', saveState);
+
+  window.addEventListener('load', () => {
+    loadState();
+    update();
+  });
+</script>
+
+</body>
+</html>

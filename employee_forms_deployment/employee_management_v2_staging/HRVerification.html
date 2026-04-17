@@ -106,6 +106,7 @@
 
         input[type='text'],
         input[type='email'],
+        input[type='date'],
         textarea {
             width: 100%;
             background: var(--input-bg);
@@ -320,9 +321,7 @@
                         </div>
                         <div class="form-group">
                             <label>Hire Date</label>
-                            <div class="read-only-box">
-                                <?= requestData.hireDate ? (requestData.hireDate instanceof Date ? requestData.hireDate.toLocaleDateString() : String(requestData.hireDate)) : 'N/A' ?>
-                            </div>
+                            <input type="date" name="hireDate" value="<?= requestData.hireDate ? String(requestData.hireDate).substring(0, 10) : '' ?>">
                         </div>
                     </div>
 
@@ -449,6 +448,7 @@
             var formData = {
                 workflowId: this.workflowId.value,
                 formId: this.formId.value,
+                hireDate: this.hireDate.value,
                 firstName: this.firstName.value,
                 lastName: this.lastName.value,
                 managerName: this.managerName.value,

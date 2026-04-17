@@ -169,8 +169,8 @@ function getWorkflowContext(workflowId) {
       jrTitle: row[headers.indexOf('JR Assign')], // Capture JR Title also
       siteName: row[headers.indexOf('Site Name')],
       hireDate: row[headers.indexOf('Hire Date')],
-      managerName: row[headers.indexOf('Reporting Manager Name')],
-      managerEmail: row[headers.indexOf('Reporting Manager Email')],  
+      managerName: row[headers.indexOf('Manager Name')],
+      managerEmail: row[headers.indexOf('Manager Email')],
       requesterEmail: row[5], // Hardcoded to Col F (Index 5) for reliability
       requestDate: Utilities.formatDate(new Date(row[headers.indexOf('Timestamp')]), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
       employmentType: row[headers.indexOf('Employment Type')],

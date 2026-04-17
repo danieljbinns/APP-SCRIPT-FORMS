@@ -52,9 +52,12 @@ function syncWorkflowState(workflowId) {
     };
     
     const isTerm = workflowId.startsWith('TERM_');
-    const lookupSheetName = isTerm ? CONFIG.SHEETS.TERMINATIONS : CONFIG.SHEETS.INITIAL_REQUESTS;
+    const isChange = workflowId.startsWith('CHANGE_');
+    const lookupSheetName = isTerm ? CONFIG.SHEETS.TERMINATIONS : (isChange ? CONFIG.SHEETS.POSITION_CHANGES : CONFIG.SHEETS.INITIAL_REQUESTS);
     const lookupSheet = ss.getSheetByName(lookupSheetName);
-    
+
+    const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(v || '');
+
     const foundReq = lookupSheet ? lookupSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (foundReq) {
       const lastCol = lookupSheet.getLastColumn();
@@ -67,21 +70,30 @@ function syncWorkflowState(workflowId) {
           requesterName: row[3] || 'Unknown',
           requesterEmail: row[4] || '',
           managerEmail: row[15] || '',
-          dateRequested: row[2] instanceof Date ? row[2].toLocaleDateString() : String(row[2] || ''),
-          hireDate: row[12] instanceof Date ? row[12].toLocaleDateString() : String(row[12] || ''), // Term Date
+          dateRequested: fmtDate(row[2]),
+          hireDate: fmtDate(row[12]), // Term Date → shown in Effective Date column
           site: String(row[11] || ''),
-          items: {
-             // For EOE, we don't have the same "specialist" items map, but we can detect if approval is done
-             isTerm: true
-          }
+          items: { isTerm: true }
+        };
+      } else if (isChange) {
+        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | Emp ID | Effective Date[7] | Current Site[8] | ...
+        reqInfo = {
+          requesterName: row[3] || 'Unknown',
+          requesterEmail: row[4] || '',
+          managerEmail: '',
+          dateRequested: fmtDate(row[2]),
+          hireDate: fmtDate(row[7]), // Effective Date → shown in Effective Date column
+          site: String(row[8] || ''),
+          empType: '',
+          items: {}
         };
       } else {
         reqInfo = {
           requesterName: row[4] || 'Unknown',
           requesterEmail: row[5] || '',
           managerEmail: row[17] || '',
-          dateRequested: row[3] instanceof Date ? row[3].toLocaleDateString() : String(row[3] || ''),
-          hireDate: row[6] instanceof Date ? row[6].toLocaleDateString() : String(row[6] || ''), // Hire Date
+          dateRequested: fmtDate(row[3]),
+          hireDate: fmtDate(row[6]), // Hire Date → shown in Start Date column
           site: String(row[15] || ''), // Site Name
           empType: empTypeIdx >= 0 ? String(row[empTypeIdx] || '') : '',
           items: {

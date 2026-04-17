@@ -67,8 +67,9 @@ function submitHRVerification(formData) {
     
     const firstNameCol = headers.indexOf('First Name');
     const lastNameCol = headers.indexOf('Last Name');
-    const managerNameCol = headers.indexOf('Reporting Manager Name');
-    const managerEmailCol = headers.indexOf('Reporting Manager Email');
+    const managerNameCol = headers.indexOf('Manager Name');
+    const managerEmailCol = headers.indexOf('Manager Email');
+    const hireDateCol = headers.indexOf('Hire Date');
     const siteNameCol = headers.indexOf('Site/Office Location');
     const jrTitleCol = headers.indexOf('Position Title'); // Col 14 - Fixed header name match
     const jrAssignCol = headers.indexOf('JR Assign'); // Col 46 (Now map to jrTitle)
@@ -83,6 +84,7 @@ function submitHRVerification(formData) {
         if (lastNameCol !== -1) mainSheet.getRange(i + 1, lastNameCol + 1).setValue(formData.lastName);
         if (managerNameCol !== -1) mainSheet.getRange(i + 1, managerNameCol + 1).setValue(formData.managerName);
         if (managerEmailCol !== -1) mainSheet.getRange(i + 1, managerEmailCol + 1).setValue(formData.managerEmail);
+        if (hireDateCol !== -1 && formData.hireDate) mainSheet.getRange(i + 1, hireDateCol + 1).setValue(new Date(formData.hireDate));
         if (siteNameCol !== -1) mainSheet.getRange(i + 1, siteNameCol + 1).setValue(formData.siteName);
         if (jrTitleCol !== -1) mainSheet.getRange(i + 1, jrTitleCol + 1).setValue(formData.jobTitle);
         if (jrAssignCol !== -1) mainSheet.getRange(i + 1, jrAssignCol + 1).setValue(formData.jrTitle);
