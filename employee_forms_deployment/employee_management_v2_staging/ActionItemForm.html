@@ -427,8 +427,15 @@
         const contextObj = <?!= (typeof context !== 'undefined' && context) ? JSON.stringify(context) : 'null' ?>;
         const context = (typeof contextObj === 'string') ? JSON.parse(contextObj) : contextObj;
 
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+
         let userEmail = "";
         let taskDraft = { items: {} };
+
+        google.script.run.withSuccessHandler(function(e) { userEmail = e || ''; }).withFailureHandler(function() {}).getCurrentUserEmail();
 
         try {
             if (taskDraftRaw) {
@@ -519,18 +526,14 @@
                     </div>
                 ` : '';
 
-                const phoneHtml = (isPhone && context && context.empPhone) ? `
-                    <div style="margin-top:4px; font-size:12px; color:var(--brand-red); font-weight:bold;">
-                        Number: ${context.empPhone}
-                    </div>
-                ` : '';
+                const phoneHtml = (isPhone && context && context.empPhone) ? '<div style="margin-top:4px; font-size:12px; color:var(--brand-red); font-weight:bold;">Number: ' + escapeHtml(context.empPhone) + '</div>' : '';
 
-                const auditHtml = saved.by ? `<span class="audit-info">By: ${saved.by} | ${new Date(saved.at).toLocaleString()}</span>` : '';
+                const auditHtml = saved.by ? '<span class="audit-info">By: ' + escapeHtml(saved.by) + ' | ' + new Date(saved.at).toLocaleString() + '</span>' : '';
                 const isAssetTask = taskCategory === 'Assets';
 
                 tr.innerHTML = `
                     <td>
-                        <span class="item-name">${item}</span>
+                        <span class="item-name">${escapeHtml(item)}</span>
                         ${phoneHtml}
                         ${auditHtml}
                     </td>
@@ -643,11 +646,15 @@
                     if (res.success) {
                         document.getElementById('formCard').innerHTML = `
                             <div style="text-align:center; padding:40px;">
-                                <h1 style="color:var(--success)">✓ Task Finalized</h1>
+                                <h1 style="color:var(--success)">&#10003; Task Finalized</h1>
                                 <p style="color:var(--text-muted)">All checklist data and audit logs have been recorded.</p>
                                 <button class="btn btn-secondary" onclick="window.close()" style="margin-top:20px; width:auto">Close Window</button>
                             </div>
                         `;
+                    } else {
+                        btn.disabled = false;
+                        btn.textContent = 'Mark Task Finalized';
+                        alert('Error: ' + (res.message || 'Server returned failure.'));
                     }
                 })
                 .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Finalize'; alert('Error: ' + err.message); })

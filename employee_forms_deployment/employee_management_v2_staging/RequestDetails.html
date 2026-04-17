@@ -579,17 +579,23 @@
                 aiContainer.innerHTML = '<div class="branch-stem"></div>';
 
                 list.forEach(item => {
-                    if (item.name === 'Initial Request' || item.name === 'Approval') return; // handled statically
+                    if (item.name === 'Initial Request' || item.name === 'Approval') return;
                     const isComplete = item.status === 'Complete';
-                    const cardClass = 'flow-card ' + (isComplete ? 'complete' : 'pending');
-                    const cardId = 'eoe_node_' + (item.target || item.name.toLowerCase().replace(/\s+/g,'_'));
-                    const badgeId = 'eoe_badge_' + (item.target || item.name.toLowerCase().replace(/\s+/g,'_'));
-                    const onclick = item.target ? `viewStepData('${item.target}')` : '';
-                    aiContainer.innerHTML += `<div class="${cardClass}" id="${cardId}" onclick="${onclick}">
-                        <h3>${item.name}</h3>
-                        <p>${item.by || 'Pending'}</p>
-                        <div class="status-badge" id="${badgeId}">${item.status}</div>
-                    </div>`;
+                    const slug = item.target || item.name.toLowerCase().replace(/\s+/g,'_');
+                    const card = document.createElement('div');
+                    card.className = 'flow-card ' + (isComplete ? 'complete' : 'pending');
+                    card.id = 'eoe_node_' + slug;
+                    if (item.target) card.addEventListener('click', function() { viewStepData(item.target); });
+                    const h3 = document.createElement('h3');
+                    h3.textContent = item.name;
+                    const p = document.createElement('p');
+                    p.textContent = item.by || 'Pending';
+                    const badge = document.createElement('div');
+                    badge.className = 'status-badge';
+                    badge.id = 'eoe_badge_' + slug;
+                    badge.textContent = item.status;
+                    card.appendChild(h3); card.appendChild(p); card.appendChild(badge);
+                    aiContainer.appendChild(card);
                 });
 
                 // Update EOE static node badges
@@ -691,7 +697,7 @@
 
         function bump(target) {
             if (!confirm('Send reminder email?')) return;
-            google.script.run.withSuccessHandler(alert).withFailureHandler(function(err) { alert('Error: ' + err.message); }).bumpRequest(workflowId, target);
+            google.script.run.withSuccessHandler(function(res) { alert(res.message || 'Done'); }).withFailureHandler(function(err) { alert('Error: ' + err.message); }).bumpRequest(workflowId, target);
         }
 
         function viewStepData(stepType) {
@@ -705,10 +711,15 @@
                 .getStepResultData(workflowId, stepType);
         }
 
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+
         function renderStepData(data) {
             const tbody = document.getElementById('stepDataBody');
             if (!data || Object.keys(data).length === 0) {
-                tbody.innerHTML = `<tr><td colspan="2" style="text-align:center;">No data found.</td></tr>`;
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;">No data found.</td></tr>';
                 return;
             }
 
@@ -716,10 +727,8 @@
             for (var key in data) {
                 if (data.hasOwnProperty(key)) {
                     var val = data[key];
-                    // Skip internal keys or empty
                     if (key === 'Workflow ID' || key === 'Form ID' || val === '') continue;
-
-                    html += '<tr><td>' + key + '</td><td>' + val + '</td></tr>';
+                    html += '<tr><td>' + escapeHtml(key) + '</td><td>' + escapeHtml(val) + '</td></tr>';
                 }
             }
             tbody.innerHTML = html;

@@ -1142,7 +1142,11 @@
           refData.sites.forEach(function(site) {
             const label = document.createElement('label');
             label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
-            label.innerHTML = '<input type="checkbox" name="adpSites" value="' + site + '" style="accent-color: var(--brand-red);"> ' + site;
+            const cb = document.createElement('input');
+            cb.type = 'checkbox'; cb.name = 'adpSites'; cb.value = site;
+            cb.style.accentColor = 'var(--brand-red)';
+            const txt = document.createTextNode(' ' + site);
+            label.appendChild(cb); label.appendChild(txt);
             adpContainer.appendChild(label);
           });
         }
@@ -1154,7 +1158,11 @@
           refData.sites.forEach(function(site) {
             const label = document.createElement('label');
             label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
-            label.innerHTML = '<input type="checkbox" name="purchasingSites" value="' + site + '" style="accent-color: var(--brand-red);"> ' + site;
+            const cb = document.createElement('input');
+            cb.type = 'checkbox'; cb.name = 'purchasingSites'; cb.value = site;
+            cb.style.accentColor = 'var(--brand-red)';
+            const txt = document.createTextNode(' ' + site);
+            label.appendChild(cb); label.appendChild(txt);
             purchasingContainer.appendChild(label);
           });
         }

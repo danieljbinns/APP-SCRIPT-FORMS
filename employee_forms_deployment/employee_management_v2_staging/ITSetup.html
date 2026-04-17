@@ -663,7 +663,7 @@
                                 <strong style="color: var(--text-muted); font-size: 0.9em;">Committees to
                                     Assign:</strong>
                                 <div style="margin-top: 5px; color: var(--text-main);">
-                                    <?!= requestData.bossJobSites ? requestData.bossJobSites.split(',').map(s => '• ' + s.trim()).join('<br>') : 'None' ?>
+                                    <?!= requestData.bossJobSites ? requestData.bossJobSites.split(',').map(s => '• ' + s.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')).join('<br>') : 'None' ?>
                                 </div>
                             </div>
 
@@ -672,7 +672,7 @@
                                 <strong style="color: var(--text-muted); font-size: 0.9em;">Cost Sheet Job
                                     Numbers:</strong>
                                 <div style="margin-top: 5px; color: var(--text-main);">
-                                    <?!= requestData.bossCostSheetJobs ? requestData.bossCostSheetJobs.split(',').map(s => '• ' + s.trim()).join('<br>') : 'None' ?>
+                                    <?!= requestData.bossCostSheetJobs ? requestData.bossCostSheetJobs.split(',').map(s => '• ' + s.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')).join('<br>') : 'None' ?>
                                 </div>
                             </div>
 
@@ -775,7 +775,7 @@
         // Pre-population Logic
         window.addEventListener('DOMContentLoaded', function () {
             // 1. Email Username (First.Last)
-            const employeeName = "<?= requestData.employeeName ?>";
+            const employeeName = <?= JSON.stringify(requestData.employeeName || '') ?>;
             if (employeeName) {
                 const parts = employeeName.split(' ');
                 if (parts.length >= 2) {

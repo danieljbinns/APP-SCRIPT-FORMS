@@ -379,6 +379,11 @@
     </div>
 
     <script>
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+
         // Use server-injected Base URL
         var SERVER_BASE_URL = "<?= baseUrl ?>";
 
@@ -464,19 +469,20 @@
                     (wf.type === 'Onboarding' ? '<span style="background:var(--info); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">NEW HIRE</span>' : '');
 
                 const dateLabel = wf.hireDate || '-';
+                const stepColor = (wf.step && wf.step.includes('Pending:')) ? '#ffab00' : '#a0a0a0';
 
-                html += '<tr onclick="openDetails(\'' + wf.id + '\', \'' + wf.type + '\')">' +
-                    '<td>' + typeBadge + '<strong>' + (wf.employee || 'Pending Name') + '</strong></td>' +
-                    '<td><span class="badge ' + statusClass + '">' + wf.status + '</span></td>' +
-                    '<td style="color: ' + (wf.step.includes('Pending:') ? '#ffab00' : '#a0a0a0') + '">' + wf.step + '</td>' +
+                html += '<tr data-id="' + escapeHtml(wf.id) + '" data-type="' + escapeHtml(wf.type) + '" onclick="openDetails(this.dataset.id,this.dataset.type)">' +
+                    '<td>' + typeBadge + '<strong>' + escapeHtml(wf.employee || 'Pending Name') + '</strong></td>' +
+                    '<td><span class="badge ' + statusClass + '">' + escapeHtml(wf.status) + '</span></td>' +
+                    '<td style="color: ' + stepColor + '">' + escapeHtml(wf.step) + '</td>' +
                     '<td>' +
-                    '<div>' + wf.requesterName + '</div>' +
-                    '<div style="font-size: 11px; color:#666;">' + wf.initiator + '</div>' +
+                    '<div>' + escapeHtml(wf.requesterName) + '</div>' +
+                    '<div style="font-size: 11px; color:#666;">' + escapeHtml(wf.initiator) + '</div>' +
                     '</td>' +
-                    '<td style="font-size:12px;">' + (wf.site || '-') + '</td>' +
-                    '<td>' + dateLabel + '</td>' +
-                    '<td>' + wf.dateRequested + '</td>' +
-                    '<td>' + wf.lastUpdated + '</td>' +
+                    '<td style="font-size:12px;">' + escapeHtml(wf.site || '-') + '</td>' +
+                    '<td>' + escapeHtml(dateLabel) + '</td>' +
+                    '<td>' + escapeHtml(wf.dateRequested) + '</td>' +
+                    '<td>' + escapeHtml(wf.lastUpdated) + '</td>' +
                     '</tr>';
             });
             tbody.innerHTML = html;
@@ -759,7 +765,7 @@
                         '<td style="padding: 12px 10px;">' + item.name + '</td>' +
                         '<td style="padding: 12px 10px;">' + badge + '</td>' +
                         '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#ccc') + ';">' + (item.by || '-') + '</td>' +
-                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#888') + ';">' + (item.time === 'undefined' ? '-' : item.time) + '</td>' +
+                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#888') + ';">' + (!item.time || item.time === 'undefined' ? '-' : item.time) + '</td>' +
                         '<td style="padding: 12px 10px; text-align: right;">' + actionBtn + '</td>' +
                         '</tr>';
                 });
@@ -774,23 +780,6 @@
 
 
             document.getElementById('modalContent').innerHTML = html;
-        }
-
-        function openAdminForm(target, id) {
-            let formName = target;
-            let query = '?wf=' + id;
-
-            // Map simple targets to form route names
-            if (target === 'id_setup') formName = 'id_setup';
-            if (target === 'hr_verification') formName = 'hr_verification';
-            if (target === 'it_setup') formName = 'it_setup';
-            if (['jonas', 'creditcard', 'fleetio', 'businesscards', 'sitedocs', 'review'].includes(target)) {
-                formName = 'specialist';
-                query += '&dept=' + target;
-            }
-
-            const url = SERVER_BASE_URL + '?form=' + formName + '&' + query.replace('?', '');
-            window.open(url, '_blank');
         }
 
         function closeModal() {
@@ -898,4 +887,3 @@
 </body>
 
 </html>
-```
