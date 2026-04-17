@@ -258,7 +258,7 @@
                 decision: this.decision.value,
                 notes: this.notes.value,
                 isTransfer: this.isTransfer.checked,
-                receivingManagerEmail: this.receivingManagerEmail.value,
+                receivingManagerEmail: this.isTransfer.checked ? this.receivingManagerEmail.value : '',
                 nextSteps: this.nextSteps.value
             };
 

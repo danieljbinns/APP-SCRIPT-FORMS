@@ -415,7 +415,9 @@
         function deleteItem(type, value) {
             if (!confirm('Are you sure you want to delete "' + value + '"?')) return;
 
-            // Optimistic UI update? No, let's wait for server to be safe
+            const btn = document.querySelector('.delete-btn[onclick*="' + value.replace(/"/g, '\\"') + '"]');
+            if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
             google.script.run
                 .withSuccessHandler((success) => {
                     if (success) {
@@ -423,10 +425,14 @@
                         renderList(type);
                         showToast('Item deleted successfully', 'success');
                     } else {
+                        if (btn) { btn.disabled = false; btn.textContent = '\u00d7'; }
                         showToast('Failed to delete item', 'error');
                     }
                 })
-                .withFailureHandler(showError)
+                .withFailureHandler((err) => {
+                    if (btn) { btn.disabled = false; btn.textContent = '\u00d7'; }
+                    showError(err);
+                })
                 .removeReferenceItem(type, value);
         }
 

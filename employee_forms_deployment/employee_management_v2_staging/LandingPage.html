@@ -186,7 +186,9 @@
     <script>
         google.script.run.withSuccessHandler(function (email) {
             document.getElementById('userEmail').textContent = email || 'Not signed in';
-        }).withFailureHandler(console.error).getCurrentUserEmail();
+        }).withFailureHandler(function() {
+            document.getElementById('userEmail').textContent = 'Not signed in';
+        }).getCurrentUserEmail();
     </script>
 </body>
 
