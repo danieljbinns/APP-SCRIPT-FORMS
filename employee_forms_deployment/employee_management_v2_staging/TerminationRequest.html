@@ -519,6 +519,7 @@
                 <div class="form-field">
                     <label>Upload Documentation</label>
                     <input type="file" name="attachment">
+                    <small style="color:#888; display:block; margin-top:4px;">Note: file attachments cannot be sent via this form — please email supporting documents separately.</small>
                     <div class="help-text">HR requires documentation for all end of employment actions please include
                         the proper documentation</div>
                 </div>
@@ -583,18 +584,23 @@
         document.getElementById('terminationForm').addEventListener('submit', function (e) {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
+            const originalLabel = btn.textContent;
             btn.disabled = true;
             btn.textContent = 'Submitting...';
 
-            // Removed manual parsing; passing the raw form object to Apps Script natively
-            // to support file uploads.
+            const rawForm = new FormData(e.target);
+            const formData = {};
+            rawForm.forEach(function(value, key) {
+                if (value instanceof File) return; // GAS cannot receive File objects
+                formData[key] = formData[key] ? formData[key] + ',' + value : value;
+            });
 
             google.script.run
                 .withSuccessHandler(function (response) {
                     if (response.success) {
                         document.getElementById('form-container').innerHTML = `
                             <div style="text-align:center; padding:40px;">
-                                <h1 style="color:var(--success-green);">✓ Submission Successful</h1>
+                                <h1 style="color:var(--success-green);">&#10003; Submission Successful</h1>
                                 <p>Workflow ID: <strong>${response.workflowId}</strong></p>
                                 <p>${response.message}</p>
                                 <button onclick="resetForm()" class="btn btn-primary" style="margin-top:20px; width:auto; padding:10px 20px;">Submit Another</button>
@@ -603,15 +609,15 @@
                     } else {
                         alert('Error: ' + response.message);
                         btn.disabled = false;
-                        btn.textContent = 'Submit Termination Request';
+                        btn.textContent = originalLabel;
                     }
                 })
                 .withFailureHandler(function (err) {
                     alert('Critical Error: ' + err.message);
                     btn.disabled = false;
-                    btn.textContent = 'Submit Termination Request';
+                    btn.textContent = originalLabel;
                 })
-                .submitTerminationRequest(this);
+                .submitTerminationRequest(formData);
         });
 
         // Setup Autocomplete for multiple fields
@@ -650,11 +656,6 @@
             }
         }).withFailureHandler(console.error).getCurrentUserDetails();
 
-        // Initialize Autocomplete for multiple fields
-        DirectoryAutocomplete.setup({ inputSelector: '#reports_to_new' });
-        DirectoryAutocomplete.setup({ inputSelector: '#google_forward' });
-        DirectoryAutocomplete.setup({ inputSelector: '#google_files' });
-        DirectoryAutocomplete.setup({ inputSelector: '#google_delegate' });
 
         function resetForm() {
             google.script.run

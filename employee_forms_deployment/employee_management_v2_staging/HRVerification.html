@@ -321,7 +321,7 @@
                         <div class="form-group">
                             <label>Hire Date</label>
                             <div class="read-only-box">
-                                <?= requestData.hireDate ? requestData.hireDate.toString().replace('00:00:00 GMT-0500 (Eastern Standard Time)', '').replace('00:00:00 GMT-0400 (Eastern Daylight Time)', '').trim() : 'N/A' ?>
+                                <?= requestData.hireDate ? (requestData.hireDate instanceof Date ? requestData.hireDate.toLocaleDateString() : String(requestData.hireDate)) : 'N/A' ?>
                             </div>
                         </div>
                     </div>
@@ -448,6 +448,7 @@
 
             var formData = {
                 workflowId: this.workflowId.value,
+                formId: this.formId.value,
                 firstName: this.firstName.value,
                 lastName: this.lastName.value,
                 managerName: this.managerName.value,
@@ -472,7 +473,7 @@
                 })
                 .withFailureHandler(function (err) {
                     overlay.style.display = 'none';
-                    alert('System error: ' + err);
+                    alert('System error: ' + err.message);
                     submitBtn.disabled = false;
                 })
                 .submitHRVerification(formData);
