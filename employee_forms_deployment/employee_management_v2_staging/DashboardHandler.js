@@ -88,9 +88,11 @@ function getDashboardData() {
         pendingItems: [],
         hireDate: row[11] instanceof Date ? row[11].toLocaleDateString() : String(row[11] || ''),
         site: String(row[12] || ''),
+        empType: String(row[13] || ''),
         type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Position Change' : 'Onboarding')
       };
     }).filter(wf => {
+      if (wf.status === 'Cancelled') return false;
       if (isFullAccess) return true;
       return wf.requesterEmail.toLowerCase() === userEmailLower ||
              wf.managerEmail.toLowerCase() === userEmailLower;
@@ -136,7 +138,7 @@ function getDashboardData() {
           if (wfMap[wfId]) {
             if      (wfMap[wfId].status === 'Complete')   { statusStr = 'Complete';   stepStr = wfMap[wfId].step || 'All Actions Completed'; }
             else if (wfMap[wfId].status === 'Rejected')   { statusStr = 'Rejected';   stepStr = wfMap[wfId].step || 'Rejected'; }
-            else if (wfMap[wfId].status === 'Cancelled')  { statusStr = 'Cancelled';  stepStr = wfMap[wfId].step || 'Cancelled'; }
+            else if (wfMap[wfId].status === 'Cancelled')  { return; }
             else if (wfMap[wfId].status === 'In Progress') { stepStr  = wfMap[wfId].step || stepStr; } // B3 fix
           }
 

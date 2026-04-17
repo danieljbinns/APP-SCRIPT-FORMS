@@ -57,7 +57,10 @@ function syncWorkflowState(workflowId) {
     
     const foundReq = lookupSheet ? lookupSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (foundReq) {
-      const row = lookupSheet.getRange(foundReq.getRow(), 1, 1, lookupSheet.getLastColumn()).getValues()[0];
+      const lastCol = lookupSheet.getLastColumn();
+      const reqHeaders = lookupSheet.getRange(1, 1, 1, lastCol).getValues()[0];
+      const empTypeIdx = reqHeaders.indexOf('Employment Type');
+      const row = lookupSheet.getRange(foundReq.getRow(), 1, 1, lastCol).getValues()[0];
       if (isTerm) {
         // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | ... | Site[11] | Term Date[12] | Manager Name[14] | Manager Email[15]
         reqInfo = {
@@ -80,6 +83,7 @@ function syncWorkflowState(workflowId) {
           dateRequested: row[3] instanceof Date ? row[3].toLocaleDateString() : String(row[3] || ''),
           hireDate: row[6] instanceof Date ? row[6].toLocaleDateString() : String(row[6] || ''), // Hire Date
           site: String(row[15] || ''), // Site Name
+          empType: empTypeIdx >= 0 ? String(row[empTypeIdx] || '') : '',
           items: {
             jonas: (row[44] && row[44].toString().length > 0),
             creditCard: (row[30] === 'Yes' || row[32] === 'Yes' || row[34] === 'Yes'),
@@ -148,13 +152,14 @@ function syncWorkflowState(workflowId) {
       reqInfo.managerEmail,
       JSON.stringify(reqInfo.items),
       reqInfo.hireDate || '',  // col 11: Start/Effective Date
-      reqInfo.site || ''       // col 12: Site
+      reqInfo.site || '',      // col 12: Site
+      reqInfo.empType || ''    // col 13: Employment Type
     ];
 
     // 4. Overwrite or Append to Dashboard_View
     const foundView = viewSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
     if (foundView) {
-      viewSheet.getRange(foundView.getRow(), 1, 1, 13).setValues([outputRow]);
+      viewSheet.getRange(foundView.getRow(), 1, 1, 14).setValues([outputRow]);
     } else {
       viewSheet.appendRow(outputRow);
     }

@@ -300,10 +300,10 @@ Current Deployment Folder: `employee_forms_deployment/`
 
 ### Action items
 
-- [ ] Commit these three files to `staging` branch under a `hotfix(prod):` commit message
-- [ ] Verify staging already has equivalent logic (isAdmin exists; empType column and cancelled-filter may not)
-- [ ] If staging is missing any of these changes, apply them to `employee_management_v2_staging/` as well
-- [ ] Add to Phase 8 testing checklist: cancelled workflows should not appear in the dashboard for any user role
+- [x] Verify staging already has equivalent logic — isAdmin ✓, cancelled filter ✓, status class fix ✓ were already present
+- [x] Back-port `empType` to staging: `StateSync.js` (col 13 in Dashboard_View outputRow), `DashboardHandler.js` (row[13] mapping), `Dashboard.html` (Type column + badge) — committed to staging branch
+- [x] Add to Phase 8 testing checklist: cancelled workflows should not appear in the dashboard for any user role
+- [ ] Run `manuallySyncAllWorkflows()` on staging spreadsheet to backfill empType into existing Dashboard_View rows
 
 ---
 

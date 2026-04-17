@@ -322,6 +322,7 @@
                 <thead>
                     <tr>
                         <th>Employee</th>
+                        <th>Type</th>
                         <th>Status</th>
                         <th>Current Action Pending</th>
                         <th>Requester</th>
@@ -333,7 +334,7 @@
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="8" style="text-align:center; padding: 40px;">Loading requests...</td>
+                        <td colspan="9" style="text-align:center; padding: 40px;">Loading requests...</td>
                     </tr>
                 </tbody>
             </table>
@@ -407,7 +408,7 @@
 
         function loadData() {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
             google.script.run.withSuccessHandler(displayData).withFailureHandler(showError).getDashboardData();
         }
 
@@ -453,14 +454,14 @@
             const currentData = filteredWorkflows.slice(startIndex, endIndex);
 
             if (currentData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
                 updatePaginationUI(0, 0, 0);
                 return;
             }
 
             let html = '';
             currentData.forEach(wf => {
-                const statusClass = wf.status === 'Completed' ? 'completed' :
+                const statusClass = (wf.status === 'Completed' || wf.status === 'Complete') ? 'completed' :
                     (wf.status === 'Cancelled' ? 'cancelled' :
                         (wf.status === 'Pending' ? 'pending' : 'in-progress'));
 
@@ -471,8 +472,11 @@
                 const dateLabel = wf.hireDate || '-';
                 const stepColor = (wf.step && wf.step.includes('Pending:')) ? '#ffab00' : '#a0a0a0';
 
+                const empTypeBadge = wf.empType ? '<span style="background:#333; color:#ccc; padding: 2px 6px; border-radius: 4px; font-size: 10px;">' + escapeHtml(wf.empType) + '</span>' : '-';
+
                 html += '<tr data-id="' + escapeHtml(wf.id) + '" data-type="' + escapeHtml(wf.type) + '" onclick="openDetails(this.dataset.id,this.dataset.type)">' +
                     '<td>' + typeBadge + '<strong>' + escapeHtml(wf.employee || 'Pending Name') + '</strong></td>' +
+                    '<td>' + empTypeBadge + '</td>' +
                     '<td><span class="badge ' + statusClass + '">' + escapeHtml(wf.status) + '</span></td>' +
                     '<td style="color: ' + stepColor + '">' + escapeHtml(wf.step) + '</td>' +
                     '<td>' +
@@ -521,7 +525,7 @@
         }
 
         function showError(msg) {
-            document.getElementById('tableBody').innerHTML = '<tr><td colspan="8" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
         }
 
         // Setup Search and Filter Event Listeners
