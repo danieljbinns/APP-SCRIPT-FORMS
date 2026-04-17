@@ -50,6 +50,10 @@ Run these after Part 1 bugs are fixed. Work top to bottom. Each item has a pass/
 | DD-3 | Position Change row | Submit a position change, open Dashboard | Type shows "Position Change", effective date shown |
 | DD-4 | In-progress termination | Approve a termination (not yet actioned), open Dashboard | Status is not blank — shows intermediate state |
 | DD-5 | Dashboard load speed | Sign in as full-access user with 20+ workflows | Noticeably faster than pre-Phase-8 |
+| DD-6 | Employment Type column | Submit a new hire with Employment Type set (e.g. "Full Time"), open Dashboard | "Type" column shows a grey badge with the employment type value |
+| DD-7 | Emp Type — EOE/Change rows | View termination or position change rows in Dashboard | Type column shows "-" (empType is not applicable for these workflow types) |
+| DD-8 | Cancelled workflows hidden | Cancel a request, refresh Dashboard | Cancelled row no longer appears for any user role |
+| DD-9 | Complete status badge | Find a workflow with status "Complete" (not "Completed") | Green badge renders — not yellow/orange in-progress badge |
 
 ---
 
@@ -94,6 +98,7 @@ Run each action and immediately check that the Dashboard_View row updates withou
 - [ ] Add 3 empty rows to the bottom of the Workflows sheet
 - [ ] Run `manuallySyncAllWorkflows()` from the Apps Script editor
 - [ ] Confirm: no errors thrown, no blank entries written to Dashboard_View
+- [ ] **empType backfill** — after first deploy with empType support, run `manuallySyncAllWorkflows()` once to populate the Employment Type column (col 13) for all existing Dashboard_View rows. New submissions populate automatically.
 
 ---
 
