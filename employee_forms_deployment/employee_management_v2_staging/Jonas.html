@@ -118,7 +118,7 @@
             border-radius: 50%;
             border-top-color: var(--brand-red);
             animation: spin 1s linear infinite;
-            mb: 15px;
+            margin-bottom: 15px;
         }
 
         @keyframes spin {
@@ -216,10 +216,15 @@
             };
 
             google.script.run
-                .withSuccessHandler(function () {
+                .withSuccessHandler(function (result) {
                     document.getElementById('loading-overlay').style.display = 'none';
-                    document.getElementById('mainContainer').style.display = 'none';
-                    document.getElementById('success-screen').style.display = 'block';
+                    if (result && result.success === false) {
+                        document.getElementById('submitBtn').disabled = false;
+                        alert('Error: ' + (result.message || 'Server returned an error.'));
+                    } else {
+                        document.getElementById('mainContainer').style.display = 'none';
+                        document.getElementById('success-screen').style.display = 'block';
+                    }
                 })
                 .withFailureHandler(function (err) {
                     document.getElementById('loading-overlay').style.display = 'none';

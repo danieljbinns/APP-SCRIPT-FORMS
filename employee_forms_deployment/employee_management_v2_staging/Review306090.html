@@ -276,10 +276,15 @@
             };
 
             google.script.run
-                .withSuccessHandler(function () {
+                .withSuccessHandler(function (result) {
                     document.getElementById('loading-overlay').style.display = 'none';
-                    document.getElementById('mainContainer').style.display = 'none';
-                    document.getElementById('success-screen').style.display = 'block';
+                    if (result && result.success === false) {
+                        document.getElementById('submitBtn').disabled = false;
+                        alert('Error: ' + (result.message || 'Server returned an error.'));
+                    } else {
+                        document.getElementById('mainContainer').style.display = 'none';
+                        document.getElementById('success-screen').style.display = 'block';
+                    }
                 })
                 .withFailureHandler(function (err) {
                     document.getElementById('loading-overlay').style.display = 'none';
