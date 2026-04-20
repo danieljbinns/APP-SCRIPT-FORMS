@@ -15,7 +15,8 @@ function serveSpecialist(workflowId, dept) {
     'centralpurchasing': 'CentralPurchasing',
     'sitedocs': 'SiteDocs',
     'review': 'Review306090',
-    'safety': 'SafetyOnboarding'
+    'safety': 'SafetyOnboarding',
+    'safetyterm': 'SafetyTermination'
   };
   
   const htmlFile = deptMap[dept] || 'Placeholder';
@@ -63,7 +64,8 @@ function submitSpecialistForm(formData) {
       'centralpurchasing': CONFIG.SHEETS.CENTRAL_PURCHASING_RESULTS,
       'sitedocs': CONFIG.SHEETS.SITEDOCS_RESULTS,
       'review': CONFIG.SHEETS.REVIEW_306090_RESULTS,
-      'safety': CONFIG.SHEETS.SAFETY_ONBOARDING_RESULTS
+      'safety': CONFIG.SHEETS.SAFETY_ONBOARDING_RESULTS,
+      'safetyterm': CONFIG.SHEETS.SAFETY_TERMINATION_RESULTS
     };
     
     const sheetName = sheetMap[dept] || 'Specialist Results';
@@ -85,6 +87,15 @@ function submitSpecialistForm(formData) {
         workflowId, formId, new Date(),
         details.siteDocsConfirmed ? 'Yes' : 'No',
         details.dssConfirmed ? 'Yes' : 'No',
+        formData.notes || '', Session.getActiveUser().getEmail()
+      ]);
+    } else if (dept === 'safetyterm') {
+      let details = {};
+      try { details = JSON.parse(formData.details || '{}'); } catch(e) {}
+      resultsSheet.appendRow([
+        workflowId, formId, new Date(),
+        details.siteDocsRemoved ? 'Yes' : 'No',
+        details.bossDeactivated ? 'Yes' : 'No',
         formData.notes || '', Session.getActiveUser().getEmail()
       ]);
     } else {

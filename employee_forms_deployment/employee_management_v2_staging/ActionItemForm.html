@@ -648,9 +648,15 @@
                             <div style="text-align:center; padding:40px;">
                                 <h1 style="color:var(--success)">&#10003; Task Finalized</h1>
                                 <p style="color:var(--text-muted)">All checklist data and audit logs have been recorded.</p>
-                                <button class="btn btn-secondary" onclick="window.close()" style="margin-top:20px; width:auto">Close Window</button>
+                                <p style="color:var(--text-muted); font-size:13px; margin-top:8px;">Returning to dashboard...</p>
                             </div>
                         `;
+                        setTimeout(function() {
+                            google.script.run
+                                .withSuccessHandler(function(url) { window.top.location.href = url + '?form=dashboard'; })
+                                .withFailureHandler(function() { window.top.location.href = '?form=dashboard'; })
+                                .getBaseUrl();
+                        }, 2000);
                     } else {
                         btn.disabled = false;
                         btn.textContent = 'Mark Task Finalized';

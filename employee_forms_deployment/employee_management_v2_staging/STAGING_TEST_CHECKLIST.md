@@ -104,6 +104,77 @@
 
 ---
 
+---
+
+## 8. Termination Form — Date Formatting
+
+- [ ] Submit termination request → Request Date in emails displays as `M/d/yyyy` (e.g. `4/20/2026`), not ISO
+- [ ] Last Day Worked in emails displays as `M/d/yyyy`, not ISO
+- [ ] Both dates consistent across: pre-approval payroll email, HR approval email, post-approval payroll email, IT email, safety email
+
+---
+
+## 9. Termination Form — Pre-Approval Payroll Email
+
+- [ ] Pre-approval email sent to Payroll on submission (before HR approves)
+- [ ] Email does **not** include a form link / action button
+- [ ] Email body contains caveat: "HR approval is still pending" and "second email will follow"
+
+---
+
+## 10. Termination Form — Direct Reports in IT Email
+
+- [ ] Submit term for employee with Direct Reports = Yes → IT action item form includes:
+  - [ ] "Reassign Google direct reports to: [name]"
+  - [ ] "Reassign BOSS direct reports to: [name]"
+- [ ] Direct reports items do **not** appear in manager or HR action items
+- [ ] Submit term for employee with Direct Reports = No → no reassign items in IT form
+
+---
+
+## 11. Termination Form — ADP Supervisor CC to Payroll
+
+- [ ] HR action item email (HR Systems Deactivation) CC's Payroll
+- [ ] HR action item form shows the standard HR checklist items
+
+---
+
+## 12. Termination Form — Safety Offboarding Form
+
+- [ ] HR approves termination → Safety receives email with link to Safety Offboarding specialist form
+- [ ] Open form URL (`?page=specialist&wf=...&dept=safetyterm`) → shows SiteDocs removal + BOSS WIS deactivation checkboxes
+- [ ] Both checkboxes must be checked before submit is allowed
+- [ ] Submit → row written to Safety Termination Results sheet
+- [ ] Workflow action item marked complete after submission
+
+---
+
+## 13. Success Screens — Auto-Navigate (All Forms)
+
+- [ ] **ActionItemForm** (term action items): finalize → shows "Task Finalized" → auto-navigates to dashboard after 2s
+- [ ] **TerminationApproval**: approve/reject → shows "Action Completed" → auto-navigates to dashboard after 2s
+- [ ] **SafetyTermination**: submit → shows success screen → auto-navigates to dashboard after 2s
+- [ ] **SafetyOnboarding**: submit → auto-navigates to dashboard after 2s
+- [ ] **Jonas**: submit → auto-navigates to dashboard after 2s
+- [ ] **CentralPurchasing**: submit → auto-navigates to dashboard after 2s
+- [ ] **Review306090**: submit → auto-navigates to dashboard after 2s
+- [ ] **CreditCard** / **BusinessCards** / **Fleetio** / **SiteDocs**: submit → auto-navigates after 2s
+- [ ] No "Close Window" button appears on any success screen
+
+---
+
+## 14. Specialist Form Layout Consistency
+
+- [ ] All specialist forms (new hire + term) display at max-width 900px
+- [ ] All show logo, `.ticket-info` context panel, notes textarea, single submit button
+- [ ] Context panel uses `.label` / `.value` two-column grid
+- [ ] Review306090 retains JR title dropdown + document link field
+- [ ] CentralPurchasing retains sites-configured text input + purchasing sites context row
+- [ ] SafetyOnboarding retains confirm-item checkboxes (SiteDocs + DSS)
+- [ ] SafetyTermination retains confirm-item checkboxes (SiteDocs removal + BOSS WIS)
+
+---
+
 ## Notes / Issues Found
 
 _Record any bugs or unexpected behavior here during testing._

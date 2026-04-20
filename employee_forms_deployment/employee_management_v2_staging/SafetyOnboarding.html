@@ -7,109 +7,109 @@
     <title>Safety Onboarding Confirmation</title>
     <style>
         :root {
-            --bg-color: #0c0c0c;
-            --card-bg: #1a1a1a;
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-            --brand-red: #EB1C2D;
-            --border-color: #333;
-            --success: #00c853;
-            --warn: #ffab00;
+            --bg-color: #0c0c0c; --card-bg: #1a1a1a; --text-main: #ffffff;
+            --text-muted: #a0a0a0; --brand-red: #EB1C2D; --border-color: #333;
+            --input-bg: #2a2a2a; --input-border: #444; --success: #00c853;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-color); color: var(--text-main); padding: 20px; }
-        .container { max-width: 640px; margin: 40px auto; background: var(--card-bg); padding: 32px; border-radius: 10px; border: 1px solid var(--border-color); }
-        .logo { display: block; height: 40px; margin: 0 auto 24px; }
-        h1 { text-align: center; font-size: 20px; margin-bottom: 6px; }
-        .subtitle { text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 28px; }
-        .context-panel { background: #111; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; }
-        .context-panel strong { color: var(--text-muted); display: block; font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
-        .context-panel span { color: var(--text-main); }
-        .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--brand-red); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin: 24px 0 16px; }
-        .confirm-item { display: flex; align-items: flex-start; gap: 14px; background: #111; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.2s; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { width: 100%; max-width: 900px; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 32px; border: 1px solid var(--border-color); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .logo-container { text-align: center; margin-bottom: 24px; }
+        .logo { height: 40px; }
+        h1 { font-size: 22px; text-align: center; margin-bottom: 8px; }
+        .subtitle { color: var(--text-muted); text-align: center; margin-bottom: 24px; font-size: 14px; }
+        .section-title { font-size: 12px; font-weight: 600; color: var(--brand-red); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .ticket-info { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 16px; margin-bottom: 24px; border: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .info-row { display: flex; flex-direction: column; font-size: 13px; }
+        .info-row .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
+        .info-row .value { color: var(--text-main); font-weight: 600; }
+        .confirm-item { display: flex; align-items: flex-start; gap: 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.2s; }
         .confirm-item:has(input:checked) { border-color: var(--success); background: rgba(0,200,83,0.05); }
         .confirm-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--success); flex-shrink: 0; margin-top: 2px; cursor: pointer; }
         .confirm-item label { cursor: pointer; }
         .confirm-item label strong { display: block; font-size: 14px; margin-bottom: 4px; }
         .confirm-item label span { font-size: 12px; color: var(--text-muted); }
-        .notes-group { margin-top: 20px; }
-        .notes-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
-        textarea { width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid var(--border-color); border-radius: 6px; color: white; box-sizing: border-box; resize: vertical; font-size: 13px; }
+        .form-group { margin-bottom: 20px; margin-top: 20px; }
+        label { display: block; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); }
+        textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; padding: 12px; color: white; font-size: 14px; box-sizing: border-box; resize: vertical; }
         textarea:focus { outline: none; border-color: var(--brand-red); }
-        button[type="submit"] { width: 100%; margin-top: 24px; padding: 14px; background: var(--brand-red); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: background 0.2s; }
-        button[type="submit"]:hover { background: #c41522; }
-        button[type="submit"]:disabled { background: #555; cursor: not-allowed; }
+        .btn { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 15px; }
+        .btn-primary { background: var(--brand-red); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { background: #555; cursor: not-allowed; opacity: 1; }
         #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; flex-direction: column; z-index: 1000; }
         .spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.2); border-radius: 50%; border-top-color: var(--brand-red); animation: spin 1s linear infinite; margin-bottom: 14px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         #success-screen { display: none; text-align: center; padding: 40px 0; }
-        .success-icon { font-size: 56px; margin-bottom: 16px; }
     </style>
 </head>
 <body>
-<div class="container" id="mainContainer">
-    <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo" alt="TEAM Group">
+<div class="container">
+<div class="card" id="mainCard">
+    <div class="logo-container">
+        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo" alt="TEAM Group">
+    </div>
     <h1>Safety Onboarding Confirmation</h1>
     <p class="subtitle">Confirm that SiteDocs locations and DSS learning paths have been assigned for this employee.</p>
 
-    <!-- Employee Context -->
-    <div class="context-panel">
-        <div><strong>Employee</strong><span><?= requestData.employeeName || '-' ?></span></div>
-        <div><strong>Start Date</strong><span><?= requestData.hireDate || '-' ?></span></div>
-        <div><strong>Job Title</strong><span><?= requestData.jobTitle || '-' ?></span></div>
-        <div><strong>JR Title</strong><span><?= requestData.jrTitle || '-' ?></span></div>
-        <div><strong>Site</strong><span><?= requestData.siteName || '-' ?></span></div>
-        <div><strong>Manager</strong><span><?= requestData.managerName || '-' ?></span></div>
-        <? if (requestData.employmentType) { ?>
-        <div><strong>Employment Type</strong><span><?= requestData.employmentType ?></span></div>
-        <? } ?>
+    <div class="section-title">Request Details</div>
+    <div class="ticket-info">
+        <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName || '-' ?></span></div>
+        <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate || '-' ?></span></div>
+        <div class="info-row"><span class="label">Job Title</span><span class="value"><?= requestData.jobTitle || '-' ?></span></div>
+        <div class="info-row"><span class="label">JR Title</span><span class="value"><?= requestData.jrTitle || '-' ?></span></div>
+        <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName || '-' ?></span></div>
+        <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName || '-' ?></span></div>
         <? if (requestData.internalEmployeeId) { ?>
-        <div><strong>Internal ID</strong><span><?= requestData.internalEmployeeId ?></span></div>
+        <div class="info-row"><span class="label">Internal ID</span><span class="value"><?= requestData.internalEmployeeId ?></span></div>
         <? } ?>
         <? if (requestData.dssUsername) { ?>
-        <div><strong>DSS Username</strong><span><?= requestData.dssUsername ?></span></div>
+        <div class="info-row"><span class="label">DSS Username</span><span class="value"><?= requestData.dssUsername ?></span></div>
         <? } ?>
         <? if (requestData.siteDocsUsername) { ?>
-        <div><strong>SiteDocs Username</strong><span><?= requestData.siteDocsUsername ?></span></div>
+        <div class="info-row"><span class="label">SiteDocs Username</span><span class="value"><?= requestData.siteDocsUsername ?></span></div>
         <? } ?>
     </div>
 
-    <form id="safetyForm">
-        <input type="hidden" name="workflowId" value="<?= workflowId ?>">
-        <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
-        <input type="hidden" name="department" value="safety">
+    <div id="formSection">
+        <div class="section-title">Confirm Completion</div>
 
-        <div class="section-label">Confirm Completion</div>
+        <form id="safetyForm">
+            <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+            <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+            <input type="hidden" name="department" value="safety">
 
-        <div class="confirm-item">
-            <input type="checkbox" id="siteDocsConfirm" name="siteDocsConfirmed" value="true" required>
-            <label for="siteDocsConfirm">
-                <strong>SiteDocs Locations Assigned</strong>
-                <span>Employee has been added to all required SiteDocs job sites and locations for their role.</span>
-            </label>
-        </div>
+            <div class="confirm-item">
+                <input type="checkbox" id="siteDocsConfirm" name="siteDocsConfirmed" value="true" required>
+                <label for="siteDocsConfirm">
+                    <strong>SiteDocs Locations Assigned</strong>
+                    <span>Employee has been added to all required SiteDocs job sites and locations for their role.</span>
+                </label>
+            </div>
 
-        <div class="confirm-item">
-            <input type="checkbox" id="dssConfirm" name="dssConfirmed" value="true" required>
-            <label for="dssConfirm">
-                <strong>DSS Learning Paths Assigned</strong>
-                <span>Employee has been enrolled in the required DSS learning paths and safety courses for their position.</span>
-            </label>
-        </div>
+            <div class="confirm-item">
+                <input type="checkbox" id="dssConfirm" name="dssConfirmed" value="true" required>
+                <label for="dssConfirm">
+                    <strong>DSS Learning Paths Assigned</strong>
+                    <span>Employee has been enrolled in the required DSS learning paths and safety courses for their position.</span>
+                </label>
+            </div>
 
-        <div class="notes-group">
-            <label>Notes (Optional)</label>
-            <textarea name="notes" rows="3" placeholder="Any additional notes, course names, or location details..."></textarea>
-        </div>
+            <div class="form-group">
+                <label>Notes (Optional)</label>
+                <textarea name="notes" rows="3" placeholder="Any additional notes, course names, or location details..."></textarea>
+            </div>
 
-        <button type="submit" id="submitBtn">Confirm & Complete</button>
-    </form>
+            <button type="submit" id="submitBtn" class="btn btn-primary">Confirm & Complete</button>
+        </form>
+    </div>
 
     <div id="success-screen">
-        <div class="success-icon">✅</div>
-        <h2>Safety Onboarding Confirmed</h2>
-        <p style="color: var(--text-muted); margin-top: 8px;">SiteDocs locations and DSS learning paths have been confirmed.</p>
-        <p style="color: #666; font-size: 13px; margin-top: 16px;">You may close this window.</p>
+        <div style="font-size: 56px; margin-bottom: 16px;">✅</div>
+        <h2 style="color: var(--success);">Safety Onboarding Confirmed</h2>
+        <p style="color: var(--text-muted); margin-top: 8px;">Returning to dashboard...</p>
     </div>
+</div>
 </div>
 
 <div id="loading-overlay">
@@ -118,6 +118,13 @@
 </div>
 
 <script>
+    function navigateToDashboard() {
+        google.script.run
+            .withSuccessHandler(function(url) { window.top.location.href = url + '?form=dashboard'; })
+            .withFailureHandler(function() { window.top.location.href = '?form=dashboard'; })
+            .getBaseUrl();
+    }
+
     document.getElementById('safetyForm').onsubmit = function(e) {
         e.preventDefault();
         var siteDocsConfirmed = document.getElementById('siteDocsConfirm').checked;
@@ -128,14 +135,12 @@
         }
         document.getElementById('loading-overlay').style.display = 'flex';
         document.getElementById('submitBtn').disabled = true;
-
         var data = {
             workflowId: this.workflowId.value,
             department: this.department.value,
             details: JSON.stringify({ siteDocsConfirmed: true, dssConfirmed: true }),
             notes: this.notes.value
         };
-
         google.script.run
             .withSuccessHandler(function(result) {
                 document.getElementById('loading-overlay').style.display = 'none';
@@ -143,11 +148,9 @@
                     document.getElementById('submitBtn').disabled = false;
                     alert('Error: ' + (result.message || 'Server error.'));
                 } else {
-                    document.getElementById('mainContainer').querySelector('h1').style.display = 'none';
-                    document.getElementById('mainContainer').querySelector('.subtitle').style.display = 'none';
-                    document.getElementById('mainContainer').querySelector('.context-panel').style.display = 'none';
-                    document.getElementById('safetyForm').style.display = 'none';
+                    document.getElementById('formSection').style.display = 'none';
                     document.getElementById('success-screen').style.display = 'block';
+                    setTimeout(navigateToDashboard, 2000);
                 }
             })
             .withFailureHandler(function(err) {

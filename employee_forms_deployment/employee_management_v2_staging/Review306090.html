@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <base target="_top">
     <meta charset="utf-8">
@@ -8,292 +7,161 @@
     <title>Review 30/60/90 Setup</title>
     <style>
         :root {
-            --bg-color: #0c0c0c;
-            --card-bg: #1a1a1a;
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-            --brand-red: #EB1C2D;
-            --border-color: #333;
-            --input-bg: #2a2a2a;
+            --bg-color: #0c0c0c; --card-bg: #1a1a1a; --text-main: #ffffff;
+            --text-muted: #a0a0a0; --brand-red: #EB1C2D; --border-color: #333;
+            --input-bg: #2a2a2a; --input-border: #444; --success: #00c853;
         }
-
-        body {
-            font-family: -apple-system, sans-serif;
-            background: var(--bg-color);
-            color: var(--text-main);
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 40px auto;
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 10px;
-            color: var(--brand-red);
-        }
-
-        .subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            margin-bottom: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .read-only-box {
-            background: #252525;
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            color: white;
-            font-family: monospace;
-        }
-
-        textarea {
-            width: 100%;
-            padding: 12px;
-            background: #2a2a2a;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: white;
-            box-sizing: border-box;
-            resize: vertical;
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            background: var(--brand-red);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            opacity: 0.9;
-        }
-
-        button:disabled {
-            background: #555;
-            cursor: not-allowed;
-        }
-
-        #loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            z-index: 1000;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: var(--brand-red);
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { width: 100%; max-width: 900px; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 32px; border: 1px solid var(--border-color); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .logo-container { text-align: center; margin-bottom: 24px; }
+        .logo { height: 40px; }
+        h1 { font-size: 22px; text-align: center; margin-bottom: 8px; }
+        .subtitle { color: var(--text-muted); text-align: center; margin-bottom: 24px; font-size: 14px; }
+        .section-title { font-size: 12px; font-weight: 600; color: var(--brand-red); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .ticket-info { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 16px; margin-bottom: 24px; border: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .info-row { display: flex; flex-direction: column; font-size: 13px; }
+        .info-row .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
+        .info-row .value { color: var(--text-main); font-weight: 600; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); }
+        textarea, input[type="text"], input[type="url"], select { width: 100%; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; padding: 12px; color: white; font-size: 14px; box-sizing: border-box; resize: vertical; }
+        select option { background: var(--input-bg); }
+        textarea:focus, input:focus, select:focus { outline: none; border-color: var(--brand-red); }
+        .help-text { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+        .btn { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 15px; }
+        .btn-primary { background: var(--brand-red); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { background: #555; cursor: not-allowed; opacity: 1; }
+        #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; flex-direction: column; z-index: 1000; }
+        .spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.2); border-radius: 50%; border-top-color: var(--brand-red); animation: spin 1s linear infinite; margin-bottom: 14px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #success-screen { display: none; text-align: center; padding: 40px 0; }
     </style>
 </head>
-
 <body>
-    <div class="container" id="mainContainer">
-        <h1>Review 30/60/90 Setup</h1>
-        <p class="subtitle">Please confirm this setup task is complete.</p>
+<div class="container">
+<div class="card" id="mainCard">
+    <div class="logo-container">
+        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo" alt="TEAM Group">
+    </div>
+    <h1>30/60/90 Review Setup</h1>
+    <p class="subtitle">Confirm the JR title and attach the review document link.</p>
 
-        <!-- Request Details Panel -->
-        <div
-            style="background: #151515; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
-            <h3
-                style="margin-top:0; margin-bottom: 15px; color: var(--brand-red); font-size: 14px; text-transform: uppercase;">
-                Request Details</h3>
-            <div
-                style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: var(--text-muted);">
-                <div><strong>Employee:</strong>
-                    <?= requestData.employeeName || '-' ?>
-                </div>
-                <div><strong>Start Date:</strong>
-                    <?= requestData.hireDate || '-' ?>
-                </div>
-                <div><strong>Job Title:</strong>
-                    <?= requestData.jobTitle || '-' ?>
-                </div>
-                <div><strong>Manager:</strong>
-                    <?= requestData.managerName || '-' ?>
-                </div>
-                <div><strong>Site:</strong>
-                    <?= requestData.siteName || '-' ?>
-                </div>
-                <div><strong>Requested JR:</strong>
-                    <?= requestData.jrTitle || '-' ?>
-                </div>
-            </div>
-            <? if(requestData.systems && requestData.systems.length > 0) { ?>
-            <div style="margin-top: 15px; font-size: 13px; color: var(--text-muted);">
-                <strong>Systems Requested:</strong>
-                <?= requestData.systems.join(', ') ?>
-            </div>
-            <? } ?>
-        </div>
+    <div class="section-title">Request Details</div>
+    <div class="ticket-info">
+        <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName || '-' ?></span></div>
+        <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate || '-' ?></span></div>
+        <div class="info-row"><span class="label">Job Title</span><span class="value"><?= requestData.jobTitle || '-' ?></span></div>
+        <div class="info-row"><span class="label">Requested JR</span><span class="value"><?= requestData.jrTitle || '-' ?></span></div>
+        <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName || '-' ?></span></div>
+        <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName || '-' ?></span></div>
+    </div>
 
+    <div id="formSection">
         <form id="specialistForm">
-            <div class="form-group">
-                <label>Workflow ID</label>
-                <div class="read-only-box">
-                    <?= workflowId ?>
-                </div>
-                <input type="hidden" name="workflowId" value="<?= workflowId ?>">
-                <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
-                <input type="hidden" name="department" value="review">
-            </div>
-
+            <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+            <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+            <input type="hidden" name="department" value="review">
             <div class="form-group">
                 <label>JR Title (Confirm Requested JR) <span style="color:var(--brand-red);">*</span></label>
-                <select name="jrTitle" id="jrTitle"
-                    data-original-value="<?= requestData.jrTitle || requestData.position ?>" required
-                    style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); box-sizing: border-box;">
+                <select name="jrTitle" id="jrTitle" data-original-value="<?= requestData.jrTitle || requestData.position ?>" required>
                     <option value="">Loading titles...</option>
                 </select>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">
-                    Requested JR: <strong>
-                        <?= requestData.jrTitle || 'None' ?>
-                    </strong>
-                </div>
+                <div class="help-text">Requested JR: <strong><?= requestData.jrTitle || 'None' ?></strong></div>
             </div>
-
             <div class="form-group">
                 <label>30/60/90 Document Link</label>
-                <input type="url" name="documentLink" placeholder="https://docs.google.com/..."
-                    style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); box-sizing: border-box;">
+                <input type="url" name="documentLink" placeholder="https://docs.google.com/...">
             </div>
-
             <div class="form-group">
                 <label>Confirmation Notes (Optional)</label>
-                <textarea name="notes" rows="4"
-                    placeholder="Enter any specific details, confirmation codes, or notes..."></textarea>
+                <textarea name="notes" rows="4" placeholder="Enter any specific details, confirmation codes, or notes..."></textarea>
             </div>
-
-            <button type="submit" id="submitBtn">Confirm Complete</button>
+            <button type="submit" id="submitBtn" class="btn btn-primary">Confirm Complete</button>
         </form>
     </div>
 
-    <div id="success-screen" style="display:none; text-align: center; padding: 40px;">
-        <div style="font-size: 48px; margin-bottom: 20px;">✅</div>
-        <h2>Setup Complete</h2>
-        <p style="color: #a0a0a0; margin-top: 10px;">Thank you for completing this task.</p>
-        <button onclick="window.close()" style="max-width: 200px; margin-top: 20px;">Close Window</button>
+    <div id="success-screen">
+        <div style="font-size: 56px; margin-bottom: 16px;">✅</div>
+        <h2 style="color: var(--success);">Task Complete</h2>
+        <p style="color: var(--text-muted); margin-top: 8px;">Returning to dashboard...</p>
     </div>
+</div>
+</div>
 
-    <div id="loading-overlay">
-        <div class="spinner"></div>
-        <div style="color: white; margin-top: 15px;">Saving...</div>
-    </div>
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div style="color: white;">Saving...</div>
+</div>
 
-    <script>
-        // Load JRs on startup
-        window.addEventListener('DOMContentLoaded', function () {
-            google.script.run
-                .withSuccessHandler(function (jrs) {
-                    const select = document.getElementById('jrTitle');
-                    const originalValue = select.getAttribute('data-original-value');
+<script>
+    function navigateToDashboard() {
+        google.script.run
+            .withSuccessHandler(function(url) { window.top.location.href = url + '?form=dashboard'; })
+            .withFailureHandler(function() { window.top.location.href = '?form=dashboard'; })
+            .getBaseUrl();
+    }
 
-                    select.innerHTML = '<option value="">-- Select Confirmed Title --</option>';
-
-                    if (jrs && jrs.length) {
-                        jrs.forEach(function (jr) {
-                            const option = document.createElement('option');
-                            option.value = jr;
-                            option.textContent = jr;
-                            if (jr === originalValue) {
-                                option.selected = true;
-                            }
-                            select.appendChild(option);
-                        });
-                    }
-
-                    if (originalValue && (!jrs || !jrs.includes(originalValue))) {
-                        const option = document.createElement('option');
-                        option.value = originalValue;
-                        option.textContent = originalValue + ' (Original Requested)';
-                        option.selected = true;
+    window.addEventListener('DOMContentLoaded', function() {
+        google.script.run
+            .withSuccessHandler(function(jrs) {
+                var select = document.getElementById('jrTitle');
+                var originalValue = select.getAttribute('data-original-value');
+                select.innerHTML = '<option value="">-- Select Confirmed Title --</option>';
+                if (jrs && jrs.length) {
+                    jrs.forEach(function(jr) {
+                        var option = document.createElement('option');
+                        option.value = jr; option.textContent = jr;
+                        if (jr === originalValue) option.selected = true;
                         select.appendChild(option);
-                    }
-                })
-                .withFailureHandler(function (err) {
-                    console.error('Failed to load JRs', err);
-                    const select = document.getElementById('jrTitle');
-                    select.innerHTML = '<option value="">Error loading titles</option>';
-                })
-                .getJRsList();
-        });
+                    });
+                }
+                if (originalValue && (!jrs || !jrs.includes(originalValue))) {
+                    var option = document.createElement('option');
+                    option.value = originalValue;
+                    option.textContent = originalValue + ' (Original Requested)';
+                    option.selected = true;
+                    select.appendChild(option);
+                }
+            })
+            .withFailureHandler(function() {
+                document.getElementById('jrTitle').innerHTML = '<option value="">Error loading titles</option>';
+            })
+            .getJRsList();
+    });
 
-        document.getElementById('specialistForm').onsubmit = function (e) {
-            e.preventDefault();
-            document.getElementById('loading-overlay').style.display = 'flex';
-            document.getElementById('submitBtn').disabled = true;
-
-            const form = this;
-            const data = {
-                workflowId: form.workflowId.value,
-                department: form.department.value,
-                notes: form.notes.value,
-                documentLink: form.documentLink.value,
-                jrTitle: form.jrTitle.value
-            };
-
-            google.script.run
-                .withSuccessHandler(function (result) {
-                    document.getElementById('loading-overlay').style.display = 'none';
-                    if (result && result.success === false) {
-                        document.getElementById('submitBtn').disabled = false;
-                        alert('Error: ' + (result.message || 'Server returned an error.'));
-                    } else {
-                        document.getElementById('mainContainer').style.display = 'none';
-                        document.getElementById('success-screen').style.display = 'block';
-                    }
-                })
-                .withFailureHandler(function (err) {
-                    document.getElementById('loading-overlay').style.display = 'none';
-                    document.getElementById('submitBtn').disabled = false;
-                    alert('Error: ' + err.message);
-                })
-                .submitSpecialistForm(data);
+    document.getElementById('specialistForm').onsubmit = function(e) {
+        e.preventDefault();
+        document.getElementById('loading-overlay').style.display = 'flex';
+        document.getElementById('submitBtn').disabled = true;
+        var form = this;
+        var data = {
+            workflowId: form.workflowId.value,
+            department: form.department.value,
+            notes: form.notes.value,
+            documentLink: form.documentLink.value,
+            jrTitle: form.jrTitle.value
         };
-    </script>
+        google.script.run
+            .withSuccessHandler(function(result) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                if (result && result.success === false) {
+                    document.getElementById('submitBtn').disabled = false;
+                    alert('Error: ' + (result.message || 'Server returned an error.'));
+                } else {
+                    document.getElementById('formSection').style.display = 'none';
+                    document.getElementById('success-screen').style.display = 'block';
+                    setTimeout(navigateToDashboard, 2000);
+                }
+            })
+            .withFailureHandler(function(err) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+                alert('Error: ' + err.message);
+            })
+            .submitSpecialistForm(data);
+    };
+</script>
 </body>
-
 </html>

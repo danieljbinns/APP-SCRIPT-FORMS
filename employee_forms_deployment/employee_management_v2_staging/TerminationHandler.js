@@ -2,6 +2,12 @@
  * Termination Request - Backend Handler
  */
 
+function fmtDate_(iso) {
+  if (!iso) return 'N/A';
+  var d = new Date(String(iso).replace(/T.*/, '') + 'T00:00:00');
+  return (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear();
+}
+
 function serveTerminationRequest() {
   const template = HtmlService.createTemplateFromFile('TerminationRequest');
   template.referenceData = JSON.stringify(getInitialFormData());
@@ -77,9 +83,9 @@ function submitTerminationRequest(formData) {
       managerEmail: formData.managerEmail,
       requestDate: new Date().toLocaleDateString(),
       requesterEmail: formData.reqEmail,
-      hireDate: formData.termDate,
+      hireDate: fmtDate_(formData.termDate),
       employmentType: formData.empType,
-      lastDayWorked: formData.lastDayWorked || '',
+      lastDayWorked: fmtDate_(formData.lastDayWorked),
       reason: formData.reason,
       equipmentRaw: equipment,
       systems: systems
@@ -103,12 +109,12 @@ function submitTerminationRequest(formData) {
 
     sendFormEmail(emailConfig);
 
-    // Notify payroll at the same time as HR — same email and form access (payroll handles approval for some locations)
+    // Notify payroll — advance notice only, no form link until HR approves
     sendFormEmail({
       to: CONFIG.EMAILS.PAYROLL,
-      subject: 'HR Approval Required',
-      body: `A new end of employment request has been submitted for ${formData.empName} and requires your approval to proceed.`,
-      formUrl: approvalUrl,
+      subject: 'Termination Submitted — Pending HR Approval',
+      body: `A new end of employment request has been submitted for ${formData.empName}. <strong>Note: This is an advance notification only — HR approval is still pending.</strong> You will receive a separate email once HR has approved or rejected this request.`,
+      formUrl: '',
       contextData: finalContext
     });
 
@@ -192,18 +198,26 @@ function submitTerminationApproval(formData) {
       
       const duration = (g.duration && g.duration !== 'N/A') ? g.duration : 'Default 1 Month then delete';
       itItems.push(`Account Duration: ${duration}`);
-      
+
+      // Direct reports reassignment
+      if (termData.hasReports === 'Yes') {
+        const newMgr = (termData.reportsToNew && termData.reportsToNew !== 'N/A') ? termData.reportsToNew : 'new manager (see HR)';
+        itItems.push('Reassign Google direct reports to: ' + newMgr);
+        itItems.push('Reassign BOSS direct reports to: ' + newMgr);
+      }
+
       if (itItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'IT', `IT Systems Deactivation - ${termData.employeeName}`, JSON.stringify(itItems), CONFIG.EMAILS.IT);
         sendActionItemEmail(CONFIG.EMAILS.IT, 'IT Action Required', tid, termData, itItems);
         tasksCreated++;
       }
 
-      // HR Group (ADP)
+      // HR Group (ADP) — CC Payroll since different locations handle this differently
       const hrItems = selectedSystems.filter(s => s === 'ADP Supervisor Access');
       if (hrItems.length > 0) {
-        const tid = ActionItemService.createActionItem(workflowId, 'HR', `HR Systems Deactivation - ${termData.employeeName}`, JSON.stringify(hrItems), CONFIG.EMAILS.HR);
-        sendActionItemEmail(CONFIG.EMAILS.HR, 'HR Action Required', tid, termData, hrItems);
+        const hrAndPayroll = CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL;
+        const tid = ActionItemService.createActionItem(workflowId, 'HR', `HR Systems Deactivation - ${termData.employeeName}`, JSON.stringify(hrItems), hrAndPayroll);
+        sendActionItemEmail(hrAndPayroll, 'HR Action Required', tid, termData, hrItems);
         tasksCreated++;
       }
 
@@ -229,20 +243,21 @@ function submitTerminationApproval(formData) {
       sendActionItemEmail(CONFIG.EMAILS.IDSETUP, 'Employee Deactivation Required', tidDeact, termData, deactItems);
       tasksCreated++;
 
-      // Safety — always notify on termination to remove from SiteDocs and update BOSS records
+      // Safety — send form link for offboarding confirmation
+      const safetyTermUrl = buildFormUrl('specialist', { wf: workflowId, dept: 'safetyterm' });
       sendFormEmail({
         to: CONFIG.EMAILS.SAFETY,
-        subject: 'Employee Termination - Safety Offboarding Required',
-        body: 'HR has approved the end of employment for ' + termData.employeeName + '. Please remove this employee from SiteDocs and update BOSS records accordingly.',
-        formUrl: '',
+        subject: 'Safety Offboarding Required — ' + termData.employeeName,
+        body: 'HR has approved the end of employment for ' + termData.employeeName + '. Please confirm SiteDocs removal and BOSS records update using the form below.',
+        formUrl: safetyTermUrl,
         displayName: 'TEAM Group - Employee Management',
         contextData: {
           ...termData,
           workflowType: 'Termination',
           employmentType: termData.empType,
-          hireDate: termData.termDate,
+          hireDate: fmtDate_(termData.termDate),
           equipmentRaw: termData.eqToReturn,
-          lastDayWorked: termData.lastDayWorked,
+          lastDayWorked: fmtDate_(termData.lastDayWorked),
           hasReports: termData.hasReports,
           reportsToNew: termData.reportsToNew
         }
@@ -287,8 +302,8 @@ function submitTerminationApproval(formData) {
         subject: 'Termination Approved',
         body: `HR has approved the end of employment for ${termData.employeeName}.<br><br>` +
               `<b>Employee:</b> ${termData.employeeName}<br>` +
-              `<b>Termination Date:</b> ${termData.termDate}<br>` +
-              `<b>Last Day Worked:</b> ${termData.lastDayWorked || 'N/A'}<br>` +
+              `<b>Termination Date:</b> ${fmtDate_(termData.termDate)}<br>` +
+              `<b>Last Day Worked:</b> ${fmtDate_(termData.lastDayWorked)}<br>` +
               `<b>Manager:</b> ${termData.managerName}<br>` +
               `<b>Site:</b> ${termData.siteName}<br>` +
               `<b>Employee Type:</b> ${termData.empType || 'N/A'}<br>` +
@@ -351,10 +366,10 @@ function sendActionItemEmail(to, subject, tid, termData, items) {
         ...termData,
         workflowType: 'Termination',
         employmentType: termData.empType,
-        hireDate: termData.termDate,
+        hireDate: fmtDate_(termData.termDate),
         equipmentRaw: termData.eqToReturn,
         systems: termData.systems,
-        lastDayWorked: termData.lastDayWorked,
+        lastDayWorked: fmtDate_(termData.lastDayWorked),
         hasReports: termData.hasReports,
         reportsToNew: termData.reportsToNew,
         checklistItems: items || null

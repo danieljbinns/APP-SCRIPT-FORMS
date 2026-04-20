@@ -308,7 +308,13 @@
             google.script.run
                 .withSuccessHandler(function (res) {
                     if (res.success) {
-                        document.querySelector('.card').innerHTML = `<div style="text-align:center; padding:40px;"><h2>✓ Action Completed</h2><p>${res.message}</p></div>`;
+                        document.querySelector('.card').innerHTML = `<div style="text-align:center; padding:40px;"><h2 style="color:var(--success)">✓ Action Completed</h2><p>${res.message}</p><p style="color:var(--text-muted); font-size:13px; margin-top:8px;">Returning to dashboard...</p></div>`;
+                        setTimeout(function() {
+                            google.script.run
+                                .withSuccessHandler(function(url) { window.top.location.href = url + '?form=dashboard'; })
+                                .withFailureHandler(function() { window.top.location.href = '?form=dashboard'; })
+                                .getBaseUrl();
+                        }, 2000);
                     } else {
                         alert('Error: ' + res.message);
                         btn.disabled = false;

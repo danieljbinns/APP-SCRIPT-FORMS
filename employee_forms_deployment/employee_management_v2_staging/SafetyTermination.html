@@ -4,7 +4,7 @@
     <base target="_top">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SiteDocs Setup</title>
+    <title>Safety Offboarding Confirmation</title>
     <style>
         :root {
             --bg-color: #0c0c0c; --card-bg: #1a1a1a; --text-main: #ffffff;
@@ -23,7 +23,13 @@
         .info-row { display: flex; flex-direction: column; font-size: 13px; }
         .info-row .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
         .info-row .value { color: var(--text-main); font-weight: 600; }
-        .form-group { margin-bottom: 20px; }
+        .confirm-item { display: flex; align-items: flex-start; gap: 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.2s; }
+        .confirm-item:has(input:checked) { border-color: var(--success); background: rgba(0,200,83,0.05); }
+        .confirm-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--success); flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+        .confirm-item label { cursor: pointer; }
+        .confirm-item label strong { display: block; font-size: 14px; margin-bottom: 4px; }
+        .confirm-item label span { font-size: 12px; color: var(--text-muted); }
+        .form-group { margin-bottom: 20px; margin-top: 20px; }
         label { display: block; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); }
         textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; padding: 12px; color: white; font-size: 14px; box-sizing: border-box; resize: vertical; }
         textarea:focus { outline: none; border-color: var(--brand-red); }
@@ -43,38 +49,56 @@
     <div class="logo-container">
         <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo" alt="TEAM Group">
     </div>
-    <h1>SiteDocs Setup</h1>
-    <p class="subtitle">Please confirm this setup task is complete.</p>
+    <h1>Safety Offboarding Confirmation</h1>
+    <p class="subtitle">Confirm that SiteDocs removal and BOSS WIS deactivation have been completed for this employee.</p>
 
-    <div class="section-title">Request Details</div>
+    <div class="section-title">Employee Details</div>
     <div class="ticket-info">
         <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName || '-' ?></span></div>
-        <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate || '-' ?></span></div>
-        <div class="info-row"><span class="label">Job Title</span><span class="value"><?= requestData.jobTitle || '-' ?></span></div>
-        <div class="info-row"><span class="label">JR Title</span><span class="value"><?= requestData.jrTitle || '-' ?></span></div>
+        <div class="info-row"><span class="label">Last Day Worked</span><span class="value"><?= requestData.lastDayWorked || '-' ?></span></div>
         <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName || '-' ?></span></div>
         <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName || '-' ?></span></div>
-        <? if (requestData.systems && requestData.systems.length > 0) { ?>
-        <div class="info-row" style="grid-column: span 2;"><span class="label">Systems Requested</span><span class="value"><?= Array.isArray(requestData.systems) ? requestData.systems.join(', ') : requestData.systems ?></span></div>
+        <? if (requestData.hasReports === 'Yes') { ?>
+        <div class="info-row" style="grid-column: span 2;"><span class="label">Direct Reports</span><span class="value">Yes — reassigning to <?= requestData.reportsToNew || 'TBD' ?></span></div>
         <? } ?>
     </div>
 
     <div id="formSection">
-        <form id="specialistForm">
+        <div class="section-title">Confirm Completion</div>
+
+        <form id="safetyTermForm">
             <input type="hidden" name="workflowId" value="<?= workflowId ?>">
             <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
-            <input type="hidden" name="department" value="sitedocs">
-            <div class="form-group">
-                <label>Confirmation Notes (Optional)</label>
-                <textarea name="notes" rows="4" placeholder="Enter any specific details, confirmation codes, or notes..."></textarea>
+            <input type="hidden" name="department" value="safetyterm">
+
+            <div class="confirm-item">
+                <input type="checkbox" id="siteDocsRemoved" name="siteDocsRemoved" value="true" required>
+                <label for="siteDocsRemoved">
+                    <strong>SiteDocs Account Removed</strong>
+                    <span>Employee has been removed from all SiteDocs job sites and their account deactivated.</span>
+                </label>
             </div>
-            <button type="submit" id="submitBtn" class="btn btn-primary">Confirm Complete</button>
+
+            <div class="confirm-item">
+                <input type="checkbox" id="bossDeactivated" name="bossDeactivated" value="true" required>
+                <label for="bossDeactivated">
+                    <strong>BOSS WIS Module Deactivated</strong>
+                    <span>Employee's BOSS WIS module access has been deactivated and records updated accordingly.</span>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label>Notes (Optional)</label>
+                <textarea name="notes" rows="3" placeholder="Any additional notes or follow-up details..."></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary">Confirm & Complete</button>
         </form>
     </div>
 
     <div id="success-screen">
         <div style="font-size: 56px; margin-bottom: 16px;">✅</div>
-        <h2 style="color: var(--success);">Task Complete</h2>
+        <h2 style="color: var(--success);">Safety Offboarding Confirmed</h2>
         <p style="color: var(--text-muted); margin-top: 8px;">Returning to dashboard...</p>
     </div>
 </div>
@@ -82,7 +106,7 @@
 
 <div id="loading-overlay">
     <div class="spinner"></div>
-    <div style="color: white;">Saving...</div>
+    <div style="color: white;">Saving confirmation...</div>
 </div>
 
 <script>
@@ -93,18 +117,28 @@
             .getBaseUrl();
     }
 
-    document.getElementById('specialistForm').onsubmit = function(e) {
+    document.getElementById('safetyTermForm').onsubmit = function(e) {
         e.preventDefault();
+        var siteDocsRemoved = document.getElementById('siteDocsRemoved').checked;
+        var bossDeactivated = document.getElementById('bossDeactivated').checked;
+        if (!siteDocsRemoved || !bossDeactivated) {
+            alert('Please confirm both items before submitting.');
+            return;
+        }
         document.getElementById('loading-overlay').style.display = 'flex';
         document.getElementById('submitBtn').disabled = true;
-        var form = this;
-        var data = { workflowId: form.workflowId.value, department: form.department.value, notes: form.notes.value };
+        var data = {
+            workflowId: this.workflowId.value,
+            department: this.department.value,
+            details: JSON.stringify({ siteDocsRemoved: true, bossDeactivated: true }),
+            notes: this.notes.value
+        };
         google.script.run
             .withSuccessHandler(function(result) {
                 document.getElementById('loading-overlay').style.display = 'none';
                 if (result && result.success === false) {
                     document.getElementById('submitBtn').disabled = false;
-                    alert('Error: ' + (result.message || 'Server returned an error.'));
+                    alert('Error: ' + (result.message || 'Server error.'));
                 } else {
                     document.getElementById('formSection').style.display = 'none';
                     document.getElementById('success-screen').style.display = 'block';

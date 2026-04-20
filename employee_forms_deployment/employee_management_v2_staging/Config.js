@@ -50,7 +50,8 @@ const CONFIG = {
     REFERENCE_JRS: 'Reference_JRs',
     REFERENCE_JOBS_JONAS: 'Reference_JobsJonas',
     ACTION_ITEMS: 'Action Items',
-    SAFETY_ONBOARDING_RESULTS: 'Safety Onboarding Results'
+    SAFETY_ONBOARDING_RESULTS: 'Safety Onboarding Results',
+    SAFETY_TERMINATION_RESULTS: 'Safety Termination Results'
   },
   
   // ==========================================================================
