@@ -184,6 +184,21 @@
             border: 1px solid var(--input-border);
             border-radius: 6px;
             cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .checkbox-label:hover {
+            border-color: var(--brand-red);
+        }
+
+        .checkbox-label:has(input[type="checkbox"]:checked) {
+            background: rgba(235, 28, 45, 0.1);
+            border-color: var(--brand-red);
+        }
+
+        .checkbox-label:has(input[type="checkbox"]:checked) span {
+            color: var(--brand-red);
+            font-weight: 600;
         }
 
         .checkbox-label input[type="checkbox"] {
@@ -223,29 +238,26 @@
             font-size: 0.8rem;
             margin-top: 4px;
         }
-      input[type="date"] {
-      position: relative;
-    }
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: auto;
-      height: auto;
-      color: transparent;
-      background: transparent;
-      cursor: pointer;
-    }
-  </style>
+
+        input[type="date"] {
+            position: relative;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: auto; height: auto;
+            color: transparent;
+            background: transparent;
+            cursor: pointer;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container">
         <div class="logo-container">
-            <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
-                class="logo">
+            <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo">
         </div>
 
         <div id="form-container">
@@ -278,7 +290,6 @@
                         <label>Last Name <span class="required">*</span></label>
                         <input type="text" name="lastName" required>
                     </div>
-
                 </div>
                 <div class="form-row">
                     <div class="form-field">
@@ -310,14 +321,13 @@
                     <h3>Site Transfer / Department Change</h3>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Same site is valid — use this section for department-only changes. Select the same site for both fields and enter the new department below.</p>
                     <div class="form-row">
-                        <div class="form-field"><label>Current Site</label><select name="siteOld"
-                                class="site-list"></select></div>
-                        <div class="form-field"><label>New Site</label><select name="siteNew"
-                                class="site-list"></select></div>
+                        <div class="form-field"><label>Current Site</label><select name="siteOld" class="site-list"></select></div>
+                        <div class="form-field"><label>New Site</label><select name="siteNew" class="site-list"></select></div>
                     </div>
                     <div class="form-field" style="margin-top: 10px;">
-                        <label>New Department <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span></label>
+                        <label>New Department</label>
                         <input type="text" name="department" placeholder="e.g. Operations, Finance, Field Services">
+                        <span class="help-text">For same-site transfers, New Department is the primary change — please specify.</span>
                     </div>
                 </div>
 
@@ -334,17 +344,11 @@
                     <div class="form-row">
                         <div class="form-field">
                             <label>Current Classification</label>
-                            <div class="radio-group"><label><input type="radio" name="classOld" value="Hourly"><span
-                                        class="radio-button">Hourly</span></label><label><input type="radio"
-                                        name="classOld" value="Salary"><span class="radio-button">Salary</span></label>
-                            </div>
+                            <div class="radio-group"><label><input type="radio" name="classOld" value="Hourly"><span class="radio-button">Hourly</span></label><label><input type="radio" name="classOld" value="Salary"><span class="radio-button">Salary</span></label></div>
                         </div>
                         <div class="form-field">
                             <label>New Classification</label>
-                            <div class="radio-group"><label><input type="radio" name="classNew" value="Hourly"><span
-                                        class="radio-button">Hourly</span></label><label><input type="radio"
-                                        name="classNew" value="Salary"><span class="radio-button">Salary</span></label>
-                            </div>
+                            <div class="radio-group"><label><input type="radio" name="classNew" value="Hourly"><span class="radio-button">Hourly</span></label><label><input type="radio" name="classNew" value="Salary"><span class="radio-button">Salary</span></label></div>
                         </div>
                     </div>
                 </div>
@@ -354,19 +358,18 @@
                     <div class="form-row">
                         <div class="form-field">
                             <label>Old Manager Email</label>
-                            <input type="email" name="mgrOldEmail" id="mgrOldEmail" placeholder="Start typing name or email..." 
+                            <input type="email" name="mgrOldEmail" id="mgrOldEmail" placeholder="Start typing name or email..."
                                 pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
                             <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
                         </div>
                         <div class="form-field"><label>Old Manager Name</label><input type="text" name="mgrOldName" id="mgrOldName" placeholder="Auto-fills on selection" readonly></div>
                         <div class="form-field">
                             <label>New Manager Email</label>
-                            <input type="email" name="mgrNewEmail" id="mgrNewEmail" placeholder="Start typing name or email..." 
+                            <input type="email" name="mgrNewEmail" id="mgrNewEmail" placeholder="Start typing name or email..."
                                 pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
                             <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
                         </div>
-                        <div class="form-field"><label>New Manager Name</label><input type="text" name="mgrNewName" id="mgrNewName" placeholder="Auto-fills on selection" readonly>
-                        </div>
+                        <div class="form-field"><label>New Manager Name</label><input type="text" name="mgrNewName" id="mgrNewName" placeholder="Auto-fills on selection" readonly></div>
                     </div>
                 </div>
 
@@ -374,12 +377,8 @@
                 <div class="form-field">
                     <label>Did employee have direct reports? <span class="required">*</span></label>
                     <div class="radio-group">
-                        <label><input type="radio" name="hadReports" value="Yes" required
-                                onchange="toggleSec('reassign_logic', this)"><span
-                                class="radio-button">Yes</span></label>
-                        <label><input type="radio" name="hadReports" value="No"
-                                onchange="toggleSec('reassign_logic', this)"><span
-                                class="radio-button">No</span></label>
+                        <label><input type="radio" name="hadReports" value="Yes" required onchange="toggleSec('reassign_logic', this)"><span class="radio-button">Yes</span></label>
+                        <label><input type="radio" name="hadReports" value="No" onchange="toggleSec('reassign_logic', this)"><span class="radio-button">No</span></label>
                     </div>
                     <div id="reassign_logic" class="logic-section">
                         <label>Reassign PREVIOUS Reports To <span class="required">*</span></label>
@@ -392,10 +391,8 @@
                 <div class="form-field">
                     <label>Is employee gaining NEW direct reports? <span class="required">*</span></label>
                     <div class="radio-group">
-                        <label><input type="radio" name="gainingReports" value="Yes" required
-                                onchange="toggleSec('gain_logic', this)"><span class="radio-button">Yes</span></label>
-                        <label><input type="radio" name="gainingReports" value="No"
-                                onchange="toggleSec('gain_logic', this)"><span class="radio-button">No</span></label>
+                        <label><input type="radio" name="gainingReports" value="Yes" required onchange="toggleSec('gain_logic', this)"><span class="radio-button">Yes</span></label>
+                        <label><input type="radio" name="gainingReports" value="No" onchange="toggleSec('gain_logic', this)"><span class="radio-button">No</span></label>
                     </div>
                     <div id="gain_logic" class="logic-section">
                         <label>Who were these reports reporting to before? <span class="required">*</span></label>
@@ -409,12 +406,8 @@
                 <div class="form-field">
                     <label>Existing Google Account? <span class="required">*</span></label>
                     <div class="radio-group">
-                        <label><input type="radio" name="hasGoogle" value="Yes" required
-                                onchange="toggleSec('google_email_sec', this)"><span
-                                class="radio-button">Yes</span></label>
-                        <label><input type="radio" name="hasGoogle" value="No"
-                                onchange="toggleSec('google_email_sec', this)"><span
-                                class="radio-button">No</span></label>
+                        <label><input type="radio" name="hasGoogle" value="Yes" required onchange="toggleSec('google_email_sec', this)"><span class="radio-button">Yes</span></label>
+                        <label><input type="radio" name="hasGoogle" value="No" onchange="toggleSec('google_email_sec', this)"><span class="radio-button">No</span></label>
                     </div>
                     <div id="google_email_sec" class="logic-section" style="border:none; padding:0;">
                         <label>Existing Email Address <span class="required">*</span></label>
@@ -424,30 +417,56 @@
                     </div>
                 </div>
 
+                <!-- ⚠️ SYNC REQUIRED: The systems checkboxes and sub-sections below must be kept in sync with
+                     InitialRequest.html (System Access → Systems/Apps section).
+                     InitialRequest.html serves both New Hire and the standalone Equipment/System request (mode=equipment).
+                     When updating systems in one form, update the other. -->
                 <h3>NEW System Access Needed</h3>
                 <div class="checkbox-group">
-                    <label class="checkbox-label"><input type="checkbox" name="sys" value="BOSS"
-                            onchange="toggleSec('boss_sec', this)"><span>BOSS</span></label>
-                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Jonas Purchasing"
-                            onchange="toggleSec('jonas_sec', this)"><span>Jonas Purchasing</span></label>
+                    <!-- ADP Supervisor Access with inline job sites + salary sub-section -->
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="sys" value="ADP Supervisor Access" id="adpSupervisorAccess" onchange="toggleSections()">
+                        <span>ADP Supervisor Access</span>
+                    </label>
+                    <div id="adpSitesSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Required ADP Job Site Numbers <span class="required">*</span></label>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Select all job site numbers this employee needs ADP access for.</p>
+                        <div id="adpSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin-bottom: 12px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin-top: 8px;">
+                            <input type="checkbox" name="adpSalaryAccess" id="adpSalaryAccess" value="Yes" style="width:18px;height:18px;accent-color:var(--brand-red);flex-shrink:0;margin-top:2px;">
+                            <span style="font-size:0.85rem;">
+                                <strong style="color:var(--text-main);">Requires access to salary data?</strong>
+                                <span style="display:block; color:var(--text-muted); font-size:0.8rem;">If checked, HR/Payroll will be notified to grant salary data permissions in ADP.</span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="BOSS" onchange="toggleSections()"><span>BOSS</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="CAA"><span>CAA</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Delivery"><span>Delivery</span></label>
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="DSS"><span>DSS</span></label>
-                    <label class="checkbox-label"><input type="checkbox" name="sys"
-                            value="Fleetio"><span>Fleetio</span></label>
-                    <label class="checkbox-label"><input type="checkbox" name="sys" value="SiteDocs"><span>SiteDocs
-                            (Portal Access)</span></label>
-                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Google Account"
-                            onchange="toggleSec('new_google_sec', this)"><span>New Google Account</span></label>
-                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Central Purchasing"
-                            id="centralPurchasingAccess" onchange="toggleCentralPurchasing()"><span>Central Purchasing Required</span></label>
-                    <!-- Central Purchasing Sites sub-section (I6) -->
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Fleetio"><span>Fleetio</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Google Account" onchange="toggleSections()"><span>New Google Account</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Incidents"><span>Incidents</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Jonas Purchasing" onchange="toggleSections()"><span>Jonas Purchasing</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="Net Promoter Score"><span>Net Promoter Score</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="sys" value="SiteDocs"><span>Sitedocs Supervisor Access <span style="color: #F59E0B; font-size: 0.8rem; font-weight: normal;">⚠️ Do not add to hourly employees</span></span></label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="sys" value="Central Purchasing" id="centralPurchasingAccess" onchange="toggleSections()">
+                        <span>Central Purchasing Required</span>
+                    </label>
+                    <!-- Central Purchasing inline sub-section -->
                     <div id="purchasingSitesSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
-                        <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Required Purchasing Sites <span style="color: var(--brand-red);">*</span></label>
-                        <div id="purchasingSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Required Purchasing Job Site Numbers <span class="required">*</span></label>
+                        <div id="purchasingSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;">
                             <!-- Populated dynamically -->
                         </div>
                     </div>
                 </div>
 
+                <!-- BOSS sub-section -->
                 <div id="boss_sec" class="logic-section">
                     <h3>BOSS Access Details</h3>
                     <div class="form-field">
@@ -457,11 +476,7 @@
                     <div class="form-row">
                         <div class="form-field">
                             <label>Cost Sheet Module Access?</label>
-                            <div class="radio-group"><label><input type="radio" name="bossCost" value="Yes"
-                                        onchange="toggleSec('boss_cost_sec', this)"><span
-                                        class="radio-button">Yes</span></label><label><input type="radio"
-                                        name="bossCost" value="No" onchange="toggleSec('boss_cost_sec', this)"><span
-                                        class="radio-button">No</span></label></div>
+                            <div class="radio-group"><label><input type="radio" name="bossCost" value="Yes" onchange="toggleSec('boss_cost_sec', this)"><span class="radio-button">Yes</span></label><label><input type="radio" name="bossCost" value="No" onchange="toggleSec('boss_cost_sec', this)"><span class="radio-button">No</span></label></div>
                         </div>
                     </div>
                     <div id="boss_cost_sec" class="logic-section">
@@ -470,35 +485,32 @@
                     </div>
                     <div class="form-row">
                         <div class="form-field"><label>Trip Reports Access?</label>
-                            <div class="radio-group"><label><input type="radio" name="bossTrip" value="Yes"><span
-                                        class="radio-button">Yes</span></label><label><input type="radio"
-                                        name="bossTrip" value="No"><span class="radio-button">No</span></label></div>
+                            <div class="radio-group"><label><input type="radio" name="bossTrip" value="Yes"><span class="radio-button">Yes</span></label><label><input type="radio" name="bossTrip" value="No"><span class="radio-button">No</span></label></div>
                         </div>
                         <div class="form-field"><label>Counselling/Grievances Access?</label>
-                            <div class="radio-group"><label><input type="radio" name="bossGriev" value="Yes"><span
-                                        class="radio-button">Yes</span></label><label><input type="radio"
-                                        name="bossGriev" value="No"><span class="radio-button">No</span></label></div>
+                            <div class="radio-group"><label><input type="radio" name="bossGriev" value="Yes"><span class="radio-button">Yes</span></label><label><input type="radio" name="bossGriev" value="No"><span class="radio-button">No</span></label></div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Jonas sub-section -->
                 <div id="jonas_sec" class="logic-section">
                     <h3>Jonas Access Details</h3>
                     <label>Job Number(s) to be Assigned</label>
                     <select name="jonasJobs" id="jonasJobs" multiple></select>
                 </div>
 
+                <!-- New Google Account sub-section -->
                 <div id="new_google_sec" class="logic-section">
                     <h3>New Google Account Setup</h3>
                     <div class="form-row">
-                        <div class="form-field"><label>Requested Email</label><input type="text" name="googleEmail"
-                                placeholder="firstname.lastname"></div>
+                        <div class="form-field"><label>Requested Email</label><input type="text" name="googleEmail" placeholder="firstname.lastname"></div>
                         <div class="form-field"><label>Domain</label><select name="googleDomain">
-                                <option>team-group.com</option>
-                                <option>robinsonsolutions.com</option>
-                                <option>industrialappliedtech.com</option>
-                                <option>stgroup.ca</option>
-                            </select></div>
+                            <option>team-group.com</option>
+                            <option>robinsonsolutions.com</option>
+                            <option>industrialappliedtech.com</option>
+                            <option>stgroup.ca</option>
+                        </select></div>
                     </div>
                 </div>
 
@@ -506,17 +518,11 @@
                 <div class="form-row">
                     <div class="form-field">
                         <label>JR Required?</label>
-                        <div class="radio-group"><label><input type="radio" name="jrReq" value="Yes"
-                                    onchange="toggleSec('jr_sec', this)"><span
-                                    class="radio-button">Yes</span></label><label><input type="radio" name="jrReq"
-                                    value="No" onchange="toggleSec('jr_sec', this)"><span
-                                    class="radio-button">No</span></label></div>
+                        <div class="radio-group"><label><input type="radio" name="jrReq" value="Yes" onchange="toggleSec('jr_sec', this)"><span class="radio-button">Yes</span></label><label><input type="radio" name="jrReq" value="No" onchange="toggleSec('jr_sec', this)"><span class="radio-button">No</span></label></div>
                     </div>
                     <div class="form-field">
                         <label>30-60-90 Plan Required?</label>
-                        <div class="radio-group"><label><input type="radio" name="plan306090" value="Yes"><span
-                                    class="radio-button">Yes</span></label><label><input type="radio" name="plan306090"
-                                    value="No"><span class="radio-button">No</span></label></div>
+                        <div class="radio-group"><label><input type="radio" name="plan306090" value="Yes"><span class="radio-button">Yes</span></label><label><input type="radio" name="plan306090" value="No"><span class="radio-button">No</span></label></div>
                     </div>
                 </div>
                 <div id="jr_sec" class="logic-section">
@@ -526,126 +532,157 @@
                     </select>
                 </div>
 
+                <!-- ⚠️ SYNC REQUIRED: The equipment checkboxes and inline sub-sections below must be kept in sync with
+                     InitialRequest.html (System Access → Equipment section).
+                     InitialRequest.html serves both New Hire and the standalone Equipment/System request (mode=equipment).
+                     When updating equipment in one form, update the other. -->
                 <h2>Equipment Request</h2>
                 <div class="checkbox-group">
-                    <label class="checkbox-label"><input type="checkbox" name="equip" value="Computer"
-                            onchange="toggleSec('comp_sec', this)"><span>Computer</span></label>
-                    <label class="checkbox-label"><input type="checkbox" name="equip" value="Mobile Phone"
-                            onchange="toggleSec('phone_sec', this)"><span>Mobile Phone</span></label>
-                    <label class="checkbox-label"><input type="checkbox" name="equip" value="Credit Card"
-                            onchange="toggleSec('cc_sec', this)"><span>Credit Card</span></label>
-                    <label class="checkbox-label"><input type="checkbox" name="equip"
-                            value="Digital Business Cards"><span>Digital Business Cards</span></label>
-                    <label class="checkbox-label"><input type="checkbox" name="equip"
-                            value="SiteDocs Tablet"><span>SiteDocs Tablet</span></label>
-                    <label class="checkbox-label"><input type="checkbox" name="equip"
-                            value="Vehicle"><span>Vehicle</span></label>
-                </div>
+                    <label class="checkbox-label"><input type="checkbox" name="equip" value="Business Cards"><span>Digital Business Cards</span></label>
 
-                <div id="comp_sec" class="logic-section">
-                    <h3>Computer Request</h3>
-                    <div class="radio-group"><label><input type="radio" name="compLogic" value="New Request"
-                                onchange="toggleComp()"><span class="radio-button">New
-                                Request</span></label><label><input type="radio" name="compLogic" value="Reassignment"
-                                onchange="toggleComp()"><span class="radio-button">Reassignment</span></label></div>
-                    <div id="comp_new" style="display:none; margin-top:15px;">
-                        <label>Computer Type</label>
-                        <div class="radio-group"><label><input type="radio" name="compType" value="Chromebook"><span
-                                    class="radio-button">Chromebook</span></label><label><input type="radio"
-                                    name="compType" value="Windows"><span
-                                    class="radio-button">Windows</span></label><label><input type="radio"
-                                    name="compType" value="Mac"><span class="radio-button">Mac</span></label></div>
-                        <label style="margin-top:15px;">Office 365 License Needed?</label>
-                        <div class="radio-group"><label><input type="radio" name="o365" value="Yes"><span
-                                    class="radio-button">Yes</span></label><label><input type="radio" name="o365"
-                                    value="No"><span class="radio-button">No</span></label></div>
-                    </div>
-                    <div id="comp_re" style="display:none; margin-top:15px;">
-                        <div class="form-row">
-                            <div class="form-field"><label>Previous User</label><input type="text" name="compPrevUser">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="equip" value="Computer" onchange="toggleEquipmentDetails()">
+                        <span>Computer</span>
+                    </label>
+                    <!-- Computer inline sub-section -->
+                    <div id="computerDetailsSection" style="display: none; grid-column: 1 / -1; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444; margin: 4px 0 8px 0;">
+                        <h4 style="margin-bottom: 12px; font-size: 0.95rem; color: var(--text-muted);">Computer Details</h4>
+                        <div class="form-field">
+                            <label>Request Type <span class="required">*</span></label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="computerRequestType" value="New" onchange="toggleComputerReassignFields()"><span class="radio-button">New Request</span></label>
+                                <label><input type="radio" name="computerRequestType" value="Reassignment" onchange="toggleComputerReassignFields()"><span class="radio-button">Reassignment</span></label>
                             </div>
-                            <div class="form-field"><label>Serial Number</label><input type="text" name="compSN"></div>
                         </div>
-                    </div>
-                </div>
-
-                <div id="phone_sec" class="logic-section">
-                    <h3>Phone Request</h3>
-                    <div class="radio-group"><label><input type="radio" name="phoneLogic" value="New Request"
-                                onchange="togglePhone()"><span class="radio-button">New
-                                Request</span></label><label><input type="radio" name="phoneLogic" value="Reassignment"
-                                onchange="togglePhone()"><span class="radio-button">Reassignment</span></label></div>
-                    <div id="phone_re" style="display:none; margin-top:15px;">
-                        <div class="form-row">
-                            <div class="form-field"><label>Previous User</label><input type="text" name="phonePrevUser">
+                        <div id="computerNewFields" style="display: none; margin-top: 1rem;">
+                            <div class="form-field">
+                                <label>Computer Type Requested</label>
+                                <div class="radio-group">
+                                    <label><input type="radio" name="computerType" value="Chromebook" onchange="toggleOffice365Question()"><span class="radio-button">Chromebook</span></label>
+                                    <label><input type="radio" name="computerType" value="Windows" onchange="toggleOffice365Question()"><span class="radio-button">Windows</span></label>
+                                    <label><input type="radio" name="computerType" value="Mac" onchange="toggleOffice365Question()"><span class="radio-button">Mac</span></label>
+                                </div>
+                                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #DBEAFE; border-left: 4px solid #3B82F6; color: #1E40AF; border-radius: 4px; font-size: 0.9rem;">
+                                    <strong>Note:</strong> Chromebook is the default option. Windows or Mac computers require IT Director approval.
+                                </div>
                             </div>
-                            <div class="form-field"><label>Previous Number</label><input type="text"
-                                    name="phonePrevNum"></div>
+                            <div id="office365Question" style="display: none; margin-top: 1rem;">
+                                <div class="form-field">
+                                    <label>Office 365 License Required?</label>
+                                    <div class="radio-group">
+                                        <label><input type="radio" name="office365Required" value="Yes"><span class="radio-button">Yes</span></label>
+                                        <label><input type="radio" name="office365Required" value="No"><span class="radio-button">No</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="computerReassignFields" style="display: none; margin-top: 1rem;">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Previous User Name</label>
+                                    <input type="text" name="computerPreviousUser" placeholder="Enter previous user name">
+                                </div>
+                                <div class="form-field">
+                                    <label>Previous Computer Type</label>
+                                    <select name="computerPreviousType">
+                                        <option value="">-- Select Type --</option>
+                                        <option value="Chromebook">Chromebook</option>
+                                        <option value="Windows">Windows</option>
+                                        <option value="Mac">Mac</option>
+                                    </select>
+                                </div>
+                                <div class="form-field">
+                                    <label>Serial Number (if known)</label>
+                                    <input type="text" name="computerSerialNumber" placeholder="Enter serial number">
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div id="cc_sec" class="logic-section">
-                    <h3>Credit Card Request</h3>
-                    <div class="form-row">
-                        <div class="form-field"><label>USA Card?</label>
-                            <div class="radio-group"><label><input type="radio" name="ccUSA" value="Yes"
-                                        onchange="toggleSec('cc_usa_limit', this)"><span
-                                        class="radio-button">Yes</span></label><label><input type="radio" name="ccUSA"
-                                        value="No" onchange="toggleSec('cc_usa_limit', this)"><span
-                                        class="radio-button">No</span></label></div>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="equip" value="Credit Card" onchange="toggleEquipmentDetails()">
+                        <span>Credit Card</span>
+                    </label>
+                    <!-- Credit Card inline sub-section -->
+                    <div id="creditCardDetailsSection" style="display: none; grid-column: 1 / -1; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444; margin: 4px 0 8px 0;">
+                        <h4 style="margin-bottom: 8px; font-size: 0.95rem; color: var(--text-muted);">Credit Card Details</h4>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Select one or more credit card types needed:</p>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px;">
+                                    <input type="checkbox" name="creditCardUSA" value="Yes" style="width: 20px; height: 20px;"><span>USA Credit Card</span>
+                                </label>
+                                <div style="margin-top: 0.5rem;">
+                                    <input type="text" name="creditCardLimitUSA" placeholder="Monthly Limit (e.g., $1,000)">
+                                </div>
+                            </div>
+                            <div class="form-field">
+                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px;">
+                                    <input type="checkbox" name="creditCardCanada" value="Yes" style="width: 20px; height: 20px;"><span>Canada Credit Card</span>
+                                </label>
+                                <div style="margin-top: 0.5rem;">
+                                    <input type="text" name="creditCardLimitCanada" placeholder="Monthly Limit (e.g., $1,000 CAD)">
+                                </div>
+                            </div>
+                            <div class="form-field">
+                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px;">
+                                    <input type="checkbox" name="creditCardHomeDepot" value="Yes" style="width: 20px; height: 20px;"><span>Home Depot Credit Card</span>
+                                </label>
+                                <div style="margin-top: 0.5rem;">
+                                    <input type="text" name="creditCardLimitHomeDepot" placeholder="Monthly Limit (e.g., $1,000)">
+                                </div>
+                            </div>
                         </div>
-                        <div id="cc_usa_limit" class="form-field" style="display:none;"><label>USA Limit</label><input
-                                type="text" name="ccUSALim"></div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-field"><label>Canada Card?</label>
-                            <div class="radio-group"><label><input type="radio" name="ccCAN" value="Yes"
-                                        onchange="toggleSec('cc_can_limit', this)"><span
-                                        class="radio-button">Yes</span></label><label><input type="radio" name="ccCAN"
-                                        value="No" onchange="toggleSec('cc_can_limit', this)"><span
-                                        class="radio-button">No</span></label></div>
+
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="equip" value="Mobile Phone" onchange="toggleEquipmentDetails()">
+                        <span>Mobile Phone</span>
+                    </label>
+                    <!-- Mobile Phone inline sub-section -->
+                    <div id="mobilePhoneDetailsSection" style="display: none; grid-column: 1 / -1; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444; margin: 4px 0 8px 0;">
+                        <h4 style="margin-bottom: 12px; font-size: 0.95rem; color: var(--text-muted);">Mobile Phone Details</h4>
+                        <div class="form-field">
+                            <label>Request Type <span class="required">*</span></label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="phoneRequestType" value="New" onchange="togglePhoneReassignFields()"><span class="radio-button">New Request</span></label>
+                                <label><input type="radio" name="phoneRequestType" value="Reassignment" onchange="togglePhoneReassignFields()"><span class="radio-button">Reassignment</span></label>
+                            </div>
                         </div>
-                        <div id="cc_can_limit" class="form-field" style="display:none;"><label>CAN Limit</label><input
-                                type="text" name="ccCANLim"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-field"><label>Home Depot Card?</label>
-                            <div class="radio-group"><label><input type="radio" name="ccHD" value="Yes"
-                                        onchange="toggleSec('cc_hd_limit', this)"><span
-                                        class="radio-button">Yes</span></label><label><input type="radio" name="ccHD"
-                                        value="No" onchange="toggleSec('cc_hd_limit', this)"><span
-                                        class="radio-button">No</span></label></div>
+                        <div id="phoneReassignFields" style="display: none; margin-top: 1rem;">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Previous User Name</label>
+                                    <input type="text" name="phonePreviousUser" placeholder="Enter previous user name">
+                                </div>
+                                <div class="form-field">
+                                    <label>Previous Phone Number</label>
+                                    <input type="text" name="phonePreviousNumber" placeholder="Enter previous phone number">
+                                </div>
+                            </div>
                         </div>
-                        <div id="cc_hd_limit" class="form-field" style="display:none;"><label>HD Limit</label><input
-                                type="text" name="ccHDLim"></div>
                     </div>
+
+                    <label class="checkbox-label"><input type="checkbox" name="equip" value="SiteDocs Tablet"><span>SiteDocs Tablet</span></label>
+                    <label class="checkbox-label"><input type="checkbox" name="equip" value="Vehicle"><span>Vehicle</span></label>
                 </div>
 
                 <h2>Access Removal</h2>
                 <div class="form-field">
                     <label>OLD System Access to Remove</label>
                     <div class="checkbox-group">
-                        <label class="checkbox-label"><input type="checkbox" name="rem"
-                                value="ADP"><span>ADP</span></label>
-                        <label class="checkbox-label"><input type="checkbox" name="rem"
-                                value="BOSS"><span>BOSS</span></label>
-                        <label class="checkbox-label"><input type="checkbox" name="rem"
-                                value="CAA"><span>CAA</span></label>
-                        <label class="checkbox-label"><input type="checkbox" name="rem"
-                                value="Delivery"><span>Delivery</span></label>
-                        <label class="checkbox-label"><input type="checkbox" name="rem"
-                                value="Fleetio"><span>Fleetio</span></label>
-                        <label class="checkbox-label"><input type="checkbox" name="rem"
-                                value="Google Account"><span>Google Account</span></label>
-                        <label class="checkbox-label"><input type="checkbox" name="rem"
-                                value="SiteDocs"><span>SiteDocs</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem" value="ADP"><span>ADP</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem" value="BOSS"><span>BOSS</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem" value="CAA"><span>CAA</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem" value="Delivery"><span>Delivery</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem" value="Fleetio"><span>Fleetio</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem" value="Google Account"><span>Google Account</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="rem" value="SiteDocs"><span>SiteDocs</span></label>
                     </div>
                 </div>
 
                 <h2>Logistics</h2>
-                <div class="form-field"><label>Rationale / Additional Comments</label><textarea
-                        name="comments"></textarea></div>
+                <div class="form-field"><label>Rationale / Additional Comments</label><textarea name="comments"></textarea></div>
                 <div class="form-field"><label>Upload Supporting Docs</label><input type="file" name="attachment"></div>
 
                 <button type="submit">Submit Change Request</button>
@@ -655,6 +692,7 @@
 
     <?!= include('DirectoryAutocomplete') ?>
     <script>
+        // toggleSec: used for type-of-change sections, reporting management, cost sheet, google email reveal
         function toggleSec(id, element) {
             const section = document.getElementById(id);
             if (!section) return;
@@ -667,18 +705,51 @@
             }
         }
 
-        function toggleComp() {
-            const checked = document.querySelector('input[name="compLogic"]:checked');
-            if (!checked) return;
-            const val = checked.value;
-            document.getElementById('comp_new').style.display = val === 'New Request' ? 'block' : 'none';
-            document.getElementById('comp_re').style.display = val === 'Reassignment' ? 'block' : 'none';
+        // toggleSections: unified toggle for all system checkboxes with sub-sections
+        function toggleSections() {
+            const adpChecked = document.getElementById('adpSupervisorAccess').checked;
+            document.getElementById('adpSitesSection').style.display = adpChecked ? 'block' : 'none';
+
+            const purchasingEl = document.getElementById('centralPurchasingAccess');
+            document.getElementById('purchasingSitesSection').style.display = (purchasingEl && purchasingEl.checked) ? 'block' : 'none';
+
+            const bossChecked = document.querySelector('[name="sys"][value="BOSS"]').checked;
+            document.getElementById('boss_sec').style.display = bossChecked ? 'block' : 'none';
+
+            const jonasChecked = document.querySelector('[name="sys"][value="Jonas Purchasing"]').checked;
+            document.getElementById('jonas_sec').style.display = jonasChecked ? 'block' : 'none';
+
+            const googleChecked = document.querySelector('[name="sys"][value="Google Account"]').checked;
+            document.getElementById('new_google_sec').style.display = googleChecked ? 'block' : 'none';
         }
 
-        function togglePhone() {
-            const checked = document.querySelector('input[name="phoneLogic"]:checked');
-            if (!checked) return;
-            document.getElementById('phone_re').style.display = checked.value === 'Reassignment' ? 'block' : 'none';
+        // toggleEquipmentDetails: show/hide inline equipment sub-sections
+        function toggleEquipmentDetails() {
+            const computerChecked = document.querySelector('[name="equip"][value="Computer"]').checked;
+            document.getElementById('computerDetailsSection').style.display = computerChecked ? 'block' : 'none';
+
+            const creditCardChecked = document.querySelector('[name="equip"][value="Credit Card"]').checked;
+            document.getElementById('creditCardDetailsSection').style.display = creditCardChecked ? 'block' : 'none';
+
+            const phoneChecked = document.querySelector('[name="equip"][value="Mobile Phone"]').checked;
+            document.getElementById('mobilePhoneDetailsSection').style.display = phoneChecked ? 'block' : 'none';
+        }
+
+        function toggleComputerReassignFields() {
+            const requestType = document.querySelector('[name="computerRequestType"]:checked');
+            document.getElementById('computerNewFields').style.display = (requestType && requestType.value === 'New') ? 'block' : 'none';
+            document.getElementById('computerReassignFields').style.display = (requestType && requestType.value === 'Reassignment') ? 'block' : 'none';
+        }
+
+        function togglePhoneReassignFields() {
+            const requestType = document.querySelector('[name="phoneRequestType"]:checked');
+            document.getElementById('phoneReassignFields').style.display = (requestType && requestType.value === 'Reassignment') ? 'block' : 'none';
+        }
+
+        function toggleOffice365Question() {
+            const computerType = document.querySelector('[name="computerType"]:checked');
+            const show = computerType && (computerType.value === 'Windows' || computerType.value === 'Mac');
+            document.getElementById('office365Question').style.display = show ? 'block' : 'none';
         }
 
         // Form Submission Logic
@@ -735,42 +806,53 @@
         });
 
         // Setup Autocomplete for multiple fields
-        DirectoryAutocomplete.setup({ 
-            inputSelector: '#mgrNewEmail',
-            nameInputSelector: '#mgrNewName'
-        });
-        DirectoryAutocomplete.setup({ 
-            inputSelector: '#mgrOldEmail',
-            nameInputSelector: '#mgrOldName'
-        });
+        DirectoryAutocomplete.setup({ inputSelector: '#mgrNewEmail', nameInputSelector: '#mgrNewName' });
+        DirectoryAutocomplete.setup({ inputSelector: '#mgrOldEmail', nameInputSelector: '#mgrOldName' });
         DirectoryAutocomplete.setup({ inputSelector: '#oldReportsTo' });
         DirectoryAutocomplete.setup({ inputSelector: '#newReportsFrom' });
         DirectoryAutocomplete.setup({ inputSelector: '#existingEmail' });
 
-        // I6: Toggle Central Purchasing sites panel
-        function toggleCentralPurchasing() {
-            const checked = document.getElementById('centralPurchasingAccess') && document.getElementById('centralPurchasingAccess').checked;
-            document.getElementById('purchasingSitesSection').style.display = checked ? 'block' : 'none';
-        }
-
         // Dynamic Populators
         const populateFormDropdowns = function (data) {
+            // Sites dropdowns
             const sites = document.querySelectorAll('.site-list, #siteName');
             sites.forEach(s => data.sites.forEach(site => {
                 const opt = document.createElement('option'); opt.value = site; opt.textContent = site; s.appendChild(opt);
             }));
 
-            // I6: Populate Central Purchasing sites checkboxes
-            const purchasingContainer = document.getElementById('purchasingSitesCheckboxes');
-            if (purchasingContainer && data.sites && data.sites.length) {
-                purchasingContainer.innerHTML = '';
-                data.sites.forEach(function(site) {
+            // ADP job site number checkboxes
+            const adpContainer = document.getElementById('adpSitesCheckboxes');
+            if (adpContainer && data.jobs && data.jobs.length) {
+                adpContainer.innerHTML = '';
+                data.jobs.forEach(function(num) {
                     const label = document.createElement('label');
-                    label.className = 'checkbox-label';
-                    label.innerHTML = '<input type="checkbox" name="purchasingSites" value="' + site + '"> ' + site;
+                    label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox'; cb.name = 'adpSites'; cb.value = num;
+                    cb.style.accentColor = 'var(--brand-red)';
+                    label.appendChild(cb);
+                    label.appendChild(document.createTextNode(' ' + num));
+                    adpContainer.appendChild(label);
+                });
+            }
+
+            // Central Purchasing job site number checkboxes
+            const purchasingContainer = document.getElementById('purchasingSitesCheckboxes');
+            if (purchasingContainer && data.jobs && data.jobs.length) {
+                purchasingContainer.innerHTML = '';
+                data.jobs.forEach(function(num) {
+                    const label = document.createElement('label');
+                    label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox'; cb.name = 'purchasingSites'; cb.value = num;
+                    cb.style.accentColor = 'var(--brand-red)';
+                    label.appendChild(cb);
+                    label.appendChild(document.createTextNode(' ' + num));
                     purchasingContainer.appendChild(label);
                 });
             }
+
+            // BOSS committees and cost sheet jobs
             data.committees.forEach(c => {
                 const opt = document.createElement('option'); opt.value = c; opt.textContent = c; document.getElementById('bossComm').appendChild(opt);
             });
@@ -779,6 +861,8 @@
                 document.getElementById('bossCostJobs').appendChild(opt.cloneNode(true));
                 document.getElementById('jonasJobs').appendChild(opt.cloneNode(true));
             });
+
+            // JR titles
             data.jrs.forEach(jr => {
                 const opt = document.createElement('option'); opt.value = jr; opt.textContent = jr; document.getElementById('jrTitle').appendChild(opt);
             });
@@ -791,7 +875,7 @@
             google.script.run.withSuccessHandler(populateFormDropdowns).withFailureHandler(console.error).getInitialFormData();
         }
 
-        // 1. Current User Details
+        // Current User Details
         google.script.run.withSuccessHandler(function (user) {
             if (user && user.email) {
                 document.getElementById('reqEmail').value = user.email;
