@@ -175,6 +175,37 @@
 
 ---
 
+## 15. Status Change Form — New Department Label
+
+- [ ] Check "Site Transfer" → site_sec expands → New Department field has no "(Optional)" text
+- [ ] Help text reads: "For same-site transfers, New Department is the primary change — please specify"
+- [ ] Field is not required (no asterisk, form submits without it filled)
+
+---
+
+## 16. Status Change Form — Systems Sync with New Hire
+
+- [ ] NEW System Access list includes: ADP Supervisor Access, BOSS, CAA, Delivery, DSS, Fleetio, Google Account, Incidents, Jonas Purchasing, Net Promoter Score, SiteDocs, Central Purchasing
+- [ ] ADP Supervisor Access → inline sub-section expands with job site number checkboxes + salary data checkbox
+- [ ] SiteDocs label shows "⚠️ Do not add to hourly employees" warning
+- [ ] Central Purchasing → inline job site numbers (same as new hire form)
+- [ ] BOSS, Jonas, Google Account sub-sections still work correctly
+
+---
+
+## 17. Status Change Form — Equipment Inline Reveals
+
+- [ ] Check Computer → inline sub-section expands (New Request / Reassignment toggle)
+- [ ] New Request → shows Computer Type (Chromebook/Windows/Mac) + IT Director approval note
+- [ ] Windows or Mac → Office 365 question appears
+- [ ] Reassignment → shows Previous User, Previous Type, Serial Number fields
+- [ ] Uncheck Computer → sub-section collapses
+- [ ] Check Credit Card → inline sub-section expands with USA / Canada / Home Depot checkboxes + limit fields (not radio buttons)
+- [ ] Check Mobile Phone → inline sub-section expands with New Request / Reassignment toggle
+- [ ] Reassignment → shows Previous User + Previous Number fields
+
+---
+
 ## Notes / Issues Found
 
 _Record any bugs or unexpected behavior here during testing._
