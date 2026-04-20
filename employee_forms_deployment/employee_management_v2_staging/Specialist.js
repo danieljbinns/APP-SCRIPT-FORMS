@@ -14,7 +14,8 @@ function serveSpecialist(workflowId, dept) {
     'jonas': 'Jonas',
     'centralpurchasing': 'CentralPurchasing',
     'sitedocs': 'SiteDocs',
-    'review': 'Review306090'
+    'review': 'Review306090',
+    'safety': 'SafetyOnboarding'
   };
   
   const htmlFile = deptMap[dept] || 'Placeholder';
@@ -61,7 +62,8 @@ function submitSpecialistForm(formData) {
       'jonas': CONFIG.SHEETS.JONAS_RESULTS,
       'centralpurchasing': CONFIG.SHEETS.CENTRAL_PURCHASING_RESULTS,
       'sitedocs': CONFIG.SHEETS.SITEDOCS_RESULTS,
-      'review': CONFIG.SHEETS.REVIEW_306090_RESULTS
+      'review': CONFIG.SHEETS.REVIEW_306090_RESULTS,
+      'safety': CONFIG.SHEETS.SAFETY_ONBOARDING_RESULTS
     };
     
     const sheetName = sheetMap[dept] || 'Specialist Results';
@@ -76,10 +78,21 @@ function submitSpecialistForm(formData) {
       resultsSheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
     
-    resultsSheet.appendRow([
-      workflowId, formId, new Date(),
-      formData.details || JSON.stringify(formData), formData.notes || '', Session.getActiveUser().getEmail()
-    ]);
+    if (dept === 'safety') {
+      let details = {};
+      try { details = JSON.parse(formData.details || '{}'); } catch(e) {}
+      resultsSheet.appendRow([
+        workflowId, formId, new Date(),
+        details.siteDocsConfirmed ? 'Yes' : 'No',
+        details.dssConfirmed ? 'Yes' : 'No',
+        formData.notes || '', Session.getActiveUser().getEmail()
+      ]);
+    } else {
+      resultsSheet.appendRow([
+        workflowId, formId, new Date(),
+        formData.details || JSON.stringify(formData), formData.notes || '', Session.getActiveUser().getEmail()
+      ]);
+    }
 
     // 30/60/90: write confirmed JR title back to HR verification results so
     // getWorkflowContext picks up the authoritative value for all downstream emails/dashboard

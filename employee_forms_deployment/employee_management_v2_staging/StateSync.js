@@ -104,7 +104,8 @@ function syncWorkflowState(workflowId) {
             fleetio: (row[20] && row[20].includes('Fleetio')),
             businessCards: (row[21] && row[21].includes('Business Cards')),
             siteDocs: ((row[20] && row[20].includes('SiteDocs')) || (row[21] && row[21].includes('SiteDocs Tablet'))),
-            review: (row[47] === 'Yes')
+            review: (row[47] === 'Yes'),
+            safety: true
           }
         };
       }
@@ -132,6 +133,7 @@ function syncWorkflowState(workflowId) {
         if (reqInfo.items.businessCards && !checkDone(CONFIG.SHEETS.BUSINESS_CARDS_RESULTS)) pending.push('Business Cards');
         if (reqInfo.items.siteDocs && !checkDone(CONFIG.SHEETS.SITEDOCS_RESULTS)) pending.push('SiteDocs');
         if (reqInfo.items.review && !checkDone(CONFIG.SHEETS.REVIEW_306090_RESULTS)) pending.push('30/60/90');
+        if (reqInfo.items.safety && !checkDone(CONFIG.SHEETS.SAFETY_ONBOARDING_RESULTS)) pending.push('Safety Onboarding');
         
         if (pending.length > 0) {
           granularStatus = 'Pending: ' + pending.join(', ');

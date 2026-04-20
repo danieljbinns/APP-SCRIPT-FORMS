@@ -210,7 +210,7 @@ function bumpRequest(workflowId, targetStep) {
     // For MVP, we map targets to roles
 
     switch (targetStep) {
-      case 'id_setup': recipient = CONFIG.EMAILS.IT || 'IT Team'; formType = 'ID Setup'; break;
+      case 'id_setup': recipient = CONFIG.EMAILS.IDSETUP; formType = 'ID Setup'; break;
       case 'hr_verification': recipient = CONFIG.EMAILS.HR || 'HR Team'; formType = 'HR Verification'; break;
       case 'it_setup': recipient = CONFIG.EMAILS.IT || 'IT Team'; formType = 'IT Setup'; break;
       case 'jonas': recipient = CONFIG.EMAILS.JONAS; formType = 'Jonas Setup'; break;

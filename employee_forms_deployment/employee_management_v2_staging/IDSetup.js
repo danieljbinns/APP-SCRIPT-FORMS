@@ -166,53 +166,14 @@ function submitEmployeeIDSetup(formData) {
       formData.siteDocsWorkerId, formData.siteDocsJobCode,
       formData.siteDocsUsername || 'N/A', formData.siteDocsPassword || 'N/A',
       formData.dssUsername, formData.dssPassword,
-      formData.setupNotes || '', Session.getActiveUser().getEmail()
+      formData.setupNotes || '', formData.bossWisCreated || 'No', Session.getActiveUser().getEmail()
     ]);
     
     const actingUser = Session.getActiveUser().getEmail();
     updateWorkflow(workflowId, 'In Progress', 'ID Setup Complete', '', actingUser);
     syncWorkflowState(workflowId);
 
-    // NOTIFY SAFETY GROUP (Post-ID Setup)
-    try {
-        // const safetyUrl = buildFormUrl('specialist', { wf: workflowId, dept: 'sitedocs' }); // REMOVED link
-        sendFormEmail({
-          to: CONFIG.EMAILS.SAFETY,
-          subject: 'Safety Verification Required',
-          body: 'Employee has been added to SiteDocs and DSS. Please confirm locations and assigned courses are correct.',
-          formUrl: '',
-          displayName: 'TEAM Group - Employee Onboarding',
-          contextData: {
-            workflowType: 'New Hire',
-            employeeName: requestData.employeeName,
-            jobTitle: requestData.position,
-            jrTitle: requestData.jrTitle,
-            siteName: requestData.siteName,
-            jobSiteNumber: requestData.jobSiteNumber,
-            hireDate: requestData.hireDate,
-            employmentType: requestData.employmentType,
-            employeeType: requestData.employeeType,
-            newHireOrRehire: requestData.newHireOrRehire,
-            managerName: requestData.managerName,
-            managerEmail: requestData.managerEmail,
-            requesterEmail: requestData.requesterEmail,
-            department: requestData.department || '',
-            internalEmployeeId: formData.internalEmployeeId,
-            dssUsername: formData.dssUsername,
-            dssPassword: formData.dssPassword,
-            siteDocsUsername: formData.siteDocsUsername || '',
-            siteDocsPassword: formData.siteDocsPassword || '',
-            siteDocsWorkerId: formData.siteDocsWorkerId,
-            siteDocsJobCode: formData.siteDocsJobCode
-          }
-        });
-        Logger.log('[SUCCESS] Safety notification sent to ' + CONFIG.EMAILS.SAFETY);
-    } catch (safeErr) {
-        Logger.log('[ERROR] Failed to notify Safety group: ' + safeErr.toString());
-    }
-
-    
-    triggerNextStepFromIDSetup(workflowId, formData);
+    triggerNextStepFromIDSetup(workflowId, formData, requestData);
     
     return {
       success: true,
@@ -228,8 +189,36 @@ function submitEmployeeIDSetup(formData) {
   }
 }
 
-function triggerNextStepFromIDSetup(workflowId, setupData) {
-  const requestData = getIDSetupRequestData(workflowId);
+function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
+  try {
+    const safetyUrl = buildFormUrl('specialist', { wf: workflowId, dept: 'safety' });
+    sendFormEmail({
+      to: CONFIG.EMAILS.SAFETY,
+      subject: 'Safety Onboarding Required — ' + requestData.employeeName,
+      body: 'Please confirm that SiteDocs locations and DSS learning paths have been assigned for this employee.',
+      formUrl: safetyUrl,
+      displayName: 'TEAM Group - Employee Onboarding',
+      contextData: {
+        workflowType: 'New Hire',
+        employeeName: requestData.employeeName,
+        jobTitle: requestData.position,
+        jrTitle: requestData.jrTitle,
+        siteName: requestData.siteName,
+        hireDate: requestData.hireDate,
+        employmentType: requestData.employmentType,
+        managerName: requestData.managerName,
+        dssUsername: setupData ? setupData.dssUsername : '',
+        siteDocsUsername: setupData ? (setupData.siteDocsUsername || '') : ''
+      }
+    });
+    Logger.log('[SUCCESS] Safety Onboarding form email sent to ' + CONFIG.EMAILS.SAFETY);
+  } catch (safeErr) {
+    Logger.log('[ERROR] Failed to send Safety Onboarding email: ' + safeErr.toString());
+  }
+}
+
+function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
+  if (!requestData) requestData = getIDSetupRequestData(workflowId);
   if (!requestData.success) return;
   
   // Optimization: Use already fetched requestData instead of re-reading sheet
@@ -292,6 +281,9 @@ function triggerNextStepFromIDSetup(workflowId, setupData) {
       contextData: context
     });
     Logger.log('[SUCCESS] HR Verification email sent to HR + Payroll (Hourly/No System Access - HR Step active)');
+
+    // Send Safety Onboarding form to safety group (hourly path fires here; salary fires after HR Verification)
+    sendSafetyOnboardingEmail(workflowId, requestData, setupData);
 
   } else {
     // Standard Path (Salary OR System Access)

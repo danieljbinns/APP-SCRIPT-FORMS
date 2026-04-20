@@ -3,8 +3,9 @@
  */
 
 function serveEquipmentRequest() {
-  const template = HtmlService.createTemplateFromFile('EquipmentSystemRequest');
+  const template = HtmlService.createTemplateFromFile('InitialRequest');
   template.referenceData = JSON.stringify(getInitialFormData());
+  template.mode = 'equipment';
   return template.evaluate()
     .setTitle('System & Equipment Request')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);

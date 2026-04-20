@@ -5,6 +5,7 @@
 function serveInitialRequest() {
   const template = HtmlService.createTemplateFromFile('InitialRequest');
   template.referenceData = JSON.stringify(getInitialFormData());
+  template.mode = 'new_hire';
   return template.evaluate()
     .setTitle('New Employee Request')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -147,7 +148,8 @@ function formatInitialRequestData(data) {
     data.comments || '',
     Array.isArray(data.adpSites) ? data.adpSites.join(', ') : (data.adpSites || ''),
     data.department || '',
-    Array.isArray(data.purchasingSites) ? data.purchasingSites.join(', ') : (data.purchasingSites || '')
+    Array.isArray(data.purchasingSites) ? data.purchasingSites.join(', ') : (data.purchasingSites || ''),
+    data.adpSalaryAccess || 'No'
   ];
 }
 

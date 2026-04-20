@@ -77,7 +77,9 @@ function submitHRVerification(formData) {
     let employmentType = '';
     let systemAccess = '';
     let requesterEmail = '';
-    
+    let adpSalaryAccess = false;
+    const adpSalaryAccessCol = headers.indexOf('ADP Salary Access');
+
     for (let i = 1; i < mainData.length; i++) {
       if (mainData[i][0] === workflowId) {
         if (firstNameCol !== -1) mainSheet.getRange(i + 1, firstNameCol + 1).setValue(formData.firstName);
@@ -88,10 +90,11 @@ function submitHRVerification(formData) {
         if (siteNameCol !== -1) mainSheet.getRange(i + 1, siteNameCol + 1).setValue(formData.siteName);
         if (jrTitleCol !== -1) mainSheet.getRange(i + 1, jrTitleCol + 1).setValue(formData.jobTitle);
         if (jrAssignCol !== -1) mainSheet.getRange(i + 1, jrAssignCol + 1).setValue(formData.jrTitle);
-        
+
         employmentType = mainData[i][9] || '';
         systemAccess = mainData[i][19] || '';
         requesterEmail = mainData[i][5] || '';
+        adpSalaryAccess = adpSalaryAccessCol !== -1 && mainData[i][adpSalaryAccessCol] === 'Yes';
         break;
       }
     }
@@ -190,14 +193,20 @@ function submitHRVerification(formData) {
       Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)' + (hasAdpSupervisor ? ' — CC: Payroll (ADP Supervisor required)' : ''));
 
       // Notify payroll for salary/expedite new hires after HR verification
+      const salaryAccessCallout = adpSalaryAccess
+        ? '\n\n⚠️ <strong style="color:#EB1C2D;">ADP SALARY ACCESS REQUIRED</strong> — This employee has been flagged as requiring access to salary data in ADP. Please ensure the appropriate salary data permissions are granted before or on their start date.'
+        : '';
       sendFormEmail({
         to: CONFIG.EMAILS.PAYROLL,
-        subject: 'HR Verified',
-        body: 'HR has completed verification for ' + formData.firstName + ' ' + formData.lastName + '. ADP ID assigned: ' + formData.adpAssociateId + '. IT setup is now in progress.',
+        subject: 'HR Verified' + (adpSalaryAccess ? ' — Salary Access Required' : ''),
+        body: 'HR has completed verification for ' + formData.firstName + ' ' + formData.lastName + '. ADP ID assigned: ' + formData.adpAssociateId + '. IT setup is now in progress.' + salaryAccessCallout,
         formUrl: '',
         contextData: context
       });
-      Logger.log('[SUCCESS] Payroll notification sent for salary new hire.');
+      Logger.log('[SUCCESS] Payroll notification sent for salary new hire.' + (adpSalaryAccess ? ' (Salary access flag included)' : ''));
+
+      // Send Safety Onboarding form (salary path fires here; hourly fires after ID Setup)
+      sendSafetyOnboardingEmail(workflowId, { employeeName: verifiedName, position: formData.jobTitle, jrTitle: formData.jrTitle, siteName: formData.siteName || '', hireDate: formData.hireDate || '', employmentType: employmentType, managerName: formData.managerName }, null);
     }
     
     return {

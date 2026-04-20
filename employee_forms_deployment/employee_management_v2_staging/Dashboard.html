@@ -79,6 +79,19 @@
             cursor: pointer;
         }
 
+        .filter-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .filter-group-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        .filter-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.15s; font-weight: 500; }
+        .filter-btn:hover { border-color: #666; color: white; }
+        .filter-btn.active { color: white; border-color: transparent; }
+        .filter-btn.active.type-onboarding { background: var(--info); }
+        .filter-btn.active.type-eoe { background: var(--brand-red); }
+        .filter-btn.active.type-change { background: #7b2ff7; }
+        .filter-btn.active.type-equip { background: #0097a7; }
+        .filter-btn.active.status-pending { background: var(--warning); color: #000; }
+        .filter-btn.active.status-completed { background: var(--success); color: #000; }
+        .filter-btn.active.status-cancelled { background: #555; }
+
         button.refresh-btn {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -290,22 +303,23 @@
             </div>
         </header>
 
-        <div class="controls" style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div class="controls" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
             <input type="text" id="searchInput" class="search-box" placeholder="Search employee, requester...">
-            
-            <select id="typeFilter" class="search-box" style="width: 150px; cursor: pointer;">
-                <option value="ALL">All Types</option>
-                <option value="ONBOARDING">New Hires</option>
-                <option value="EOE">End of Employment</option>
-                <option value="CHANGE">Position Change</option>
-            </select>
-            
-            <select id="statusFilter" class="search-box" style="width: 180px; cursor: pointer;">
-                <option value="ALL">All Statuses</option>
-                <option value="PENDING">Action Required</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCELLED">Cancelled</option>
-            </select>
+
+            <div class="filter-group">
+                <span class="filter-group-label">Type</span>
+                <button class="filter-btn type-onboarding" data-filter="type" data-value="ONBOARDING">New Hires</button>
+                <button class="filter-btn type-eoe" data-filter="type" data-value="EOE">End of Employment</button>
+                <button class="filter-btn type-change" data-filter="type" data-value="CHANGE">Position Change</button>
+                <button class="filter-btn type-equip" data-filter="type" data-value="EQUIP">Equipment</button>
+            </div>
+
+            <div class="filter-group">
+                <span class="filter-group-label">Status</span>
+                <button class="filter-btn status-pending" data-filter="status" data-value="PENDING">Action Required</button>
+                <button class="filter-btn status-completed" data-filter="status" data-value="COMPLETED">Completed</button>
+                <button class="filter-btn status-cancelled" data-filter="status" data-value="CANCELLED">Cancelled</button>
+            </div>
 
             <select id="sortSelect" class="search-box" style="width: 150px; cursor: pointer;">
                 <option value="DATE_DESC">Newest First</option>
@@ -321,8 +335,9 @@
             <table id="workflowTable">
                 <thead>
                     <tr>
-                        <th>Employee</th>
                         <th>Type</th>
+                        <th>Employee</th>
+                        <th>Emp Type</th>
                         <th>Status</th>
                         <th>Current Action Pending</th>
                         <th>Requester</th>
@@ -335,7 +350,7 @@
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="10" style="text-align:center; padding: 40px;">Loading requests...</td>
+                        <td colspan="11" style="text-align:center; padding: 40px;">Loading requests...</td>
                     </tr>
                 </tbody>
             </table>
@@ -399,8 +414,8 @@
 
         // Filtering and Sorting State
         let currentSort = 'DATE_DESC';
-        let currentTypeFilter = 'ALL';
-        let currentStatusFilter = 'ALL';
+        let activeTypeFilters = new Set();
+        let activeStatusFilters = new Set();
         let searchTerm = '';
 
         // Pagination State
@@ -409,7 +424,7 @@
 
         function loadData() {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
             google.script.run.withSuccessHandler(displayData).withFailureHandler(showError).getDashboardData();
         }
 
@@ -460,7 +475,7 @@
             const currentData = filteredWorkflows.slice(startIndex, endIndex);
 
             if (currentData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
                 updatePaginationUI(0, 0, 0);
                 return;
             }
@@ -471,19 +486,26 @@
                     (wf.status === 'Cancelled' ? 'cancelled' :
                         (wf.status === 'Pending' ? 'pending' : 'in-progress'));
 
-                const typeBadge = wf.type === 'End of Employment' ?
-                    '<span style="background:var(--brand-red); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">EOE</span>' :
-                    (wf.type === 'Onboarding' ? '<span style="background:var(--info); color:white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 8px;">NEW HIRE</span>' : '');
-
                 const isOnboarding = wf.type === 'Onboarding';
                 const startDate = isOnboarding ? (wf.hireDate || '-') : 'N/A';
                 const effectiveDate = isOnboarding ? 'N/A' : (wf.hireDate || '-');
                 const stepColor = (wf.step && wf.step.includes('Pending:')) ? '#ffab00' : '#a0a0a0';
 
+                const typeLabel = wf.type === 'End of Employment' ? 'EOE' :
+                    wf.type === 'Onboarding' ? 'New Hire' :
+                    wf.type === 'Position Change' ? 'Position Change' :
+                    wf.type === 'Equipment' ? 'Equipment' : (wf.type || '-');
+                const typeColor = wf.type === 'End of Employment' ? 'var(--brand-red)' :
+                    wf.type === 'Onboarding' ? 'var(--info)' :
+                    wf.type === 'Position Change' ? '#7b2ff7' :
+                    wf.type === 'Equipment' ? '#0097a7' : '#555';
+                const typeCellHtml = '<span style="background:' + typeColor + '; color:white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight:600; white-space:nowrap;">' + typeLabel + '</span>';
+
                 const empTypeBadge = wf.empType ? '<span style="background:#333; color:#ccc; padding: 2px 6px; border-radius: 4px; font-size: 10px;">' + escapeHtml(wf.empType) + '</span>' : '-';
 
                 html += '<tr data-id="' + escapeHtml(wf.id) + '" data-type="' + escapeHtml(wf.type) + '" onclick="openDetails(this.dataset.id,this.dataset.type)">' +
-                    '<td>' + typeBadge + '<strong>' + escapeHtml(wf.employee || 'Pending Name') + '</strong></td>' +
+                    '<td>' + typeCellHtml + '</td>' +
+                    '<td><strong>' + escapeHtml(wf.employee || 'Pending Name') + '</strong></td>' +
                     '<td>' + empTypeBadge + '</td>' +
                     '<td><span class="badge ' + statusClass + '">' + escapeHtml(wf.status) + '</span></td>' +
                     '<td style="color: ' + stepColor + '">' + escapeHtml(wf.step) + '</td>' +
@@ -534,7 +556,7 @@
         }
 
         function showError(msg) {
-            document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="11" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
         }
 
         // Setup Search and Filter Event Listeners
@@ -544,40 +566,62 @@
             clearTimeout(searchDebounce);
             searchDebounce = setTimeout(applyFiltersAndSort, 150);
         });
-        document.getElementById('typeFilter').addEventListener('change', function (e) {
-            currentTypeFilter = e.target.value;
-            applyFiltersAndSort();
-        });
-        document.getElementById('statusFilter').addEventListener('change', function (e) {
-            currentStatusFilter = e.target.value;
-            applyFiltersAndSort();
-        });
         document.getElementById('sortSelect').addEventListener('change', function (e) {
             currentSort = e.target.value;
             applyFiltersAndSort();
         });
 
+        // Multi-select button group toggle
+        document.querySelectorAll('.filter-btn[data-filter]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const filter = this.dataset.filter;
+                const value = this.dataset.value;
+                const set = filter === 'type' ? activeTypeFilters : activeStatusFilters;
+                if (set.has(value)) {
+                    set.delete(value);
+                    this.classList.remove('active');
+                } else {
+                    set.add(value);
+                    this.classList.add('active');
+                }
+                applyFiltersAndSort();
+            });
+        });
+
+        const TYPE_MAP = { 'ONBOARDING': 'Onboarding', 'EOE': 'End of Employment', 'CHANGE': 'Position Change', 'EQUIP': 'Equipment' };
+
         function applyFiltersAndSort() {
             // 1. Filter
             filteredWorkflows = allWorkflows.filter(wf => {
                 // Search Text
-                const matchesSearch = !searchTerm || 
+                const matchesSearch = !searchTerm ||
                     (wf.employee && wf.employee.toLowerCase().includes(searchTerm)) ||
                     (wf.requesterName && wf.requesterName.toLowerCase().includes(searchTerm)) ||
                     (wf.initiator && wf.initiator.toLowerCase().includes(searchTerm)) ||
                     (wf.id && wf.id.toLowerCase().includes(searchTerm));
-                
+
                 if (!matchesSearch) return false;
 
-                // Type Dropdown
-                if (currentTypeFilter === 'ONBOARDING' && wf.type !== 'Onboarding') return false;
-                if (currentTypeFilter === 'EOE' && wf.type !== 'End of Employment') return false;
-                if (currentTypeFilter === 'CHANGE' && wf.type !== 'Position Change') return false;
+                // Type multi-select (empty set = show all)
+                if (activeTypeFilters.size > 0) {
+                    const allowed = [...activeTypeFilters].map(v => TYPE_MAP[v]);
+                    if (!allowed.includes(wf.type)) return false;
+                }
 
-                // Status Dropdown
-                if (currentStatusFilter === 'COMPLETED' && wf.status !== 'Completed') return false;
-                if (currentStatusFilter === 'CANCELLED' && wf.status !== 'Cancelled') return false;
-                if (currentStatusFilter === 'PENDING' && (wf.status === 'Completed' || wf.status === 'Cancelled')) return false;
+                // Status multi-select (empty set = show all)
+                if (activeStatusFilters.size > 0) {
+                    const isCompleted = wf.status === 'Completed' || wf.status === 'Complete';
+                    const isCancelled = wf.status === 'Cancelled';
+                    const isPending = !isCompleted && !isCancelled;
+                    if (activeStatusFilters.has('COMPLETED') && !isCompleted) return false;
+                    if (activeStatusFilters.has('CANCELLED') && !isCancelled) return false;
+                    if (activeStatusFilters.has('PENDING') && !isPending) return false;
+                    // If multiple status filters active, show union (OR logic)
+                    const matchesAny = (activeStatusFilters.has('COMPLETED') && isCompleted) ||
+                        (activeStatusFilters.has('CANCELLED') && isCancelled) ||
+                        (activeStatusFilters.has('PENDING') && isPending);
+                    if (!matchesAny) return false;
+                }
 
                 return true;
             });

@@ -415,17 +415,10 @@
 
       <!-- Gatekeeper Section (shown first) -->
       <div id="gatekeeperSection">
-        <h1>New Employee Request</h1>
+        <h1><?= mode === 'equipment' ? 'System & Equipment Request' : 'New Employee Request' ?></h1>
         <p style="color: var(--text-muted); margin-bottom: 2rem;">
-          Before proceeding, please confirm all recruiting requirements have been met.
+          <?= mode === 'equipment' ? 'Request equipment or system access for an existing employee.' : 'Before proceeding, please confirm all recruiting requirements have been met.' ?>
         </p>
-
-        <div style="background: #1e1e00; border: 1px solid #F59E0B; border-radius: 6px; padding: 1rem 1.25rem; margin-bottom: 2rem; text-align: left; max-width: 560px; margin-left: auto; margin-right: auto;">
-          <strong style="color: #F59E0B;">⚠️ US Employees — Background Check Required</strong>
-          <p style="color: #d4b44a; margin-top: 0.5rem; margin-bottom: 0; font-size: 0.9rem;">
-            Do not submit this request until the employee's background check has been completed and cleared. Submitting early may result in access being provisioned before clearance is confirmed.
-          </p>
-        </div>
 
         <button type="button" class="confirm-button" onclick="confirmGatekeeper()">
           ✓ Yes, all requirements are met
@@ -476,7 +469,7 @@
         <div class="form-section">
           <h2>Employee Information</h2>
 
-          <div class="form-row">
+          <div class="form-row new-hire-only">
             <div class="form-field">
               <label>Hire Date <span class="required">*</span></label>
               <input type="date" name="hireDate" id="hireDate" required onchange="checkHireDate()">
@@ -597,7 +590,7 @@
             </div>
           </div>
 
-          <div class="question-wrapper">
+          <div class="question-wrapper new-hire-only">
             <label>System Access Needed? <span class="required">*</span></label>
             <div class="radio-group">
               <label>
@@ -620,23 +613,30 @@
           <h2>System Access</h2>
 
           <!-- Systems/Apps Checkboxes (Alphabetical) -->
-          <h3 style="margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.1rem;">Systems/Apps</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; padding: 0.6rem 0.8rem; background: #252525; border-radius: 4px; border-left: 3px solid var(--border-color);">
+          <h3 class="systems-only" style="margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.1rem;">Systems/Apps</h3>
+          <p class="systems-only" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; padding: 0.6rem 0.8rem; background: #252525; border-radius: 4px; border-left: 3px solid var(--border-color);">
             All employees receive <strong>DSS+</strong> and <strong>Sitedocs</strong>. Most hourly employees need no further access.
           </p>
-          <div class="checkbox-group">
+          <div class="checkbox-group systems-only">
             <label class="checkbox-label">
               <input type="checkbox" name="systems" value="ADP Supervisor Access" id="adpSupervisorAccess"
                 onchange="toggleSections()">
               <span>ADP Supervisor Access</span>
             </label>
-            <!-- ADP Sites sub-section (shown when ADP Supervisor is checked) -->
+            <!-- ADP sub-section (shown when ADP Supervisor is checked) -->
             <div id="adpSitesSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
-              <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Required ADP Sites <span class="required">*</span></label>
-              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Select all sites this employee needs ADP access for. The assigned site is pre-selected.</p>
-              <div id="adpSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px;">
+              <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Required ADP Job Site Numbers <span class="required">*</span></label>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Select all job site numbers this employee needs ADP access for.</p>
+              <div id="adpSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin-bottom: 12px;">
                 <!-- Populated dynamically -->
               </div>
+              <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin-top: 8px;">
+                <input type="checkbox" name="adpSalaryAccess" id="adpSalaryAccess" value="Yes" style="width:18px;height:18px;accent-color:var(--brand-red);flex-shrink:0;margin-top:2px;">
+                <span style="font-size:0.85rem;">
+                  <strong style="color:var(--text-main);">Requires access to salary data?</strong>
+                  <span style="display:block; color:var(--text-muted); font-size:0.8rem;">If checked, HR/Payroll will be notified to grant salary data permissions in ADP before the start date.</span>
+                </span>
+              </label>
             </div>
             <label class="checkbox-label">
               <input type="checkbox" name="systems" value="BOSS" onchange="toggleSections()">
@@ -679,17 +679,17 @@
                 onchange="toggleSections()">
               <span>Central Purchasing Required</span>
             </label>
-            <!-- Central Purchasing Sites sub-section (shown when Central Purchasing is checked) -->
+            <!-- Central Purchasing sub-section (shown when Central Purchasing is checked) -->
             <div id="purchasingSitesSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
-              <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Required Purchasing Sites <span class="required">*</span></label>
-              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Select all sites this employee needs Central Purchasing access for.</p>
-              <div id="purchasingSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px;">
+              <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Required Purchasing Job Site Numbers <span class="required">*</span></label>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Select all job site numbers this employee needs Central Purchasing access for.</p>
+              <div id="purchasingSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;">
                 <!-- Populated dynamically -->
               </div>
             </div>
           </div>
 
-          <!-- Equipment Checkboxes (Alphabetical) -->
+          <!-- Equipment Checkboxes (Alphabetical) with inline sub-sections -->
           <h3 style="margin-top: 2rem; margin-bottom: 1rem; font-size: 1.1rem;">Equipment</h3>
           <div class="checkbox-group">
             <label class="checkbox-label">
@@ -700,14 +700,119 @@
               <input type="checkbox" name="equipment" value="Computer" onchange="toggleEquipmentDetails()">
               <span>Computer</span>
             </label>
+            <div id="computerDetailsSection" style="display: none; grid-column: 1 / -1; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444; margin: 4px 0 8px 0;">
+              <h4 style="margin-bottom: 12px; font-size: 0.95rem; color: var(--text-muted);">Computer Details</h4>
+              <div class="form-field">
+                <label>Request Type <span class="required">*</span></label>
+                <div class="radio-group">
+                  <label><input type="radio" name="computerRequestType" value="New" onchange="toggleComputerReassignFields()"><span class="radio-button">New Request</span></label>
+                  <label><input type="radio" name="computerRequestType" value="Reassignment" onchange="toggleComputerReassignFields()"><span class="radio-button">Reassignment</span></label>
+                </div>
+              </div>
+              <div id="computerNewFields" style="display: none; margin-top: 1rem;">
+                <div class="form-field">
+                  <label>Computer Type Requested</label>
+                  <div class="radio-group">
+                    <label><input type="radio" name="computerType" value="Chromebook" onchange="toggleOffice365Question()"><span class="radio-button">Chromebook</span></label>
+                    <label><input type="radio" name="computerType" value="Windows" onchange="toggleOffice365Question()"><span class="radio-button">Windows</span></label>
+                    <label><input type="radio" name="computerType" value="Mac" onchange="toggleOffice365Question()"><span class="radio-button">Mac</span></label>
+                  </div>
+                  <div style="margin-top: 0.75rem; padding: 0.75rem; background: #DBEAFE; border-left: 4px solid #3B82F6; color: #1E40AF; border-radius: 4px; font-size: 0.9rem;">
+                    <strong>Note:</strong> Chromebook is the default option. Windows or Mac computers require IT Director approval.
+                  </div>
+                </div>
+                <div id="office365Question" style="display: none; margin-top: 1rem;">
+                  <div class="form-field">
+                    <label>Office 365 License Required?</label>
+                    <div class="radio-group">
+                      <label><input type="radio" name="office365Required" value="Yes"><span class="radio-button">Yes</span></label>
+                      <label><input type="radio" name="office365Required" value="No"><span class="radio-button">No</span></label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="computerReassignFields" style="display: none; margin-top: 1rem;">
+                <div class="form-row">
+                  <div class="form-field">
+                    <label>Previous User Name</label>
+                    <input type="text" name="computerPreviousUser" placeholder="Enter previous user name">
+                  </div>
+                  <div class="form-field">
+                    <label>Previous Computer Type</label>
+                    <select name="computerPreviousType" style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                      <option value="">-- Select Type --</option>
+                      <option value="Chromebook">Chromebook</option>
+                      <option value="Windows">Windows</option>
+                      <option value="Mac">Mac</option>
+                    </select>
+                  </div>
+                  <div class="form-field">
+                    <label>Serial Number (if known)</label>
+                    <input type="text" name="computerSerialNumber" placeholder="Enter serial number">
+                  </div>
+                </div>
+              </div>
+            </div>
             <label class="checkbox-label">
               <input type="checkbox" name="equipment" value="Credit Card" onchange="toggleEquipmentDetails()">
               <span>Credit Card</span>
             </label>
+            <div id="creditCardDetailsSection" style="display: none; grid-column: 1 / -1; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444; margin: 4px 0 8px 0;">
+              <h4 style="margin-bottom: 8px; font-size: 0.95rem; color: var(--text-muted);">Credit Card Details</h4>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Select one or more credit card types needed:</p>
+              <div class="form-row">
+                <div class="form-field">
+                  <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px;">
+                    <input type="checkbox" name="creditCardUSA" value="Yes" style="width: 20px; height: 20px;"><span>USA Credit Card</span>
+                  </label>
+                  <div style="margin-top: 0.5rem;">
+                    <input type="text" name="creditCardLimitUSA" placeholder="Monthly Limit (e.g., $1,000)" style="width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px;">
+                    <input type="checkbox" name="creditCardCanada" value="Yes" style="width: 20px; height: 20px;"><span>Canada Credit Card</span>
+                  </label>
+                  <div style="margin-top: 0.5rem;">
+                    <input type="text" name="creditCardLimitCanada" placeholder="Monthly Limit (e.g., $1,000 CAD)" style="width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px;">
+                    <input type="checkbox" name="creditCardHomeDepot" value="Yes" style="width: 20px; height: 20px;"><span>Home Depot Credit Card</span>
+                  </label>
+                  <div style="margin-top: 0.5rem;">
+                    <input type="text" name="creditCardLimitHomeDepot" placeholder="Monthly Limit (e.g., $1,000)" style="width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                  </div>
+                </div>
+              </div>
+            </div>
             <label class="checkbox-label">
               <input type="checkbox" name="equipment" value="Mobile Phone" onchange="toggleEquipmentDetails()">
               <span>Mobile Phone</span>
             </label>
+            <div id="mobilePhoneDetailsSection" style="display: none; grid-column: 1 / -1; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444; margin: 4px 0 8px 0;">
+              <h4 style="margin-bottom: 12px; font-size: 0.95rem; color: var(--text-muted);">Mobile Phone Details</h4>
+              <div class="form-field">
+                <label>Request Type <span class="required">*</span></label>
+                <div class="radio-group">
+                  <label><input type="radio" name="phoneRequestType" value="New" onchange="togglePhoneReassignFields()"><span class="radio-button">New Request</span></label>
+                  <label><input type="radio" name="phoneRequestType" value="Reassignment" onchange="togglePhoneReassignFields()"><span class="radio-button">Reassignment</span></label>
+                </div>
+              </div>
+              <div id="phoneReassignFields" style="display: none; margin-top: 1rem;">
+                <div class="form-row-2">
+                  <div class="form-field">
+                    <label>Previous User Name</label>
+                    <input type="text" name="phonePreviousUser" placeholder="Enter previous user name">
+                  </div>
+                  <div class="form-field">
+                    <label>Previous Phone Number</label>
+                    <input type="tel" name="phonePreviousNumber" placeholder="Enter previous phone number">
+                  </div>
+                </div>
+              </div>
+            </div>
             <label class="checkbox-label">
               <input type="checkbox" name="equipment" value="SiteDocs Tablet" onchange="toggleEquipmentDetails()">
               <span>SiteDocs Tablet</span>
@@ -721,7 +826,7 @@
           <hr style="margin-top: 2rem;">
 
           <!-- Google Account Details (conditional on Google Account checkbox) -->
-          <div id="googleAccountDetailsSection" style="display: none;">
+          <div id="googleAccountDetailsSection" class="systems-only" style="display: none;">
             <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Google Account Details</h3>
 
             <div class="form-row-2">
@@ -749,172 +854,8 @@
             </div>
           </div>
 
-          <!-- Computer Details (conditional on Computer checkbox) -->
-          <div id="computerDetailsSection" style="display: none;">
-            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Computer Details</h3>
-            <div class="form-field">
-              <label>Request Type <span class="required">*</span></label>
-              <div class="radio-group">
-                <label>
-                  <input type="radio" name="computerRequestType" value="New" onchange="toggleComputerReassignFields()">
-                  <span class="radio-button">New Request</span>
-                </label>
-                <label>
-                  <input type="radio" name="computerRequestType" value="Reassignment"
-                    onchange="toggleComputerReassignFields()">
-                  <span class="radio-button">Reassignment</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Fields for NEW computer request -->
-            <div id="computerNewFields" style="display: none; margin-top: 1rem;">
-              <div class="form-field">
-                <label>Computer Type Requested</label>
-                <div class="radio-group">
-                  <label>
-                    <input type="radio" name="computerType" value="Chromebook"
-                      onchange="toggleOffice365Question()">
-                    <span class="radio-button">Chromebook</span>
-                  </label>
-                  <label>
-                    <input type="radio" name="computerType" value="Windows" onchange="toggleOffice365Question()">
-                    <span class="radio-button">Windows</span>
-                  </label>
-                  <label>
-                    <input type="radio" name="computerType" value="Mac" onchange="toggleOffice365Question()">
-                    <span class="radio-button">Mac</span>
-                  </label>
-                </div>
-                <div
-                  style="margin-top: 0.75rem; padding: 0.75rem; background: #DBEAFE; border-left: 4px solid #3B82F6; color: #1E40AF; border-radius: 4px; font-size: 0.9rem;">
-                  <strong>Note:</strong> Chromebook is the default option. Windows or Mac computers require IT Director
-                  approval.
-                </div>
-              </div>
-
-              <div id="office365Question" style="display: none; margin-top: 1rem;">
-                <div class="form-field">
-                  <label>Office 365 License Required?</label>
-                  <div class="radio-group">
-                    <label>
-                      <input type="radio" name="office365Required" value="Yes">
-                      <span class="radio-button">Yes</span>
-                    </label>
-                    <label>
-                      <input type="radio" name="office365Required" value="No">
-                      <span class="radio-button">No</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Fields for REASSIGNMENT -->
-            <div id="computerReassignFields" style="display: none; margin-top: 1rem;">
-              <div class="form-row">
-                <div class="form-field">
-                  <label>Previous User Name</label>
-                  <input type="text" name="computerPreviousUser" placeholder="Enter previous user name">
-                </div>
-                <div class="form-field">
-                  <label>Previous Computer Type</label>
-                  <select name="computerPreviousType"
-                    style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                    <option value="">-- Select Type --</option>
-                    <option value="Chromebook">Chromebook</option>
-                    <option value="Windows">Windows</option>
-                    <option value="Mac">Mac</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label>Serial Number (if known)</label>
-                  <input type="text" name="computerSerialNumber" placeholder="Enter serial number">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Credit Card Details (conditional on Credit Card checkbox) -->
-          <div id="creditCardDetailsSection" style="display: none;">
-            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Credit Card Details</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Select one or more credit card
-              types needed:</p>
-
-            <div class="form-row">
-              <div class="form-field">
-                <label class="checkbox-label"
-                  style="display: flex; align-items: center; gap: 0.5rem; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px;">
-                  <input type="checkbox" name="creditCardUSA" value="Yes" style="width: 20px; height: 20px;">
-                  <span>USA Credit Card</span>
-                </label>
-                <div style="margin-top: 0.5rem;">
-                  <input type="text" name="creditCardLimitUSA" placeholder="Monthly Limit (e.g., $1,000)"
-                    style="width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                </div>
-              </div>
-
-              <div class="form-field">
-                <label class="checkbox-label"
-                  style="display: flex; align-items: center; gap: 0.5rem; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px;">
-                  <input type="checkbox" name="creditCardCanada" value="Yes" style="width: 20px; height: 20px;">
-                  <span>Canada Credit Card</span>
-                </label>
-                <div style="margin-top: 0.5rem;">
-                  <input type="text" name="creditCardLimitCanada" placeholder="Monthly Limit (e.g., $1,000 CAD)"
-                    style="width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                </div>
-              </div>
-
-              <div class="form-field">
-                <label class="checkbox-label"
-                  style="display: flex; align-items: center; gap: 0.5rem; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px;">
-                  <input type="checkbox" name="creditCardHomeDepot" value="Yes" style="width: 20px; height: 20px;">
-                  <span>Home Depot Credit Card</span>
-                </label>
-                <div style="margin-top: 0.5rem;">
-                  <input type="text" name="creditCardLimitHomeDepot" placeholder="Monthly Limit (e.g., $1,000)"
-                    style="width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Mobile Phone Details (conditional on Mobile Phone checkbox) -->
-          <div id="mobilePhoneDetailsSection" style="display: none;">
-            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Mobile Phone Details</h3>
-
-            <div class="form-field">
-              <label>Request Type <span class="required">*</span></label>
-              <div class="radio-group">
-                <label>
-                  <input type="radio" name="phoneRequestType" value="New" onchange="togglePhoneReassignFields()">
-                  <span class="radio-button">New Request</span>
-                </label>
-                <label>
-                  <input type="radio" name="phoneRequestType" value="Reassignment"
-                    onchange="togglePhoneReassignFields()">
-                  <span class="radio-button">Reassignment</span>
-                </label>
-              </div>
-            </div>
-
-            <div id="phoneReassignFields" style="display: none; margin-top: 1rem;">
-              <div class="form-row-2">
-                <div class="form-field">
-                  <label>Previous User Name</label>
-                  <input type="text" name="phonePreviousUser" placeholder="Enter previous user name">
-                </div>
-                <div class="form-field">
-                  <label>Previous Phone Number</label>
-                  <input type="tel" name="phonePreviousNumber" placeholder="Enter previous phone number">
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- BOSS Details (conditional on BOSS checkbox) -->
-          <div id="bossDetailsSection" style="display: none;">
+          <div id="bossDetailsSection" class="systems-only" style="display: none;">
             <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">BOSS System Details</h3>
 
             <div class="form-field">
@@ -988,7 +929,7 @@
           </div>
 
           <!-- Jonas Details (conditional on Jonas checkbox) -->
-          <div id="jonasDetailsSection" style="display: none;">
+          <div id="jonasDetailsSection" class="systems-only" style="display: none;">
             <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Jonas Purchasing Details</h3>
 
             <div class="form-field">
@@ -1003,7 +944,7 @@
           </div>
 
           <!-- JR Assignment -->
-          <div style="margin-top: 2rem;">
+          <div class="new-hire-only" style="margin-top: 2rem;">
             <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">JR Assignment</h3>
             <div class="form-field">
               <label>JR Required?</label>
@@ -1032,7 +973,7 @@
           </div>
 
           <!-- 30-60-90 Day Plan -->
-          <div style="margin-top: 2rem;">
+          <div class="new-hire-only" style="margin-top: 2rem;">
             <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">30-60-90 Day Plan</h3>
             <div class="form-field">
               <label>30-60-90 Day Plan Required?</label>
@@ -1078,7 +1019,15 @@
   <datalist id="jobNumbersList"></datalist>
 
   <?!= include('DirectoryAutocomplete') ?>
+  <? if (mode === 'equipment') { ?>
+  <style>
+    .new-hire-only { display: none !important; }
+    #systemAccessSection { display: block !important; }
+    .systems-only { display: none !important; }
+  </style>
+  <? } ?>
   <script>
+    const FORM_MODE = '<?= mode ?>';
     window.addEventListener('DOMContentLoaded', function () {
 
       // Helper to populate select elements
@@ -1135,45 +1084,37 @@
         // 1. Sites
         populateSelect('siteName', refData.sites);
 
-        // Populate ADP sites checkboxes
+        // Populate ADP job site number checkboxes
         const adpContainer = document.getElementById('adpSitesCheckboxes');
-        if (adpContainer && refData.sites && refData.sites.length) {
+        if (adpContainer && refData.jobNumbers && refData.jobNumbers.length) {
           adpContainer.innerHTML = '';
-          refData.sites.forEach(function(site) {
+          refData.jobNumbers.forEach(function(num) {
             const label = document.createElement('label');
             label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
             const cb = document.createElement('input');
-            cb.type = 'checkbox'; cb.name = 'adpSites'; cb.value = site;
+            cb.type = 'checkbox'; cb.name = 'adpSites'; cb.value = num;
             cb.style.accentColor = 'var(--brand-red)';
-            const txt = document.createTextNode(' ' + site);
+            const txt = document.createTextNode(' ' + num);
             label.appendChild(cb); label.appendChild(txt);
             adpContainer.appendChild(label);
           });
         }
 
-        // Populate Central Purchasing sites checkboxes (I6)
+        // Populate Central Purchasing job site number checkboxes
         const purchasingContainer = document.getElementById('purchasingSitesCheckboxes');
-        if (purchasingContainer && refData.sites && refData.sites.length) {
+        if (purchasingContainer && refData.jobNumbers && refData.jobNumbers.length) {
           purchasingContainer.innerHTML = '';
-          refData.sites.forEach(function(site) {
+          refData.jobNumbers.forEach(function(num) {
             const label = document.createElement('label');
             label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
             const cb = document.createElement('input');
-            cb.type = 'checkbox'; cb.name = 'purchasingSites'; cb.value = site;
+            cb.type = 'checkbox'; cb.name = 'purchasingSites'; cb.value = num;
             cb.style.accentColor = 'var(--brand-red)';
-            const txt = document.createTextNode(' ' + site);
+            const txt = document.createTextNode(' ' + num);
             label.appendChild(cb); label.appendChild(txt);
             purchasingContainer.appendChild(label);
           });
         }
-
-        // Auto-check ADP site when site dropdown changes
-        document.getElementById('siteName').addEventListener('change', function() {
-          const selected = this.value;
-          document.querySelectorAll('[name="adpSites"]').forEach(function(cb) {
-            cb.checked = (cb.value === selected);
-          });
-        });
         
         // 2. JRs
         const jrAssignment = document.querySelector('[name="jrAssignment"]');
@@ -1274,11 +1215,14 @@
           toggleSystemAccess(); // Show the section
         }
 
-        // Auto-check ADP Supervisor Access for salary employees
+        // Auto-check ADP Supervisor Access + salary data access for salary employees
         const adpSupervisorAccess = document.getElementById('adpSupervisorAccess');
         if (adpSupervisorAccess) {
           adpSupervisorAccess.checked = true;
+          toggleSections(); // Show ADP sub-section
         }
+        const adpSalaryAccess = document.getElementById('adpSalaryAccess');
+        if (adpSalaryAccess) adpSalaryAccess.checked = true;
       }
     }
 
@@ -1511,7 +1455,8 @@
         comments: formData.get('comments'),
         adpSites: formData.getAll('adpSites'),
         department: formData.get('department'),
-        purchasingSites: formData.getAll('purchasingSites')
+        purchasingSites: formData.getAll('purchasingSites'),
+        adpSalaryAccess: formData.get('adpSalaryAccess') === 'Yes' ? 'Yes' : 'No'
       };
 
       // Clear fields that belong to hidden sections so stale DOM defaults don't leak into the sheet.
@@ -1550,6 +1495,10 @@
         data.creditCardHomeDepot = '';
         data.creditCardLimitHomeDepot = '';
       }
+      if (!data.systems || !data.systems.includes('ADP Supervisor Access')) {
+        data.adpSites = [];
+        data.adpSalaryAccess = 'No';
+      }
       var bossChecked = data.systems && data.systems.includes('BOSS');
       if (!bossChecked) {
         data.bossJobSites = '';
@@ -1570,41 +1519,47 @@
       console.log('Submitting data to server...', data);
 
       // Call server-side function
-      google.script.run
-        .withSuccessHandler(function (response) {
+      const successHandler = function (response) {
           console.log('Server response:', response);
-
           if (response && response.success) {
-            // Success State
+            const label = FORM_MODE === 'equipment' ? 'Equipment Request' : 'New Employee Request';
+            const nextFormParam = FORM_MODE === 'equipment' ? 'equipment_request' : 'initial_request';
             document.getElementById('form-container').innerHTML = `
                   <div style="text-align: center; padding: 40px;">
                     <h1 style="color: var(--brand-red); margin-bottom: 20px;">Request Submitted!</h1>
                     <p style="font-size: 1.2rem; color: var(--text-main);">
-                      New Employee Request has been successfully submitted.<br>
+                      ${label} has been successfully submitted.<br>
                       <strong>Request ID: ${response.requestId || response.workflowId}</strong>
                     </p>
                     <div style="margin-top: 30px;">
-                      <a href="${response.scriptUrl}?form=initial_request" target="_top" style="background-color: var(--brand-red); color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Submit Another Request</a>
+                      <a href="${response.scriptUrl}?form=${nextFormParam}" target="_top" style="background-color: var(--brand-red); color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Submit Another Request</a>
                     </div>
                   </div>
                 `;
           } else {
-            // Failure State from Server
             submitBtn.disabled = false;
             submitBtn.textContent = 'Submit Request';
             const errorMsg = response ? response.message : 'Unknown server error';
             alert('❌ Error Submitting Form: ' + errorMsg);
-            console.error('Server reported error:', errorMsg);
           }
-        })
-        .withFailureHandler(function (error) {
-          // Failure State from Network/Script
+        };
+      const failureHandler = function (error) {
           console.error('Submission failed:', error);
           submitBtn.disabled = false;
           submitBtn.textContent = 'Submit Request';
           alert('❌ Network/Script Error: ' + error.message);
-        })
-        .submitInitialRequest(data);
+        };
+
+      const runner = google.script.run.withSuccessHandler(successHandler).withFailureHandler(failureHandler);
+      if (FORM_MODE === 'equipment') {
+        // Map field names to equipment handler's expected shape
+        data.reqName = data.requesterName;
+        data.reqEmail = data.requesterEmail;
+        data.position = data.positionTitle;
+        runner.submitEquipmentRequest(data);
+      } else {
+        runner.submitInitialRequest(data);
+      }
     });
   </script>
 </body>

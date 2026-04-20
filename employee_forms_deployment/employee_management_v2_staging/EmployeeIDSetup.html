@@ -444,6 +444,15 @@
                     </div>
                 </div>
 
+                <!-- BOSS WIS Account -->
+                <div class="form-section">
+                    <h2>BOSS WIS Account</h2>
+                    <div class="form-field" style="display:flex; align-items:center; gap:12px;">
+                        <input type="checkbox" name="bossWisCreated" id="bossWisCreated" value="Yes" style="width:20px;height:20px;accent-color:var(--brand-red);flex-shrink:0;">
+                        <label for="bossWisCreated" style="margin:0; font-weight:600; cursor:pointer;">BOSS WIS account has been created for this employee</label>
+                    </div>
+                </div>
+
                 <!-- Setup Notes -->
                 <div class="form-section">
                     <h2>Setup Notes</h2>
@@ -483,7 +492,8 @@
                 siteDocsPassword: formData.get('siteDocsPassword'),
                 dssUsername: formData.get('dssUsername'),
                 dssPassword: formData.get('dssPassword'),
-                setupNotes: formData.get('setupNotes')
+                setupNotes: formData.get('setupNotes'),
+                bossWisCreated: formData.get('bossWisCreated') || 'No'
             };
 
             google.script.run

@@ -42,7 +42,8 @@ function initializeSystem() {
       'Office 365', 'CC USA', 'Limit USA', 'CC CAN', 'Limit CAN', 'CC HD', 'Limit HD',
       'Phone Req', 'Prev User', 'Prev Number', 'BOSS Sites', 'BOSS Cost Sheet',
       'BOSS Jobs', 'BOSS Trip', 'BOSS Grievances', 'Jonas Job #s', 'JR Req', 'JR Assign',
-      '30/60/90', 'Comments', 'ADP Sites', 'Department', 'Purchasing Sites', 'Status'
+      '30/60/90', 'Comments', 'ADP Sites', 'Department', 'Purchasing Sites', 'Status',
+      'ADP Salary Access'
     ]);
     
     // 3. Initialize ID Setup Results
@@ -50,7 +51,7 @@ function initializeSystem() {
       'Workflow ID', 'Form ID', 'Submission Timestamp', 'Internal Employee ID',
       'SiteDocs Worker ID', 'SiteDocs Job Code', 'SiteDocs Username',
       'SiteDocs Password', 'DSS Username', 'DSS Password',
-      'Setup Notes', 'Submitted By'
+      'Setup Notes', 'BOSS WIS Created', 'Submitted By'
     ]);
     
     // 4. Initialize HR Verification Results
@@ -79,6 +80,11 @@ function initializeSystem() {
     initSheet(ss, CONFIG.SHEETS.SITEDOCS_RESULTS, specialistHeaders);
     initSheet(ss, CONFIG.SHEETS.REVIEW_306090_RESULTS, specialistHeaders);
     initSheet(ss, CONFIG.SHEETS.CENTRAL_PURCHASING_RESULTS, specialistHeaders);
+    initSheet(ss, CONFIG.SHEETS.SAFETY_ONBOARDING_RESULTS, [
+      'Workflow ID', 'Form ID', 'Submission Timestamp',
+      'SiteDocs Locations Confirmed', 'DSS Learning Paths Confirmed',
+      'Notes', 'Submitted By'
+    ]);
     
     // 7. Initialize Termination & Change Status Sheets
     initSheet(ss, CONFIG.SHEETS.TERMINATIONS, [
