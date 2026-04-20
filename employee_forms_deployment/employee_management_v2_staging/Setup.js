@@ -85,6 +85,11 @@ function initializeSystem() {
       'SiteDocs Locations Confirmed', 'DSS Learning Paths Confirmed',
       'Notes', 'Submitted By'
     ]);
+    initSheet(ss, CONFIG.SHEETS.SAFETY_TERMINATION_RESULTS, [
+      'Workflow ID', 'Form ID', 'Submission Timestamp',
+      'SiteDocs Removed', 'BOSS WIS Deactivated',
+      'Notes', 'Submitted By'
+    ]);
     
     // 7. Initialize Termination & Change Status Sheets
     initSheet(ss, CONFIG.SHEETS.TERMINATIONS, [
