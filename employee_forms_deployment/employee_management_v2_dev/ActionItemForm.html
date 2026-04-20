@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Action Item:
+        <?= task.TaskName ?>
+    </title>
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+            --border-color: #333;
+            --success: #00c853;
+            --warning: #ffab00;
+            --danger: #f44336;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            color: var(--brand-red);
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin: 8px 0 0;
+            font-size: 14px;
+        }
+
+        .ticket-info {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .info-row {
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+        }
+
+        .label {
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .value {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .checklist-section {
+            margin-bottom: 24px;
+        }
+
+        .checklist-section h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--brand-red);
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .checklist-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .checklist-table th {
+            text-align: left;
+            padding: 12px;
+            color: var(--text-muted);
+            font-size: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .checklist-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .item-name {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .audit-info {
+            font-size: 10px;
+            color: var(--text-muted);
+            display: block;
+        }
+
+        .status-btn-group {
+            display: flex;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            overflow: hidden;
+            width: fit-content;
+        }
+
+        .status-btn {
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            border-right: 1px solid var(--input-border);
+        }
+
+        .status-btn:last-child {
+            border-right: none;
+        }
+
+        .status-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+        }
+
+        .status-btn.active.pending {
+            background: var(--warning);
+            color: black;
+        }
+
+        .status-btn.active.complete {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-btn.active.not-returned {
+            background: var(--danger);
+            color: white;
+        }
+
+        .status-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        input.serial-input,
+        textarea.item-comment {
+            background: var(--input-bg);
+            color: white;
+            border: 1px solid var(--input-border);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        textarea.item-comment {
+            margin-top: 5px;
+            min-height: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+            margin-top: 20px;
+        }
+
+        textarea#notes {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            padding: 12px;
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: white;
+        }
+
+        .btn-primary {
+            background: var(--brand-red);
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .status-open {
+            background: rgba(235, 28, 45, 0.1);
+            color: var(--brand-red);
+            border: 1px solid var(--brand-red);
+        }
+
+        .status-closed {
+            background: rgba(0, 200, 83, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .specialist-section {
+            margin-bottom: 24px;
+            padding: 20px;
+            background: rgba(235, 28, 45, 0.04);
+            border: 1px solid rgba(235, 28, 45, 0.2);
+            border-radius: 8px;
+        }
+
+        .specialist-section h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--brand-red);
+            margin: 0 0 16px;
+        }
+
+        .spec-field {
+            margin-bottom: 14px;
+        }
+
+        .spec-field label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .spec-field input[type="text"],
+        .spec-field input[type="date"],
+        .spec-field select {
+            width: 100%;
+            background: var(--input-bg);
+            color: white;
+            border: 1px solid var(--input-border);
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+
+        .spec-field .radio-group {
+            display: flex;
+            gap: 16px;
+            margin-top: 4px;
+        }
+
+        .spec-field .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-main);
+            text-transform: none;
+            cursor: pointer;
+        }
+
+        .spec-field .radio-group input[type="radio"] {
+            accent-color: var(--brand-red);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card" id="formCard">
+            <div class="header">
+                <span class="status-badge <?= task.Status === 'Open' ? 'status-open' : 'status-closed' ?>">
+                    <?= task.Status ?>
+                </span>
+                <h1>
+                    <?= task.TaskName ?>
+                </h1>
+                <p>Action Item #
+                    <?= task.TaskID ?>
+                </p>
+            </div>
+
+            <div class="ticket-info">
+                <div class="info-row"><span class="label">Workflow ID</span><span class="value">
+                        <?= task.WorkflowID ?>
+                    </span></div>
+                <? if (context) { ?>
+                <? if (context.employeeName) { ?>
+                <div class="info-row"><span class="label">Employee</span><span class="value">
+                        <?= context.employeeName ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.jobTitle) { ?>
+                <div class="info-row"><span class="label">Job Title</span><span class="value">
+                        <?= context.jobTitle ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.jrTitle) { ?>
+                <div class="info-row"><span class="label">JR Title</span><span class="value">
+                        <?= context.jrTitle ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.hireDate) { ?>
+                <div class="info-row"><span class="label">Effective Date</span><span class="value">
+                        <?= context.hireDate ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.siteName) { ?>
+                <div class="info-row"><span class="label">Site</span><span class="value">
+                        <?= context.siteName ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.managerName) { ?>
+                <div class="info-row"><span class="label">Manager</span><span class="value">
+                        <?= context.managerName ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.reason) { ?>
+                <div class="info-row"><span class="label">Reason</span><span class="value">
+                        <?= context.reason ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.systems && context.systems.length > 0) { ?>
+                <div class="info-row" style="grid-column: span 2;"><span class="label">All Requested Systems</span><span
+                        class="value">
+                        <?= Array.isArray(context.systems) ? context.systems.join(', ') : context.systems ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.equipmentRaw) { ?>
+                <div class="info-row" style="grid-column: span 2;"><span class="label">Full Equipment Request</span><span
+                        class="value">
+                        <?= context.equipmentRaw ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.requesterEmail) { ?>
+                <div class="info-row"><span class="label">Requester</span><span class="value" style="font-size:11px;">
+                        <?= context.requesterEmail ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.originalComments) { ?>
+                <div class="info-row" style="border-top:1px dashed #444; margin-top:10px; padding-top:10px;">
+                    <span class="label">Request Comments</span>
+                    <span class="value" style="font-style:italic; color:#ddd;">
+                        <?= context.originalComments ?>
+                    </span>
+                </div>
+                <? } ?>
+                <? } ?>
+                <div class="info-row"><span class="label">Category</span><span class="value">
+                        <?= task.Category ?>
+                    </span></div>
+                <div class="info-row"><span class="label">Assigned To</span><span class="value">
+                        <?= task.AssignedTo ?>
+                    </span></div>
+            </div>
+
+            <!-- Specialist form section — rendered dynamically by JS based on formType -->
+            <div id="specialistSection" style="display:none;"></div>
+
+            <div class="checklist-section">
+                <h3>Verification Checklist</h3>
+                <table class="checklist-table">
+                    <thead>
+                        <tr>
+                            <th>Item Details</th>
+                            <th width="150">Status</th>
+                            <th>Comments / Data</th>
+                        </tr>
+                    </thead>
+                    <tbody id="checklistBody">
+                        <!-- Items will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="form-group">
+                <label style="display:block; margin-bottom:8px; font-size:13px; color:var(--text-muted)">General Action
+                    Notes</label>
+                <textarea id="notes" rows="3"
+                    placeholder="Enter any general notes or overall confirmation details..."><?= task.Notes ?></textarea>
+            </div>
+
+            <? if (task.Status === 'Open') { ?>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="saveDraft()" id="draftBtn">Save Progress</button>
+                <button class="btn btn-primary" onclick="finalComplete()" id="completeBtn">Mark Task Finalized</button>
+            </div>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 15px; text-align: center;">
+                Saving progress records your email and timestamp for each changed item.
+            </p>
+            <? } else { ?>
+            <div style="text-align: center; color: var(--success); padding-top: 10px;">
+                <strong>✓ Task Finalized on
+                    <?= task.CompletedDate instanceof Date ? task.CompletedDate.toLocaleDateString() : task.CompletedDate ?>
+                </strong>
+            </div>
+            <? } ?>
+        </div>
+    </div>
+
+    <script>
+        const taskId = "<?= task.TaskID ?>";
+        const taskCategory = "<?= task.Category ?>";
+        const taskDescription = <?= JSON.stringify(task.Description || '') ?>;
+        const taskDraftRaw = <?!= task.Draft ? JSON.stringify(task.Draft) : 'null' ?>;
+        const isClosed = "<?= task.Status ?>" === "Closed";
+        const contextObj = <?!= (typeof context !== 'undefined' && context) ? JSON.stringify(context) : 'null' ?>;
+        const context = (typeof contextObj === 'string') ? JSON.parse(contextObj) : contextObj;
+        const formType = "<?= task.FormType || '' ?>";
+        const formDataRaw = <?!= task.FormData ? JSON.stringify(task.FormData) : 'null' ?>;
+        let savedFormData = {};
+        try { if (formDataRaw) savedFormData = JSON.parse(formDataRaw); } catch(e) {}
+
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+
+        let userEmail = "";
+        let taskDraft = { items: {} };
+
+        google.script.run.withSuccessHandler(function(e) { userEmail = e || ''; }).withFailureHandler(function() {}).getCurrentUserEmail();
+
+        try {
+            if (taskDraftRaw) {
+                const parsed = (typeof taskDraftRaw === 'string') ? JSON.parse(taskDraftRaw) : taskDraftRaw;
+                if (typeof parsed === 'object' && parsed !== null) {
+                    // Backwards compatibility for old draft format (array of checked items)
+                    if (Array.isArray(parsed.checkedItems)) {
+                        parsed.checkedItems.forEach(name => {
+                            taskDraft.items[name] = { status: 'Collected' };
+                        });
+                    } else if (parsed.items) {
+                        taskDraft = parsed;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Draft Parse Error:', e);
+        }
+
+        function getChecklistItems() {
+            if (!taskDescription) return [];
+
+            let items = [];
+            try {
+                let current = taskDescription.trim();
+                
+                // Recursively parse if it's double-stringified
+                let attempts = 0;
+                while (attempts < 3 && typeof current === 'string' && (current.startsWith('[') || current.startsWith('"{') || current.startsWith('"['))) {
+                    try {
+                        let next = JSON.parse(current);
+                        if (next === current) break;
+                        current = next;
+                        attempts++;
+                    } catch (e) {
+                        if (current.startsWith('"[') && current.endsWith(']"')) {
+                            current = current.substring(1, current.length - 1).replace(/\\"/g, '"');
+                            continue;
+                        }
+                        break;
+                    }
+                }
+
+                if (Array.isArray(current)) {
+                    items = current;
+                } else if (typeof current === 'string') {
+                    let delimiter = current.includes('|~|') ? '|~|' : ',';
+                    if (current.includes('\\n') && !current.includes('|~|')) delimiter = '\\n';
+                    else if (current.includes('\n') && !current.includes('|~|')) delimiter = '\n';
+                    items = current.split(delimiter);
+                }
+
+                // Cleanup items - remove leading/trailing brackets/quotes but keep internal ones
+                items = items.map(s => {
+                    let str = String(s).trim();
+                    // Remove outer brackets and quotes that often wrapper the whole list element incorrectly
+                    str = str.replace(/^[\["']+|[\]"']+$/g, '').trim();
+                    return str;
+                }).filter(s => s && s.toLowerCase() !== 'n/a' && s !== 'null');
+
+            } catch (e) {
+                console.error('getChecklistItems Error:', e);
+            }
+            return items;
+        }
+
+        function initChecklist() {
+            const body = document.getElementById('checklistBody');
+            const items = getChecklistItems();
+
+            if (items.length === 0) {
+                body.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted); text-align:center;">No checklist items identified.</td></tr>';
+                return;
+            }
+
+            items.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+                const saved = taskDraft.items[item] || { status: 'Pending', comments: '', serial: '' };
+
+                const itemLower = item.toLowerCase();
+                const isComputer = itemLower.includes('computer') || itemLower.includes('laptop') || itemLower.includes('tablet');
+                const isPhone = itemLower.includes('mobile phone') || (itemLower.includes('phone') && !itemLower.includes('system'));
+
+                const serialHtml = isComputer ? `
+                    <div style="margin-top:8px;">
+                        <label style="font-size:10px; color:var(--text-muted);">Serial Number:</label>
+                        <input type="text" class="serial-input" value="${saved.serial || ''}" placeholder="Enter Serial/Svc Tag" ${isClosed ? 'disabled' : ''} onchange="updateItemData(this, 'serial', this.value)">
+                    </div>
+                ` : '';
+
+                const phoneHtml = (isPhone && context && context.empPhone) ? '<div style="margin-top:4px; font-size:12px; color:var(--brand-red); font-weight:bold;">Number: ' + escapeHtml(context.empPhone) + '</div>' : '';
+
+                const auditHtml = saved.by ? '<span class="audit-info">By: ' + escapeHtml(saved.by) + ' | ' + new Date(saved.at).toLocaleString() + '</span>' : '';
+                const isAssetTask = taskCategory === 'Assets';
+
+                tr.innerHTML = `
+                    <td>
+                        <span class="item-name">${escapeHtml(item)}</span>
+                        ${phoneHtml}
+                        ${auditHtml}
+                    </td>
+                    <td>
+                        <div class="status-btn-group" data-item="${encodeURIComponent(item)}">
+                            <button class="status-btn pending ${saved.status === 'Pending' ? 'active' : ''}" 
+                                onclick="onStatusChange('Pending', this)" ${isClosed ? 'disabled' : ''}>Pending</button>
+                            <button class="status-btn complete ${(saved.status === 'Collected' || saved.status === 'Complete') ? 'active' : ''}" 
+                                onclick="onStatusChange('${isAssetTask ? 'Collected' : 'Complete'}', this)" ${isClosed ? 'disabled' : ''}>${isAssetTask ? 'Collected' : 'Complete'}</button>
+                            ${isAssetTask ? `<button class="status-btn not-returned ${saved.status === 'Not Returned' ? 'active' : ''}" 
+                                onclick="onStatusChange('Not Returned', this)" ${isClosed ? 'disabled' : ''}>Not Returned</button>` : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <textarea class="item-comment" placeholder="Add specific comments..." ${isClosed ? 'disabled' : ''} onchange="updateItemData(this, 'comments', this.value)">${saved.comments || ''}</textarea>
+                        ${serialHtml}
+                    </td>
+                `;
+
+                body.appendChild(tr);
+            });
+        }
+
+        function onStatusChange(status, btn) {
+            const group = btn.parentElement;
+            const name = decodeURIComponent(group.getAttribute('data-item'));
+            
+            group.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            if (!taskDraft.items[name]) taskDraft.items[name] = { status: 'Pending' };
+            taskDraft.items[name].status = status;
+            taskDraft.items[name].by = userEmail;
+            taskDraft.items[name].at = new Date().toISOString();
+        }
+
+        function updateItemData(el, field, value) {
+            const row = el.closest('tr');
+            const group = row.querySelector('.status-btn-group');
+            const name = decodeURIComponent(group.getAttribute('data-item'));
+
+            if (!taskDraft.items[name]) taskDraft.items[name] = { status: 'Pending' };
+            taskDraft.items[name][field] = value;
+            taskDraft.items[name].by = userEmail;
+            taskDraft.items[name].at = new Date().toISOString();
+        }
+
+        function saveDraft() {
+            const btn = document.getElementById('draftBtn');
+            const notes = document.getElementById('notes').value;
+            const draft = JSON.stringify(taskDraft);
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            google.script.run
+                .withSuccessHandler(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Save Progress';
+                    // Optional: Refresh labels to show audit trail
+                    location.reload();
+                })
+                .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Save Progress'; alert('Error saving: ' + err.message); })
+                .saveActionItemDraft(taskId, notes, draft);
+        }
+
+        function finalComplete() {
+            const items = getChecklistItems();
+            
+            // Check taskDraft state for completeness
+            let pendingCount = 0;
+            items.forEach(item => {
+                const saved = taskDraft.items[item];
+                if (!saved || saved.status === 'Pending') {
+                    pendingCount++;
+                }
+            });
+
+            if (pendingCount > 0) {
+                alert('All items must be marked as either "Collected", "Complete", or "Not Returned" before finalizing.');
+                return;
+            }
+
+            // Specific check for "Not Returned" comments
+            let missingComments = false;
+            for (let itemName in taskDraft.items) {
+                const itemData = taskDraft.items[itemName];
+                if (itemData.status === 'Not Returned' && (!itemData.comments || !itemData.comments.trim())) {
+                    missingComments = true;
+                    break;
+                }
+            }
+
+            if (missingComments) {
+                alert('Please add a comment for any items marked as "Not Returned".');
+                return;
+            }
+
+            if (!confirm('Finalize this action item? This will notify HR and lock the record.')) return;
+
+            const btn = document.getElementById('completeBtn');
+            const notes = document.getElementById('notes').value;
+
+            btn.disabled = true;
+            btn.textContent = 'Finalizing...';
+
+            const formDataJSON = collectFormData();
+
+            // Save draft one last time as part of closure to ensure audit trail is up to date
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res.success) {
+                        document.getElementById('formCard').innerHTML = `
+                            <div style="text-align:center; padding:40px;">
+                                <h1 style="color:var(--success)">&#10003; Task Finalized</h1>
+                                <p style="color:var(--text-muted)">All checklist data and audit logs have been recorded.</p>
+                                <p style="color:var(--text-muted); font-size:13px; margin-top:8px;">Returning to dashboard...</p>
+                            </div>
+                        `;
+                        setTimeout(function() {
+                            google.script.run
+                                .withSuccessHandler(function(url) { window.top.location.href = url + '?form=dashboard'; })
+                                .withFailureHandler(function() { window.top.location.href = '?form=dashboard'; })
+                                .getBaseUrl();
+                        }, 2000);
+                    } else {
+                        btn.disabled = false;
+                        btn.textContent = 'Mark Task Finalized';
+                        alert('Error: ' + (res.message || 'Server returned failure.'));
+                    }
+                })
+                .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Finalize'; alert('Error: ' + err.message); })
+                .closeActionItemWithNotes(taskId, notes, JSON.stringify(taskDraft), formDataJSON);
+        }
+
+        // ---------------------------------------------------------------
+        // Specialist form section — renders type-specific fields
+        // ---------------------------------------------------------------
+        function renderSpecialistSection() {
+            if (!formType) return;
+            const el = document.getElementById('specialistSection');
+            if (!el) return;
+
+            const d = savedFormData;
+            const disabled = isClosed ? 'disabled' : '';
+
+            const field = (id, label, inputHtml) =>
+                `<div class="spec-field"><label for="${id}">${label}</label>${inputHtml}</div>`;
+
+            const yesNo = (name, val) =>
+                `<div class="radio-group">
+                    <label><input type="radio" name="${name}" value="Yes" ${val === 'Yes' ? 'checked' : ''} ${disabled}> Yes</label>
+                    <label><input type="radio" name="${name}" value="No"  ${val === 'No'  ? 'checked' : ''} ${disabled}> No</label>
+                </div>`;
+
+            const text = (id, placeholder, val) =>
+                `<input type="text" id="${id}" placeholder="${placeholder}" value="${escapeHtml(val || '')}" ${disabled}>`;
+
+            let html = '<div class="specialist-section"><h3>Specialist Completion Fields</h3>';
+
+            if (formType === 'creditcard') {
+                html += field('cc_usa_ordered', 'USA Card Ordered?', yesNo('cc_usa_ordered', d.cc_usa_ordered));
+                html += field('cc_can_ordered', 'Canada Card Ordered?', yesNo('cc_can_ordered', d.cc_can_ordered));
+                html += field('cc_hd_ordered', 'Home Depot Card Ordered?', yesNo('cc_hd_ordered', d.cc_hd_ordered));
+                html += field('cc_approval', 'Approval / Account Reference', text('cc_approval', 'e.g. approval #, account ref', d.cc_approval));
+
+            } else if (formType === 'businesscards') {
+                html += field('bc_ordered', 'Order Placed?', yesNo('bc_ordered', d.bc_ordered));
+                html += field('bc_vendor', 'Vendor / Supplier Used', text('bc_vendor', 'e.g. Vistaprint', d.bc_vendor));
+                html += field('bc_delivery', 'Expected Delivery Date', `<input type="date" id="bc_delivery" value="${d.bc_delivery || ''}" ${disabled}>`);
+
+            } else if (formType === 'fleetio') {
+                html += field('fl_created', 'Fleetio Account Created?', yesNo('fl_created', d.fl_created));
+                html += field('fl_username', 'Fleetio Username Assigned', text('fl_username', 'e.g. jdoe@team-group.com', d.fl_username));
+                html += field('fl_vehicle', 'Vehicle / Equipment Assigned', text('fl_vehicle', 'Enter vehicle or N/A', d.fl_vehicle));
+
+            } else if (formType === 'jonas') {
+                html += field('jonas_granted', 'All Job Numbers Granted?', yesNo('jonas_granted', d.jonas_granted));
+                html += field('jonas_access', 'Access Level Granted', text('jonas_access', 'e.g. Standard / Supervisor', d.jonas_access));
+
+            } else if (formType === 'centralpurchasing') {
+                html += field('cp_confirmed', 'All Purchasing Sites Confirmed?', yesNo('cp_confirmed', d.cp_confirmed));
+                html += field('cp_access', 'Access Level / Role Granted', text('cp_access', 'e.g. Purchaser, Viewer', d.cp_access));
+
+            } else if (formType === 'sitedocs') {
+                html += field('sd_locations', 'SiteDocs Locations Confirmed?', yesNo('sd_locations', d.sd_locations));
+                html += field('sd_user', 'SiteDocs User / Worker ID Verified', text('sd_user', 'Worker ID or username', d.sd_user));
+
+            } else if (formType === 'safety_onboarding') {
+                html += field('so_sitedocs', 'SiteDocs Locations Assigned?', yesNo('so_sitedocs', d.so_sitedocs));
+                html += field('so_dss', 'DSS Learning Paths Assigned?', yesNo('so_dss', d.so_dss));
+
+            } else if (formType === 'safety_term') {
+                html += field('st_sitedocs', 'SiteDocs Access Removed?', yesNo('st_sitedocs', d.st_sitedocs));
+                html += field('st_boss', 'BOSS WIS Records Updated?', yesNo('st_boss', d.st_boss));
+
+            } else if (formType === 'review_306090') {
+                html += field('rv_plan', 'Review Plan Set Up?', yesNo('rv_plan', d.rv_plan));
+                html += field('rv_jr', 'JR Assignment Confirmed?', yesNo('rv_jr', d.rv_jr));
+                html += field('rv_jr_title', 'Confirmed JR Title', text('rv_jr_title', 'Enter confirmed JR title', d.rv_jr_title));
+            }
+
+            html += '</div>';
+            el.innerHTML = html;
+            el.style.display = 'block';
+        }
+
+        function collectFormData() {
+            if (!formType) return null;
+            const data = {};
+
+            const getRadio = (name) => {
+                const el = document.querySelector(`input[name="${name}"]:checked`);
+                return el ? el.value : '';
+            };
+            const getText = (id) => {
+                const el = document.getElementById(id);
+                return el ? el.value.trim() : '';
+            };
+
+            if (formType === 'creditcard') {
+                data.cc_usa_ordered = getRadio('cc_usa_ordered');
+                data.cc_can_ordered = getRadio('cc_can_ordered');
+                data.cc_hd_ordered  = getRadio('cc_hd_ordered');
+                data.cc_approval    = getText('cc_approval');
+            } else if (formType === 'businesscards') {
+                data.bc_ordered  = getRadio('bc_ordered');
+                data.bc_vendor   = getText('bc_vendor');
+                data.bc_delivery = getText('bc_delivery');
+            } else if (formType === 'fleetio') {
+                data.fl_created  = getRadio('fl_created');
+                data.fl_username = getText('fl_username');
+                data.fl_vehicle  = getText('fl_vehicle');
+            } else if (formType === 'jonas') {
+                data.jonas_granted = getRadio('jonas_granted');
+                data.jonas_access  = getText('jonas_access');
+            } else if (formType === 'centralpurchasing') {
+                data.cp_confirmed = getRadio('cp_confirmed');
+                data.cp_access    = getText('cp_access');
+            } else if (formType === 'sitedocs') {
+                data.sd_locations = getRadio('sd_locations');
+                data.sd_user      = getText('sd_user');
+            } else if (formType === 'safety_onboarding') {
+                data.so_sitedocs = getRadio('so_sitedocs');
+                data.so_dss      = getRadio('so_dss');
+            } else if (formType === 'safety_term') {
+                data.st_sitedocs = getRadio('st_sitedocs');
+                data.st_boss     = getRadio('st_boss');
+            } else if (formType === 'review_306090') {
+                data.rv_plan     = getRadio('rv_plan');
+                data.rv_jr       = getRadio('rv_jr');
+                data.rv_jr_title = getText('rv_jr_title');
+            }
+
+            return JSON.stringify(data);
+        }
+
+        window.onload = function() {
+            initChecklist();
+            renderSpecialistSection();
+        };
+    </script>
+</body>
+
+</html>

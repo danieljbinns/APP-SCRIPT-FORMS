@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Employee Management Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(26, 26, 26, 0.95);
+            border-bottom: 2px solid #EB1C2D;
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            height: 40px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #a0a0a0;
+            font-size: 0.9rem;
+        }
+
+        .container {
+            max-width: 1600px;
+            width: 95%;
+            margin: 60px auto;
+            padding: 0 40px;
+            flex: 1;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 50px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .card:hover {
+            background: rgba(35, 35, 35, 0.9);
+            border-color: #EB1C2D;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(235, 28, 45, 0.2);
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #EB1C2D 0%, #c41828 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .card-description {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-top: 50px;
+            margin-bottom: 25px;
+            color: #a0a0a0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo"
+            alt="Team Group Companies">
+        <div class="user-info">
+            <i class="fa-solid fa-user-circle"></i>
+            <span id="userEmail">Loading...</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Employee Management Portal</h1>
+        <p class="subtitle">Access workflows, dashboards, and administrative tools</p>
+
+        <div class="section-title"><i class="fa-solid fa-clipboard-list"></i> Workflows</div>
+        <div class="cards-grid">
+            <a href="<?= buildFormUrl('initial_request') ?>" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-user-plus"></i></div>
+                <div class="card-title">New Employee Request</div>
+                <div class="card-description">Submit a new employee onboarding request to begin the provisioning
+                    workflow</div>
+            </a>
+
+            <a href="<?= buildFormUrl('termination_request') ?>" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-user-minus"></i></div>
+                <div class="card-title">End of Employment Request</div>
+                <div class="card-description">Submit an end of employment request to begin the deprovisioning workflow
+                </div>
+            </a>
+
+            <a href="<?= buildFormUrl('position_site_change') ?>" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-user-gear"></i></div>
+                <div class="card-title">Position / Site Change</div>
+                <div class="card-description">Submit a request for employee status changes, site transfers, or
+                    promotions</div>
+            </a>
+
+            <a href="<?= buildFormUrl('equipment_request') ?>" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-laptop"></i></div>
+                <div class="card-title">System & Equipment Request</div>
+                <div class="card-description">Request one-off systems, software, or hardware for existing personnel</div>
+            </a>
+        </div>
+
+        <div class="section-title"><i class="fa-solid fa-chart-line"></i> Dashboards</div>
+        <div class="cards-grid">
+            <a href="<?= getBaseUrl() ?>?form=dashboard" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-table-list"></i></div>
+                <div class="card-title">Workflow Dashboard</div>
+                <div class="card-description">View and manage all active employee onboarding workflows and their current
+                    status</div>
+            </a>
+        </div>
+
+
+
+    </div>
+
+    <script>
+        google.script.run.withSuccessHandler(function (email) {
+            document.getElementById('userEmail').textContent = email || 'Not signed in';
+        }).withFailureHandler(function() {
+            document.getElementById('userEmail').textContent = 'Not signed in';
+        }).getCurrentUserEmail();
+    </script>
+</body>
+
+</html>

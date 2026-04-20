@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Manager - Employee Onboarding</title>
+    <style>
+        :root {
+            --primary-color: #EB1C2D;
+            /* Reflecting the red from Access Denied page which likely matches brand */
+            --primary-hover: #C41624;
+            --bg-color: #121212;
+            --card-bg: #1E1E1E;
+            --text-color: #E0E0E0;
+            --text-secondary: #AAAAAA;
+            --border-color: #333333;
+            --success-color: #4CAF50;
+            --delete-color: #F44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .back-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .data-section {
+            display: none;
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .data-section.active {
+            display: block;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: #2D2D2D;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        button.primary {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        button.primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .item-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            background: #252525;
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-row:hover {
+            background: #2D2D2D;
+        }
+
+        .delete-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: rgba(244, 67, 54, 0.1);
+            color: var(--delete-color);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #notification-area {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--delete-color);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Data Manager</h1>
+            <!-- Using a relative link that will be handled by Router logic or just going back to dashboard -->
+            <a href="<?= getBaseUrl() ?>?form=dashboard" class="back-btn">Back to Dashboard</a>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab(event, 'site')">Sites</button>
+            <button class="tab-btn" onclick="switchTab(event, 'jr')">JRs (Titles)</button>
+            <button class="tab-btn" onclick="switchTab(event, 'job_code')">Job Codes</button>
+            <button class="tab-btn" onclick="switchTab(event, 'job_number')">Job Numbers</button>
+        </div>
+
+        <!-- Sites Section -->
+        <div id="section-site" class="data-section active">
+            <h2>Manage Sites</h2>
+            <div class="input-group">
+                <input type="text" id="input-site" placeholder="Enter new Site name...">
+                <button class="primary" onclick="addItem(event, 'site')">Add Site</button>
+            </div>
+            <ul id="list-site" class="item-list">
+                <li class="item-row" style="justify-content:center;">Loading...</li>
+            </ul>
+        </div>
+
+        <!-- JRs Section -->
+        <div id="section-jr" class="data-section">
+            <h2>Manage JRs (Titles)</h2>
+            <div class="input-group">
+                <input type="text" id="input-jr" placeholder="Enter new JR/Title...">
+                <button class="primary" onclick="addItem(event, 'jr')">Add JR</button>
+            </div>
+            <ul id="list-jr" class="item-list">
+                <!-- Items populated via JS -->
+            </ul>
+        </div>
+
+        <!-- Job Codes Section -->
+        <div id="section-job_code" class="data-section">
+            <h2>Manage Job Codes</h2>
+            <div class="input-group">
+                <input type="text" id="input-job_code" placeholder="Enter new Job Code...">
+                <button class="primary" onclick="addItem(event, 'job_code')">Add Code</button>
+            </div>
+            <ul id="list-job_code" class="item-list">
+                <!-- Items populated via JS -->
+            </ul>
+        </div>
+
+        <!-- Job Numbers Section -->
+        <div id="section-job_number" class="data-section">
+            <h2>Manage Job Numbers</h2>
+            <div class="input-group">
+                <input type="text" id="input-job_number" placeholder="Enter new Job Number...">
+                <button class="primary" onclick="addItem(event, 'job_number')">Add Number</button>
+            </div>
+            <ul id="list-job_number" class="item-list">
+                <!-- Items populated via JS -->
+            </ul>
+        </div>
+
+    </div>
+
+    <div id="notification-area"></div>
+
+    <script>
+        // Global data store
+        const state = {
+            site: [],
+            jr: [],
+            job_code: [],
+            job_number: []
+        };
+
+        // Initialization
+        window.onload = function () {
+            loadAllData();
+        };
+
+        function switchTab(event, type) {
+            // Update tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update sections
+            document.querySelectorAll('.data-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById('section-' + type).classList.add('active');
+        }
+
+        function loadAllData() {
+            google.script.run
+                .withSuccessHandler(onDataLoaded)
+                .withFailureHandler(showError)
+                .getAllReferenceData(); // We need to create this wrapper function
+        }
+
+        function onDataLoaded(data) {
+            state.site = data.sites || [];
+            state.jr = data.jrs || [];
+            state.job_code = data.jobCodes || [];
+            state.job_number = data.jobNumbers || [];
+
+            renderList('site');
+            renderList('jr');
+            renderList('job_code');
+            renderList('job_number');
+        }
+
+        function renderList(type) {
+            const listEl = document.getElementById('list-' + type);
+            const data = state[type];
+
+            listEl.innerHTML = '';
+
+            if (data.length === 0) {
+                listEl.innerHTML = '<li class="item-row" style="color:var(--text-secondary); justify-content:center;">No items found</li>';
+                return;
+            }
+
+            // Sort alphabetically
+            data.sort((a, b) => a.toString().localeCompare(b.toString()));
+
+            data.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'item-row';
+                li.innerHTML = `
+            <span>${escapeHtml(item)}</span>
+            <button class="delete-btn" onclick="deleteItem('${type}', '${escapeHtml(item)}')">&times;</button>
+          `;
+                listEl.appendChild(li);
+            });
+        }
+
+        function addItem(event, type) {
+            const inputEl = document.getElementById('input-' + type);
+            const value = inputEl.value.trim();
+            const btn = event.target;
+
+            if (!value) return;
+
+            const originalText = btn.innerText;
+            btn.innerHTML = '<span class="loading-spinner" style="width:12px;height:12px;border-width:2px;"></span> Adding...';
+            btn.disabled = true;
+
+            google.script.run
+                .withSuccessHandler((success) => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+
+                    if (success) {
+                        inputEl.value = '';
+                        state[type].push(value);
+                        renderList(type);
+                        showToast('Item added successfully', 'success');
+                    } else {
+                        showToast('Failed to add item', 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    showError(err);
+                })
+                .addReferenceItem(type, value);
+        }
+
+        function deleteItem(type, value) {
+            if (!confirm('Are you sure you want to delete "' + value + '"?')) return;
+
+            const btn = document.querySelector('.delete-btn[onclick*="' + value.replace(/"/g, '\\"') + '"]');
+            if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+            google.script.run
+                .withSuccessHandler((success) => {
+                    if (success) {
+                        state[type] = state[type].filter(item => item !== value);
+                        renderList(type);
+                        showToast('Item deleted successfully', 'success');
+                    } else {
+                        if (btn) { btn.disabled = false; btn.textContent = '\u00d7'; }
+                        showToast('Failed to delete item', 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    if (btn) { btn.disabled = false; btn.textContent = '\u00d7'; }
+                    showError(err);
+                })
+                .removeReferenceItem(type, value);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function showToast(message, type = 'info') {
+            const area = document.getElementById('notification-area');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.innerText = message;
+            area.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function showError(err) {
+            console.error(err);
+            showToast('Error: ' + err.message, 'error');
+        }
+    </script>
+</body>
+
+</html>

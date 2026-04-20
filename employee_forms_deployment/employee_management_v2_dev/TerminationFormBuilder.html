@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>End of Employment Builder</title>
+    <!-- Include SortableJS for drag and drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        /* Dark Mode Theme from InitialRequest.html */
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --brand-red: #EB1C2D;
+            --brand-red-hover: #c41522;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+            --border-color: #333;
+            --success-green: #0f9d58;
+            --builder-bg: #111;
+            --surface: #2a2a2a;
+            --danger: #F44336;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+            background-color: var(--builder-bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Builder Controls Sidebar */
+        .builder-sidebar {
+            width: 300px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            overflow-y: auto;
+        }
+
+        .builder-sidebar h2 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .builder-btn {
+            background-color: var(--brand-red);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .builder-btn:hover {
+            background-color: var(--brand-red-hover);
+        }
+
+        .builder-btn.outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        .builder-btn.outline:hover {
+            background: var(--input-border);
+        }
+
+        #exportResult {
+            width: 100%;
+            height: 150px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--success-green);
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            resize: vertical;
+            display: none;
+        }
+
+        /* The Live Form View */
+        .form-preview-area {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background-color: var(--bg-color);
+        }
+
+        #form-container {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: var(--text-main);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border-color);
+            margin: 20px 0;
+        }
+
+        /* Draggable Wrappers */
+        .draggable-wrapper {
+            position: relative;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px dashed transparent;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .draggable-wrapper:hover {
+            border-color: var(--border-color);
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .drag-handle {
+            cursor: grab;
+            color: var(--text-muted);
+            padding: 10px 5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .draggable-wrapper:hover .drag-handle {
+            opacity: 1;
+        }
+
+        .draggable-wrapper .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .toggle-include {
+            margin-top: 12px;
+            accent-color: var(--brand-red);
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .field-content {
+            flex: 1;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+
+        .field-content label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+            font-size: 0.95rem;
+        }
+
+        .logic-badge {
+            display: inline-block;
+            background: #e1f5fe;
+            color: #0277bd;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            border: 1px solid #b3e5fc;
+        }
+
+        .draggable-wrapper.excluded .field-content {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .draggable-wrapper.excluded {
+            border-color: rgba(235, 28, 45, 0.3);
+        }
+
+        /* Form Controls Styling (from Live Form) */
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .required {
+            color: var(--brand-red);
+        }
+
+        input[type="text"],
+        input[type="date"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        input[type="file"] {
+            border: 1px dashed var(--input-border);
+            padding: 20px;
+            text-align: center;
+            cursor: not-allowed;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 0;
+            margin-top: 10px;
+            border: 2px solid var(--input-border);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--input-bg);
+        }
+
+        .radio-group label {
+            flex: 1;
+            position: relative;
+            margin: 0;
+        }
+
+        .radio-group label:not(:last-child) {
+            border-right: 1px solid var(--input-border);
+        }
+
+        .radio-button {
+            display: block;
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            text-align: center;
+            cursor: pointer;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            accent-color: var(--brand-red);
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0;
+            padding: 10px;
+        }
+
+        .draggable-wrapper:hover .delete-btn {
+            opacity: 1;
+        }
+
+        /* Sortable JS state */
+        .sortable-ghost {
+            opacity: 0.3;
+            background: var(--input-bg);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background-color: var(--surface);
+            border-radius: 8px;
+            width: 400px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            transform: translateY(20px);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="builder-sidebar">
+        <h2>End of Employment Builder</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+            This WYSIWYG editor lets you design the live HTML form.
+            <br><br>
+            • Drag the ☰ handle to reorder.<br>
+            • Uncheck the box to exclude a field.<br>
+            • Click '+ Add Field' for custom inputs.
+        </p>
+
+        <button class="builder-btn outline" onclick="openModal()">+ Add Custom Field</button>
+        <button class="builder-btn" onclick="exportForm()">Export Final Design</button>
+
+        <textarea id="exportResult" readonly></textarea>
+    </div>
+
+    <!-- Main Canvas -->
+    <div class="form-preview-area">
+        <div id="form-container">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+                    alt="Logo" style="max-height: 70px;">
+            </div>
+
+            <h1>End of Employment Request</h1>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 20px;">
+                Complete all fields to initiate the offboarding process.
+            </p>
+            <hr>
+
+            <div id="sortable-canvas">
+                <!-- Pre-filled Fields via JS -->
+            </div>
+
+            <div style="margin-top: 30px; padding: 15px; text-align: center; opacity: 0.5;">
+                <button type="button" class="builder-btn"
+                    style="width: 100%; padding: 15px; font-size: 1.1rem; cursor: not-allowed;">Submit Form (Disabled in
+                    Builder)</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Add Field Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <h2>Add Custom Field</h2>
+            <div class="form-group">
+                <label>Field Name / Label</label>
+                <input type="text" id="newFieldName" placeholder="e.g. Reason for Leaving">
+            </div>
+            <div class="form-group">
+                <label>Field Type</label>
+                <select id="newFieldType">
+                    <option value="text">Text Input</option>
+                    <option value="textarea">Multi-line Text (Comments)</option>
+                    <option value="date">Date Picker</option>
+                    <option value="radio">Radio Options (Yes/No)</option>
+                    <option value="checkboxes">Checkbox Group</option>
+                    <option value="file">File Upload</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="builder-btn outline" onclick="closeModal()">Cancel</button>
+                <button class="builder-btn" onclick="addField()">Add to Form</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        let fieldCounter = 1;
+
+        // The default fields we planned for the Termination workflow
+        const defaultFields = [
+            { id: 'f_reqname', label: 'Requester Name', type: 'text', required: true },
+            { id: 'f_date', label: 'Effective Date of Change', type: 'date', required: true },
+            { id: 'f_empname', label: 'Employee Name', type: 'text', required: true },
+            { id: 'f_work_email_gate', label: 'Does employee have a work email?', type: 'checkboxes', options: ['Has Work Email'] },
+            { id: 'f_work_email', label: 'Current Work Email', type: 'text', logic: 'Only if Has Work Email is checked' },
+            { id: 'f_m_phone_gate', label: 'Does employee have a mobile phone?', type: 'checkboxes', options: ['Has Mobile Phone'] },
+            { id: 'f_m_phone', label: 'Mobile Phone Number', type: 'text', logic: 'Only if Has Mobile Phone is checked' },
+            { id: 'f_comp_gate', label: 'Does employee have a computer?', type: 'checkboxes', options: ['Has Computer'] },
+            //{ id: 'f_comp_serial', label: 'Computer Serial Number', type: 'text', logic: 'Only if Has Computer is checked' },
+            { id: 'f_reason', label: 'Reason for Leaving', type: 'radio', options: ['Deceased', 'End of contract', 'Resigned', 'Retired', 'Terminated'], required: true },
+            { id: 'f_hr_approved', label: 'Has HR Approved this Termination?', type: 'radio', options: ['Yes', 'No'], required: true, logic: 'Only shows if Reason is Terminated' },
+            { id: 'f_site', label: 'Site Name', type: 'text', required: true },
+            { id: 'f_type', label: 'Hourly or Salary', type: 'radio', options: ['Hourly', 'Salary'], required: true },
+            { id: 'f_has_reports', label: 'Does employee have direct reports?', type: 'radio', options: ['Yes', 'No'], required: true },
+            { id: 'f_reassign', label: 'Reassign Direct Reports To', type: 'text', help: 'Required if they manage others.', logic: 'Only shows if "Direct Reports" is Yes' },
+            { id: 'f_systems', label: 'Systems/Apps to Deactivate', type: 'checkboxes', options: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'Fleetio', 'Google Account', 'Incidents', 'Jonas Purchasing', 'Central Purchasing'] },
+            { id: 'f_google_forward', label: 'Email Forwarding (Google Account)', type: 'text', help: 'Who should emails be forwarded to?', logic: 'Only if "Google Account" is checked' },
+            { id: 'f_google_files', label: 'Transfer Drive Files To', type: 'text', help: 'Who gets access to their Google Drive files?', logic: 'Only if "Google Account" is checked' },
+            { id: 'f_google_delegate', label: 'Delegated Inbox Access To', type: 'text', logic: 'Only if "Google Account" is checked' },
+            { id: 'f_google_duration', label: 'Keep Account Active For', type: 'radio', options: ['Default 1 Month then delete', 'Longer (Specify in notes)', 'Delete Immediately (No forwarding/access)'], logic: 'Only if "Google Account" is checked' },
+            { id: 'f_google_vacation', label: 'Vacation Responder Msg', type: 'text', help: 'Optional auto-reply message before deletion', logic: 'Only if "Google Account" is checked', placeholder: 'xxx is no longer with TEAM group / IAT / Robinsons. Please contact [Person Reassigned] to get their reports/assistance.' },
+            { id: 'f_upload', label: 'Upload Documentation', type: 'file', help: 'Resignation letter, etc.' },
+            { id: 'f_equip', label: 'Return Equipment Checklist', type: 'checkboxes', options: ['Computer/Laptop', 'Mobile Phone', 'Tablet', 'Credit Card', 'Vehicle and Keys', 'Building Access Card/Keys'] },
+            { id: 'f_comments', label: 'Additional Comments', type: 'textarea' }
+        ];
+
+        const canvas = document.getElementById('sortable-canvas');
+
+        // Render a field block
+        function renderFieldBlock(field) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'draggable-wrapper';
+            wrapper.dataset.id = field.id;
+            wrapper.dataset.label = field.label;
+            wrapper.dataset.type = field.type;
+
+            let fieldHtml = '';
+            const reqHtml = field.required ? '<span class="required">*</span>' : '';
+            const helpHtml = field.help ? `<small style="color:var(--text-muted); display:block; margin-top:4px; font-size:0.8rem;">${field.help}</small>` : '';
+            const logicHtml = field.logic ? `<div class="logic-badge">Logic: ${field.logic}</div>` : '';
+
+            if (field.type === 'text') {
+                const ph = field.placeholder || `Enter ${field.label}`;
+                fieldHtml = `<label>${field.label} ${reqHtml}</label><input type="text" placeholder="${ph}" readonly>${helpHtml}`;
+            } else if (field.type === 'textarea') {
+                fieldHtml = `<label>${field.label} ${reqHtml}</label><textarea readonly placeholder="Enter ${field.label}"></textarea>${helpHtml}`;
+            } else if (field.type === 'date') {
+                fieldHtml = `<label>${field.label} ${reqHtml}</label><input type="date" readonly>${helpHtml}`;
+            } else if (field.type === 'file') {
+                fieldHtml = `<label>${field.label} ${reqHtml}</label><input type="file" disabled>${helpHtml}`;
+            } else if (field.type === 'radio') {
+                let optsHtml = (field.options || ['Yes', 'No']).map(opt => `
+                    <label><input type="radio"><span class="radio-button">${opt}</span></label>
+                `).join('');
+                fieldHtml = `
+                    <label>${field.label} ${reqHtml}</label>
+                    <div class="radio-group" style="pointer-events: none;">
+                        ${optsHtml}
+                    </div>${helpHtml}
+                `;
+            } else if (field.type === 'checkboxes') {
+                let optsHtml = (field.options || ['Option 1', 'Option 2']).map(opt => `
+                    <label class="checkbox-label" style="pointer-events: none;">
+                        <input type="checkbox"><span>${opt}</span>
+                    </label>
+                `).join('');
+                fieldHtml = `
+                    <label>${field.label} ${reqHtml}</label>
+                    <div class="checkbox-group">${optsHtml}</div>${helpHtml}
+                `;
+            }
+
+            wrapper.innerHTML = `
+                <div class="drag-handle" title="Drag to reorder">☰</div>
+                <input type="checkbox" class="toggle-include" checked title="Include in form" onchange="toggleInclude(this)">
+                <div class="field-content">
+                    ${logicHtml}
+                    ${fieldHtml}
+                </div>
+                <button class="delete-btn" onclick="deleteField(this)" title="Delete Field">✕</button>
+            `;
+
+            canvas.appendChild(wrapper);
+        }
+
+        // Initialize Sortable
+        new Sortable(canvas, {
+            animation: 150,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost'
+        });
+
+        // Initialize default fields
+        defaultFields.forEach(renderFieldBlock);
+
+        // Toggle inclusion state
+        window.toggleInclude = function (checkbox) {
+            const wrapper = checkbox.closest('.draggable-wrapper');
+            if (checkbox.checked) {
+                wrapper.classList.remove('excluded');
+            } else {
+                wrapper.classList.add('excluded');
+            }
+        };
+
+        window.deleteField = function (btn) {
+            if (confirm("Remove this field completely?")) {
+                btn.closest('.draggable-wrapper').remove();
+            }
+        };
+
+        // Modal logic
+        window.openModal = function () {
+            document.getElementById('newFieldName').value = '';
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('newFieldName').focus();
+        };
+
+        window.closeModal = function () {
+            document.getElementById('addModal').classList.remove('active');
+        };
+
+        window.addField = function () {
+            const name = document.getElementById('newFieldName').value.trim();
+            const type = document.getElementById('newFieldType').value;
+
+            if (!name) return alert("Please enter a field name.");
+
+            renderFieldBlock({
+                id: 'custom_' + (fieldCounter++),
+                label: name,
+                type: type,
+                required: false
+            });
+
+            closeModal();
+        };
+
+        // Export Function
+        window.exportForm = function () {
+            const wrappers = Array.from(canvas.querySelectorAll('.draggable-wrapper'));
+            const finalFields = wrappers.map(w => {
+                const included = w.querySelector('.toggle-include').checked;
+                return {
+                    id: w.dataset.id,
+                    label: w.dataset.label,
+                    type: w.dataset.type,
+                    included: included
+                };
+            });
+
+            const result = {
+                formType: "Termination / End of Employment",
+                fields: finalFields.filter(f => f.included) // only export the checked ones
+            };
+
+            const txt = document.getElementById('exportResult');
+            txt.style.display = 'block';
+            txt.value = JSON.stringify(result, null, 2);
+            txt.select();
+        };
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Onboarding Process Map</title>
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --border-color: #333;
+            --success: #00c853;
+            --line-color: #444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .back-link {
+            color: var(--brand-red);
+            text-decoration: none;
+            font-weight: 500;
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .back-link:hover {
+            background: #333;
+        }
+
+        /* Flow Chart Styles */
+        .flow-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .step-row {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 60px;
+            /* Space for arrows */
+            position: relative;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--brand-red);
+            padding: 20px;
+            border-radius: 8px;
+            width: 250px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: #555;
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #fff;
+        }
+
+        .card p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .card.specialist {
+            border-left-color: var(--success);
+        }
+
+        .card.parallel {
+            border-left-color: #2196f3;
+        }
+
+        /* Connecting Lines */
+        .arrow-down {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 40px;
+            background: var(--line-color);
+        }
+
+        .arrow-down::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -4px;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid var(--line-color);
+        }
+
+        /* Branching */
+        .branch-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1000px;
+            padding-top: 40px;
+            border-top: 2px solid var(--line-color);
+            position: relative;
+        }
+
+        /* The inputs to the branch */
+        .branch-connector {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            width: 2px;
+            height: 40px;
+            background: var(--line-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Onboarding Process Flow</h1>
+            <a href="<?= getBaseUrl() ?>?form=dashboard" class="back-link">Back to Dashboard</a>
+        </header>
+
+        <div class="flow-container">
+
+            <!-- Step 1 -->
+            <div class="step-row">
+                <div class="card">
+                    <h3>1. Initial Request</h3>
+                    <p>Hiring Manager submits request form.</p>
+                    <div class="arrow-down"></div>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-row">
+                <div class="card">
+                    <h3>2. ID Generation</h3>
+                    <p>System auto-generates Employee ID and DSS Username.</p>
+                    <div class="arrow-down"></div>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-row">
+                <div class="card">
+                    <h3>3. HR Verification</h3>
+                    <p>HR reviews details and confirms title/salary/manager.</p>
+                    <div class="arrow-down"></div>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step-row">
+                <div class="card">
+                    <h3>4. IT Setup</h3>
+                    <p>IT creates email, assigns devices, and configures access.</p>
+                    <div class="arrow-down"></div>
+                </div>
+            </div>
+
+            <!-- Step 5: Parallel -->
+            <div class="branch-container">
+                <div class="branch-connector"></div>
+
+                <div class="card specialist">
+                    <h3>Jonas Setup</h3>
+                    <p>Accounting sets up job numbers.</p>
+                </div>
+
+                <div class="card specialist">
+                    <h3>Credit Card</h3>
+                    <p>Finance team processes card request.</p>
+                </div>
+
+                <div class="card specialist">
+                    <h3>Fleetio</h3>
+                    <p>Fleet team sets up vehicle access.</p>
+                </div>
+
+                <div class="card specialist">
+                    <h3>Business Cards</h3>
+                    <p>Admin orders physical cards.</p>
+                </div>
+
+                <div class="card specialist">
+                    <h3>SiteDocs</h3>
+                    <p>Safety team adds worker to safety platform.</p>
+                </div>
+
+                <div class="card specialist">
+                    <h3>30/60/90</h3>
+                    <p>HR/Manager schedules performance reviews.</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; color: var(--text-muted); font-size: 14px;">
+                * Specialist steps run in parallel once IT Setup is submitted.
+            </div>
+
+        </div>
+    </div>
+</body>
+
+</html>

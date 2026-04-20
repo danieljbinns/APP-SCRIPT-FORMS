@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Builder</title>
+    <!-- Include SortableJS for drag and drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --danger: #ef4444;
+            --success: #10b981;
+
+            /* Action Type Colors */
+            --color-email: #8b5cf6;
+            --color-ticket: #f59e0b;
+            --color-approval: #ec4899;
+            --color-update: #10b981;
+            --color-logic: #3b82f6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .column {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .column-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .count-badge {
+            background-color: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .field-list {
+            padding: 15px;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .field-item {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: grab;
+            transition: border-color 0.2s;
+        }
+
+        .field-item:active {
+            cursor: grabbing;
+        }
+
+        /* Color coding by type */
+        .type-Email {
+            border-left-color: var(--color-email);
+        }
+
+        .type-Ticket {
+            border-left-color: var(--color-ticket);
+        }
+
+        .type-Approval {
+            border-left-color: var(--color-approval);
+        }
+
+        .type-Update {
+            border-left-color: var(--color-update);
+        }
+
+        .type-Logic {
+            border-left-color: var(--color-logic);
+        }
+
+        .field-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .field-name {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .field-type {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .field-condition {
+            font-size: 0.75rem;
+            color: var(--logic-color);
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        .field-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover {
+            background-color: var(--surface-hover);
+            color: var(--text);
+        }
+
+        .action-btn.delete:hover {
+            color: var(--danger);
+        }
+
+        /* Sortable JS classes */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: var(--surface-hover) !important;
+        }
+
+        .sortable-drag {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+            cursor: grabbing !important;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background-color: var(--surface);
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+            border: 1px solid var(--border);
+            transform: translateY(20px);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .modal-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .form-group input,
+        .form-group select {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        #exportResult {
+            width: 100%;
+            height: 200px;
+            background-color: var(--bg-color);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: monospace;
+            resize: vertical;
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div>
+            <h1>Workflow Action & Logic Planner</h1>
+            <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.9rem;">Plan the backend sequence of
+                actions triggered by each form submission.</p>
+        </div>
+        <div class="controls">
+            <button onclick="openActionModal()">+ Custom Action</button>
+            <button onclick="exportConfig()" style="background-color: var(--success);">Export Workflow</button>
+        </div>
+    </header>
+    <textarea id="exportResult" readonly></textarea>
+    <div class="main-container">
+        <div class="column">
+            <div class="column-header">
+                <span>Available Actions</span>
+                <span class="count-badge" id="count-available">0</span>
+            </div>
+            <div class="field-list" id="list-available"></div>
+        </div>
+        <div class="column">
+            <div class="column-header">
+                <span>Position / Title Change</span>
+                <span class="count-badge" id="count-position">0</span>
+            </div>
+            <div class="field-list" id="list-position"></div>
+        </div>
+        <div class="column">
+            <div class="column-header">
+                <span>Location Change</span>
+                <span class="count-badge" id="count-location">0</span>
+            </div>
+            <div class="field-list" id="list-location"></div>
+        </div>
+        <div class="column">
+            <div class="column-header">
+                <span>End of Employment</span>
+                <span class="count-badge" id="count-termination">0</span>
+            </div>
+            <div class="field-list" id="list-termination"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="actionModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Action</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="actionId">
+                <div class="form-group">
+                    <label>Action Description</label>
+                    <input type="text" id="actionName" placeholder="e.g. Create IT Ticket">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="actionType">
+                        <option value="Email">Email Notification</option>
+                        <option value="Ticket">Create Ticket</option>
+                        <option value="Approval">Require Approval</option>
+                        <option value="Update">Database/System Update</option>
+                        <option value="Logic">Branching Logic (If/Else)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Condition (When does this run?)</label>
+                    <input type="text" id="actionCondition" placeholder="e.g. Always, or 'If Manager Changes'">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button style="background: transparent; border: 1px solid var(--border); color: var(--text);"
+                    onclick="closeModal()">Cancel</button>
+                <button onclick="saveAction()">Save Action</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let actionIdCounter = 1;
+
+        function createActionObj(name, type, condition = '') {
+            return { id: 'action_' + (actionIdCounter++), name, type, condition };
+        }
+
+        function getBaseActions() {
+            return [
+                createActionObj('Require HR Verification', 'Approval', 'Always first'),
+                createActionObj('Send Email to New Manager', 'Email', 'If Manager changes'),
+                createActionObj('Create IT Ticket: Systems', 'Ticket', 'If System Access changes'),
+                createActionObj('Create IT Ticket: Equipment', 'Ticket', 'If Equipment changes'),
+                createActionObj('Create URGENT Ticket: Deactivate ALL', 'Ticket', 'If System Access = Yes'),
+                createActionObj('Create IT Ticket: Collect Equipment', 'Ticket', 'If Equipment = Yes'),
+                createActionObj('Update Reporting Structure', 'Update', 'If Direct Reports change'),
+                createActionObj('Send JR Email', 'Email', 'Always for New Job Title'),
+                createActionObj('Send Payroll Notification', 'Email', 'Always'),
+                createActionObj('Update Master AppSheet DB', 'Update', 'Always, when complete')
+            ];
+        }
+
+        const lists = {
+            'list-available': getBaseActions(),
+            'list-position': [
+                createActionObj('Require HR Verification', 'Approval', 'Always first'),
+                createActionObj('Send Email to New Manager', 'Email', 'If Manager changes'),
+                createActionObj('Create IT Ticket: Systems', 'Ticket', 'If System Access changes'),
+                createActionObj('Create IT Ticket: Equipment', 'Ticket', 'If Equipment changes'),
+                createActionObj('Update Reporting Structure', 'Update', 'If Direct Reports change'),
+                createActionObj('Send JR Email', 'Email', 'Always for New Job Title'),
+                createActionObj('Send Payroll Notification', 'Email', 'Always'),
+                createActionObj('Update Master AppSheet DB', 'Update', 'Always, when complete')
+            ],
+            'list-location': [
+                createActionObj('Require HR Verification', 'Approval', 'Always first'),
+                createActionObj('Send Email to New Manager', 'Email', 'If Manager changes'),
+                createActionObj('Send JR Email', 'Email', 'If Job Title Changes'),
+                createActionObj('Create IT Ticket: Systems', 'Ticket', 'If System Access changes'),
+                createActionObj('Create IT Ticket: Equipment', 'Ticket', 'If Equipment changes'),
+                createActionObj('Update Reporting Structure', 'Update', 'If Direct Reports change'),
+                createActionObj('Send Payroll Notification', 'Email', 'Always'),
+                createActionObj('Update Master AppSheet DB', 'Update', 'Always, when complete')
+            ],
+            'list-termination': [
+                createActionObj('Require HR Verification', 'Approval', 'Always first'),
+                createActionObj('Create URGENT Ticket: Deactivate ALL', 'Ticket', 'If System Access = Yes'),
+                createActionObj('Create IT Ticket: Collect Equipment', 'Ticket', 'If Equipment = Yes'),
+                createActionObj('Update Reporting Structure', 'Update', 'If Direct Reports = Yes'),
+                createActionObj('Send Payroll Notification', 'Email', 'Always'),
+                createActionObj('Update Master AppSheet DB', 'Update', 'Mark Inactive, Always')
+            ]
+        };
+
+        function renderAction(action, listId) {
+            const list = document.getElementById(listId);
+            const div = document.createElement('div');
+            div.className = 'field-item type-' + action.type;
+            div.dataset.id = action.id;
+            div.dataset.name = action.name;
+            div.dataset.type = action.type;
+            div.dataset.condition = action.condition || '';
+
+            const condHtml = action.condition ? `<span class="field-condition">Condition: ${action.condition}</span>` : '';
+
+            div.innerHTML = `
+                <div class="field-info">
+                    <span class="field-name">${action.name} <span class="field-type">${action.type}</span></span>
+                    ${condHtml}
+                </div>
+                <div class="field-actions">
+                    <button class="action-btn" onclick="editAction('${action.id}')" title="Edit">✎</button>
+                    <button class="action-btn delete" onclick="deleteAction(this)" title="Delete">✕</button>
+                </div>
+            `;
+            list.appendChild(div);
+        }
+
+        function init() {
+            Object.keys(lists).forEach(listId => {
+                lists[listId].forEach(a => renderAction(a, listId));
+
+                new Sortable(document.getElementById(listId), {
+                    group: { name: 'shared', pull: listId === 'list-available' ? 'clone' : true, put: true },
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    onEnd: function (evt) { updateCounts(); }
+                });
+            });
+            updateCounts();
+        }
+
+        function updateCounts() {
+            ['list-available', 'list-position', 'list-location', 'list-termination'].forEach(id => {
+                document.getElementById('count-' + id.split('-')[1]).innerText = document.getElementById(id).children.length;
+            });
+        }
+
+        function openActionModal(id = null) {
+            const modal = document.getElementById('actionModal');
+            document.getElementById('modalTitle').innerText = id ? 'Edit Logic Action' : 'Add New Logic Action';
+
+            if (id) {
+                const el = document.querySelector(`[data-id="${id}"]`);
+                document.getElementById('actionId').value = id;
+                document.getElementById('actionName').value = el.dataset.name;
+                document.getElementById('actionType').value = el.dataset.type;
+                document.getElementById('actionCondition').value = el.dataset.condition || '';
+            } else {
+                document.getElementById('actionId').value = '';
+                document.getElementById('actionName').value = '';
+                document.getElementById('actionType').value = 'Email';
+                document.getElementById('actionCondition').value = '';
+            }
+            modal.classList.add('active');
+            document.getElementById('actionName').focus();
+        }
+
+        function closeModal() { document.getElementById('actionModal').classList.remove('active'); }
+
+        window.editAction = function (id) { openActionModal(id); }
+
+        window.deleteAction = function (btn) {
+            if (confirm('Remove this action?')) {
+                btn.closest('.field-item').remove();
+                updateCounts();
+            }
+        }
+
+        function saveAction() {
+            const id = document.getElementById('actionId').value;
+            const name = document.getElementById('actionName').value.trim();
+            const type = document.getElementById('actionType').value;
+            const condition = document.getElementById('actionCondition').value.trim();
+
+            if (!name) return alert('Name is required');
+
+            if (id) {
+                const els = document.querySelectorAll(`[data-id="${id}"]`);
+                els.forEach(el => {
+                    el.dataset.name = name;
+                    el.dataset.type = type;
+                    el.dataset.condition = condition;
+                    el.className = 'field-item type-' + type;
+                    const condHtml = condition ? `<span class="field-condition">Condition: ${condition}</span>` : '';
+                    el.querySelector('.field-info').innerHTML = `<span class="field-name">${name} <span class="field-type">${type}</span></span>${condHtml}`;
+                });
+            } else {
+                renderAction(createActionObj(name, type, condition), 'list-available');
+            }
+            closeModal();
+            updateCounts();
+        }
+
+        function exportConfig() {
+            const config = {};
+            ['list-position', 'list-location', 'list-termination'].forEach(id => {
+                const arr = [];
+                Array.from(document.getElementById(id).children).forEach(el => {
+                    arr.push({ action: el.dataset.name, type: el.dataset.type, condition: el.dataset.condition || null });
+                });
+                config[id.replace('list-', '')] = arr;
+            });
+            const res = document.getElementById('exportResult');
+            res.style.display = 'block';
+            res.value = JSON.stringify(config, null, 2);
+            res.select();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
