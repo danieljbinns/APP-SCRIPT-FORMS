@@ -540,6 +540,7 @@ function getRequestDetails(workflowId) {
           'Credit Card', 'Business Cards', 'Fleetio', 'Jonas',
           'Central Purchasing', 'SiteDocs', '30/60/90 Review', 'Safety'
         ]);
+        let hasSiteDocsAI = false;
 
         for (let i = 1; i < aiData.length; i++) {
           if (String(aiData[i][aiWfCol]) !== workflowId) continue;
@@ -574,6 +575,8 @@ function getRequestDetails(workflowId) {
           const rawTarget = formType || cat.toLowerCase().replace(/[\s\/]+/g, '');
           const target = NODE_MAP[rawTarget] || rawTarget;
 
+          if (cat === 'SiteDocs') hasSiteDocsAI = true;
+
           checklist.push({
             name: cat,
             status: isClosed ? 'Complete' : 'Pending',
@@ -581,6 +584,29 @@ function getRequestDetails(workflowId) {
             tid: tid,
             by: byActor,
             time: timeStr
+          });
+        }
+      }
+    }
+
+    // SiteDocs is set up during ID Setup, not as a specialist action item.
+    // If no SiteDocs action item exists, synthesize a checklist entry from ID Setup Results.
+    if (!hasSiteDocsAI) {
+      const idSh = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
+      if (idSh) {
+        const idFound = idSh.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext();
+        if (idFound) {
+          const idRow = idSh.getRange(idFound.getRow(), 1, 1, idSh.getLastColumn()).getValues()[0];
+          const idHdrs = idSh.getRange(1, 1, 1, idSh.getLastColumn()).getValues()[0];
+          const tsCol = idHdrs.indexOf('Submission Timestamp');
+          const byCol = idHdrs.indexOf('Submitted By');
+          checklist.push({
+            name: 'SiteDocs',
+            status: 'Complete',
+            target: 'sitedocs',
+            tid: '',
+            by: byCol >= 0 ? String(idRow[byCol] || '') : '',
+            time: tsCol >= 0 && idRow[tsCol] instanceof Date ? idRow[tsCol].toLocaleString() : ''
           });
         }
       }
@@ -814,7 +840,33 @@ function getStepResultData(workflowId, stepTarget) {
           });
           taskNum++;
         }
-        if (taskNum === 1) result['Status'] = 'No action item found for: ' + targetCat;
+        if (taskNum === 1) {
+          // SiteDocs is completed during ID Setup — fall back to ID Setup Results
+          if (stepTarget === 'sitedocs') {
+            const idSh = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
+            if (idSh) {
+              const idData2 = idSh.getDataRange().getValues();
+              const idHdrs2 = idData2[0];
+              const idWfCol2 = idHdrs2.indexOf('Workflow ID');
+              const SHOW_COLS = new Set([
+                'SiteDocs Worker ID', 'SiteDocs Job Code', 'SiteDocs Username',
+                'DSS Username', 'Submission Timestamp', 'Submitted By'
+              ]);
+              for (let i = 1; i < idData2.length; i++) {
+                if (String(idData2[i][idWfCol2]) !== workflowId) continue;
+                idHdrs2.forEach((h, j) => {
+                  if (!h || !SHOW_COLS.has(h)) return;
+                  const v = idData2[i][j];
+                  result[h] = v instanceof Date ? v.toLocaleString() : String(v || '');
+                });
+                result['Note'] = 'SiteDocs set up during ID Setup step';
+                break;
+              }
+            }
+          } else {
+            result['Status'] = 'No action item found for: ' + targetCat;
+          }
+        }
         return result;
       }
       default: return {};
