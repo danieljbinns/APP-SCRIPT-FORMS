@@ -51,7 +51,7 @@ function buildEmailSubject(action, contextData, opts) {
   var dateValue = contextData.hireDate || '';
   if (dateValue) {
     try {
-      var d = dateValue instanceof Date ? dateValue : new Date(String(dateValue));
+      var d = dateValue instanceof Date ? dateValue : new Date(String(dateValue).replace(/^(\d{4}-\d{2}-\d{2})$/, '$1T12:00:00'));
       if (!isNaN(d.getTime())) dateStr = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
     } catch (e) { dateStr = String(dateValue).substring(0, 10); }
   }
@@ -168,7 +168,7 @@ function getWorkflowContext(workflowId) {
       jobTitle: row[headers.indexOf('Position Title')],
       jrTitle: row[headers.indexOf('JR Assign')], // Capture JR Title also
       siteName: row[headers.indexOf('Site Name')],
-      hireDate: (function(d){ return d instanceof Date ? Utilities.formatDate(d, 'UTC', 'yyyy-MM-dd') : (d ? String(d).substring(0, 10) : ''); })(row[headers.indexOf('Hire Date')]),
+      hireDate: (function(d){ return d instanceof Date ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd') : (d ? String(d).substring(0, 10) : ''); })(row[headers.indexOf('Hire Date')]),
       managerName: row[headers.indexOf('Manager Name')],
       managerEmail: row[headers.indexOf('Manager Email')],
       requesterEmail: row[5], // Hardcoded to Col F (Index 5) for reliability

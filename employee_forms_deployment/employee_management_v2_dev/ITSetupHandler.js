@@ -35,7 +35,7 @@ function getITContextData(workflowId) {
           employeeName: mainData[i][10] + ' ' + mainData[i][12],
           firstName: mainData[i][10],
           lastName: mainData[i][12],
-          hireDate: (function(d){ return d instanceof Date ? Utilities.formatDate(d, 'UTC', 'yyyy-MM-dd') : (d ? String(d).substring(0, 10) : ''); })(mainData[i][6]),
+          hireDate: (function(d){ return d instanceof Date ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd') : (d ? String(d).substring(0, 10) : ''); })(mainData[i][6]),
           jobTitle: mainData[i][14], // Job Title (Text)
           jrTitle: mainData[i][46],  // JR Title (Lookup)
           siteName: mainData[i][15],
