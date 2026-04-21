@@ -690,181 +690,210 @@
 
         function finalComplete() {
             const items = getChecklistItems();
-            
-            // Check taskDraft state for completeness
+
             let pendingCount = 0;
             items.forEach(item => {
                 const saved = taskDraft.items[item];
-                if (!saved || saved.status === 'Pending') {
-                    pendingCount++;
-                }
+                if (!saved || saved.status === 'Pending') pendingCount++;
             });
-
             if (pendingCount > 0) {
                 alert('All items must be marked as either "Collected", "Complete", or "Not Returned" before finalizing.');
                 return;
             }
 
-            // Specific check for "Not Returned" comments
             let missingComments = false;
             for (let itemName in taskDraft.items) {
                 const itemData = taskDraft.items[itemName];
                 if (itemData.status === 'Not Returned' && (!itemData.comments || !itemData.comments.trim())) {
-                    missingComments = true;
-                    break;
+                    missingComments = true; break;
                 }
             }
-
-            if (missingComments) {
-                alert('Please add a comment for any items marked as "Not Returned".');
-                return;
-            }
-
+            if (missingComments) { alert('Please add a comment for any items marked as "Not Returned".'); return; }
             if (!confirm('Finalize this action item? This will notify HR and lock the record.')) return;
 
             const btn = document.getElementById('completeBtn');
-            const notes = document.getElementById('notes').value;
-
+            const notesVal = document.getElementById('notes').value;
             btn.disabled = true;
             btn.textContent = 'Finalizing...';
 
             const formDataJSON = collectFormData();
 
-            // Save draft one last time as part of closure to ensure audit trail is up to date
-            google.script.run
-                .withSuccessHandler((res) => {
-                    if (res.success) {
+            function doClose(finalNotes) {
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        if (res.success) {
+                            google.script.run
+                                .withSuccessHandler(function(url) {
+                                    document.getElementById('formCard').innerHTML =
+                                        '<div style="text-align:center; padding:40px;">' +
+                                        '<h1 style="color:var(--success)">&#10003; Task Finalized</h1>' +
+                                        '<p style="color:var(--text-muted); margin-top:8px;">All checklist data and audit logs have been recorded.</p>' +
+                                        '<br><a href="' + url + '?form=dashboard" style="display:inline-block; margin-top:16px; padding:12px 28px; background:var(--brand-red); color:white; text-decoration:none; border-radius:8px; font-weight:600; font-size:15px;">Go to Dashboard</a>' +
+                                        '</div>';
+                                })
+                                .withFailureHandler(function() {
+                                    document.getElementById('formCard').innerHTML =
+                                        '<div style="text-align:center; padding:40px;">' +
+                                        '<h1 style="color:var(--success)">&#10003; Task Finalized</h1>' +
+                                        '<br><a href="?form=dashboard" style="display:inline-block; margin-top:16px; padding:12px 28px; background:var(--brand-red); color:white; text-decoration:none; border-radius:8px; font-weight:600; font-size:15px;">Go to Dashboard</a>' +
+                                        '</div>';
+                                })
+                                .getBaseUrl();
+                        } else {
+                            btn.disabled = false;
+                            btn.textContent = 'Mark Task Finalized';
+                            alert('Error: ' + (res.message || 'Server returned failure.'));
+                        }
+                    })
+                    .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Finalize'; alert('Error: ' + err.message); })
+                    .closeActionItemWithNotes(taskId, finalNotes, JSON.stringify(taskDraft), formDataJSON);
+            }
+
+            // Business cards: upload file first if one was selected
+            if (formType === 'businesscards') {
+                const fileInput = document.getElementById('bc_file');
+                if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const base64 = e.target.result.split(',')[1];
+                        btn.textContent = 'Uploading file...';
                         google.script.run
-                            .withSuccessHandler(function(url) {
-                                document.getElementById('formCard').innerHTML =
-                                    '<div style="text-align:center; padding:40px;">' +
-                                    '<h1 style="color:var(--success)">&#10003; Task Finalized</h1>' +
-                                    '<p style="color:var(--text-muted); margin-top:8px;">All checklist data and audit logs have been recorded.</p>' +
-                                    '<br><a href="' + url + '?form=dashboard" style="display:inline-block; margin-top:16px; padding:12px 28px; background:var(--brand-red); color:white; text-decoration:none; border-radius:8px; font-weight:600; font-size:15px;">Go to Dashboard</a>' +
-                                    '</div>';
+                            .withSuccessHandler(function(upRes) {
+                                var extra = (upRes && upRes.driveUrl) ? ' | Confirmation file: ' + upRes.driveUrl : '';
+                                doClose(notesVal + extra);
                             })
-                            .withFailureHandler(function() {
-                                document.getElementById('formCard').innerHTML =
-                                    '<div style="text-align:center; padding:40px;">' +
-                                    '<h1 style="color:var(--success)">&#10003; Task Finalized</h1>' +
-                                    '<br><a href="?form=dashboard" style="display:inline-block; margin-top:16px; padding:12px 28px; background:var(--brand-red); color:white; text-decoration:none; border-radius:8px; font-weight:600; font-size:15px;">Go to Dashboard</a>' +
-                                    '</div>';
-                            })
-                            .getBaseUrl();
-                    } else {
-                        btn.disabled = false;
-                        btn.textContent = 'Mark Task Finalized';
-                        alert('Error: ' + (res.message || 'Server returned failure.'));
-                    }
-                })
-                .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Finalize'; alert('Error: ' + err.message); })
-                .closeActionItemWithNotes(taskId, notes, JSON.stringify(taskDraft), formDataJSON);
+                            .withFailureHandler(function() { doClose(notesVal); })
+                            .uploadBusinessCardsFile(taskId, file.name, file.type, base64);
+                    };
+                    reader.readAsDataURL(file);
+                    return; // wait for async file read
+                }
+            }
+
+            doClose(notesVal);
         }
 
         // ---------------------------------------------------------------
         // Specialist form section — renders type-specific fields
         // ---------------------------------------------------------------
         function renderSpecialistSection() {
-            if (!formType) return;
+            if (!formType || formType === 'safety_onboarding') return;
             const el = document.getElementById('specialistSection');
             if (!el) return;
 
             const d = savedFormData;
-            const disabled = isClosed ? 'disabled' : '';
+            const dis = isClosed ? 'disabled' : '';
 
             const field = (id, label, inputHtml) =>
                 `<div class="spec-field"><label for="${id}">${label}</label>${inputHtml}</div>`;
-
             const yesNo = (name, val) =>
                 `<div class="radio-group">
-                    <label><input type="radio" name="${name}" value="Yes" ${val === 'Yes' ? 'checked' : ''} ${disabled}> Yes</label>
-                    <label><input type="radio" name="${name}" value="No"  ${val === 'No'  ? 'checked' : ''} ${disabled}> No</label>
+                    <label><input type="radio" name="${name}" value="Yes" ${val === 'Yes' ? 'checked' : ''} ${dis}> Yes</label>
+                    <label><input type="radio" name="${name}" value="No"  ${val === 'No'  ? 'checked' : ''} ${dis}> No</label>
                 </div>`;
+            const txt = (id, placeholder, val) =>
+                `<input type="text" id="${id}" placeholder="${placeholder}" value="${escapeHtml(val || '')}" ${dis}>`;
+            const costBlock = (jobs) => jobs
+                ? `<div style="margin-bottom:14px; padding:10px 14px; background:rgba(235,28,45,0.06); border-left:3px solid var(--brand-red); border-radius:4px;">
+                      <div style="font-size:10px; color:var(--brand-red); text-transform:uppercase; font-weight:600; margin-bottom:4px;">Cost Sheet Jobs to Configure</div>
+                      <div style="font-size:14px; font-weight:600; line-height:1.7;">${escapeHtml(jobs)}</div>
+                   </div>` : '';
 
-            const text = (id, placeholder, val) =>
-                `<input type="text" id="${id}" placeholder="${placeholder}" value="${escapeHtml(val || '')}" ${disabled}>`;
-
-            let html = '<div class="specialist-section"><h3>Specialist Completion Fields</h3>';
+            let html = '<div class="specialist-section"><h3>Completion</h3>';
 
             if (formType === 'creditcard') {
-                html += field('cc_usa_ordered', 'USA Card Ordered?', yesNo('cc_usa_ordered', d.cc_usa_ordered));
-                html += field('cc_can_ordered', 'Canada Card Ordered?', yesNo('cc_can_ordered', d.cc_can_ordered));
-                html += field('cc_hd_ordered', 'Home Depot Card Ordered?', yesNo('cc_hd_ordered', d.cc_hd_ordered));
-                html += field('cc_approval', 'Approval / Account Reference', text('cc_approval', 'e.g. approval #, account ref', d.cc_approval));
+                // Only show cards that were actually requested — parse from task description
+                let descItems = [];
+                try { descItems = JSON.parse(taskDescription); } catch(e) {}
+                if (typeof descItems === 'string') { try { descItems = JSON.parse(descItems); } catch(e) {} }
+                if (!Array.isArray(descItems)) descItems = [];
+                const hasUSA = descItems.some(s => String(s).toLowerCase().includes('usa card'));
+                const hasCA  = descItems.some(s => String(s).toLowerCase().includes('canada card'));
+                const hasHD  = descItems.some(s => String(s).toLowerCase().includes('home depot'));
+                // Fallback: if none detected show all
+                if (hasUSA || (!hasUSA && !hasCA && !hasHD)) html += field('cc_usa_done', 'USA Card — Ordered?', yesNo('cc_usa_done', d.cc_usa_done));
+                if (hasCA  || (!hasUSA && !hasCA && !hasHD)) html += field('cc_can_done', 'Canada Card — Ordered?', yesNo('cc_can_done', d.cc_can_done));
+                if (hasHD  || (!hasUSA && !hasCA && !hasHD)) html += field('cc_hd_done',  'Home Depot Card — Ordered?', yesNo('cc_hd_done', d.cc_hd_done));
 
             } else if (formType === 'businesscards') {
-                html += field('bc_ordered', 'Order Placed?', yesNo('bc_ordered', d.bc_ordered));
-                html += field('bc_vendor', 'Vendor / Supplier Used', text('bc_vendor', 'e.g. Vistaprint', d.bc_vendor));
-                html += field('bc_delivery', 'Expected Delivery Date', `<input type="date" id="bc_delivery" value="${d.bc_delivery || ''}" ${disabled}>`);
+                html += '<div style="margin-bottom:14px; padding:10px 14px; background:rgba(255,171,0,0.08); border:1px solid rgba(255,171,0,0.3); border-radius:6px; font-size:13px; color:#ffcc02;">📦 Attach the order confirmation below. An email with the file will be sent to the employee and manager on completion.</div>';
+                if (!isClosed) html += field('bc_file', 'Order Confirmation File (optional)', `<input type="file" id="bc_file" accept=".pdf,.png,.jpg,.jpeg">`);
+                html += field('bc_complete', 'Cards Ordered?', yesNo('bc_complete', d.bc_complete));
 
             } else if (formType === 'fleetio') {
-                html += field('fl_created', 'Fleetio Account Created?', yesNo('fl_created', d.fl_created));
-                html += field('fl_username', 'Fleetio Username Assigned', text('fl_username', 'e.g. jdoe@team-group.com', d.fl_username));
-                html += field('fl_vehicle', 'Vehicle / Equipment Assigned', text('fl_vehicle', 'Enter vehicle or N/A', d.fl_vehicle));
+                html += field('fl_created', 'Account Created?', yesNo('fl_created', d.fl_created));
+                html += '<p style="margin:-6px 0 14px; font-size:12px; color:var(--text-muted); font-style:italic;">ℹ️ Fleetio sends login credentials directly to the employee\'s email — no need to record them here.</p>';
+                html += field('fl_vehicle_assigned', 'Vehicle Assigned?', yesNo('fl_vehicle_assigned', d.fl_vehicle_assigned));
+                html += `<div id="vehicleFields" style="${d.fl_vehicle_assigned === 'Yes' ? '' : 'display:none;'}">`;
+                html += field('fl_make',  'Vehicle Make',    txt('fl_make',  'e.g. Ford',    d.fl_make));
+                html += field('fl_model', 'Vehicle Model',   txt('fl_model', 'e.g. F-150',   d.fl_model));
+                html += field('fl_unit',  'Unit / Asset #',  txt('fl_unit',  'e.g. U-042',   d.fl_unit));
+                html += '</div>';
 
             } else if (formType === 'jonas') {
-                html += field('jonas_granted', 'All Job Numbers Granted?', yesNo('jonas_granted', d.jonas_granted));
-                html += field('jonas_access', 'Access Level Granted', text('jonas_access', 'e.g. Standard / Supervisor', d.jonas_access));
+                html += costBlock(context && context.bossCostSheetJobs ? String(context.bossCostSheetJobs) : '');
+                html += field('jonas_granted', 'All access granted?', yesNo('jonas_granted', d.jonas_granted));
 
             } else if (formType === 'centralpurchasing') {
-                html += field('cp_confirmed', 'All Purchasing Sites Confirmed?', yesNo('cp_confirmed', d.cp_confirmed));
-                html += field('cp_access', 'Access Level / Role Granted', text('cp_access', 'e.g. Purchaser, Viewer', d.cp_access));
+                html += costBlock(context && context.bossCostSheetJobs ? String(context.bossCostSheetJobs) : '');
+                html += field('cp_granted', 'All access configured?', yesNo('cp_granted', d.cp_granted));
+
+            } else if (formType === 'review_306090') {
+                const suggestedJR = (context && (context.jrTitle || context.jrAssign || context.position)) || '';
+                html += field('rv_jr_title',
+                    'JR Title Assigned <span style="font-size:11px; color:var(--text-muted);">(pre-filled — change if different)</span>',
+                    `<input type="text" id="rv_jr_title" value="${escapeHtml(d.rv_jr_title || suggestedJR)}" placeholder="Confirmed JR title" ${dis}>`);
+                html += field('rv_assigned', 'JR Assigned?', yesNo('rv_assigned', d.rv_assigned));
 
             } else if (formType === 'sitedocs') {
                 html += field('sd_locations', 'SiteDocs Locations Confirmed?', yesNo('sd_locations', d.sd_locations));
-                html += field('sd_user', 'SiteDocs User / Worker ID Verified', text('sd_user', 'Worker ID or username', d.sd_user));
-
-            } else if (formType === 'safety_onboarding') {
-                // No specialist fields — checklist items serve as the completion mechanism
-                return;
+                html += field('sd_user', 'Worker ID Verified', txt('sd_user', 'Worker ID or username', d.sd_user));
 
             } else if (formType === 'safety_term') {
                 html += field('st_sitedocs', 'SiteDocs Access Removed?', yesNo('st_sitedocs', d.st_sitedocs));
                 html += field('st_boss', 'BOSS WIS Records Updated?', yesNo('st_boss', d.st_boss));
-
-            } else if (formType === 'review_306090') {
-                html += field('rv_plan', 'Review Plan Set Up?', yesNo('rv_plan', d.rv_plan));
-                html += field('rv_jr', 'JR Assignment Confirmed?', yesNo('rv_jr', d.rv_jr));
-                html += field('rv_jr_title', 'Confirmed JR Title', text('rv_jr_title', 'Enter confirmed JR title', d.rv_jr_title));
             }
 
             html += '</div>';
             el.innerHTML = html;
             el.style.display = 'block';
+
+            // Wire Fleetio vehicle toggle
+            if (formType === 'fleetio' && !isClosed) {
+                document.querySelectorAll('input[name="fl_vehicle_assigned"]').forEach(function(r) {
+                    r.addEventListener('change', function() {
+                        document.getElementById('vehicleFields').style.display = this.value === 'Yes' ? 'block' : 'none';
+                    });
+                });
+            }
         }
 
         function collectFormData() {
             if (!formType) return null;
             const data = {};
-
-            const getRadio = (name) => {
-                const el = document.querySelector(`input[name="${name}"]:checked`);
-                return el ? el.value : '';
-            };
-            const getText = (id) => {
-                const el = document.getElementById(id);
-                return el ? el.value.trim() : '';
-            };
+            const getRadio = (name) => { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : ''; };
+            const getText  = (id)   => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
 
             if (formType === 'creditcard') {
-                data.cc_usa_ordered = getRadio('cc_usa_ordered');
-                data.cc_can_ordered = getRadio('cc_can_ordered');
-                data.cc_hd_ordered  = getRadio('cc_hd_ordered');
-                data.cc_approval    = getText('cc_approval');
+                data.cc_usa_done = getRadio('cc_usa_done');
+                data.cc_can_done = getRadio('cc_can_done');
+                data.cc_hd_done  = getRadio('cc_hd_done');
             } else if (formType === 'businesscards') {
-                data.bc_ordered  = getRadio('bc_ordered');
-                data.bc_vendor   = getText('bc_vendor');
-                data.bc_delivery = getText('bc_delivery');
+                data.bc_complete = getRadio('bc_complete');
             } else if (formType === 'fleetio') {
-                data.fl_created  = getRadio('fl_created');
-                data.fl_username = getText('fl_username');
-                data.fl_vehicle  = getText('fl_vehicle');
+                data.fl_created          = getRadio('fl_created');
+                data.fl_vehicle_assigned = getRadio('fl_vehicle_assigned');
+                data.fl_make  = getText('fl_make');
+                data.fl_model = getText('fl_model');
+                data.fl_unit  = getText('fl_unit');
             } else if (formType === 'jonas') {
                 data.jonas_granted = getRadio('jonas_granted');
-                data.jonas_access  = getText('jonas_access');
             } else if (formType === 'centralpurchasing') {
-                data.cp_confirmed = getRadio('cp_confirmed');
-                data.cp_access    = getText('cp_access');
+                data.cp_granted = getRadio('cp_granted');
+            } else if (formType === 'review_306090') {
+                data.rv_jr_title = getText('rv_jr_title');
+                data.rv_assigned = getRadio('rv_assigned');
             } else if (formType === 'sitedocs') {
                 data.sd_locations = getRadio('sd_locations');
                 data.sd_user      = getText('sd_user');
@@ -874,12 +903,7 @@
             } else if (formType === 'safety_term') {
                 data.st_sitedocs = getRadio('st_sitedocs');
                 data.st_boss     = getRadio('st_boss');
-            } else if (formType === 'review_306090') {
-                data.rv_plan     = getRadio('rv_plan');
-                data.rv_jr       = getRadio('rv_jr');
-                data.rv_jr_title = getText('rv_jr_title');
             }
-
             return JSON.stringify(data);
         }
 

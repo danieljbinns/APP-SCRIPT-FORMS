@@ -562,10 +562,22 @@ function getRequestDetails(workflowId) {
             timeStr = cr instanceof Date ? cr.toLocaleString() : String(cr);
           }
 
+          // Normalize formType to match flowchart node IDs in RequestDetails.html
+          const NODE_MAP = {
+            'creditcard':       'credit_card',
+            'businesscards':    'business_cards',
+            'review_306090':    'review',
+            'centralpurchasing':'central_purchasing',
+            'safety_onboarding':'safety',
+            'safety_term':      'safety_term'
+          };
+          const rawTarget = formType || cat.toLowerCase().replace(/[\s\/]+/g, '');
+          const target = NODE_MAP[rawTarget] || rawTarget;
+
           checklist.push({
             name: cat,
             status: isClosed ? 'Complete' : 'Pending',
-            target: formType || cat.toLowerCase().replace(/[\s\/]+/g, ''),
+            target: target,
             tid: tid,
             by: byActor,
             time: timeStr

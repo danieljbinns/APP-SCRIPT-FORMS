@@ -2,6 +2,68 @@
  * Specialist Forms - Handler Functions
  */
 
+/**
+ * Business Cards: upload order confirmation file to Drive and email to manager + employee.
+ * Called from ActionItemForm.html before closing the action item.
+ * @param {string} taskId
+ * @param {string} fileName
+ * @param {string} mimeType
+ * @param {string} base64Data - base64-encoded file content (no data-URL prefix)
+ * @returns {{ success: boolean, driveUrl: string }}
+ */
+function uploadBusinessCardsFile(taskId, fileName, mimeType, base64Data) {
+  try {
+    const task = ActionItemService.getTask(taskId);
+    if (!task) return { success: false, message: 'Task not found' };
+
+    const workflowId = task.WorkflowID;
+    const context = getWorkflowContext(workflowId) || {};
+    const actingUser = Session.getActiveUser().getEmail();
+
+    // Decode and create Drive file
+    let driveUrl = '';
+    let fileBlob = null;
+    try {
+      const bytes = Utilities.base64Decode(base64Data);
+      fileBlob = Utilities.newBlob(bytes, mimeType || 'application/octet-stream', fileName);
+      const safeName = 'BizCards_' + String(context.employeeName || workflowId).replace(/\s/g, '_') + '_' + fileName;
+      fileBlob.setName(safeName);
+
+      const mainFolder = DriveApp.getFolderById(CONFIG.MAIN_FOLDER_ID);
+      const file = mainFolder.createFile(fileBlob);
+      // Reset blob name after Drive creation (blob is consumed)
+      driveUrl = file.getUrl();
+      Logger.log('[BizCards] File saved to Drive: ' + driveUrl);
+    } catch (dErr) {
+      Logger.log('[BizCards] Drive upload failed: ' + dErr.message);
+    }
+
+    // Build recipient list: assigned email + manager + requester
+    const recipients = [];
+    if (context.assignedEmail)  recipients.push(context.assignedEmail);
+    if (context.managerEmail && !recipients.includes(context.managerEmail))   recipients.push(context.managerEmail);
+    if (context.requesterEmail && !recipients.includes(context.requesterEmail)) recipients.push(context.requesterEmail);
+
+    if (recipients.length > 0) {
+      const subject = 'Business Cards Ordered — ' + (context.employeeName || 'New Employee');
+      const htmlBody = 'Business cards have been ordered for <b>' + (context.employeeName || 'your new team member') + '</b>.' +
+        (driveUrl ? ' <a href="' + driveUrl + '">View order confirmation</a>.' : '') +
+        '<br><br>Please check with your manager if you have questions about delivery.';
+
+      const mailOptions = { htmlBody: htmlBody, name: 'TEAM Group - Employee Onboarding' };
+      if (fileBlob) mailOptions.attachments = [fileBlob];
+
+      GmailApp.sendEmail(recipients.join(','), subject, 'See HTML version.', mailOptions);
+      Logger.log('[BizCards] Email sent to: ' + recipients.join(', '));
+    }
+
+    return { success: true, driveUrl: driveUrl };
+  } catch (e) {
+    Logger.log('[ERROR] uploadBusinessCardsFile: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
 function serveSpecialist(workflowId, dept) {
   if (!workflowId) {
     return HtmlService.createHtmlOutput('<h1>Error: No workflow ID provided</h1>');
