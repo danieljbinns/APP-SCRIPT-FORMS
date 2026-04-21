@@ -331,6 +331,15 @@
             <button class="refresh-btn" onclick="loadData()">Refresh</button>
         </div>
 
+        <!-- My Tasks Panel — shown only when current user has pending action items -->
+        <div id="myTasksPanel" style="display:none; background:rgba(235,28,45,0.06); border:1px solid rgba(235,28,45,0.3); border-radius:8px; padding:16px; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <strong style="color:var(--brand-red); font-size:14px;">⚡ My Pending Tasks</strong>
+                <span id="myTasksCount" style="background:var(--brand-red); color:white; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;"></span>
+            </div>
+            <div id="myTasksList" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+        </div>
+
         <div class="table-container">
             <table id="workflowTable">
                 <thead>
@@ -404,7 +413,10 @@
 
         // Set dynamic URLs on load
 
-        document.addEventListener('DOMContentLoaded', loadData);
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            loadMyTasks();
+        });
         let allWorkflows = [];
         let filteredWorkflows = []; // For search + pagination combo
         let currentWorkflowId = null;
@@ -422,6 +434,35 @@
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
             google.script.run.withSuccessHandler(displayData).withFailureHandler(showError).getDashboardData();
+        }
+
+        function loadMyTasks() {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    const tasks = res.tasks || [];
+                    const panel = document.getElementById('myTasksPanel');
+                    const list  = document.getElementById('myTasksList');
+                    const count = document.getElementById('myTasksCount');
+                    if (tasks.length === 0) { panel.style.display = 'none'; return; }
+                    panel.style.display = 'block';
+                    count.textContent = tasks.length + ' open';
+                    list.innerHTML = tasks.map(function(t) {
+                        var catColors = {
+                            'Assets':'#ff9800','IT':'#2196f3','HR':'#9c27b0','Fleet':'#00bcd4',
+                            'Finance':'#4caf50','Deactivation':'#607d8b','Safety':'#ff5722'
+                        };
+                        var catColor = catColors[t.category] || '#555';
+                        return '<div style="background:var(--card-bg); border:1px solid var(--border-color); border-left:3px solid ' + catColor + '; border-radius:6px; padding:12px 14px; min-width:220px; max-width:300px;">' +
+                            '<div style="font-size:11px; color:' + catColor + '; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">' + escapeHtml(t.category) + '</div>' +
+                            '<div style="font-size:13px; font-weight:600; margin:4px 0;">' + escapeHtml(t.employeeName || t.workflowId) + '</div>' +
+                            '<div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">' + escapeHtml(t.created) + '</div>' +
+                            '<button class="action-btn" style="background:var(--brand-red); color:white; width:100%; font-size:12px;" ' +
+                            'onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + escapeHtml(t.tid) + '\', \'_blank\')">Open Task</button>' +
+                            '</div>';
+                    }).join('');
+                })
+                .withFailureHandler(function() { /* silently fail */ })
+                .getMyPendingTasks();
         }
 
         function displayData(responseStr) {
@@ -582,6 +623,14 @@
                 applyFiltersAndSort();
             });
         });
+
+        // Default state: all type buttons active, only "Action Required" (open) status active
+        document.querySelectorAll('.filter-btn[data-filter="type"]').forEach(function(btn) {
+            activeTypeFilters.add(btn.dataset.value);
+            btn.classList.add('active');
+        });
+        activeStatusFilters.add('PENDING');
+        document.querySelector('.filter-btn[data-value="PENDING"]').classList.add('active');
 
         const TYPE_MAP = { 'ONBOARDING': 'Onboarding', 'EOE': 'End of Employment', 'CHANGE': 'Position Change', 'EQUIP': 'Equipment' };
 
@@ -762,7 +811,7 @@
                 : (r['Hire Date'] || r['Hire/Start Date'] || r['Start Date'] || '-');
             var html = stepperHtml +
                 '<div class="detail-grid">' +
-                '<div class="detail-item"><label>Employee Name</label><div>' + escapeHtml((r['First Name'] || '') + ' ' + (r['Last Name'] || r['Employee Name'] || '')) + '</div></div>' +
+                '<div class="detail-item"><label>Employee Name</label><div>' + escapeHtml(r['Employee Name'] || ((r['First Name'] || '') + ' ' + (r['Last Name'] || '')).trim() || '-') + '</div></div>' +
                 '<div class="detail-item"><label>Job Title</label><div>' + escapeHtml(r['Position Title'] || r['HR Verified Title'] || r['Position/JR Title'] || r['Job Title'] || '-') + '</div></div>' +
                 '<div class="detail-item"><label>Site</label><div>' + escapeHtml(r['Site/Office Location'] || r['Site Name'] || r['Site'] || '-') + '</div></div>' +
                 '<div class="detail-item"><label>' + _dateLabel + '</label><div>' + escapeHtml(_dateVal) + '</div></div>' +
@@ -805,6 +854,9 @@
                         }
                     } else if (isComplete && item.target) {
                         actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + item.target + '\')">View Data</button>';
+                        if (item.tid) {
+                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                        }
                     } else if (isComplete && item.name === 'Initial Request') {
                         var targetForm = details.type === 'End of Employment' ? 'termination_request' : 'initial_request';
                         actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + targetForm + '\')">View Data</button>';

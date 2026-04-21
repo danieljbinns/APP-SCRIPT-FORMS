@@ -606,6 +606,26 @@
                     badge.id = 'eoe_badge_' + slug;
                     badge.textContent = item.status;
                     card.appendChild(h3); card.appendChild(p); card.appendChild(badge);
+                    // Remind + View Form buttons for pending action items
+                    if (!isComplete && item.target) {
+                        const btnRow = document.createElement('div');
+                        btnRow.style.cssText = 'display:flex; gap:4px; margin-top:8px;';
+                        const remBtn = document.createElement('button');
+                        remBtn.className = 'btn';
+                        remBtn.style.cssText = 'flex:1; font-size:10px; padding:3px 6px; background:var(--warning); color:black;';
+                        remBtn.textContent = 'Remind';
+                        (function(tgt) { remBtn.onclick = function(e) { e.stopPropagation(); bump(tgt); }; })(item.target);
+                        btnRow.appendChild(remBtn);
+                        if (item.tid) {
+                            const vfBtn = document.createElement('button');
+                            vfBtn.className = 'btn card-form-btn';
+                            vfBtn.style.cssText = 'flex:1; font-size:10px; padding:3px 6px; background:var(--brand-red); color:white; border:none; border-radius:4px; cursor:pointer;';
+                            vfBtn.textContent = 'View Form';
+                            (function(tid) { vfBtn.onclick = function(e) { e.stopPropagation(); window.open(SERVER_BASE_URL + '?form=action_item_view&tid=' + tid, '_blank'); }; })(item.tid);
+                            btnRow.appendChild(vfBtn);
+                        }
+                        card.appendChild(btnRow);
+                    }
                     aiContainer.appendChild(card);
                 });
 
@@ -639,13 +659,16 @@
             // Snapshot - adapt fields for EOE vs Onboarding
             if (workflowId.startsWith('TERM_')) {
                 document.getElementById('employeeName').innerText = r['Employee Name'] || data.id;
+                var termAttach = r['Attachment URL'] || r['Attachment Url'] || '';
                 document.getElementById('snapshotGrid').innerHTML =
                     '<div class="detail-item"><label>Workflow ID</label><div>' + data.id + '</div></div>' +
                     '<div class="detail-item"><label>Employee</label><div>' + (r['Employee Name'] || '-') + '</div></div>' +
+                    (r['Employee Type'] ? '<div class="detail-item"><label>Employee Type</label><div>' + escapeHtml(r['Employee Type']) + '</div></div>' : '') +
                     '<div class="detail-item"><label>Site</label><div>' + (r['Site'] || '-') + '</div></div>' +
                     '<div class="detail-item"><label>Term Date</label><div>' + (r['Term Date'] || '-') + '</div></div>' +
                     '<div class="detail-item"><label>Reason</label><div>' + (r['Reason'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Requester</label><div>' + (r['Requester Email'] || '-') + '</div></div>';
+                    '<div class="detail-item"><label>Requester</label><div>' + (r['Requester Email'] || '-') + '</div></div>' +
+                    (termAttach ? '<div class="detail-item"><label>Documentation</label><div><a href="' + termAttach + '" target="_blank" style="color:#EB1C2D;">View Attached File</a></div></div>' : '');
             } else {
                 document.getElementById('employeeName').innerText = (r['First Name'] || '') + ' ' + (r['Last Name'] || '');
                 var _di = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
@@ -713,6 +736,9 @@
                 var actions = '-';
                 if (!isComplete && !isNA && item.target) {
                     actions = '<button class="btn" style="background:var(--warning); color:black;" onclick="bump(\'' + item.target + '\')">Remind</button>';
+                    if (item.tid) {
+                        actions += ' <button class="btn" style="background:var(--brand-red); color:white;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                    }
                 } else if (isComplete && item.target) {
                     actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
                 } else if (isComplete && item.name === 'Initial Request') {
@@ -776,7 +802,7 @@
             for (var key in data) {
                 if (data.hasOwnProperty(key)) {
                     var val = data[key];
-                    if (key === 'Workflow ID' || key === 'Form ID' || val === '') continue;
+                    if (key === 'Workflow ID' || key === 'Form ID' || val === '' || val === 'N/A') continue;
                     html += '<tr><td>' + escapeHtml(key) + '</td><td>' + escapeHtml(val) + '</td></tr>';
                 }
             }

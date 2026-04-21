@@ -301,35 +301,12 @@
                         <label class="toggle-label"><input type="checkbox"
                                 onchange="toggleSec('email_sec', this)"><span>Has Work Email</span></label>
                     </div>
-                    <div class="form-field">
-                        <label>Does employee have a mobile phone?</label>
-                        <label class="toggle-label"><input type="checkbox"
-                                onchange="toggleSec('phone_sec', this)"><span>Has Mobile Phone</span></label>
-                    </div>
-                    <div class="form-field">
-                        <label>Does employee have a computer?</label>
-                        <label class="toggle-label"><input type="checkbox"
-                                onchange="toggleSec('equip_note', this)"><span>Has Computer</span></label>
-                    </div>
                 </div>
 
                 <div id="email_sec" class="logic-section" style="margin-top:0;">
                     <div class="form-field">
                         <label>Current Work Email <span class="required">*</span></label>
                         <input type="email" name="empWorkEmail" placeholder="employee@team-group.com">
-                    </div>
-                </div>
-                <div id="phone_sec" class="logic-section" style="margin-top:0;">
-                    <div class="form-field">
-                        <label>Mobile Phone Number <span class="required">*</span></label>
-                        <input type="text" name="empPhone" placeholder="Cell number">
-                    </div>
-                </div>
-                <div id="equip_note" class="logic-section" style="margin-top:0;">
-                    <div class="form-field">
-                        <p style="font-size: 0.85rem; color: var(--text-muted);">Note: Specific asset details (Serial
-                            Numbers, etc) will be collected by the manager during physical equipment retrieval after
-                            approval.</p>
                     </div>
                 </div>
                 <div class="form-row">
@@ -459,7 +436,7 @@
                         <div class="form-field">
                             <label>Email Forwarding To</label>
                             <input type="email" id="google_forward" name="google_forward"
-                                placeholder="Start typing name or email..." onchange="updateVacationResponder(this.value)"
+                                placeholder="Start typing name or email..." onchange="updateVacationResponder(this.value)" oninput="updateVacationResponder(this.value)"
                                 pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
                             <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
                             <div class="help-text">Who should emails be forwarded to?</div>
@@ -496,30 +473,58 @@
                     </div>
                 </div>
 
-                <h2>Equipment Return</h2>
+                <h2>Equipment &amp; Assets</h2>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Check all equipment and assets this employee currently has. Checked items will automatically generate an asset collection checklist for the manager after HR approval. Serial numbers and condition details are recorded at collection time.</p>
                 <div class="form-field">
-                    <label>Equipment to be Returned</label>
                     <div class="checkbox-group">
-                        <label class="checkbox-label"><input type="checkbox" name="equip"
-                                value="Computer/Laptop"><span>Computer/Laptop</span></label>
-                        <label class="checkbox-label"><input type="checkbox" name="equip"
-                                value="Mobile Phone"><span>Mobile Phone</span></label>
-                        <label class="checkbox-label"><input type="checkbox" name="equip"
-                                value="Tablet"><span>Tablet</span></label>
-                        <label class="checkbox-label"><input type="checkbox" name="equip"
-                                value="Credit Card"><span>Credit Card</span></label>
-                        <label class="checkbox-label"><input type="checkbox" name="equip"
-                                value="Vehicle and Keys"><span>Vehicle and Keys</span></label>
-                        <label class="checkbox-label"><input type="checkbox" name="equip"
-                                value="Building Access Card/Keys"><span>Building Access Card/Keys</span></label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Computer/Laptop">
+                            <span>Computer / Laptop</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" id="equip_phone_chk" value="Mobile Phone" onchange="toggleEquipPhone(this)">
+                            <span>Mobile Phone</span>
+                        </label>
+                        <div id="equip_phone_sec" style="display:none; padding:10px 0 4px 28px;">
+                            <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:4px;">Phone Number</label>
+                            <input type="text" name="empPhone" id="empPhone" placeholder="e.g. 555-123-4567" style="max-width:280px;">
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Tablet">
+                            <span>Tablet</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Credit Card">
+                            <span>Credit Card</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Vehicle and Keys">
+                            <span>Vehicle and Keys</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Building Access Card/Keys">
+                            <span>Building Access Card / Keys</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="PPE/Safety Gear">
+                            <span>PPE / Safety Gear</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Uniform">
+                            <span>Uniform</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Tools">
+                            <span>Tools</span>
+                        </label>
                     </div>
                 </div>
 
                 <h2>Documentation & Logistics</h2>
                 <div class="form-field">
                     <label>Upload Documentation</label>
-                    <input type="file" name="attachment">
-                    <small style="color:#888; display:block; margin-top:4px;">Note: file attachments cannot be sent via this form — please email supporting documents separately.</small>
+                    <input type="file" name="attachment" id="attachmentFile">
+                    <small style="color:#888; display:block; margin-top:4px;">Attach supporting documents (e.g. resignation letter, signed forms). File will be saved to Drive and included in the HR email.</small>
                     <div class="help-text">HR requires documentation for all end of employment actions please include
                         the proper documentation</div>
                 </div>
@@ -568,6 +573,17 @@
             }
         }
 
+        function toggleEquipPhone(checkbox) {
+            const sec = document.getElementById('equip_phone_sec');
+            const input = document.getElementById('empPhone');
+            if (checkbox.checked) {
+                sec.style.display = 'block';
+            } else {
+                sec.style.display = 'none';
+                if (input) input.value = '';
+            }
+        }
+
         function updateVacationResponder(email) {
             const textarea = document.getElementById('google_vacation');
             if (email && email.trim() !== '') {
@@ -590,34 +606,57 @@
 
             const rawForm = new FormData(e.target);
             const formData = {};
+            let fileToUpload = null;
             rawForm.forEach(function(value, key) {
-                if (value instanceof File) return; // GAS cannot receive File objects
+                if (value instanceof File) {
+                    if (value.size > 0) fileToUpload = value;
+                    return;
+                }
                 formData[key] = formData[key] ? formData[key] + ',' + value : value;
             });
 
-            google.script.run
-                .withSuccessHandler(function (response) {
-                    if (response.success) {
-                        document.getElementById('form-container').innerHTML = `
-                            <div style="text-align:center; padding:40px;">
-                                <h1 style="color:var(--success-green);">&#10003; Submission Successful</h1>
-                                <p>Workflow ID: <strong>${response.workflowId}</strong></p>
-                                <p>${response.message}</p>
-                                <button onclick="resetForm()" class="btn btn-primary" style="margin-top:20px; width:auto; padding:10px 20px;">Submit Another</button>
-                            </div>
-                        `;
-                    } else {
-                        alert('Error: ' + response.message);
+            function doSubmit() {
+                google.script.run
+                    .withSuccessHandler(function (response) {
+                        if (response.success) {
+                            document.getElementById('form-container').innerHTML = `
+                                <div style="text-align:center; padding:40px;">
+                                    <h1 style="color:var(--success-green);">&#10003; Submission Successful</h1>
+                                    <p>Workflow ID: <strong>${response.workflowId}</strong></p>
+                                    <button onclick="resetForm()" class="btn btn-primary" style="margin-top:20px; width:auto; padding:10px 20px;">Submit Another</button>
+                                </div>
+                            `;
+                        } else {
+                            alert('Error: ' + response.message);
+                            btn.disabled = false;
+                            btn.textContent = originalLabel;
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        alert('Critical Error: ' + err.message);
                         btn.disabled = false;
                         btn.textContent = originalLabel;
-                    }
-                })
-                .withFailureHandler(function (err) {
-                    alert('Critical Error: ' + err.message);
-                    btn.disabled = false;
-                    btn.textContent = originalLabel;
-                })
-                .submitTerminationRequest(formData);
+                    })
+                    .submitTerminationRequest(formData);
+            }
+
+            if (fileToUpload) {
+                btn.textContent = 'Uploading file...';
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    formData.attachmentBase64 = ev.target.result.split(',')[1];
+                    formData.attachmentName = fileToUpload.name;
+                    formData.attachmentMimeType = fileToUpload.type || 'application/octet-stream';
+                    doSubmit();
+                };
+                reader.onerror = function() {
+                    // Upload failed silently — still submit without attachment
+                    doSubmit();
+                };
+                reader.readAsDataURL(fileToUpload);
+            } else {
+                doSubmit();
+            }
         });
 
         // Setup Autocomplete for multiple fields

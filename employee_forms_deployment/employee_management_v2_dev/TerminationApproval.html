@@ -243,6 +243,11 @@
                 <div class="info-row"><span class="info-label">Submitted By:</span><span>
                         <?= requestData.requesterEmail ?>
                     </span></div>
+                <? if (requestData.attachmentUrl) { ?>
+                <div class="info-row"><span class="info-label">Documentation:</span><span>
+                        <a href="<?= requestData.attachmentUrl ?>" target="_blank" style="color:#EB1C2D;">View Attached File</a>
+                    </span></div>
+                <? } ?>
             </div>
 
             <form id="approvalForm">
@@ -255,19 +260,6 @@
                         <button type="button" class="status-btn active" id="btnApproved" onclick="setDecision('Approved')">Approve Termination</button>
                         <button type="button" class="status-btn" id="btnRejected" onclick="setDecision('Rejected')">Reject / Need Info</button>
                     </div>
-                </div>
-
-                <div class="section-title" style="display: none;">Follow-up Actions</div>
-                <div class="checkbox-group" style="display: none;">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="collectAssets" value="true" <?=(requestData.hasPhone ||
-                            requestData.hasLaptop) ? 'checked' : '' ?>>
-                        <span>Notify Manager to collect company assets</span>
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="itDisable" value="true" checked>
-                        <span>Notify IT to disable Google/System access</span>
-                    </label>
                 </div>
 
                 <div class="form-group" style="margin-top: 20px;">
@@ -300,21 +292,26 @@
             const formData = {
                 workflowId: this.workflowId.value,
                 decision: this.decision.value,
-                notes: this.notes.value,
-                collectAssets: this.collectAssets.checked,
-                itDisable: this.itDisable.checked
+                notes: this.notes.value
             };
 
             google.script.run
                 .withSuccessHandler(function (res) {
                     if (res.success) {
-                        document.querySelector('.card').innerHTML = `<div style="text-align:center; padding:40px;"><h2 style="color:var(--success)">✓ Action Completed</h2><p>${res.message}</p><p style="color:var(--text-muted); font-size:13px; margin-top:8px;">Returning to dashboard...</p></div>`;
-                        setTimeout(function() {
-                            google.script.run
-                                .withSuccessHandler(function(url) { window.top.location.href = url + '?form=dashboard'; })
-                                .withFailureHandler(function() { window.top.location.href = '?form=dashboard'; })
-                                .getBaseUrl();
-                        }, 2000);
+                        google.script.run.withSuccessHandler(function(url) {
+                            document.querySelector('.card').innerHTML =
+                                '<div style="text-align:center; padding:40px;">' +
+                                '<h2 style="color:var(--success)">✓ Action Completed</h2>' +
+                                '<p>' + res.message + '</p>' +
+                                '<a href="' + url + '?form=dashboard" target="_top" class="btn btn-primary" style="display:inline-block; margin-top:20px; padding:10px 28px; text-decoration:none;">Return to Dashboard</a>' +
+                                '</div>';
+                        }).withFailureHandler(function() {
+                            document.querySelector('.card').innerHTML =
+                                '<div style="text-align:center; padding:40px;">' +
+                                '<h2 style="color:var(--success)">✓ Action Completed</h2>' +
+                                '<p>' + res.message + '</p>' +
+                                '</div>';
+                        }).getBaseUrl();
                     } else {
                         alert('Error: ' + res.message);
                         btn.disabled = false;

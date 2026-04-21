@@ -75,6 +75,7 @@ function syncWorkflowState(workflowId) {
           dateRequested: fmtDate(row[2]),
           hireDate: fmtDate(row[12]), // Term Date → shown in Effective Date column
           site: String(row[11] || ''),
+          empType: String(row[7] || ''), // Employee Type
           items: { isTerm: true }
         };
       } else if (isChange) {

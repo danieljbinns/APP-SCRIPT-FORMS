@@ -192,17 +192,19 @@ var ActionItemService = (function() {
 
   /**
    * Checks if a workflow is complete (all tasks closed).
-   * GUARD: Only auto-completes when the current workflow step is 'Specialist Forms Needed'
-   * — meaning IT Setup has already been submitted. This prevents early action items
-   * (e.g. Safety created at HR Verification stage) from prematurely closing a workflow
-   * that still requires IT setup.
+   * GUARD: Only auto-completes when the current workflow step indicates all upstream
+   * gates have been passed:
+   *   - 'Specialist Forms Needed'  → onboarding (IT Setup done, specialists outstanding)
+   *   - 'Action Items Pending'     → termination or position-change (approval done, tasks outstanding)
+   * This prevents early action items (e.g. Safety at HR Verification stage) from
+   * prematurely closing a workflow that still requires IT setup.
    */
   function checkWorkflowCompletion(workflowId) {
-    // Gate: only proceed if IT has already been done (step = 'Specialist Forms Needed')
     const workflow = getWorkflow(workflowId);
     const currentStep = workflow ? String(workflow['Current Step'] || '') : '';
-    if (currentStep !== 'Specialist Forms Needed') {
-      Logger.log(`[ActionItemService] Skipping auto-complete for ${workflowId} — step is '${currentStep}', not 'Specialist Forms Needed'. IT gatekeeps completion.`);
+    const ALLOWED_STEPS = ['Specialist Forms Needed', 'Action Items Pending'];
+    if (!ALLOWED_STEPS.includes(currentStep)) {
+      Logger.log(`[ActionItemService] Skipping auto-complete for ${workflowId} — step is '${currentStep}', not in allowed completion steps.`);
       return;
     }
 
@@ -228,7 +230,13 @@ var ActionItemService = (function() {
       const workflow = getWorkflow(task.WorkflowID);
       const context = getWorkflowContext(task.WorkflowID) || {};
       
-      const subject = `Task Completed: ${task.TaskName} - ${workflow ? workflow['Employee Name'] : 'Action Item'}`;
+      // Strip any "- Employee Name" suffix from the task name — buildEmailSubject appends
+      // employeeName from contextData, so including it here causes duplication.
+      const empName = workflow ? workflow['Employee Name'] : '';
+      const baseTaskName = empName && task.TaskName
+        ? task.TaskName.replace(new RegExp('\\s*[-\u2014]\\s*' + empName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$'), '').trim()
+        : (task.TaskName || task.Category || 'Action Item');
+      const subject = `Task Completed: ${baseTaskName}`;
       let body = `The following action item has been marked as <b>Closed</b>.
         <br><br><b>Task:</b> ${task.TaskName}
         <br><b>Completed By:</b> ${closedBy}
@@ -279,25 +287,25 @@ var ActionItemService = (function() {
 
             sendFormEmail({
               to: CONFIG.EMAILS.IT,
-              subject: `Assets Returned: IT Equipment - ${workflow['Employee Name']}`,
+              subject: 'Assets Returned: IT Equipment',
               body: itBody,
               contextData: context
             });
           }
-          
+
           if (financeReturns.length > 0) {
             sendFormEmail({
               to: CONFIG.EMAILS.CREDIT_CARD,
-              subject: `Assets Returned: Credit Card - ${workflow['Employee Name']}`,
+              subject: 'Assets Returned: Credit Card',
               body: `The credit card for ${workflow['Employee Name']} has been collected and is ready for processing.`,
               contextData: context
             });
           }
-          
+
           if (fleetReturns.length > 0) {
             sendFormEmail({
               to: CONFIG.EMAILS.FLEETIO,
-              subject: `Assets Returned: Vehicle and Keys - ${workflow['Employee Name']}`,
+              subject: 'Assets Returned: Vehicle and Keys',
               body: `The vehicle and keys for ${workflow['Employee Name']} have been collected.`,
               contextData: context
             });

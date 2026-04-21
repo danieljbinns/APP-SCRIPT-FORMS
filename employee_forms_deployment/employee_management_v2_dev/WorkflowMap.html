@@ -5,7 +5,7 @@
     <base target="_top">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Onboarding Process Map</title>
+    <title>Process Map</title>
     <style>
         :root {
             --bg-color: #0c0c0c;
@@ -15,6 +15,8 @@
             --brand-red: #EB1C2D;
             --border-color: #333;
             --success: #00c853;
+            --warning: #ffab00;
+            --info: #2196f3;
             --line-color: #444;
         }
 
@@ -26,24 +28,15 @@
             padding: 20px;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1200px; margin: 0 auto; }
 
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 1px solid var(--border-color);
-        }
-
-        h1 {
-            margin: 0;
-            font-weight: 300;
-            letter-spacing: 1px;
         }
 
         .back-link {
@@ -53,20 +46,73 @@
             border: 1px solid var(--border-color);
             padding: 8px 16px;
             border-radius: 4px;
+        }
+        .back-link:hover { background: #333; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+        .tab-btn {
+            padding: 12px 28px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
             transition: all 0.2s;
         }
+        .tab-btn:hover { color: white; }
+        .tab-btn.active { color: white; border-bottom-color: var(--brand-red); }
 
-        .back-link:hover {
-            background: #333;
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Live stats bar */
+        .stats-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 14px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
         }
+        .stat-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #222;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 12px;
+        }
+        .stat-chip .label { color: var(--text-muted); }
+        .stat-chip .count {
+            background: var(--brand-red);
+            color: white;
+            border-radius: 10px;
+            padding: 1px 7px;
+            font-weight: 700;
+            font-size: 11px;
+        }
+        .stat-chip .count.zero { background: #333; color: #666; }
+        .stats-loading { color: var(--text-muted); font-size: 13px; font-style: italic; }
 
-        /* Flow Chart Styles */
+        /* Flow chart */
         .flow-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
-            position: relative;
+            padding: 10px 20px 20px;
         }
 
         .step-row {
@@ -74,7 +120,6 @@
             justify-content: center;
             gap: 40px;
             margin-bottom: 60px;
-            /* Space for arrows */
             position: relative;
             width: 100%;
         }
@@ -83,41 +128,36 @@
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-left: 4px solid var(--brand-red);
-            padding: 20px;
+            padding: 18px 20px;
             border-radius: 8px;
-            width: 250px;
+            width: 240px;
             text-align: center;
             position: relative;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             transition: transform 0.2s;
         }
+        .card:hover { transform: translateY(-2px); }
+        .card h3 { margin: 0 0 8px 0; font-size: 15px; color: #fff; }
+        .card p  { margin: 0; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
 
-        .card:hover {
-            transform: translateY(-2px);
-            border-color: #555;
+        .card.specialist { border-left-color: var(--success); }
+        .card.eoe-action { border-left-color: var(--warning); }
+        .card.eoe-fyi    { border-left-color: #555; }
+        .card.eoe-main   { border-left-color: var(--brand-red); }
+
+        /* Live count badge on card */
+        .live-badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
         }
+        .live-badge.has-items { background: rgba(235,28,45,0.2); color: var(--brand-red); }
+        .live-badge.no-items  { background: rgba(0,200,83,0.1); color: var(--success); }
 
-        .card h3 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-            color: #fff;
-        }
-
-        .card p {
-            margin: 0;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .card.specialist {
-            border-left-color: var(--success);
-        }
-
-        .card.parallel {
-            border-left-color: #2196f3;
-        }
-
-        /* Connecting Lines */
+        /* Arrow down */
         .arrow-down {
             position: absolute;
             bottom: -40px;
@@ -127,32 +167,27 @@
             height: 40px;
             background: var(--line-color);
         }
-
         .arrow-down::after {
             content: '';
             position: absolute;
             bottom: 0;
             left: -4px;
-            width: 0;
-            height: 0;
             border-left: 5px solid transparent;
             border-right: 5px solid transparent;
             border-top: 5px solid var(--line-color);
         }
 
-        /* Branching */
+        /* Branch */
         .branch-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 20px;
-            max-width: 1000px;
+            gap: 16px;
+            max-width: 1100px;
             padding-top: 40px;
             border-top: 2px solid var(--line-color);
             position: relative;
         }
-
-        /* The inputs to the branch */
         .branch-connector {
             position: absolute;
             top: -40px;
@@ -161,95 +196,292 @@
             height: 40px;
             background: var(--line-color);
         }
+
+        .note {
+            margin-top: 30px;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-align: center;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <header>
-            <h1>Onboarding Process Flow</h1>
-            <a href="<?= getBaseUrl() ?>?form=dashboard" class="back-link">Back to Dashboard</a>
+            <h1 style="font-weight:300; letter-spacing:1px;">Process Map</h1>
+            <a href="<?= baseUrl ?>?form=dashboard" class="back-link">← Back to Dashboard</a>
         </header>
 
-        <div class="flow-container">
-
-            <!-- Step 1 -->
-            <div class="step-row">
-                <div class="card">
-                    <h3>1. Initial Request</h3>
-                    <p>Hiring Manager submits request form.</p>
-                    <div class="arrow-down"></div>
-                </div>
-            </div>
-
-            <!-- Step 2 -->
-            <div class="step-row">
-                <div class="card">
-                    <h3>2. ID Generation</h3>
-                    <p>System auto-generates Employee ID and DSS Username.</p>
-                    <div class="arrow-down"></div>
-                </div>
-            </div>
-
-            <!-- Step 3 -->
-            <div class="step-row">
-                <div class="card">
-                    <h3>3. HR Verification</h3>
-                    <p>HR reviews details and confirms title/salary/manager.</p>
-                    <div class="arrow-down"></div>
-                </div>
-            </div>
-
-            <!-- Step 4 -->
-            <div class="step-row">
-                <div class="card">
-                    <h3>4. IT Setup</h3>
-                    <p>IT creates email, assigns devices, and configures access.</p>
-                    <div class="arrow-down"></div>
-                </div>
-            </div>
-
-            <!-- Step 5: Parallel -->
-            <div class="branch-container">
-                <div class="branch-connector"></div>
-
-                <div class="card specialist">
-                    <h3>Jonas Setup</h3>
-                    <p>Accounting sets up job numbers.</p>
-                </div>
-
-                <div class="card specialist">
-                    <h3>Credit Card</h3>
-                    <p>Finance team processes card request.</p>
-                </div>
-
-                <div class="card specialist">
-                    <h3>Fleetio</h3>
-                    <p>Fleet team sets up vehicle access.</p>
-                </div>
-
-                <div class="card specialist">
-                    <h3>Business Cards</h3>
-                    <p>Admin orders physical cards.</p>
-                </div>
-
-                <div class="card specialist">
-                    <h3>SiteDocs</h3>
-                    <p>Safety team adds worker to safety platform.</p>
-                </div>
-
-                <div class="card specialist">
-                    <h3>30/60/90</h3>
-                    <p>HR/Manager schedules performance reviews.</p>
-                </div>
-            </div>
-
-            <div style="margin-top: 40px; color: var(--text-muted); font-size: 14px;">
-                * Specialist steps run in parallel once IT Setup is submitted.
-            </div>
-
+        <!-- Tab selector -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('onboarding')">New Hire Onboarding</button>
+            <button class="tab-btn" onclick="switchTab('eoe')">End of Employment</button>
         </div>
+
+        <!-- Live stats (shared, reloaded per tab) -->
+        <div class="stats-bar">
+            <span class="stats-loading" id="statsLoading">Loading live status...</span>
+            <div id="statChips" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+        </div>
+
+        <!-- ===== ONBOARDING TAB ===== -->
+        <div id="tab_onboarding" class="tab-panel active">
+            <div class="flow-container">
+
+                <div class="step-row">
+                    <div class="card">
+                        <h3>1. Initial Request</h3>
+                        <p>Hiring Manager submits request with employee details, role, site, and required access.</p>
+                        <div class="live-badge" id="badge_onb_initial">-</div>
+                        <div class="arrow-down"></div>
+                    </div>
+                </div>
+
+                <div class="step-row" style="gap:20px;">
+                    <div class="card">
+                        <h3>2a. ID Generation</h3>
+                        <p>ID Setup team creates Employee ID, DSS username, and SiteDocs record.</p>
+                        <div class="live-badge" id="badge_onb_id">-</div>
+                    </div>
+                    <div class="card">
+                        <h3>2b. HR Verification</h3>
+                        <p>HR confirms title, employment type, manager, and compensation.</p>
+                        <div class="live-badge" id="badge_onb_hr">-</div>
+                    </div>
+                </div>
+
+                <div class="step-row" style="margin-top:-20px;">
+                    <div class="card">
+                        <h3>3. IT Setup</h3>
+                        <p>IT creates Google account, assigns devices, configures system access.</p>
+                        <div class="live-badge" id="badge_onb_it">-</div>
+                        <div class="arrow-down"></div>
+                    </div>
+                </div>
+
+                <div class="branch-container">
+                    <div class="branch-connector"></div>
+
+                    <div class="card specialist">
+                        <h3>Jonas</h3>
+                        <p>Accounting sets up job cost numbers.</p>
+                        <div class="live-badge" id="badge_onb_jonas">-</div>
+                    </div>
+                    <div class="card specialist">
+                        <h3>Credit Card</h3>
+                        <p>Finance processes card application and sets limits.</p>
+                        <div class="live-badge" id="badge_onb_cc">-</div>
+                    </div>
+                    <div class="card specialist">
+                        <h3>Fleetio</h3>
+                        <p>Fleet team sets up vehicle access and assignment.</p>
+                        <div class="live-badge" id="badge_onb_fleet">-</div>
+                    </div>
+                    <div class="card specialist">
+                        <h3>Business Cards</h3>
+                        <p>Admin orders physical business cards.</p>
+                        <div class="live-badge" id="badge_onb_bc">-</div>
+                    </div>
+                    <div class="card specialist">
+                        <h3>SiteDocs</h3>
+                        <p>Safety team adds worker to SiteDocs safety platform.</p>
+                        <div class="live-badge" id="badge_onb_sd">-</div>
+                    </div>
+                    <div class="card specialist">
+                        <h3>30/60/90</h3>
+                        <p>Manager and HR schedule performance review touchpoints.</p>
+                        <div class="live-badge" id="badge_onb_rev">-</div>
+                    </div>
+                </div>
+
+            </div>
+            <p class="note">* Steps 2a and 2b run in parallel. Specialist steps (4+) are issued as Action Items once IT Setup is submitted.</p>
+        </div>
+
+        <!-- ===== EOE TAB ===== -->
+        <div id="tab_eoe" class="tab-panel">
+            <div class="flow-container">
+
+                <div class="step-row">
+                    <div class="card eoe-main">
+                        <h3>1. EOE Request</h3>
+                        <p>Manager submits request with term date, reason, systems access, equipment, and supporting documentation.</p>
+                        <div class="live-badge" id="badge_eoe_req">-</div>
+                        <div class="arrow-down"></div>
+                    </div>
+                </div>
+
+                <div class="step-row">
+                    <div class="card eoe-main">
+                        <h3>2. HR Approval</h3>
+                        <p>HR reviews the request and approves or rejects. Approval triggers all offboarding action items simultaneously.</p>
+                        <div class="live-badge" id="badge_eoe_appr">-</div>
+                        <div class="arrow-down"></div>
+                    </div>
+                </div>
+
+                <div class="branch-container">
+                    <div class="branch-connector"></div>
+
+                    <div class="card eoe-action">
+                        <h3>Asset Collection</h3>
+                        <p>Manager collects company equipment (laptop, phone, vehicle, credit card, etc.) and records status.</p>
+                        <div class="live-badge" id="badge_eoe_assets">-</div>
+                    </div>
+                    <div class="card eoe-action">
+                        <h3>IT Deactivation</h3>
+                        <p>IT deactivates Google account, BOSS, Delivery, Incidents, CAA. Configures email forwarding, vacation responder, and schedules account deletion.</p>
+                        <div class="live-badge" id="badge_eoe_it">-</div>
+                    </div>
+                    <div class="card eoe-action">
+                        <h3>HR Systems</h3>
+                        <p>HR removes ADP supervisor access and payroll records.</p>
+                        <div class="live-badge" id="badge_eoe_hr">-</div>
+                    </div>
+                    <div class="card eoe-action">
+                        <h3>Fleet Deactivation</h3>
+                        <p>Fleet team removes Fleetio access and reassigns vehicles.</p>
+                        <div class="live-badge" id="badge_eoe_fleet">-</div>
+                    </div>
+                    <div class="card eoe-action">
+                        <h3>Finance / Jonas</h3>
+                        <p>Finance removes Jonas Purchasing and Central Purchasing access.</p>
+                        <div class="live-badge" id="badge_eoe_finance">-</div>
+                    </div>
+                    <div class="card eoe-action">
+                        <h3>Employee Deactivation</h3>
+                        <p>ID Setup team deactivates SiteDocs, DSS user, and BOSS WIS module records.</p>
+                        <div class="live-badge" id="badge_eoe_deact">-</div>
+                    </div>
+                    <div class="card eoe-fyi">
+                        <h3>Safety (FYI)</h3>
+                        <p>Safety receives an advance notification only. No action required — deactivation handled by ID Setup above.</p>
+                    </div>
+                </div>
+
+            </div>
+            <p class="note">* All offboarding action items are issued simultaneously upon HR approval. Each team works independently. Workflow completes when all items are closed.</p>
+        </div>
+
     </div>
+
+    <script>
+        var SERVER_BASE_URL = '<?= baseUrl ?>';
+        var activeTab = 'onboarding';
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+            event.target.classList.add('active');
+            document.getElementById('tab_' + tab).classList.add('active');
+            loadStats();
+        }
+
+        function loadStats() {
+            document.getElementById('statsLoading').style.display = 'inline';
+            document.getElementById('statChips').innerHTML = '';
+            google.script.run
+                .withSuccessHandler(renderStats)
+                .withFailureHandler(function() {
+                    document.getElementById('statsLoading').textContent = 'Could not load live stats.';
+                })
+                .getWorkflowMapStats();
+        }
+
+        function renderStats(data) {
+            document.getElementById('statsLoading').style.display = 'none';
+            const chips = document.getElementById('statChips');
+            chips.innerHTML = '';
+
+            if (activeTab === 'onboarding') {
+                var counts = data.onboarding || {};
+                var stepMap = [
+                    { label: 'ID Setup',       steps: ['ID Setup Needed'],        badge: 'badge_onb_id' },
+                    { label: 'HR Verification', steps: ['HR Verification Needed'], badge: 'badge_onb_hr' },
+                    { label: 'IT Setup',        steps: ['IT Setup Needed'],        badge: 'badge_onb_it' },
+                    { label: 'Specialists',     steps: ['Specialist Forms Needed'],badge: null }
+                ];
+
+                var total = 0;
+                stepMap.forEach(function(sm) {
+                    var n = 0;
+                    sm.steps.forEach(function(s) { n += (counts[s] || 0); });
+                    total += n;
+                    if (sm.badge) {
+                        var el = document.getElementById(sm.badge);
+                        if (el) {
+                            el.textContent = n > 0 ? n + ' active' : 'Clear';
+                            el.className = 'live-badge ' + (n > 0 ? 'has-items' : 'no-items');
+                        }
+                    }
+                    chips.appendChild(makeChip(sm.label, n));
+                });
+                // Update initial badge
+                var initEl = document.getElementById('badge_onb_initial');
+                if (initEl) { initEl.textContent = total + ' total active'; initEl.className = 'live-badge ' + (total > 0 ? 'has-items' : 'no-items'); }
+
+                // Specialist action item badges (approximation — all fall under same step)
+                var specCount = counts['Specialist Forms Needed'] || 0;
+                ['badge_onb_jonas','badge_onb_cc','badge_onb_fleet','badge_onb_bc','badge_onb_sd','badge_onb_rev'].forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        el.textContent = specCount > 0 ? 'Pending' : 'Clear';
+                        el.className = 'live-badge ' + (specCount > 0 ? 'has-items' : 'no-items');
+                    }
+                });
+
+            } else {
+                var counts = data.eoe || {};
+                var stepMap = [
+                    { label: 'Awaiting HR Approval', steps: ['HR Approval Needed'],  badge: 'badge_eoe_appr' },
+                    { label: 'Action Items Pending', steps: ['Action Items Pending'], badge: null }
+                ];
+                stepMap.forEach(function(sm) {
+                    var n = 0;
+                    sm.steps.forEach(function(s) { n += (counts[s] || 0); });
+                    chips.appendChild(makeChip(sm.label, n));
+                    if (sm.badge) {
+                        var el = document.getElementById(sm.badge);
+                        if (el) { el.textContent = n > 0 ? n + ' pending' : 'Clear'; el.className = 'live-badge ' + (n > 0 ? 'has-items' : 'no-items'); }
+                    }
+                });
+
+                // EOE req badge — total active
+                var total = 0;
+                for (var k in counts) total += counts[k];
+                var reqEl = document.getElementById('badge_eoe_req');
+                if (reqEl) { reqEl.textContent = total + ' total active'; reqEl.className = 'live-badge ' + (total > 0 ? 'has-items' : 'no-items'); }
+
+                // Action item branch badges — all share the same step
+                var aiCount = counts['Action Items Pending'] || 0;
+                ['badge_eoe_assets','badge_eoe_it','badge_eoe_hr','badge_eoe_fleet','badge_eoe_finance','badge_eoe_deact'].forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) { el.textContent = aiCount > 0 ? 'Active' : 'Clear'; el.className = 'live-badge ' + (aiCount > 0 ? 'has-items' : 'no-items'); }
+                });
+            }
+        }
+
+        function makeChip(label, count) {
+            var d = document.createElement('div');
+            d.className = 'stat-chip';
+            d.innerHTML = '<span class="label">' + label + '</span><span class="count ' + (count === 0 ? 'zero' : '') + '">' + count + '</span>';
+            return d;
+        }
+
+        // Load stats on initial load
+        loadStats();
+    </script>
 </body>
 
 </html>

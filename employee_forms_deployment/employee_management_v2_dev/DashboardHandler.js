@@ -16,8 +16,10 @@ function serveDashboard() {
 }
 
 function serveWorkflowMap() {
-  return HtmlService.createTemplateFromFile('WorkflowMap').evaluate()
-    .setTitle('Onboarding Process Map')
+  const template = HtmlService.createTemplateFromFile('WorkflowMap');
+  template.baseUrl = getBaseUrl();
+  return template.evaluate()
+    .setTitle('Process Map')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
@@ -62,6 +64,18 @@ function getDashboardData() {
     const canEditDates = accessFlags.canEditDates;
     const userEmailLower = userEmail.toLowerCase();
 
+    // Pre-load empType from Terminations sheet so existing TERM_ rows in Dashboard_View
+    // (synced before the empType fix) can be supplemented without a full re-sync.
+    const termEmpTypeMap = {};
+    const termSheetForType = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
+    if (termSheetForType) {
+      const tData = termSheetForType.getDataRange().getValues();
+      for (let i = 1; i < tData.length; i++) {
+        const wfId = String(tData[i][0] || '');
+        if (wfId) termEmpTypeMap[wfId] = String(tData[i][7] || ''); // col 7 = Employee Type
+      }
+    }
+
     // Read the flat materialized view — single bulk read
     const data = viewSheet.getDataRange().getValues();
     if (data.length <= 1) {
@@ -105,7 +119,7 @@ function getDashboardData() {
         pendingItems: [],
         hireDate: fmtDate(row[11]),
         site: String(row[12] || ''),
-        empType: String(row[13] || ''),
+        empType: String(row[13] || '') || (workflowId.startsWith('TERM_') ? (termEmpTypeMap[workflowId] || '') : ''),
         type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Position Change' : 'Onboarding')
       };
     }).filter(wf => {
@@ -172,6 +186,7 @@ function getDashboardData() {
             managerEmail:  String(row[15] || ''),
             hireDate:      fmtDate(row[12]),
             site:          String(row[11] || ''),
+            empType:       String(row[7]  || ''), // Employee Type
             requestedItems: {},
             pendingItems: [],
             type: 'End of Employment'
@@ -251,6 +266,57 @@ function bumpRequest(workflowId, targetStep) {
         } catch (aiErr) { Logger.log('Bump Action Item lookup error: ' + aiErr.toString()); }
         return { success: false, message: 'Action Item not found or already closed for: ' + targetStep };
       }
+      // EOE Action Item targets — look up by category rather than form type
+      case 'asset_collection':
+      case 'systems_deactivation':
+      case 'systems_deactivation_hr':
+      case 'systems_deactivation_fleet':
+      case 'systems_deactivation_finance':
+      case 'systems_deactivation_deact': {
+        const eoeTargetCatMap = {
+          'asset_collection':          'Assets',
+          'systems_deactivation':      'IT',
+          'systems_deactivation_hr':   'HR',
+          'systems_deactivation_fleet':'Fleet',
+          'systems_deactivation_finance':'Finance',
+          'systems_deactivation_deact':'Deactivation'
+        };
+        const targetCat = eoeTargetCatMap[targetStep];
+        try {
+          const aiSh_ = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+          if (aiSh_) {
+            const aiD_ = aiSh_.getDataRange().getValues();
+            const aH_  = aiD_[0];
+            const wI_  = aH_.indexOf('Workflow ID'), catI_ = aH_.indexOf('Category'),
+                  tiI_ = aH_.indexOf('Task ID'),     asI_  = aH_.indexOf('Assigned To'),
+                  stI_ = aH_.indexOf('Status'),      tnI_  = aH_.indexOf('Task Name');
+            for (let i = 1; i < aiD_.length; i++) {
+              if (String(aiD_[i][wI_])   !== workflowId) continue;
+              if (String(aiD_[i][catI_]) !== targetCat)  continue;
+              if (String(aiD_[i][stI_])  === 'Closed')   continue;
+              recipient = String(aiD_[i][asI_] || '');
+              formType  = String(aiD_[i][tnI_] || targetCat);
+              const tid_ = String(aiD_[i][tiI_] || '');
+              if (tid_ && recipient && recipient.includes('@')) {
+                const bumpCtx_ = getWorkflowContext(workflowId) || {};
+                sendFormEmail({
+                  to: recipient,
+                  subject: 'Reminder: ' + formType,
+                  body: 'ACTION REQUIRED: A reminder that the following action item is still pending your completion.',
+                  formUrl: buildFormUrl('action_item_view', { tid: tid_ }),
+                  displayName: 'TEAM Group - Employee Management',
+                  contextData: bumpCtx_,
+                  subjectOpts: { isReminder: true, requestDate: new Date() }
+                });
+                return { success: true, message: 'Reminder sent to ' + recipient };
+              }
+              break;
+            }
+          }
+        } catch (aiErr) { Logger.log('Bump EOE Action Item error: ' + aiErr.toString()); }
+        return { success: false, message: 'Action item not found or already closed for: ' + targetStep };
+      }
+
       default: recipient = 'Assignee'; formType = 'General';
     }
 
@@ -383,6 +449,11 @@ function getRequestDetails(workflowId) {
   try {
     if (!workflowId) return { success: false, message: 'No workflow ID provided' };
 
+    // Termination workflows have a dedicated function with the correct checklist logic
+    if (workflowId.startsWith('TERM_')) {
+      return getTerminationDetails(workflowId);
+    }
+
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const context = { success: true, id: workflowId, checklist: [] };
 
@@ -390,7 +461,7 @@ function getRequestDetails(workflowId) {
     const reqSheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
     if (!reqSheet) return { success: false, message: 'Initial Requests sheet missing' };
 
-    const isTerm = workflowId.startsWith('TERM_');
+    const isTerm = false;
     const isChange = workflowId.startsWith('CHANGE_');
     const lookupSheetName = isTerm ? CONFIG.SHEETS.TERMINATIONS : (isChange ? CONFIG.SHEETS.POSITION_CHANGES : CONFIG.SHEETS.INITIAL_REQUESTS);
     const lookupSheet = ss.getSheetByName(lookupSheetName);
@@ -520,6 +591,8 @@ function getRequestDetails(workflowId) {
     checklist.push({ name: "IT Setup", target: "it_setup", ...itSheetData });
 
     // -- Stage 5: Specialist Action Items (single sheet read replaces 7 per-sheet checks) --
+    // Declared outside the aiSheet block so the SiteDocs fallback below can always read it
+    let hasSiteDocsAI = false;
     const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
     if (aiSheet) {
       const aiData = aiSheet.getDataRange().getValues();
@@ -540,7 +613,6 @@ function getRequestDetails(workflowId) {
           'Credit Card', 'Business Cards', 'Fleetio', 'Jonas',
           'Central Purchasing', 'SiteDocs', '30/60/90 Review', 'Safety'
         ]);
-        let hasSiteDocsAI = false;
 
         for (let i = 1; i < aiData.length; i++) {
           if (String(aiData[i][aiWfCol]) !== workflowId) continue;
@@ -685,33 +757,44 @@ function getStepResultData(workflowId, stepTarget) {
         if (!tFound) return {};
         const tr = tSh.getRange(tFound.getRow(), 1, 1, tSh.getLastColumn()).getValues()[0];
         const fd = (v) => v instanceof Date ? v.toLocaleString() : String(v || '');
-        return {
-          'Workflow ID': fd(tr[0]),
-          'Timestamp': fd(tr[2]),
-          'Requester Name': fd(tr[3]),
-          'Requester Email': fd(tr[4]),
-          'Employee Name': fd(tr[5]),
-          'Employee Type': fd(tr[7]),
-          'Work Email': fd(tr[8]),
-          'Phone': fd(tr[9]),
-          'Computer Serial': fd(tr[10]),
-          'Site': fd(tr[11]),
-          'Term Date': fd(tr[12]),
-          'Reason': fd(tr[13]),
-          'Manager Name': fd(tr[14]),
-          'Manager Email': fd(tr[15]),
-          'HR Approved (Manager)': fd(tr[16]),
-          'Has Reports': fd(tr[17]),
-          'Reassign Reports To': fd(tr[18]),
-          'Systems to Deactivate': fd(tr[19]),
-          'Email Forwarding': fd(tr[20]),
-          'Drive Files Transfer': fd(tr[21]),
-          'Inbox Delegate': fd(tr[22]),
-          'Account Duration': fd(tr[23]),
-          'Vacation Message': fd(tr[24]),
-          'Equipment to Return': fd(tr[25]),
-          'Comments': fd(tr[26])
-        };
+        // Helper: only add if value is not empty / N/A
+        const out = {};
+        const add = (label, val) => { const s = fd(val); if (s && s !== 'N/A') out[label] = s; };
+
+        add('Employee Name',    tr[5]);
+        add('Employee Type',    tr[7]);
+        add('Site',             tr[11]);
+        add('Term Date',        tr[12]);
+        add('Reason',           tr[13]);
+        add('Manager Name',     tr[14]);
+        add('Manager Email',    tr[15]);
+        add('Requester Name',   tr[3]);
+        add('Requester Email',  tr[4]);
+        add('Timestamp',        tr[2]);
+        add('HR Pre-Approved',  tr[16]);
+        add('Has Reports',      tr[17]);
+        if (fd(tr[17]) === 'Yes') add('Reports Reassigned To', tr[18]);
+        add('Systems to Deactivate', tr[19]);
+        add('Equipment to Return',   tr[25]);
+
+        // Only include Google Account fields when Google Account was selected
+        const systems = fd(tr[19]);
+        if (systems.includes('Google Account')) {
+          add('Work Email',       tr[8]);
+          add('Email Forwarding', tr[20]);
+          add('Drive Files Transfer', tr[21]);
+          add('Inbox Delegate',   tr[22]);
+          add('Account Duration', tr[23]);
+          add('Vacation Message', tr[24]);
+        }
+
+        // Phone only if provided
+        add('Phone',            tr[9]);
+        add('Computer Serial',  tr[10]);
+        add('Comments',         tr[26]);
+        if (tr[28]) add('Documentation', fd(tr[28]));
+
+        return out;
       }
       case 'termination_approval': {
         const appSh = ss.getSheetByName(CONFIG.SHEETS.TERMINATION_APPROVALS);
@@ -1017,7 +1100,8 @@ function getTerminationDetails(workflowId) {
           'HR': 'systems_deactivation_hr',
           'Fleet': 'systems_deactivation_fleet',
           'Finance': 'systems_deactivation_finance',
-          'Deactivation': 'systems_deactivation_deact'
+          'Deactivation': 'systems_deactivation_deact',
+          'Safety': 'safety_term'
         };
 
         for (let cat in categories) {
@@ -1049,6 +1133,100 @@ function getTerminationDetails(workflowId) {
   } catch (e) {
     Logger.log('getTerminationDetails Fatal Error: ' + e.toString());
     return { success: false, message: 'Server error: ' + e.message };
+  }
+}
+
+/**
+ * Returns pending action items assigned to the current user.
+ * Used by the Dashboard "My Tasks" panel so assignees can find their
+ * open tasks without searching old email.
+ */
+function getMyPendingTasks() {
+  try {
+    const userEmail = Session.getActiveUser().getEmail().toLowerCase();
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    if (!aiSheet) return { tasks: [] };
+
+    const data = aiSheet.getDataRange().getValues();
+    const headers = data[0];
+    const wfIdx     = headers.indexOf('Workflow ID');
+    const taskIdIdx = headers.indexOf('Task ID');
+    const catIdx    = headers.indexOf('Category');
+    const nameIdx   = headers.indexOf('Task Name');
+    const assignIdx = headers.indexOf('Assigned To');
+    const statusIdx = headers.indexOf('Status');
+    const createdIdx= headers.indexOf('Created Date');
+    const tz = Session.getScriptTimeZone();
+
+    const tasks = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (String(row[statusIdx] || '') === 'Closed') continue;
+      const assignedTo = String(row[assignIdx] || '').toLowerCase();
+      // Assigned To may be comma-separated (e.g. HR + Payroll)
+      const isAssigned = assignedTo.split(',').map(e => e.trim()).includes(userEmail);
+      if (!isAssigned) continue;
+
+      const wfId = String(row[wfIdx] || '');
+      const wf   = getWorkflow(wfId);
+      const createdVal = row[createdIdx];
+      const createdStr = createdVal instanceof Date
+        ? Utilities.formatDate(createdVal, tz, 'yyyy/MM/dd')
+        : String(createdVal || '');
+
+      tasks.push({
+        tid:          String(row[taskIdIdx] || ''),
+        workflowId:   wfId,
+        category:     String(row[catIdx]  || ''),
+        taskName:     String(row[nameIdx] || ''),
+        employeeName: wf ? (wf['Employee Name'] || '') : '',
+        status:       String(row[statusIdx] || ''),
+        created:      createdStr
+      });
+    }
+    return { tasks: tasks };
+  } catch(e) {
+    Logger.log('[getMyPendingTasks] Error: ' + e.message);
+    return { tasks: [] };
+  }
+}
+
+/**
+ * Returns active workflow counts per step for the process map live-status badges.
+ */
+function getWorkflowMapStats() {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const wfSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+    if (!wfSheet) return { onboarding: {}, eoe: {} };
+
+    const data    = wfSheet.getDataRange().getValues();
+    const headers = data[0];
+    const wfIdIdx  = headers.indexOf('Workflow ID');
+    const statusIdx= headers.indexOf('Status');
+    const stepIdx  = headers.indexOf('Current Step');
+
+    const onbCounts = {};
+    const eoeCounts = {};
+
+    for (let i = 1; i < data.length; i++) {
+      const wfId   = String(data[i][wfIdIdx]   || '');
+      const status = String(data[i][statusIdx]  || '');
+      const step   = String(data[i][stepIdx]    || '');
+      if (!wfId) continue;
+      if (status === 'Cancelled' || status === 'Complete' || status === 'Completed') continue;
+
+      if (wfId.startsWith('TERM_')) {
+        eoeCounts[step] = (eoeCounts[step] || 0) + 1;
+      } else if (!wfId.startsWith('CHANGE_') && !wfId.startsWith('EQUIP_')) {
+        onbCounts[step] = (onbCounts[step] || 0) + 1;
+      }
+    }
+    return { onboarding: onbCounts, eoe: eoeCounts };
+  } catch(e) {
+    Logger.log('[getWorkflowMapStats] Error: ' + e.message);
+    return { onboarding: {}, eoe: {} };
   }
 }
 

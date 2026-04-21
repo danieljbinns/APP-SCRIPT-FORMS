@@ -504,6 +504,7 @@
 
     <script>
         const taskId = "<?= task.TaskID ?>";
+        const taskName = "<?= task.TaskName || '' ?>";
         const taskCategory = "<?= task.Category ?>";
         const taskDescription = <?= JSON.stringify(task.Description || '') ?>;
         const taskDraftRaw = <?!= task.Draft ? JSON.stringify(task.Draft) : 'null' ?>;
@@ -577,8 +578,10 @@
                 }
 
                 // Cleanup items - remove leading/trailing brackets/quotes but keep internal ones
+                // __CAL__ marker items are preserved as-is
                 items = items.map(s => {
                     let str = String(s).trim();
+                    if (str.startsWith('__CAL__')) return str; // preserve calendar markers
                     // Remove outer brackets and quotes that often wrapper the whole list element incorrectly
                     str = str.replace(/^[\["']+|[\]"']+$/g, '').trim();
                     return str;
@@ -600,6 +603,39 @@
             }
 
             items.forEach((item, idx) => {
+                // ── Calendar marker row ──────────────────────────────────────────
+                if (item.startsWith('__CAL__')) {
+                    const parts = item.substring(7).split('__');
+                    const calDuration = parts[0] || '1 Month';
+                    const calConfirm = parts[1] || '';
+                    const calAdded = taskDraft.items['__CAL__'] && taskDraft.items['__CAL__'].status === 'Complete';
+
+                    const tr = document.createElement('tr');
+                    tr.id = 'cal-row';
+                    tr.innerHTML = `
+                        <td>
+                            <span class="item-name">Schedule Account Deletion</span>
+                            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+                                Duration: <b>${escapeHtml(calDuration)}</b>
+                                ${calConfirm ? ' &nbsp;·&nbsp; Confirm with: <b>' + escapeHtml(calConfirm) + '</b>' : ''}
+                            </div>
+                        </td>
+                        <td>
+                            ${calAdded
+                                ? `<span style="color:var(--success); font-weight:600;">✓ Added to Calendar</span>
+                                   <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${escapeHtml(taskDraft.items['__CAL__'].dateStr || '')}</div>`
+                                : `<button class="status-btn complete" id="calBtn" ${isClosed ? 'disabled' : ''}
+                                        onclick="doAddToCalendar('${escapeHtml(calDuration)}','${escapeHtml(calConfirm)}')">
+                                        📅 Add to Calendar
+                                   </button>`
+                            }
+                        </td>
+                        <td></td>`;
+                    body.appendChild(tr);
+                    return;
+                }
+                // ────────────────────────────────────────────────────────────────
+
                 const tr = document.createElement('tr');
                 const saved = taskDraft.items[item] || { status: 'Pending', comments: '', serial: '' };
 
@@ -669,6 +705,53 @@
             taskDraft.items[name].at = new Date().toISOString();
         }
 
+        function doAddToCalendar(duration, confirmWith) {
+            const confirmMsg = confirmWith
+                ? 'This will open Google Calendar to schedule account deletion (' + duration + ').\n\nRemember to confirm with ' + confirmWith + ' before deleting.'
+                : 'This will open Google Calendar to schedule account deletion (' + duration + ').';
+            if (!confirm(confirmMsg)) return;
+
+            // Parse months from duration string e.g. "1 Month", "3 Months"
+            const matchMonths = duration.match(/(\d+)/);
+            const months = matchMonths ? parseInt(matchMonths[1], 10) : 1;
+
+            // Calculate deletion date
+            const deletionDate = new Date();
+            deletionDate.setMonth(deletionDate.getMonth() + months);
+            const pad = function(n) { return String(n).padStart(2, '0'); };
+            const dateYMD = deletionDate.getFullYear() + pad(deletionDate.getMonth() + 1) + pad(deletionDate.getDate());
+            const nextDay  = new Date(deletionDate); nextDay.setDate(nextDay.getDate() + 1);
+            const nextYMD  = nextDay.getFullYear() + pad(nextDay.getMonth() + 1) + pad(nextDay.getDate());
+            const displayDate = (deletionDate.getMonth() + 1) + '/' + deletionDate.getDate() + '/' + deletionDate.getFullYear();
+
+            // Employee name from task name (strip prefix)
+            const empName = taskName.replace(/^IT Systems Deactivation\s*[-–]\s*/i, '') || 'Employee';
+
+            const title   = encodeURIComponent('Delete Google Account — ' + empName);
+            const details = encodeURIComponent([
+                'Delete Google account for: ' + empName,
+                confirmWith ? 'Confirm deletion with: ' + confirmWith : '',
+                'Duration setting: ' + duration
+            ].filter(Boolean).join('\n'));
+
+            const calUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+                '&text=' + title +
+                '&dates=' + dateYMD + '/' + nextYMD +
+                '&details=' + details;
+
+            window.open(calUrl, '_blank');
+
+            // Mark as scheduled in draft immediately — no server round-trip needed
+            taskDraft.items['__CAL__'] = { status: 'Complete', dateStr: displayDate, at: new Date().toISOString() };
+            const calRow = document.getElementById('cal-row');
+            if (calRow) {
+                calRow.cells[1].innerHTML =
+                    '<span style="color:var(--success); font-weight:600;">✓ Calendar Opened</span>' +
+                    '<div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Scheduled for ' + displayDate + ' — save the event in Google Calendar</div>';
+            }
+            saveDraft();
+        }
+
         function saveDraft() {
             const btn = document.getElementById('draftBtn');
             const notes = document.getElementById('notes').value;
@@ -693,6 +776,7 @@
 
             let pendingCount = 0;
             items.forEach(item => {
+                if (item.startsWith('__CAL__')) return; // Calendar marker is optional — don't block completion
                 const saved = taskDraft.items[item];
                 if (!saved || saved.status === 'Pending') pendingCount++;
             });
@@ -703,13 +787,13 @@
 
             let missingComments = false;
             for (let itemName in taskDraft.items) {
+                if (itemName === '__CAL__') continue;
                 const itemData = taskDraft.items[itemName];
                 if (itemData.status === 'Not Returned' && (!itemData.comments || !itemData.comments.trim())) {
                     missingComments = true; break;
                 }
             }
             if (missingComments) { alert('Please add a comment for any items marked as "Not Returned".'); return; }
-            if (!confirm('Finalize this action item? This will notify HR and lock the record.')) return;
 
             const btn = document.getElementById('completeBtn');
             const notesVal = document.getElementById('notes').value;
