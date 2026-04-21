@@ -43,8 +43,9 @@ const CONFIG = {
     REFERENCE_REQUESTERS: 'Reference_Requesters',
     REFERENCE_JRS: 'Reference_JRs',
     REFERENCE_JOBS_JONAS: 'Reference_JobsJonas',
-    ACTION_ITEMS: 'Action Items'
+    ACTION_ITEMS: 'Action Items',
     // Safety Onboarding and Safety Termination removed — now Action Items with formType.
+    FORM_EDIT_LOG: 'Form Edit Log'
   },
   
   // ==========================================================================

@@ -225,6 +225,19 @@
                 <h1>HR Verification & ADP Setup</h1>
                 <p class="subtitle">Complete the verification and internal ID assignment to proceed</p>
 
+                <? if (requestData.isEdit) { ?>
+                <div style="background:rgba(255,171,0,0.1); border:1px solid #ffab00; border-radius:8px; padding:14px 18px; margin-bottom:24px; display:flex; align-items:flex-start; gap:12px;">
+                    <span style="font-size:22px; line-height:1;">✏️</span>
+                    <div>
+                        <div style="font-weight:700; color:#ffab00; font-size:14px;">Previously Submitted — Edit Mode</div>
+                        <div style="font-size:12px; color:#a0a0a0; margin-top:4px;">
+                            Originally submitted by <strong><?= requestData.previousData.submittedBy ?></strong> on <?= requestData.previousData.submittedAt ?>.
+                            Changes will update the existing record and be logged for auditing.
+                        </div>
+                    </div>
+                </div>
+                <? } ?>
+
                 <div class="info-grid"
                     style="background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 16px; margin-bottom: 32px; border: 1px solid var(--border-color); text-align: left;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
@@ -369,16 +382,16 @@
                     <div class="section-title">ADP Assignment</div>
                     <div class="form-group">
                         <label>ADP Associate ID <span class="required">*</span></label>
-                        <input type="text" name="adpAssociateId" placeholder="e.g. 123456" required>
+                        <input type="text" name="adpAssociateId" value="<?= requestData.adpAssociateId || '' ?>" placeholder="e.g. 123456" required>
                     </div>
 
                     <div class="form-group">
                         <label>Internal HR Notes (Optional)</label>
-                        <textarea name="notes" rows="3"></textarea>
+                        <textarea name="notes" rows="3"><?= requestData.isEdit && requestData.previousData ? requestData.previousData.notes : '' ?></textarea>
                     </div>
 
                     <div class="button-container">
-                        <button type="submit" class="btn btn-primary" id="submitBtn">Submit Verification</button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn"><?= requestData.isEdit ? 'Update Verification' : 'Submit Verification' ?></button>
                     </div>
                 </form>
             </div>

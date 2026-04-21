@@ -59,9 +59,38 @@ function getHRVerificationData(workflowId) {
     }
     
     if (!result.success) return result;
-    
+
+    // Check for existing submission — populate edit-mode data if found
+    const hrResultsSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
+    if (hrResultsSheet) {
+      const hrData = hrResultsSheet.getDataRange().getValues();
+      for (let i = 1; i < hrData.length; i++) {
+        if (String(hrData[i][0]) === workflowId && String(hrData[i][1]) !== 'DATE_CHANGE') {
+          const submittedAt = hrData[i][2] instanceof Date
+            ? Utilities.formatDate(hrData[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm')
+            : String(hrData[i][2] || '');
+          const combined = String(hrData[i][7] || ''); // "Job Title / JR Title"
+          result.isEdit = true;
+          result.previousData = {
+            adpAssociateId: String(hrData[i][3] || ''),
+            verifiedName:   String(hrData[i][4] || ''),
+            managerName:    String(hrData[i][5] || ''),
+            managerEmail:   String(hrData[i][6] || ''),
+            jobTitle:  combined.includes(' / ') ? combined.split(' / ')[0].trim() : combined,
+            jrTitle:   combined.includes(' / ') ? combined.split(' / ').slice(1).join(' / ').trim() : '',
+            notes:      String(hrData[i][8] || ''),
+            submittedBy: String(hrData[i][9] || ''),
+            submittedAt: submittedAt
+          };
+          // Pre-populate ADP ID so the form field picks it up
+          result.adpAssociateId = result.previousData.adpAssociateId;
+          break;
+        }
+      }
+    }
+
     return result;
-    
+
   } catch (error) {
     Logger.log('Error fetching verification data: ' + error.toString());
     return { success: false, message: error.message };
@@ -87,13 +116,18 @@ function submitHRVerification(formData) {
     const jrTitleCol = headers.indexOf('Position Title'); // Col 14 - Fixed header name match
     const jrAssignCol = headers.indexOf('JR Assign'); // Col 46 (Now map to jrTitle)
     
-    // Guard: prevent re-submission if already completed
+    // Detect existing submission for update-vs-insert logic
+    let existingHRRowIndex = -1;
+    let existingHRRowData = null;
     const existingResultsSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
     if (existingResultsSheet) {
       const existingData = existingResultsSheet.getDataRange().getValues();
-      const alreadySubmitted = existingData.some((row, idx) => idx > 0 && String(row[0]) === workflowId);
-      if (alreadySubmitted) {
-        return { success: false, message: 'HR Verification has already been submitted for this workflow. Contact an administrator if changes are needed.' };
+      for (let ei = 1; ei < existingData.length; ei++) {
+        if (String(existingData[ei][0]) === workflowId && String(existingData[ei][1]) !== 'DATE_CHANGE') {
+          existingHRRowIndex = ei + 1; // 1-based sheet row
+          existingHRRowData = existingData[ei];
+          break;
+        }
       }
     }
 
@@ -150,13 +184,22 @@ function submitHRVerification(formData) {
       Logger.log('[HR Verification] ' + dateChangeFlag + ' for workflow ' + workflowId);
     }
 
-    resultsSheet.appendRow([
+    const hrResultRow = [
       workflowId, formId, new Date(), formData.adpAssociateId,
       formData.firstName + ' ' + formData.lastName,
       formData.managerName, formData.managerEmail,
       formData.jobTitle + ' / ' + formData.jrTitle,
-      verificationNotes, Session.getActiveUser().getEmail()
-    ]);
+      verificationNotes, actingUser
+    ];
+
+    if (existingHRRowIndex !== -1 && existingResultsSheet) {
+      // UPDATE existing row in-place and log the edit
+      existingResultsSheet.getRange(existingHRRowIndex, 1, 1, hrResultRow.length).setValues([hrResultRow]);
+      logFormEdit(workflowId, 'HR Verification', actingUser, existingHRRowData, hrResultRow);
+      Logger.log('[HR Verification] Updated existing row for ' + workflowId + ' by ' + actingUser);
+    } else {
+      resultsSheet.appendRow(hrResultRow);
+    }
     
     const actingUser = Session.getActiveUser().getEmail();
     

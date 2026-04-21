@@ -98,8 +98,24 @@ function submitITSetup(formData) {
     const workflowId = formData.workflowId || formData.requestId;
     const formId = generateFormId('IT_SETUP');
     Logger.log('IT Setup submitted for: ' + workflowId);
-    
+
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+
+    // Detect existing submission for update-vs-insert
+    let existingITRowIndex = -1;
+    let existingITRowData = null;
+    const itSheetCheck = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
+    if (itSheetCheck) {
+      const itCheckData = itSheetCheck.getDataRange().getValues();
+      for (let ei = 1; ei < itCheckData.length; ei++) {
+        if (String(itCheckData[ei][0]) === workflowId) {
+          existingITRowIndex = ei + 1;
+          existingITRowData = itCheckData[ei];
+          break;
+        }
+      }
+    }
+
     let itSheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
     
     if (!itSheet) {
@@ -141,14 +157,20 @@ function submitITSetup(formData) {
       Session.getActiveUser().getEmail()
     ];
     
-    itSheet.appendRow(rowData);
-    Logger.log('Appended row to IT Results: ' + JSON.stringify(rowData));
-    
     const actingUser = Session.getActiveUser().getEmail();
-    updateWorkflow(workflowId, 'In Progress', 'Specialist Forms Needed', '', actingUser);
-    syncWorkflowState(workflowId);
 
-    triggerSpecialists(workflowId, formData);
+    if (existingITRowIndex !== -1 && itSheet) {
+      // UPDATE existing row in-place — do NOT re-trigger specialists
+      itSheet.getRange(existingITRowIndex, 1, 1, rowData.length).setValues([rowData]);
+      logFormEdit(workflowId, 'IT Setup', actingUser, existingITRowData, rowData);
+      Logger.log('[IT Setup] Updated existing row for ' + workflowId + ' by ' + actingUser + ' — specialists NOT re-triggered');
+    } else {
+      itSheet.appendRow(rowData);
+      Logger.log('Appended row to IT Results: ' + JSON.stringify(rowData));
+      updateWorkflow(workflowId, 'In Progress', 'Specialist Forms Needed', '', actingUser);
+      syncWorkflowState(workflowId);
+      triggerSpecialists(workflowId, formData);
+    }
 
     // Notify Requester + Manager
     try {
