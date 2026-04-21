@@ -637,12 +637,20 @@
                     '<div class="detail-item"><label>Requester</label><div>' + (r['Requester Email'] || '-') + '</div></div>';
             } else {
                 document.getElementById('employeeName').innerText = (r['First Name'] || '') + ' ' + (r['Last Name'] || '');
+                var _di = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
                 document.getElementById('snapshotGrid').innerHTML =
-                    '<div class="detail-item"><label>Workflow ID</label><div>' + data.id + '</div></div>' +
-                    '<div class="detail-item"><label>Job Title</label><div>' + (r['Position/JR Title'] || r['Position'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Site</label><div>' + (r['Site/Office Location'] || r['Site Name'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Start Date</label><div>' + formatDate(r['Hire/Start Date'] || r['Hire Date']) + '</div></div>' +
-                    '<div class="detail-item"><label>Requester</label><div>' + (r['Requester Email'] || '-') + '</div></div>';
+                    _di('Workflow ID', data.id) +
+                    _di('Employment Type', r['Employment Type']) +
+                    _di('Employee Type', r['Employee Type']) +
+                    _di('Position Title', r['Position Title'] || r['HR Verified Title'] || r['Position/JR Title']) +
+                    _di('Department', r['Department']) +
+                    _di('Site', r['Site/Office Location'] || r['Site Name']) +
+                    _di('Job Site #', r['Job Site #']) +
+                    _di('Start Date', r['Hire Date'] || r['Hire/Start Date']) +
+                    _di('Manager', (r['Manager Name'] || '') + (r['Manager Email'] ? ' · ' + r['Manager Email'] : '')) +
+                    _di('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' · ' + r['Requester Email'] : '')) +
+                    _di('System Access', r['System Access']) +
+                    _di('Date Requested', r['Date Requested']);
             }
 
             // Auto-launch specific viewing modal if vd parameter provided via Dashboard
@@ -674,8 +682,9 @@
                     }
                 }
 
+                var isNA = item.status === 'N/A' || item.status === 'Skipped';
                 var actions = '-';
-                if (!isComplete && item.target) {
+                if (!isComplete && !isNA && item.target) {
                     actions = '<button class="btn" style="background:var(--warning); color:black;" onclick="bump(\'' + item.target + '\')">Remind</button>';
                 } else if (isComplete && item.target) {
                     actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + item.target + '\')">View Data</button>';

@@ -118,23 +118,23 @@ function syncWorkflowState(workflowId) {
     
     if (baseStatus !== 'Cancelled' && baseStatus !== 'Completed') {
       if (currentStep === 'Specialist Forms Needed') {
-        let pending = [];
-        
-        // Helper to check if ID exists in a specific result sheet
-        const checkDone = (sheetName) => {
-          const sheet = ss.getSheetByName(sheetName);
-          if (!sheet) return false;
-          return sheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() !== null;
-        };
-        
-        if (reqInfo.items.jonas && !checkDone(CONFIG.SHEETS.JONAS_RESULTS)) pending.push('Jonas');
-        if (reqInfo.items.creditCard && !checkDone(CONFIG.SHEETS.CREDIT_CARD_RESULTS)) pending.push('Credit Card');
-        if (reqInfo.items.fleetio && !checkDone(CONFIG.SHEETS.FLEETIO_RESULTS)) pending.push('Fleetio');
-        if (reqInfo.items.businessCards && !checkDone(CONFIG.SHEETS.BUSINESS_CARDS_RESULTS)) pending.push('Business Cards');
-        if (reqInfo.items.siteDocs && !checkDone(CONFIG.SHEETS.SITEDOCS_RESULTS)) pending.push('SiteDocs');
-        if (reqInfo.items.review && !checkDone(CONFIG.SHEETS.REVIEW_306090_RESULTS)) pending.push('30/60/90');
-        if (reqInfo.items.safety && !checkDone(CONFIG.SHEETS.SAFETY_ONBOARDING_RESULTS)) pending.push('Safety Onboarding');
-        
+        // Check Action Items sheet for open specialist tasks
+        const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+        const pending = [];
+        if (aiSheet) {
+          const aiData = aiSheet.getDataRange().getValues();
+          const aiHdrs = aiData[0];
+          const wfCol = aiHdrs.indexOf('Workflow ID');
+          const catCol = aiHdrs.indexOf('Category');
+          const stCol  = aiHdrs.indexOf('Status');
+          const SPECIALIST_CATS = new Set(['Credit Card','Business Cards','Fleetio','Jonas','Central Purchasing','SiteDocs','30/60/90 Review','Safety']);
+          for (let i = 1; i < aiData.length; i++) {
+            if (String(aiData[i][wfCol]) !== workflowId) continue;
+            const cat = String(aiData[i][catCol] || '');
+            if (!SPECIALIST_CATS.has(cat)) continue;
+            if (String(aiData[i][stCol]) !== 'Closed') pending.push(cat);
+          }
+        }
         if (pending.length > 0) {
           granularStatus = 'Pending: ' + pending.join(', ');
         } else {

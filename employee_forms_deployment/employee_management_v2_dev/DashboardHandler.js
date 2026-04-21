@@ -376,12 +376,14 @@ function getRequestDetails(workflowId) {
     const reqRow = lookupSheet.getRange(reqRowIndex, 1, 1, reqLastCol).getValues()[0]; // Use lookupSheet here
 
     const r = {};
+    const _tz = Session.getScriptTimeZone();
     // Safer mapping: Ensure no undefined values which break google.script.run serialization
     reqHeaders.forEach((h, i) => {
       if (h) {
         const val = reqRow[i];
         if (val instanceof Date) {
-          r[h] = val.toString();
+          // Date-only fields: format without time to avoid UTC shift on client
+          r[h] = Utilities.formatDate(val, _tz, 'M/d/yyyy');
         } else if (val === undefined || val === null) {
           r[h] = '';
         } else {
@@ -566,7 +568,50 @@ function getStepResultData(workflowId, stepTarget) {
     let sheetName = '';
 
     switch (stepTarget) {
-      case 'initial_request': sheetName = CONFIG.SHEETS.INITIAL_REQUESTS; break;
+      case 'initial_request': {
+        const irSh = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
+        if (!irSh) return {};
+        const irFound = irSh.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext();
+        if (!irFound) return {};
+        const irH = irSh.getRange(1, 1, 1, irSh.getLastColumn()).getValues()[0];
+        const irRow = irSh.getRange(irFound.getRow(), 1, 1, irSh.getLastColumn()).getValues()[0];
+        const irMap = {};
+        const irTz = Session.getScriptTimeZone();
+        irH.forEach((h, i) => {
+          if (!h) return;
+          const v = irRow[i];
+          irMap[h] = v instanceof Date ? Utilities.formatDate(v, irTz, 'M/d/yyyy') : String(v || '');
+        });
+        const fv = (k) => irMap[k] || '';
+        // Curated ordered display — omit internal IDs, passwords, raw system lists
+        const SKIP_IR = new Set(['Workflow ID','Form ID','Submission Timestamp','Systems','Equipment',
+          'Google Email','Google Domain','JR Req','JR Assign','ADP Salary Access',
+          'Requested Username','Requested Domain','BOSS Job Sites','BOSS Cost Sheet','BOSS Cost Sheet Jobs',
+          'BOSS Trip Reports','BOSS Grievances','Jonas Job Numbers','Credit Card USA','Credit Card Limit USA',
+          'Credit Card Limit Canada','Credit Card Limit Home Depot','Purchasing Sites','Status']);
+        const ORDER = [
+          'Status','Employment Type','Employee Type','New Hire/Rehire',
+          'First Name','Last Name','Position Title','Department',
+          'Site/Office Location','Site Name','Job Site #',
+          'Manager Name','Manager Email',
+          'Requester Name','Requester Email',
+          'System Access','Hire Date','Date Requested'
+        ];
+        const out = {};
+        // Show ordered fields first
+        ORDER.forEach(k => {
+          const v = fv(k);
+          if (v) out[k] = k === 'Submission Timestamp' ? v : v;
+        });
+        // Append any remaining non-skipped fields
+        irH.forEach(h => {
+          if (!h || SKIP_IR.has(h) || ORDER.includes(h) || h in out) return;
+          const v = fv(h);
+          if (v) out[h] = v;
+        });
+        out['Submitted at'] = fv('Submission Timestamp') || fv('Timestamp') || '-';
+        return out;
+      }
       case 'termination_request': {
         const tSh = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
         if (!tSh) return {};
@@ -716,15 +761,16 @@ function getStepResultData(workflowId, stepTarget) {
         const ftIdx = aH.indexOf('Form Type');
         const result = {};
         let taskNum = 1;
+        const SKIP_COLS = new Set(['Workflow ID','Task ID','Form ID','Description','Draft','Form Data','Form Type']);
         for (let i = 1; i < aiD.length; i++) {
           if (String(aiD[i][wIdx]) !== workflowId) continue;
           if (String(aiD[i][cIdx]) !== targetCat) continue;
           if (ftIdx >= 0 && aiD[i][ftIdx] && aiD[i][ftIdx] !== stepTarget) continue;
+          const prefix = taskNum > 1 ? 'Task ' + taskNum + ' — ' : '';
           aH.forEach((h, j) => {
-            if (h) {
-              const v = aiD[i][j];
-              result[(taskNum > 1 ? 'Task ' + taskNum + ' — ' : '') + h] = v instanceof Date ? v.toLocaleString() : String(v || '');
-            }
+            if (!h || SKIP_COLS.has(h)) return;
+            const v = aiD[i][j];
+            result[prefix + h] = v instanceof Date ? v.toLocaleString() : String(v || '');
           });
           taskNum++;
         }

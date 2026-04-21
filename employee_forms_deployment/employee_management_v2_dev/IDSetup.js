@@ -69,7 +69,7 @@ function getIDSetupRequestData(workflowId) {
           employeeName: firstName + ' ' + lastName,
           firstName: firstName,
           lastName: lastName,
-          hireDate: hireDateRaw instanceof Date ? Utilities.formatDate(hireDateRaw, 'UTC', 'yyyy-MM-dd') : (hireDateRaw ? String(hireDateRaw).substring(0, 10) : ''),
+          hireDate: hireDateRaw instanceof Date ? Utilities.formatDate(hireDateRaw, Session.getScriptTimeZone(), 'yyyy-MM-dd') : (hireDateRaw ? String(hireDateRaw).substring(0, 10) : ''),
           position: get(row, 'Position Title'),
           jrTitle: get(row, 'JR Assign') || '',
           siteName: get(row, 'Site Name'),
@@ -199,18 +199,12 @@ function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
       siteName: requestData.siteName,
       hireDate: requestData.hireDate,
       employmentType: requestData.employmentType,
-      managerName: requestData.managerName,
-      dssUsername: setupData ? setupData.dssUsername : '',
-      siteDocsUsername: setupData ? (setupData.siteDocsUsername || '') : ''
+      managerName: requestData.managerName
     };
 
     const description = JSON.stringify([
       'Assign SiteDocs locations for employee',
-      'Site: ' + (requestData.siteName || 'N/A'),
-      'DSS Username: ' + (setupData ? (setupData.dssUsername || 'N/A') : 'N/A'),
-      'SiteDocs Username: ' + (setupData ? (setupData.siteDocsUsername || 'N/A') : 'N/A'),
-      'Assign DSS learning paths',
-      'Confirm SiteDocs and DSS setup complete'
+      'Assign DSS learning paths'
     ]);
 
     const tid = ActionItemService.createActionItem(

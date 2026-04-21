@@ -767,12 +767,18 @@
                 stepperHtml += '</div>';
             }
 
+            var _dateLabel = isEOE ? 'Term Date' : 'Start Date';
+            var _dateVal = isEOE
+                ? (r['Term Date'] || r['Termination Date'] || '-')
+                : (r['Hire Date'] || r['Hire/Start Date'] || r['Start Date'] || '-');
             var html = stepperHtml +
                 '<div class="detail-grid">' +
-                '<div class="detail-item"><label>Employee Name</label><div>' + (r['First Name'] || '') + ' ' + (r['Last Name'] || '') + '</div></div>' +
-                '<div class="detail-item"><label>Job Title</label><div>' + (r['Position/JR Title'] || r['Position Title'] || r['Job Title'] || r['Position'] || r['Job Title'] || '-') + '</div></div>' +
-                '<div class="detail-item"><label>Site</label><div>' + (r['Site/Office Location'] || r['Site Name'] || r['Site'] || r['Location'] || '-') + '</div></div>' +
-                '<div class="detail-item"><label>Effective Date</label><div>' + formatDate(r['Hire/Start Date'] || r['Hire Date'] || r['Start Date'] || r['Term Date'] || r['Termination Date']) + '</div></div>' +
+                '<div class="detail-item"><label>Employee Name</label><div>' + escapeHtml((r['First Name'] || '') + ' ' + (r['Last Name'] || r['Employee Name'] || '')) + '</div></div>' +
+                '<div class="detail-item"><label>Job Title</label><div>' + escapeHtml(r['Position Title'] || r['HR Verified Title'] || r['Position/JR Title'] || r['Job Title'] || '-') + '</div></div>' +
+                '<div class="detail-item"><label>Site</label><div>' + escapeHtml(r['Site/Office Location'] || r['Site Name'] || r['Site'] || '-') + '</div></div>' +
+                '<div class="detail-item"><label>' + _dateLabel + '</label><div>' + escapeHtml(_dateVal) + '</div></div>' +
+                '<div class="detail-item"><label>Date Requested</label><div>' + escapeHtml(r['Date Requested'] || r['Timestamp'] || '-') + '</div></div>' +
+                '<div class="detail-item"><label>Employment Type</label><div>' + escapeHtml(r['Employment Type'] || '-') + '</div></div>' +
                 '</div>' +
                 '<h3 class="section-header">Status Checklist</h3>' +
                 '<table style="width:100%; border-collapse: collapse; margin-top: 10px;">' +

@@ -198,7 +198,8 @@ var ActionItemService = (function() {
     if (pending.length === 0) {
       Logger.log(`[ActionItemService] All tasks closed for Workflow ${workflowId}. Marking complete.`);
       updateWorkflow(workflowId, 'Complete', 'All Action Items Closed');
-      
+      syncWorkflowState(workflowId);
+
       // Notify HR and Requester of full closure
       notifyWorkflowClosure(workflowId);
     }
