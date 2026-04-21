@@ -315,11 +315,39 @@ function updateHireDate(workflowId, newDateStr) {
 
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][wfIdCol]) === workflowId) {
+        // Capture old date for audit trail
+        const rawOld = data[i][hireDateCol];
+        const oldDateStr = rawOld instanceof Date
+          ? Utilities.formatDate(rawOld, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+          : String(rawOld || '').substring(0, 10);
+
         sheet.getRange(i + 1, hireDateCol + 1).setValue(new Date(newDateStr + 'T12:00:00'));
         SpreadsheetApp.flush();
         syncWorkflowState(workflowId);
-        Logger.log('[D2] Hire date updated for ' + workflowId + ' to ' + newDateStr + ' by ' + userEmail);
-        return { success: true, message: 'Start date updated successfully.' };
+
+        // Write audit row to HR Verification Results so the change is visible in records
+        try {
+          const auditSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
+          if (auditSheet) {
+            auditSheet.appendRow([
+              workflowId,
+              'DATE_CHANGE',
+              new Date(),
+              '', // ADP ID
+              '', // Verified Name
+              '', // Manager
+              '', // Manager Email
+              '', // JR Title
+              '[START DATE CHANGED: ' + oldDateStr + ' → ' + newDateStr + '] by ' + userEmail,
+              userEmail
+            ]);
+          }
+        } catch (auditErr) {
+          Logger.log('[D2] Could not write audit row: ' + auditErr.message);
+        }
+
+        Logger.log('[D2] Hire date updated for ' + workflowId + ' from ' + oldDateStr + ' to ' + newDateStr + ' by ' + userEmail);
+        return { success: true, message: 'Start date updated from ' + oldDateStr + ' to ' + newDateStr + '.' };
       }
     }
     return { success: false, message: 'Workflow not found in Initial Requests.' };

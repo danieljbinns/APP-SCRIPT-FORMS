@@ -101,10 +101,19 @@ function submitHRVerification(formData) {
     let systemAccess = '';
     let requesterEmail = '';
     let adpSalaryAccess = false;
+    let originalHireDate = '';
     const adpSalaryAccessCol = headers.indexOf('ADP Salary Access');
 
     for (let i = 1; i < mainData.length; i++) {
       if (mainData[i][0] === workflowId) {
+        // Capture original hire date before overwriting (for audit trail)
+        if (hireDateCol !== -1) {
+          const rawOrig = mainData[i][hireDateCol];
+          originalHireDate = rawOrig instanceof Date
+            ? Utilities.formatDate(rawOrig, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+            : String(rawOrig || '').substring(0, 10);
+        }
+
         if (firstNameCol !== -1) mainSheet.getRange(i + 1, firstNameCol + 1).setValue(formData.firstName);
         if (lastNameCol !== -1) mainSheet.getRange(i + 1, lastNameCol + 1).setValue(formData.lastName);
         if (managerNameCol !== -1) mainSheet.getRange(i + 1, managerNameCol + 1).setValue(formData.managerName);
@@ -133,12 +142,20 @@ function submitHRVerification(formData) {
       resultsSheet.getRange(1, 1, 1, 10).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
     
+    // Build notes — flag if hire date was changed during verification
+    let verificationNotes = formData.notes || '';
+    if (formData.hireDate && originalHireDate && formData.hireDate !== originalHireDate) {
+      const dateChangeFlag = '[START DATE CHANGED: ' + originalHireDate + ' → ' + formData.hireDate + ']';
+      verificationNotes = dateChangeFlag + (verificationNotes ? ' | ' + verificationNotes : '');
+      Logger.log('[HR Verification] ' + dateChangeFlag + ' for workflow ' + workflowId);
+    }
+
     resultsSheet.appendRow([
       workflowId, formId, new Date(), formData.adpAssociateId,
       formData.firstName + ' ' + formData.lastName,
-      formData.managerName, formData.managerEmail, 
-      formData.jobTitle + ' / ' + formData.jrTitle, // Store combined in verification results logs
-      formData.notes || '', Session.getActiveUser().getEmail()
+      formData.managerName, formData.managerEmail,
+      formData.jobTitle + ' / ' + formData.jrTitle,
+      verificationNotes, Session.getActiveUser().getEmail()
     ]);
     
     const actingUser = Session.getActiveUser().getEmail();

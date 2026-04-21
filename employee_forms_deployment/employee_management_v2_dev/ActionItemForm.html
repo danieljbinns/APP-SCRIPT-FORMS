@@ -384,6 +384,21 @@
                         <?= context.jrTitle ?>
                     </span></div>
                 <? } ?>
+                <? if (context.department) { ?>
+                <div class="info-row"><span class="label">Department</span><span class="value">
+                        <?= context.department ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.employmentType) { ?>
+                <div class="info-row"><span class="label">Employment Type</span><span class="value">
+                        <?= context.employmentType ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.employeeType) { ?>
+                <div class="info-row"><span class="label">Employee Type</span><span class="value">
+                        <?= context.employeeType ?>
+                    </span></div>
+                <? } ?>
                 <? if (context.hireDate) { ?>
                 <div class="info-row"><span class="label">Start Date</span><span class="value">
                         <?= context.hireDate ?>
@@ -397,6 +412,11 @@
                 <? if (context.managerName) { ?>
                 <div class="info-row"><span class="label">Manager</span><span class="value">
                         <?= context.managerName ?>
+                    </span></div>
+                <? } ?>
+                <? if (context.managerEmail) { ?>
+                <div class="info-row"><span class="label">Manager Email</span><span class="value" style="font-size:11px;">
+                        <?= context.managerEmail ?>
                     </span></div>
                 <? } ?>
                 <? if (context.reason) { ?>
@@ -422,7 +442,7 @@
                     </span></div>
                 <? } ?>
                 <? if (context.originalComments) { ?>
-                <div class="info-row" style="border-top:1px dashed #444; margin-top:10px; padding-top:10px;">
+                <div class="info-row" style="grid-column: span 2; border-top:1px dashed #444; margin-top:10px; padding-top:10px;">
                     <span class="label">Request Comments</span>
                     <span class="value" style="font-style:italic; color:#ddd;">
                         <?= context.originalComments ?>
