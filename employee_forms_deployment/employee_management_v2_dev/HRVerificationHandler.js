@@ -177,6 +177,8 @@ function submitHRVerification(formData) {
     }
     
     // Build notes — flag if hire date was changed during verification
+    const actingUser = Session.getActiveUser().getEmail();
+
     let verificationNotes = formData.notes || '';
     if (formData.hireDate && originalHireDate && formData.hireDate !== originalHireDate) {
       const dateChangeFlag = '[START DATE CHANGED: ' + originalHireDate + ' → ' + formData.hireDate + ']';
@@ -193,15 +195,18 @@ function submitHRVerification(formData) {
     ];
 
     if (existingHRRowIndex !== -1 && existingResultsSheet) {
-      // UPDATE existing row in-place and log the edit
+      // UPDATE existing row in-place — do NOT re-fire workflow transitions or emails
       existingResultsSheet.getRange(existingHRRowIndex, 1, 1, hrResultRow.length).setValues([hrResultRow]);
       logFormEdit(workflowId, 'HR Verification', actingUser, existingHRRowData, hrResultRow);
       Logger.log('[HR Verification] Updated existing row for ' + workflowId + ' by ' + actingUser);
+      SpreadsheetApp.flush();
+      return {
+        success: true,
+        message: 'HR Verification updated successfully. No downstream emails re-sent.'
+      };
     } else {
       resultsSheet.appendRow(hrResultRow);
     }
-    
-    const actingUser = Session.getActiveUser().getEmail();
     
     // CRITICAL: Ensure sheet updates are committed before reading context/sending email
     SpreadsheetApp.flush();

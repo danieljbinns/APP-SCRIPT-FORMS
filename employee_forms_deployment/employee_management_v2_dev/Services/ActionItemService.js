@@ -191,9 +191,21 @@ var ActionItemService = (function() {
   }
 
   /**
-   * Checks if a workflow is complete (all tasks closed)
+   * Checks if a workflow is complete (all tasks closed).
+   * GUARD: Only auto-completes when the current workflow step is 'Specialist Forms Needed'
+   * — meaning IT Setup has already been submitted. This prevents early action items
+   * (e.g. Safety created at HR Verification stage) from prematurely closing a workflow
+   * that still requires IT setup.
    */
   function checkWorkflowCompletion(workflowId) {
+    // Gate: only proceed if IT has already been done (step = 'Specialist Forms Needed')
+    const workflow = getWorkflow(workflowId);
+    const currentStep = workflow ? String(workflow['Current Step'] || '') : '';
+    if (currentStep !== 'Specialist Forms Needed') {
+      Logger.log(`[ActionItemService] Skipping auto-complete for ${workflowId} — step is '${currentStep}', not 'Specialist Forms Needed'. IT gatekeeps completion.`);
+      return;
+    }
+
     const pending = getPendingTasks(workflowId);
     if (pending.length === 0) {
       Logger.log(`[ActionItemService] All tasks closed for Workflow ${workflowId}. Marking complete.`);

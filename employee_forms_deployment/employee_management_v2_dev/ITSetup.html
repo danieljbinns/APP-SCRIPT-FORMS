@@ -433,7 +433,17 @@
                     <div class="info-row">
                         <span class="label">Email Requested:</span>
                         <span class="value">
-                            <?= requestData.emailRequested ?>
+                            <?
+                              var _er = requestData.emailRequested || '';
+                              var _atIdx = _er.indexOf('@');
+                              if (_atIdx > 0) {
+                                var _uname = _er.substring(0, _atIdx);
+                                var _domain = _er.substring(_atIdx);
+                                print('"' + _uname + '"' + _domain);
+                              } else {
+                                print(_er || 'N/A');
+                              }
+                            ?>
                         </span>
                     </div>
 
