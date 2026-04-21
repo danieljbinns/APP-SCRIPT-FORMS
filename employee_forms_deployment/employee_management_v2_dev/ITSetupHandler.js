@@ -281,10 +281,16 @@ function triggerSpecialists(workflowId, itData) {
 
   // 5. Jonas — only if job numbers were provided
   if (context.jonasJobNumbers && context.jonasJobNumbers.toString().trim().length > 0) {
-    const jobNums = context.jonasJobNumbers.toString().split(',').map(s => s.trim()).filter(s => s);
-    const jobItems = ['Provision Jonas access for employee', 'Login email: ' + assignedEmail]
-      .concat(jobNums.map(n => 'Grant access to job #' + n))
-      .concat(['Confirm all job numbers accessible']);
+    const costSheetJobs = context.bossCostSheetJobs
+      ? context.bossCostSheetJobs.toString().split(',').map(s => s.trim()).filter(s => s)
+      : [];
+    const jobItems = ['Provision Jonas access for employee', 'Login email: ' + assignedEmail];
+    if (costSheetJobs.length > 0) {
+      costSheetJobs.forEach(j => jobItems.push('Grant cost sheet access: ' + j));
+    } else {
+      jobItems.push('Confirm cost sheet access requirements with manager');
+    }
+    jobItems.push('Confirm all cost sheets accessible in Jonas');
     specialists.push({
       email: CONFIG.EMAILS.JONAS,
       category: 'Jonas',
@@ -296,10 +302,16 @@ function triggerSpecialists(workflowId, itData) {
 
   // 6. Central Purchasing — only if sites were selected
   if (context.purchasingSites && context.purchasingSites.toString().trim().length > 0) {
-    const sites = context.purchasingSites.toString().split(',').map(s => s.trim()).filter(s => s);
-    const cpItems = ['Set up Central Purchasing access for employee', 'Login email: ' + assignedEmail]
-      .concat(sites.map(s => 'Confirm access for site: ' + s))
-      .concat(['Confirm purchasing access active']);
+    const costSheetJobs = context.bossCostSheetJobs
+      ? context.bossCostSheetJobs.toString().split(',').map(s => s.trim()).filter(s => s)
+      : [];
+    const cpItems = ['Set up Central Purchasing access for employee', 'Login email: ' + assignedEmail];
+    if (costSheetJobs.length > 0) {
+      costSheetJobs.forEach(j => cpItems.push('Grant cost sheet access: ' + j));
+    } else {
+      cpItems.push('Confirm cost sheet access requirements with manager');
+    }
+    cpItems.push('Confirm purchasing access active');
     specialists.push({
       email: CONFIG.EMAILS.JONAS,
       category: 'Central Purchasing',

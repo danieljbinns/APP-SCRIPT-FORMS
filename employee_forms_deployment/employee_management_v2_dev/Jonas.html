@@ -51,9 +51,20 @@
         <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName || '-' ?></span></div>
         <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate || '-' ?></span></div>
         <div class="info-row"><span class="label">Job Title</span><span class="value"><?= requestData.jobTitle || '-' ?></span></div>
-        <div class="info-row"><span class="label">JR Title</span><span class="value"><?= requestData.jrTitle || '-' ?></span></div>
+        <div class="info-row"><span class="label">Department</span><span class="value"><?= requestData.department || '-' ?></span></div>
         <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName || '-' ?></span></div>
         <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName || '-' ?></span></div>
+        <div class="info-row"><span class="label">Login Email</span><span class="value"><?= requestData.assignedEmail || requestData.emailRequested || '-' ?></span></div>
+        <div class="info-row"><span class="label">Employment Type</span><span class="value"><?= requestData.employmentType || '-' ?></span></div>
+        <? if (requestData.bossCostSheetJobs) { ?>
+        <div class="info-row" style="grid-column: span 2; border-top: 1px solid #333; padding-top: 10px; margin-top: 4px;">
+            <span class="label" style="color: var(--brand-red);">Cost Sheet Jobs (Required Access)</span>
+            <span class="value" style="font-size: 14px; line-height: 1.6;"><?= requestData.bossCostSheetJobs ?></span>
+        </div>
+        <? } ?>
+        <? if (requestData.bossCostSheet) { ?>
+        <div class="info-row"><span class="label">Cost Sheet Access</span><span class="value"><?= requestData.bossCostSheet ?></span></div>
+        <? } ?>
     </div>
 
     <div id="formSection">

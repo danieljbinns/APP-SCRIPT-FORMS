@@ -51,11 +51,19 @@
         <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName || '-' ?></span></div>
         <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate || '-' ?></span></div>
         <div class="info-row"><span class="label">Job Title</span><span class="value"><?= requestData.jobTitle || '-' ?></span></div>
-        <div class="info-row"><span class="label">Assigned Email</span><span class="value"><?= requestData.assignedEmail || requestData.emailRequested || '-' ?></span></div>
+        <div class="info-row"><span class="label">Department</span><span class="value"><?= requestData.department || '-' ?></span></div>
         <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName || '-' ?></span></div>
         <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName || '-' ?></span></div>
+        <div class="info-row"><span class="label">Login Email</span><span class="value"><?= requestData.assignedEmail || requestData.emailRequested || '-' ?></span></div>
+        <div class="info-row"><span class="label">Employment Type</span><span class="value"><?= requestData.employmentType || '-' ?></span></div>
+        <? if (requestData.bossCostSheetJobs) { ?>
+        <div class="info-row" style="grid-column: span 2; border-top: 1px solid #333; padding-top: 10px; margin-top: 4px;">
+            <span class="label" style="color: var(--brand-red);">Cost Sheet Jobs (Required Access)</span>
+            <span class="value" style="font-size: 14px; line-height: 1.6;"><?= requestData.bossCostSheetJobs ?></span>
+        </div>
+        <? } ?>
         <? if (requestData.purchasingSites) { ?>
-        <div class="info-row" style="grid-column: span 2;"><span class="label">Purchasing Sites Requested</span><span class="value"><?= requestData.purchasingSites ?></span></div>
+        <div class="info-row" style="grid-column: span 2;"><span class="label">Purchasing Sites</span><span class="value"><?= requestData.purchasingSites ?></span></div>
         <? } ?>
     </div>
 
@@ -65,8 +73,8 @@
             <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
             <input type="hidden" name="department" value="centralpurchasing">
             <div class="form-group">
-                <label>Sites Configured (confirm or adjust)</label>
-                <input type="text" name="sitesConfigured" value="<?= requestData.purchasingSites || '' ?>" placeholder="List sites where access was granted">
+                <label>Cost Sheet Jobs Configured (confirm or adjust)</label>
+                <input type="text" name="sitesConfigured" value="<?= requestData.bossCostSheetJobs || requestData.purchasingSites || '' ?>" placeholder="List cost sheet jobs where access was granted">
             </div>
             <div class="form-group">
                 <label>Confirmation Notes (Optional)</label>
