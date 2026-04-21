@@ -310,7 +310,7 @@
                 <span class="filter-group-label">Type</span>
                 <button class="filter-btn type-onboarding" data-filter="type" data-value="ONBOARDING">New Hires</button>
                 <button class="filter-btn type-eoe" data-filter="type" data-value="EOE">End of Employment</button>
-                <button class="filter-btn type-change" data-filter="type" data-value="CHANGE">Position Change</button>
+                <button class="filter-btn type-change" data-filter="type" data-value="CHANGE">Status Change</button>
                 <button class="filter-btn type-equip" data-filter="type" data-value="EQUIP">Equipment</button>
             </div>
 
@@ -529,11 +529,11 @@
 
                 const typeLabel = wf.type === 'End of Employment' ? 'EOE' :
                     wf.type === 'Onboarding' ? 'New Hire' :
-                    wf.type === 'Position Change' ? 'Position Change' :
+                    wf.type === 'Status Change' ? 'Status Change' :
                     wf.type === 'Equipment' ? 'Equipment' : (wf.type || '-');
                 const typeColor = wf.type === 'End of Employment' ? 'var(--brand-red)' :
                     wf.type === 'Onboarding' ? 'var(--info)' :
-                    wf.type === 'Position Change' ? '#7b2ff7' :
+                    wf.type === 'Status Change' ? '#7b2ff7' :
                     wf.type === 'Equipment' ? '#0097a7' : '#555';
                 const typeCellHtml = '<span style="background:' + typeColor + '; color:white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight:600; white-space:nowrap;">' + typeLabel + '</span>';
 
@@ -632,7 +632,7 @@
         activeStatusFilters.add('PENDING');
         document.querySelector('.filter-btn[data-value="PENDING"]').classList.add('active');
 
-        const TYPE_MAP = { 'ONBOARDING': 'Onboarding', 'EOE': 'End of Employment', 'CHANGE': 'Position Change', 'EQUIP': 'Equipment' };
+        const TYPE_MAP = { 'ONBOARDING': 'Onboarding', 'EOE': 'End of Employment', 'CHANGE': 'Status Change', 'EQUIP': 'Equipment' };
 
         function applyFiltersAndSort() {
             // 1. Filter

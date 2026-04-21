@@ -271,13 +271,21 @@ function bumpRequest(workflowId, targetStep) {
       case 'change_it':
       case 'change_purchasing':
       case 'change_idsetup':
-      case 'change_safety': {
+      case 'change_safety':
+      case 'change_businesscards':
+      case 'change_creditcard':
+      case 'change_fleetio':
+      case 'change_jonas': {
         const changeBumpCatMap = {
-          'change_manager':   'Manager',
-          'change_it':        'IT',
-          'change_purchasing':'Purchasing',
-          'change_idsetup':   'ID Setup',
-          'change_safety':    'Safety'
+          'change_manager':      'Manager',
+          'change_it':           'IT',
+          'change_purchasing':   'Purchasing',
+          'change_idsetup':      'ID Setup',
+          'change_safety':       'Safety',
+          'change_businesscards':'Business Cards',
+          'change_creditcard':   'Credit Card',
+          'change_fleetio':      'Fleetio',
+          'change_jonas':        'Jonas'
         };
         const chgTargetCat = changeBumpCatMap[targetStep];
         try {
@@ -839,13 +847,21 @@ function getStepResultData(workflowId, stepTarget) {
       case 'change_it':
       case 'change_purchasing':
       case 'change_idsetup':
-      case 'change_safety': {
+      case 'change_safety':
+      case 'change_businesscards':
+      case 'change_creditcard':
+      case 'change_fleetio':
+      case 'change_jonas': {
         const changeCatMap = {
-          'change_manager':   'Manager',
-          'change_it':        'IT',
-          'change_purchasing':'Purchasing',
-          'change_idsetup':   'ID Setup',
-          'change_safety':    'Safety'
+          'change_manager':      'Manager',
+          'change_it':           'IT',
+          'change_purchasing':   'Purchasing',
+          'change_idsetup':      'ID Setup',
+          'change_safety':       'Safety',
+          'change_businesscards':'Business Cards',
+          'change_creditcard':   'Credit Card',
+          'change_fleetio':      'Fleetio',
+          'change_jonas':        'Jonas'
         };
         const catLabel = changeCatMap[stepTarget];
         const aiSh2 = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
@@ -1378,11 +1394,15 @@ function getChangeDetails(workflowId) {
         }
 
         const catTargetMap = {
-          'Manager':   'change_manager',
-          'IT':        'change_it',
-          'Purchasing':'change_purchasing',
-          'ID Setup':  'change_idsetup',
-          'Safety':    'change_safety'
+          'Manager':        'change_manager',
+          'IT':             'change_it',
+          'Purchasing':     'change_purchasing',
+          'ID Setup':       'change_idsetup',
+          'Safety':         'change_safety',
+          'Business Cards': 'change_businesscards',
+          'Credit Card':    'change_creditcard',
+          'Fleetio':        'change_fleetio',
+          'Jonas':          'change_jonas'
         };
 
         for (const cat in categories) {

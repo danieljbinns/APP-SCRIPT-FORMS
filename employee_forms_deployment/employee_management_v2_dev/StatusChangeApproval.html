@@ -210,27 +210,6 @@
                     </div>
                 </div>
 
-                <div class="section-title">Workflow Logic</div>
-
-                <label class="checkbox-label">
-                    <input type="checkbox" name="isTransfer" id="isTransfer"
-                        onchange="document.getElementById('receivingSec').style.display = this.checked ? 'block' : 'none'">
-                    <span>This is a Site Transfer (Requires notification to receiving manager)</span>
-                </label>
-
-                <div id="receivingSec" style="display:none;" class="form-group">
-                    <label>Receiving Manager Email</label>
-                    <input type="email" name="receivingManagerEmail" placeholder="manager@team-group.com">
-                </div>
-
-                <div class="form-group">
-                    <label>Trigger IT Setup (If equipment/systems needed)</label>
-                    <select name="nextSteps">
-                        <option value="Complete">No IT Action Needed</option>
-                        <option value="IT Setup">Trigger IT Setup Form</option>
-                    </select>
-                </div>
-
                 <div class="form-group">
                     <label>Notes</label>
                     <textarea name="notes" rows="3"></textarea>
@@ -242,26 +221,6 @@
     </div>
 
     <script>
-        // Auto-detect isTransfer and IT need from request data
-        (function() {
-            var changes = '<?= requestData.changes || '' ?>'.toLowerCase();
-            var systems = '<?= requestData.systems || '' ?>'.trim();
-            var equipment = '<?= requestData.equipment || '' ?>'.trim();
-
-            if (changes.indexOf('site transfer') !== -1) {
-                var cb = document.getElementById('isTransfer');
-                if (cb) {
-                    cb.checked = true;
-                    document.getElementById('receivingSec').style.display = 'block';
-                }
-            }
-
-            if (systems || equipment) {
-                var sel = document.querySelector('select[name="nextSteps"]');
-                if (sel) sel.value = 'IT Setup';
-            }
-        })();
-
         function setDecision(value) {
             document.getElementById('decisionInput').value = value;
             document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
@@ -281,10 +240,7 @@
             const formData = {
                 workflowId: this.workflowId.value,
                 decision: this.decision.value,
-                notes: this.notes.value,
-                isTransfer: this.isTransfer.checked,
-                receivingManagerEmail: this.isTransfer.checked ? this.receivingManagerEmail.value : '',
-                nextSteps: this.nextSteps.value
+                notes: this.notes.value
             };
 
             google.script.run

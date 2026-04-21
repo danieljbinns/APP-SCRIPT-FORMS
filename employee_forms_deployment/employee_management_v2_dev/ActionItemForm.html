@@ -497,6 +497,8 @@
                 <strong>✓ Task Finalized on
                     <?= task.CompletedDate instanceof Date ? task.CompletedDate.toLocaleDateString() : task.CompletedDate ?>
                 </strong>
+                <br>
+                <div id="dashboardLinkArea" style="margin-top:16px;"></div>
             </div>
             <? } ?>
         </div>
@@ -584,6 +586,8 @@
                     if (str.startsWith('__CAL__')) return str; // preserve calendar markers
                     // Remove outer brackets and quotes that often wrapper the whole list element incorrectly
                     str = str.replace(/^[\["']+|[\]"']+$/g, '').trim();
+                    // Strip __EFFDATE__ marker (used internally for calendar detection)
+                    str = str.replace(/__EFFDATE__[\d-]+/g, '').trim();
                     return str;
                 }).filter(s => s && s.toLowerCase() !== 'n/a' && s !== 'null');
 
@@ -1016,6 +1020,19 @@
         window.onload = function() {
             initChecklist();
             renderSpecialistSection();
+            if (isClosed) {
+                var area = document.getElementById('dashboardLinkArea');
+                if (area) {
+                    google.script.run
+                        .withSuccessHandler(function(url) {
+                            area.innerHTML = '<a href="' + url + '?form=dashboard" style="display:inline-block; padding:12px 28px; background:var(--brand-red); color:white; text-decoration:none; border-radius:8px; font-weight:600; font-size:15px;">Go to Dashboard</a>';
+                        })
+                        .withFailureHandler(function() {
+                            area.innerHTML = '<a href="?form=dashboard" style="display:inline-block; padding:12px 28px; background:var(--brand-red); color:white; text-decoration:none; border-radius:8px; font-weight:600; font-size:15px;">Go to Dashboard</a>';
+                        })
+                        .getBaseUrl();
+                }
+            }
         };
     </script>
 </body>

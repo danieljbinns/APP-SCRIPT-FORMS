@@ -49,7 +49,8 @@ function submitPositionChangeRequest(formData) {
       removal,
       formData.comments || '',
       formData.department || '',
-      purchasingSites       // index 22
+      purchasingSites,                        // index 22
+      formData.receivingManagerEmail || ''    // index 23
     ];
     
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGES, rowData);
@@ -137,7 +138,8 @@ function getPositionChangeData(workflowId) {
     requesterEmail: data[4],
     comments: data[20],
     department: data[21] || '',
-    purchasingSites: data[22] || ''
+    purchasingSites: data[22] || '',
+    receivingManagerEmail: data[23] || ''
   };
 }
 
@@ -146,16 +148,20 @@ function getPositionChangeData(workflowId) {
  */
 function submitPositionChangeApproval(formData) {
   try {
-    const { workflowId, decision, notes, isTransfer, receivingManagerEmail, nextSteps } = formData;
+    const { workflowId, decision, notes } = formData;
     const formId = generateFormId('CHG_APP');
-    
+
     addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, [
-      workflowId, formId, new Date(), decision, notes, nextSteps || 'N/A', Session.getActiveUser().getEmail()
+      workflowId, formId, new Date(), decision, notes, 'N/A', Session.getActiveUser().getEmail()
     ]);
     
     if (decision === 'Approved') {
       const changeData = getPositionChangeData(workflowId);
       let tasksCreated = 0;
+
+      // Derive transfer and receiving manager from the original request (not HR form)
+      const isTransfer = changeData.changes && changeData.changes.includes('Site Transfer');
+      const receivingManagerEmail = changeData.receivingManagerEmail || '';
 
       // Build enriched context for all approval emails — parse manager emails from stored string
       const mgrMatches = (changeData.managerChange || '').match(/\(([^)@\s]+@[^)]+)\)/g) || [];
@@ -213,54 +219,96 @@ function submitPositionChangeApproval(formData) {
         });
       }
 
-      // 2. If IT action needed (systems or equipment)
-      if (nextSteps && nextSteps.includes('IT')) {
-        const itTasks = [];
-        const allSystems = changeData.systems ? changeData.systems.split(', ') : [];
+      // 2. Specialist action items — created automatically based on what was requested
+      const allSystems = changeData.systems ? changeData.systems.split(', ') : [];
+      const equipList = changeData.equipment ? changeData.equipment.split(', ') : [];
 
-        // Jonas Purchasing and Central Purchasing are handled by Jonas team — filter out of IT loop
-        const itSystems = allSystems.filter(s => s !== 'Central Purchasing' && s !== 'Jonas Purchasing');
-        const cpSystems = allSystems.filter(s => s === 'Central Purchasing');
-        const jonasSystems = allSystems.filter(s => s === 'Jonas Purchasing');
-
-        itSystems.forEach(sys => {
-          const tid = ActionItemService.createActionItem(workflowId, 'IT', `Setup ${sys}`, `Provision access for ${changeData.employeeName}`, CONFIG.EMAILS.IT);
-          itTasks.push({ name: `Setup ${sys}`, url: buildFormUrl('action_item_view', { tid: tid }) });
-          tasksCreated++;
+      // Business Cards → dedicated person
+      if (equipList.includes('Business Cards')) {
+        const bcDesc = JSON.stringify(['Order digital business cards for ' + changeData.employeeName]);
+        const bcTid = ActionItemService.createActionItem(workflowId, 'Business Cards', 'Business Cards Order', bcDesc, CONFIG.EMAILS.BUSINESS_CARDS, 'businesscards');
+        tasksCreated++;
+        sendFormEmail({
+          to: CONFIG.EMAILS.BUSINESS_CARDS,
+          subject: 'Business Cards Action Required',
+          body: 'A status change has been approved for ' + changeData.employeeName + '. Please process the business card order using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: bcTid }) + '">Open Action Item</a>',
+          contextData: changeContext
         });
+      }
 
-        // Jonas Purchasing → Jonas team
-        if (jonasSystems.length > 0) {
-          const jTid = ActionItemService.createActionItem(workflowId, 'Purchasing', 'Jonas Purchasing Update', 'Update Jonas Purchasing access for ' + changeData.employeeName, CONFIG.EMAILS.JONAS);
-          itTasks.push({ name: 'Jonas Purchasing Update', url: buildFormUrl('action_item_view', { tid: jTid }) });
-          tasksCreated++;
-        }
-
-        // Central Purchasing → Jonas team
-        if (cpSystems.length > 0 || changeData.purchasingSites) {
-          const cpDesc = 'Update Central Purchasing access for ' + changeData.employeeName +
-            (changeData.purchasingSites ? ' — Sites: ' + changeData.purchasingSites : '');
-          const cpTid = ActionItemService.createActionItem(workflowId, 'Purchasing', 'Central Purchasing Update', cpDesc, CONFIG.EMAILS.JONAS);
-          itTasks.push({ name: 'Central Purchasing Update', url: buildFormUrl('action_item_view', { tid: cpTid }) });
-          tasksCreated++;
-        }
-
-        const assets = changeData.equipment ? changeData.equipment.split(', ') : [];
-        assets.forEach(asset => {
-          const tid = ActionItemService.createActionItem(workflowId, 'IT', `Provision ${asset}`, `Setup and deliver ${asset} for ${changeData.employeeName}`, CONFIG.EMAILS.IT);
-          itTasks.push({ name: `Provision ${asset}`, url: buildFormUrl('action_item_view', { tid: tid }) });
-          tasksCreated++;
+      // Credit Card → finance/admin
+      if (equipList.includes('Credit Card')) {
+        const ccDesc = JSON.stringify(['Process credit card application for ' + changeData.employeeName]);
+        const ccTid = ActionItemService.createActionItem(workflowId, 'Credit Card', 'Credit Card Order', ccDesc, CONFIG.EMAILS.CREDIT_CARD, 'creditcard');
+        tasksCreated++;
+        sendFormEmail({
+          to: CONFIG.EMAILS.CREDIT_CARD,
+          subject: 'Credit Card Action Required',
+          body: 'A status change has been approved for ' + changeData.employeeName + '. Please process the credit card application using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: ccTid }) + '">Open Action Item</a>',
+          contextData: changeContext
         });
+      }
 
-        if (itTasks.length > 0) {
-          const taskLinks = itTasks.map(t => `<a href="${t.url}">${t.name}</a>`).join('<br>');
-          sendFormEmail({
-            to: CONFIG.EMAILS.IT,
-            subject: 'IT Action Required',
-            body: `HR has approved a status change for ${changeData.employeeName}. Below are the individual action items that require closure:<br><br>${taskLinks}`,
-            contextData: changeContext
-          });
-        }
+      // Fleetio → fleet team
+      if (allSystems.includes('Fleetio')) {
+        const flDesc = JSON.stringify(['Update Fleetio vehicle access for ' + changeData.employeeName]);
+        const flTid = ActionItemService.createActionItem(workflowId, 'Fleetio', 'Fleetio Access Update', flDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
+        tasksCreated++;
+        sendFormEmail({
+          to: CONFIG.EMAILS.FLEETIO,
+          subject: 'Fleetio Action Required',
+          body: 'A status change has been approved for ' + changeData.employeeName + '. Please update their Fleetio access using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: flTid }) + '">Open Action Item</a>',
+          contextData: changeContext
+        });
+      }
+
+      // Jonas Purchasing → Jonas team
+      if (allSystems.includes('Jonas Purchasing')) {
+        const jDesc = JSON.stringify(['Update Jonas Purchasing access for ' + changeData.employeeName]);
+        const jTid = ActionItemService.createActionItem(workflowId, 'Jonas', 'Jonas Purchasing Update', jDesc, CONFIG.EMAILS.JONAS, 'jonas');
+        tasksCreated++;
+        sendFormEmail({
+          to: CONFIG.EMAILS.JONAS,
+          subject: 'Jonas Purchasing Action Required',
+          body: 'A status change has been approved for ' + changeData.employeeName + '. Please update their Jonas Purchasing access using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: jTid }) + '">Open Action Item</a>',
+          contextData: changeContext
+        });
+      }
+
+      // Central Purchasing → Jonas team
+      if (allSystems.includes('Central Purchasing') || changeData.purchasingSites) {
+        const cpDesc = 'Update Central Purchasing access for ' + changeData.employeeName +
+          (changeData.purchasingSites ? ' — Sites: ' + changeData.purchasingSites : '');
+        const cpTid = ActionItemService.createActionItem(workflowId, 'Purchasing', 'Central Purchasing Update', cpDesc, CONFIG.EMAILS.JONAS, 'centralpurchasing');
+        tasksCreated++;
+        sendFormEmail({
+          to: CONFIG.EMAILS.JONAS,
+          subject: 'Central Purchasing Action Required',
+          body: 'A status change has been approved for ' + changeData.employeeName + '. Please update their Central Purchasing access using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: cpTid }) + '">Open Action Item</a>',
+          contextData: changeContext
+        });
+      }
+
+      // IT — all remaining systems + equipment (excluding specialist-handled items)
+      const itSystems = allSystems.filter(function(s) {
+        return s !== 'Central Purchasing' && s !== 'Jonas Purchasing' && s !== 'Fleetio';
+      });
+      const itEquip = equipList.filter(function(e) {
+        return e !== 'Business Cards' && e !== 'Credit Card' && e !== 'Vehicle';
+      });
+
+      if (itSystems.length > 0 || itEquip.length > 0) {
+        const itDescItems = [];
+        itSystems.forEach(function(s) { itDescItems.push('Provision access: ' + s); });
+        itEquip.forEach(function(e) { itDescItems.push('Provision equipment: ' + e); });
+        const itTid = ActionItemService.createActionItem(workflowId, 'IT', 'IT Access & Equipment Setup', JSON.stringify(itDescItems), CONFIG.EMAILS.IT);
+        tasksCreated++;
+        sendFormEmail({
+          to: CONFIG.EMAILS.IT,
+          subject: 'IT Action Required',
+          body: 'A status change has been approved for ' + changeData.employeeName + '. Please set up system access and/or equipment using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: itTid }) + '">Open Action Item</a>',
+          contextData: changeContext
+        });
       }
 
       // 3. ID Setup — tracked action item for system records update

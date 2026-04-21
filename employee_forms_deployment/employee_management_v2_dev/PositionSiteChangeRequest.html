@@ -329,6 +329,12 @@
                         <input type="text" name="department" placeholder="e.g. Operations, Finance, Field Services">
                         <span class="help-text">For same-site transfers, New Department is the primary change — please specify.</span>
                     </div>
+                    <div class="form-field" style="margin-top: 10px;">
+                        <label>Receiving Manager Email <span class="required">*</span></label>
+                        <input type="email" name="receivingManagerEmail" id="receivingManagerEmail" placeholder="Start typing name or email..."
+                            pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                        <span class="help-text domain-hint">The manager at the receiving site who will onboard this employee.</span>
+                    </div>
                 </div>
 
                 <div id="pos_sec" class="logic-section">
@@ -667,6 +673,18 @@
                     <label class="checkbox-label"><input type="checkbox" name="equip" value="Vehicle"><span>Vehicle</span></label>
                 </div>
 
+                <h2>Equipment to Return</h2>
+                <div class="form-field">
+                    <label>Equipment Being Returned</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="equipRem" value="Computer"><span>Computer</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="equipRem" value="Mobile Phone"><span>Mobile Phone</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="equipRem" value="SiteDocs Tablet"><span>SiteDocs Tablet</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="equipRem" value="Vehicle"><span>Vehicle</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="equipRem" value="Credit Card"><span>Credit Card</span></label>
+                    </div>
+                </div>
+
                 <h2>Access Removal</h2>
                 <div class="form-field">
                     <label>OLD System Access to Remove</label>
@@ -811,6 +829,7 @@
         DirectoryAutocomplete.setup({ inputSelector: '#oldReportsTo' });
         DirectoryAutocomplete.setup({ inputSelector: '#newReportsFrom' });
         DirectoryAutocomplete.setup({ inputSelector: '#existingEmail' });
+        DirectoryAutocomplete.setup({ inputSelector: '#receivingManagerEmail' });
 
         // Dynamic Populators
         const populateFormDropdowns = function (data) {

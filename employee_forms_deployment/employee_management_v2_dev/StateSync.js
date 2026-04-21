@@ -79,7 +79,11 @@ function syncWorkflowState(workflowId) {
           items: { isTerm: true }
         };
       } else if (isChange) {
-        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | Emp ID | Effective Date[7] | Current Site[8] | ...
+        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | Emp ID | Effective Date[7] | Current Site[8] | Changes[9] | ... | Class Change[12] | ...
+        // Extract old classification from classChange field: "Hourly -> Salary" → "Hourly"
+        const classChange = String(row[12] || '');
+        const classOld = classChange.includes(' -> ') ? classChange.split(' -> ')[0].trim() : '';
+        const empTypeFromClass = (classOld && classOld !== 'N/A') ? classOld : '';
         reqInfo = {
           requesterName: row[3] || 'Unknown',
           requesterEmail: row[4] || '',
@@ -87,7 +91,7 @@ function syncWorkflowState(workflowId) {
           dateRequested: fmtDate(row[2]),
           hireDate: fmtDate(row[7]), // Effective Date → shown in Effective Date column
           site: String(row[8] || ''),
-          empType: '',
+          empType: empTypeFromClass,
           items: {}
         };
       } else {
