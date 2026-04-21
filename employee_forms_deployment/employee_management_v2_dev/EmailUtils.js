@@ -387,7 +387,7 @@ function createContextBlock(context) {
   var hireDateDisplay = '';
   if (context.hireDate) {
     try {
-      var hd = context.hireDate instanceof Date ? context.hireDate : new Date(String(context.hireDate));
+      var hd = context.hireDate instanceof Date ? context.hireDate : new Date(String(context.hireDate).replace(/^(\d{4}-\d{2}-\d{2})$/, '$1T12:00:00'));
       hireDateDisplay = !isNaN(hd.getTime())
         ? Utilities.formatDate(hd, Session.getScriptTimeZone(), 'yyyy-MM-dd')
         : String(context.hireDate).substring(0, 10);
