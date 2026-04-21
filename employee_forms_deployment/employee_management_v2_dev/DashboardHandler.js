@@ -315,7 +315,7 @@ function updateHireDate(workflowId, newDateStr) {
 
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][wfIdCol]) === workflowId) {
-        sheet.getRange(i + 1, hireDateCol + 1).setValue(new Date(newDateStr));
+        sheet.getRange(i + 1, hireDateCol + 1).setValue(new Date(newDateStr + 'T12:00:00'));
         SpreadsheetApp.flush();
         syncWorkflowState(workflowId);
         Logger.log('[D2] Hire date updated for ' + workflowId + ' to ' + newDateStr + ' by ' + userEmail);

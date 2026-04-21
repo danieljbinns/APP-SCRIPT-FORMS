@@ -386,8 +386,6 @@
             <div class="modal-footer">
                 <button class="action-btn" style="background:var(--info); color:white; margin-right:auto;"
                     onclick="openFullPage()">View Full Data Page &rarr;</button>
-                <button id="btnEditDate" class="action-btn" style="display:none; background:#555; color:white;"
-                    onclick="editHireDate()">Edit Start Date</button>
                 <button id="btnCancel" class="action-btn cancel-btn" onclick="cancelCurrentRequest()">Cancel Entire
                     Request</button>
                 <button class="action-btn" style="background:#555; color:white;" onclick="closeModal()">Close</button>
@@ -410,8 +408,6 @@
         let allWorkflows = [];
         let filteredWorkflows = []; // For search + pagination combo
         let currentWorkflowId = null;
-        let canEditDates = false; // D2: set from server response
-
         // Filtering and Sorting State
         let currentSort = 'DATE_DESC';
         let activeTypeFilters = new Set();
@@ -441,7 +437,6 @@
                 return;
             }
             allWorkflows = response.workflows;
-            canEditDates = !!response.canEditDates; // D2
             applyFiltersAndSort(); // Triggers sorting and initially setting filteredWorkflows
         }
 
@@ -608,15 +603,13 @@
                     if (!allowed.includes(wf.type)) return false;
                 }
 
-                // Status multi-select (empty set = show all)
-                if (activeStatusFilters.size > 0) {
-                    const isCompleted = wf.status === 'Completed' || wf.status === 'Complete';
-                    const isCancelled = wf.status === 'Cancelled';
-                    const isPending = !isCompleted && !isCancelled;
-                    if (activeStatusFilters.has('COMPLETED') && !isCompleted) return false;
-                    if (activeStatusFilters.has('CANCELLED') && !isCancelled) return false;
-                    if (activeStatusFilters.has('PENDING') && !isPending) return false;
-                    // If multiple status filters active, show union (OR logic)
+                // Status filter: default (no filter) hides Complete and Cancelled; filters show OR union
+                const isCompleted = wf.status === 'Completed' || wf.status === 'Complete';
+                const isCancelled = wf.status === 'Cancelled';
+                const isPending = !isCompleted && !isCancelled;
+                if (activeStatusFilters.size === 0) {
+                    if (isCompleted || isCancelled) return false;
+                } else {
                     const matchesAny = (activeStatusFilters.has('COMPLETED') && isCompleted) ||
                         (activeStatusFilters.has('CANCELLED') && isCancelled) ||
                         (activeStatusFilters.has('PENDING') && isPending);
@@ -648,10 +641,6 @@
             currentWorkflowId = id;
             document.getElementById('detailsModal').style.display = 'flex';
             document.getElementById('modalTitle').innerText = (type === 'End of Employment' ? 'End of Employment Details: ' : 'Request Details: ') + id;
-            // D2: Show edit date button for onboarding workflows if user has permission
-            const editBtn = document.getElementById('btnEditDate');
-            if (editBtn) editBtn.style.display = (canEditDates && type !== 'End of Employment') ? 'inline-block' : 'none';
-
             // Show loading state first
             document.getElementById('modalContent').innerHTML =
                 '<div style="text-align: center; color: var(--text-muted); padding: 40px;">' +
@@ -894,36 +883,6 @@
 
         function openFormForWorkflow(formName, id) {
             window.open('<?= getBaseUrl() ?>?form=' + formName + '&id=' + id + '&wf=' + id, '_blank');
-        }
-
-        // D2: Edit hire/start date (HR, IT, Admin only)
-        function editHireDate() {
-            const newDate = prompt('Enter new start date (YYYY-MM-DD):');
-            if (!newDate) return;
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
-                alert('Invalid date format. Please use YYYY-MM-DD.');
-                return;
-            }
-            const btn = document.getElementById('btnEditDate');
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
-            google.script.run
-                .withSuccessHandler(function(res) {
-                    btn.innerText = 'Edit Start Date';
-                    btn.disabled = false;
-                    if (res.success) {
-                        alert('Start date updated successfully.');
-                        loadData();
-                    } else {
-                        alert('Error: ' + res.message);
-                    }
-                })
-                .withFailureHandler(function(err) {
-                    btn.innerText = 'Edit Start Date';
-                    btn.disabled = false;
-                    alert('Error: ' + err.message);
-                })
-                .updateHireDate(currentWorkflowId, newDate);
         }
 
         function cancelCurrentRequest() {

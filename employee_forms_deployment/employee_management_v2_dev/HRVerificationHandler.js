@@ -87,6 +87,16 @@ function submitHRVerification(formData) {
     const jrTitleCol = headers.indexOf('Position Title'); // Col 14 - Fixed header name match
     const jrAssignCol = headers.indexOf('JR Assign'); // Col 46 (Now map to jrTitle)
     
+    // Guard: prevent re-submission if already completed
+    const existingResultsSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
+    if (existingResultsSheet) {
+      const existingData = existingResultsSheet.getDataRange().getValues();
+      const alreadySubmitted = existingData.some((row, idx) => idx > 0 && String(row[0]) === workflowId);
+      if (alreadySubmitted) {
+        return { success: false, message: 'HR Verification has already been submitted for this workflow. Contact an administrator if changes are needed.' };
+      }
+    }
+
     let employmentType = '';
     let systemAccess = '';
     let requesterEmail = '';
@@ -99,7 +109,7 @@ function submitHRVerification(formData) {
         if (lastNameCol !== -1) mainSheet.getRange(i + 1, lastNameCol + 1).setValue(formData.lastName);
         if (managerNameCol !== -1) mainSheet.getRange(i + 1, managerNameCol + 1).setValue(formData.managerName);
         if (managerEmailCol !== -1) mainSheet.getRange(i + 1, managerEmailCol + 1).setValue(formData.managerEmail);
-        if (hireDateCol !== -1 && formData.hireDate) mainSheet.getRange(i + 1, hireDateCol + 1).setValue(new Date(formData.hireDate));
+        if (hireDateCol !== -1 && formData.hireDate) mainSheet.getRange(i + 1, hireDateCol + 1).setValue(new Date(formData.hireDate + 'T12:00:00'));
         if (siteNameCol !== -1) mainSheet.getRange(i + 1, siteNameCol + 1).setValue(formData.siteName);
         if (jrTitleCol !== -1) mainSheet.getRange(i + 1, jrTitleCol + 1).setValue(formData.jobTitle);
         if (jrAssignCol !== -1) mainSheet.getRange(i + 1, jrAssignCol + 1).setValue(formData.jrTitle);
