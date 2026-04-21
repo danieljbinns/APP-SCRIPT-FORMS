@@ -293,6 +293,33 @@
                 </div>
                 <div class="form-row">
                     <div class="form-field">
+                        <label>Current Classification <span class="required">*</span></label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="currentClass" value="Hourly" required><span class="radio-button">Hourly</span></label>
+                            <label><input type="radio" name="currentClass" value="Salary"><span class="radio-button">Salary</span></label>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label>Current Job Title</label>
+                        <input type="text" name="currentTitle" placeholder="e.g. Site Manager">
+                        <span class="help-text">HR will use this to verify and confirm title on transfer.</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Current Manager Email</label>
+                        <input type="email" name="currentManagerEmail" id="currentManagerEmail"
+                            placeholder="Start typing name or email..."
+                            pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                        <span class="help-text domain-hint">Current direct manager — will be notified of the change.</span>
+                    </div>
+                    <div class="form-field">
+                        <label>Current Manager Name</label>
+                        <input type="text" name="currentManagerName" id="currentManagerName" placeholder="Auto-fills on selection" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
                         <label>Effective Date of Change <span class="required">*</span></label>
                         <input type="date" name="effDate" required>
                     </div>
@@ -824,6 +851,7 @@
         });
 
         // Setup Autocomplete for multiple fields
+        DirectoryAutocomplete.setup({ inputSelector: '#currentManagerEmail', nameInputSelector: '#currentManagerName' });
         DirectoryAutocomplete.setup({ inputSelector: '#mgrNewEmail', nameInputSelector: '#mgrNewName' });
         DirectoryAutocomplete.setup({ inputSelector: '#mgrOldEmail', nameInputSelector: '#mgrOldName' });
         DirectoryAutocomplete.setup({ inputSelector: '#oldReportsTo' });

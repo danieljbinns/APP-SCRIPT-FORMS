@@ -79,15 +79,17 @@ function syncWorkflowState(workflowId) {
           items: { isTerm: true }
         };
       } else if (isChange) {
-        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | Emp ID | Effective Date[7] | Current Site[8] | Changes[9] | ... | Class Change[12] | ...
+        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | Emp ID | Effective Date[7] | Current Site[8] | Changes[9] | ... | Class Change[12] | ... | Current Class[27]
         // Extract old classification from classChange field: "Hourly -> Salary" → "Hourly"
+        // Fall back to currentClass field (index 27) when no classification change was made
         const classChange = String(row[12] || '');
         const classOld = classChange.includes(' -> ') ? classChange.split(' -> ')[0].trim() : '';
-        const empTypeFromClass = (classOld && classOld !== 'N/A') ? classOld : '';
+        const currentClass = String(row[27] || '');
+        const empTypeFromClass = (classOld && classOld !== 'N/A') ? classOld : (currentClass || '');
         reqInfo = {
           requesterName: row[3] || 'Unknown',
           requesterEmail: row[4] || '',
-          managerEmail: '',
+          managerEmail: String(row[25] || ''), // currentManagerEmail
           dateRequested: fmtDate(row[2]),
           hireDate: fmtDate(row[7]), // Effective Date → shown in Effective Date column
           site: String(row[8] || ''),

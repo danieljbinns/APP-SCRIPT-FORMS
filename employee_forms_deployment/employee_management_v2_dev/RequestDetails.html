@@ -666,10 +666,13 @@
                 document.getElementById('snapshotGrid').innerHTML =
                     _diC('Workflow ID', data.id) +
                     _diC('Employee', r['Employee Name']) +
+                    _diC('Classification', r['Current Classification']) +
+                    _diC('Current Title', r['Current Title']) +
                     _diC('Effective Date', r['Effective Date']) +
                     _diC('Site', r['Site Name']) +
                     _diC('Changes', r['Change Type']) +
                     _diC('Department', r['Department']) +
+                    _diC('Current Manager', (r['Current Manager Name'] || '') + (r['Current Manager Email'] ? ' \xb7 ' + r['Current Manager Email'] : '')) +
                     _diC('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : ''));
             } else if (workflowId.startsWith('TERM_')) {
                 document.getElementById('employeeName').innerText = r['Employee Name'] || data.id;

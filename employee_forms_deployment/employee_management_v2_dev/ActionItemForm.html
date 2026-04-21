@@ -963,6 +963,11 @@
             } else if (formType === 'safety_term') {
                 html += field('st_sitedocs', 'SiteDocs Access Removed?', yesNo('st_sitedocs', d.st_sitedocs));
                 html += field('st_boss', 'BOSS WIS Records Updated?', yesNo('st_boss', d.st_boss));
+
+            } else if (formType === 'safety_change') {
+                html += field('sc_dss_site', 'DSS Site Assignment Updated?', yesNo('sc_dss_site', d.sc_dss_site));
+                html += field('sc_dss_learning', 'DSS Learning Path Updated?', yesNo('sc_dss_learning', d.sc_dss_learning));
+                html += field('sc_sitedocs_site', 'SiteDocs Site Assignment Updated?', yesNo('sc_sitedocs_site', d.sc_sitedocs_site));
             }
 
             html += '</div>';
@@ -1013,6 +1018,10 @@
             } else if (formType === 'safety_term') {
                 data.st_sitedocs = getRadio('st_sitedocs');
                 data.st_boss     = getRadio('st_boss');
+            } else if (formType === 'safety_change') {
+                data.sc_dss_site      = getRadio('sc_dss_site');
+                data.sc_dss_learning  = getRadio('sc_dss_learning');
+                data.sc_sitedocs_site = getRadio('sc_sitedocs_site');
             }
             return JSON.stringify(data);
         }

@@ -1321,13 +1321,17 @@ function getChangeDetails(workflowId) {
     });
     // Normalized aliases by index for reliable client-side snapshot access
     const _fmt = function(v) { return v instanceof Date ? Utilities.formatDate(v, _tz, 'M/d/yyyy') : String(v || ''); };
-    r['Employee Name']   = r['Employee Name']   || _fmt(reqRow[5]);
-    r['Requester Name']  = r['Requester Name']  || _fmt(reqRow[3]);
-    r['Requester Email'] = r['Requester Email'] || _fmt(reqRow[4]);
-    r['Effective Date']  = r['Effective Date']  || _fmt(reqRow[7]);
-    r['Site Name']       = r['Site Name']       || _fmt(reqRow[8]);
-    r['Change Type']     = r['Change Type']     || _fmt(reqRow[9]);
-    r['Department']      = r['Department']      || _fmt(reqRow[21]);
+    r['Employee Name']        = r['Employee Name']        || _fmt(reqRow[5]);
+    r['Requester Name']       = r['Requester Name']       || _fmt(reqRow[3]);
+    r['Requester Email']      = r['Requester Email']      || _fmt(reqRow[4]);
+    r['Effective Date']       = r['Effective Date']       || _fmt(reqRow[7]);
+    r['Site Name']            = r['Site Name']            || _fmt(reqRow[8]);
+    r['Change Type']          = r['Change Type']          || _fmt(reqRow[9]);
+    r['Department']           = r['Department']           || _fmt(reqRow[21]);
+    r['Current Title']        = r['Current Title']        || _fmt(reqRow[24]);
+    r['Current Manager Email']= r['Current Manager Email']|| _fmt(reqRow[25]);
+    r['Current Manager Name'] = r['Current Manager Name'] || _fmt(reqRow[26]);
+    r['Current Classification']= r['Current Classification']|| _fmt(reqRow[27]);
     context.requestData = r;
 
     const wf = getWorkflow(workflowId);

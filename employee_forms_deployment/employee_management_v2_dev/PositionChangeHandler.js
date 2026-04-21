@@ -50,7 +50,11 @@ function submitPositionChangeRequest(formData) {
       formData.comments || '',
       formData.department || '',
       purchasingSites,                        // index 22
-      formData.receivingManagerEmail || ''    // index 23
+      formData.receivingManagerEmail || '',   // index 23
+      formData.currentTitle || '',            // index 24
+      formData.currentManagerEmail || '',     // index 25
+      formData.currentManagerName || '',      // index 26
+      formData.currentClass || ''             // index 27
     ];
     
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGES, rowData);
@@ -87,19 +91,29 @@ function submitPositionChangeRequest(formData) {
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
       subject: 'HR Approval Required',
-      body: `A new position/site change request has been submitted for ${formData.firstName} ${formData.lastName}. HR approval is required to proceed.`,
+      body: 'A new status change request has been submitted for ' + formData.firstName + ' ' + formData.lastName + '. Please review and approve or reject using the button below.',
       formUrl: approvalUrl,
       contextData: finalContext
     });
 
-    // Notify payroll at same time as HR — same email and form access (payroll handles approval for some locations)
+    // Notify payroll at same time as HR
     sendFormEmail({
       to: CONFIG.EMAILS.PAYROLL,
       subject: 'HR Approval Required',
-      body: `A new position/site change request has been submitted for ${formData.firstName} ${formData.lastName}. HR approval is required to proceed.`,
+      body: 'A new status change request has been submitted for ' + formData.firstName + ' ' + formData.lastName + '. Please review and approve or reject using the button below.',
       formUrl: approvalUrl,
       contextData: finalContext
     });
+
+    // Notify current manager (if provided and different from requester)
+    if (formData.currentManagerEmail && formData.currentManagerEmail !== formData.reqEmail) {
+      sendFormEmail({
+        to: formData.currentManagerEmail,
+        subject: 'Status Change Initiated',
+        body: 'A status change request has been submitted for ' + formData.firstName + ' ' + formData.lastName + ', who currently reports to you. The change is pending HR review. You will be notified of the outcome.',
+        contextData: finalContext
+      });
+    }
 
     return { success: true, workflowId: workflowId, message: 'Change request submitted and sent to HR for approval.' };
   } catch (error) {
@@ -139,7 +153,15 @@ function getPositionChangeData(workflowId) {
     comments: data[20],
     department: data[21] || '',
     purchasingSites: data[22] || '',
-    receivingManagerEmail: data[23] || ''
+    receivingManagerEmail: data[23] || '',
+    currentTitle: data[24] || '',
+    currentManagerEmail: data[25] || '',
+    currentManagerName: data[26] || '',
+    currentClass: data[27] || '',
+    mgrNewEmail: (function() {
+      var m = (String(data[13] || '')).match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
+      return m.length > 1 ? m[1].replace(/[()]/g, '') : (m.length === 1 ? m[0].replace(/[()]/g, '') : '');
+    })()
   };
 }
 
@@ -148,30 +170,47 @@ function getPositionChangeData(workflowId) {
  */
 function submitPositionChangeApproval(formData) {
   try {
-    const { workflowId, decision, notes } = formData;
+    const { workflowId, decision, notes, confirmedNewManager, confirmedTitle } = formData;
     const formId = generateFormId('CHG_APP');
 
     addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, [
-      workflowId, formId, new Date(), decision, notes, 'N/A', Session.getActiveUser().getEmail()
+      workflowId, formId, new Date(), decision, notes,
+      confirmedTitle || '', confirmedNewManager || '', Session.getActiveUser().getEmail()
     ]);
-    
+
     if (decision === 'Approved') {
       const changeData = getPositionChangeData(workflowId);
       let tasksCreated = 0;
 
-      // Derive transfer and receiving manager from the original request (not HR form)
+      // Derive transfer flag and effective receiving manager
+      // HR's confirmed new manager takes precedence; fall back to request fields
       const isTransfer = changeData.changes && changeData.changes.includes('Site Transfer');
-      const receivingManagerEmail = changeData.receivingManagerEmail || '';
+      const receivingManagerEmail = (confirmedNewManager && confirmedNewManager.trim())
+        ? confirmedNewManager.trim()
+        : (changeData.receivingManagerEmail || changeData.mgrNewEmail || '');
 
-      // Build enriched context for all approval emails — parse manager emails from stored string
-      const mgrMatches = (changeData.managerChange || '').match(/\(([^)@\s]+@[^)]+)\)/g) || [];
-      const mgrOldEmail = mgrMatches.length > 0 ? mgrMatches[0].replace(/[()]/g, '') : '';
-      const mgrNewEmail = mgrMatches.length > 1 ? mgrMatches[1].replace(/[()]/g, '') : mgrOldEmail;
+      // Current (old) manager email — from stored current manager or parsed managerChange
+      const mgrMatches = (changeData.managerChange || '').match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
+      const mgrOldEmail = changeData.currentManagerEmail || (mgrMatches.length > 0 ? mgrMatches[0].replace(/[()]/g, '') : '');
+      const mgrNewEmail = receivingManagerEmail || (mgrMatches.length > 1 ? mgrMatches[1].replace(/[()]/g, '') : mgrOldEmail);
+
+      // Effective job title: HR's confirmed title > request's new title > current title
+      const effectiveTitle = (confirmedTitle && confirmedTitle.trim()) ? confirmedTitle.trim() : (changeData.jobTitle || changeData.currentTitle || '');
+
+      // Helper: styled calendar button for email bodies
+      var _calBtn = function(url, label, effDate) {
+        if (!url) return '';
+        return '<div style="margin-top:20px; text-align:center;">' +
+          '<a href="' + url + '" target="_blank" style="display:inline-block; background:linear-gradient(135deg,#EB1C2D 0%,#c41828 100%); color:#fff; padding:12px 28px; text-decoration:none; border-radius:6px; font-weight:600; font-size:15px; box-shadow:0 4px 12px rgba(235,28,45,0.3);">' +
+          '&#128197; ' + (label || 'Add to Calendar') + (effDate ? ' (' + effDate + ')' : '') + ' &rarr;</a></div>';
+      };
+
+      // Build enriched context for all approval emails
       const changeContext = {
         workflowType: 'Status Change',
         department: changeData.department || '',
         employeeName: changeData.employeeName,
-        jobTitle: changeData.jobTitle || '',
+        jobTitle: effectiveTitle,
         siteName: changeData.siteName,
         hireDate: changeData.effDate,
         requesterEmail: changeData.requesterEmail,
@@ -180,50 +219,55 @@ function submitPositionChangeApproval(formData) {
         titleChange: changeData.titleChange,
         classChange: changeData.classChange,
         managerChange: changeData.managerChange,
+        managerName: changeData.currentManagerName || '',
         managerEmail: mgrNewEmail,
         managerOldEmail: mgrOldEmail,
         managerNewEmail: mgrNewEmail,
         systems: changeData.systems,
         equipmentRaw: changeData.equipment,
         purchasingSites: changeData.purchasingSites || '',
-        credentialNote: 'Credentials on file — verify with IDSETUP if role or site requires updates.'
+        employmentType: changeData.currentClass || '',
+        currentTitle: changeData.currentTitle || ''
       };
 
-      // 1. If Transfer, create Action Item for Receiving Manager
-      if (isTransfer && receivingManagerEmail) {
+      // 1. Receiving manager action item (for transfers OR any manager assignment)
+      if (receivingManagerEmail) {
         const effDateForCal = changeData.effDate ? changeData.effDate.replace(/-/g, '') : '';
         const calTitle = encodeURIComponent('Transfer Effective: ' + changeData.employeeName);
-        const calDetails = encodeURIComponent('Effective date for transfer of ' + changeData.employeeName + ' to your group.');
+        const calDetails = encodeURIComponent('Effective date for transfer/change for ' + changeData.employeeName + '.');
         const calUrl = effDateForCal
           ? 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + calTitle + '&dates=' + effDateForCal + '%2F' + effDateForCal + '&details=' + calDetails
           : '';
         const transferDesc = 'Prepare for transfer of ' + changeData.employeeName + ' to your group. Eff Date: ' + changeData.effDate +
           (changeData.effDate ? '__EFFDATE__' + changeData.effDate : '');
-        const tid = ActionItemService.createActionItem(
-          workflowId,
-          'Manager',
-          'Incoming Transfer Setup',
-          transferDesc,
-          receivingManagerEmail
-        );
+        const tid = ActionItemService.createActionItem(workflowId, 'Manager', 'Incoming Transfer Setup', transferDesc, receivingManagerEmail);
         tasksCreated++;
-
-        const taskLink = buildFormUrl('action_item_view', { tid: tid });
-        const calLink = calUrl ? '<br><br><a href="' + calUrl + '" target="_blank">+ Add Effective Date to Calendar (' + changeData.effDate + ')</a>' : '';
         sendFormEmail({
           to: receivingManagerEmail,
           subject: 'Incoming Transfer Action Required',
-          body: 'HR has approved a status change for ' + changeData.employeeName + '. You have been assigned an action item to prepare for their arrival:<br><br>' +
-                '<a href="' + taskLink + '">Incoming Transfer Setup Task</a>' + calLink,
+          body: 'HR has approved a status change for <strong>' + changeData.employeeName + '</strong>. You have been assigned as the receiving manager. Please complete the action item below to prepare for their arrival.' +
+                _calBtn(calUrl, 'Add Effective Date to Calendar', changeData.effDate),
+          formUrl: buildFormUrl('action_item_view', { tid: tid }),
           contextData: changeContext
         });
       }
 
-      // 2. Specialist action items — created automatically based on what was requested
-      const allSystems = changeData.systems ? changeData.systems.split(', ') : [];
-      const equipList = changeData.equipment ? changeData.equipment.split(', ') : [];
+      // Notify current (old) manager if different from receiving manager
+      if (mgrOldEmail && mgrOldEmail !== receivingManagerEmail && mgrOldEmail !== changeData.requesterEmail) {
+        sendFormEmail({
+          to: mgrOldEmail,
+          subject: 'Status Change Approved',
+          body: 'HR has approved a status change for <strong>' + changeData.employeeName + '</strong>, who currently reports to you. The change takes effect on <strong>' + changeData.effDate + '</strong>.' +
+                (notes ? '<br><br><em>HR Notes: ' + notes + '</em>' : ''),
+          contextData: changeContext
+        });
+      }
 
-      // Business Cards → dedicated person
+      // 2. Specialist action items — based on what was requested
+      const allSystems = changeData.systems ? changeData.systems.split(', ') : [];
+      const equipList  = changeData.equipment ? changeData.equipment.split(', ') : [];
+
+      // Business Cards
       if (equipList.includes('Business Cards')) {
         const bcDesc = JSON.stringify(['Order digital business cards for ' + changeData.employeeName]);
         const bcTid = ActionItemService.createActionItem(workflowId, 'Business Cards', 'Business Cards Order', bcDesc, CONFIG.EMAILS.BUSINESS_CARDS, 'businesscards');
@@ -231,12 +275,13 @@ function submitPositionChangeApproval(formData) {
         sendFormEmail({
           to: CONFIG.EMAILS.BUSINESS_CARDS,
           subject: 'Business Cards Action Required',
-          body: 'A status change has been approved for ' + changeData.employeeName + '. Please process the business card order using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: bcTid }) + '">Open Action Item</a>',
+          body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please process the digital business card order.',
+          formUrl: buildFormUrl('action_item_view', { tid: bcTid }),
           contextData: changeContext
         });
       }
 
-      // Credit Card → finance/admin
+      // Credit Card
       if (equipList.includes('Credit Card')) {
         const ccDesc = JSON.stringify(['Process credit card application for ' + changeData.employeeName]);
         const ccTid = ActionItemService.createActionItem(workflowId, 'Credit Card', 'Credit Card Order', ccDesc, CONFIG.EMAILS.CREDIT_CARD, 'creditcard');
@@ -244,12 +289,13 @@ function submitPositionChangeApproval(formData) {
         sendFormEmail({
           to: CONFIG.EMAILS.CREDIT_CARD,
           subject: 'Credit Card Action Required',
-          body: 'A status change has been approved for ' + changeData.employeeName + '. Please process the credit card application using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: ccTid }) + '">Open Action Item</a>',
+          body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please process the credit card application.',
+          formUrl: buildFormUrl('action_item_view', { tid: ccTid }),
           contextData: changeContext
         });
       }
 
-      // Fleetio → fleet team
+      // Fleetio
       if (allSystems.includes('Fleetio')) {
         const flDesc = JSON.stringify(['Update Fleetio vehicle access for ' + changeData.employeeName]);
         const flTid = ActionItemService.createActionItem(workflowId, 'Fleetio', 'Fleetio Access Update', flDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
@@ -257,12 +303,13 @@ function submitPositionChangeApproval(formData) {
         sendFormEmail({
           to: CONFIG.EMAILS.FLEETIO,
           subject: 'Fleetio Action Required',
-          body: 'A status change has been approved for ' + changeData.employeeName + '. Please update their Fleetio access using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: flTid }) + '">Open Action Item</a>',
+          body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update their Fleetio vehicle access.',
+          formUrl: buildFormUrl('action_item_view', { tid: flTid }),
           contextData: changeContext
         });
       }
 
-      // Jonas Purchasing → Jonas team
+      // Jonas Purchasing
       if (allSystems.includes('Jonas Purchasing')) {
         const jDesc = JSON.stringify(['Update Jonas Purchasing access for ' + changeData.employeeName]);
         const jTid = ActionItemService.createActionItem(workflowId, 'Jonas', 'Jonas Purchasing Update', jDesc, CONFIG.EMAILS.JONAS, 'jonas');
@@ -270,12 +317,13 @@ function submitPositionChangeApproval(formData) {
         sendFormEmail({
           to: CONFIG.EMAILS.JONAS,
           subject: 'Jonas Purchasing Action Required',
-          body: 'A status change has been approved for ' + changeData.employeeName + '. Please update their Jonas Purchasing access using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: jTid }) + '">Open Action Item</a>',
+          body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update their Jonas Purchasing access.',
+          formUrl: buildFormUrl('action_item_view', { tid: jTid }),
           contextData: changeContext
         });
       }
 
-      // Central Purchasing → Jonas team
+      // Central Purchasing
       if (allSystems.includes('Central Purchasing') || changeData.purchasingSites) {
         const cpDesc = 'Update Central Purchasing access for ' + changeData.employeeName +
           (changeData.purchasingSites ? ' — Sites: ' + changeData.purchasingSites : '');
@@ -284,65 +332,74 @@ function submitPositionChangeApproval(formData) {
         sendFormEmail({
           to: CONFIG.EMAILS.JONAS,
           subject: 'Central Purchasing Action Required',
-          body: 'A status change has been approved for ' + changeData.employeeName + '. Please update their Central Purchasing access using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: cpTid }) + '">Open Action Item</a>',
+          body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update their Central Purchasing site access.',
+          formUrl: buildFormUrl('action_item_view', { tid: cpTid }),
           contextData: changeContext
         });
       }
 
-      // IT — all remaining systems + equipment (excluding specialist-handled items)
+      // IT — remaining systems + equipment (excluding specialist-handled)
       const itSystems = allSystems.filter(function(s) {
-        return s !== 'Central Purchasing' && s !== 'Jonas Purchasing' && s !== 'Fleetio';
+        return s !== 'Central Purchasing' && s !== 'Jonas Purchasing' && s !== 'Fleetio' && s !== 'SiteDocs';
       });
       const itEquip = equipList.filter(function(e) {
         return e !== 'Business Cards' && e !== 'Credit Card' && e !== 'Vehicle';
       });
-
       if (itSystems.length > 0 || itEquip.length > 0) {
         const itDescItems = [];
         itSystems.forEach(function(s) { itDescItems.push('Provision access: ' + s); });
-        itEquip.forEach(function(e) { itDescItems.push('Provision equipment: ' + e); });
+        itEquip.forEach(function(e)   { itDescItems.push('Provision equipment: ' + e); });
         const itTid = ActionItemService.createActionItem(workflowId, 'IT', 'IT Access & Equipment Setup', JSON.stringify(itDescItems), CONFIG.EMAILS.IT);
         tasksCreated++;
         sendFormEmail({
           to: CONFIG.EMAILS.IT,
           subject: 'IT Action Required',
-          body: 'A status change has been approved for ' + changeData.employeeName + '. Please set up system access and/or equipment using the action item below.<br><br><a href="' + buildFormUrl('action_item_view', { tid: itTid }) + '">Open Action Item</a>',
+          body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please set up the requested system access and/or equipment listed in the action item.',
+          formUrl: buildFormUrl('action_item_view', { tid: itTid }),
           contextData: changeContext
         });
       }
 
-      // 3. ID Setup — tracked action item for system records update
+      // 3. ID Setup — update BOSS WIS records only
+      // Also handles new SiteDocs account if requested (SiteDocs in systems)
+      var idDescItems = ['Update BOSS WIS records to reflect the new position/site for ' + changeData.employeeName + '.'];
+      if (allSystems.includes('SiteDocs')) {
+        idDescItems.push('Create new SiteDocs supervisor account as requested.');
+      }
       const idTid = ActionItemService.createActionItem(
-        workflowId,
-        'ID Setup',
-        'System Records Update',
-        'Update BOSS, DSS, and SiteDocs records to reflect the new site and/or position for ' + changeData.employeeName + '.',
-        CONFIG.EMAILS.IDSETUP
+        workflowId, 'ID Setup', 'BOSS WIS Records Update',
+        JSON.stringify(idDescItems), CONFIG.EMAILS.IDSETUP
       );
       tasksCreated++;
       sendFormEmail({
         to: CONFIG.EMAILS.IDSETUP,
-        subject: 'System Records Update Required',
-        body: 'A status change has been approved for ' + changeData.employeeName + '. Please update BOSS, DSS, and SiteDocs records to reflect the new site and/or position.<br><br>' +
-              '<a href="' + buildFormUrl('action_item_view', { tid: idTid }) + '">Open Action Item</a>',
+        subject: 'BOSS WIS Update Required',
+        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update BOSS WIS records to reflect the new position and/or site.' +
+              (allSystems.includes('SiteDocs') ? ' A new SiteDocs supervisor account has also been requested.' : ''),
+        formUrl: buildFormUrl('action_item_view', { tid: idTid }),
         displayName: 'TEAM Group - Employee Management',
         contextData: changeContext
       });
 
-      // 4. Safety — tracked action item for safety verification
+      // 4. Safety — update DSS site/learning path and SiteDocs site (not a new account)
+      var safDescItems = [
+        'Update DSS site assignment and learning path for ' + changeData.employeeName + ' to reflect the new position/site.',
+        'Update SiteDocs site assignment for ' + changeData.employeeName + '.'
+      ];
+      // If a new SiteDocs account was requested, that's handled by ID Setup — safety only updates existing
+      if (allSystems.includes('SiteDocs')) {
+        safDescItems[1] = 'Note: New SiteDocs account creation is handled by ID Setup — verify assignment after account is created.';
+      }
       const safTid = ActionItemService.createActionItem(
-        workflowId,
-        'Safety',
-        'Safety Verification',
-        'Verify SiteDocs locations, assigned safety courses, and BOSS records reflect the updated position/site for ' + changeData.employeeName + '.',
-        CONFIG.EMAILS.SAFETY
+        workflowId, 'Safety', 'Safety System Updates',
+        JSON.stringify(safDescItems), CONFIG.EMAILS.SAFETY, 'safety_change'
       );
       tasksCreated++;
       sendFormEmail({
         to: CONFIG.EMAILS.SAFETY,
-        subject: 'Safety Verification Required',
-        body: 'A status change has been approved for ' + changeData.employeeName + '. Please verify SiteDocs locations, assigned safety courses, and BOSS records reflect the updated position/site.<br><br>' +
-              '<a href="' + buildFormUrl('action_item_view', { tid: safTid }) + '">Open Action Item</a>',
+        subject: 'Safety System Updates Required',
+        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update their DSS site and learning path, and update their SiteDocs site assignment.',
+        formUrl: buildFormUrl('action_item_view', { tid: safTid }),
         displayName: 'TEAM Group - Employee Management',
         contextData: changeContext
       });
@@ -354,28 +411,23 @@ function submitPositionChangeApproval(formData) {
       sendFormEmail({
         to: CONFIG.EMAILS.PAYROLL,
         subject: 'Status Change Approved',
-        body: `HR has approved a status change for ${changeData.employeeName}.<br><br>` +
-              `<b>Employee:</b> ${changeData.employeeName}<br>` +
-              `<b>Effective Date:</b> ${changeData.effDate}<br>` +
-              `<b>Changes:</b> ${changeData.changes || 'N/A'}<br>` +
-              `<b>Site:</b> ${changeData.siteName}<br>` +
-              `<b>HR Notes:</b> ${notes || 'None'}<br>`,
-        formUrl: '',
+        body: 'HR has approved a status change for <strong>' + changeData.employeeName + '</strong>.' +
+              (notes ? '<br><br><em>HR Notes: ' + notes + '</em>' : ''),
         contextData: changeContext
       });
 
-      // Notify requester (and new manager if different) that the change has been approved
+      // Notify requester
       const scRecipients = [changeData.requesterEmail];
       if (mgrNewEmail && mgrNewEmail !== changeData.requesterEmail) scRecipients.push(mgrNewEmail);
       sendFormEmail({
         to: scRecipients.join(','),
         subject: 'Status Change Approved',
-        body: `HR has approved the status change for ${changeData.employeeName}. All relevant teams have been notified and any required action items have been assigned.${notes ? '<br><br><b>HR Notes:</b> ' + notes : ''}`,
-        formUrl: '',
+        body: 'HR has approved the status change for <strong>' + changeData.employeeName + '</strong>. All relevant teams have been notified and action items have been assigned.' +
+              (notes ? '<br><br><em>HR Notes: ' + notes + '</em>' : ''),
         contextData: changeContext
       });
 
-      return { success: true, message: `Position change approved. ${tasksCreated} action items generated.` };
+      return { success: true, message: 'Status change approved. ' + tasksCreated + ' action items generated.' };
     } else {
       updateWorkflow(workflowId, 'Rejected', 'Rejected by HR');
       syncWorkflowState(workflowId);
