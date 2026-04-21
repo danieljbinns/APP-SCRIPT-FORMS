@@ -33,7 +33,8 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
+            width: 95%;
             margin: 0 auto;
             padding: 20px;
         }
@@ -64,7 +65,7 @@
             margin-bottom: 20px;
         }
 
-        input.search-box {
+        input.search-box, select.search-box {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: white;
@@ -72,6 +73,24 @@
             border-radius: 6px;
             width: 300px;
         }
+
+        select.search-box {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .filter-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .filter-group-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        .filter-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.15s; font-weight: 500; }
+        .filter-btn:hover { border-color: #666; color: white; }
+        .filter-btn.active { color: white; border-color: transparent; }
+        .filter-btn.active.type-onboarding { background: var(--info); }
+        .filter-btn.active.type-eoe { background: var(--brand-red); }
+        .filter-btn.active.type-change { background: #7b2ff7; }
+        .filter-btn.active.type-equip { background: #0097a7; }
+        .filter-btn.active.status-pending { background: var(--warning); color: #000; }
+        .filter-btn.active.status-completed { background: var(--success); color: #000; }
+        .filter-btn.active.status-cancelled { background: #555; }
 
         button.refresh-btn {
             background: var(--card-bg);
@@ -87,11 +106,16 @@
         }
 
         button.action-btn {
-            padding: 8px 16px;
+            display: inline-block;
+            padding: 5px 10px;
             border-radius: 4px;
             border: none;
             cursor: pointer;
             font-weight: 600;
+            color: white;
+            background: #444;
+            font-size: 12px;
+            white-space: nowrap;
         }
 
         button.bump-btn {
@@ -273,14 +297,37 @@
                 <a href="<?= getBaseUrl() ?>?form=workflow_map" class="action-link"
                     style="margin-right: 15px; color: #fff; background: #333; padding: 10px 15px; border-radius: 6px; text-decoration: none;">View
                     Process Map</a>
-                <a href="<?= getBaseUrl() ?>?form=initial_request" class="action-link"
+                <a href="<?= getBaseUrl() ?>" class="action-link"
                     style="background: var(--brand-red); color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none;">+
                     New Request</a>
             </div>
         </header>
 
-        <div class="controls">
+        <div class="controls" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
             <input type="text" id="searchInput" class="search-box" placeholder="Search employee, requester...">
+
+            <div class="filter-group">
+                <span class="filter-group-label">Type</span>
+                <button class="filter-btn type-onboarding" data-filter="type" data-value="ONBOARDING">New Hires</button>
+                <button class="filter-btn type-eoe" data-filter="type" data-value="EOE">End of Employment</button>
+                <button class="filter-btn type-change" data-filter="type" data-value="CHANGE">Position Change</button>
+                <button class="filter-btn type-equip" data-filter="type" data-value="EQUIP">Equipment</button>
+            </div>
+
+            <div class="filter-group">
+                <span class="filter-group-label">Status</span>
+                <button class="filter-btn status-pending" data-filter="status" data-value="PENDING">Action Required</button>
+                <button class="filter-btn status-completed" data-filter="status" data-value="COMPLETED">Completed</button>
+                <button class="filter-btn status-cancelled" data-filter="status" data-value="CANCELLED">Cancelled</button>
+            </div>
+
+            <select id="sortSelect" class="search-box" style="width: 150px; cursor: pointer;">
+                <option value="DATE_DESC">Newest First</option>
+                <option value="DATE_ASC">Oldest First</option>
+                <option value="NAME_ASC">Name (A-Z)</option>
+                <option value="STATUS">Status Sort</option>
+            </select>
+
             <button class="refresh-btn" onclick="loadData()">Refresh</button>
         </div>
 
@@ -288,17 +335,22 @@
             <table id="workflowTable">
                 <thead>
                     <tr>
+                        <th>Type</th>
                         <th>Employee</th>
+                        <th>Emp Type</th>
                         <th>Status</th>
                         <th>Current Action Pending</th>
                         <th>Requester</th>
+                        <th>Site</th>
+                        <th>Start Date</th>
+                        <th>Effective Date</th>
                         <th>Date Requested</th>
                         <th>Last Updated</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="6" style="text-align:center; padding: 40px;">Loading requests...</td>
+                        <td colspan="11" style="text-align:center; padding: 40px;">Loading requests...</td>
                     </tr>
                 </tbody>
             </table>
@@ -334,6 +386,8 @@
             <div class="modal-footer">
                 <button class="action-btn" style="background:var(--info); color:white; margin-right:auto;"
                     onclick="openFullPage()">View Full Data Page &rarr;</button>
+                <button id="btnEditDate" class="action-btn" style="display:none; background:#555; color:white;"
+                    onclick="editHireDate()">Edit Start Date</button>
                 <button id="btnCancel" class="action-btn cancel-btn" onclick="cancelCurrentRequest()">Cancel Entire
                     Request</button>
                 <button class="action-btn" style="background:#555; color:white;" onclick="closeModal()">Close</button>
@@ -342,19 +396,27 @@
     </div>
 
     <script>
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+
         // Use server-injected Base URL
         var SERVER_BASE_URL = "<?= baseUrl ?>";
 
         // Set dynamic URLs on load
-        window.onload = function () {
-            // var headerBtn = document.getElementById('headerFullScreenBtn');
-            // if (headerBtn) headerBtn.href = SERVER_BASE_URL + '?form=dashboard';
-        };
 
         document.addEventListener('DOMContentLoaded', loadData);
         let allWorkflows = [];
         let filteredWorkflows = []; // For search + pagination combo
         let currentWorkflowId = null;
+        let canEditDates = false; // D2: set from server response
+
+        // Filtering and Sorting State
+        let currentSort = 'DATE_DESC';
+        let activeTypeFilters = new Set();
+        let activeStatusFilters = new Set();
+        let searchTerm = '';
 
         // Pagination State
         const ITEMS_PER_PAGE = 25;
@@ -362,7 +424,7 @@
 
         function loadData() {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
             google.script.run.withSuccessHandler(displayData).withFailureHandler(showError).getDashboardData();
         }
 
@@ -379,17 +441,21 @@
                 return;
             }
             allWorkflows = response.workflows;
-            filteredWorkflows = [...allWorkflows]; // Initialize
-            currentPage = 1; // Reset to page 1 on fresh load
-            renderTable();
+            canEditDates = !!response.canEditDates; // D2
+            applyFiltersAndSort(); // Triggers sorting and initially setting filteredWorkflows
         }
 
         // Helper to safely format dates
         function formatDate(dateStr) {
             if (!dateStr) return '-';
+            // Already yyyy/MM/dd — return as-is if it matches
+            if (/^\d{4}\/\d{2}\/\d{2}/.test(dateStr)) return dateStr;
             const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr; // Return original if parse fails
-            return d.toLocaleDateString();
+            if (isNaN(d.getTime())) return dateStr;
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return y + '/' + m + '/' + day;
         }
 
         function renderTable() {
@@ -409,27 +475,49 @@
             const currentData = filteredWorkflows.slice(startIndex, endIndex);
 
             if (currentData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
                 updatePaginationUI(0, 0, 0);
                 return;
             }
 
             let html = '';
             currentData.forEach(wf => {
-                const statusClass = wf.status === 'Completed' ? 'completed' :
+                const statusClass = (wf.status === 'Completed' || wf.status === 'Complete') ? 'completed' :
                     (wf.status === 'Cancelled' ? 'cancelled' :
                         (wf.status === 'Pending' ? 'pending' : 'in-progress'));
 
-                html += '<tr onclick="openDetails(\'' + wf.id + '\')">' +
-                    '<td><strong>' + (wf.employee || 'Pending Name') + '</strong></td>' +
-                    '<td><span class="badge ' + statusClass + '">' + wf.status + '</span></td>' +
-                    '<td style="color: ' + (wf.step.includes('Pending:') ? '#ffab00' : '#a0a0a0') + '">' + wf.step + '</td>' +
+                const isOnboarding = wf.type === 'Onboarding';
+                const startDate = isOnboarding ? (wf.hireDate || '-') : 'N/A';
+                const effectiveDate = isOnboarding ? 'N/A' : (wf.hireDate || '-');
+                const stepColor = (wf.step && wf.step.includes('Pending:')) ? '#ffab00' : '#a0a0a0';
+
+                const typeLabel = wf.type === 'End of Employment' ? 'EOE' :
+                    wf.type === 'Onboarding' ? 'New Hire' :
+                    wf.type === 'Position Change' ? 'Position Change' :
+                    wf.type === 'Equipment' ? 'Equipment' : (wf.type || '-');
+                const typeColor = wf.type === 'End of Employment' ? 'var(--brand-red)' :
+                    wf.type === 'Onboarding' ? 'var(--info)' :
+                    wf.type === 'Position Change' ? '#7b2ff7' :
+                    wf.type === 'Equipment' ? '#0097a7' : '#555';
+                const typeCellHtml = '<span style="background:' + typeColor + '; color:white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight:600; white-space:nowrap;">' + typeLabel + '</span>';
+
+                const empTypeBadge = wf.empType ? '<span style="background:#333; color:#ccc; padding: 2px 6px; border-radius: 4px; font-size: 10px;">' + escapeHtml(wf.empType) + '</span>' : '-';
+
+                html += '<tr data-id="' + escapeHtml(wf.id) + '" data-type="' + escapeHtml(wf.type) + '" onclick="openDetails(this.dataset.id,this.dataset.type)">' +
+                    '<td>' + typeCellHtml + '</td>' +
+                    '<td><strong>' + escapeHtml(wf.employee || 'Pending Name') + '</strong></td>' +
+                    '<td>' + empTypeBadge + '</td>' +
+                    '<td><span class="badge ' + statusClass + '">' + escapeHtml(wf.status) + '</span></td>' +
+                    '<td style="color: ' + stepColor + '">' + escapeHtml(wf.step) + '</td>' +
                     '<td>' +
-                    '<div>' + wf.requesterName + '</div>' +
-                    '<div style="font-size: 11px; color:#666;">' + wf.initiator + '</div>' +
+                    '<div>' + escapeHtml(wf.requesterName) + '</div>' +
+                    '<div style="font-size: 11px; color:#666;">' + escapeHtml(wf.initiator) + '</div>' +
                     '</td>' +
-                    '<td>' + wf.dateRequested + '</td>' +
-                    '<td>' + wf.lastUpdated + '</td>' +
+                    '<td style="font-size:12px;">' + escapeHtml(wf.site || '-') + '</td>' +
+                    '<td style="font-size:12px;">' + escapeHtml(formatDate(startDate)) + '</td>' +
+                    '<td style="font-size:12px;">' + escapeHtml(formatDate(effectiveDate)) + '</td>' +
+                    '<td>' + escapeHtml(formatDate(wf.dateRequested)) + '</td>' +
+                    '<td>' + escapeHtml(wf.lastUpdated) + '</td>' +
                     '</tr>';
             });
             tbody.innerHTML = html;
@@ -468,33 +556,101 @@
         }
 
         function showError(msg) {
-            document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="11" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
         }
 
-        // Search
+        // Setup Search and Filter Event Listeners
+        let searchDebounce;
         document.getElementById('searchInput').addEventListener('input', function (e) {
-            const term = e.target.value.toLowerCase();
-            filteredWorkflows = allWorkflows.filter(wf =>
-                (wf.employee && wf.employee.toLowerCase().includes(term)) ||
-                (wf.requesterName && wf.requesterName.toLowerCase().includes(term)) ||
-                (wf.initiator && wf.initiator.toLowerCase().includes(term)) ||
-                (wf.id && wf.id.toLowerCase().includes(term))
-            );
-            currentPage = 1; // Reset to page 1 on search
-            renderTable();
+            searchTerm = e.target.value.toLowerCase();
+            clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(applyFiltersAndSort, 150);
+        });
+        document.getElementById('sortSelect').addEventListener('change', function (e) {
+            currentSort = e.target.value;
+            applyFiltersAndSort();
         });
 
+        // Multi-select button group toggle
+        document.querySelectorAll('.filter-btn[data-filter]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const filter = this.dataset.filter;
+                const value = this.dataset.value;
+                const set = filter === 'type' ? activeTypeFilters : activeStatusFilters;
+                if (set.has(value)) {
+                    set.delete(value);
+                    this.classList.remove('active');
+                } else {
+                    set.add(value);
+                    this.classList.add('active');
+                }
+                applyFiltersAndSort();
+            });
+        });
+
+        const TYPE_MAP = { 'ONBOARDING': 'Onboarding', 'EOE': 'End of Employment', 'CHANGE': 'Position Change', 'EQUIP': 'Equipment' };
+
+        function applyFiltersAndSort() {
+            // 1. Filter
+            filteredWorkflows = allWorkflows.filter(wf => {
+                // Search Text
+                const matchesSearch = !searchTerm ||
+                    (wf.employee && wf.employee.toLowerCase().includes(searchTerm)) ||
+                    (wf.requesterName && wf.requesterName.toLowerCase().includes(searchTerm)) ||
+                    (wf.initiator && wf.initiator.toLowerCase().includes(searchTerm)) ||
+                    (wf.id && wf.id.toLowerCase().includes(searchTerm));
+
+                if (!matchesSearch) return false;
+
+                // Type multi-select (empty set = show all)
+                if (activeTypeFilters.size > 0) {
+                    const allowed = [...activeTypeFilters].map(v => TYPE_MAP[v]);
+                    if (!allowed.includes(wf.type)) return false;
+                }
+
+                // Status multi-select (empty set = show all)
+                if (activeStatusFilters.size > 0) {
+                    const isCompleted = wf.status === 'Completed' || wf.status === 'Complete';
+                    const isCancelled = wf.status === 'Cancelled';
+                    const isPending = !isCompleted && !isCancelled;
+                    if (activeStatusFilters.has('COMPLETED') && !isCompleted) return false;
+                    if (activeStatusFilters.has('CANCELLED') && !isCancelled) return false;
+                    if (activeStatusFilters.has('PENDING') && !isPending) return false;
+                    // If multiple status filters active, show union (OR logic)
+                    const matchesAny = (activeStatusFilters.has('COMPLETED') && isCompleted) ||
+                        (activeStatusFilters.has('CANCELLED') && isCancelled) ||
+                        (activeStatusFilters.has('PENDING') && isPending);
+                    if (!matchesAny) return false;
+                }
+
+                return true;
+            });
+
+            // 2. Sort — dateRequested is yyyy/MM/dd so plain string compare is chronological
+            filteredWorkflows.sort((a, b) => {
+                if (currentSort === 'NAME_ASC') {
+                    return (a.employee || '').localeCompare(b.employee || '');
+                } else if (currentSort === 'STATUS') {
+                    return (a.status || '').localeCompare(b.status || '');
+                } else if (currentSort === 'DATE_ASC') {
+                    return (a.dateRequested || '').localeCompare(b.dateRequested || '');
+                } else {
+                    return (b.dateRequested || '').localeCompare(a.dateRequested || '');
+                }
+            });
+
+            currentPage = 1; // Reset to page 1 on new filter/search
+            renderTable();
+        }
+
         // Modal Functions
-        function openDetails(id) {
+        function openDetails(id, type) {
             currentWorkflowId = id;
             document.getElementById('detailsModal').style.display = 'flex';
-            document.getElementById('modalTitle').innerText = 'Request Details: ' + id;
-
-            // Update New Tab Button - Removed per Phase 4
-            // var btn = document.getElementById('modalNewTabBtn');
-            // if (btn) {
-            //     btn.href = SERVER_BASE_URL + '?form=request_details&id=' + id;
-            // }
+            document.getElementById('modalTitle').innerText = (type === 'End of Employment' ? 'End of Employment Details: ' : 'Request Details: ') + id;
+            // D2: Show edit date button for onboarding workflows if user has permission
+            const editBtn = document.getElementById('btnEditDate');
+            if (editBtn) editBtn.style.display = (canEditDates && type !== 'End of Employment') ? 'inline-block' : 'none';
 
             // Show loading state first
             document.getElementById('modalContent').innerHTML =
@@ -504,12 +660,21 @@
                 '</div>';
 
             // Request full details from backend
-            google.script.run
-                .withSuccessHandler(renderModalDetails)
-                .withFailureHandler(err => {
-                    document.getElementById('modalContent').innerHTML = '<div style="color:red; padding:20px;">Error loading details: ' + err.message + '</div>';
-                })
-                .getRequestDetails(id);
+            if (type === 'End of Employment' || type === 'Termination' || id.startsWith('TERM_')) {
+                google.script.run
+                    .withSuccessHandler(renderModalDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('modalContent').innerHTML = '<div style="color:red; padding:20px;">Error loading details: ' + err.message + '</div>';
+                    })
+                    .getTerminationDetails(id);
+            } else {
+                google.script.run
+                    .withSuccessHandler(renderModalDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('modalContent').innerHTML = '<div style="color:red; padding:20px;">Error loading details: ' + err.message + '</div>';
+                    })
+                    .getRequestDetails(id);
+            }
         }
 
         function renderModalDetails(details) {
@@ -523,68 +688,99 @@
             const checklist = details.checklist || [];
 
             // --- Stepper Logic ---
-            // Define standard steps order
-            const steps = ["Initial Request", "ID Setup", "HR Verification", "IT Setup"];
-            // See if we have specialists
-            const hasSpecialists = checklist.some(c => !steps.includes(c.name));
-            if (hasSpecialists) steps.push("Specialists");
+            const isOnboarding = details.type === 'Onboarding';
+            const isEOE = details.type === 'End of Employment';
+            let stepperHtml = '';
 
-            // Calculate active step
-            let activeIndex = -1;
-            // Simplified: Find last "Complete"
-            // Actually, we want to show progress. 
-            // 0=Request, 1=ID, 2=HR, 3=IT, 4=Spec
+            if (isOnboarding || isEOE) {
+                let steps = [];
+                let statusMap = {};
 
-            // Map checklist items to standard steps logic
-            const statusMap = {};
-            checklist.forEach(c => {
-                let key = c.name;
-                if (key.includes("Jonas") || key.includes("Credit") || key.includes("Fleet") || key.includes("SiteDocs")) key = "Specialists";
-                if (!statusMap[key]) statusMap[key] = c.status;
-                // If any specialist is pending, the whole blocks is pending
-                if (key === "Specialists" && c.status !== "Complete") statusMap[key] = "Pending";
-            });
+                if (isOnboarding) {
+                    steps = ["Initial Request", "ID Setup", "HR Verification", "IT Setup"];
+                    const hasSpecialists = checklist.some(c => !steps.includes(c.name));
+                    if (hasSpecialists) steps.push("Specialists");
 
-            let stepperHtml = '<div style="display:flex; justify-content:space-between; margin-bottom: 30px; position:relative;">';
+                    checklist.forEach(c => {
+                        let key = c.name;
+                        if (key.includes("Jonas") || key.includes("Credit") || key.includes("Fleet") || key.includes("SiteDocs") || key.includes("Business") || key.includes("30") || key.includes("Central")) key = "Specialists";
+                        if (!statusMap[key]) statusMap[key] = c.status;
+                        if (key === "Specialists" && c.status !== "Complete") statusMap[key] = "Pending";
+                    });
+                } else if (isEOE) {
+                    steps = ["Initial Request", "Approval", "Assets", "Systems"];
+                    
+                    // Pre-fill N/A for conditionally generated items so they don't default to pending
+                    statusMap["Assets"] = "N/A";
+                    statusMap["Systems"] = "N/A";
+                    
+                    checklist.forEach(c => {
+                        let key = c.name;
+                        // Map asset categories
+                        if (key === "Asset Collection" || key === "Assets") {
+                            if (statusMap["Assets"] === "N/A" || statusMap["Assets"] === "Complete") {
+                                statusMap["Assets"] = c.status; // Pending overwrites N/A or Complete
+                            }
+                        }
+                        
+                        // Map all deactivation action items to "Systems"
+                        else if (['IT', 'HR', 'Fleet', 'Finance', 'Deactivation', 'IT Systems Deactivation'].includes(key)) {
+                            // If ANY systems item is pending, the stepper shows Pending
+                            if (c.status === "Pending") {
+                                statusMap["Systems"] = "Pending";
+                            } else if (statusMap["Systems"] === "N/A") {
+                                statusMap["Systems"] = c.status; // e.g. Complete
+                            }
+                        } else {
+                            // Fallback for Initial Request and Approval
+                            if (!statusMap[key]) statusMap[key] = c.status;
+                        }
+                    });
+                }
 
-            // Background line
-            stepperHtml += '<div style="position:absolute; top:12px; left:0; right:0; height:2px; background:#333; z-index:0;"></div>';
+                stepperHtml = '<div class="stepper-container" style="display:flex; justify-content:space-between; margin-bottom: 30px; position:relative; padding: 0 10px;">';
+                stepperHtml += '<div style="position:absolute; top:12px; left:20px; right:20px; height:2px; background:#333; z-index:0;"></div>';
 
-            steps.forEach((step, idx) => {
-                let status = statusMap[step] || 'Pending';
-                // If previous is pending, this is likely pending too.
-                // Status mapping from checklist names to stepper names
-                if (step === "Specialists" && statusMap["Specialists"]) status = statusMap["Specialists"];
+                steps.forEach((step, idx) => {
+                    let status = statusMap[step] || 'Pending';
+                    let color = '#333';
+                    let textColor = '#666';
 
-                // Color logic
-                let color = '#333'; // Default
-                let textColor = '#666';
-                if (status === 'Complete') { color = 'var(--success)'; textColor = '#fff'; }
-                else if (status === 'Pending' && (idx === 0 || statusMap[steps[idx - 1]] === 'Complete')) { color = 'var(--warning)'; textColor = '#fff'; } // Active
+                    if (status === 'Complete') {
+                        color = 'var(--success)';
+                        textColor = '#fff';
+                    } else if (status === 'Pending') {
+                        // Mark as active if previous is complete
+                        const prevStep = idx > 0 ? steps[idx - 1] : null;
+                        if (!prevStep || statusMap[prevStep] === 'Complete') {
+                            color = 'var(--warning)';
+                            textColor = '#fff';
+                        }
+                    }
 
-                stepperHtml +=
-                    '<div style="z-index:1; text-align:center; background:var(--card-bg); padding:0 10px;">' +
-                    '<div style="width:24px; height:24px; background:' + color + '; border-radius:50%; margin:0 auto 5px; line-height:24px; font-size:12px; font-weight:bold; color:black;">' + (idx + 1) + '</div>' +
-                    '<div style="font-size:12px; color:' + textColor + '; font-weight:500;">' + step + '</div>' +
-                    '</div>';
-            });
-            stepperHtml += '</div>';
-
+                    stepperHtml +=
+                        '<div style="z-index:1; text-align:center; background:var(--card-bg); padding:0 5px; flex: 1;">' +
+                        '<div style="width:24px; height:24px; background:' + color + '; border-radius:50%; margin:0 auto 5px; line-height:24px; font-size:12px; font-weight:bold; color:black;">' + (idx + 1) + '</div>' +
+                        '<div style="font-size:11px; color:' + textColor + '; font-weight:500; white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">' + step + '</div>' +
+                        '</div>';
+                });
+                stepperHtml += '</div>';
+            }
 
             var html = stepperHtml +
                 '<div class="detail-grid">' +
                 '<div class="detail-item"><label>Employee Name</label><div>' + (r['First Name'] || '') + ' ' + (r['Last Name'] || '') + '</div></div>' +
-                '<div class="detail-item"><label>Job Title</label><div>' + (r['Position/JR Title'] || r['Position Title'] || r['Job Title'] || r['Position'] || '-') + '</div></div>' +
+                '<div class="detail-item"><label>Job Title</label><div>' + (r['Position/JR Title'] || r['Position Title'] || r['Job Title'] || r['Position'] || r['Job Title'] || '-') + '</div></div>' +
                 '<div class="detail-item"><label>Site</label><div>' + (r['Site/Office Location'] || r['Site Name'] || r['Site'] || r['Location'] || '-') + '</div></div>' +
-                '<div class="detail-item"><label>Start Date</label><div>' + formatDate(r['Hire/Start Date'] || r['Hire Date'] || r['Start Date']) + '</div></div>' +
+                '<div class="detail-item"><label>Effective Date</label><div>' + formatDate(r['Hire/Start Date'] || r['Hire Date'] || r['Start Date'] || r['Term Date'] || r['Termination Date']) + '</div></div>' +
                 '</div>' +
-                '<h3 class="section-header">Status</h3>' +
+                '<h3 class="section-header">Status Checklist</h3>' +
                 '<table style="width:100%; border-collapse: collapse; margin-top: 10px;">' +
                 '<thead>' +
                 '<tr style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-size: 13px;">' +
                 '<th style="padding: 10px; text-align: left;">Step / Form</th>' +
                 '<th style="padding: 10px; text-align: left;">Status</th>' +
-                '<th style="padding: 10px; text-align: left;">Completed By</th>' +
+                '<th style="padding: 10px; text-align: left;">Actor</th>' +
                 '<th style="padding: 10px; text-align: left;">Timestamp</th>' +
                 '<th style="padding: 10px; text-align: right;">Action</th>' +
                 '</tr>' +
@@ -604,16 +800,19 @@
                     var actionBtn = '-';
 
                     if (!isComplete && !isNA && item.target) {
-                        actionBtn = '<button class="action-btn" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
+                        if (item.tid) {
+                            // EOE Action Item — route to the specific Action Item form via tid
+                            actionBtn = '<button class="action-btn" style="background: #444;" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
+                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                        } else {
+                            actionBtn = '<button class="action-btn" style="background: #444;" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
+                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="openFormForWorkflow(\'' + item.target + '\', \'' + details.id + '\')">View Form</button>';
+                        }
                     } else if (isComplete && item.target) {
-                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openFullPage()">View</button>';
+                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + item.target + '\')">View Data</button>';
                     } else if (isComplete && item.name === 'Initial Request') {
-                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openFullPage()">View</button>';
-                    }
-
-                    // Append Admin Testing Links
-                    if (details.isAdmin && item.target && !isNA) {
-                        actionBtn += '&nbsp;<button class="action-btn" style="background:var(--brand-red); color:white; font-size: 11px; padding: 4px 10px;" onclick="openAdminForm(\'' + item.target + '\', \'' + details.id + '\')">Open Form</button>';
+                        var targetForm = details.type === 'End of Employment' ? 'termination_request' : 'initial_request';
+                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + targetForm + '\')">View Data</button>';
                     }
 
                     html +=
@@ -621,7 +820,7 @@
                         '<td style="padding: 12px 10px;">' + item.name + '</td>' +
                         '<td style="padding: 12px 10px;">' + badge + '</td>' +
                         '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#ccc') + ';">' + (item.by || '-') + '</td>' +
-                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#888') + ';">' + (item.time === 'undefined' ? '-' : item.time) + '</td>' +
+                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#888') + ';">' + (!item.time || item.time === 'undefined' ? '-' : item.time) + '</td>' +
                         '<td style="padding: 12px 10px; text-align: right;">' + actionBtn + '</td>' +
                         '</tr>';
                 });
@@ -636,23 +835,6 @@
 
 
             document.getElementById('modalContent').innerHTML = html;
-        }
-
-        function openAdminForm(target, id) {
-            let formName = target;
-            let query = '?wf=' + id;
-
-            // Map simple targets to form route names
-            if (target === 'id_setup') formName = 'id_setup';
-            if (target === 'hr_verification') formName = 'hr_verification';
-            if (target === 'it_setup') formName = 'it_setup';
-            if (['jonas', 'creditcard', 'fleetio', 'businesscards', 'sitedocs', 'review'].includes(target)) {
-                formName = 'specialist';
-                query += '&dept=' + target;
-            }
-
-            const url = SERVER_BASE_URL + '?form=' + formName + '&' + query.replace('?', '');
-            window.open(url, '_blank');
         }
 
         function closeModal() {
@@ -677,6 +859,12 @@
             }
         });
 
+        function openStepDataView(target) {
+            if (currentWorkflowId) {
+                window.open(SERVER_BASE_URL + '?form=request_details&id=' + currentWorkflowId + '&vd=' + target, '_blank');
+            }
+        }
+
         function openFullPage() {
             if (currentWorkflowId) {
                 window.open('<?= getBaseUrl() ?>?form=request_details&id=' + currentWorkflowId, '_blank');
@@ -694,7 +882,42 @@
                 .withSuccessHandler(res => {
                     alert(res.message);
                 })
+                .withFailureHandler(function(err) { alert('Error: ' + err.message); })
                 .bumpRequest(currentWorkflowId, target);
+        }
+
+        function openFormForWorkflow(formName, id) {
+            window.open('<?= getBaseUrl() ?>?form=' + formName + '&id=' + id + '&wf=' + id, '_blank');
+        }
+
+        // D2: Edit hire/start date (HR, IT, Admin only)
+        function editHireDate() {
+            const newDate = prompt('Enter new start date (YYYY-MM-DD):');
+            if (!newDate) return;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+                alert('Invalid date format. Please use YYYY-MM-DD.');
+                return;
+            }
+            const btn = document.getElementById('btnEditDate');
+            btn.innerText = 'Saving...';
+            btn.disabled = true;
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    btn.innerText = 'Edit Start Date';
+                    btn.disabled = false;
+                    if (res.success) {
+                        alert('Start date updated successfully.');
+                        loadData();
+                    } else {
+                        alert('Error: ' + res.message);
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    btn.innerText = 'Edit Start Date';
+                    btn.disabled = false;
+                    alert('Error: ' + err.message);
+                })
+                .updateHireDate(currentWorkflowId, newDate);
         }
 
         function cancelCurrentRequest() {
@@ -712,10 +935,10 @@
                     closeModal();
                     loadData(); // Refresh list
                 })
+                .withFailureHandler(function(err) { btn.innerText = 'Cancel Request'; btn.disabled = false; alert('Error: ' + err.message); })
                 .cancelRequest(currentWorkflowId);
         }
     </script>
 </body>
 
 </html>
-```

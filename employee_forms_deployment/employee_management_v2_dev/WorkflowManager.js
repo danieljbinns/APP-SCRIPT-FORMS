@@ -110,37 +110,35 @@ function updateWorkflow(workflowId, status, currentStep, employeeName) {
 }
 
 /**
- * Helper to sync status back to Initial Requests sheet
+ * Helper to sync status back to origin request sheets (Initial, Terminations, Position Changes)
  */
 function syncStatusToRequestSheet(ss, workflowId, status) {
   try {
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
-    if (!sheet) return;
-    
-    // Check headers for 'Status' column
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    let statusColIndex = headers.indexOf('Status');
-    
-    // If not found, try 'Current Status'
-    if (statusColIndex === -1) statusColIndex = headers.indexOf('Current Status');
-    
-    // If still not found, we generally shouldn't just append randomly, 
-    // but the user expects it. Let's assume if it's missing we can't update it safely without risking overwriting data.
-    // However, if we want to be helpful, we could log it.
-    if (statusColIndex === -1) {
-       Logger.log('No Status column found in Initial Requests sheet');
-       return;
-    }
-    
-    // Find row
-    const data = sheet.getDataRange().getValues();
-    // Assuming ID is Col A (0)
-    for (let i = 1; i < data.length; i++) {
+    const originSheets = [
+      CONFIG.SHEETS.INITIAL_REQUESTS,
+      CONFIG.SHEETS.TERMINATIONS,
+      CONFIG.SHEETS.POSITION_CHANGES
+    ];
+
+    for (const sheetName of originSheets) {
+      if (!sheetName) continue;
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet) continue;
+
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      let statusColIndex = headers.indexOf('Status');
+      if (statusColIndex === -1) statusColIndex = headers.indexOf('Current Status');
+      if (statusColIndex === -1) continue;
+
+      const data = sheet.getDataRange().getValues();
+      // Assume Workflow ID is in Col A (index 0)
+      for (let i = 1; i < data.length; i++) {
         if (data[i][0] === workflowId) {
-            sheet.getRange(i + 1, statusColIndex + 1).setValue(status);
-            Logger.log('Synced status to Initial Requests sheet');
-            break;
+          sheet.getRange(i + 1, statusColIndex + 1).setValue(status);
+          Logger.log(`Synced status to ${sheetName} sheet`);
+          return; // Found and updated, done
         }
+      }
     }
   } catch (e) {
     Logger.log('Error syncing status to requests: ' + e.toString());

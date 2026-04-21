@@ -104,13 +104,6 @@ function getBossCostSheetsList() {
  * @returns {Array<Object>} Array of {name, email} objects
  */
 function getManagersList() {
-  const cache = CacheService.getScriptCache();
-  const cached = cache.get('MANAGERS_LIST');
-  if (cached) {
-    Logger.log('Fetched managers from ScriptCache');
-    return JSON.parse(cached);
-  }
-
   try {
     const allUsers = [];
     let pageToken = null;
@@ -152,13 +145,6 @@ function getManagersList() {
       .sort((a, b) => a.name.localeCompare(b.name));
     
     Logger.log('Fetched ' + managers.length + ' managers from Google Directory');
-    
-    try {
-      cache.put('MANAGERS_LIST', JSON.stringify(managers), 21600); // 6 hours
-    } catch(cacheErr) {
-      Logger.log('Cache save failed (possibly too large): ' + cacheErr);
-    }
-    
     return managers;
     
   } catch (error) {
@@ -188,6 +174,46 @@ function getAllReferenceData() {
     jobNumbers: getJobNumbersList()
   };
 }
+
+/**
+ * Unified data fetch for Termination and Position Change forms.
+ * Reads Data_Lookup sheet ONCE and extracts all columns in a single pass.
+ */
+function getInitialFormData() {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Data_Lookup');
+    if (!sheet) return { sites: [], committees: [], jobs: [], jrs: [], jobNumbers: [] };
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const rows = data.slice(1);
+    const jrsIdx = headers.indexOf('JRs');
+
+    const extract = (colIdx) => rows
+      .map(r => r[colIdx])
+      .filter(v => v !== undefined && v !== null && String(v).trim() !== '');
+
+    return {
+      sites:       extract(0),                             // Column A
+      jobNumbers:  extract(3),                             // Column D
+      jobs:        extract(4),                             // Column E (Boss Cost Sheets)
+      committees:  extract(5),                             // Column F (Boss Job Sites)
+      jrs:         jrsIdx >= 0 ? extract(jrsIdx) : []
+    };
+  } catch (e) {
+    Logger.log('Error in getInitialFormData: ' + e.toString());
+    return { sites: [], committees: [], jobs: [], jrs: [], jobNumbers: [] };
+  }
+}
+
+/**
+ * Legacy/Simple site fetch for Termination form
+ */
+function getSiteOptions() {
+  return getSitesList();
+}
+
 
 /**
  * Add a new item to a reference list

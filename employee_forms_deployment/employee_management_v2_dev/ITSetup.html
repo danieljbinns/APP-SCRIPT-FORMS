@@ -395,7 +395,7 @@
                     <div class="info-row">
                         <span class="label">Hire Date:</span>
                         <span class="value">
-                            <?= requestData.hireDate ?>
+                            <?= requestData.hireDate ? Utilities.formatDate(new Date(requestData.hireDate + 'T12:00:00Z'), 'UTC', 'M/d/yyyy') : '-' ?>
                         </span>
                     </div>
                     <div class="info-row">
@@ -663,7 +663,7 @@
                                 <strong style="color: var(--text-muted); font-size: 0.9em;">Committees to
                                     Assign:</strong>
                                 <div style="margin-top: 5px; color: var(--text-main);">
-                                    <?!= requestData.bossJobSites ? requestData.bossJobSites.split(',').map(s => '• ' + s.trim()).join('<br>') : 'None' ?>
+                                    <?!= requestData.bossJobSites ? requestData.bossJobSites.split(',').map(s => '• ' + s.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')).join('<br>') : 'None' ?>
                                 </div>
                             </div>
 
@@ -672,7 +672,7 @@
                                 <strong style="color: var(--text-muted); font-size: 0.9em;">Cost Sheet Job
                                     Numbers:</strong>
                                 <div style="margin-top: 5px; color: var(--text-main);">
-                                    <?!= requestData.bossCostSheetJobs ? requestData.bossCostSheetJobs.split(',').map(s => '• ' + s.trim()).join('<br>') : 'None' ?>
+                                    <?!= requestData.bossCostSheetJobs ? requestData.bossCostSheetJobs.split(',').map(s => '• ' + s.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')).join('<br>') : 'None' ?>
                                 </div>
                             </div>
 
@@ -775,7 +775,7 @@
         // Pre-population Logic
         window.addEventListener('DOMContentLoaded', function () {
             // 1. Email Username (First.Last)
-            const employeeName = "<?= requestData.employeeName ?>";
+            const employeeName = <?= JSON.stringify(requestData.employeeName || '') ?>;
             if (employeeName) {
                 const parts = employeeName.split(' ');
                 if (parts.length >= 2) {
@@ -824,7 +824,16 @@
             status.innerHTML = '<div class="status-info">Submitting setup results...</div>';
 
             const formData = {};
-            new FormData(e.target).forEach((value, key) => { formData[key] = value; });
+            const fd = new FormData(e.target);
+            // Use getAll so repeated keys (checkboxes, multi-selects) are captured as comma-separated
+            const seen = new Set();
+            fd.forEach((value, key) => {
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    const all = fd.getAll(key);
+                    formData[key] = all.length > 1 ? all.join(',') : value;
+                }
+            });
 
             google.script.run
                 .withSuccessHandler(res => {

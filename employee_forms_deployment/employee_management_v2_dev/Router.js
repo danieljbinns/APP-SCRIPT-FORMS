@@ -18,6 +18,10 @@ function doGet(e) {
       case 'initial_request':
         // Anyone in domain can start a request
         return serveInitialRequest();
+        
+      case 'equipment_request':
+        // Anyone in domain can request hardware/software
+        return serveEquipmentRequest();
 
       case 'dashboard':
         // Dashboard has internal filtering, but we can double check general access
@@ -57,6 +61,30 @@ function doGet(e) {
         // Access check removed as requested
         const dept = e.parameter.dept || '';
         return serveSpecialist(workflowId, dept);
+        
+      case 'termination_builder':
+        return serveTerminationBuilder();
+        
+      case 'position_change_builder':
+        return servePositionChangeBuilder();
+
+      case 'termination_request':
+        return serveTerminationRequest();
+
+      case 'position_site_change':
+        return servePositionSiteChange();
+        
+      case 'termination_approval':
+        return serveTerminationApproval(workflowId);
+        
+      case 'position_change_approval':
+        return servePositionChangeApproval(workflowId);
+        
+      case 'asset_retrieval':
+        return serveAssetRetrieval(workflowId);
+
+      case 'action_item_view':
+        return ActionItemService.serveActionItem(e.parameter.tid);
         
       default:
         return HtmlService.createHtmlOutput('<h1>Form not found</h1><p>Form: ' + form + '</p>');

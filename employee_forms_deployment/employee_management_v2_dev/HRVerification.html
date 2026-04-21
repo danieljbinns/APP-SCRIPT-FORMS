@@ -38,7 +38,7 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             padding: 40px 20px;
         }
 
@@ -106,6 +106,7 @@
 
         input[type='text'],
         input[type='email'],
+        input[type='date'],
         textarea {
             width: 100%;
             background: var(--input-bg);
@@ -222,7 +223,86 @@
 
             <div id="form-content">
                 <h1>HR Verification & ADP Setup</h1>
-                <p class="subtitle">Update core records and assign ADP Associate ID</p>
+                <p class="subtitle">Complete the verification and internal ID assignment to proceed</p>
+
+                <div class="info-grid"
+                    style="background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 16px; margin-bottom: 32px; border: 1px solid var(--border-color); text-align: left;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                        <span style="color: var(--text-muted);">Employee (Pending):</span>
+                        <span>
+                            <?= requestData.firstName ?>
+                            <?= requestData.lastName ?>
+                        </span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                        <span style="color: var(--text-muted);">Proposed Hire:</span>
+                        <span>
+                            <?= requestData.hireDate ?>
+                        </span>
+                    </div>
+                    <? if (requestData.managerName) { ?>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                        <span style="color: var(--text-muted);">Manager:</span>
+                        <span>
+                            <?= requestData.managerName ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Site:</span>
+                        <span>
+                            <?= requestData.siteName ?>
+                        </span>
+                    </div>
+                    <? if (requestData.employmentType) { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Employment Type:</span>
+                        <span>
+                            <?= requestData.employmentType ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.employeeType) { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Employee Type:</span>
+                        <span>
+                            <?= requestData.employeeType ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.newHireOrRehire) { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Status:</span>
+                        <span>
+                            <?= requestData.newHireOrRehire ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.jobSiteNumber) { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Job Site #:</span>
+                        <span>
+                            <?= requestData.jobSiteNumber ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.systemAccess && requestData.systemAccess !== 'No') { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Systems:</span>
+                        <span>
+                            <?= Array.isArray(requestData.systems) ? requestData.systems.join(', ') : requestData.systems ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                    <? if (requestData.equipmentRaw) { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Equipment:</span>
+                        <span>
+                            <?= requestData.equipmentRaw ?>
+                        </span>
+                    </div>
+                    <? } ?>
+                </div>
 
                 <form id="hrVerificationForm">
                     <div class="section-title">Request Context</div>
@@ -241,9 +321,7 @@
                         </div>
                         <div class="form-group">
                             <label>Hire Date</label>
-                            <div class="read-only-box">
-                                <?= requestData.hireDate ? requestData.hireDate.toString().replace('00:00:00 GMT-0500 (Eastern Standard Time)', '').replace('00:00:00 GMT-0400 (Eastern Daylight Time)', '').trim() : 'N/A' ?>
-                            </div>
+                            <input type="date" name="hireDate" value="<?= requestData.hireDate ? String(requestData.hireDate).substring(0, 10) : '' ?>">
                         </div>
                     </div>
 
@@ -275,14 +353,18 @@
                         <input type="text" name="jobTitle" value="<?= requestData.position ?>" required>
                     </div>
 
+                    <? if (requestData.jrRequired === 'Yes') { ?>
                     <div class="form-group">
                         <label>JR Title (Verified Position) <span class="required">*</span></label>
                         <select name="jrTitle" id="jrTitle"
-                            data-original-value="<?= requestData.jrTitle || requestData.position ?>" required
+                            data-original-value="<?= requestData.jrTitle || '' ?>" required
                             style="width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; color: white; font-size: 15px;">
                             <option value="">Loading titles...</option>
                         </select>
                     </div>
+                    <? } else { ?>
+                    <input type="hidden" name="jrTitle" value="">
+                    <? } ?>
 
                     <div class="section-title">ADP Assignment</div>
                     <div class="form-group">
@@ -369,6 +451,8 @@
 
             var formData = {
                 workflowId: this.workflowId.value,
+                formId: this.formId.value,
+                hireDate: this.hireDate.value,
                 firstName: this.firstName.value,
                 lastName: this.lastName.value,
                 managerName: this.managerName.value,
@@ -393,7 +477,7 @@
                 })
                 .withFailureHandler(function (err) {
                     overlay.style.display = 'none';
-                    alert('System error: ' + err);
+                    alert('System error: ' + err.message);
                     submitBtn.disabled = false;
                 })
                 .submitHRVerification(formData);

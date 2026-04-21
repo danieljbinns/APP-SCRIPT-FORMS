@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Termination Form WYSIWYG Builder</title>
+    <title>End of Employment Builder</title>
     <!-- Include SortableJS for drag and drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
@@ -21,6 +21,8 @@
             --border-color: #333;
             --success-green: #0f9d58;
             --builder-bg: #111;
+            --surface: #2a2a2a;
+            --danger: #F44336;
         }
 
         * {
@@ -377,7 +379,7 @@
 
     <!-- Sidebar -->
     <div class="builder-sidebar">
-        <h2>Termination Form Builder</h2>
+        <h2>End of Employment Builder</h2>
         <p style="font-size: 0.85rem; color: var(--text-muted);">
             This WYSIWYG editor lets you design the live HTML form.
             <br><br>
@@ -454,20 +456,26 @@
             { id: 'f_reqname', label: 'Requester Name', type: 'text', required: true },
             { id: 'f_date', label: 'Effective Date of Change', type: 'date', required: true },
             { id: 'f_empname', label: 'Employee Name', type: 'text', required: true },
-            { id: 'f_reason', label: 'Reason for Leaving', type: 'radio', options: ['Terminated', 'Resigned', 'Retired', 'Deceased', 'End of Assignment'], required: true },
+            { id: 'f_work_email_gate', label: 'Does employee have a work email?', type: 'checkboxes', options: ['Has Work Email'] },
+            { id: 'f_work_email', label: 'Current Work Email', type: 'text', logic: 'Only if Has Work Email is checked' },
+            { id: 'f_m_phone_gate', label: 'Does employee have a mobile phone?', type: 'checkboxes', options: ['Has Mobile Phone'] },
+            { id: 'f_m_phone', label: 'Mobile Phone Number', type: 'text', logic: 'Only if Has Mobile Phone is checked' },
+            { id: 'f_comp_gate', label: 'Does employee have a computer?', type: 'checkboxes', options: ['Has Computer'] },
+            //{ id: 'f_comp_serial', label: 'Computer Serial Number', type: 'text', logic: 'Only if Has Computer is checked' },
+            { id: 'f_reason', label: 'Reason for Leaving', type: 'radio', options: ['Deceased', 'End of contract', 'Resigned', 'Retired', 'Terminated'], required: true },
             { id: 'f_hr_approved', label: 'Has HR Approved this Termination?', type: 'radio', options: ['Yes', 'No'], required: true, logic: 'Only shows if Reason is Terminated' },
             { id: 'f_site', label: 'Site Name', type: 'text', required: true },
             { id: 'f_type', label: 'Hourly or Salary', type: 'radio', options: ['Hourly', 'Salary'], required: true },
             { id: 'f_has_reports', label: 'Does employee have direct reports?', type: 'radio', options: ['Yes', 'No'], required: true },
             { id: 'f_reassign', label: 'Reassign Direct Reports To', type: 'text', help: 'Required if they manage others.', logic: 'Only shows if "Direct Reports" is Yes' },
-            { id: 'f_systems', label: 'Systems/Apps to Deactivate', type: 'checkboxes', options: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'Fleetio', 'Google Account', 'Incidents', 'Jonas Purchasing', 'Net Promoter Score', 'SiteDocs'] },
+            { id: 'f_systems', label: 'Systems/Apps to Deactivate', type: 'checkboxes', options: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'Fleetio', 'Google Account', 'Incidents', 'Jonas Purchasing', 'Central Purchasing'] },
             { id: 'f_google_forward', label: 'Email Forwarding (Google Account)', type: 'text', help: 'Who should emails be forwarded to?', logic: 'Only if "Google Account" is checked' },
             { id: 'f_google_files', label: 'Transfer Drive Files To', type: 'text', help: 'Who gets access to their Google Drive files?', logic: 'Only if "Google Account" is checked' },
             { id: 'f_google_delegate', label: 'Delegated Inbox Access To', type: 'text', logic: 'Only if "Google Account" is checked' },
             { id: 'f_google_duration', label: 'Keep Account Active For', type: 'radio', options: ['Default 1 Month then delete', 'Longer (Specify in notes)', 'Delete Immediately (No forwarding/access)'], logic: 'Only if "Google Account" is checked' },
             { id: 'f_google_vacation', label: 'Vacation Responder Msg', type: 'text', help: 'Optional auto-reply message before deletion', logic: 'Only if "Google Account" is checked', placeholder: 'xxx is no longer with TEAM group / IAT / Robinsons. Please contact [Person Reassigned] to get their reports/assistance.' },
             { id: 'f_upload', label: 'Upload Documentation', type: 'file', help: 'Resignation letter, etc.' },
-            { id: 'f_equip', label: 'Return Equipment Checklist', type: 'checkboxes', options: ['Computer/Laptop', 'Mobile Phone', 'Credit Card', 'Vehicle Keys', 'Building Access Card/Keys'] },
+            { id: 'f_equip', label: 'Return Equipment Checklist', type: 'checkboxes', options: ['Computer/Laptop', 'Mobile Phone', 'Tablet', 'Credit Card', 'Vehicle and Keys', 'Building Access Card/Keys'] },
             { id: 'f_comments', label: 'Additional Comments', type: 'textarea' }
         ];
 

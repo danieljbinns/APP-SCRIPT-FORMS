@@ -253,10 +253,10 @@
         </header>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('site')">Sites</button>
-            <button class="tab-btn" onclick="switchTab('jr')">JRs (Titles)</button>
-            <button class="tab-btn" onclick="switchTab('job_code')">Job Codes</button>
-            <button class="tab-btn" onclick="switchTab('job_number')">Job Numbers</button>
+            <button class="tab-btn active" onclick="switchTab(event, 'site')">Sites</button>
+            <button class="tab-btn" onclick="switchTab(event, 'jr')">JRs (Titles)</button>
+            <button class="tab-btn" onclick="switchTab(event, 'job_code')">Job Codes</button>
+            <button class="tab-btn" onclick="switchTab(event, 'job_number')">Job Numbers</button>
         </div>
 
         <!-- Sites Section -->
@@ -264,7 +264,7 @@
             <h2>Manage Sites</h2>
             <div class="input-group">
                 <input type="text" id="input-site" placeholder="Enter new Site name...">
-                <button class="primary" onclick="addItem('site')">Add Site</button>
+                <button class="primary" onclick="addItem(event, 'site')">Add Site</button>
             </div>
             <ul id="list-site" class="item-list">
                 <li class="item-row" style="justify-content:center;">Loading...</li>
@@ -276,7 +276,7 @@
             <h2>Manage JRs (Titles)</h2>
             <div class="input-group">
                 <input type="text" id="input-jr" placeholder="Enter new JR/Title...">
-                <button class="primary" onclick="addItem('jr')">Add JR</button>
+                <button class="primary" onclick="addItem(event, 'jr')">Add JR</button>
             </div>
             <ul id="list-jr" class="item-list">
                 <!-- Items populated via JS -->
@@ -288,7 +288,7 @@
             <h2>Manage Job Codes</h2>
             <div class="input-group">
                 <input type="text" id="input-job_code" placeholder="Enter new Job Code...">
-                <button class="primary" onclick="addItem('job_code')">Add Code</button>
+                <button class="primary" onclick="addItem(event, 'job_code')">Add Code</button>
             </div>
             <ul id="list-job_code" class="item-list">
                 <!-- Items populated via JS -->
@@ -300,7 +300,7 @@
             <h2>Manage Job Numbers</h2>
             <div class="input-group">
                 <input type="text" id="input-job_number" placeholder="Enter new Job Number...">
-                <button class="primary" onclick="addItem('job_number')">Add Number</button>
+                <button class="primary" onclick="addItem(event, 'job_number')">Add Number</button>
             </div>
             <ul id="list-job_number" class="item-list">
                 <!-- Items populated via JS -->
@@ -325,7 +325,7 @@
             loadAllData();
         };
 
-        function switchTab(type) {
+        function switchTab(event, type) {
             // Update tabs
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
@@ -379,7 +379,7 @@
             });
         }
 
-        function addItem(type) {
+        function addItem(event, type) {
             const inputEl = document.getElementById('input-' + type);
             const value = inputEl.value.trim();
             const btn = event.target;
@@ -415,7 +415,9 @@
         function deleteItem(type, value) {
             if (!confirm('Are you sure you want to delete "' + value + '"?')) return;
 
-            // Optimistic UI update? No, let's wait for server to be safe
+            const btn = document.querySelector('.delete-btn[onclick*="' + value.replace(/"/g, '\\"') + '"]');
+            if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
             google.script.run
                 .withSuccessHandler((success) => {
                     if (success) {
@@ -423,10 +425,14 @@
                         renderList(type);
                         showToast('Item deleted successfully', 'success');
                     } else {
+                        if (btn) { btn.disabled = false; btn.textContent = '\u00d7'; }
                         showToast('Failed to delete item', 'error');
                     }
                 })
-                .withFailureHandler(showError)
+                .withFailureHandler((err) => {
+                    if (btn) { btn.disabled = false; btn.textContent = '\u00d7'; }
+                    showError(err);
+                })
                 .removeReferenceItem(type, value);
         }
 

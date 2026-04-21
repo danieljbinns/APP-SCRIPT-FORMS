@@ -17,7 +17,7 @@ function initializeSystem() {
     
     Logger.log('Spreadsheet opened successfully: ' + ss.getName());
     
-    // 1. Initialize Workflows Sheet (Audit Log)
+    // 1. Initialize Workflows Sheet
     initSheet(ss, CONFIG.SHEETS.WORKFLOWS, [
       'Workflow ID', 'Workflow Type', 'Workflow Name', 'Initiator Email', 
       'Status', 'Created Date', 'Last Updated', 'Current Step', 'Employee Name'
@@ -26,8 +26,9 @@ function initializeSystem() {
     // 1b. Initialize Dashboard View Sheet (Flat, instantaneous UI read model)
     initSheet(ss, CONFIG.SHEETS.DASHBOARD_VIEW, [
       'Workflow ID', 'Employee Name', 'Global Status', 'Granular Step Details',
-      'Requester Name', 'Requester Email', 'Initiator Email', 'Date Requested', 
-      'Last Updated', 'Manager Email', 'Requested Items JSON'
+      'Requester Name', 'Requester Email', 'Initiator Email', 'Date Requested',
+      'Last Updated', 'Manager Email', 'Requested Items JSON', 'Hire Date',
+      'Site', 'Employment Type'
     ]);
     
     // 2. Initialize Initial Requests
@@ -41,7 +42,8 @@ function initializeSystem() {
       'Office 365', 'CC USA', 'Limit USA', 'CC CAN', 'Limit CAN', 'CC HD', 'Limit HD',
       'Phone Req', 'Prev User', 'Prev Number', 'BOSS Sites', 'BOSS Cost Sheet',
       'BOSS Jobs', 'BOSS Trip', 'BOSS Grievances', 'Jonas Job #s', 'JR Req', 'JR Assign',
-      '30/60/90', 'Comments', 'Status'
+      '30/60/90', 'Comments', 'ADP Sites', 'Department', 'Purchasing Sites', 'Status',
+      'ADP Salary Access'
     ]);
     
     // 3. Initialize ID Setup Results
@@ -49,7 +51,7 @@ function initializeSystem() {
       'Workflow ID', 'Form ID', 'Submission Timestamp', 'Internal Employee ID',
       'SiteDocs Worker ID', 'SiteDocs Job Code', 'SiteDocs Username',
       'SiteDocs Password', 'DSS Username', 'DSS Password',
-      'Setup Notes', 'Submitted By'
+      'Setup Notes', 'BOSS WIS Created', 'Submitted By'
     ]);
     
     // 4. Initialize HR Verification Results
@@ -68,48 +70,54 @@ function initializeSystem() {
       'IT Notes', 'Submitted By'
     ]);
     
-    // 6. Initialize Specialist Sheets
-    const specialistHeaders = ['Workflow ID', 'Form ID', 'Submission Timestamp', 'Details', 'Notes', 'Submitted By'];
+    // 6. Specialist sheets removed — specialist steps now use Action Items.
     
-    initSheet(ss, CONFIG.SHEETS.CREDIT_CARD_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.BUSINESS_CARDS_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.FLEETIO_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.JONAS_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.SITEDOCS_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.REVIEW_306090_RESULTS, specialistHeaders);
+    // 7. Initialize Termination & Change Status Sheets
+    initSheet(ss, CONFIG.SHEETS.TERMINATIONS, [
+      'Workflow ID', 'Form ID', 'Timestamp', 'Requester Name', 'Requester Email', 
+      'Employee Name', 'Employee ID', 'Employee Type', 'Work Email', 'Phone', 'Computer Serial', 
+      'Site', 'Term Date', 'Reason', 'Manager Name', 'Manager Email', 'HR Approved Status', 'Has Reports', 'Reassign Reports To', 
+      'Systems to Deactivate', 'Email Forwarding', 'Drive Files Transfer', 'Inbox Delegate', 'Account Duration', 'Vacation Responder Auto Reply',
+      'Equipment to Return', 'Comments', 'Last Day Worked'
+    ]);
+    
+    initSheet(ss, CONFIG.SHEETS.POSITION_CHANGES, [
+      'Workflow ID', 'Form ID', 'Timestamp', 'Requester Name', 'Requester Email', 
+      'Employee Name', 'Employee ID', 'Effective Date', 'Current Site', 'Change Types', 
+      'Site Transfer (Old -> New)', 'Title Change (Old -> New)', 'Classification (Old -> New)', 
+      'Manager Change (Old -> New Email)', 'Reassign Old Reports', 'Gain New Reports',
+      'Google Account', 'Systems Added', 'Equipment', 'Removed Access', 'Comments', 'Department'
+    ]);
+
+    // 7b. Initialize Equipment Requests
+    initSheet(ss, CONFIG.SHEETS.EQUIPMENT_REQUESTS, [
+      'Timestamp', 'Workflow ID', 'Form ID', 'Requester Name', 'Requester Email', 
+      'Employee First Name', 'Employee Last Name', 'Site Name', 'Job Title', 'Manager Name', 'Manager Email',
+      'Equipment Requested', 'Systems Requested', 'Comments'
+    ]);
+
+    // 8. Initialize Approval & Collection Results
+    const approvalHeaders = ['Workflow ID', 'Form ID', 'Timestamp', 'Decision', 'Notes', 'Follow-up Required', 'Submitted By'];
+    initSheet(ss, CONFIG.SHEETS.TERMINATION_APPROVALS, approvalHeaders);
+    initSheet(ss, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, approvalHeaders);
+    
+    // Asset Collection Results sheet removed — asset collection now uses Action Items.
+
+    // 9. Initialize Action Items
+    initSheet(ss, CONFIG.SHEETS.ACTION_ITEMS, [
+      'Workflow ID', 'Task ID', 'Category', 'Task Name', 'Description', 'Assigned To',
+      'Status', 'Created Date', 'Completed Date', 'Notes', 'Closed By', 'Draft',
+      'Form Type', 'Form Data'
+    ]);
+
+    // 10. Initialize Lookups
+    createDataLookupSheet();
     
     Logger.log('System initialization complete! All sheets ready.');
     
   } catch (error) {
     Logger.log('Error in initializeSystem: ' + error.toString());
   }
-}
-
-/**
- * Run this function ONCE in the Staging Apps Script Editor to set the environment variables.
- * Do not run this on Prod.
- */
-function setStagingEnvironmentProperties() {
-  PropertiesService.getScriptProperties().setProperties({
-    'SPREADSHEET_ID': '1o2KulGLhpClbvbkYG-VqsaOJNQfAcpVZgRtc-FKpuAw',
-    'MAIN_FOLDER_ID': '1urQub0R77Dps927UIydfdNHuBLEr6j7N',
-    'EMAIL_REDIRECT_ALL': 'dbinns@robinsonsolutions.com',
-    'DEPLOYMENT_URL': 'https://script.google.com/a/macros/robinsonsolutions.com/s/AKfycbyZ_V8PvQl0HPLx5nzMGuy6Sky1i5SQQ016bNpKhxINDEEgQ0WBcgGF9TjdBTP7pezb/exec'
-  });
-  Logger.log('Staging environment properties set successfully.');
-}
-
-/**
- * Run this function ONCE in the DEV Apps Script Editor to set the environment variables.
- */
-function setDevEnvironmentProperties() {
-  PropertiesService.getScriptProperties().setProperties({
-    'SPREADSHEET_ID': '1KeWBbh8755mRXFSK2dCeSW75djpaPgtprbmqd7BAsMA', // User provided DEV sheet
-    'MAIN_FOLDER_ID': '1e9rVCCI14kZ_lwEaA_NFsswnk-kfP-Bj', // Dev Folder ID
-    'EMAIL_REDIRECT_ALL': Session.getActiveUser().getEmail() || 'dbinns@team-group.com',
-    'DEPLOYMENT_URL': '' // Leave blank initially until explicitly deployed as web app
-  });
-  Logger.log('DEV environment properties set successfully via IDE.');
 }
 
 /**

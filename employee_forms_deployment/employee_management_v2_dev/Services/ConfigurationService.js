@@ -23,8 +23,8 @@ var ConfigurationService = (function() {
     'EMAIL_NOTIFICATIONS': 'grp.forms.it@team-group.com',
     'EMAIL_REDIRECT_ALL': '', // Set this to an email in Script Properties to redirect ALL outbound mail
     
-    // Resource IDs (Fallback Defaults)
-    'SPREADSHEET_ID': '1KeWBbh8755mRXFSK2dCeSW75djpaPgtprbmqd7BAsMA',
+    // Resource IDs (Override in Script Properties for Staging/Test)
+    'SPREADSHEET_ID': '1o2KulGLhpClbvbkYG-VqsaOJNQfAcpVZgRtc-FKpuAw',
     'MAIN_FOLDER_ID': '1vBZVuzXmSatnLGiqhU7QoS0zBK2NGDQE',
     'SHARED_DRIVE_ID': '0AOOOWlqzpUNVUk9PVA',
     'DEPLOYMENT_URL': 'https://script.google.com/a/macros/robinsonsolutions.com/s/AKfycbzBuUzj2DOW9ZcRPsfSoE9zVO-eMVWGj8dCaEW1i-X2rcdMBcWWBrHLoX5dn0Zf05Sm3w/exec'

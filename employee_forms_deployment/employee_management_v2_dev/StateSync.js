@@ -17,7 +17,7 @@ function manuallySyncAllWorkflows() {
   
   for (let i = 1; i < data.length; i++) {
     const wfId = data[i][0];
-    if (wfId) {
+    if (wfId && String(wfId).trim() !== '') {
       syncWorkflowState(wfId);
     }
   }
@@ -51,23 +51,64 @@ function syncWorkflowState(workflowId) {
       dateRequested: '', items: {} 
     };
     
-    const foundReq = reqSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
+    const isTerm = workflowId.startsWith('TERM_');
+    const isChange = workflowId.startsWith('CHANGE_');
+    const lookupSheetName = isTerm ? CONFIG.SHEETS.TERMINATIONS : (isChange ? CONFIG.SHEETS.POSITION_CHANGES : CONFIG.SHEETS.INITIAL_REQUESTS);
+    const lookupSheet = ss.getSheetByName(lookupSheetName);
+
+    const tz = Session.getScriptTimeZone();
+    const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd') : String(v || '').replace(/-/g, '/');
+    const fmtDateTime = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd HH:mm') : String(v || '').replace(/-/g, '/');
+
+    const foundReq = lookupSheet ? lookupSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (foundReq) {
-      const row = reqSheet.getRange(foundReq.getRow(), 1, 1, reqSheet.getLastColumn()).getValues()[0];
-      reqInfo = {
-        requesterName: row[4] || 'Unknown',
-        requesterEmail: row[5] || '',
-        managerEmail: row[17] || '',
-        dateRequested: row[3] instanceof Date ? row[3].toLocaleDateString() : String(row[3] || ''),
-        items: {
-          jonas: (row[44] && row[44].toString().length > 0),
-          creditCard: (row[30] === 'Yes' || row[32] === 'Yes' || row[34] === 'Yes'),
-          fleetio: (row[20] && row[20].includes('Fleetio')),
-          businessCards: (row[20] && row[20].includes('Business Cards')),
-          siteDocs: ((row[20] && row[20].includes('SiteDocs')) || (row[21] && row[21].includes('SiteDocs Tablet'))),
-          review: (row[47] === 'Yes')
-        }
-      };
+      const lastCol = lookupSheet.getLastColumn();
+      const reqHeaders = lookupSheet.getRange(1, 1, 1, lastCol).getValues()[0];
+      const empTypeIdx = reqHeaders.indexOf('Employment Type');
+      const row = lookupSheet.getRange(foundReq.getRow(), 1, 1, lastCol).getValues()[0];
+      if (isTerm) {
+        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | ... | Site[11] | Term Date[12] | Manager Name[14] | Manager Email[15]
+        reqInfo = {
+          requesterName: row[3] || 'Unknown',
+          requesterEmail: row[4] || '',
+          managerEmail: row[15] || '',
+          dateRequested: fmtDate(row[2]),
+          hireDate: fmtDate(row[12]), // Term Date → shown in Effective Date column
+          site: String(row[11] || ''),
+          items: { isTerm: true }
+        };
+      } else if (isChange) {
+        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | Emp ID | Effective Date[7] | Current Site[8] | ...
+        reqInfo = {
+          requesterName: row[3] || 'Unknown',
+          requesterEmail: row[4] || '',
+          managerEmail: '',
+          dateRequested: fmtDate(row[2]),
+          hireDate: fmtDate(row[7]), // Effective Date → shown in Effective Date column
+          site: String(row[8] || ''),
+          empType: '',
+          items: {}
+        };
+      } else {
+        reqInfo = {
+          requesterName: row[4] || 'Unknown',
+          requesterEmail: row[5] || '',
+          managerEmail: row[17] || '',
+          dateRequested: fmtDate(row[3]),
+          hireDate: fmtDate(row[6]), // Hire Date → shown in Start Date column
+          site: String(row[15] || ''), // Site Name
+          empType: empTypeIdx >= 0 ? String(row[empTypeIdx] || '') : '',
+          items: {
+            jonas: (row[44] && row[44].toString().length > 0),
+            creditCard: (row[30] === 'Yes' || row[32] === 'Yes' || row[34] === 'Yes'),
+            fleetio: (row[20] && row[20].includes('Fleetio')),
+            businessCards: (row[21] && row[21].includes('Business Cards')),
+            siteDocs: ((row[20] && row[20].includes('SiteDocs')) || (row[21] && row[21].includes('SiteDocs Tablet'))),
+            review: (row[47] === 'Yes'),
+            safety: true
+          }
+        };
+      }
     }
     
     // 2. Determine Pre-Calculated Status String
@@ -92,6 +133,7 @@ function syncWorkflowState(workflowId) {
         if (reqInfo.items.businessCards && !checkDone(CONFIG.SHEETS.BUSINESS_CARDS_RESULTS)) pending.push('Business Cards');
         if (reqInfo.items.siteDocs && !checkDone(CONFIG.SHEETS.SITEDOCS_RESULTS)) pending.push('SiteDocs');
         if (reqInfo.items.review && !checkDone(CONFIG.SHEETS.REVIEW_306090_RESULTS)) pending.push('30/60/90');
+        if (reqInfo.items.safety && !checkDone(CONFIG.SHEETS.SAFETY_ONBOARDING_RESULTS)) pending.push('Safety Onboarding');
         
         if (pending.length > 0) {
           granularStatus = 'Pending: ' + pending.join(', ');
@@ -108,29 +150,32 @@ function syncWorkflowState(workflowId) {
     }
     
     // 3. Prepare the flat row for the View sheet
-    // Headers: Workflow ID | Employee Name | Global Status | Granular Step Details | Requester Name | Requester Email | Initiator Email | Date Requested | Last Updated | Manager Email | Requested Items JSON
-    const lastUpdated = wfRow[6] instanceof Date ? wfRow[6].toLocaleString() : String(wfRow[6]);
+    // Headers: Workflow ID | Employee Name | Global Status | Granular Step Details | Requester Name | Requester Email | Initiator Email | Date Requested | Last Updated | Manager Email | Requested Items JSON | Start/Term Date | Site
+    const lastUpdated = fmtDateTime(wfRow[6]);
     const initEmail = wfRow[3];
     const empName = wfRow[8];
-    
+
     const outputRow = [
-      workflowId, 
-      empName, 
-      baseStatus, 
-      granularStatus, 
-      reqInfo.requesterName, 
-      reqInfo.requesterEmail, 
-      initEmail, 
-      reqInfo.dateRequested, 
-      lastUpdated, 
-      reqInfo.managerEmail, 
-      JSON.stringify(reqInfo.items)
+      workflowId,
+      empName,
+      baseStatus,
+      granularStatus,
+      reqInfo.requesterName,
+      reqInfo.requesterEmail,
+      initEmail,
+      reqInfo.dateRequested,
+      lastUpdated,
+      reqInfo.managerEmail,
+      JSON.stringify(reqInfo.items),
+      reqInfo.hireDate || '',  // col 11: Start/Effective Date
+      reqInfo.site || '',      // col 12: Site
+      reqInfo.empType || ''    // col 13: Employment Type
     ];
-    
+
     // 4. Overwrite or Append to Dashboard_View
     const foundView = viewSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
     if (foundView) {
-      viewSheet.getRange(foundView.getRow(), 1, 1, 11).setValues([outputRow]);
+      viewSheet.getRange(foundView.getRow(), 1, 1, 14).setValues([outputRow]);
     } else {
       viewSheet.appendRow(outputRow);
     }

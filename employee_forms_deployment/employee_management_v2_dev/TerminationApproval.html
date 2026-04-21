@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Termination Approval</title>
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+            --border-color: #333;
+            --success: #00c853;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .logo {
+            height: 40px;
+        }
+
+        h1 {
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .info-grid {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--brand-red);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 24px 0 16px 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        select,
+        textarea {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            padding: 12px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: #ddd;
+        }
+
+        input[type="checkbox"] {
+            accent-color: var(--brand-red);
+            width: 18px;
+            height: 18px;
+        }
+
+        .status-btn-group {
+            display: flex;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            overflow: hidden;
+            width: fit-content;
+            margin-top: 8px;
+        }
+
+        .status-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: 0.2s;
+            border-right: 1px solid var(--input-border);
+        }
+
+        .status-btn:last-child {
+            border-right: none;
+        }
+
+        .status-btn.active {
+            background: var(--brand-red);
+            color: white;
+        }
+
+        .status-btn:not(.active):hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--brand-red);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="logo-container">
+                <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+                    alt="Team Group" class="logo">
+            </div>
+            <h1>Termination Approval</h1>
+            <p class="subtitle">Review request and trigger follow-up steps</p>
+
+            <div class="info-grid">
+                <div class="info-row"><span class="info-label">Employee:</span><span>
+                        <?= requestData.employeeName ?>
+                    </span></div>
+                <div class="info-row"><span class="info-label">Type:</span><span>
+                        <?= requestData.empType ?>
+                    </span></div>
+                <div class="info-row"><span class="info-label">Site:</span><span>
+                        <?= requestData.siteName ?>
+                    </span></div>
+                <div class="info-row"><span class="info-label">Manager:</span><span>
+                        <?= requestData.managerName ?>
+                    </span></div>
+                <div class="info-row"><span class="info-label">Term Date:</span><span>
+                        <?= requestData.termDate ?>
+                    </span></div>
+                <div class="info-row"><span class="info-label">Reason:</span><span>
+                        <?= requestData.reason ?>
+                    </span></div>
+                <? if (requestData.empPhone && requestData.empPhone !== 'N/A') { ?>
+                <div class="info-row"><span class="info-label">Assigned Phone:</span><span>
+                        <?= requestData.empPhone ?>
+                    </span></div>
+                <? } ?>
+                <? if (requestData.systems && requestData.systems !== 'N/A') { ?>
+                <div class="info-row"><span class="info-label">System Access:</span><span>
+                        <?= requestData.systems ?>
+                    </span></div>
+                <? } ?>
+                <? if (requestData.eqToReturn && requestData.eqToReturn !== 'N/A') { ?>
+                <div class="info-row"><span class="info-label">Equipment to Return:</span><span>
+                        <?= requestData.eqToReturn ?>
+                    </span></div>
+                <? } ?>
+                <div class="info-row"><span class="info-label">Direct Reports:</span><span>
+                        <?= requestData.hasReports === 'Yes' ? 'Yes, routing to ' + requestData.reportsToNew : 'No' ?>
+                    </span></div>
+                <div class="info-row"><span class="info-label">Submitted By:</span><span>
+                        <?= requestData.requesterEmail ?>
+                    </span></div>
+            </div>
+
+            <form id="approvalForm">
+                <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+
+                <div class="form-group">
+                    <label>HR Decision</label>
+                    <input type="hidden" name="decision" id="decisionInput" value="Approved" required>
+                    <div class="status-btn-group">
+                        <button type="button" class="status-btn active" id="btnApproved" onclick="setDecision('Approved')">Approve Termination</button>
+                        <button type="button" class="status-btn" id="btnRejected" onclick="setDecision('Rejected')">Reject / Need Info</button>
+                    </div>
+                </div>
+
+                <div class="section-title" style="display: none;">Follow-up Actions</div>
+                <div class="checkbox-group" style="display: none;">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="collectAssets" value="true" <?=(requestData.hasPhone ||
+                            requestData.hasLaptop) ? 'checked' : '' ?>>
+                        <span>Notify Manager to collect company assets</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="itDisable" value="true" checked>
+                        <span>Notify IT to disable Google/System access</span>
+                    </label>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Approval/Rejection notes..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="submitBtn">Process Approval</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function setDecision(value) {
+            document.getElementById('decisionInput').value = value;
+            document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
+            if (value === 'Approved') {
+                document.getElementById('btnApproved').classList.add('active');
+            } else {
+                document.getElementById('btnRejected').classList.add('active');
+            }
+        }
+
+        document.getElementById('approvalForm').onsubmit = function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            const formData = {
+                workflowId: this.workflowId.value,
+                decision: this.decision.value,
+                notes: this.notes.value,
+                collectAssets: this.collectAssets.checked,
+                itDisable: this.itDisable.checked
+            };
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res.success) {
+                        document.querySelector('.card').innerHTML = `<div style="text-align:center; padding:40px;"><h2 style="color:var(--success)">✓ Action Completed</h2><p>${res.message}</p><p style="color:var(--text-muted); font-size:13px; margin-top:8px;">Returning to dashboard...</p></div>`;
+                        setTimeout(function() {
+                            google.script.run
+                                .withSuccessHandler(function(url) { window.top.location.href = url + '?form=dashboard'; })
+                                .withFailureHandler(function() { window.top.location.href = '?form=dashboard'; })
+                                .getBaseUrl();
+                        }, 2000);
+                    } else {
+                        alert('Error: ' + res.message);
+                        btn.disabled = false;
+                        btn.textContent = 'Process Approval';
+                    }
+                })
+                .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Process Approval'; alert('Error: ' + err.message); })
+                .submitTerminationApproval(formData);
+        }
+    </script>
+</body>
+
+</html>

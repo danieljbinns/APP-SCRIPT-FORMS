@@ -43,7 +43,8 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1600px;
+            width: 95%;
             margin: 60px auto;
             padding: 0 40px;
             flex: 1;
@@ -54,6 +55,7 @@
             margin-bottom: 10px;
             background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -139,11 +141,31 @@
 
         <div class="section-title"><i class="fa-solid fa-clipboard-list"></i> Workflows</div>
         <div class="cards-grid">
-            <a href="<?= getBaseUrl() ?>?form=initial_request" class="card" target="_top">
+            <a href="<?= buildFormUrl('initial_request') ?>" class="card" target="_top">
                 <div class="card-icon"><i class="fa-solid fa-user-plus"></i></div>
                 <div class="card-title">New Employee Request</div>
                 <div class="card-description">Submit a new employee onboarding request to begin the provisioning
                     workflow</div>
+            </a>
+
+            <a href="<?= buildFormUrl('termination_request') ?>" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-user-minus"></i></div>
+                <div class="card-title">End of Employment Request</div>
+                <div class="card-description">Submit an end of employment request to begin the deprovisioning workflow
+                </div>
+            </a>
+
+            <a href="<?= buildFormUrl('position_site_change') ?>" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-user-gear"></i></div>
+                <div class="card-title">Position / Site Change</div>
+                <div class="card-description">Submit a request for employee status changes, site transfers, or
+                    promotions</div>
+            </a>
+
+            <a href="<?= buildFormUrl('equipment_request') ?>" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-laptop"></i></div>
+                <div class="card-title">System & Equipment Request</div>
+                <div class="card-description">Request one-off systems, software, or hardware for existing personnel</div>
             </a>
         </div>
 
@@ -156,11 +178,16 @@
                     status</div>
             </a>
         </div>
+
+
+
     </div>
 
     <script>
         google.script.run.withSuccessHandler(function (email) {
             document.getElementById('userEmail').textContent = email || 'Not signed in';
+        }).withFailureHandler(function() {
+            document.getElementById('userEmail').textContent = 'Not signed in';
         }).getCurrentUserEmail();
     </script>
 </body>

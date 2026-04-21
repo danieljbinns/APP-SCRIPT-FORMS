@@ -3,7 +3,10 @@
  */
 
 function serveInitialRequest() {
-  return HtmlService.createHtmlOutputFromFile('InitialRequest')
+  const template = HtmlService.createTemplateFromFile('InitialRequest');
+  template.referenceData = JSON.stringify(getInitialFormData());
+  template.mode = 'new_hire';
+  return template.evaluate()
     .setTitle('New Employee Request')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -47,8 +50,8 @@ function submitInitialRequest(formData) {
     // Update workflow with employee name
     const employeeName = formData.firstName + ' ' + formData.lastName;
     updateWorkflow(workflowId, 'In Progress', 'ID Setup Needed', employeeName);
-    
-    
+    syncWorkflowState(workflowId);
+
     Logger.log('[SUCCESS] Form submitted: Workflow ID: ' + workflowId + ', Form ID: ' + formId);
     
     // Send initial emails with full context
@@ -57,7 +60,7 @@ function submitInitialRequest(formData) {
     sendInitialRequestEmails({
       requestId: workflowId,
       employeeName: employeeName,
-      jobTitle: formData.positionTitle, // HR Job Title (Text)
+      jobTitle: formData.positionTitle,
       siteName: formData.siteName,
       hireDate: formData.hireDate,
       managerName: formData.reportingManagerName,
@@ -70,17 +73,11 @@ function submitInitialRequest(formData) {
       systemAccess: formData.systemAccess,
       systems: formData.systems,
       equipment: formData.equipment,
+      department: formData.department || '',
       employeeIdSetupUrl: idSetupUrl,
       siteDocsEmail: CONFIG.EMAILS.IDSETUP
     });
     
-    // Asynchronously update the Materialized Dashboard View
-    try {
-      syncWorkflowState(workflowId);
-    } catch(syncErr) {
-      Logger.log('Warning: Failed to sync view for ' + workflowId);
-    }
-
     return {
       success: true,
       workflowId: workflowId,
@@ -148,7 +145,11 @@ function formatInitialRequestData(data) {
     data.jrRequired || '',
     data.jrAssignment || '',
     data.plan306090 || '',
-    data.comments || ''
+    data.comments || '',
+    Array.isArray(data.adpSites) ? data.adpSites.join(', ') : (data.adpSites || ''),
+    data.department || '',
+    Array.isArray(data.purchasingSites) ? data.purchasingSites.join(', ') : (data.purchasingSites || ''),
+    data.adpSalaryAccess || 'No'
   ];
 }
 
@@ -156,26 +157,4 @@ function formatInitialRequestData(data) {
  * Get current user's details for auto-populating requester fields
  * @returns {Object} {email, name}
  */
-function getCurrentUserDetails() {
-  try {
-    const email = Session.getActiveUser().getEmail();
-    let name = '';
-    
-    // Try to get name from Directory API
-    try {
-      const user = AdminDirectory.Users.get(email);
-      name = user.name.fullName;
-    } catch (e) {
-      // Fallback if Directory API fails or user not found
-      Logger.log('Could not fetch user name from directory: ' + e.toString());
-    }
-    
-    return {
-      email: email,
-      name: name
-    };
-  } catch (error) {
-    Logger.log('Error getting current user details: ' + error.toString());
-    return { email: '', name: '' };
-  }
-}
+

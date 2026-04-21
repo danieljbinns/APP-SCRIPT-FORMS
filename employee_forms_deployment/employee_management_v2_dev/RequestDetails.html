@@ -331,7 +331,7 @@
         </div>
 
         <div id="loading" style="text-align:center; padding: 50px; color: var(--text-muted);">
-            Loading Details...
+            Running Flight Check...
         </div>
 
         <div id="content" style="display:none;">
@@ -341,7 +341,7 @@
                 <div class="detail-grid" id="snapshotGrid"></div>
             </div>
 
-            <!-- Workflow Diagram Section -->
+            <!-- Workflow Diagram Section — Onboarding -->
             <div id="flowSection" class="flow-section" style="display:none;">
                 <h2 style="color:var(--text-muted); font-size:16px; margin-bottom:20px;">Live Request Flow</h2>
                 <div class="flow-container">
@@ -377,7 +377,7 @@
                         <!-- Visually connect somewhat -->
                         <div class="flow-card" id="node_it_setup" onclick="viewStepData('it_setup')">
                             <h3>IT Setup</h3>
-                            <p>Equipment & Access</p>
+                            <p>Equipment &amp; Access</p>
                             <div class="status-badge" id="badge_it_setup">-</div>
                             <div class="connector-line"></div>
                         </div>
@@ -426,9 +426,42 @@
                 </div>
             </div>
 
+            <!-- Workflow Diagram Section — End of Employment -->
+            <div id="eoeFlowSection" class="flow-section" style="display:none;">
+                <h2 style="color:var(--text-muted); font-size:16px; margin-bottom:20px;">Live Request Flow — End of Employment</h2>
+                <div class="flow-container">
+
+                    <!-- 1. Initial Request -->
+                    <div class="step-row">
+                        <div class="flow-card" id="eoe_node_term_req" onclick="viewStepData('termination_request')">
+                            <h3>EOE Request</h3>
+                            <p>Submitted by Manager</p>
+                            <div class="status-badge" id="eoe_badge_term_req">-</div>
+                            <div class="connector-line"></div>
+                        </div>
+                    </div>
+
+                    <!-- 2. HR Approval -->
+                    <div class="step-row">
+                        <div class="flow-card" id="eoe_node_approval" onclick="viewStepData('termination_approval')">
+                            <h3>HR Approval</h3>
+                            <p>HR Review &amp; Decision</p>
+                            <div class="status-badge" id="eoe_badge_approval">-</div>
+                            <div class="connector-line"></div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Parallel Action Item branches -->
+                    <div class="branch-container" id="eoeActionItemNodes">
+                        <div class="branch-stem"></div>
+                        <!-- Populated dynamically by renderDetails based on categories present -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Workflow Steps Table (Legacy/Detail) -->
             <div class="card">
-                <h2>Request Details Checklist</h2>
+                <h2>Flight Check Details</h2>
                 <table id="checklistTable">
                     <thead>
                         <tr>
@@ -492,13 +525,35 @@
             return d.toLocaleDateString();
         }
 
+        let viewDataTarget = null;
         function loadDetails() {
-            google.script.run
-                .withSuccessHandler(renderDetails)
-                .withFailureHandler(err => {
-                    document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
-                })
-                .getRequestDetails(workflowId);
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('content').style.display = 'none'; // Changed from workflowContent
+            document.getElementById('flowSection').style.display = 'none';
+            
+            // Check for view data auto-open parameter first
+            google.script.url.getLocation(function(loc) {
+                if (loc && loc.parameter && loc.parameter.vd) {
+                    viewDataTarget = loc.parameter.vd;
+                }
+                
+                // Route appropriately based on ID
+                if (workflowId.startsWith('TERM_')) { 
+                    google.script.run
+                        .withSuccessHandler(renderDetails)
+                        .withFailureHandler(err => {
+                            document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
+                        })
+                        .getTerminationDetails(workflowId);
+                } else {
+                    google.script.run
+                        .withSuccessHandler(renderDetails)
+                        .withFailureHandler(err => {
+                            document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
+                        })
+                        .getRequestDetails(workflowId);
+                }
+            });
         }
 
         function renderDetails(data) {
@@ -509,35 +564,100 @@
 
             document.getElementById('loading').style.display = 'none';
             document.getElementById('content').style.display = 'block';
-            document.getElementById('flowSection').style.display = 'block';
 
+            // Show the appropriate flow diagram section
             const r = data.requestData || {};
             const list = data.checklist || [];
 
-            // Snapshot
-            document.getElementById('employeeName').innerText = (r['First Name'] || '') + ' ' + (r['Last Name'] || '');
+            if (workflowId.startsWith('TERM_')) {
+                document.getElementById('flowSection').style.display = 'none';
+                document.getElementById('eoeFlowSection').style.display = 'block';
 
-            var snapshotHtml = '<div class="detail-item"><label>Workflow ID</label><div>' + data.id + '</div></div>' +
-                '<div class="detail-item"><label>Job Title</label><div>' + (r['Position/JR Title'] || r['Position'] || '-') + '</div></div>' +
-                '<div class="detail-item"><label>Site</label><div>' + (r['Site/Office Location'] || r['Site Name'] || '-') + '</div></div>' +
-                '<div class="detail-item"><label>Start Date</label><div>' + formatDate(r['Hire/Start Date'] || r['Hire Date']) + '</div></div>' +
-                '<div class="detail-item"><label>Requester</label><div>' + (r['Requester Email'] || '-') + '</div></div>';
-            document.getElementById('snapshotGrid').innerHTML = snapshotHtml;
+                // Dynamically build action item category cards in the EOE diagram
+                const aiContainer = document.getElementById('eoeActionItemNodes');
+                // Keep the branch-stem div, remove old cards
+                aiContainer.innerHTML = '<div class="branch-stem"></div>';
 
-            // Map Status Logic
-            // Reset all nodes
-            document.querySelectorAll('.flow-card').forEach(el => {
-                el.className = 'flow-card future';
-                el.querySelector('.status-badge').innerText = 'Pending';
-            });
+                list.forEach(item => {
+                    if (item.name === 'Initial Request' || item.name === 'Approval') return;
+                    const isComplete = item.status === 'Complete';
+                    const slug = item.target || item.name.toLowerCase().replace(/\s+/g,'_');
+                    const card = document.createElement('div');
+                    card.className = 'flow-card ' + (isComplete ? 'complete' : 'pending');
+                    card.id = 'eoe_node_' + slug;
+                    if (item.target) card.addEventListener('click', function() { viewStepData(item.target); });
+                    const h3 = document.createElement('h3');
+                    h3.textContent = item.name;
+                    const p = document.createElement('p');
+                    p.textContent = item.by || 'Pending';
+                    const badge = document.createElement('div');
+                    badge.className = 'status-badge';
+                    badge.id = 'eoe_badge_' + slug;
+                    badge.textContent = item.status;
+                    card.appendChild(h3); card.appendChild(p); card.appendChild(badge);
+                    aiContainer.appendChild(card);
+                });
+
+                // Update EOE static node badges
+                const termReqItem = list.find(i => i.name === 'Initial Request');
+                const approvalItem = list.find(i => i.name === 'Approval');
+                if (termReqItem) {
+                    const n = document.getElementById('eoe_node_term_req');
+                    if (n) { n.className = 'flow-card ' + (termReqItem.status === 'Complete' ? 'complete' : 'pending'); }
+                    const b = document.getElementById('eoe_badge_term_req');
+                    if (b) b.innerText = termReqItem.status;
+                }
+                if (approvalItem) {
+                    const n = document.getElementById('eoe_node_approval');
+                    if (n) { n.className = 'flow-card ' + (approvalItem.status === 'Complete' ? 'complete' : 'pending'); }
+                    const b = document.getElementById('eoe_badge_approval');
+                    if (b) b.innerText = approvalItem.status;
+                }
+
+            } else {
+                document.getElementById('flowSection').style.display = 'block';
+                document.getElementById('eoeFlowSection').style.display = 'none';
+
+                // Reset all onboarding nodes to future state first
+                document.querySelectorAll('#flowSection .flow-card').forEach(el => {
+                    el.className = 'flow-card future';
+                    el.querySelector('.status-badge').innerText = 'Pending';
+                });
+            }
+
+            // Snapshot - adapt fields for EOE vs Onboarding
+            if (workflowId.startsWith('TERM_')) {
+                document.getElementById('employeeName').innerText = r['Employee Name'] || data.id;
+                document.getElementById('snapshotGrid').innerHTML =
+                    '<div class="detail-item"><label>Workflow ID</label><div>' + data.id + '</div></div>' +
+                    '<div class="detail-item"><label>Employee</label><div>' + (r['Employee Name'] || '-') + '</div></div>' +
+                    '<div class="detail-item"><label>Site</label><div>' + (r['Site'] || '-') + '</div></div>' +
+                    '<div class="detail-item"><label>Term Date</label><div>' + (r['Term Date'] || '-') + '</div></div>' +
+                    '<div class="detail-item"><label>Reason</label><div>' + (r['Reason'] || '-') + '</div></div>' +
+                    '<div class="detail-item"><label>Requester</label><div>' + (r['Requester Email'] || '-') + '</div></div>';
+            } else {
+                document.getElementById('employeeName').innerText = (r['First Name'] || '') + ' ' + (r['Last Name'] || '');
+                document.getElementById('snapshotGrid').innerHTML =
+                    '<div class="detail-item"><label>Workflow ID</label><div>' + data.id + '</div></div>' +
+                    '<div class="detail-item"><label>Job Title</label><div>' + (r['Position/JR Title'] || r['Position'] || '-') + '</div></div>' +
+                    '<div class="detail-item"><label>Site</label><div>' + (r['Site/Office Location'] || r['Site Name'] || '-') + '</div></div>' +
+                    '<div class="detail-item"><label>Start Date</label><div>' + formatDate(r['Hire/Start Date'] || r['Hire Date']) + '</div></div>' +
+                    '<div class="detail-item"><label>Requester</label><div>' + (r['Requester Email'] || '-') + '</div></div>';
+            }
+
+            // Auto-launch specific viewing modal if vd parameter provided via Dashboard
+            if (viewDataTarget) {
+                const capturedVD = viewDataTarget;
+                viewDataTarget = null;
+                setTimeout(() => viewStepData(capturedVD), 600);
+            }
 
             // Checklist & Flow Update
             let rows = '';
             list.forEach(item => {
                 const isComplete = item.status === 'Complete';
-                const isNA = item.status === 'N/A';
-                const statusClass = isComplete ? 'complete' : (isNA ? 'future' : 'pending');
-                const icon = isComplete ? '&#10003;' : (isNA ? '&empty;' : '&#8987;');
+                const statusClass = isComplete ? 'complete' : 'pending';
+                const icon = isComplete ? '&#10003;' : '&#8987;'; // Checkmark or Hourglass
 
 
                 // Update Node
@@ -551,24 +671,17 @@
                     if (node) {
                         node.className = 'flow-card ' + statusClass;
                         node.querySelector('.status-badge').innerText = item.status;
-                        if (isNA) {
-                            node.style.opacity = '0.3';
-                        }
                     }
                 }
 
                 var actions = '-';
-                if (!isComplete && !isNA && item.target) {
+                if (!isComplete && item.target) {
                     actions = '<button class="btn" style="background:var(--warning); color:black;" onclick="bump(\'' + item.target + '\')">Remind</button>';
                 } else if (isComplete && item.target) {
                     actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
                 } else if (isComplete && item.name === 'Initial Request') {
-                    actions = '<button class="btn view-data-btn" onclick="viewStepData(\'initial_request\')">View Data</button>';
-                }
-
-                // Append Admin Testing Links
-                if (data.isAdmin && item.target && !isNA) {
-                    actions += ' <button class="btn" style="background:var(--brand-red); margin-left:5px;" onclick="openAdminForm(\'' + item.target + '\', \'' + data.id + '\')">Open Form</button>';
+                    var targetData = workflowId.startsWith('TERM_') ? 'termination_request' : 'initial_request';
+                    actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + targetData + '\')">View Data</button>';
                 }
 
                 rows += '<tr>' +
@@ -582,26 +695,9 @@
             document.getElementById('checklistBody').innerHTML = rows;
         }
 
-        function openAdminForm(target, id) {
-            let formName = target;
-            let query = '?wf=' + id;
-
-            // Map simple targets to form route names
-            if (target === 'id_setup') formName = 'id_setup';
-            if (target === 'hr_verification') formName = 'hr_verification';
-            if (target === 'it_setup') formName = 'it_setup';
-            if (['jonas', 'creditcard', 'fleetio', 'businesscards', 'sitedocs', 'review'].includes(target)) {
-                formName = 'specialist';
-                query += '&dept=' + target;
-            }
-
-            const url = SERVER_BASE_URL + '?form=' + formName + '&' + query.replace('?', '');
-            window.open(url, '_blank');
-        }
-
         function bump(target) {
             if (!confirm('Send reminder email?')) return;
-            google.script.run.withSuccessHandler(alert).bumpRequest(workflowId, target);
+            google.script.run.withSuccessHandler(function(res) { alert(res.message || 'Done'); }).withFailureHandler(function(err) { alert('Error: ' + err.message); }).bumpRequest(workflowId, target);
         }
 
         function viewStepData(stepType) {
@@ -615,10 +711,15 @@
                 .getStepResultData(workflowId, stepType);
         }
 
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+
         function renderStepData(data) {
             const tbody = document.getElementById('stepDataBody');
             if (!data || Object.keys(data).length === 0) {
-                tbody.innerHTML = `<tr><td colspan="2" style="text-align:center;">No data found.</td></tr>`;
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;">No data found.</td></tr>';
                 return;
             }
 
@@ -626,10 +727,8 @@
             for (var key in data) {
                 if (data.hasOwnProperty(key)) {
                     var val = data[key];
-                    // Skip internal keys or empty
                     if (key === 'Workflow ID' || key === 'Form ID' || val === '') continue;
-
-                    html += '<tr><td>' + key + '</td><td>' + val + '</td></tr>';
+                    html += '<tr><td>' + escapeHtml(key) + '</td><td>' + escapeHtml(val) + '</td></tr>';
                 }
             }
             tbody.innerHTML = html;
@@ -639,6 +738,22 @@
             document.getElementById('dataModal').style.display = 'none';
         }
 
+        // Close modal when clicking outside of it
+        document.getElementById('dataModal').addEventListener('click', function (event) {
+            if (event.target === this) {
+                closeDataModal();
+            }
+        });
+
+        // Close modal on Escape key press
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('dataModal');
+                if (modal && modal.style.display === 'flex') {
+                    closeDataModal();
+                }
+            }
+        });
     </script>
 </body>
 

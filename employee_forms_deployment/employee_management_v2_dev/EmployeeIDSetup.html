@@ -310,7 +310,7 @@
                     <div class="info-item">
                         <span class="label">Start Date:</span>
                         <span class="value">
-                            <?= requestData.hireDate ?>
+                            <?= requestData.hireDate ? Utilities.formatDate(new Date(requestData.hireDate + 'T12:00:00Z'), 'UTC', 'M/d/yyyy') : '-' ?>
                         </span>
                     </div>
                     <div class="info-item">
@@ -444,6 +444,15 @@
                     </div>
                 </div>
 
+                <!-- BOSS WIS Account -->
+                <div class="form-section">
+                    <h2>BOSS WIS Account</h2>
+                    <div class="form-field" style="display:flex; align-items:center; gap:12px;">
+                        <input type="checkbox" name="bossWisCreated" id="bossWisCreated" value="Yes" style="width:20px;height:20px;accent-color:var(--brand-red);flex-shrink:0;">
+                        <label for="bossWisCreated" style="margin:0; font-weight:600; cursor:pointer;">BOSS WIS account has been created for this employee</label>
+                    </div>
+                </div>
+
                 <!-- Setup Notes -->
                 <div class="form-section">
                     <h2>Setup Notes</h2>
@@ -475,6 +484,7 @@
             const formData = new FormData(e.target);
             const data = {
                 workflowId: formData.get('workflowId'),
+                formId: formData.get('formId'),
                 internalEmployeeId: formData.get('internalEmployeeId'),
                 siteDocsWorkerId: formData.get('siteDocsWorkerId'),
                 siteDocsJobCode: formData.get('siteDocsJobCode'),
@@ -482,7 +492,8 @@
                 siteDocsPassword: formData.get('siteDocsPassword'),
                 dssUsername: formData.get('dssUsername'),
                 dssPassword: formData.get('dssPassword'),
-                setupNotes: formData.get('setupNotes')
+                setupNotes: formData.get('setupNotes'),
+                bossWisCreated: formData.get('bossWisCreated') || 'No'
             };
 
             google.script.run

@@ -12,3 +12,7 @@ function serveLandingPage() {
 function getCurrentUserEmail() {
   return Session.getActiveUser().getEmail();
 }
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
