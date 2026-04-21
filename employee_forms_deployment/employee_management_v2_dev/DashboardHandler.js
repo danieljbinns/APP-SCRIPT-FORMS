@@ -120,7 +120,7 @@ function getDashboardData() {
         hireDate: fmtDate(row[11]),
         site: String(row[12] || ''),
         empType: String(row[13] || '') || (workflowId.startsWith('TERM_') ? (termEmpTypeMap[workflowId] || '') : ''),
-        type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Position Change' : 'Onboarding')
+        type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Status Change' : 'Onboarding')
       };
     }).filter(wf => {
       if (wf.status === 'Cancelled') return false;
@@ -266,6 +266,55 @@ function bumpRequest(workflowId, targetStep) {
         } catch (aiErr) { Logger.log('Bump Action Item lookup error: ' + aiErr.toString()); }
         return { success: false, message: 'Action Item not found or already closed for: ' + targetStep };
       }
+      // Status Change Action Item targets — look up by category
+      case 'change_manager':
+      case 'change_it':
+      case 'change_purchasing':
+      case 'change_idsetup':
+      case 'change_safety': {
+        const changeBumpCatMap = {
+          'change_manager':   'Manager',
+          'change_it':        'IT',
+          'change_purchasing':'Purchasing',
+          'change_idsetup':   'ID Setup',
+          'change_safety':    'Safety'
+        };
+        const chgTargetCat = changeBumpCatMap[targetStep];
+        try {
+          const aiSh_ = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+          if (aiSh_) {
+            const aiD_ = aiSh_.getDataRange().getValues();
+            const aH_  = aiD_[0];
+            const wI_  = aH_.indexOf('Workflow ID'), catI_ = aH_.indexOf('Category'),
+                  tiI_ = aH_.indexOf('Task ID'),     asI_  = aH_.indexOf('Assigned To'),
+                  stI_ = aH_.indexOf('Status'),      tnI_  = aH_.indexOf('Task Name');
+            for (let i = 1; i < aiD_.length; i++) {
+              if (String(aiD_[i][wI_])   !== workflowId) continue;
+              if (String(aiD_[i][catI_]) !== chgTargetCat) continue;
+              if (String(aiD_[i][stI_])  === 'Closed')   continue;
+              recipient = String(aiD_[i][asI_] || '');
+              formType  = String(aiD_[i][tnI_] || chgTargetCat);
+              const tid_ = String(aiD_[i][tiI_] || '');
+              if (tid_ && recipient && recipient.includes('@')) {
+                const bumpCtx_ = getWorkflowContext(workflowId) || {};
+                sendFormEmail({
+                  to: recipient,
+                  subject: 'Reminder: ' + formType,
+                  body: 'ACTION REQUIRED: A reminder that the following action item is still pending your completion.',
+                  formUrl: buildFormUrl('action_item_view', { tid: tid_ }),
+                  displayName: 'TEAM Group - Employee Management',
+                  contextData: bumpCtx_,
+                  subjectOpts: { isReminder: true, requestDate: new Date() }
+                });
+                return { success: true, message: 'Reminder sent to ' + recipient };
+              }
+              break;
+            }
+          }
+        } catch (aiErr) { Logger.log('Bump CHANGE Action Item error: ' + aiErr.toString()); }
+        return { success: false, message: 'Action item not found or already closed for: ' + targetStep };
+      }
+
       // EOE Action Item targets — look up by category rather than form type
       case 'asset_collection':
       case 'systems_deactivation':
@@ -452,6 +501,11 @@ function getRequestDetails(workflowId) {
     // Termination workflows have a dedicated function with the correct checklist logic
     if (workflowId.startsWith('TERM_')) {
       return getTerminationDetails(workflowId);
+    }
+
+    // Status change workflows have a dedicated function
+    if (workflowId.startsWith('CHANGE_')) {
+      return getChangeDetails(workflowId);
     }
 
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -688,7 +742,7 @@ function getRequestDetails(workflowId) {
     context.isAdmin = AccessControlService.isAdmin(userEmail);
 
     context.checklist = checklist;
-    context.type = isChange ? 'Position Change' : 'Onboarding';
+    context.type = isChange ? 'Status Change' : 'Onboarding';
     return context;
 
   } catch (e) {
@@ -749,6 +803,84 @@ function getStepResultData(workflowId, stepTarget) {
         });
         out['Submitted at'] = fv('Submission Timestamp') || fv('Timestamp') || '-';
         return out;
+      }
+      case 'change_request': {
+        const pcSh = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGES);
+        if (!pcSh) return {};
+        const pcFound = pcSh.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext();
+        if (!pcFound) return {};
+        const pcH = pcSh.getRange(1, 1, 1, pcSh.getLastColumn()).getValues()[0];
+        const pcRow = pcSh.getRange(pcFound.getRow(), 1, 1, pcSh.getLastColumn()).getValues()[0];
+        const pcTz = Session.getScriptTimeZone();
+        const out = {};
+        pcH.forEach(function(h, i) {
+          if (!h || h === 'Workflow ID' || h === 'Form ID') return;
+          const v = pcRow[i];
+          out[h] = v instanceof Date ? Utilities.formatDate(v, pcTz, 'M/d/yyyy') : String(v || '');
+        });
+        return out;
+      }
+      case 'position_change_approval': {
+        const pcaSh = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
+        if (!pcaSh) return {};
+        const pcaFound = pcaSh.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext();
+        if (!pcaFound) return {};
+        const pcaRow = pcaSh.getRange(pcaFound.getRow(), 1, 1, pcaSh.getLastColumn()).getValues()[0];
+        const fd2 = function(v) { return v instanceof Date ? v.toLocaleString() : String(v || ''); };
+        return {
+          'Decision':     fd2(pcaRow[3]),
+          'Notes':        fd2(pcaRow[4]),
+          'Next Steps':   fd2(pcaRow[5]),
+          'Submitted By': fd2(pcaRow[6]),
+          'Timestamp':    fd2(pcaRow[2])
+        };
+      }
+      case 'change_manager':
+      case 'change_it':
+      case 'change_purchasing':
+      case 'change_idsetup':
+      case 'change_safety': {
+        const changeCatMap = {
+          'change_manager':   'Manager',
+          'change_it':        'IT',
+          'change_purchasing':'Purchasing',
+          'change_idsetup':   'ID Setup',
+          'change_safety':    'Safety'
+        };
+        const catLabel = changeCatMap[stepTarget];
+        const aiSh2 = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+        if (!aiSh2) return {};
+        const aiData2 = aiSh2.getDataRange().getValues();
+        const aiHdrs2 = aiData2[0];
+        const wfColIdx2  = aiHdrs2.indexOf('Workflow ID');
+        const catColIdx2 = aiHdrs2.indexOf('Category');
+        const taskColIdx2= aiHdrs2.indexOf('Task Name');
+        const descColIdx2= aiHdrs2.indexOf('Description');
+        const statColIdx2= aiHdrs2.indexOf('Status');
+        const assignColIdx2 = aiHdrs2.indexOf('Assigned To');
+        const closedByColIdx2 = aiHdrs2.indexOf('Closed By');
+        const completedDateColIdx2 = aiHdrs2.indexOf('Completed Date');
+        const notesColIdx2 = aiHdrs2.indexOf('Notes');
+        const result2 = {};
+        let taskNum2 = 1;
+        for (let i = 1; i < aiData2.length; i++) {
+          if (String(aiData2[i][wfColIdx2]) !== workflowId) continue;
+          if (String(aiData2[i][catColIdx2]) !== catLabel) continue;
+          const prefix = 'Task ' + taskNum2;
+          result2[prefix + ' Name'] = String(aiData2[i][taskColIdx2] || '-');
+          result2[prefix + ' Status'] = String(aiData2[i][statColIdx2] || '-');
+          result2[prefix + ' Assigned To'] = String(aiData2[i][assignColIdx2] || '-');
+          if (closedByColIdx2 >= 0 && aiData2[i][closedByColIdx2]) result2[prefix + ' Closed By'] = String(aiData2[i][closedByColIdx2]);
+          if (completedDateColIdx2 >= 0 && aiData2[i][completedDateColIdx2]) {
+            const cd2 = aiData2[i][completedDateColIdx2];
+            result2[prefix + ' Completed'] = cd2 instanceof Date ? cd2.toLocaleString() : String(cd2);
+          }
+          if (notesColIdx2 >= 0) result2[prefix + ' Notes'] = String(aiData2[i][notesColIdx2] || '-');
+          if (descColIdx2 >= 0) result2[prefix + ' Description'] = String(aiData2[i][descColIdx2] || '-');
+          taskNum2++;
+        }
+        if (taskNum2 === 1) result2['Status'] = 'No tasks found for category: ' + catLabel;
+        return result2;
       }
       case 'termination_request': {
         const tSh = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
@@ -1132,6 +1264,153 @@ function getTerminationDetails(workflowId) {
 
   } catch (e) {
     Logger.log('getTerminationDetails Fatal Error: ' + e.toString());
+    return { success: false, message: 'Server error: ' + e.message };
+  }
+}
+
+/**
+ * Get Details for Status Change Workflow Modal
+ */
+function getChangeDetails(workflowId) {
+  try {
+    if (!workflowId) return { success: false, message: 'No workflow ID provided' };
+
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const context = { success: true, id: workflowId, checklist: [], type: 'Status Change' };
+
+    const reqSheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGES);
+    if (!reqSheet) return { success: false, message: 'Position Changes sheet missing' };
+
+    const foundReq = reqSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext();
+    if (!foundReq) return { success: false, message: 'Request ID not found in database' };
+
+    const reqRowIndex = foundReq.getRow();
+    const reqLastCol = reqSheet.getLastColumn();
+    const reqHeaders = reqSheet.getRange(1, 1, 1, reqLastCol).getValues()[0];
+    const reqRow = reqSheet.getRange(reqRowIndex, 1, 1, reqLastCol).getValues()[0];
+
+    const r = {};
+    const _tz = Session.getScriptTimeZone();
+    reqHeaders.forEach(function(h, i) {
+      if (h) {
+        const val = reqRow[i];
+        if (val instanceof Date) {
+          r[h] = Utilities.formatDate(val, _tz, 'M/d/yyyy');
+        } else if (val === undefined || val === null) {
+          r[h] = '';
+        } else {
+          r[h] = String(val);
+        }
+      }
+    });
+    // Normalized aliases by index for reliable client-side snapshot access
+    const _fmt = function(v) { return v instanceof Date ? Utilities.formatDate(v, _tz, 'M/d/yyyy') : String(v || ''); };
+    r['Employee Name']   = r['Employee Name']   || _fmt(reqRow[5]);
+    r['Requester Name']  = r['Requester Name']  || _fmt(reqRow[3]);
+    r['Requester Email'] = r['Requester Email'] || _fmt(reqRow[4]);
+    r['Effective Date']  = r['Effective Date']  || _fmt(reqRow[7]);
+    r['Site Name']       = r['Site Name']       || _fmt(reqRow[8]);
+    r['Change Type']     = r['Change Type']     || _fmt(reqRow[9]);
+    r['Department']      = r['Department']      || _fmt(reqRow[21]);
+    context.requestData = r;
+
+    const wf = getWorkflow(workflowId);
+    context.status = wf ? String(wf['Status'] || '') : '';
+    context.step = wf ? String(wf['Current Step'] || '') : '';
+
+    const checklist = [];
+
+    checklist.push({
+      name: 'Initial Request',
+      status: 'Complete',
+      target: 'change_request',
+      by: r['Requester Email'] || 'Unknown',
+      time: r['Timestamp'] || ''
+    });
+
+    const approvalSheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
+    if (approvalSheet) {
+      const foundAppr = approvalSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext();
+      if (foundAppr) {
+        const apprRow = approvalSheet.getRange(foundAppr.getRow(), 1, 1, approvalSheet.getLastColumn()).getValues()[0];
+        checklist.push({
+          name: 'HR Approval',
+          status: 'Complete',
+          target: 'position_change_approval',
+          by: apprRow[6] || 'HR',
+          time: apprRow[2] instanceof Date ? apprRow[2].toLocaleString() : String(apprRow[2] || '')
+        });
+      } else {
+        checklist.push({ name: 'HR Approval', status: 'Pending', target: 'position_change_approval' });
+      }
+    }
+
+    const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    if (aiSheet) {
+      const aiData = aiSheet.getDataRange().getValues();
+      if (aiData.length > 1) {
+        const aiHeaders = aiData[0];
+        const wfIdx          = aiHeaders.indexOf('Workflow ID');
+        const catIdx         = aiHeaders.indexOf('Category');
+        const tidIdx         = aiHeaders.indexOf('Task ID');
+        const statusIdx      = aiHeaders.indexOf('Status');
+        const assignIdx      = aiHeaders.indexOf('Assigned To');
+        const closedByIdx    = aiHeaders.indexOf('Closed By');
+        const completedDateIdx = aiHeaders.indexOf('Completed Date');
+        const dateIdx        = aiHeaders.indexOf('Created Date');
+
+        const categories = {};
+        for (let i = 1; i < aiData.length; i++) {
+          if (String(aiData[i][wfIdx]) !== workflowId) continue;
+          const cat = aiData[i][catIdx] || 'Task';
+          const isClosed = aiData[i][statusIdx] === 'Closed' || aiData[i][statusIdx] === 'Complete';
+          if (!categories[cat]) {
+            categories[cat] = { total: 0, complete: 0, by: aiData[i][assignIdx], time: aiData[i][dateIdx], tid: aiData[i][tidIdx] || '' };
+          }
+          categories[cat].total++;
+          if (isClosed) {
+            categories[cat].complete++;
+            const closedBy = closedByIdx >= 0 ? aiData[i][closedByIdx] : '';
+            if (closedBy) categories[cat].closedBy = closedBy;
+            const completedDate = completedDateIdx >= 0 ? aiData[i][completedDateIdx] : null;
+            if (completedDate) categories[cat].completedTime = completedDate;
+          }
+        }
+
+        const catTargetMap = {
+          'Manager':   'change_manager',
+          'IT':        'change_it',
+          'Purchasing':'change_purchasing',
+          'ID Setup':  'change_idsetup',
+          'Safety':    'change_safety'
+        };
+
+        for (const cat in categories) {
+          const c = categories[cat];
+          const status = c.complete === c.total ? 'Complete' : 'Pending';
+          const byActor = (status === 'Complete' && c.closedBy) ? c.closedBy : (c.by || '-');
+          const timeStamp = (status === 'Complete' && c.completedTime)
+            ? (c.completedTime instanceof Date ? c.completedTime.toLocaleString() : String(c.completedTime))
+            : (c.time instanceof Date ? c.time.toLocaleString() : String(c.time || ''));
+          checklist.push({
+            name: cat,
+            status: status,
+            target: catTargetMap[cat] || cat.toLowerCase().replace(/\s+/g, '_'),
+            tid: c.tid || '',
+            by: byActor,
+            time: timeStamp
+          });
+        }
+      }
+    }
+
+    const userEmail = Session.getActiveUser().getEmail();
+    context.isAdmin = AccessControlService.isAdmin(userEmail);
+    context.checklist = checklist;
+    return context;
+
+  } catch (e) {
+    Logger.log('getChangeDetails Fatal Error: ' + e.toString());
     return { success: false, message: 'Server error: ' + e.message };
   }
 }

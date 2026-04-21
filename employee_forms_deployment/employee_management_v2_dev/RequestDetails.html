@@ -570,7 +570,7 @@
             if (statusEl) {
                 var sColor = (data.status === 'Completed' || data.status === 'Complete') ? 'var(--success)' : data.status === 'Cancelled' ? '#aaa' : 'var(--warning)';
                 var sBadge = '<span style="background:' + sColor + '; color:#000; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700; display:inline-block;">' + escapeHtml(data.status || '') + '</span>';
-                if (!workflowId.startsWith('TERM_') && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
+                if (!workflowId.startsWith('TERM_') && !workflowId.startsWith('CHANGE_') && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
                     sBadge += ' <button class="btn" style="margin-left:10px; background:#555; color:white; font-size:12px;" onclick="editStartDate()">Edit Start Date</button>';
                 }
                 statusEl.innerHTML = sBadge;
@@ -580,17 +580,20 @@
             const r = data.requestData || {};
             const list = data.checklist || [];
 
-            if (workflowId.startsWith('TERM_')) {
+            if (workflowId.startsWith('TERM_') || workflowId.startsWith('CHANGE_')) {
                 document.getElementById('flowSection').style.display = 'none';
                 document.getElementById('eoeFlowSection').style.display = 'block';
 
-                // Dynamically build action item category cards in the EOE diagram
+                var eoeTitle = document.querySelector('#eoeFlowSection h2');
+                if (eoeTitle) eoeTitle.textContent = workflowId.startsWith('CHANGE_') ? 'Live Request Flow \u2014 Status Change' : 'Live Request Flow \u2014 End of Employment';
+
+                // Dynamically build action item category cards in the EOE/CHANGE diagram
                 const aiContainer = document.getElementById('eoeActionItemNodes');
                 // Keep the branch-stem div, remove old cards
                 aiContainer.innerHTML = '<div class="branch-stem"></div>';
 
                 list.forEach(item => {
-                    if (item.name === 'Initial Request' || item.name === 'Approval') return;
+                    if (item.name === 'Initial Request' || item.name === 'Approval' || item.name === 'HR Approval') return;
                     const isComplete = item.status === 'Complete';
                     const slug = item.target || item.name.toLowerCase().replace(/\s+/g,'_');
                     const card = document.createElement('div');
@@ -629,9 +632,9 @@
                     aiContainer.appendChild(card);
                 });
 
-                // Update EOE static node badges
+                // Update EOE/CHANGE static node badges
                 const termReqItem = list.find(i => i.name === 'Initial Request');
-                const approvalItem = list.find(i => i.name === 'Approval');
+                const approvalItem = list.find(i => i.name === 'Approval' || i.name === 'HR Approval');
                 if (termReqItem) {
                     const n = document.getElementById('eoe_node_term_req');
                     if (n) { n.className = 'flow-card ' + (termReqItem.status === 'Complete' ? 'complete' : 'pending'); }
@@ -656,8 +659,19 @@
                 });
             }
 
-            // Snapshot - adapt fields for EOE vs Onboarding
-            if (workflowId.startsWith('TERM_')) {
+            // Snapshot - adapt fields for EOE / Status Change / Onboarding
+            if (workflowId.startsWith('CHANGE_')) {
+                document.getElementById('employeeName').innerText = r['Employee Name'] || data.id;
+                var _diC = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
+                document.getElementById('snapshotGrid').innerHTML =
+                    _diC('Workflow ID', data.id) +
+                    _diC('Employee', r['Employee Name']) +
+                    _diC('Effective Date', r['Effective Date']) +
+                    _diC('Site', r['Site Name']) +
+                    _diC('Changes', r['Change Type']) +
+                    _diC('Department', r['Department']) +
+                    _diC('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : ''));
+            } else if (workflowId.startsWith('TERM_')) {
                 document.getElementById('employeeName').innerText = r['Employee Name'] || data.id;
                 var termAttach = r['Attachment URL'] || r['Attachment Url'] || '';
                 document.getElementById('snapshotGrid').innerHTML =
@@ -742,7 +756,7 @@
                 } else if (isComplete && item.target) {
                     actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
                 } else if (isComplete && item.name === 'Initial Request') {
-                    var targetData = workflowId.startsWith('TERM_') ? 'termination_request' : 'initial_request';
+                    var targetData = workflowId.startsWith('TERM_') ? 'termination_request' : (workflowId.startsWith('CHANGE_') ? 'change_request' : 'initial_request');
                     actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + targetData + '\')">View Data</button>';
                 }
 

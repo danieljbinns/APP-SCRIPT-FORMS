@@ -185,20 +185,30 @@ function submitPositionChangeApproval(formData) {
 
       // 1. If Transfer, create Action Item for Receiving Manager
       if (isTransfer && receivingManagerEmail) {
-        const description = `Prepare for transfer of ${changeData.employeeName} to your group. Eff Date: ${changeData.effDate}`;
+        const effDateForCal = changeData.effDate ? changeData.effDate.replace(/-/g, '') : '';
+        const calTitle = encodeURIComponent('Transfer Effective: ' + changeData.employeeName);
+        const calDetails = encodeURIComponent('Effective date for transfer of ' + changeData.employeeName + ' to your group.');
+        const calUrl = effDateForCal
+          ? 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + calTitle + '&dates=' + effDateForCal + '%2F' + effDateForCal + '&details=' + calDetails
+          : '';
+        const transferDesc = 'Prepare for transfer of ' + changeData.employeeName + ' to your group. Eff Date: ' + changeData.effDate +
+          (changeData.effDate ? '__EFFDATE__' + changeData.effDate : '');
         const tid = ActionItemService.createActionItem(
           workflowId,
           'Manager',
           'Incoming Transfer Setup',
-          description,
+          transferDesc,
           receivingManagerEmail
         );
         tasksCreated++;
 
+        const taskLink = buildFormUrl('action_item_view', { tid: tid });
+        const calLink = calUrl ? '<br><br><a href="' + calUrl + '" target="_blank">+ Add Effective Date to Calendar (' + changeData.effDate + ')</a>' : '';
         sendFormEmail({
           to: receivingManagerEmail,
           subject: 'Incoming Transfer Action Required',
-          body: `HR has approved a status change for ${changeData.employeeName}. You have been assigned an action item to prepare for their arrival:<br><br><a href="${buildFormUrl('action_item_view', { tid: tid })}">Incoming Transfer Setup Task</a>`,
+          body: 'HR has approved a status change for ' + changeData.employeeName + '. You have been assigned an action item to prepare for their arrival:<br><br>' +
+                '<a href="' + taskLink + '">Incoming Transfer Setup Task</a>' + calLink,
           contextData: changeContext
         });
       }
@@ -253,23 +263,38 @@ function submitPositionChangeApproval(formData) {
         }
       }
 
-      // 3. Notify IDSETUP to update BOSS / DSS / SiteDocs for new site or position
+      // 3. ID Setup — tracked action item for system records update
+      const idTid = ActionItemService.createActionItem(
+        workflowId,
+        'ID Setup',
+        'System Records Update',
+        'Update BOSS, DSS, and SiteDocs records to reflect the new site and/or position for ' + changeData.employeeName + '.',
+        CONFIG.EMAILS.IDSETUP
+      );
+      tasksCreated++;
       sendFormEmail({
         to: CONFIG.EMAILS.IDSETUP,
         subject: 'System Records Update Required',
-        body: 'A status change has been approved for ' + changeData.employeeName + '. Please update BOSS, DSS, and SiteDocs records to reflect the new site and/or position.',
-        formUrl: '',
+        body: 'A status change has been approved for ' + changeData.employeeName + '. Please update BOSS, DSS, and SiteDocs records to reflect the new site and/or position.<br><br>' +
+              '<a href="' + buildFormUrl('action_item_view', { tid: idTid }) + '">Open Action Item</a>',
         displayName: 'TEAM Group - Employee Management',
         contextData: changeContext
       });
 
-      // 4. Always notify Safety — position/site changes affect BOSS records, courses, and locations.
-      // IDSETUP handles system updates first; Safety notified here since there is no IDSETUP completion event for status changes.
+      // 4. Safety — tracked action item for safety verification
+      const safTid = ActionItemService.createActionItem(
+        workflowId,
+        'Safety',
+        'Safety Verification',
+        'Verify SiteDocs locations, assigned safety courses, and BOSS records reflect the updated position/site for ' + changeData.employeeName + '.',
+        CONFIG.EMAILS.SAFETY
+      );
+      tasksCreated++;
       sendFormEmail({
         to: CONFIG.EMAILS.SAFETY,
         subject: 'Safety Verification Required',
-        body: 'A status change has been approved for ' + changeData.employeeName + '. Please verify SiteDocs locations, assigned safety courses, and BOSS records reflect the updated position/site.',
-        formUrl: '',
+        body: 'A status change has been approved for ' + changeData.employeeName + '. Please verify SiteDocs locations, assigned safety courses, and BOSS records reflect the updated position/site.<br><br>' +
+              '<a href="' + buildFormUrl('action_item_view', { tid: safTid }) + '">Open Action Item</a>',
         displayName: 'TEAM Group - Employee Management',
         contextData: changeContext
       });
