@@ -901,9 +901,9 @@
 
             // Central Purchasing job site number checkboxes
             const purchasingContainer = document.getElementById('purchasingSitesCheckboxes');
-            if (purchasingContainer && data.jobNumbers && data.jobNumbers.length) {
+            if (purchasingContainer && data.jobs && data.jobs.length) {
                 purchasingContainer.innerHTML = '';
-                data.jobNumbers.forEach(function(num) {
+                data.jobs.forEach(function(num) {
                     const label = document.createElement('label');
                     label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
                     const cb = document.createElement('input');
@@ -949,9 +949,9 @@
 
             // Jonas job numbers — checkboxes inline below Jonas checkbox
             var jonasContainer = document.getElementById('jonasJobNumbersCheckboxes');
-            if (jonasContainer && data.jobNumbers && data.jobNumbers.length) {
+            if (jonasContainer && data.jobs && data.jobs.length) {
                 jonasContainer.innerHTML = '';
-                data.jobNumbers.forEach(function(num) {
+                data.jobs.forEach(function(num) {
                     var label = document.createElement('label');
                     label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
                     var cb = document.createElement('input');

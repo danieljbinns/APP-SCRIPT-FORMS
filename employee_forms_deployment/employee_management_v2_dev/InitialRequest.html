@@ -420,23 +420,25 @@
           <?= mode === 'equipment' ? 'Request equipment or system access for an existing employee.' : 'Before proceeding, please confirm all recruiting requirements have been met.' ?>
         </p>
 
+        <? if (mode !== 'equipment') { ?>
         <div style="background: #1e1e00; border: 1px solid #F59E0B; border-radius: 6px; padding: 1rem 1.25rem; margin-bottom: 2rem; text-align: left; max-width: 560px; margin-left: auto; margin-right: auto;">
           <strong style="color: #F59E0B;">⚠️ US Employees — Background Check Required</strong>
           <p style="color: #d4b44a; margin-top: 0.5rem; margin-bottom: 0; font-size: 0.9rem;">
             Do not submit this request until the employee's background check has been completed and cleared. Submitting early may result in access being provisioned before clearance is confirmed.
           </p>
         </div>
+        <? } ?>
 
         <button type="button" class="confirm-button" onclick="confirmGatekeeper()">
-          ✓ Yes, all requirements are met
+          <?= mode === 'equipment' ? 'Continue →' : '✓ Yes, all requirements are met' ?>
         </button>
       </div>
 
       <!-- Main Form (hidden initially, loaded in background) -->
       <form id="mainForm">
-        <h1>New Employee Request</h1>
+        <h1><?= mode === 'equipment' ? 'System & Equipment Request' : 'New Employee Request' ?></h1>
         <p style="text-align: center; color: var(--text-muted); margin-bottom: 10px;">
-          Complete all required fields to submit a new employee request.
+          <?= mode === 'equipment' ? 'Complete all required fields to submit a system or equipment request.' : 'Complete all required fields to submit a new employee request.' ?>
         </p>
         <div style="text-align: center; margin-bottom: 20px;">
           <!-- Prefill button removed per user request -->
@@ -624,11 +626,11 @@
                This file serves both New Hire and the standalone Equipment/System request (mode=equipment).
                When updating systems in one form, update the other. -->
           <!-- Systems/Apps Checkboxes (Alphabetical) -->
-          <h3 class="systems-only" style="margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.1rem;">Systems/Apps</h3>
+          <h3 style="margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.1rem;">Systems/Apps</h3>
           <p class="systems-only" style="font-size: 0.9rem; color: #fbbf24; margin-bottom: 1rem; padding: 0.75rem 1rem; background: rgba(245, 158, 11, 0.08); border-radius: 4px; border-left: 4px solid #F59E0B;">
             <strong>⚠️ Note:</strong> All employees receive <strong>DSS+</strong> and <strong>SiteDocs</strong>. Most hourly employees need no further access.
           </p>
-          <div class="checkbox-group systems-only">
+          <div class="checkbox-group">
             <label class="checkbox-label">
               <input type="checkbox" name="systems" value="ADP Supervisor Access" id="adpSupervisorAccess"
                 onchange="toggleSections()">
@@ -704,7 +706,7 @@
               <span>Google Account</span>
             </label>
             <!-- Google Account sub-section (inline) -->
-            <div id="googleAccountDetailsSection" class="systems-only" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+            <div id="googleAccountDetailsSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
               <div class="form-row-2">
                 <div class="form-field">
                   <label style="font-size: 0.85rem; color: var(--text-muted);">Requested Email Address</label>
@@ -735,7 +737,7 @@
               <span>Jonas Purchasing</span>
             </label>
             <!-- Jonas sub-section (inline) -->
-            <div id="jonasDetailsSection" class="systems-only" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+            <div id="jonasDetailsSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
               <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Job Number(s) To Be Assigned</label>
               <div id="jonasJobNumbersCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;">
                 <!-- Populated dynamically -->

@@ -71,7 +71,7 @@ function submitEquipmentRequest(formData) {
     let businessCardTask = null;
     let vehicleTask = null;
     let jonasTask = null;
-    
+
     systems.forEach(sys => {
       if (sys === 'Jonas Purchasing') jonasTask = true;
       else if (sys === 'ADP Supervisor Access' || sys === 'Incidents' || sys === 'Net Promoter Score') hrTasks.push(sys);
