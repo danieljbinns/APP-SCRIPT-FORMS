@@ -477,6 +477,40 @@
                     </div>
 
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="BOSS" onchange="toggleSections()"><span>BOSS</span></label>
+                    <!-- BOSS sub-section (inline, shown when BOSS checked) -->
+                    <div id="bossDetailsSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Committee(s) To Be Assigned</label>
+                        <div id="bossCommitteesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin-bottom: 12px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Cost Sheet Module Access?</label>
+                            <div class="radio-group" style="max-width: 260px;">
+                                <label><input type="radio" name="bossCost" value="Yes" onchange="toggleCostSheetJobs()"><span class="radio-button">Yes</span></label>
+                                <label><input type="radio" name="bossCost" value="No" onchange="toggleCostSheetJobs()"><span class="radio-button">No</span></label>
+                            </div>
+                        </div>
+                        <div id="costSheetJobs" style="display: none; margin-top: 8px;">
+                            <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Job Number(s) for Cost Sheet</label>
+                            <div id="costSheetJobCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Trip Reports Access?</label>
+                            <div class="radio-group" style="max-width: 260px;">
+                                <label><input type="radio" name="bossTrip" value="Yes"><span class="radio-button">Yes</span></label>
+                                <label><input type="radio" name="bossTrip" value="No"><span class="radio-button">No</span></label>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Corrective Counselling &amp; Grievances Access?</label>
+                            <div class="radio-group" style="max-width: 260px;">
+                                <label><input type="radio" name="bossGriev" value="Yes"><span class="radio-button">Yes</span></label>
+                                <label><input type="radio" name="bossGriev" value="No"><span class="radio-button">No</span></label>
+                            </div>
+                        </div>
+                    </div>
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="CAA"><span>CAA</span></label>
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="Delivery"><span>Delivery</span></label>
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="DSS"><span>DSS</span></label>
@@ -484,6 +518,13 @@
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="Google Account" onchange="toggleSections()"><span>New Google Account</span></label>
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="Incidents"><span>Incidents</span></label>
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="Jonas Purchasing" onchange="toggleSections()"><span>Jonas Purchasing</span></label>
+                    <!-- Jonas sub-section (inline) -->
+                    <div id="jonasDetailsSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Job Number(s) To Be Assigned</label>
+                        <div id="jonasJobNumbersCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="Net Promoter Score"><span>Net Promoter Score</span></label>
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="SiteDocs"><span>Sitedocs Supervisor Access <span style="color: #F59E0B; font-size: 0.8rem; font-weight: normal;">⚠️ Do not add to hourly employees</span></span></label>
                     <label class="checkbox-label">
@@ -497,40 +538,6 @@
                             <!-- Populated dynamically -->
                         </div>
                     </div>
-                </div>
-
-                <!-- BOSS sub-section -->
-                <div id="boss_sec" class="logic-section">
-                    <h3>BOSS Access Details</h3>
-                    <div class="form-field">
-                        <label>Committee(s) to be Assigned</label>
-                        <select name="bossComm" id="bossComm" multiple></select>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-field">
-                            <label>Cost Sheet Module Access?</label>
-                            <div class="radio-group"><label><input type="radio" name="bossCost" value="Yes" onchange="toggleSec('boss_cost_sec', this)"><span class="radio-button">Yes</span></label><label><input type="radio" name="bossCost" value="No" onchange="toggleSec('boss_cost_sec', this)"><span class="radio-button">No</span></label></div>
-                        </div>
-                    </div>
-                    <div id="boss_cost_sec" class="logic-section">
-                        <label>Job Number(s) for Cost Sheet</label>
-                        <select name="bossCostJobs" id="bossCostJobs" multiple></select>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-field"><label>Trip Reports Access?</label>
-                            <div class="radio-group"><label><input type="radio" name="bossTrip" value="Yes"><span class="radio-button">Yes</span></label><label><input type="radio" name="bossTrip" value="No"><span class="radio-button">No</span></label></div>
-                        </div>
-                        <div class="form-field"><label>Counselling/Grievances Access?</label>
-                            <div class="radio-group"><label><input type="radio" name="bossGriev" value="Yes"><span class="radio-button">Yes</span></label><label><input type="radio" name="bossGriev" value="No"><span class="radio-button">No</span></label></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Jonas sub-section -->
-                <div id="jonas_sec" class="logic-section">
-                    <h3>Jonas Access Details</h3>
-                    <label>Job Number(s) to be Assigned</label>
-                    <select name="jonasJobs" id="jonasJobs" multiple></select>
                 </div>
 
                 <!-- New Google Account sub-section -->
@@ -759,13 +766,22 @@
             document.getElementById('purchasingSitesSection').style.display = (purchasingEl && purchasingEl.checked) ? 'block' : 'none';
 
             const bossChecked = document.querySelector('[name="sys"][value="BOSS"]').checked;
-            document.getElementById('boss_sec').style.display = bossChecked ? 'block' : 'none';
+            document.getElementById('bossDetailsSection').style.display = bossChecked ? 'block' : 'none';
 
             const jonasChecked = document.querySelector('[name="sys"][value="Jonas Purchasing"]').checked;
-            document.getElementById('jonas_sec').style.display = jonasChecked ? 'block' : 'none';
+            document.getElementById('jonasDetailsSection').style.display = jonasChecked ? 'block' : 'none';
 
             const googleChecked = document.querySelector('[name="sys"][value="Google Account"]').checked;
             document.getElementById('new_google_sec').style.display = googleChecked ? 'block' : 'none';
+        }
+
+        // toggleCostSheetJobs: show/hide cost sheet job numbers when bossCost radio changes
+        function toggleCostSheetJobs() {
+            var costSheet = document.querySelector('[name="bossCost"]:checked');
+            var costSheetJobs = document.getElementById('costSheetJobs');
+            if (costSheetJobs) {
+                costSheetJobs.style.display = (costSheet && costSheet.value === 'Yes') ? 'block' : 'none';
+            }
         }
 
         // toggleEquipmentDetails: show/hide inline equipment sub-sections
@@ -899,15 +915,53 @@
                 });
             }
 
-            // BOSS committees and cost sheet jobs
-            data.committees.forEach(c => {
-                const opt = document.createElement('option'); opt.value = c; opt.textContent = c; document.getElementById('bossComm').appendChild(opt);
-            });
-            data.jobs.forEach(j => {
-                const opt = document.createElement('option'); opt.value = j; opt.textContent = j;
-                document.getElementById('bossCostJobs').appendChild(opt.cloneNode(true));
-                document.getElementById('jonasJobs').appendChild(opt.cloneNode(true));
-            });
+            // BOSS committees — checkboxes inline below BOSS checkbox
+            var bossCommContainer = document.getElementById('bossCommitteesCheckboxes');
+            if (bossCommContainer && data.committees && data.committees.length) {
+                bossCommContainer.innerHTML = '';
+                data.committees.forEach(function(committee) {
+                    var label = document.createElement('label');
+                    label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
+                    var cb = document.createElement('input');
+                    cb.type = 'checkbox'; cb.name = 'bossComm'; cb.value = committee;
+                    cb.style.accentColor = 'var(--brand-red)';
+                    label.appendChild(cb);
+                    label.appendChild(document.createTextNode(' ' + committee));
+                    bossCommContainer.appendChild(label);
+                });
+            }
+
+            // BOSS cost sheet jobs — checkboxes
+            var costSheetContainer = document.getElementById('costSheetJobCheckboxes');
+            if (costSheetContainer && data.jobs && data.jobs.length) {
+                costSheetContainer.innerHTML = '';
+                data.jobs.forEach(function(job) {
+                    var label = document.createElement('label');
+                    label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
+                    var cb = document.createElement('input');
+                    cb.type = 'checkbox'; cb.name = 'bossCostJobs'; cb.value = job;
+                    cb.style.accentColor = 'var(--brand-red)';
+                    label.appendChild(cb);
+                    label.appendChild(document.createTextNode(' ' + job));
+                    costSheetContainer.appendChild(label);
+                });
+            }
+
+            // Jonas job numbers — checkboxes inline below Jonas checkbox
+            var jonasContainer = document.getElementById('jonasJobNumbersCheckboxes');
+            if (jonasContainer && data.jobs && data.jobs.length) {
+                jonasContainer.innerHTML = '';
+                data.jobs.forEach(function(num) {
+                    var label = document.createElement('label');
+                    label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
+                    var cb = document.createElement('input');
+                    cb.type = 'checkbox'; cb.name = 'jonasJobs'; cb.value = num;
+                    cb.style.accentColor = 'var(--brand-red)';
+                    label.appendChild(cb);
+                    label.appendChild(document.createTextNode(' ' + num));
+                    jonasContainer.appendChild(label);
+                });
+            }
 
             // JR titles
             data.jrs.forEach(jr => {
