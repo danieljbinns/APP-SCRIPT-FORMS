@@ -1047,11 +1047,11 @@
         // 1. Sites
         populateSelect('siteName', refData.sites);
 
-        // Populate ADP job site number checkboxes
+        // Populate ADP cost sheet checkboxes
         const adpContainer = document.getElementById('adpSitesCheckboxes');
-        if (adpContainer && refData.jobNumbers && refData.jobNumbers.length) {
+        if (adpContainer && refData.jobs && refData.jobs.length) {
           adpContainer.innerHTML = '';
-          refData.jobNumbers.forEach(function(num) {
+          refData.jobs.forEach(function(num) {
             const label = document.createElement('label');
             label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
             const cb = document.createElement('input');
@@ -1063,11 +1063,11 @@
           });
         }
 
-        // Populate Central Purchasing job site number checkboxes
+        // Populate Central Purchasing cost sheet checkboxes
         const purchasingContainer = document.getElementById('purchasingSitesCheckboxes');
-        if (purchasingContainer && refData.jobNumbers && refData.jobNumbers.length) {
+        if (purchasingContainer && refData.jobs && refData.jobs.length) {
           purchasingContainer.innerHTML = '';
-          refData.jobNumbers.forEach(function(num) {
+          refData.jobs.forEach(function(num) {
             const label = document.createElement('label');
             label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
             const cb = document.createElement('input');
@@ -1128,11 +1128,11 @@
           });
         }
 
-        // 6. Jonas Job Numbers — checkboxes inline below Jonas checkbox
+        // 6. Jonas Cost Sheets — checkboxes inline below Jonas checkbox
         var jonasContainer = document.getElementById('jonasJobNumbersCheckboxes');
-        if (jonasContainer && refData.jobNumbers && refData.jobNumbers.length) {
+        if (jonasContainer && refData.jobs && refData.jobs.length) {
           jonasContainer.innerHTML = '';
-          refData.jobNumbers.forEach(function(num) {
+          refData.jobs.forEach(function(num) {
             var label = document.createElement('label');
             label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
             var cb = document.createElement('input');
