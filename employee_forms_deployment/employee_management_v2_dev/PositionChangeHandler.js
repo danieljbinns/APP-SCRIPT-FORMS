@@ -238,8 +238,11 @@ function submitPositionChangeApproval(formData) {
         const calUrl = effDateForCal
           ? 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + calTitle + '&dates=' + effDateForCal + '%2F' + effDateForCal + '&details=' + calDetails
           : '';
-        const transferDesc = 'Prepare for transfer of ' + changeData.employeeName + ' to your group. Eff Date: ' + changeData.effDate +
-          (changeData.effDate ? '__EFFDATE__' + changeData.effDate : '');
+        const transferDesc = JSON.stringify([
+          'Review incoming transfer: ' + changeData.employeeName + (changeData.effDate ? ' — Eff Date: ' + changeData.effDate + '__EFFDATE__' + changeData.effDate : ''),
+          'Prepare workspace, equipment, and system access for incoming employee',
+          'Confirm reporting structure and onboarding plan with HR'
+        ]);
         const tid = ActionItemService.createActionItem(workflowId, 'Manager', 'Incoming Transfer Setup', transferDesc, receivingManagerEmail);
         tasksCreated++;
         sendFormEmail({
@@ -269,7 +272,11 @@ function submitPositionChangeApproval(formData) {
 
       // Business Cards
       if (equipList.includes('Business Cards')) {
-        const bcDesc = JSON.stringify(['Order digital business cards for ' + changeData.employeeName]);
+        const bcDesc = JSON.stringify([
+          'Verify updated name, job title, email, and site with requester',
+          'Place updated business card order for ' + changeData.employeeName,
+          'Confirm order placed and provide delivery timeline to manager'
+        ]);
         const bcTid = ActionItemService.createActionItem(workflowId, 'Business Cards', 'Business Cards Order', bcDesc, CONFIG.EMAILS.BUSINESS_CARDS, 'businesscards');
         tasksCreated++;
         sendFormEmail({
@@ -283,7 +290,11 @@ function submitPositionChangeApproval(formData) {
 
       // Credit Card
       if (equipList.includes('Credit Card')) {
-        const ccDesc = JSON.stringify(['Process credit card application for ' + changeData.employeeName]);
+        const ccDesc = JSON.stringify([
+          'Verify card type(s) required for new role (USA / Canada / Home Depot)',
+          'Submit credit card application for ' + changeData.employeeName,
+          'Confirm application submitted and card delivery timeline'
+        ]);
         const ccTid = ActionItemService.createActionItem(workflowId, 'Credit Card', 'Credit Card Order', ccDesc, CONFIG.EMAILS.CREDIT_CARD, 'creditcard');
         tasksCreated++;
         sendFormEmail({
@@ -297,7 +308,12 @@ function submitPositionChangeApproval(formData) {
 
       // Fleetio
       if (allSystems.includes('Fleetio')) {
-        const flDesc = JSON.stringify(['Update Fleetio vehicle access for ' + changeData.employeeName]);
+        const flDesc = JSON.stringify([
+          'Update Fleetio account for ' + changeData.employeeName + ' to reflect new site/role',
+          'Update vehicle assignment — assign vehicles appropriate for new location',
+          'Remove access to vehicles no longer required',
+          'Confirm employee has correct vehicle access and account is active'
+        ]);
         const flTid = ActionItemService.createActionItem(workflowId, 'Fleetio', 'Fleetio Access Update', flDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
         tasksCreated++;
         sendFormEmail({
@@ -311,7 +327,11 @@ function submitPositionChangeApproval(formData) {
 
       // Jonas Purchasing
       if (allSystems.includes('Jonas Purchasing')) {
-        const jDesc = JSON.stringify(['Update Jonas Purchasing access for ' + changeData.employeeName]);
+        const jDesc = JSON.stringify([
+          'Update Jonas Purchasing job number assignments for ' + changeData.employeeName,
+          'Remove access for old job sites no longer required',
+          'Confirm all required job numbers are active and accessible'
+        ]);
         const jTid = ActionItemService.createActionItem(workflowId, 'Jonas', 'Jonas Purchasing Update', jDesc, CONFIG.EMAILS.JONAS, 'jonas');
         tasksCreated++;
         sendFormEmail({
@@ -325,8 +345,12 @@ function submitPositionChangeApproval(formData) {
 
       // Central Purchasing
       if (allSystems.includes('Central Purchasing') || changeData.purchasingSites) {
-        const cpDesc = 'Update Central Purchasing access for ' + changeData.employeeName +
-          (changeData.purchasingSites ? ' — Sites: ' + changeData.purchasingSites : '');
+        const cpDesc = JSON.stringify([
+          'Update Central Purchasing site access for ' + changeData.employeeName,
+          changeData.purchasingSites ? 'Required sites: ' + changeData.purchasingSites : 'Confirm required purchasing sites with manager',
+          'Remove access for old sites no longer required',
+          'Confirm all purchasing sites are configured and active'
+        ]);
         const cpTid = ActionItemService.createActionItem(workflowId, 'Purchasing', 'Central Purchasing Update', cpDesc, CONFIG.EMAILS.JONAS, 'centralpurchasing');
         tasksCreated++;
         sendFormEmail({
