@@ -351,7 +351,11 @@
 
 <body>
     <div class="container">
+        <div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
         <div class="card" id="formCard">
+            <div style="text-align:center;margin-bottom:20px;">
+                <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" style="height:40px;" alt="TEAM Group">
+            </div>
             <div class="header">
                 <span class="status-badge <?= task.Status === 'Open' ? 'status-open' : 'status-closed' ?>">
                     <?= task.Status ?>
@@ -450,11 +454,8 @@
                 </div>
                 <? } ?>
                 <? } ?>
-                <div class="info-row"><span class="label">Category</span><span class="value">
-                        <?= task.Category ?>
-                    </span></div>
                 <div class="info-row"><span class="label">Assigned To</span><span class="value">
-                        <?= task.AssignedTo ?>
+                        <?= task.Category ?>
                     </span></div>
             </div>
 

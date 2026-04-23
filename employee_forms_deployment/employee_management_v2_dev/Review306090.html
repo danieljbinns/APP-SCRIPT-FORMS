@@ -68,11 +68,11 @@
             <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
             <input type="hidden" name="department" value="review">
             <div class="form-group">
-                <label>JR Title (Confirm Requested JR) <span style="color:var(--brand-red);">*</span></label>
-                <select name="jrTitle" id="jrTitle" data-original-value="<?= requestData.jrTitle || requestData.position ?>" required>
+                <label>JR Title (HR-Verified) <span style="color:var(--brand-red);">*</span></label>
+                <select name="jrTitle" id="jrTitle" data-original-value="<?= requestData.jrTitle || requestData.jrRequested || '' ?>" required>
                     <option value="">Loading titles...</option>
                 </select>
-                <div class="help-text">Requested JR: <strong><?= requestData.jrTitle || 'None' ?></strong></div>
+                <div class="help-text">Originally requested: <strong><?= requestData.jrRequested || requestData.jrTitle || 'None' ?></strong></div>
             </div>
             <div class="form-group">
                 <label>30/60/90 Document Link</label>

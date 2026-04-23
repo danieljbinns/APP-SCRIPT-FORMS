@@ -78,7 +78,8 @@ function serveSpecialist(workflowId, dept) {
     'sitedocs': 'SiteDocs',
     'review': 'Review306090',
     'safety': 'SafetyOnboarding',
-    'safetyterm': 'SafetyTermination'
+    'safetyterm': 'SafetyTermination',
+    'wis': 'WIS'
   };
   
   const htmlFile = deptMap[dept] || 'Placeholder';
@@ -127,7 +128,8 @@ function submitSpecialistForm(formData) {
       'sitedocs': CONFIG.SHEETS.SITEDOCS_RESULTS,
       'review': CONFIG.SHEETS.REVIEW_306090_RESULTS,
       'safety': CONFIG.SHEETS.SAFETY_ONBOARDING_RESULTS,
-      'safetyterm': CONFIG.SHEETS.SAFETY_TERMINATION_RESULTS
+      'safetyterm': CONFIG.SHEETS.SAFETY_TERMINATION_RESULTS,
+      'wis': 'WIS Results'
     };
     
     const sheetName = sheetMap[dept] || 'Specialist Results';

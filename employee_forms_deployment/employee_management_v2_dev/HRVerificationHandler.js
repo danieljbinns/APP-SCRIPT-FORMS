@@ -257,7 +257,6 @@ function submitHRVerification(formData) {
               '<strong>CREDENTIALS:</strong>\n' +
               '• DSS: ' + (context.dssUsername || 'N/A') + ' (Pwd: ' + (context.dssPassword || 'N/A') + ')\n' +
               '• SiteDocs: ' + (context.siteDocsUsername || 'N/A') + ' (Pwd: ' + (context.siteDocsPassword || 'N/A') + ')\n\n' +
-              'You can view the full request details using the button below.' +
               calendarLinkHtml,
         displayName: 'TEAM Group - Employee Onboarding',
         formUrl: '',
@@ -265,21 +264,39 @@ function submitHRVerification(formData) {
       });
       Logger.log('[SUCCESS] Completion email sent to requester & manager (Hourly/No System Access)');
     } else {
-      updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed', verifiedName, actingUser);
-      syncWorkflowState(workflowId);
-      const itUrl = buildFormUrl('it_setup', { wf: workflowId });
+      const systems = context.systems;
+      const hasBOSSAccess = Array.isArray(systems) ? systems.includes('BOSS') : String(systems || '').includes('BOSS');
 
-      const itRecipients = CONFIG.EMAILS.IT;
+      if (hasBOSSAccess) {
+        updateWorkflow(workflowId, 'In Progress', 'BOSS Review Needed', verifiedName, actingUser);
+        syncWorkflowState(workflowId);
+        const bossReviewUrl = buildFormUrl('boss_review', { wf: workflowId });
+        sendFormEmail({
+          to: 'davelangohr@team-group.com',
+          subject: 'BOSS Setup Review Required — ' + verifiedName,
+          body: 'HR has verified ' + verifiedName + '. Please review and confirm the BOSS access configuration before IT proceeds with provisioning.',
+          formUrl: bossReviewUrl,
+          displayName: 'TEAM Group - Employee Onboarding',
+          contextData: context
+        });
+        Logger.log('[SUCCESS] BOSS Review email sent to Dave Langohr for: ' + verifiedName);
+      } else {
+        updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed', verifiedName, actingUser);
+        syncWorkflowState(workflowId);
+        const itUrl = buildFormUrl('it_setup', { wf: workflowId });
 
-      sendFormEmail({
-        to: itRecipients,
-        subject: 'IT Setup Required',
-        body: 'HR has verified the employee details and assigned an ADP ID.\n\nPlease complete the IT setup form using the button below.',
-        formUrl: itUrl,
-        displayName: 'TEAM Group - Employee Onboarding',
-        contextData: context
-      });
-      Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)');
+        const itRecipients = CONFIG.EMAILS.IT;
+
+        sendFormEmail({
+          to: itRecipients,
+          subject: 'IT Setup Required',
+          body: 'HR has verified the employee details and assigned an ADP ID.\n\nPlease complete the IT setup form using the button below.',
+          formUrl: itUrl,
+          displayName: 'TEAM Group - Employee Onboarding',
+          contextData: context
+        });
+        Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)');
+      }
 
       // Notify payroll for salary/expedite new hires after HR verification
       const salaryAccessCallout = adpSalaryAccess

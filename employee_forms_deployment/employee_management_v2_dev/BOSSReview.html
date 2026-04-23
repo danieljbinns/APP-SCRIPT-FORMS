@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BOSS Setup Review</title>
+    <style>
+        :root {
+            --bg-color: #0c0c0c; --card-bg: #1a1a1a; --text-main: #ffffff;
+            --text-muted: #a0a0a0; --brand-red: #EB1C2D; --border-color: #333;
+            --input-bg: #2a2a2a; --input-border: #444; --success: #00c853;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { width: 100%; max-width: 900px; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 32px; border: 1px solid var(--border-color); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .logo-container { text-align: center; margin-bottom: 24px; }
+        .logo { height: 40px; }
+        h1 { font-size: 22px; text-align: center; margin-bottom: 8px; }
+        .subtitle { color: var(--text-muted); text-align: center; margin-bottom: 24px; font-size: 14px; }
+        .section-title { font-size: 12px; font-weight: 600; color: var(--brand-red); text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 16px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .ticket-info { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 16px; margin-bottom: 8px; border: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .info-row { display: flex; flex-direction: column; font-size: 13px; }
+        .info-row .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
+        .info-row .value { color: var(--text-main); font-weight: 600; }
+        .form-group { margin-bottom: 20px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        label { display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-muted); }
+        input[type="text"], textarea, select {
+            width: 100%; background: var(--input-bg); border: 1px solid var(--input-border);
+            border-radius: 6px; padding: 10px 12px; color: white; font-size: 14px;
+            box-sizing: border-box; resize: vertical; font-family: inherit;
+        }
+        textarea { resize: vertical; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--brand-red); }
+        select option { background: var(--input-bg); }
+        .radio-group { display: flex; gap: 12px; margin-top: 4px; }
+        .radio-btn { display: flex; align-items: center; gap: 6px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 14px; }
+        .radio-btn input { width: 16px; height: 16px; accent-color: var(--brand-red); cursor: pointer; }
+        .help-text { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+        .btn { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 15px; margin-top: 8px; }
+        .btn-primary { background: var(--brand-red); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { background: #555; cursor: not-allowed; opacity: 1; }
+        #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; flex-direction: column; z-index: 1000; }
+        .spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.2); border-radius: 50%; border-top-color: var(--brand-red); animation: spin 1s linear infinite; margin-bottom: 14px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #success-screen { display: none; text-align: center; padding: 40px 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+<div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
+<div class="card" id="mainCard">
+    <div class="logo-container">
+        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo" alt="TEAM Group">
+    </div>
+    <h1>BOSS Setup Review</h1>
+    <p class="subtitle">Review and confirm BOSS access details before IT proceeds with provisioning.</p>
+
+    <div class="section-title">Employee Details</div>
+    <div class="ticket-info">
+        <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName || '-' ?></span></div>
+        <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate || '-' ?></span></div>
+        <div class="info-row"><span class="label">Job Title</span><span class="value"><?= requestData.jobTitle || '-' ?></span></div>
+        <div class="info-row"><span class="label">JR Title</span><span class="value"><?= requestData.jrTitle || '-' ?></span></div>
+        <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName || '-' ?></span></div>
+        <div class="info-row"><span class="label">Department</span><span class="value"><?= requestData.department || '-' ?></span></div>
+        <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName || '-' ?></span></div>
+        <div class="info-row"><span class="label">Employment Type</span><span class="value"><?= requestData.employmentType || '-' ?></span></div>
+    </div>
+
+    <div id="formSection">
+        <form id="bossReviewForm" autocomplete="off">
+            <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+
+            <div class="section-title">BOSS Access Configuration</div>
+
+            <div class="form-group">
+                <label>Committees / Job Sites <span style="color:var(--brand-red);">*</span></label>
+                <textarea name="bossJobSites" rows="3" placeholder="Enter committee names or job sites, comma-separated"><?= requestData.bossJobSites || '' ?></textarea>
+                <div class="help-text">As originally requested. Edit to correct or add assignments.</div>
+            </div>
+
+            <div class="form-group">
+                <label>Cost Sheet Access</label>
+                <div class="radio-group">
+                    <label class="radio-btn">
+                        <input type="radio" name="bossCostSheet" value="Yes" <?= requestData.bossCostSheet === 'Yes' ? 'checked' : '' ?>>
+                        Yes
+                    </label>
+                    <label class="radio-btn">
+                        <input type="radio" name="bossCostSheet" value="No" <?= requestData.bossCostSheet !== 'Yes' ? 'checked' : '' ?>>
+                        No
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group" id="costSheetJobsSec">
+                <label>Cost Sheet Job Numbers</label>
+                <textarea name="bossCostSheetJobs" rows="2" placeholder="Job numbers, comma-separated"><?= requestData.bossCostSheetJobs || requestData.bossCostSheet === 'Yes' ? (requestData.bossCostSheetJobs || '') : '' ?></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Trip Reports Access</label>
+                    <div class="radio-group">
+                        <label class="radio-btn">
+                            <input type="radio" name="bossTripReports" value="Yes" <?= requestData.bossTripReports === 'Yes' ? 'checked' : '' ?>>
+                            Yes
+                        </label>
+                        <label class="radio-btn">
+                            <input type="radio" name="bossTripReports" value="No" <?= requestData.bossTripReports !== 'Yes' ? 'checked' : '' ?>>
+                            No
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Corrective Counselling &amp; Grievances Access</label>
+                    <div class="radio-group">
+                        <label class="radio-btn">
+                            <input type="radio" name="bossGrievances" value="Yes" <?= requestData.bossGrievances === 'Yes' ? 'checked' : '' ?>>
+                            Yes
+                        </label>
+                        <label class="radio-btn">
+                            <input type="radio" name="bossGrievances" value="No" <?= requestData.bossGrievances !== 'Yes' ? 'checked' : '' ?>>
+                            No
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">Equipment</div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Computer Request</label>
+                    <select name="computerReq">
+                        <option value="None" <?= (!requestData.computerReq || requestData.computerReq === 'None') ? 'selected' : '' ?>>None</option>
+                        <option value="New" <?= requestData.computerReq === 'New' ? 'selected' : '' ?>>New</option>
+                        <option value="Reassign" <?= requestData.computerReq === 'Reassign' ? 'selected' : '' ?>>Reassign</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Computer Type</label>
+                    <input type="text" name="computerType" value="<?= requestData.computerType || '' ?>" placeholder="e.g. Laptop, Desktop">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Phone Request</label>
+                <select name="phoneReq">
+                    <option value="No" <?= (!requestData.phoneReq || requestData.phoneReq === 'No') ? 'selected' : '' ?>>No</option>
+                    <option value="Yes" <?= requestData.phoneReq === 'Yes' ? 'selected' : '' ?>>Yes — New</option>
+                    <option value="Reassign" <?= requestData.phoneReq === 'Reassign' ? 'selected' : '' ?>>Reassign</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Notes (Optional)</label>
+                <textarea name="notes" rows="3" placeholder="Any changes made, access decisions, or additional context for IT..."></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary">Confirm &amp; Send to IT</button>
+        </form>
+    </div>
+
+    <div id="success-screen">
+        <div style="font-size: 56px; margin-bottom: 16px;">✅</div>
+        <h2 style="color: var(--success);">BOSS Review Complete</h2>
+        <p style="color: var(--text-muted); margin-top: 8px;">IT has been notified and will proceed with setup.</p>
+        <div style="margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <button class="btn btn-primary" style="max-width: 220px;"
+                onclick="window.open('<?= getBaseUrl() ?>?form=dashboard', '_top')">Return to Dashboard</button>
+        </div>
+    </div>
+</div>
+</div>
+
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div style="color: white;">Submitting review...</div>
+</div>
+
+<script>
+    document.getElementById('bossReviewForm').onsubmit = function(e) {
+        e.preventDefault();
+        document.getElementById('loading-overlay').style.display = 'flex';
+        document.getElementById('submitBtn').disabled = true;
+        var form = this;
+        var data = {
+            workflowId: form.workflowId.value,
+            bossJobSites: form.bossJobSites.value,
+            bossCostSheet: form.bossCostSheet.value,
+            bossCostSheetJobs: form.bossCostSheetJobs.value,
+            bossTripReports: form.bossTripReports.value,
+            bossGrievances: form.bossGrievances.value,
+            computerReq: form.computerReq.value,
+            computerType: form.computerType.value,
+            phoneReq: form.phoneReq.value,
+            notes: form.notes.value
+        };
+        google.script.run
+            .withSuccessHandler(function(result) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                if (result && result.success === false) {
+                    document.getElementById('submitBtn').disabled = false;
+                    alert('Error: ' + (result.message || 'Server error.'));
+                } else {
+                    document.getElementById('formSection').style.display = 'none';
+                    document.getElementById('success-screen').style.display = 'block';
+                }
+            })
+            .withFailureHandler(function(err) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+                alert('Error: ' + err.message);
+            })
+            .submitBOSSReview(data);
+    };
+</script>
+</body>
+</html>

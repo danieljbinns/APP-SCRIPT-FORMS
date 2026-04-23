@@ -390,7 +390,7 @@
                     </div>
                 </div>
 
-                <h2>Systems & Systems Access</h2>
+                <h2>System Access Removal</h2>
                 <div class="form-field">
                     <label>HR Systems</label>
                     <div class="checkbox-group">
@@ -403,14 +403,7 @@
                     <label>IT Systems</label>
                     <div class="checkbox-group">
                         <label class="checkbox-label"><input type="checkbox" name="systems"
-                                value="BOSS" onchange="toggleBossSec(this)"><span>BOSS</span></label>
-                        <div id="term_boss_sec" style="display:none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
-                            <label style="display: block; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-muted);">Did employee have these BOSS sub-permissions?</label>
-                            <div style="display: flex; flex-direction: column; gap: 8px;">
-                                <label class="checkbox-label"><input type="checkbox" name="systems" value="BOSS Trip Reports"><span>Trip Reports Access</span></label>
-                                <label class="checkbox-label"><input type="checkbox" name="systems" value="BOSS Grievances"><span>Corrective Counselling &amp; Grievances Access</span></label>
-                            </div>
-                        </div>
+                                value="BOSS"><span>BOSS</span></label>
                         <label class="checkbox-label"><input type="checkbox" name="systems"
                                 value="CAA"><span>CAA</span></label>
                         <label class="checkbox-label"><input type="checkbox" name="systems"
@@ -515,18 +508,6 @@
                             <input type="checkbox" name="equip" value="Building Access Card/Keys">
                             <span>Building Access Card / Keys</span>
                         </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="equip" value="PPE/Safety Gear">
-                            <span>PPE / Safety Gear</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="equip" value="Uniform">
-                            <span>Uniform</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="equip" value="Tools">
-                            <span>Tools</span>
-                        </label>
                     </div>
                 </div>
 
@@ -594,16 +575,7 @@
             }
         }
 
-        function toggleBossSec(checkbox) {
-            var sec = document.getElementById('term_boss_sec');
-            if (!sec) return;
-            sec.style.display = checkbox.checked ? 'block' : 'none';
-            if (!checkbox.checked) {
-                sec.querySelectorAll('input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
-            }
-        }
-
-        function updateVacationResponder(email) {
+function updateVacationResponder(email) {
             const textarea = document.getElementById('google_vacation');
             if (email && email.trim() !== '') {
                 textarea.value = `Please be advised I am no longer with the company. Please contact ${email} for assistance.`;

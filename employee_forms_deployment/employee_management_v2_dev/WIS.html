@@ -4,7 +4,7 @@
     <base target="_top">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Fleetio Setup</title>
+    <title>WIS Assignment</title>
     <style>
         :root {
             --bg-color: #0c0c0c; --card-bg: #1a1a1a; --text-main: #ffffff;
@@ -23,7 +23,7 @@
         .info-row { display: flex; flex-direction: column; font-size: 13px; }
         .info-row .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
         .info-row .value { color: var(--text-main); font-weight: 600; }
-        .form-group { margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; margin-top: 20px; }
         label { display: block; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); }
         textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; padding: 12px; color: white; font-size: 14px; box-sizing: border-box; resize: vertical; }
         textarea:focus { outline: none; border-color: var(--brand-red); }
@@ -50,62 +50,54 @@
     <div class="logo-container">
         <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo" alt="TEAM Group">
     </div>
-    <h1>Fleetio Setup</h1>
-    <p class="subtitle">Please confirm this setup task is complete.</p>
+    <h1>WIS Assignment</h1>
+    <p class="subtitle">Confirm that Work Instructions & Safety (WIS) has been assigned in BOSS for this employee.</p>
 
-    <div class="section-title">Request Details</div>
+    <div class="section-title">Employee Details</div>
     <div class="ticket-info">
         <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName || '-' ?></span></div>
-        <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate || '-' ?></span></div>
+        <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate ? Utilities.formatDate(new Date(requestData.hireDate + 'T12:00:00Z'), 'UTC', 'M/d/yyyy') : '-' ?></span></div>
         <div class="info-row"><span class="label">Job Title</span><span class="value"><?= requestData.jobTitle || '-' ?></span></div>
         <div class="info-row"><span class="label">JR Title</span><span class="value"><?= requestData.jrTitle || '-' ?></span></div>
-        <div class="info-row"><span class="label">Department</span><span class="value"><?= requestData.department || '-' ?></span></div>
         <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName || '-' ?></span></div>
+        <div class="info-row"><span class="label">Department</span><span class="value"><?= requestData.department || '-' ?></span></div>
         <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName || '-' ?></span></div>
-        <div class="info-row"><span class="label">Employment Type</span><span class="value"><?= requestData.employmentType || '-' ?></span></div>
-        <div class="info-row"><span class="label">Employee Type</span><span class="value"><?= requestData.employeeType || '-' ?></span></div>
-        <? if (requestData.systems) { ?>
-        <div class="info-row" style="grid-column: span 2;"><span class="label">Systems</span><span class="value"><?= Array.isArray(requestData.systems) ? requestData.systems.join(', ') : requestData.systems ?></span></div>
-        <? } ?>
+        <div class="info-row"><span class="label">Work Email</span><span class="value"><?= requestData.assignedEmail || '-' ?></span></div>
     </div>
 
     <div id="formSection">
-        <div class="section-title">Confirm Completion</div>
-        <form id="specialistForm" autocomplete="off">
+        <div class="section-title">Confirm Assignment</div>
+        <form id="wisForm" autocomplete="off">
             <input type="hidden" name="workflowId" value="<?= workflowId ?>">
             <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
-            <input type="hidden" name="department" value="fleetio">
+            <input type="hidden" name="department" value="wis">
 
             <div class="confirm-item">
-                <input type="checkbox" id="fleetioCreated" name="fleetioCreated" value="true" required>
-                <label for="fleetioCreated">
-                    <strong>Fleetio Account Created</strong>
-                    <span>Employee has been set up in Fleetio with the appropriate fleet group and access.</span>
+                <input type="checkbox" id="wisAssigned" name="wisAssigned" value="true" required>
+                <label for="wisAssigned">
+                    <strong>WIS Assigned in BOSS</strong>
+                    <span>Employee has been assigned the appropriate Work Instructions & Safety module(s) in BOSS for their role and site.</span>
                 </label>
             </div>
 
-            <? if (requestData.vehicleRequested === 'Yes') { ?>
-            <div class="confirm-item">
-                <input type="checkbox" id="vehicleAssigned" name="vehicleAssigned" value="true" required>
-                <label for="vehicleAssigned">
-                    <strong>Vehicle Assigned</strong>
-                    <span>Company vehicle has been assigned and configured in Fleetio for this employee.</span>
-                </label>
-            </div>
-            <? } ?>
-
-            <div class="form-group" style="margin-top: 20px;">
+            <div class="form-group">
                 <label>Notes (Optional)</label>
-                <textarea name="notes" rows="3" placeholder="Vehicle plate, fleet group, or any other details..."></textarea>
+                <textarea name="notes" rows="3" placeholder="WIS module names, any exceptions, or additional details..."></textarea>
             </div>
-            <button type="submit" id="submitBtn" class="btn btn-primary">Confirm Complete</button>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary">Confirm & Complete</button>
         </form>
     </div>
 
     <div id="success-screen">
         <div style="font-size: 56px; margin-bottom: 16px;">✅</div>
-        <h2 style="color: var(--success);">Task Complete</h2>
-        <p style="color: var(--text-muted); margin-top: 8px;">Returning to dashboard...</p>
+        <h2 style="color: var(--success);">WIS Assignment Confirmed</h2>
+        <p style="color: var(--text-muted); margin-top: 8px;">Onboarding is now complete.</p>
+        <div style="margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <button class="btn btn-primary" style="max-width: 220px;"
+                onclick="window.open('<?= getBaseUrl() ?>?form=dashboard', '_top')">Return to Dashboard</button>
+            <p style="color: #888; font-size: 13px;">You may now close this window.</p>
+        </div>
     </div>
 </div>
 </div>
@@ -116,36 +108,30 @@
 </div>
 
 <script>
-    function navigateToDashboard() {
-        google.script.run
-            .withSuccessHandler(function(url) { window.top.location.href = url + '?form=dashboard'; })
-            .withFailureHandler(function() { window.top.location.href = '?form=dashboard'; })
-            .getBaseUrl();
-    }
-
-    document.getElementById('specialistForm').onsubmit = function(e) {
+    document.getElementById('wisForm').onsubmit = function(e) {
         e.preventDefault();
+        if (!document.getElementById('wisAssigned').checked) {
+            alert('Please confirm WIS has been assigned before submitting.');
+            return;
+        }
         document.getElementById('loading-overlay').style.display = 'flex';
         document.getElementById('submitBtn').disabled = true;
         var form = this;
-        var fleetioCreated = document.getElementById('fleetioCreated') ? document.getElementById('fleetioCreated').checked : true;
-        var vehicleAssigned = document.getElementById('vehicleAssigned') ? document.getElementById('vehicleAssigned').checked : null;
         var data = {
             workflowId: form.workflowId.value,
             department: form.department.value,
             notes: form.notes.value,
-            details: JSON.stringify({ fleetioCreated: fleetioCreated, vehicleAssigned: vehicleAssigned })
+            details: JSON.stringify({ wisAssigned: true })
         };
         google.script.run
             .withSuccessHandler(function(result) {
                 document.getElementById('loading-overlay').style.display = 'none';
                 if (result && result.success === false) {
                     document.getElementById('submitBtn').disabled = false;
-                    alert('Error: ' + (result.message || 'Server returned an error.'));
+                    alert('Error: ' + (result.message || 'Server error.'));
                 } else {
                     document.getElementById('formSection').style.display = 'none';
                     document.getElementById('success-screen').style.display = 'block';
-                    setTimeout(navigateToDashboard, 2000);
                 }
             })
             .withFailureHandler(function(err) {

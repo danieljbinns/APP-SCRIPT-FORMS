@@ -37,7 +37,8 @@ function getITContextData(workflowId) {
           lastName: mainData[i][12],
           hireDate: (function(d){ return d instanceof Date ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd') : (d ? String(d).substring(0, 10) : ''); })(mainData[i][6]),
           jobTitle: mainData[i][14], // Job Title (Text)
-          jrTitle: mainData[i][46],  // JR Title (Lookup)
+          jrTitle: mainData[i][46],  // JR Title (Assigned/Verified)
+          jrRequested: mainData[i][45], // JR Title as originally requested
           siteName: mainData[i][15],
           managerName: mainData[i][18],
           managerEmail: mainData[i][17], // Added for notifications
@@ -65,6 +66,7 @@ function getITContextData(workflowId) {
           creditCardLimitCanada: mainData[i][32],
           creditCardLimitHomeDepot: mainData[i][35],
           businessCards: mainData[i][21] && mainData[i][21].includes('Business Cards') ? 'Yes' : 'No',
+          vehicleRequested: mainData[i][21] && mainData[i][21].includes('Vehicle') ? 'Yes' : 'No',
           fleetioAccess: mainData[i][20] && mainData[i][20].includes('Fleetio') ? 'Yes' : 'No',
           jobSiteNumber: mainData[i][16], // Col 16 = Job Site #
           department: headers.indexOf('Department') !== -1 ? mainData[i][headers.indexOf('Department')] : '',
@@ -76,7 +78,20 @@ function getITContextData(workflowId) {
     }
     
     if (!context.success) return context;
-    
+
+    // Overlay BOSS Review Results if Dave has already reviewed this workflow
+    const bossReview = (typeof getBOSSReviewData === 'function') ? getBOSSReviewData(workflowId) : null;
+    if (bossReview) {
+      if (bossReview.bossJobSites !== undefined) context.bossJobSites = bossReview.bossJobSites;
+      if (bossReview.bossCostSheet) context.bossCostSheet = bossReview.bossCostSheet;
+      if (bossReview.bossCostSheetJobs !== undefined) context.bossCostSheetJobs = bossReview.bossCostSheetJobs;
+      if (bossReview.bossTripReports) context.bossTripReports = bossReview.bossTripReports;
+      if (bossReview.bossGrievances) context.bossGrievances = bossReview.bossGrievances;
+      if (bossReview.computerReq) context.computerReq = bossReview.computerReq;
+      if (bossReview.computerType) context.computerType = bossReview.computerType;
+      if (bossReview.phoneReq) context.phoneReq = bossReview.phoneReq;
+    }
+
     if (idSetupSheet) {
       const idData = idSetupSheet.getDataRange().getValues();
       for (let j = 1; j < idData.length; j++) {
@@ -137,7 +152,7 @@ function submitITSetup(formData) {
       itSheet.getRange(1, 1, 1, 22).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
     
-    const assignedEmail = formData.Email_Username ? (formData.Email_Username + formData.Email_Domain) : 'N/A';
+    const assignedEmail = formData.Email_Username ? (String(formData.Email_Username).replace(/^"|"$/g, '') + formData.Email_Domain) : 'N/A';
     
     const rowData = [
       workflowId, 
@@ -229,7 +244,7 @@ function submitITSetup(formData) {
 }
 
 function triggerSpecialists(workflowId, itData) {
-  const assignedEmail = itData.Email_Username ? (itData.Email_Username + itData.Email_Domain) : '[Pending]';
+  const assignedEmail = itData.Email_Username ? (String(itData.Email_Username).replace(/^"|"$/g, '') + itData.Email_Domain) : '[Pending]';
 
   const context = getITContextData(workflowId);
   context.assignedEmail = assignedEmail;
@@ -255,7 +270,6 @@ function triggerSpecialists(workflowId, itData) {
     if (context.creditCardUSA === 'Yes')       ccItems.push('Apply for USA card — Requested limit: ' + (context.creditCardLimitUSA || 'Standard'));
     if (context.creditCardCanada === 'Yes')    ccItems.push('Apply for Canada card — Requested limit: ' + (context.creditCardLimitCanada || 'Standard'));
     if (context.creditCardHomeDepot === 'Yes') ccItems.push('Apply for Home Depot card — Requested limit: ' + (context.creditCardLimitHomeDepot || 'Standard'));
-    ccItems.push('Confirm card delivery / activation');
     specialists.push({
       email: CONFIG.EMAILS.CREDIT_CARD,
       category: 'Credit Card',
@@ -267,13 +281,14 @@ function triggerSpecialists(workflowId, itData) {
 
   // 2. Business Cards
   if (context.businessCards === 'Yes') {
+    const bcItems = ['Create and send digital business card'];
+    if (assignedEmail && assignedEmail !== '[Pending]') bcItems.push('Email: ' + assignedEmail);
+    if (context.phoneNumber) bcItems.push('Phone: ' + context.phoneNumber);
     specialists.push({
       email: CONFIG.EMAILS.BUSINESS_CARDS,
       category: 'Business Cards',
       name: 'Business Cards — ' + context.employeeName,
-      description: JSON.stringify([
-        'Create and send digital business card'
-      ]),
+      description: JSON.stringify(bcItems),
       formType: 'businesscards'
     });
   }
@@ -338,6 +353,17 @@ function triggerSpecialists(workflowId, itData) {
       name: combinedName,
       description: JSON.stringify(combinedItems),
       formType: hasJonas ? 'jonas' : 'centralpurchasing'
+    });
+  }
+
+  // WIS Assignment — always required for new hires; assigned to manager
+  if (context.managerEmail) {
+    specialists.push({
+      email: context.managerEmail,
+      category: 'WIS',
+      name: 'WIS Assignment — ' + context.employeeName,
+      description: JSON.stringify(['Assign Work Instructions & Safety (WIS) module(s) in BOSS for this employee']),
+      formType: 'wis'
     });
   }
 

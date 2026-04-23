@@ -211,11 +211,10 @@ function submitTerminationApproval(formData) {
       const selectedSystems = rawSystems ? rawSystems.split(',').map(s => s.trim()).filter(s => s && s !== 'N/A') : [];
 
       // IT Group (BOSS, Delivery, Incidents, Google, CAA)
-      const itItems = selectedSystems.filter(s => ['BOSS', 'Delivery', 'Incidents', 'Google Account', 'CAA'].includes(s)).map(s => 'Deactivate ' + s);
-
-      // BOSS sub-permissions — deactivate if employee had these
-      if (selectedSystems.includes('BOSS Trip Reports')) itItems.push('Remove BOSS Trip Reports access');
-      if (selectedSystems.includes('BOSS Grievances')) itItems.push('Remove BOSS Corrective Counselling & Grievances access');
+      const itItems = selectedSystems.filter(s => ['BOSS', 'Delivery', 'Incidents', 'Google Account', 'CAA'].includes(s)).map(s => {
+        if (s === 'BOSS') return 'Delete BOSS account';
+        return 'Deactivate ' + s;
+      });
       
       const g = termData.googleOffboarding;
       const hasGoogleAccount = selectedSystems.includes('Google Account');
@@ -269,7 +268,7 @@ function submitTerminationApproval(formData) {
       }
 
       // HR Group (ADP) — CC Payroll since different locations handle this differently
-      const hrItems = selectedSystems.filter(s => s === 'ADP Supervisor Access');
+      const hrItems = selectedSystems.filter(s => s === 'ADP Supervisor Access').map(s => 'Remove from ' + s);
       if (hrItems.length > 0) {
         const hrAndPayroll = CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL;
         const hrDescItems = hrItems.slice();
@@ -284,7 +283,7 @@ function submitTerminationApproval(formData) {
       }
 
       // Fleet Group (Fleetio)
-      const fleetItems = selectedSystems.filter(s => s === 'Fleetio');
+      const fleetItems = selectedSystems.filter(s => s === 'Fleetio').map(s => 'Remove from ' + s);
       if (fleetItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'Fleet', `Fleet Systems Deactivation - ${termData.employeeName}`, JSON.stringify(fleetItems), CONFIG.EMAILS.FLEETIO);
         sendActionItemEmail(CONFIG.EMAILS.FLEETIO, 'Fleet Action Required', tid, termData, fleetItems);
@@ -292,7 +291,7 @@ function submitTerminationApproval(formData) {
       }
 
       // Jonas/Finance Group (Jonas Purchasing + Central Purchasing — same team, same email)
-      const financeItems = selectedSystems.filter(s => s === 'Jonas Purchasing' || s === 'Central Purchasing');
+      const financeItems = selectedSystems.filter(s => s === 'Jonas Purchasing' || s === 'Central Purchasing').map(s => 'Remove from ' + s);
       if (financeItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Jonas/Purchasing Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
         sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Finance Action Required', tid, termData, financeItems);
@@ -300,7 +299,7 @@ function submitTerminationApproval(formData) {
       }
 
       // Employee Deactivation Group (SiteDocs, DSS, BOSS WIS) - Always Mandatory
-      const deactItems = ['SiteDocs', 'DSS User', 'BOSS WIS Module'];
+      const deactItems = ['Remove from SiteDocs', 'Remove DSS User', 'Remove from BOSS WIS Module'];
       const tidDeact = ActionItemService.createActionItem(workflowId, 'Deactivation', `Employee Deactivation - ${termData.employeeName}`, JSON.stringify(deactItems), CONFIG.EMAILS.IDSETUP);
       sendActionItemEmail(CONFIG.EMAILS.IDSETUP, 'Employee Deactivation Required', tidDeact, termData, deactItems);
       tasksCreated++;
