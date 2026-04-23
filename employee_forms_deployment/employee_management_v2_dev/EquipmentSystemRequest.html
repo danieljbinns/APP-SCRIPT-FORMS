@@ -1031,6 +1031,7 @@
         var available = items.filter(function(i) { return selected.indexOf(i) < 0; });
         var chosen    = items.filter(function(i) { return selected.indexOf(i) >= 0; });
         function render() {
+          container.style.cssText = 'width:100%;display:block;';
           container.innerHTML = '';
           var hidden = document.createElement('input');
           hidden.type = 'hidden'; hidden.name = fieldName; hidden.value = chosen.join(', ');
