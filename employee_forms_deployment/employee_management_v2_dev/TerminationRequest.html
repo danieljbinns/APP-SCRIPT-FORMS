@@ -266,6 +266,7 @@
 
 <body>
     <div class="container">
+        <div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
         <div class="logo-container">
             <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
                 class="logo">
@@ -306,7 +307,9 @@
                 <div id="email_sec" class="logic-section" style="margin-top:0;">
                     <div class="form-field">
                         <label>Current Work Email <span class="required">*</span></label>
-                        <input type="email" name="empWorkEmail" placeholder="employee@team-group.com">
+                        <input type="email" name="empWorkEmail" id="empWorkEmail" placeholder="Start typing name or email..."
+                            pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                        <span class="domain-hint" style="font-size:0.8rem; color:var(--text-muted);">Must be a company domain (e.g., @team-group.com)</span>
                     </div>
                 </div>
                 <div class="form-row">
@@ -400,7 +403,14 @@
                     <label>IT Systems</label>
                     <div class="checkbox-group">
                         <label class="checkbox-label"><input type="checkbox" name="systems"
-                                value="BOSS"><span>BOSS</span></label>
+                                value="BOSS" onchange="toggleBossSec(this)"><span>BOSS</span></label>
+                        <div id="term_boss_sec" style="display:none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+                            <label style="display: block; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-muted);">Did employee have these BOSS sub-permissions?</label>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <label class="checkbox-label"><input type="checkbox" name="systems" value="BOSS Trip Reports"><span>Trip Reports Access</span></label>
+                                <label class="checkbox-label"><input type="checkbox" name="systems" value="BOSS Grievances"><span>Corrective Counselling &amp; Grievances Access</span></label>
+                            </div>
+                        </div>
                         <label class="checkbox-label"><input type="checkbox" name="systems"
                                 value="CAA"><span>CAA</span></label>
                         <label class="checkbox-label"><input type="checkbox" name="systems"
@@ -584,6 +594,15 @@
             }
         }
 
+        function toggleBossSec(checkbox) {
+            var sec = document.getElementById('term_boss_sec');
+            if (!sec) return;
+            sec.style.display = checkbox.checked ? 'block' : 'none';
+            if (!checkbox.checked) {
+                sec.querySelectorAll('input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+            }
+        }
+
         function updateVacationResponder(email) {
             const textarea = document.getElementById('google_vacation');
             if (email && email.trim() !== '') {
@@ -661,6 +680,7 @@
 
         // Setup Autocomplete for multiple fields
         DirectoryAutocomplete.setup({ inputSelector: '#managerEmail', nameInputSelector: '#managerName' });
+        DirectoryAutocomplete.setup({ inputSelector: '#empWorkEmail' });
         DirectoryAutocomplete.setup({ inputSelector: '#reports_to_new' });
         DirectoryAutocomplete.setup({ inputSelector: '#google_forward' });
         DirectoryAutocomplete.setup({ inputSelector: '#google_files' });

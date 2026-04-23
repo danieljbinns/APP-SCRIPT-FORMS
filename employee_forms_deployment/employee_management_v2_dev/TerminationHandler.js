@@ -212,6 +212,10 @@ function submitTerminationApproval(formData) {
 
       // IT Group (BOSS, Delivery, Incidents, Google, CAA)
       const itItems = selectedSystems.filter(s => ['BOSS', 'Delivery', 'Incidents', 'Google Account', 'CAA'].includes(s)).map(s => 'Deactivate ' + s);
+
+      // BOSS sub-permissions — deactivate if employee had these
+      if (selectedSystems.includes('BOSS Trip Reports')) itItems.push('Remove BOSS Trip Reports access');
+      if (selectedSystems.includes('BOSS Grievances')) itItems.push('Remove BOSS Corrective Counselling & Grievances access');
       
       const g = termData.googleOffboarding;
       const hasGoogleAccount = selectedSystems.includes('Google Account');
@@ -258,6 +262,7 @@ function submitTerminationApproval(formData) {
       }
 
       if (itItems.length > 0) {
+        itItems.push('Confirm employee had no additional systems or equipment not listed above — verify with manager if unsure');
         const tid = ActionItemService.createActionItem(workflowId, 'IT', 'IT Systems Deactivation - ' + termData.employeeName, JSON.stringify(itItems), CONFIG.EMAILS.IT);
         sendActionItemEmail(CONFIG.EMAILS.IT, 'IT Action Required', tid, termData, itItems);
         tasksCreated++;
@@ -267,7 +272,13 @@ function submitTerminationApproval(formData) {
       const hrItems = selectedSystems.filter(s => s === 'ADP Supervisor Access');
       if (hrItems.length > 0) {
         const hrAndPayroll = CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL;
-        const tid = ActionItemService.createActionItem(workflowId, 'HR', `HR Systems Deactivation - ${termData.employeeName}`, JSON.stringify(hrItems), hrAndPayroll);
+        const hrDescItems = hrItems.slice();
+        if (termData.hasReports === 'Yes') {
+          const newMgr = (termData.reportsToNew && termData.reportsToNew !== 'N/A') ? termData.reportsToNew : 'TBD — confirm with HR';
+          hrDescItems.push('Direct reports to be reassigned to: ' + newMgr);
+          hrDescItems.push('Update ADP reporting structure to reflect direct report reassignment');
+        }
+        const tid = ActionItemService.createActionItem(workflowId, 'HR', 'HR Systems Deactivation - ' + termData.employeeName, JSON.stringify(hrDescItems), hrAndPayroll);
         sendActionItemEmail(hrAndPayroll, 'HR Action Required', tid, termData, hrItems);
         tasksCreated++;
       }

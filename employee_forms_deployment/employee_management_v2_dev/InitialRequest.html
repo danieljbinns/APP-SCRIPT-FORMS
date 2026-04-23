@@ -404,6 +404,7 @@
 
 <body>
   <div class="container">
+    <div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
     <!-- Logo -->
     <div class="logo-container">
       <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
@@ -657,6 +658,15 @@
             </label>
             <!-- BOSS sub-section (inline, shown when BOSS checked) -->
             <div id="bossDetailsSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+              <div style="margin-bottom: 12px;">
+                <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Training User Only?</label>
+                <div class="radio-group" style="max-width: 260px;">
+                  <label><input type="radio" name="bossTrainingOnly" value="Yes" onchange="toggleBossTrainingOnly()"><span class="radio-button">Yes</span></label>
+                  <label><input type="radio" name="bossTrainingOnly" value="No" onchange="toggleBossTrainingOnly()"><span class="radio-button">No</span></label>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">If Yes, user only receives BOSS training access — no committees, cost sheet, trip reports, or grievances.</p>
+              </div>
+              <div id="bossFullAccessFields">
               <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Committee(s) To Be Assigned</label>
               <div id="bossCommitteesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin-bottom: 12px;">
                 <!-- Populated dynamically -->
@@ -688,6 +698,7 @@
                   <label><input type="radio" name="bossGrievance" value="No"><span class="radio-button">No</span></label>
                 </div>
               </div>
+              </div><!-- end bossFullAccessFields -->
             </div>
             <label class="checkbox-label">
               <input type="checkbox" name="systems" value="CAA" onchange="toggleSections()">
@@ -1351,6 +1362,12 @@
         const checked365 = document.querySelector('[name="office365Required"]:checked');
         if (checked365) checked365.checked = false;
       }
+    }
+
+    function toggleBossTrainingOnly() {
+      var trainingOnly = document.querySelector('[name="bossTrainingOnly"]:checked');
+      var fullAccess = document.getElementById('bossFullAccessFields');
+      if (fullAccess) fullAccess.style.display = (trainingOnly && trainingOnly.value === 'Yes') ? 'none' : 'block';
     }
 
     // Toggle Cost Sheet job numbers

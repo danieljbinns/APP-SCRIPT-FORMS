@@ -629,6 +629,15 @@
                         }
                         card.appendChild(btnRow);
                     }
+                    // View Form button for completed action items
+                    if (isComplete && item.tid) {
+                        const vfBtnC = document.createElement('button');
+                        vfBtnC.className = 'btn card-form-btn';
+                        vfBtnC.style.cssText = 'margin-top:8px; font-size:10px; padding:3px 8px; background:#444; color:white; border:none; border-radius:4px; cursor:pointer; width:100%;';
+                        vfBtnC.textContent = 'View Form';
+                        (function(tid) { vfBtnC.onclick = function(e) { e.stopPropagation(); window.open(SERVER_BASE_URL + '?form=action_item_view&tid=' + tid, '_blank'); }; })(item.tid);
+                        card.appendChild(vfBtnC);
+                    }
                     aiContainer.appendChild(card);
                 });
 

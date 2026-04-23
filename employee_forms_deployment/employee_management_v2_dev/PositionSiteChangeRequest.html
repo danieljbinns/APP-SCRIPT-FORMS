@@ -256,6 +256,7 @@
 
 <body>
     <div class="container">
+        <div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
         <div class="logo-container">
             <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo">
         </div>
@@ -340,7 +341,7 @@
                     <label class="checkbox-label"><input type="checkbox" name="changeType" value="Classification"
                             onchange="toggleSec('class_sec', this)"><span>Classification Change (Hr/Sal)</span></label>
                     <label class="checkbox-label"><input type="checkbox" name="changeType" value="Manager Change"
-                            onchange="toggleSec('mgr_sec', this)"><span>Reporting Manager Change</span></label>
+                            onchange="toggleSec('mgr_sec', this); copyCurrentManagerToOld(this)"><span>Reporting Manager Change</span></label>
                 </div>
 
                 <!-- Conditional Sections for Type of Change -->
@@ -479,6 +480,15 @@
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="BOSS" onchange="toggleSections()"><span>BOSS</span></label>
                     <!-- BOSS sub-section (inline, shown when BOSS checked) -->
                     <div id="bossDetailsSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Training User Only?</label>
+                            <div class="radio-group" style="max-width: 260px;">
+                                <label><input type="radio" name="bossTrainingOnly" value="Yes" onchange="toggleBossTrainingOnly()"><span class="radio-button">Yes</span></label>
+                                <label><input type="radio" name="bossTrainingOnly" value="No" onchange="toggleBossTrainingOnly()"><span class="radio-button">No</span></label>
+                            </div>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">If Yes, user only receives BOSS training access — no committees, cost sheet, trip reports, or grievances.</p>
+                        </div>
+                        <div id="bossFullAccessFields">
                         <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Committee(s) To Be Assigned</label>
                         <div id="bossCommitteesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin-bottom: 12px;">
                             <!-- Populated dynamically -->
@@ -511,6 +521,7 @@
                             </div>
                         </div>
                     </div>
+                    </div><!-- end bossDetailsSection -->
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="CAA"><span>CAA</span></label>
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="Delivery"><span>Delivery</span></label>
                     <label class="checkbox-label"><input type="checkbox" name="sys" value="DSS"><span>DSS</span></label>
@@ -782,6 +793,22 @@
             if (costSheetJobs) {
                 costSheetJobs.style.display = (costSheet && costSheet.value === 'Yes') ? 'block' : 'none';
             }
+        }
+
+        function toggleBossTrainingOnly() {
+            var trainingOnly = document.querySelector('[name="bossTrainingOnly"]:checked');
+            var fullAccess = document.getElementById('bossFullAccessFields');
+            if (fullAccess) fullAccess.style.display = (trainingOnly && trainingOnly.value === 'Yes') ? 'none' : 'block';
+        }
+
+        function copyCurrentManagerToOld(checkbox) {
+            if (!checkbox.checked) return;
+            var oldEmail = document.getElementById('mgrOldEmail');
+            var oldName = document.getElementById('mgrOldName');
+            var curEmail = document.getElementById('currentManagerEmail');
+            var curName = document.getElementById('currentManagerName');
+            if (oldEmail && curEmail && !oldEmail.value) oldEmail.value = curEmail.value;
+            if (oldName && curName && !oldName.value) oldName.value = curName.value;
         }
 
         // toggleEquipmentDetails: show/hide inline equipment sub-sections

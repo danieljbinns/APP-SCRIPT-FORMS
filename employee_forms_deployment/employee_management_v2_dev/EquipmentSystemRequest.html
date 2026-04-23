@@ -830,6 +830,16 @@
             <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">BOSS System Details</h3>
 
             <div class="form-field">
+              <label>Training User Only?</label>
+              <div class="radio-group">
+                <label><input type="radio" name="bossTrainingOnly" value="Yes" onchange="toggleBossTrainingOnly()"><span class="radio-button">Yes</span></label>
+                <label><input type="radio" name="bossTrainingOnly" value="No" onchange="toggleBossTrainingOnly()"><span class="radio-button">No</span></label>
+              </div>
+              <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">If Yes, user only receives BOSS training access — no committees, cost sheet, trip reports, or grievances.</small>
+            </div>
+
+            <div id="bossFullAccessFields">
+            <div class="form-field">
               <label>Committee(s) To Be Assigned</label>
               <select name="bossJobSites" id="bossJobSites" multiple size="5"
                 style="width: 100%; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
@@ -897,6 +907,7 @@
                 </div>
               </div>
             </div>
+            </div><!-- end bossFullAccessFields -->
           </div>
 
           <!-- Jonas Details (conditional on Jonas checkbox) -->
@@ -1280,6 +1291,12 @@
       } else {
         costSheetJobs.style.display = 'none';
       }
+    }
+
+    function toggleBossTrainingOnly() {
+      var trainingOnly = document.querySelector('[name="bossTrainingOnly"]:checked');
+      var fullAccess = document.getElementById('bossFullAccessFields');
+      if (fullAccess) fullAccess.style.display = (trainingOnly && trainingOnly.value === 'Yes') ? 'none' : 'block';
     }
 
     // Auto-fill job number based on site selection

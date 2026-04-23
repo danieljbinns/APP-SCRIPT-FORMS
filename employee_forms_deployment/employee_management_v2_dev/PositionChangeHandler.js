@@ -161,7 +161,9 @@ function getPositionChangeData(workflowId) {
     mgrNewEmail: (function() {
       var m = (String(data[13] || '')).match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
       return m.length > 1 ? m[1].replace(/[()]/g, '') : (m.length === 1 ? m[0].replace(/[()]/g, '') : '');
-    })()
+    })(),
+    oldReportsTo: data[14] || '',
+    newReportsFrom: data[15] || ''
   };
 }
 
@@ -227,7 +229,9 @@ function submitPositionChangeApproval(formData) {
         equipmentRaw: changeData.equipment,
         purchasingSites: changeData.purchasingSites || '',
         employmentType: changeData.currentClass || '',
-        currentTitle: changeData.currentTitle || ''
+        currentTitle: changeData.currentTitle || '',
+        oldReportsTo: changeData.oldReportsTo || '',
+        newReportsFrom: changeData.newReportsFrom || ''
       };
 
       // 1. Receiving manager action item (for transfers OR any manager assignment)
@@ -432,11 +436,17 @@ function submitPositionChangeApproval(formData) {
       syncWorkflowState(workflowId);
 
       // Notify payroll
+      var payrollBody = 'HR has approved a status change for <strong>' + changeData.employeeName + '</strong>.';
+      if (changeData.newReportsFrom && changeData.newReportsFrom !== 'N/A') {
+        payrollBody += '<br><br><strong>Direct Report Reassignment:</strong> ' + changeData.employeeName + '\'s direct reports are being reassigned to <strong>' + changeData.newReportsFrom + '</strong>. Please update ADP reporting structure accordingly.';
+      } else if (changeData.oldReportsTo && changeData.oldReportsTo !== 'N/A') {
+        payrollBody += '<br><br><strong>Direct Reports:</strong> ' + changeData.employeeName + ' currently has direct reports (' + changeData.oldReportsTo + '). Please confirm reassignment with HR and update ADP reporting structure.';
+      }
+      if (notes) payrollBody += '<br><br><em>HR Notes: ' + notes + '</em>';
       sendFormEmail({
         to: CONFIG.EMAILS.PAYROLL,
         subject: 'Status Change Approved',
-        body: 'HR has approved a status change for <strong>' + changeData.employeeName + '</strong>.' +
-              (notes ? '<br><br><em>HR Notes: ' + notes + '</em>' : ''),
+        body: payrollBody,
         contextData: changeContext
       });
 
