@@ -1007,6 +1007,69 @@
       // Evaluate Synchronous Backend Injection
       const INJECTED_REF_DATA = <?!= typeof referenceData !== 'undefined' ? referenceData : 'null' ?>;
       
+      function buildDualList(containerId, items, fieldName, selected) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        selected = selected || [];
+        items = items || [];
+        var available = items.filter(function(i) { return selected.indexOf(i) < 0; });
+        var chosen    = items.filter(function(i) { return selected.indexOf(i) >= 0; });
+        function render() {
+          container.innerHTML = '';
+          var hidden = document.createElement('input');
+          hidden.type = 'hidden'; hidden.name = fieldName; hidden.value = chosen.join(', ');
+          container.appendChild(hidden);
+          var wrapper = document.createElement('div'); wrapper.className = 'dual-list-wrapper';
+          function makePanel(headerText, searchId, listId) {
+            var panel = document.createElement('div'); panel.className = 'dual-list-panel';
+            var hdr = document.createElement('div'); hdr.className = 'dual-list-panel-header'; hdr.textContent = headerText; panel.appendChild(hdr);
+            var srch = document.createElement('input'); srch.type = 'text'; srch.className = 'dual-list-search'; srch.placeholder = 'Filter...'; srch.id = searchId; panel.appendChild(srch);
+            var lst = document.createElement('div'); lst.className = 'dual-list-list'; lst.id = listId; panel.appendChild(lst);
+            var ftr = document.createElement('div'); ftr.className = 'dual-list-footer'; panel.appendChild(ftr);
+            return { panel: panel, search: srch, list: lst, footer: ftr, header: hdr };
+          }
+          var av = makePanel('Available', containerId+'_av_s', containerId+'_av_l');
+          var addAllBtn = document.createElement('button'); addAllBtn.type = 'button'; addAllBtn.className = 'dual-list-btn'; addAllBtn.textContent = 'Add visible'; av.footer.appendChild(addAllBtn);
+          var arrows = document.createElement('div'); arrows.className = 'dual-list-arrows';
+          var addBtn = document.createElement('button'); addBtn.type = 'button'; addBtn.className = 'dual-list-arrow'; addBtn.textContent = '›'; arrows.appendChild(addBtn);
+          var remBtn = document.createElement('button'); remBtn.type = 'button'; remBtn.className = 'dual-list-arrow'; remBtn.textContent = '‹'; arrows.appendChild(remBtn);
+          var sel = makePanel('Selected', containerId+'_sel_s', containerId+'_sel_l');
+          var remAllBtn = document.createElement('button'); remAllBtn.type = 'button'; remAllBtn.className = 'dual-list-btn'; remAllBtn.textContent = 'Remove all'; sel.footer.appendChild(remAllBtn);
+          wrapper.appendChild(av.panel); wrapper.appendChild(arrows); wrapper.appendChild(sel.panel);
+          container.appendChild(wrapper);
+          function buildItems(lst, arr, term) {
+            lst.innerHTML = '';
+            arr.forEach(function(val) {
+              if (term && val.toLowerCase().indexOf(term.toLowerCase()) < 0) return;
+              var item = document.createElement('div'); item.className = 'dual-list-item'; item.textContent = val; item.dataset.value = val;
+              item.addEventListener('click', function() { item.classList.toggle('selected'); });
+              item.addEventListener('dblclick', function() { move(val, lst === av.list ? 'add' : 'remove'); });
+              lst.appendChild(item);
+            });
+          }
+          function move(val, dir) {
+            if (dir === 'add') { var i = available.indexOf(val); if (i >= 0) { available.splice(i,1); chosen.push(val); } }
+            else { var i = chosen.indexOf(val); if (i >= 0) { chosen.splice(i,1); available.push(val); } }
+            available.sort(); chosen.sort(); refresh();
+          }
+          function refresh() {
+            av.header.textContent  = 'Available (' + available.length + ')';
+            sel.header.textContent = 'Selected ('  + chosen.length   + ')';
+            buildItems(av.list,  available, av.search.value);
+            buildItems(sel.list, chosen,    sel.search.value);
+            hidden.value = chosen.join(', ');
+          }
+          addBtn.addEventListener('click', function() { av.list.querySelectorAll('.dual-list-item.selected').forEach(function(el) { move(el.dataset.value, 'add'); }); });
+          remBtn.addEventListener('click', function() { sel.list.querySelectorAll('.dual-list-item.selected').forEach(function(el) { move(el.dataset.value, 'remove'); }); });
+          addAllBtn.addEventListener('click', function() { var t = av.search.value.toLowerCase(); available.filter(function(v) { return !t || v.toLowerCase().indexOf(t) >= 0; }).slice().forEach(function(v) { move(v, 'add'); }); });
+          remAllBtn.addEventListener('click', function() { chosen.slice().forEach(function(v) { move(v, 'remove'); }); });
+          av.search.addEventListener('input', function() { buildItems(av.list, available, av.search.value); });
+          sel.search.addEventListener('input', function() { buildItems(sel.list, chosen, sel.search.value); });
+          refresh();
+        }
+        render();
+      }
+
       const populateAll = function (refData) {
         console.log('✅ Synchronously Loaded Unified Reference Payload');
         
