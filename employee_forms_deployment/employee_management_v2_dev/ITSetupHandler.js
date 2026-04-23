@@ -45,7 +45,14 @@ function getITContextData(workflowId) {
           employmentType: mainData[i][9],
           emailRequested: mainData[i][22] + (mainData[i][23] ? '@' + mainData[i][23].replace('@', '') : ''),
           // Additional Context for Pre-populating IT Form
-          computerType: mainData[i][25], // Col 25 = Computer Type
+          computerReq: mainData[i][24],      // Col 24 = Computer Req (New/Reassign/None)
+          computerType: mainData[i][25],     // Col 25 = Computer Type
+          computerPrevUser: mainData[i][26], // Col 26 = Computer Prev User (reassignment)
+          computerPrevType: mainData[i][27], // Col 27 = Computer Prev Type
+          computerSerial: mainData[i][28],   // Col 28 = Serial # (reassignment)
+          phoneReq: mainData[i][36],         // Col 36 = Phone Req (Yes/No/type)
+          phonePrevUser: mainData[i][37],    // Col 37 = Phone Prev User
+          phonePrevNumber: mainData[i][38],  // Col 38 = Phone Prev Number
           requestedDomains: mainData[i][23], // Col 23 = Google Domain
           bossJobSites: mainData[i][39], // Col 39 = BOSS Job Sites
           bossCostSheet: mainData[i][40], // Col 40 = Cost Sheet Yes/No
@@ -186,11 +193,19 @@ function submitITSetup(formData) {
         }
 
         if (recipients.length > 0) {
+          const itCompletedBody = 'IT setup has been completed for ' + context.employeeName + '.\n\n' +
+            '<strong>Assigned Email:</strong> ' + assignedEmail + '\n' +
+            (formData.Computer_Assigned === 'Yes'
+              ? '<strong>Computer:</strong> ' + (formData.Computer_Type || 'Assigned') + (formData.Computer_Serial ? ' (S/N: ' + formData.Computer_Serial + ')' : '') + '\n'
+              : '') +
+            (formData.Phone_Assigned === 'Yes'
+              ? '<strong>Phone:</strong> ' + (formData.Phone_Number || 'Assigned') + '\n'
+              : '') +
+            '\nSpecialist requests (Credit Cards, Jonas, etc.) have been triggered in parallel.';
           sendFormEmail({
             to: recipients.join(','),
             subject: 'IT Setup Complete',
-            body: 'IT setup has been completed for ' + context.employeeName + '. Credentials and equipment details are listed below. ' +
-                  'Specialist requests (Credit Cards, Jonas, etc.) have been triggered in parallel.',
+            body: itCompletedBody,
             formUrl: '',
             displayName: 'Onboarding System',
             contextData: context
@@ -237,9 +252,9 @@ function triggerSpecialists(workflowId, itData) {
   // 1. Credit Card
   if (context.creditCardUSA === 'Yes' || context.creditCardCanada === 'Yes' || context.creditCardHomeDepot === 'Yes') {
     const ccItems = [];
-    if (context.creditCardUSA === 'Yes')       ccItems.push('Apply for USA card — Limit: ' + (context.creditCardLimitUSA || 'Standard'));
-    if (context.creditCardCanada === 'Yes')    ccItems.push('Apply for Canada card — Limit: ' + (context.creditCardLimitCanada || 'Standard'));
-    if (context.creditCardHomeDepot === 'Yes') ccItems.push('Apply for Home Depot card — Limit: ' + (context.creditCardLimitHomeDepot || 'Standard'));
+    if (context.creditCardUSA === 'Yes')       ccItems.push('Apply for USA card — Requested limit: ' + (context.creditCardLimitUSA || 'Standard'));
+    if (context.creditCardCanada === 'Yes')    ccItems.push('Apply for Canada card — Requested limit: ' + (context.creditCardLimitCanada || 'Standard'));
+    if (context.creditCardHomeDepot === 'Yes') ccItems.push('Apply for Home Depot card — Requested limit: ' + (context.creditCardLimitHomeDepot || 'Standard'));
     ccItems.push('Confirm card delivery / activation');
     specialists.push({
       email: CONFIG.EMAILS.CREDIT_CARD,
@@ -257,11 +272,7 @@ function triggerSpecialists(workflowId, itData) {
       category: 'Business Cards',
       name: 'Business Cards — ' + context.employeeName,
       description: JSON.stringify([
-        'Order business cards for employee',
-        'Name/Title: ' + (context.jrTitle || context.jobTitle || 'N/A'),
-        'Email on card: ' + assignedEmail,
-        'Phone on card: ' + (context.phoneNumber || 'N/A'),
-        'Confirm order placed'
+        'Create and send digital business card'
       ]),
       formType: 'businesscards'
     });
@@ -274,11 +285,8 @@ function triggerSpecialists(workflowId, itData) {
       category: 'Fleetio',
       name: 'Fleetio Access — ' + context.employeeName,
       description: JSON.stringify([
-        'Create Fleetio account for employee',
-        'Login email: ' + assignedEmail,
-        'Site: ' + (context.siteName || 'N/A'),
-        'Assign appropriate equipment/vehicles',
-        'Confirm account active'
+        'Assign Fleetio account for employee',
+        'Assign vehicle (if applicable)'
       ]),
       formType: 'fleetio'
     });
@@ -289,57 +297,47 @@ function triggerSpecialists(workflowId, itData) {
     specialists.push({
       email: CONFIG.EMAILS.REVIEW_306090_JR,
       category: '30/60/90 Review',
-      name: '30/60/90 Review — ' + context.employeeName,
+      name: '30/60/90 and JR Assignment — ' + context.employeeName,
       description: JSON.stringify([
-        'Set up 30/60/90 day review plan',
-        'Job Title: ' + (context.jobTitle || 'N/A'),
-        'JR Title (to confirm): ' + (context.jrTitle || 'N/A'),
-        'Confirm JR assignment',
+        'Create 30/60/90 day review plan',
+        'Verify and assign JR title',
         'Schedule review meetings with manager'
       ]),
       formType: 'review_306090'
     });
   }
 
-  // 5. Jonas — only if job numbers were provided
-  if (context.jonasJobNumbers && context.jonasJobNumbers.toString().trim().length > 0) {
-    const costSheetJobs = context.bossCostSheetJobs
-      ? context.bossCostSheetJobs.toString().split(',').map(s => s.trim()).filter(s => s)
-      : [];
-    const jobItems = ['Provision Jonas access for employee', 'Login email: ' + assignedEmail];
-    if (costSheetJobs.length > 0) {
-      costSheetJobs.forEach(j => jobItems.push('Grant cost sheet access: ' + j));
-    } else {
-      jobItems.push('Confirm cost sheet access requirements with manager');
-    }
-    jobItems.push('Confirm all cost sheets accessible in Jonas');
-    specialists.push({
-      email: CONFIG.EMAILS.JONAS,
-      category: 'Jonas',
-      name: 'Jonas Access — ' + context.employeeName,
-      description: JSON.stringify(jobItems),
-      formType: 'jonas'
-    });
-  }
+  // 5. Jonas + Central Purchasing — combined into one action item when both apply
+  const hasJonas = context.jonasJobNumbers && context.jonasJobNumbers.toString().trim().length > 0;
+  const hasCentralPurchasing = context.purchasingSites && context.purchasingSites.toString().trim().length > 0;
 
-  // 6. Central Purchasing — only if sites were selected
-  if (context.purchasingSites && context.purchasingSites.toString().trim().length > 0) {
-    const costSheetJobs = context.bossCostSheetJobs
-      ? context.bossCostSheetJobs.toString().split(',').map(s => s.trim()).filter(s => s)
-      : [];
-    const cpItems = ['Set up Central Purchasing access for employee', 'Login email: ' + assignedEmail];
-    if (costSheetJobs.length > 0) {
-      costSheetJobs.forEach(j => cpItems.push('Grant cost sheet access: ' + j));
-    } else {
-      cpItems.push('Confirm cost sheet access requirements with manager');
+  if (hasJonas || hasCentralPurchasing) {
+    const combinedItems = [];
+    if (hasJonas) {
+      const jonasJobs = context.jonasJobNumbers.toString().split(',').map(s => s.trim()).filter(s => s);
+      if (jonasJobs.length > 0) {
+        jonasJobs.forEach(j => combinedItems.push('Jonas: Provision access — ' + j));
+      } else {
+        combinedItems.push('Jonas: Provision access for employee');
+      }
     }
-    cpItems.push('Confirm purchasing access active');
+    if (hasCentralPurchasing) {
+      const cpSites = context.purchasingSites.toString().split(',').map(s => s.trim()).filter(s => s);
+      if (cpSites.length > 0) {
+        cpSites.forEach(s => combinedItems.push('Central Purchasing: Set up access — ' + s));
+      } else {
+        combinedItems.push('Central Purchasing: Set up access for employee');
+      }
+    }
+    const combinedName = (hasJonas && hasCentralPurchasing)
+      ? 'Jonas & Central Purchasing Setup — ' + context.employeeName
+      : (hasJonas ? 'Jonas Setup — ' + context.employeeName : 'Central Purchasing Setup — ' + context.employeeName);
     specialists.push({
       email: CONFIG.EMAILS.JONAS,
-      category: 'Central Purchasing',
-      name: 'Central Purchasing — ' + context.employeeName,
-      description: JSON.stringify(cpItems),
-      formType: 'centralpurchasing'
+      category: hasJonas && hasCentralPurchasing ? 'Jonas / Central Purchasing' : (hasJonas ? 'Jonas' : 'Central Purchasing'),
+      name: combinedName,
+      description: JSON.stringify(combinedItems),
+      formType: hasJonas ? 'jonas' : 'centralpurchasing'
     });
   }
 
@@ -358,15 +356,15 @@ function triggerSpecialists(workflowId, itData) {
     emailMap[spec.email].push({ name: spec.name, tid: tid });
   });
 
-  // One email per team — lists all assigned items with direct Action Item links
+  // One email per team — lists all assigned items with direct Action Item buttons
   for (const email in emailMap) {
     const items = emailMap[email];
-    let itemList = '<ul style="margin:0; padding-left:20px;">';
+    let itemList = '<div style="margin:0;">';
     items.forEach(item => {
       const url = buildFormUrl('action_item_view', { tid: item.tid });
-      itemList += '<li style="margin-bottom:8px;"><a href="' + url + '" style="color:#EB1C2D; font-weight:600;">' + item.name + '</a></li>';
+      itemList += '<div style="margin-bottom:12px;"><a href="' + url + '" style="display:inline-block; background:#EB1C2D; color:#ffffff; padding:10px 20px; text-decoration:none; border-radius:6px; font-weight:600; font-size:14px;">' + item.name + ' &rarr;</a></div>';
     });
-    itemList += '</ul>';
+    itemList += '</div>';
 
     sendFormEmail({
       to: email,

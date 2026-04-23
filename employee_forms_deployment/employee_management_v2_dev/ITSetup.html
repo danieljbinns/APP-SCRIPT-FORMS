@@ -315,6 +315,18 @@
             margin-top: 25px;
         }
 
+        .confirm-item {
+            display: flex; align-items: flex-start; gap: 14px;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .confirm-item:has(input:checked) { border-color: var(--success-green); background: rgba(15,157,88,0.05); }
+        .confirm-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--success-green); flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+        .confirm-item label { cursor: pointer; margin: 0; }
+        .confirm-item label strong { display: block; font-size: 14px; margin-bottom: 2px; color: var(--text-main); }
+        .confirm-item label span { font-size: 12px; color: var(--text-muted); }
+
         .success {
             background: rgba(15, 157, 88, 0.2);
             color: var(--success-green);
@@ -366,6 +378,7 @@
 
 <body>
     <div class="container">
+        <div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
         <div class="header">
             <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="Logo"
                 class="logo">
@@ -425,6 +438,12 @@
                         </span>
                     </div>
                     <div class="info-row">
+                        <span class="label">Department:</span>
+                        <span class="value">
+                            <?= requestData.department || 'N/A' ?>
+                        </span>
+                    </div>
+                    <div class="info-row">
                         <span class="label">Employment Type:</span>
                         <span class="value">
                             <?= requestData.employmentType ?>
@@ -433,20 +452,40 @@
                     <div class="info-row">
                         <span class="label">Email Requested:</span>
                         <span class="value">
-                            <?
-                              var _er = requestData.emailRequested || '';
-                              var _atIdx = _er.indexOf('@');
-                              if (_atIdx > 0) {
-                                var _uname = _er.substring(0, _atIdx);
-                                var _domain = _er.substring(_atIdx);
-                                print('"' + _uname + '"' + _domain);
-                              } else {
-                                print(_er || 'N/A');
-                              }
-                            ?>
+                            <?= requestData.emailRequested || 'N/A' ?>
                         </span>
                     </div>
 
+                    <? if (requestData.computerReq) { ?>
+                    <div class="info-row">
+                        <span class="label">Computer Request:</span>
+                        <span class="value">
+                            <?= requestData.computerReq ?>
+                            <? if (requestData.computerType) { ?> — <?= requestData.computerType ?><? } ?>
+                        </span>
+                    </div>
+                    <? if (requestData.computerPrevUser) { ?>
+                    <div class="info-row">
+                        <span class="label">Prev Computer User:</span>
+                        <span class="value"><?= requestData.computerPrevUser ?><? if (requestData.computerSerial) { ?> · Serial: <?= requestData.computerSerial ?><? } ?></span>
+                    </div>
+                    <? } else if (requestData.computerSerial) { ?>
+                    <div class="info-row">
+                        <span class="label">Computer Serial:</span>
+                        <span class="value"><?= requestData.computerSerial ?></span>
+                    </div>
+                    <? } ?>
+                    <? } ?>
+                    <? if (requestData.phoneReq) { ?>
+                    <div class="info-row">
+                        <span class="label">Phone Request:</span>
+                        <span class="value">
+                            <?= requestData.phoneReq ?>
+                            <? if (requestData.phonePrevUser) { ?> · Prev: <?= requestData.phonePrevUser ?><? } ?>
+                            <? if (requestData.phonePrevNumber) { ?> (<?= requestData.phonePrevNumber ?>)<? } ?>
+                        </span>
+                    </div>
+                    <? } ?>
                     <div class="info-row">
                         <span class="label">BOSS Committees:</span>
                         <span class="value">
@@ -477,6 +516,9 @@
 
                     <!-- Hidden fields for pre-population -->
                     <input type="hidden" id="ctx_computerType" value="<?= requestData.computerType || '' ?>">
+                    <input type="hidden" id="ctx_computerReq" value="<?= requestData.computerReq || '' ?>">
+                    <input type="hidden" id="ctx_computerSerial" value="<?= requestData.computerSerial || '' ?>">
+                    <input type="hidden" id="ctx_phoneReq" value="<?= requestData.phoneReq || '' ?>">
                     <input type="hidden" id="ctx_requestedDomains" value="<?= requestData.requestedDomains || '' ?>">
                     <input type="hidden" id="ctx_bossJobSites" value="<?= requestData.bossJobSites || '' ?>">
                     <input type="hidden" id="ctx_bossCostSheet" value="<?= requestData.bossCostSheet || '' ?>">
@@ -516,7 +558,7 @@
             </div>
         </div>
 
-        <form id="taskForm">
+        <form id="taskForm" autocomplete="off">
             <input type="hidden" name="workflowId" value="<?= workflowId ?>">
             <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
             <input type="hidden" name="Employee_Name" value="<?= requestData.employeeName ?>">
@@ -566,6 +608,14 @@
             <!-- Computer Setup -->
             <div class="form-section">
                 <h2>Computer Assignment</h2>
+                <? if (requestData.computerReq && requestData.computerReq !== 'None') { ?>
+                <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:6px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:var(--text-muted);">
+                    <strong style="color:var(--text-main);">Requested:</strong>
+                    <?= requestData.computerReq ?><? if (requestData.computerType) { ?> — <?= requestData.computerType ?><? } ?>
+                    <? if (requestData.computerPrevUser) { ?> &nbsp;·&nbsp; Prev user: <?= requestData.computerPrevUser ?><? } ?>
+                    <? if (requestData.computerSerial) { ?> &nbsp;·&nbsp; S/N: <?= requestData.computerSerial ?><? } ?>
+                </div>
+                <? } ?>
                 <div class="form-group">
                     <label>Computer Assigned: <span class="required">*</span></label>
                     <div class="radio-group">
@@ -606,6 +656,14 @@
             <!-- Phone Setup -->
             <div class="form-section">
                 <h2>Phone Assignment</h2>
+                <? if (requestData.phoneReq && requestData.phoneReq !== 'No') { ?>
+                <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:6px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:var(--text-muted);">
+                    <strong style="color:var(--text-main);">Requested:</strong>
+                    <?= requestData.phoneReq ?>
+                    <? if (requestData.phonePrevUser) { ?> &nbsp;·&nbsp; Prev user: <?= requestData.phonePrevUser ?><? } ?>
+                    <? if (requestData.phonePrevNumber) { ?> (<?= requestData.phonePrevNumber ?>)<? } ?>
+                </div>
+                <? } ?>
                 <div class="form-group">
                     <label>Phone Assigned: <span class="required">*</span></label>
                     <div class="radio-group">
@@ -664,105 +722,75 @@
                     </div>
 
                     <div class="form-group" style="grid-column: span 2;">
-                        <label>BOSS Access Details (Requested by Manager):</label>
-                        <div class="context-section"
-                            style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); padding: 15px; border-radius: 6px;">
-
-                            <!-- Committees -->
-                            <div style="margin-bottom: 10px;">
-                                <strong style="color: var(--text-muted); font-size: 0.9em;">Committees to
-                                    Assign:</strong>
-                                <div style="margin-top: 5px; color: var(--text-main);">
-                                    <?!= requestData.bossJobSites ? requestData.bossJobSites.split(',').map(s => '• ' + s.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')).join('<br>') : 'None' ?>
-                                </div>
-                            </div>
-
-                            <!-- Cost Sheets -->
-                            <div style="margin-bottom: 10px;">
-                                <strong style="color: var(--text-muted); font-size: 0.9em;">Cost Sheet Job
-                                    Numbers:</strong>
-                                <div style="margin-top: 5px; color: var(--text-main);">
-                                    <?!= requestData.bossCostSheetJobs ? requestData.bossCostSheetJobs.split(',').map(s => '• ' + s.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')).join('<br>') : 'None' ?>
-                                </div>
-                            </div>
-
-                            <!-- Flags -->
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                                <div>
-                                    <strong style="color: var(--text-muted); font-size: 0.9em;">Trip Reports:</strong>
-                                    <span
-                                        style="color: <?= requestData.bossTripReports === 'Yes' ? 'var(--brand-red)' : 'var(--text-main)' ?>; font-weight: bold;">
-                                        <?= requestData.bossTripReports || 'No' ?>
-                                    </span>
-                                </div>
-                                <div>
-                                    <strong style="color: var(--text-muted); font-size: 0.9em;">Grievances:</strong>
-                                    <span
-                                        style="color: <?= requestData.bossGrievances === 'Yes' ? 'var(--brand-red)' : 'var(--text-main)' ?>; font-weight: bold;">
-                                        <?= requestData.bossGrievances || 'No' ?>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Incidents Access: <span class="required">*</span></label>
-                        <div class="radio-group">
-                            <label>
-                                <input type="radio" name="Incidents_Access" value="Yes" required>
-                                <span>Yes</span>
-                            </label>
-                            <label>
-                                <input type="radio" name="Incidents_Access" value="No" required>
-                                <span>No</span>
+                        <label style="margin-bottom:12px;">Confirm BOSS Access — Check off each item once assigned:</label>
+                        <? if (requestData.bossJobSites) { requestData.bossJobSites.split(',').forEach(function(site){ site = site.trim(); if (site) { var skey = site.replace(/[^a-zA-Z0-9]/g,'_'); ?>
+                        <div class="confirm-item">
+                            <input type="checkbox" id="BOSS_Cmte_<?= skey ?>" name="BOSS_Cmte_<?= skey ?>" value="Confirmed">
+                            <label for="BOSS_Cmte_<?= skey ?>">
+                                <strong>Committee: <?= site ?></strong>
+                                <span>Grant BOSS committee access for this site</span>
                             </label>
                         </div>
+                        <? }}); } ?>
+                        <? if (requestData.bossCostSheetJobs) { requestData.bossCostSheetJobs.split(',').forEach(function(job){ job = job.trim(); if (job) { var jkey = job.replace(/[^a-zA-Z0-9]/g,'_'); ?>
+                        <div class="confirm-item">
+                            <input type="checkbox" id="BOSS_CostSheet_<?= jkey ?>" name="BOSS_CostSheet_<?= jkey ?>" value="Confirmed">
+                            <label for="BOSS_CostSheet_<?= jkey ?>">
+                                <strong>Cost Sheet: <?= job ?></strong>
+                                <span>Grant BOSS cost sheet access for this job</span>
+                            </label>
+                        </div>
+                        <? }}); } ?>
+                        <? if (requestData.bossTripReports === 'Yes') { ?>
+                        <div class="confirm-item">
+                            <input type="checkbox" id="BOSS_TripReports" name="BOSS_TripReports" value="Confirmed">
+                            <label for="BOSS_TripReports">
+                                <strong>Trip Reports</strong>
+                                <span>Grant BOSS trip report access</span>
+                            </label>
+                        </div>
+                        <? } ?>
+                        <? if (requestData.bossGrievances === 'Yes') { ?>
+                        <div class="confirm-item">
+                            <input type="checkbox" id="BOSS_Grievances" name="BOSS_Grievances" value="Confirmed">
+                            <label for="BOSS_Grievances">
+                                <strong>Grievances</strong>
+                                <span>Grant BOSS grievances access</span>
+                            </label>
+                        </div>
+                        <? } ?>
                     </div>
+
                 </div>
 
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label>CAA Access: <span class="required">*</span></label>
-                        <div class="radio-group">
-                            <label>
-                                <input type="radio" name="CAA_Access" value="Yes" required>
-                                <span>Yes</span>
-                            </label>
-                            <label>
-                                <input type="radio" name="CAA_Access" value="No" required>
-                                <span>No</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Delivery App Access: <span class="required">*</span></label>
-                        <div class="radio-group">
-                            <label>
-                                <input type="radio" name="Delivery_App_Access" value="Yes" required>
-                                <span>Yes</span>
-                            </label>
-                            <label>
-                                <input type="radio" name="Delivery_App_Access" value="No" required>
-                                <span>No</span>
-                            </label>
-                        </div>
-                    </div>
+                <label style="margin-bottom:12px; display:block;">Additional System Access — Check each system that was granted:</label>
+                <div class="confirm-item">
+                    <input type="checkbox" id="Incidents_Access" name="Incidents_Access" value="Yes">
+                    <label for="Incidents_Access">
+                        <strong>Incidents Access</strong>
+                        <span>Access to the Incidents reporting system</span>
+                    </label>
                 </div>
-
-                <div class="form-group">
-                    <label>Net Promoter Score Access: <span class="required">*</span></label>
-                    <div class="radio-group">
-                        <label>
-                            <input type="radio" name="Net_Promoter_Score_Access" value="Yes" required>
-                            <span>Yes</span>
-                        </label>
-                        <label>
-                            <input type="radio" name="Net_Promoter_Score_Access" value="No" required>
-                            <span>No</span>
-                        </label>
-                    </div>
+                <div class="confirm-item">
+                    <input type="checkbox" id="CAA_Access" name="CAA_Access" value="Yes">
+                    <label for="CAA_Access">
+                        <strong>CAA Access</strong>
+                        <span>Access to the CAA system</span>
+                    </label>
+                </div>
+                <div class="confirm-item">
+                    <input type="checkbox" id="Delivery_App_Access" name="Delivery_App_Access" value="Yes">
+                    <label for="Delivery_App_Access">
+                        <strong>Delivery App Access</strong>
+                        <span>Access to the delivery application</span>
+                    </label>
+                </div>
+                <div class="confirm-item">
+                    <input type="checkbox" id="Net_Promoter_Score_Access" name="Net_Promoter_Score_Access" value="Yes">
+                    <label for="Net_Promoter_Score_Access">
+                        <strong>Net Promoter Score Access</strong>
+                        <span>Access to NPS reporting tools</span>
+                    </label>
                 </div>
             </div>
 
@@ -779,6 +807,17 @@
             <button type="submit" id="submitBtn" class="btn-submit">Complete IT Setup</button>
             <div id="status"></div>
         </form>
+
+        <div id="success-screen" style="display:none; text-align:center; padding:40px 0;">
+            <div style="font-size:56px; margin-bottom:16px;">✅</div>
+            <h2 style="color:var(--success-green);">IT Setup Complete</h2>
+            <p style="color:var(--text-muted); margin-top:8px;">The requester and specialist teams have been notified.</p>
+            <div style="margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:15px;">
+                <button class="btn-submit" style="width:auto; padding:14px 28px; font-size:15px;"
+                    onclick="window.open('<?= getBaseUrl() ?>?form=dashboard', '_top')">Return to Dashboard</button>
+                <p style="color:#888; font-size:13px;">You may now close this window.</p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -814,13 +853,18 @@
                 else if (compType.includes('Chromebook')) compSelect.value = 'Chromebook';
             }
 
-            // 4. BOSS / Jonas Checkboxes Logic could be added here if we had checkboxes on IT form
-            // currently IT form has Radios for access. We can default them to Yes if request data exists?
+            // 4. BOSS default to Yes if any BOSS sites requested
             const bossSites = document.getElementById('ctx_bossJobSites').value;
             if (bossSites) {
-                // If any BOSS sites requested, default BOSS Access to Yes
                 const bossYes = document.querySelector('input[name="BOSS_Access"][value="Yes"]');
                 if (bossYes) bossYes.checked = true;
+            }
+
+            // 5. Pre-populate computer serial from request data
+            const computerSerial = document.getElementById('ctx_computerSerial').value;
+            if (computerSerial) {
+                const serialField = document.getElementById('computerMake');
+                if (serialField && !serialField.value) serialField.value = computerSerial;
             }
         });
 
@@ -845,13 +889,16 @@
                 }
             });
 
+            // Default unchecked system access confirm-items to 'No'
+            ['Incidents_Access', 'CAA_Access', 'Delivery_App_Access', 'Net_Promoter_Score_Access'].forEach(function(field) {
+                if (!formData[field]) formData[field] = 'No';
+            });
+
             google.script.run
                 .withSuccessHandler(res => {
                     if (res.success) {
-                        status.innerHTML = '<div class="success">' + res.message + '<br><br>' +
-                            '<button class="btn-submit" style="width:auto; padding: 10px 20px; font-size: 14px; margin-top:10px;" onclick="window.open(\'' + "<?= getBaseUrl() ?>?form=dashboard" + '\', \'_top\')">Return to Dashboard</button>' +
-                            '</div>';
                         document.getElementById('taskForm').style.display = 'none';
+                        document.getElementById('success-screen').style.display = 'block';
                     } else {
                         status.innerHTML = '<div class="error">Error: ' + res.message + '</div>';
                         btn.disabled = false;

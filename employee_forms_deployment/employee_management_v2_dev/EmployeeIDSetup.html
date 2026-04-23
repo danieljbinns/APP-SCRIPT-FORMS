@@ -260,6 +260,7 @@
 
 <body>
     <div class="container">
+        <div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
         <!-- Logo -->
         <div class="logo-container">
             <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
@@ -344,6 +345,12 @@
                         </span>
                     </div>
                     <div class="info-item">
+                        <span class="label">Department:</span>
+                        <span class="value">
+                            <?= requestData.department || 'N/A' ?>
+                        </span>
+                    </div>
+                    <div class="info-item">
                         <span class="label">Requested By:</span>
                         <span class="value">
                             <?= requestData.requesterEmail ?>
@@ -358,7 +365,7 @@
                 </div>
             </div>
 
-            <form id="setupForm">
+            <form id="setupForm" autocomplete="off">
                 <input type="hidden" name="workflowId" value="<?= workflowId ?>">
                 <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
 
@@ -447,9 +454,12 @@
                 <!-- BOSS WIS Account -->
                 <div class="form-section">
                     <h2>BOSS WIS Account</h2>
-                    <div class="form-field" style="display:flex; align-items:center; gap:12px;">
-                        <input type="checkbox" name="bossWisCreated" id="bossWisCreated" value="Yes" style="width:20px;height:20px;accent-color:var(--brand-red);flex-shrink:0;">
-                        <label for="bossWisCreated" style="margin:0; font-weight:600; cursor:pointer;">BOSS WIS account has been created for this employee</label>
+                    <div style="display:flex; align-items:flex-start; gap:14px; background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:16px; cursor:pointer; transition:border-color 0.2s;" id="bossWisItem">
+                        <input type="checkbox" name="bossWisCreated" id="bossWisCreated" value="Yes" style="width:20px;height:20px;accent-color:#0f9d58;flex-shrink:0;margin-top:2px;cursor:pointer;" onchange="document.getElementById('bossWisItem').style.borderColor=this.checked?'#0f9d58':'var(--border-color)'; document.getElementById('bossWisItem').style.background=this.checked?'rgba(15,157,88,0.05)':'rgba(255,255,255,0.03)';">
+                        <label for="bossWisCreated" style="margin:0; cursor:pointer;">
+                            <strong style="display:block; font-size:14px; margin-bottom:4px;">BOSS WIS Account Created</strong>
+                            <span style="font-size:12px; color:var(--text-muted);">Confirm that a BOSS WIS account has been set up for this employee.</span>
+                        </label>
                     </div>
                 </div>
 
@@ -468,6 +478,18 @@
 
             <div id="statusMessage"></div>
         </div>
+
+        <div id="success-screen" style="display:none; text-align:center; padding:40px 0;">
+            <div style="font-size:56px; margin-bottom:16px;">✅</div>
+            <h2 style="color:#0f9d58;">ID Setup Complete</h2>
+            <p style="color:var(--text-muted); margin-top:8px;">HR and relevant teams have been notified.</p>
+            <div style="margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:15px;">
+                <button class="btn btn-primary" style="max-width:220px; padding:14px 28px; border-radius:8px; border:none; font-weight:600; cursor:pointer; font-size:15px; background:var(--brand-red); color:white;"
+                    onclick="window.open('<?= getBaseUrl() ?>?form=dashboard', '_top')">Return to Dashboard</button>
+                <p style="color:#888; font-size:13px;">You may now close this window.</p>
+            </div>
+        </div>
+    </div>
     </div>
 
     <script>
@@ -499,8 +521,8 @@
             google.script.run
                 .withSuccessHandler(function (response) {
                     if (response.success) {
-                        statusMsg.innerHTML = '<div class="success">✅ Employee ID Setup Complete!<br><br>IT and other teams have been notified.<br><br>You may now close this window.</div>';
-                        document.getElementById('setupForm').style.display = 'none';
+                        document.getElementById('form-container').style.display = 'none';
+                        document.getElementById('success-screen').style.display = 'block';
                     } else {
                         statusMsg.innerHTML = '<div class="error">❌ Error: ' + response.message + '</div>';
                         submitBtn.disabled = false;

@@ -215,6 +215,7 @@
 
 <body>
     <div class="container">
+        <div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
         <div class="card">
             <div class="logo-container">
                 <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
@@ -248,7 +249,7 @@
                         </span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
-                        <span style="color: var(--text-muted);">Proposed Hire:</span>
+                        <span style="color: var(--text-muted);">Hire Date:</span>
                         <span>
                             <?= requestData.hireDate ?>
                         </span>
@@ -315,9 +316,26 @@
                         </span>
                     </div>
                     <? } ?>
+                    <? if (requestData.department) { ?>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Department:</span>
+                        <span>
+                            <?= requestData.department ?>
+                        </span>
+                    </div>
+                    <? } ?>
                 </div>
 
-                <form id="hrVerificationForm">
+                <form id="hrVerificationForm" autocomplete="off">
+                    <div style="background:rgba(255,171,0,0.1); border:1px solid #ffab00; border-radius:8px; padding:14px 18px; margin-bottom:24px; display:flex; align-items:flex-start; gap:12px;">
+                        <span style="font-size:20px; line-height:1;">⚠️</span>
+                        <div>
+                            <div style="font-weight:700; color:#ffab00; font-size:13px;">Verification Required</div>
+                            <div style="font-size:12px; color:#a0a0a0; margin-top:4px;">
+                                Please confirm the employee details below match what is on file in ADP before assigning the Associate ID. Update any fields that differ from the official record.
+                            </div>
+                        </div>
+                    </div>
                     <div class="section-title">Request Context</div>
                     <!-- Hidden Request Context -->
                     <input type="hidden" name="workflowId" value="<?= workflowId ?>">
@@ -327,15 +345,17 @@
 
                     <div class="grid">
                         <div class="form-group">
-                            <div class="form-group">
-                                <label>Site</label>
-                                <input type="text" name="siteName" value="<?= requestData.siteName || '' ?>">
-                            </div>
+                            <label>Site</label>
+                            <input type="text" name="siteName" value="<?= requestData.siteName || '' ?>">
                         </div>
                         <div class="form-group">
                             <label>Hire Date</label>
                             <input type="date" name="hireDate" value="<?= requestData.hireDate ? String(requestData.hireDate).substring(0, 10) : '' ?>">
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Department</label>
+                        <input type="text" name="department" value="<?= requestData.department || '' ?>" placeholder="e.g. Operations, Finance">
                     </div>
 
                     <div class="section-title">Verified Information</div>

@@ -144,6 +144,7 @@
 
 <body>
     <div class="container">
+        <div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
         <div class="card">
             <h1>Status Change Approval</h1>
             <p style="color:#888; text-align:center;">HR Review required for position/site changes</p>
@@ -158,17 +159,63 @@
                 <div class="info-row"><span>Changes Requested:</span><span>
                         <?= requestData.changes ?>
                     </span></div>
-                <? if (requestData.siteTransfer && requestData.siteTransfer !== 'N/A -> N/A') { ?>
+                <!-- Current manager — always shown so HR can confirm who they report to -->
+                <? if (requestData.currentManagerName || requestData.currentManagerEmail) { ?>
+                <div class="info-row"><span>Current Manager:</span><span>
+                        <?= (requestData.currentManagerName || '') + (requestData.currentManagerName && requestData.currentManagerEmail ? ' — ' : '') + (requestData.currentManagerEmail || '') ?>
+                    </span></div>
+                <? } ?>
+                <? if (requestData.currentClass) { ?>
+                <div class="info-row"><span>Current Classification:</span><span>
+                        <?= requestData.currentClass ?>
+                    </span></div>
+                <? } ?>
+                <? if (requestData.currentTitle) { ?>
+                <div class="info-row"><span>Current Title:</span><span>
+                        <?= requestData.currentTitle ?>
+                    </span></div>
+                <? } ?>
+                <?
+                  // Site transfer — only show if it's a real change (not N/A -> N/A or identical sides)
+                  var stVal = String(requestData.siteTransfer || '');
+                  var stParts = stVal.split(' -> ');
+                  var showSt = stVal && stVal.indexOf('N/A') === -1 && (stParts.length < 2 || stParts[0].trim() !== stParts[1].trim());
+                  if (showSt) {
+                ?>
                 <div class="info-row"><span>Site Transfer:</span><span>
                         <?= requestData.siteTransfer ?>
                     </span></div>
                 <? } ?>
-                <? if (requestData.titleChange && requestData.titleChange !== 'N/A -> N/A') { ?>
+                <?
+                  // Title change — only show if it's a real change
+                  var tcVal = String(requestData.titleChange || '');
+                  var tcParts = tcVal.split(' -> ');
+                  var showTc = tcVal && tcVal.indexOf('N/A') === -1 && (tcParts.length < 2 || tcParts[0].trim() !== tcParts[1].trim());
+                  if (showTc) {
+                ?>
                 <div class="info-row"><span>Title Change:</span><span>
                         <?= requestData.titleChange ?>
                     </span></div>
                 <? } ?>
-                <? if (requestData.managerChange && requestData.managerChange.indexOf('N/A -> N/A') === -1) { ?>
+                <?
+                  // Classification change — only show if it's a real change
+                  var ccVal = String(requestData.classChange || '');
+                  var ccParts = ccVal.split(' -> ');
+                  var showCc = ccVal && ccVal.indexOf('N/A') === -1 && (ccParts.length < 2 || ccParts[0].trim() !== ccParts[1].trim());
+                  if (showCc) {
+                ?>
+                <div class="info-row"><span>Classification Change:</span><span>
+                        <?= requestData.classChange ?>
+                    </span></div>
+                <? } ?>
+                <?
+                  // Manager change — only show if it's a real change (excludes N/A (N/A) -> N/A (N/A))
+                  var mcVal = String(requestData.managerChange || '');
+                  var mcNoNA = mcVal && mcVal.indexOf('N/A (N/A)') === -1 && mcVal.indexOf('N/A -> N/A') === -1;
+                  var mcParts2 = mcVal.split(' -> ');
+                  var showMc = mcNoNA && (mcParts2.length < 2 || mcParts2[0].trim() !== mcParts2[1].trim());
+                  if (showMc) {
+                ?>
                 <div class="info-row"><span>Manager Change:</span><span>
                         <?= requestData.managerChange ?>
                     </span></div>
@@ -186,21 +233,6 @@
                 <? if (requestData.department) { ?>
                 <div class="info-row"><span>Department:</span><span>
                         <?= requestData.department ?>
-                    </span></div>
-                <? } ?>
-                <? if (requestData.currentClass) { ?>
-                <div class="info-row"><span>Current Classification:</span><span>
-                        <?= requestData.currentClass ?>
-                    </span></div>
-                <? } ?>
-                <? if (requestData.currentTitle) { ?>
-                <div class="info-row"><span>Current Title:</span><span>
-                        <?= requestData.currentTitle ?>
-                    </span></div>
-                <? } ?>
-                <? if (requestData.currentManagerEmail) { ?>
-                <div class="info-row"><span>Current Manager:</span><span>
-                        <?= (requestData.currentManagerName ? requestData.currentManagerName + ' — ' : '') + requestData.currentManagerEmail ?>
                     </span></div>
                 <? } ?>
                 <? if (requestData.comments) { ?>
@@ -227,14 +259,25 @@
                 </div>
 
                 <div class="form-group">
-                    <label>JR / Job Title to Confirm</label>
-                    <input type="text" name="confirmedTitle"
-                        value="<?= requestData.currentTitle || '' ?>"
-                        placeholder="Confirm current or enter new JR title...">
+                    <label>Confirmed Job Title</label>
+                    <input type="text" name="confirmedTitle" id="confirmedTitle"
+                        value="<?= requestData.titleNew || requestData.currentTitle || '' ?>"
+                        placeholder="Free-text job title as it should appear on record...">
                     <p style="font-size:11px; color:#666; margin-top:5px;">
                         <?= requestData.currentTitle ? 'Current: ' + requestData.currentTitle : '' ?>
-                        <?= (requestData.titleChange && requestData.titleChange !== 'N/A -> N/A') ? ' | Requested change: ' + requestData.titleChange : '' ?>
+                        <?= requestData.titleNew ? ' | Requested new: ' + requestData.titleNew : '' ?>
                     </p>
+                </div>
+
+                <div class="form-group">
+                    <label>Confirmed JR Title <span style="color:#666; font-weight:400; font-size:11px;">(select from JR list — leave blank if not applicable)</span></label>
+                    <select name="confirmedJrTitle" id="confirmedJrTitle">
+                        <option value="">— No JR / Not applicable —</option>
+                        <? for (var i = 0; i < jrList.length; i++) { ?>
+                        <option value="<?= jrList[i] ?>"><?= jrList[i] ?></option>
+                        <? } ?>
+                    </select>
+                    <p style="font-size:11px; color:#666; margin-top:5px;">JR titles drive safety, learning, and system access assignments. Select the correct JR for the new role.</p>
                 </div>
 
                 <div class="form-group">
@@ -278,7 +321,8 @@
                 decision: this.decision.value,
                 notes: this.notes.value,
                 confirmedNewManager: this.confirmedNewManager.value,
-                confirmedTitle: this.confirmedTitle.value
+                confirmedTitle: this.confirmedTitle.value,
+                confirmedJrTitle: this.confirmedJrTitle.value
             };
 
             google.script.run

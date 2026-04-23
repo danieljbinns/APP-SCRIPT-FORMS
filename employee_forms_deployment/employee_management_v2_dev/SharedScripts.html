@@ -1,0 +1,307 @@
+<script>
+/* ============================================================
+   TEAM Group — Shared Client-Side Utilities v1
+   Single source of truth for client JS helpers used across
+   all employee form pages.
+   Include in any .html file:  <?!= include('SharedScripts') ?>
+
+   IMPORTANT: This file contains NO server-side GAS code.
+   All functions are pure client-side JS.
+   ============================================================ */
+
+/* ── String / DOM helpers ────────────────────────────────────────── */
+
+/**
+ * Safely HTML-encode a value for injection into innerHTML.
+ * Always call this before rendering any user-supplied data.
+ */
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* ── Loading overlay ─────────────────────────────────────────────── */
+
+/**
+ * Show the #loading-overlay element.
+ * @param {string} [message] - Optional label shown under spinner.
+ */
+function showLoading(message) {
+  var overlay = document.getElementById('loading-overlay');
+  if (!overlay) return;
+  var label = overlay.querySelector('p, div[data-loading-label]');
+  if (label && message) label.textContent = message;
+  overlay.style.display = 'flex';
+  overlay.classList.add('active');
+}
+
+/**
+ * Hide the #loading-overlay element.
+ */
+function hideLoading() {
+  var overlay = document.getElementById('loading-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+  overlay.classList.remove('active');
+}
+
+/* ── Success screen ──────────────────────────────────────────────── */
+
+/**
+ * Transition from the main form to the #success-screen.
+ * Hides an optional wrapper element, shows the success screen.
+ *
+ * @param {object}   opts
+ * @param {string}   [opts.hideId]       - ID of element to hide (default: 'formSection')
+ * @param {string}   [opts.iconText]     - Emoji icon (default: '✅')
+ * @param {string}   [opts.headingText]  - Heading text (default: 'Submitted Successfully')
+ * @param {string}   [opts.bodyText]     - Subtext below heading
+ * @param {string}   [opts.dashboardUrl] - URL for dashboard button (omit to skip button)
+ * @param {string}   [opts.btnLabel]     - Button label (default: 'Return to Dashboard')
+ */
+function showSuccess(opts) {
+  opts = opts || {};
+  var hideId  = opts.hideId || 'formSection';
+  var icon    = opts.iconText    || '✅';
+  var heading = opts.headingText || 'Submitted Successfully';
+  var body    = opts.bodyText    || 'Your submission has been recorded.';
+  var url     = opts.dashboardUrl;
+  var label   = opts.btnLabel    || 'Return to Dashboard';
+
+  var hideEl = document.getElementById(hideId);
+  if (hideEl) hideEl.style.display = 'none';
+
+  var screen = document.getElementById('success-screen');
+  if (!screen) return;
+
+  // Populate dynamic slots if they exist
+  var iconEl    = screen.querySelector('.success-icon');
+  var headEl    = screen.querySelector('h2');
+  var bodyEl    = screen.querySelector('p');
+  var actionsEl = screen.querySelector('.actions');
+
+  if (iconEl)    iconEl.textContent = icon;
+  if (headEl)    headEl.textContent = heading;
+  if (bodyEl)    bodyEl.textContent = body;
+
+  if (actionsEl && url) {
+    actionsEl.innerHTML =
+      '<a href="' + escapeHtml(url) + '" class="btn btn-primary" style="max-width:240px;">' +
+      escapeHtml(label) + '</a>' +
+      '<p style="color:#888; font-size:13px; margin:0;">You may now close this window.</p>';
+  }
+
+  screen.style.display = 'block';
+}
+
+/* ── google.script.run promise wrapper ───────────────────────────── */
+
+/**
+ * Wraps google.script.run in a Promise so you can use .then()/.catch().
+ *
+ * Usage:
+ *   gsRun('myServerFunction', arg1, arg2)
+ *     .then(result => { ... })
+ *     .catch(err  => { alert(err.message); });
+ *
+ * @param  {string}  fnName  - Server-side function name
+ * @param  {...*}    args    - Arguments forwarded to the server function
+ * @return {Promise}
+ */
+function gsRun(fnName) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function(resolve, reject) {
+    var runner = google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(reject);
+    runner[fnName].apply(runner, args);
+  });
+}
+
+/* ── Checkbox grid builder ───────────────────────────────────────── */
+
+/**
+ * Build a compact checkbox grid (`.checkbox-grid` style) inside a container.
+ * Used for dynamically populated lists: job numbers, committees, sites, etc.
+ *
+ * @param {HTMLElement} container    - The div to render into
+ * @param {string[]}    items        - Array of option strings
+ * @param {string}      nameAttr     - The `name` attribute for each checkbox
+ * @param {string[]}    [selected]   - Pre-selected values (for edit/draft restore)
+ */
+function buildCheckboxGrid(container, items, nameAttr, selected) {
+  if (!container) return;
+  selected = selected || [];
+  container.innerHTML = '';
+  if (!items || items.length === 0) {
+    container.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">No options available.</span>';
+    return;
+  }
+  items.forEach(function(item) {
+    var lbl = document.createElement('label');
+    var cb  = document.createElement('input');
+    cb.type    = 'checkbox';
+    cb.name    = nameAttr;
+    cb.value   = item;
+    cb.checked = selected.indexOf(item) >= 0;
+    var txt = document.createTextNode(' ' + item);
+    lbl.appendChild(cb);
+    lbl.appendChild(txt);
+    container.appendChild(lbl);
+  });
+}
+
+/* ── Tiled checkbox builder ──────────────────────────────────────── */
+
+/**
+ * Build large tiled checkboxes (`.checkbox-label` style) inside a container.
+ * Used for top-level multi-select questions (equipment categories, systems, etc.)
+ *
+ * @param {HTMLElement} container    - The div to render into
+ * @param {string[]}    items        - Array of option strings
+ * @param {string}      nameAttr     - The `name` attribute for each checkbox
+ * @param {string[]}    [selected]   - Pre-selected values
+ */
+function buildCheckboxTiles(container, items, nameAttr, selected) {
+  if (!container) return;
+  selected = selected || [];
+  container.innerHTML = '';
+  items.forEach(function(item) {
+    var lbl = document.createElement('label');
+    lbl.className = 'checkbox-label';
+    var cb = document.createElement('input');
+    cb.type    = 'checkbox';
+    cb.name    = nameAttr;
+    cb.value   = item;
+    cb.checked = selected.indexOf(item) >= 0;
+    var span = document.createElement('span');
+    span.textContent = item;
+    lbl.appendChild(cb);
+    lbl.appendChild(span);
+    container.appendChild(lbl);
+  });
+}
+
+/* ── Select populator ────────────────────────────────────────────── */
+
+/**
+ * Populate a <select> element with an array of option strings.
+ *
+ * @param {HTMLSelectElement} selectEl    - The <select> to populate
+ * @param {string[]}          items       - Array of option values/labels
+ * @param {string}            [placeholder] - Placeholder text for blank option
+ * @param {string}            [selected]  - Pre-selected value
+ */
+function populateSelect(selectEl, items, placeholder, selected) {
+  if (!selectEl) return;
+  selectEl.innerHTML = '';
+  if (placeholder) {
+    var blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = placeholder;
+    blank.disabled = true;
+    blank.selected = !selected;
+    selectEl.appendChild(blank);
+  }
+  (items || []).forEach(function(item) {
+    var opt = document.createElement('option');
+    opt.value = item;
+    opt.textContent = item;
+    if (selected && item === selected) opt.selected = true;
+    selectEl.appendChild(opt);
+  });
+}
+
+/* ── Sub-section toggle ──────────────────────────────────────────── */
+
+/**
+ * Show or hide a sub-section div based on a boolean condition.
+ * Typically called from an onchange handler on a parent checkbox/radio.
+ *
+ * @param {string|HTMLElement} target  - Element ID string or DOM element
+ * @param {boolean}            show    - true = show, false = hide
+ */
+function toggleSection(target, show) {
+  var el = (typeof target === 'string') ? document.getElementById(target) : target;
+  if (!el) return;
+  el.style.display = show ? 'block' : 'none';
+}
+
+/* ── Collected values helpers ────────────────────────────────────── */
+
+/**
+ * Get an array of values from all checked checkboxes with a given name.
+ * @param  {string} nameAttr
+ * @return {string[]}
+ */
+function getCheckedValues(nameAttr) {
+  return Array.from(document.querySelectorAll('input[name="' + nameAttr + '"]:checked'))
+    .map(function(el) { return el.value; });
+}
+
+/**
+ * Get the value of the selected radio button in a group.
+ * @param  {string} nameAttr
+ * @return {string}
+ */
+function getRadioValue(nameAttr) {
+  var el = document.querySelector('input[name="' + nameAttr + '"]:checked');
+  return el ? el.value : '';
+}
+
+/* ── Form validation helpers ─────────────────────────────────────── */
+
+/**
+ * Validate that all elements with class `required-field` have a value.
+ * Adds a red border to invalid fields and returns false if any fail.
+ * @return {boolean}
+ */
+function validateRequired() {
+  var fields = document.querySelectorAll('.required-field');
+  var valid = true;
+  fields.forEach(function(field) {
+    var val = (field.type === 'checkbox') ? field.checked : field.value.trim();
+    if (!val) {
+      field.style.borderColor = 'var(--brand-red)';
+      valid = false;
+    } else {
+      field.style.borderColor = '';
+    }
+  });
+  if (!valid) {
+    var first = document.querySelector('.required-field[style*="brand-red"]');
+    if (first) first.focus();
+  }
+  return valid;
+}
+
+/* ── Date helpers ────────────────────────────────────────────────── */
+
+/**
+ * Format a Date object or ISO string to MM/DD/YYYY for display.
+ * @param  {Date|string} val
+ * @return {string}
+ */
+function formatDisplayDate(val) {
+  if (!val) return '';
+  var d = (val instanceof Date) ? val : new Date(val + 'T12:00:00Z');
+  if (isNaN(d.getTime())) return String(val);
+  return (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '/' + d.getUTCFullYear();
+}
+
+/**
+ * Return today's date as YYYY-MM-DD (for <input type="date"> defaults).
+ * @return {string}
+ */
+function todayISO() {
+  var d = new Date();
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  var dd = String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + mm + '-' + dd;
+}
+</script>

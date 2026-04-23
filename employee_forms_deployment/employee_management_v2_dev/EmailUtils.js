@@ -138,6 +138,49 @@ function getWorkflowContext(workflowId) {
       }
     }
 
+    // Support for Position Change / Status Change Workflows
+    if (workflowId && workflowId.startsWith('CHANGE_')) {
+      const changeData = typeof getPositionChangeData === 'function' ? getPositionChangeData(workflowId) : null;
+      if (changeData) {
+        // Parse manager emails from stored managerChange string "Name (email) -> Name (email)"
+        const mcStr = String(changeData.managerChange || '');
+        const mcMatches = mcStr.match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
+        const mgrOldEmail = changeData.currentManagerEmail || (mcMatches.length > 0 ? mcMatches[0].replace(/[()]/g, '') : '');
+        const mgrNewEmail = changeData.mgrNewEmail || (mcMatches.length > 1 ? mcMatches[1].replace(/[()]/g, '') : mgrOldEmail);
+        return {
+          workflowType: 'Status Change',
+          employeeName: changeData.employeeName || '',
+          jobTitle: changeData.jobTitle || changeData.currentTitle || '',
+          siteName: changeData.siteName || '',
+          hireDate: changeData.effDate || '',
+          requesterEmail: changeData.requesterEmail || '',
+          managerName: changeData.currentManagerName || '',
+          managerEmail: mgrNewEmail || mgrOldEmail || '',
+          managerOldEmail: mgrOldEmail || '',
+          managerNewEmail: mgrNewEmail || '',
+          department: changeData.department || '',
+          changeTypes: changeData.changes || '',
+          siteTransfer: changeData.siteTransfer || '',
+          titleChange: changeData.titleChange || '',
+          classChange: changeData.classChange || '',
+          managerChange: mcStr,
+          systems: changeData.systems ? changeData.systems.split(', ').map(function(s) { return s.trim(); }).filter(Boolean) : [],
+          equipmentRaw: changeData.equipment || '',
+          purchasingSites: changeData.purchasingSites || '',
+          employmentType: changeData.currentClass || '',
+          currentTitle: changeData.currentTitle || '',
+          currentManagerName: changeData.currentManagerName || '',
+          currentManagerEmail: changeData.currentManagerEmail || '',
+          creditCardUSA:            changeData.creditCardUSA || '',
+          creditCardLimitUSA:       changeData.creditCardLimitUSA || '',
+          creditCardCanada:         changeData.creditCardCanada || '',
+          creditCardLimitCanada:    changeData.creditCardLimitCanada || '',
+          creditCardHomeDepot:      changeData.creditCardHomeDepot || '',
+          creditCardLimitHomeDepot: changeData.creditCardLimitHomeDepot || ''
+        };
+      }
+    }
+
     const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
     
     if (!sheet) {

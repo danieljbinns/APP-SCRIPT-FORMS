@@ -288,7 +288,7 @@ function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
               '• DSS: ' + (setupData.dssUsername || 'N/A') + ' (Pwd: ' + (setupData.dssPassword || 'N/A') + ')\n' +
               '• SiteDocs: ' + (setupData.siteDocsUsername || 'N/A') + ' (Pwd: ' + (setupData.siteDocsPassword || 'N/A') + ')\n' +
               '• SiteDocs Worker ID: ' + (setupData.siteDocsWorkerId || 'N/A') + '\n\n' +
-              'HR Verification is pending for ADP setup.',
+              'HR Verification is pending for ADP setup.' + calendarLinkHtml,
         formUrl: '', // REMOVED BUTTON as per user request (view is inaccurate)
         displayName: 'TEAM Group - Employee Onboarding',
         contextData: context

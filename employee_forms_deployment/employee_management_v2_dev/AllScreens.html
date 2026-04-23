@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TEAM Group — All Screens (Standardized)</title>
+<style>
+:root{
+  --bg:#0c0c0c;--card:#1a1a1a;--text:#fff;--muted:#a0a0a0;
+  --red:#EB1C2D;--ibdr:#444;--ibg:#2a2a2a;--bdr:#333;
+  --ok:#00c853;--warn:#ffab00;--danger:#f44336;--info:#64b5f6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#080808;color:var(--text);display:flex;min-height:100vh;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── SIDEBAR ── */
+#sidebar{width:220px;flex-shrink:0;background:#0e0e0e;border-right:1px solid #1a1a1a;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sb-head{padding:14px 16px;border-bottom:1px solid #1a1a1a;}
+.sb-logo{color:var(--red);font-weight:700;font-size:13px;display:block;margin-bottom:3px;}
+.sb-sub{color:#3a3a3a;font-size:9px;letter-spacing:.5px;text-transform:uppercase;}
+.sb-group{padding:14px 12px 4px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#2a2a2a;}
+.sb-link{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:12px;color:#555;text-decoration:none;border-left:2px solid transparent;transition:all .15s;cursor:pointer;}
+.sb-link:hover{color:#aaa;background:rgba(255,255,255,.03);}
+.sb-link.active{color:#fff;border-left-color:var(--red);background:rgba(235,28,45,.06);}
+.sb-link .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.dot-req{background:var(--info);}
+.dot-appr{background:var(--warn);}
+.dot-spec{background:var(--ok);}
+.dot-off{background:var(--danger);}
+.dot-std{background:#666;}
+
+/* ── MAIN ── */
+#main{flex:1;overflow-y:auto;}
+.top-bar{position:sticky;top:0;z-index:100;background:#111;border-bottom:2px solid var(--red);padding:0 20px;display:flex;align-items:center;gap:14px;min-height:44px;}
+.tb-title{font-size:12px;color:var(--muted);}
+.tb-hint{font-size:11px;color:#2a2a2a;margin-left:auto;}
+.screen-block{border-bottom:3px solid #111;}
+.screen-label{background:#0f0f0f;border-bottom:1px solid #1a1a1a;padding:9px 24px;display:flex;align-items:center;gap:12px;}
+.sl-name{font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;}
+.sl-type{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:2px 8px;border-radius:3px;}
+.type-req {background:rgba(100,181,246,.12);color:var(--info);}
+.type-appr{background:rgba(255,171,0,.12);color:var(--warn);}
+.type-spec{background:rgba(0,200,83,.12);color:var(--ok);}
+.type-off {background:rgba(244,67,54,.12);color:var(--danger);}
+.type-std {background:rgba(180,180,180,.08);color:#666;}
+.sl-file{font-size:10px;color:#2a2a2a;margin-left:auto;font-family:monospace;}
+.conf-toggle-bar{background:#090909;border-top:1px dashed #1a1a1a;padding:9px 20px;display:flex;align-items:center;gap:12px;}
+.conf-toggle-bar p{font-size:11px;color:#2a2a2a;}
+.ctb{font-size:11px;font-weight:700;font-family:inherit;padding:5px 14px;border-radius:4px;cursor:pointer;border:1px solid #252525;background:transparent;color:#444;transition:all .15s;}
+.ctb:hover{color:#fff;border-color:#444;}
+.ctb.shown{color:var(--ok);border-color:var(--ok);}
+
+/* ── SIMULATED PAGE — ALL FORMS SAME WIDTH ── */
+.sim{background:var(--bg);padding:40px 20px 60px;display:flex;flex-direction:column;align-items:center;}
+
+/* ── DESIGN SYSTEM ── */
+.logo-wrap{text-align:center;margin-bottom:22px;width:100%;}
+.logo-wrap img{height:60px;}
+/* ONE container width for all forms */
+.cw{width:95%;max-width:1400px;}
+/* ONE card/form wrapper for all forms */
+.cf{background:var(--card);padding:36px;border-radius:8px;border:1px solid var(--bdr);box-shadow:0 4px 16px rgba(255,255,255,.04);width:100%;}
+/* page context callout */
+.pctx{margin-bottom:16px;padding:10px 16px;background:rgba(100,181,246,.06);border:1px solid rgba(100,181,246,.18);border-radius:6px;font-size:12px;color:#9ac8f5;display:flex;align-items:center;gap:10px;width:100%;}
+/* section titles — h2 everywhere */
+h2.s{color:var(--text);font-size:1.05rem;font-weight:600;border-bottom:1px solid var(--bdr);padding-bottom:9px;margin:28px 0 16px;}
+h2.s:first-child{margin-top:0;}
+/* ticket info */
+.ti{background:rgba(255,255,255,.02);border-radius:8px;padding:14px;margin-bottom:16px;border:1px solid var(--bdr);display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.ir{display:flex;flex-direction:column;font-size:13px;}
+.ir .l{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.ir .v{color:var(--text);font-weight:600;}
+.ir.s2{grid-column:span 2;}
+.ir.chg .v{color:var(--info);}
+/* inputs */
+.ff{margin-bottom:14px;}
+.fl{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+.req{color:var(--red);}
+.fi{width:100%;padding:10px 13px;font-size:13px;font-family:inherit;border:1px solid var(--ibdr);border-radius:6px;background:var(--ibg);color:var(--text);box-sizing:border-box;}
+.fr{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:14px;}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+/* radio group */
+.rg{display:flex;border:1px solid var(--ibdr);border-radius:6px;overflow:hidden;background:var(--ibg);}
+.rg label{flex:1;position:relative;margin:0;}
+.rg label:not(:last-child){border-right:1px solid var(--ibdr);}
+.rg input[type=radio]{position:absolute;opacity:0;width:0;height:0;}
+.rb{display:block;padding:9px 14px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);}
+.rg input[type=radio]:checked+.rb{background:var(--red);color:#fff;}
+/* checkbox tiles */
+.cbt{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:7px;margin-top:4px;}
+.ct{display:flex;align-items:center;padding:9px 12px;background:var(--ibg);border:1px solid var(--ibdr);border-radius:6px;cursor:pointer;font-size:13px;gap:8px;}
+.ct input{accent-color:var(--red);width:15px;height:15px;flex-shrink:0;}
+.ct.on{border-color:var(--red);color:var(--red);font-weight:600;background:rgba(235,28,45,.08);}
+/* expanding sub-section */
+.sub-sec{margin-top:8px;padding:14px 16px;background:#1e1e1e;border-radius:6px;border:1px solid #2e2e2e;display:none;}
+.sub-sec.open{display:block;}
+.sub-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:block;}
+/* compact checkbox grid */
+.cbg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;}
+.cbg label{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:var(--text);padding:6px 8px;border-radius:4px;}
+.cbg label:hover{background:rgba(255,255,255,.04);}
+.cbg input{accent-color:var(--red);width:14px;height:14px;flex-shrink:0;}
+/* ── CHECKLIST TABLE — used for ALL step lists ── */
+.cht{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:4px;}
+.cht th{text-align:left;padding:9px 12px;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--bdr);}
+.cht td{padding:10px 12px;border-bottom:1px solid var(--bdr);vertical-align:middle;}
+.cht tr:last-child td{border-bottom:none;}
+.cht .cn{font-weight:600;display:block;margin-bottom:2px;}
+.cht .cs{font-size:11px;color:var(--muted);}
+/* status button group */
+.sbg{display:flex;background:var(--ibg);border:1px solid var(--ibdr);border-radius:5px;overflow:hidden;width:fit-content;}
+.sb{padding:6px 11px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:10px;font-weight:700;text-transform:uppercase;border-right:1px solid var(--ibdr);font-family:inherit;white-space:nowrap;}
+.sb:last-child{border-right:none;}
+.sb.p{background:var(--warn);color:#000;}
+.sb.c{background:var(--ok);color:#fff;}
+.sb.n{background:var(--danger);color:#fff;}
+/* ── HR DECISION BUTTONS — larger / more prominent ── */
+.decision-wrap{margin-bottom:16px;}
+.decision-wrap .fl{margin-bottom:10px;}
+.dtog{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--ibdr);border-radius:8px;overflow:hidden;width:100%;}
+.dt{padding:16px 24px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;font-weight:700;font-family:inherit;transition:all .15s;text-align:center;}
+.dt:first-child{border-right:2px solid var(--ibdr);}
+.dt:hover{background:rgba(255,255,255,.05);color:#fff;}
+.dt.on-approve{background:var(--ok);color:#fff;border-color:var(--ok);}
+.dt.on-approve:first-child{border-right-color:rgba(0,0,0,.2);}
+.dt.on-reject{background:#444;color:#fff;}
+/* status badge */
+.bdg{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.b-open{background:rgba(235,28,45,.1);color:var(--red);border:1px solid var(--red);}
+.b-pend{background:rgba(255,171,0,.1);color:var(--warn);border:1px solid var(--warn);}
+.b-ok{background:rgba(0,200,83,.1);color:var(--ok);border:1px solid var(--ok);}
+/* callouts */
+.co{padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:12px;}
+.co-i{background:rgba(100,181,246,.07);border:1px solid rgba(100,181,246,.2);color:#9ac8f5;}
+.co-w{background:rgba(255,171,0,.07);border:1px solid rgba(255,171,0,.2);color:#ffcc02;}
+/* form header (title + badge) */
+.fhdr{margin-bottom:24px;}
+.fhdr .bdg{margin-bottom:10px;}
+.fhdr h1{font-size:22px;font-weight:700;margin-bottom:4px;}
+.fhdr p{color:var(--muted);font-size:13px;}
+/* buttons */
+.btn{display:inline-block;padding:12px 22px;border:none;border-radius:8px;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer;text-align:center;text-decoration:none;}
+.btn-p{background:var(--red);color:#fff;}
+.btn-s{background:#2a2a2a;color:#fff;border:1px solid var(--bdr);}
+.btn-full{width:100%;display:block;}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--bdr);}
+.act1{margin-top:24px;padding-top:20px;border-top:1px solid var(--bdr);}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;}
+.stat{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:16px 20px;}
+.stat .sv{font-size:28px;font-weight:700;margin-bottom:4px;}
+.stat .sl2{font-size:12px;color:var(--muted);}
+/* dashboard table */
+.dtbl{width:100%;border-collapse:collapse;font-size:13px;}
+.dtbl th{text-align:left;padding:10px 12px;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--bdr);}
+.dtbl td{padding:11px 12px;border-bottom:1px solid var(--bdr);vertical-align:middle;}
+.dtbl tr:last-child td{border-bottom:none;}
+/* confirmation screen — identical for every form */
+.conf-screen{text-align:center;padding:52px 24px;}
+.conf-screen .ci{font-size:56px;margin-bottom:16px;}
+.conf-screen h2{color:var(--ok);font-size:22px;font-weight:700;margin:0 0 10px;}
+.conf-screen p{color:var(--muted);font-size:14px;margin-bottom:26px;max-width:440px;margin-left:auto;margin-right:auto;}
+.conf-screen .cb{max-width:220px;display:block;margin:0 auto;}
+.conf-screen .cx{color:#444;font-size:12px;margin-top:12px;}
+/* email */
+.email-frame{background:#f4f4f4;border-radius:8px;overflow:hidden;max-width:620px;margin:0 auto;}
+.email-hdr{background:#0c0c0c;padding:24px;text-align:center;}
+.email-body{background:#fff;padding:32px;color:#1a1a1a;}
+.email-body h2{font-size:20px;font-weight:700;margin-bottom:14px;}
+.email-body p{font-size:14px;color:#444;line-height:1.7;margin-bottom:14px;}
+.eib{background:#f8f8f8;border:1px solid #e0e0e0;border-radius:6px;padding:14px 18px;margin:16px 0;}
+.eib .ei{display:flex;flex-direction:column;margin-bottom:8px;}
+.eib .ei:last-child{margin-bottom:0;}
+.eib .el{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:2px;}
+.eib .ev{font-weight:600;color:#1a1a1a;font-size:14px;}
+.ecta{display:block;background:#EB1C2D;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 24px;border-radius:8px;text-align:center;margin:22px 0;}
+.eftr{background:#f0f0f0;padding:14px 24px;font-size:11px;color:#888;text-align:center;border-top:1px solid #ddd;}
+</style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <div class="sb-head">
+    <span class="sb-logo">🎨 All Screens</span>
+    <span class="sb-sub">Standardized Mockups</span>
+  </div>
+  <div id="sb-links"></div>
+</nav>
+
+<div id="main">
+  <div class="top-bar">
+    <span class="tb-title">TEAM Group — All HTML Views · One width · One checklist style · One confirmation</span>
+    <span class="tb-hint">Toggle button shows confirmation state for each form</span>
+  </div>
+  <div id="screens"></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════ */
+
+// Checklist table — used for ALL step lists, no exceptions
+// Notes column is ALWAYS present. Row data r[2]==='3' triggers 3-state buttons (Asset Retrieval only).
+function cht(rows) {
+  var h = '<table class="cht"><thead><tr><th>Step</th><th style="width:160px;">Status</th><th>Notes / Comments</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var btns = r[2] === '3'
+      ? '<div class="sbg"><button class="sb p">Pending</button><button class="sb">Collected</button><button class="sb">Not Returned</button></div>'
+      : '<div class="sbg"><button class="sb p">Pending</button><button class="sb">Complete</button></div>';
+    h += '<tr><td><span class="cn">'+r[0]+'</span>'+(r[1]?'<span class="cs">'+r[1]+'</span>':'')+'</td><td>'+btns+'</td><td><textarea class="fi" rows="2" placeholder="Notes..."></textarea></td></tr>';
+  });
+  return h + '</tbody></table>';
+}
+
+// Ticket info
+function ti(rows){
+  var h = '<div class="ti">';
+  rows.forEach(function(r){
+    h += '<div class="ir'+(r[2]?' '+r[2]:'')+'"><span class="l">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>';
+  });
+  return h + '</div>';
+}
+
+// Spec form header
+function specHdr(title, sub, badgeClass){
+  badgeClass = badgeClass || 'b-open';
+  return '<div class="fhdr"><span class="bdg '+badgeClass+'">'+({
+    'b-open':'Open','b-pend':'Pending Approval','b-ok':'Closed'
+  }[badgeClass] || 'Open')+'</span><h1>'+title+' — Jane Doe</h1><p>'+sub+'</p></div>';
+}
+
+// Confirmation screen — identical for every form
+function confScreen(title, msg){
+  return '<div class="sim"><div class="cw"><div class="logo-wrap"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="TEAM Group"></div><div class="cf"><div class="conf-screen"><div class="ci">✅</div><h2>'+title+'</h2><p>'+msg+'</p><button class="btn btn-p cb">Return to Dashboard</button><p class="cx">You may close this window.</p></div></div></div></div>';
+}
+
+/* ══════════════════════════════════════════════════════
+   SCREEN DEFINITIONS
+══════════════════════════════════════════════════════ */
+var SCREENS = [
+
+/* ─── REQUEST FORMS ─── */
+{id:'initial-request', file:'InitialRequest.html', name:'New Employee Request', type:'req', typeLabel:'Request Form',
+ conf:{title:'Request Submitted', msg:'Your new hire request for <strong>Jane Doe</strong> has been submitted to HR. You will receive an email confirmation when the request is reviewed.'},
+ html:function(){return `
+<div class="sim"><div class="cw">
+<div class="logo-wrap"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="TEAM Group"></div>
+<div class="pctx">ℹ️ &nbsp;Submitting this request will create onboarding action items for IT, Safety, HR, and any selected equipment or system departments.</div>
+<div class="cf">
+<h2 class="s">Employee Information</h2>
+<div class="fr">
+  <div class="ff"><label class="fl">First Name <span class="req">*</span></label><input type="text" class="fi" value="Jane"></div>
+  <div class="ff"><label class="fl">Last Name <span class="req">*</span></label><input type="text" class="fi" value="Doe"></div>
+  <div class="ff"><label class="fl">Start Date <span class="req">*</span></label><input type="date" class="fi" value="2026-05-12"></div>
+  <div class="ff"><label class="fl">Site <span class="req">*</span></label><select class="fi"><option>Edmonton Main</option><option>Calgary North</option><option>Vancouver Island</option></select></div>
+  <div class="ff"><label class="fl">Job Title <span class="req">*</span></label><input type="text" class="fi" value="Site Manager"></div>
+  <div class="ff"><label class="fl">Manager Email <span class="req">*</span></label><input type="email" class="fi" value="jsmith@team-group.com"></div>
+</div>
+<div class="fr2">
+  <div class="ff"><label class="fl">Employment Type <span class="req">*</span></label><div class="rg"><label><input type="radio" name="et" checked><span class="rb">Salaried</span></label><label><input type="radio" name="et"><span class="rb">Hourly</span></label><label><input type="radio" name="et"><span class="rb">Contract</span></label></div></div>
+  <div class="ff"><label class="fl">Requested Email Address</label><input type="email" class="fi" placeholder="jane.doe@team-group.com"></div>
+</div>
+
+<h2 class="s">System Access</h2>
+<div class="ff"><label class="fl">Select all that apply</label>
+<div class="cbt">
+  <label class="ct on"><input type="checkbox" checked><span>Google Workspace</span></label>
+  <label class="ct on"><input type="checkbox" checked><span>VPN Access</span></label>
+  <label class="ct on"><input type="checkbox" checked><span>SiteDocs</span></label>
+  <label class="ct on"><input type="checkbox" id="boss-chk" onchange="document.getElementById('boss-sub').classList.toggle('open',this.checked)" checked><span>BOSS</span></label>
+  <label class="ct"><input type="checkbox" id="jonas-chk" onchange="document.getElementById('jonas-sub').classList.toggle('open',this.checked)"><span>Jonas</span></label>
+  <label class="ct"><input type="checkbox" id="cp-chk" onchange="document.getElementById('cp-sub').classList.toggle('open',this.checked)"><span>Central Purchasing</span></label>
+  <label class="ct"><input type="checkbox"><span>Fleetio</span></label>
+</div>
+<!-- BOSS sub-section -->
+<div id="boss-sub" class="sub-sec open" style="margin-top:10px;">
+  <span class="sub-lbl">BOSS — Select Committees</span>
+  <div class="cbg">
+    <label><input type="checkbox" checked> Incidents</label>
+    <label><input type="checkbox"> Cost Sheet</label>
+    <label><input type="checkbox" checked> Trip Reports</label>
+    <label><input type="checkbox"> Grievances</label>
+    <label><input type="checkbox"> Health &amp; Safety</label>
+    <label><input type="checkbox"> Environmental</label>
+  </div>
+</div>
+<!-- Jonas sub-section -->
+<div id="jonas-sub" class="sub-sec" style="margin-top:10px;">
+  <span class="sub-lbl">Jonas — Select Cost Sheet Job Numbers</span>
+  <div class="cbg">
+    <label><input type="checkbox"> 10001 — Edmonton Main</label>
+    <label><input type="checkbox"> 10002 — Edmonton North</label>
+    <label><input type="checkbox"> 10003 — Leduc</label>
+    <label><input type="checkbox"> 10004 — Nisku</label>
+    <label><input type="checkbox"> 10005 — Calgary North</label>
+    <label><input type="checkbox"> 10006 — Calgary South</label>
+    <label><input type="checkbox"> 10007 — Red Deer</label>
+    <label><input type="checkbox"> 10008 — Lethbridge</label>
+    <label><input type="checkbox"> 10009 — Vancouver Island</label>
+    <label><input type="checkbox"> 10010 — Kelowna</label>
+  </div>
+</div>
+<!-- Central Purchasing sub-section -->
+<div id="cp-sub" class="sub-sec" style="margin-top:10px;">
+  <span class="sub-lbl">Central Purchasing — Select Purchasing Sites</span>
+  <div class="cbg">
+    <label><input type="checkbox"> 10001 — Edmonton Main</label>
+    <label><input type="checkbox"> 10003 — Leduc</label>
+    <label><input type="checkbox"> 10004 — Nisku</label>
+    <label><input type="checkbox"> 10005 — Calgary North</label>
+  </div>
+</div>
+</div>
+
+<h2 class="s">Equipment</h2>
+<div class="ff"><label class="fl">Select all that apply</label>
+<div class="cbt">
+  <label class="ct on"><input type="checkbox" checked><span>Laptop (Windows)</span></label>
+  <label class="ct on"><input type="checkbox" checked><span>Mobile Phone</span></label>
+  <label class="ct"><input type="checkbox"><span>Business Cards</span></label>
+  <label class="ct"><input type="checkbox" id="cc-chk" onchange="document.getElementById('cc-sub').classList.toggle('open',this.checked)"><span>Credit Card</span></label>
+  <label class="ct"><input type="checkbox"><span>Company Vehicle</span></label>
+  <label class="ct"><input type="checkbox"><span>Employee ID Card</span></label>
+</div>
+<!-- Credit Card sub-section -->
+<div id="cc-sub" class="sub-sec" style="margin-top:10px;">
+  <span class="sub-lbl">Credit Card — Select Types Required</span>
+  <div class="cbg">
+    <label><input type="checkbox"> USA Corporate Card</label>
+    <label><input type="checkbox"> Canada Corporate Card</label>
+    <label><input type="checkbox"> Home Depot Card</label>
+  </div>
+</div>
+</div>
+
+<h2 class="s">Additional Information</h2>
+<div class="fr2">
+  <div class="ff"><label class="fl">Safety Onboarding Required?</label><div class="rg"><label><input type="radio" name="so" checked><span class="rb">Yes</span></label><label><input type="radio" name="so"><span class="rb">No</span></label></div></div>
+  <div class="ff"><label class="fl">30/60/90 Review Required?</label><div class="rg"><label><input type="radio" name="rev" checked><span class="rb">Yes</span></label><label><input type="radio" name="rev"><span class="rb">No</span></label></div></div>
+</div>
+<div class="ff"><label class="fl">Notes / Comments</label><textarea class="fi" rows="3" placeholder="Any additional context for HR or IT..."></textarea></div>
+<div class="acts"><button class="btn btn-s">Save Draft</button><button class="btn btn-p">Submit Request</button></div>
+</div></div></div>`;}},
+
+{id:'position-change', file:'PositionSiteChangeRequest.html', name:'Position / Site Change Request', type:'req', typeLabel:'Request Form',
+ conf:{title:'Change Request Submitted', msg:'The status change request for <strong>Jane Doe</strong> has been sent to HR for approval. HR will review and confirm the details before action items are created.'},
+ html:function(){return `
+<div class="sim"><div class="cw">
+<div class="logo-wrap"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="TEAM Group"></div>
+<div class="pctx">ℹ️ &nbsp;Current employee: <strong>Jane Doe</strong> · Edmonton Main · Site Manager · jdoe@team-group.com</div>
+<div class="cf">
+<h2 class="s">Change Details</h2>
+<div class="fr">
+  <div class="ff"><label class="fl">Effective Date <span class="req">*</span></label><input type="date" class="fi" value="2026-06-01"></div>
+  <div class="ff"><label class="fl">New Site</label><select class="fi"><option value="" disabled>Select...</option><option selected>Calgary North</option><option>Edmonton Main</option><option>Vancouver Island</option></select></div>
+  <div class="ff"><label class="fl">New Job Title</label><input type="text" class="fi" value="Senior Site Manager"></div>
+  <div class="ff"><label class="fl">New Manager Email</label><input type="email" class="fi" value="slee@team-group.com"></div>
+</div>
+<div class="fr2">
+  <div class="ff"><label class="fl">New Classification</label><div class="rg"><label><input type="radio" name="nc" checked><span class="rb">Salaried</span></label><label><input type="radio" name="nc"><span class="rb">Hourly</span></label><label><input type="radio" name="nc"><span class="rb">Contract</span></label></div></div>
+</div>
+<h2 class="s">Additional Access Required</h2>
+<div class="ff"><label class="fl">Select any new systems needed</label>
+<div class="cbt">
+  <label class="ct"><input type="checkbox" id="pc-jonas" onchange="document.getElementById('pc-jonas-sub').classList.toggle('open',this.checked)"><span>Jonas</span></label>
+  <label class="ct on"><input type="checkbox" checked><span>Central Purchasing</span></label>
+  <label class="ct"><input type="checkbox"><span>Fleetio</span></label>
+</div>
+<div id="pc-jonas-sub" class="sub-sec" style="margin-top:10px;">
+  <span class="sub-lbl">Jonas — Select Additional Cost Sheet Jobs</span>
+  <div class="cbg">
+    <label><input type="checkbox"> 10005 — Calgary North</label>
+    <label><input type="checkbox"> 10006 — Calgary South</label>
+    <label><input type="checkbox"> 10007 — Red Deer</label>
+  </div>
+</div>
+</div>
+<h2 class="s">New Equipment Required</h2>
+<div class="ff"><div class="cbt">
+  <label class="ct"><input type="checkbox"><span>Business Cards</span></label>
+  <label class="ct on"><input type="checkbox" checked id="pc-cc" onchange="document.getElementById('pc-cc-sub').classList.toggle('open',this.checked)"><span>Credit Card</span></label>
+  <label class="ct"><input type="checkbox"><span>Company Vehicle</span></label>
+</div>
+<div id="pc-cc-sub" class="sub-sec open" style="margin-top:10px;">
+  <span class="sub-lbl">Credit Card — Select Types Required</span>
+  <div class="cbg">
+    <label><input type="checkbox" checked> USA Corporate Card — Limit: $5,000</label>
+    <label><input type="checkbox"> Canada Corporate Card</label>
+    <label><input type="checkbox"> Home Depot Card</label>
+  </div>
+</div>
+</div>
+<h2 class="s">Additional Information</h2>
+<div class="ff"><label class="fl">Notes / Reason for Change</label><textarea class="fi" rows="3" placeholder="Provide context for this change request..."></textarea></div>
+<div class="acts"><button class="btn btn-s">Save Draft</button><button class="btn btn-p">Submit to HR</button></div>
+</div></div></div>`;}},
+
+{id:'termination-req', file:'TerminationRequest.html', name:'End of Employment Request', type:'req', typeLabel:'Request Form',
+ conf:{title:'Termination Request Submitted', msg:'The end of employment request for <strong>Jane Doe</strong> has been submitted for HR approval. Offboarding action items will be created upon approval.'},
+ html:function(){return `
+<div class="sim"><div class="cw">
+<div class="logo-wrap"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="TEAM Group"></div>
+<div class="pctx co-w">⚠️ &nbsp;Termination requests require HR approval before offboarding action items are created. All asset retrieval and access revocation will be tracked.</div>
+<div class="cf">
+<h2 class="s">Employee Information</h2>
+<div class="fr">
+  <div class="ff"><label class="fl">Employee Name <span class="req">*</span></label><input type="text" class="fi" value="Jane Doe"></div>
+  <div class="ff"><label class="fl">Last Day of Work <span class="req">*</span></label><input type="date" class="fi" value="2026-05-31"></div>
+  <div class="ff"><label class="fl">Site</label><input type="text" class="fi" value="Edmonton Main"></div>
+  <div class="ff"><label class="fl">Manager Email</label><input type="email" class="fi" value="jsmith@team-group.com"></div>
+</div>
+<div class="ff"><label class="fl">Reason for Termination <span class="req">*</span></label><div class="rg"><label><input type="radio" name="tr" checked><span class="rb">Resignation</span></label><label><input type="radio" name="tr"><span class="rb">Termination</span></label><label><input type="radio" name="tr"><span class="rb">Retirement</span></label><label><input type="radio" name="tr"><span class="rb">Contract End</span></label></div></div>
+<h2 class="s">Assets to Retrieve</h2>
+<div class="ff"><label class="fl">Select all assets assigned to this employee</label>
+<div class="cbt">
+  <label class="ct on"><input type="checkbox" checked><span>Laptop</span></label>
+  <label class="ct on"><input type="checkbox" checked><span>Mobile Phone</span></label>
+  <label class="ct"><input type="checkbox"><span>Company Vehicle</span></label>
+  <label class="ct on"><input type="checkbox" checked><span>Employee ID Card</span></label>
+  <label class="ct"><input type="checkbox"><span>Business Cards</span></label>
+  <label class="ct"><input type="checkbox"><span>Credit Card</span></label>
+</div>
+</div>
+<h2 class="s">System Access to Revoke</h2>
+<div class="ff"><label class="fl">Select all active systems</label>
+<div class="cbt">
+  <label class="ct on"><input type="checkbox" checked><span>Google Workspace</span></label>
+  <label class="ct on"><input type="checkbox" checked><span>VPN Access</span></label>
+  <label class="ct on"><input type="checkbox" checked><span>SiteDocs</span></label>
+  <label class="ct on"><input type="checkbox" checked><span>Jonas</span></label>
+  <label class="ct on"><input type="checkbox" checked><span>BOSS</span></label>
+  <label class="ct"><input type="checkbox"><span>Fleetio</span></label>
+</div>
+</div>
+<div class="ff" style="margin-top:14px;"><label class="fl">Notes</label><textarea class="fi" rows="3" placeholder="Any additional context..."></textarea></div>
+<div class="acts"><button class="btn btn-s">Save Draft</button><button class="btn btn-p">Submit to HR</button></div>
+</div></div></div>`;}},
+
+/* ─── APPROVAL FORMS ─── */
+{id:'status-change-approval', file:'StatusChangeApproval.html', name:'Status Change Approval', type:'appr', typeLabel:'Approval Form',
+ conf:{title:'Decision Submitted', msg:'Your approval decision for <strong>Jane Doe\'s</strong> status change has been recorded. Action items will be created and all parties notified.'},
+ html:function(){return `
+<div class="sim"><div class="cw">
+<div class="logo-wrap"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="TEAM Group"></div>
+<div class="pctx">ℹ️ &nbsp;Submitted by <strong>John Smith</strong> on Apr 22, 2026 · Workflow: CHG_20260422_001</div>
+<div class="cf">
+${specHdr('Status Change Approval','HR review required','b-pend')}
+<h2 class="s">Request Summary</h2>
+${ti([
+  ['Employee','Jane Doe'],['Effective Date','June 1, 2026'],
+  ['Current Site','Edmonton Main'],['New Site','Calgary North','chg'],
+  ['Current Title','Field Technician'],['New Title','Senior Technician','chg'],
+  ['Current Manager','John Smith'],['New Manager','Sarah Lee','chg'],
+  ['New Equipment / Access','Credit Card (USA $5,000), Central Purchasing','s2']
+])}
+<h2 class="s">HR Confirmation</h2>
+<div class="fr">
+  <div class="ff"><label class="fl">Confirmed New Manager Email</label><input type="email" class="fi" value="slee@team-group.com"><p style="font-size:11px;color:#555;margin-top:4px;">Pre-filled from request — update if needed.</p></div>
+  <div class="ff"><label class="fl">Confirmed Job Title</label><input type="text" class="fi" value="Senior Technician"></div>
+  <div class="ff"><label class="fl">Confirmed JR Title</label><select class="fi"><option>— None / N/A —</option><option selected>Field Supervisor</option><option>Site Manager</option><option>Senior Technician</option></select><p style="font-size:11px;color:#555;margin-top:4px;">Drives safety, learning paths, and system access.</p></div>
+</div>
+<h2 class="s">Checklist</h2>
+${cht([
+  ['Confirm new manager has been notified of transition',''],
+  ['Verify access changes are in scope for this role','Review new system access requests against JR title'],
+  ['Confirm effective date is correct','Cross-reference with payroll if classification is changing'],
+  ['Confirm credit card authorization if applicable','Manager written approval required for limit changes']
+])}
+<h2 class="s">HR Decision</h2>
+<div class="decision-wrap">
+  <label class="fl">Select your decision</label>
+  <div class="dtog">
+    <button class="dt on-approve" onclick="this.classList.add('on-approve');this.nextElementSibling.classList.remove('on-reject');">✓ &nbsp;Approve Change</button>
+    <button class="dt" onclick="this.classList.add('on-reject');this.previousElementSibling.classList.remove('on-approve');">✕ &nbsp;Reject</button>
+  </div>
+</div>
+<div class="ff"><label class="fl">Notes</label><textarea class="fi" rows="3" placeholder="Optional notes to requester and managers..."></textarea></div>
+<div class="act1"><button class="btn btn-p btn-full">Submit Decision</button></div>
+</div></div></div>`;}},
+
+{id:'termination-approval', file:'TerminationApproval.html', name:'Termination Approval', type:'appr', typeLabel:'Approval Form',
+ conf:{title:'Decision Recorded', msg:'Your approval for <strong>Jane Doe\'s</strong> end of employment has been recorded. Offboarding action items will be created and all departments notified.'},
+ html:function(){return `
+<div class="sim"><div class="cw">
+<div class="logo-wrap"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="TEAM Group"></div>
+<div class="pctx">ℹ️ &nbsp;Submitted by <strong>John Smith</strong> on Apr 22, 2026 · Workflow: TERM_20260422_001</div>
+<div class="cf">
+${specHdr('Termination Approval','HR review required','b-pend')}
+<h2 class="s">Request Summary</h2>
+${ti([
+  ['Employee','Jane Doe'],['Last Day','May 31, 2026'],
+  ['Site','Edmonton Main'],['Reason','Resignation'],
+  ['Assets to Retrieve','Laptop, Mobile Phone, Employee ID Card','s2'],
+  ['Access to Revoke','Google Workspace, VPN, SiteDocs, BOSS','s2']
+])}
+<h2 class="s">Checklist</h2>
+${cht([
+  ['Payroll notified of last day and final pay','Confirm payroll is aware of the termination date'],
+  ['Benefits / insurance processing initiated','HR has begun benefits termination or transfer'],
+  ['Access revocation date confirmed with IT','IT informed of last day and scheduled access removal'],
+  ['ROE initiated in payroll system','Record of Employment to be filed within required window'],
+  ['Exit interview scheduled if applicable','']
+])}
+<h2 class="s">HR Decision</h2>
+<div class="decision-wrap">
+  <label class="fl">Select your decision</label>
+  <div class="dtog">
+    <button class="dt on-approve" onclick="this.classList.add('on-approve');this.nextElementSibling.classList.remove('on-reject');">✓ &nbsp;Approve Termination</button>
+    <button class="dt" onclick="this.classList.add('on-reject');this.previousElementSibling.classList.remove('on-approve');">✕ &nbsp;Reject</button>
+  </div>
+</div>
+<div class="ff"><label class="fl">Notes</label><textarea class="fi" rows="3" placeholder="Optional notes..."></textarea></div>
+<div class="act1"><button class="btn btn-p btn-full">Submit Decision</button></div>
+</div></div></div>`;}},
+
+{id:'hr-verification', file:'HRVerification.html', name:'HR Verification & ADP Setup', type:'appr', typeLabel:'Approval Form',
+ conf:{title:'Verification Complete', msg:'ADP setup and email verification for <strong>Jane Doe</strong> has been confirmed. IT Setup action item is now unlocked.'},
+ html:function(){return `
+<div class="sim"><div class="cw">
+<div class="logo-wrap"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="TEAM Group"></div>
+<div class="pctx">ℹ️ &nbsp;Workflow: NEW_EMP_20260422_001 · IT Setup is gated behind this step — complete before start date.</div>
+<div class="cf">
+${specHdr('HR Verification & ADP','Assigned to: hr@team-group.com')}
+<h2 class="s">Employee Details</h2>
+${ti([
+  ['Employee','Jane Doe'],['Start Date','May 12, 2026'],
+  ['Job Title','Site Manager'],['Site','Edmonton Main'],
+  ['Requested Email','"jane.doe"@team-group.com','s2']
+])}
+<h2 class="s">ADP Setup</h2>
+<div class="fr2">
+  <div class="ff"><label class="fl">ADP Employee ID <span class="req">*</span></label><input type="text" class="fi" placeholder="e.g. 10042"></div>
+  <div class="ff"><label class="fl">Confirmed Email Address <span class="req">*</span></label><input type="email" class="fi" value="jane.doe@team-group.com"></div>
+</div>
+<h2 class="s">Checklist</h2>
+${cht([
+  ['Employee created in ADP with correct start date and classification',''],
+  ['Google Workspace account created and active','Login: jane.doe@team-group.com'],
+  ['Employee listed in company Google Directory','Name, title, and site visible'],
+  ['ADP employee number recorded and filed','']
+])}
+<div class="act1"><button class="btn btn-p btn-full">Confirm & Complete</button></div>
+</div></div></div>`;}},
+
+/* ─── SPECIALIST: ONBOARDING ─── */
+{id:'it-setup', file:'ITSetup.html', name:'IT Setup', type:'spec', typeLabel:'Specialist Form',
+ conf:{title:'IT Setup Confirmed', msg:'All IT setup tasks for <strong>Jane Doe</strong> have been completed and recorded. The employee can now log in to all required systems.'},
+ html:function(){return sf({
+  title:'IT Setup', sub:'Assigned to: it@team-group.com',
+  tiRows:[['Employee','Jane Doe'],['Start Date','May 12, 2026'],['Job Title','Site Manager'],['JR Title','Field Supervisor'],['Email Assigned','jane.doe@team-group.com'],['Equipment','Laptop (Windows), Mobile Phone','s2']],
+  steps:[
+   ['Create Google Workspace account','Login: jane.doe@team-group.com'],
+   ['Configure email signature','Standard TEAM Group format'],
+   ['Set up laptop — Windows, Chrome, required software',''],
+   ['Configure VPN access and test from off-network',''],
+   ['Set up mobile device — MDM enrollment',''],
+   ['Verify employee can log in to all systems','Test on or before start date'],
+   ['Notify manager that IT setup is complete','']
+  ]
+ });}},
+
+{id:'safety-onboarding', file:'SafetyOnboarding.html', name:'Safety Onboarding', type:'spec', typeLabel:'Specialist Form',
+ conf:{title:'Safety Onboarding Confirmed', msg:'SiteDocs locations and DSS learning paths for <strong>Jane Doe</strong> have been assigned and recorded.'},
+ html:function(){return sf({
+  title:'Safety Onboarding', sub:'Assigned to: safety@team-group.com',
+  tiRows:[['Employee','Jane Doe'],['Start Date','May 12, 2026'],['Site','Edmonton Main'],['JR Title','Field Supervisor'],['Manager','John Smith']],
+  steps:[
+   ['Add employee to SiteDocs platform','Login: jane.doe@team-group.com'],
+   ['Assign all required SiteDocs job site locations','Based on role and JR title'],
+   ['Assign DSS learning path for JR title','Field Supervisor template'],
+   ['Schedule safety orientation with the safety team','On or before start date'],
+   ['Confirm employee can access SiteDocs and submit forms','Test login'],
+   ['Confirm DSS enrollment is visible to employee','']
+  ]
+ });}},
+
+{id:'jonas-setup', file:'Jonas.html', name:'Jonas Access Setup', type:'spec', typeLabel:'Specialist Form',
+ conf:{title:'Jonas Setup Confirmed', msg:'Jonas Purchasing account and cost sheet access for <strong>Jane Doe</strong> have been provisioned.'},
+ html:function(){return sf({
+  title:'Jonas Access', sub:'Assigned to: jonas@team-group.com',
+  tiRows:[['Employee','Jane Doe'],['Job Title','Site Manager'],['JR Title','Field Supervisor'],['Cost Sheet Jobs','10001, 10003, 10017','s2']],
+  steps:[
+   ['Create Jonas Purchasing account','Login: jane.doe@team-group.com'],
+   ['Assign cost sheet: 10001 — Edmonton',''],
+   ['Assign cost sheet: 10003 — Leduc',''],
+   ['Assign cost sheet: 10017 — Nisku',''],
+   ['Verify all cost sheets are accessible','Employee can view and post to all assigned jobs'],
+   ['Notify manager that Jonas access is complete','']
+  ]
+ });}},
+
+{id:'fleetio-setup', file:'Fleetio.html', name:'Fleetio Setup', type:'spec', typeLabel:'Specialist Form',
+ conf:{title:'Fleetio Setup Confirmed', msg:'Fleetio driver account and fleet access for <strong>Jane Doe</strong> have been configured.'},
+ html:function(){return sf({
+  title:'Fleetio Setup', sub:'Assigned to: fleet@team-group.com',
+  tiRows:[['Employee','Jane Doe'],['Site','Edmonton Main'],['Manager','John Smith'],['Start Date','May 12, 2026']],
+  steps:[
+   ['Create Fleetio driver account','Login: jane.doe@team-group.com'],
+   ['Assign to Edmonton Main fleet group','Include all site vehicles'],
+   ['Configure driver profile and verify license info','License class and expiry date'],
+   ['Confirm account active and fleet vehicles visible',''],
+   ['Notify manager that Fleetio access is complete','']
+  ]
+ });}},
+
+{id:'business-cards', file:'BusinessCards.html', name:'Business Cards Order', type:'spec', typeLabel:'Specialist Form',
+ conf:{title:'Business Cards Confirmed', msg:'Business card order for <strong>Jane Doe</strong> has been submitted and delivery timeline confirmed.'},
+ html:function(){return sf({
+  title:'Business Cards', sub:'Assigned to: hr@team-group.com',
+  tiRows:[['Employee','Jane Doe'],['Job Title','Site Manager'],['Email','jane.doe@team-group.com'],['Phone','780-555-0100'],['Site','Edmonton Main']],
+  steps:[
+   ['Confirm card details with employee or manager','Name, title, email, phone, site — verify all correct'],
+   ['Submit order to print vendor','Use standard TEAM Group card template'],
+   ['Confirm order received and in production','Record order reference number'],
+   ['Record estimated delivery date and notify manager','']
+  ]
+ });}},
+
+{id:'credit-card', file:'CreditCard.html', name:'Credit Card Application', type:'spec', typeLabel:'Specialist Form',
+ conf:{title:'Credit Card Application Confirmed', msg:'Credit card application for <strong>Jane Doe</strong> has been submitted and card delivery timeline has been communicated.'},
+ html:function(){return sf({
+  title:'Credit Card', sub:'Assigned to: finance@team-group.com',
+  tiRows:[['Employee','Jane Doe'],['Card Type','USA Corporate Visa'],['Credit Limit','$5,000 USD'],['Manager','John Smith']],
+  steps:[
+   ['Confirm manager authorization for card and credit limit','Written or email approval required'],
+   ['Submit USA Corporate Visa application to TD Commercial Banking',''],
+   ['Record application reference number',''],
+   ['Set up online banking portal access for employee','TD SmartBusiness enrollment'],
+   ['Confirm application in process and record estimated card delivery date',''],
+   ['Notify employee and manager of delivery timeline','']
+  ]
+ });}},
+
+{id:'central-purchasing', file:'CentralPurchasing.html', name:'Central Purchasing Access', type:'spec', typeLabel:'Specialist Form',
+ conf:{title:'Central Purchasing Confirmed', msg:'Central Purchasing account and purchasing site access for <strong>Jane Doe</strong> have been configured.'},
+ html:function(){return sf({
+  title:'Central Purchasing', sub:'Assigned to: purchasing@team-group.com',
+  tiRows:[['Employee','Jane Doe'],['Job Title','Site Manager'],['Purchasing Sites','10001 — Edmonton, 10003 — Leduc','s2']],
+  steps:[
+   ['Create Central Purchasing account','Login: jane.doe@team-group.com'],
+   ['Assign purchasing site: 10001 — Edmonton','Set appropriate spending permissions'],
+   ['Assign purchasing site: 10003 — Leduc',''],
+   ['Verify account is active and POs can be created','Employee test login confirmed'],
+   ['Notify manager that Central Purchasing access is ready','']
+  ]
+ });}},
+
+{id:'employee-id', file:'EmployeeIDSetup.html', name:'Employee ID & Building Access', type:'spec', typeLabel:'Specialist Form',
+ conf:{title:'Employee ID Setup Confirmed', msg:'Employee ID card and building access for <strong>Jane Doe</strong> have been activated.'},
+ html:function(){return sf({
+  title:'Employee ID Setup', sub:'Assigned to: facilities@team-group.com',
+  tiRows:[['Employee','Jane Doe'],['Site','Edmonton Main'],['Start Date','May 12, 2026'],['Access Level','Standard Employee']],
+  steps:[
+   ['Coordinate photo for employee ID card','Photo obtained from employee or HR'],
+   ['Order ID card from badge vendor',''],
+   ['Program building access for Edmonton Main','Standard employee access level'],
+   ['Configure any after-hours or restricted access if requested','Manager to confirm requirements'],
+   ['Confirm access card is activated and working','Test at main entrance on or before start date']
+  ]
+ });}},
+
+{id:'sitedocs-setup', file:'SiteDocs.html', name:'SiteDocs Setup', type:'spec', typeLabel:'Specialist Form',
+ conf:{title:'SiteDocs Setup Confirmed', msg:'SiteDocs locations and inspection templates for <strong>Jane Doe</strong> have been configured.'},
+ html:function(){return sf({
+  title:'SiteDocs Setup', sub:'Assigned to: safety@team-group.com',
+  tiRows:[['Employee','Jane Doe'],['JR Title','Field Supervisor'],['Site','Edmonton Main'],['Inspection Level','Site Supervisor']],
+  steps:[
+   ['Add employee to SiteDocs platform','Login: jane.doe@team-group.com'],
+   ['Assign to all required Edmonton Main job site locations',''],
+   ['Assign inspection templates for Field Supervisor JR title',''],
+   ['Confirm employee can log in and view all assigned sites',''],
+   ['Confirm inspection templates are correct for JR title','']
+  ]
+ });}},
+
+{id:'review-306090', file:'Review306090.html', name:'30/60/90 Day Review Setup', type:'spec', typeLabel:'Specialist Form',
+ conf:{title:'Review Setup Confirmed', msg:'30/60/90 day review schedule for <strong>Jane Doe</strong> has been configured and the review document link has been saved.'},
+ html:function(){return `
+<div class="sim"><div class="cw">
+<div class="logo-wrap"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="TEAM Group"></div>
+<div class="pctx">ℹ️ &nbsp;Workflow: NEW_EMP_20260422_001 · Complete before or on start date.</div>
+<div class="cf">
+${specHdr('30/60/90 Day Review Setup','Assigned to: hr@team-group.com')}
+<h2 class="s">Employee Details</h2>
+${ti([['Employee','Jane Doe'],['Start Date','May 12, 2026'],['Job Title','Site Manager'],['Manager','John Smith']])}
+<h2 class="s">Review Configuration</h2>
+<div class="fr2">
+  <div class="ff"><label class="fl">JR Title for Review Template <span class="req">*</span></label><select class="fi"><option>— Select JR Title —</option><option selected>Field Supervisor</option><option>Site Manager</option><option>Project Lead</option></select><p style="font-size:11px;color:#555;margin-top:4px;">Determines which 30/60/90 review template is used.</p></div>
+  <div class="ff"><label class="fl">Review Document Link</label><input type="text" class="fi" placeholder="https://docs.google.com/..."></div>
+</div>
+<div class="ff"><label class="fl">Notes</label><textarea class="fi" rows="3" placeholder="Any notes about the review schedule or JR title selection..."></textarea></div>
+<h2 class="s">Checklist</h2>
+${cht([
+  ['30-day check-in calendar invite sent to manager and employee',''],
+  ['60-day check-in calendar invite sent',''],
+  ['90-day check-in calendar invite sent',''],
+  ['Review document shared with manager','Link saved above']
+])}
+<div class="act1"><button class="btn btn-p btn-full">Confirm & Complete</button></div>
+</div></div></div>`;}},
+
+/* ─── SPECIALIST: OFFBOARDING ─── */
+{id:'asset-retrieval', file:'AssetRetrieval.html', name:'Asset Retrieval', type:'off', typeLabel:'Offboarding Form',
+ conf:{title:'Collection Report Submitted', msg:'Asset collection statuses for <strong>Jane Doe</strong> have been recorded. All relevant departments have been notified.'},
+ html:function(){return `
+<div class="sim"><div class="cw">
+<div class="logo-wrap"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="TEAM Group"></div>
+<div class="pctx">ℹ️ &nbsp;Workflow: TERM_20260422_001 · Record collection status for each asset on or before last day.</div>
+<div class="cf">
+${specHdr('Asset Retrieval','Assigned to: hr@team-group.com')}
+<h2 class="s">Employee Details</h2>
+${ti([['Employee','Jane Doe'],['Last Day','May 31, 2026'],['Site','Edmonton Main'],['Manager','John Smith']])}
+<h2 class="s">Asset Collection Status</h2>
+${cht([
+  ['Laptop (Windows)','Serial: LT-00421','3'],
+  ['Mobile Phone','iPhone 14 Pro','3'],
+  ['Employee ID / Access Card','Badge #4821','3'],
+  ['Business Cards','Collect and destroy remaining stock','3'],
+  ['Credit Card','Cut up or return to Finance','3']
+])}
+<div class="ff" style="margin-top:14px;"><label class="fl">Additional Notes</label><textarea class="fi" rows="2" placeholder="Any issues with asset collection..."></textarea></div>
+<div class="act1"><button class="btn btn-p btn-full">Submit Collection Report</button></div>
+</div></div></div>`;}},
+
+{id:'safety-termination', file:'SafetyTermination.html', name:'Safety Offboarding', type:'off', typeLabel:'Offboarding Form',
+ conf:{title:'Safety Offboarding Confirmed', msg:'SiteDocs removal and safety system deactivation for <strong>Jane Doe</strong> have been completed and recorded.'},
+ html:function(){return sf({
+  title:'Safety Offboarding', sub:'Assigned to: safety@team-group.com',
+  tiRows:[['Employee','Jane Doe'],['Last Day','May 31, 2026'],['Site','Edmonton Main'],['JR Title','Field Supervisor']],
+  steps:[
+   ['Remove employee from all SiteDocs job site locations','Employee must not appear in any active sites'],
+   ['Deactivate BOSS WIS access','Login disabled, all active sessions terminated'],
+   ['Note any outstanding safety incidents or certifications','File in employee safety record'],
+   ['Complete safety offboarding record for audit trail',''],
+   ['Confirm safety equipment returned or transferred','Hard hat, PPE, site-specific gear']
+  ]
+ });}},
+
+/* ─── OTHER ─── */
+{id:'dashboard', file:'Dashboard.html', name:'Onboarding Dashboard', type:'std', typeLabel:'Dashboard',
+ conf:null,
+ html:function(){return `
+<div class="sim"><div class="cw">
+<div class="logo-wrap"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="TEAM Group"></div>
+<div style="text-align:center;margin-bottom:28px;"><h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">Onboarding Dashboard</h1><p style="color:var(--muted);font-size:14px;">Track new hires, status changes, and terminations across all sites</p></div>
+<div class="stats">
+  <div class="stat"><div class="sv" style="color:var(--info);">12</div><div class="sl2">Active Requests</div></div>
+  <div class="stat"><div class="sv" style="color:var(--warn);">4</div><div class="sl2">Pending HR Approval</div></div>
+  <div class="stat"><div class="sv" style="color:var(--red);">7</div><div class="sl2">Action Items Open</div></div>
+  <div class="stat"><div class="sv" style="color:var(--ok);">23</div><div class="sl2">Completed This Month</div></div>
+</div>
+<div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;">
+  <input type="text" class="fi" style="max-width:280px;" placeholder="🔍  Search employee or workflow ID...">
+  <select class="fi" style="max-width:160px;"><option>All Types</option><option>New Hire</option><option>Status Change</option><option>Termination</option></select>
+  <select class="fi" style="max-width:160px;"><option>All Statuses</option><option>Open</option><option>Pending</option><option>Closed</option></select>
+  <button class="btn btn-p" style="padding:10px 18px;font-size:13px;margin-left:auto;">+ New Request</button>
+</div>
+<div class="cf" style="padding:0;overflow:hidden;">
+<table class="dtbl">
+<thead><tr><th>Employee</th><th>Type</th><th>Site</th><th>Submitted</th><th>Status</th><th>Open Items</th><th></th></tr></thead>
+<tbody>
+<tr><td><strong>Jane Doe</strong><br><span style="font-size:11px;color:var(--muted);">NEW_EMP_20260422_001</span></td><td>New Hire</td><td>Edmonton Main</td><td>Apr 22, 2026</td><td><span class="bdg b-open">Open</span></td><td><span style="color:var(--warn);font-weight:700;">3 open</span></td><td><button class="btn btn-s" style="padding:7px 14px;font-size:12px;">View</button></td></tr>
+<tr><td><strong>Mike Torres</strong><br><span style="font-size:11px;color:var(--muted);">CHG_20260420_002</span></td><td>Status Change</td><td>Calgary North</td><td>Apr 20, 2026</td><td><span class="bdg b-pend">Pending</span></td><td><span style="color:var(--muted);">Awaiting HR</span></td><td><button class="btn btn-s" style="padding:7px 14px;font-size:12px;">View</button></td></tr>
+<tr><td><strong>Sarah Chen</strong><br><span style="font-size:11px;color:var(--muted);">TERM_20260418_003</span></td><td>Termination</td><td>Vancouver Island</td><td>Apr 18, 2026</td><td><span class="bdg b-ok">Closed</span></td><td><span style="color:var(--ok);">All complete</span></td><td><button class="btn btn-s" style="padding:7px 14px;font-size:12px;">View</button></td></tr>
+<tr><td><strong>Alex Patel</strong><br><span style="font-size:11px;color:var(--muted);">NEW_EMP_20260415_004</span></td><td>New Hire</td><td>Kelowna</td><td>Apr 15, 2026</td><td><span class="bdg b-open">Open</span></td><td><span style="color:var(--warn);font-weight:700;">5 open</span></td><td><button class="btn btn-s" style="padding:7px 14px;font-size:12px;">View</button></td></tr>
+</tbody>
+</table>
+</div>
+</div></div>`;}},
+
+{id:'email-template', file:'EmailUtils.js', name:'Email Notification Template', type:'std', typeLabel:'Email Standard',
+ conf:null,
+ html:function(){return `
+<div class="sim"><div class="cw">
+<div style="text-align:center;margin-bottom:28px;"><h1 style="font-size:18px;font-weight:700;margin-bottom:6px;">Standardized Email Notification</h1><p style="color:var(--muted);font-size:13px;">One template structure for all workflow notification emails</p></div>
+<div class="email-frame">
+  <div class="email-hdr"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" style="height:48px;"></div>
+  <div class="email-body">
+    <h2>Action Required: IT Setup for Jane Doe</h2>
+    <p>You have been assigned an IT setup action item as part of the onboarding workflow for <strong>Jane Doe</strong>, starting <strong>May 12, 2026</strong>.</p>
+    <div class="eib">
+      <div class="ei"><span class="el">Employee</span><span class="ev">Jane Doe</span></div>
+      <div class="ei"><span class="el">Start Date</span><span class="ev">May 12, 2026</span></div>
+      <div class="ei"><span class="el">Site</span><span class="ev">Edmonton Main</span></div>
+      <div class="ei"><span class="el">Workflow ID</span><span class="ev">NEW_EMP_20260422_001</span></div>
+      <div class="ei"><span class="el">Assigned To</span><span class="ev">it@team-group.com</span></div>
+    </div>
+    <p>Please complete all checklist items before the employee's start date. You can save your progress and return to the form at any time using the link below.</p>
+    <a class="ecta" href="#">Open IT Setup Form →</a>
+    <p style="font-size:12px;color:#888;">Not expecting this email? Contact HR at hr@team-group.com</p>
+  </div>
+  <div class="eftr">This is an automated message from the TEAM Group Employee Management System.<br>TEAM Group of Companies · Edmonton, AB · Do not reply to this email.</div>
+</div>
+<div class="pctx" style="max-width:620px;margin:20px auto 0;">ℹ️ &nbsp;<strong>Standard structure for all emails:</strong> Logo header · Action subject (type + employee name) · Context paragraph · Info box (Employee / Date / Site / Workflow ID / Assigned To) · CTA button → form link · Footer. Subject line and body text are the only things that change per notification type.</div>
+</div></div>`;}},
+
+{id:'confirmation-standard', file:'(all forms)', name:'Confirmation Screen — The Standard', type:'std', typeLabel:'Standard Pattern',
+ conf:null,
+ html:function(){return `
+<div class="sim"><div class="cw">
+<div style="text-align:center;margin-bottom:28px;"><h1 style="font-size:18px;font-weight:700;margin-bottom:6px;">Confirmation Screen — Identical Across All Forms</h1><p style="color:var(--muted);font-size:13px;">Form section is hidden, this div is shown in-place. Only the title and message text change.</p></div>
+<div class="cf" style="margin-bottom:24px;">
+  <div class="conf-screen">
+    <div class="ci">✅</div>
+    <h2>[Form Name] Confirmed</h2>
+    <p>A one or two sentence confirmation naming the employee and describing what was completed. Tell the user what happens next if relevant.</p>
+    <button class="btn btn-p cb">Return to Dashboard</button>
+    <p class="cx">You may close this window.</p>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">
+${[
+ ['IT Setup Confirmed','All IT setup tasks for Jane Doe have been completed.'],
+ ['Safety Onboarding Confirmed','SiteDocs and DSS assignments for Jane Doe have been saved.'],
+ ['Request Submitted','New hire request for Jane Doe has been sent to HR for review.'],
+ ['Decision Submitted','Approval decision for Jane Doe\'s status change has been recorded.'],
+ ['Collection Report Submitted','Asset collection statuses for Jane Doe have been recorded.'],
+ ['Jonas Setup Confirmed','Jonas account and cost sheet access for Jane Doe are complete.'],
+ ['Safety Offboarding Confirmed','SiteDocs removal and safety deactivation complete.'],
+ ['Business Cards Confirmed','Order placed and delivery timeline confirmed.'],
+].map(function(x){
+  return '<div style="background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:20px;text-align:center;"><div style="font-size:36px;margin-bottom:10px;">✅</div><div style="color:var(--ok);font-weight:700;font-size:14px;margin-bottom:6px;">'+x[0]+'</div><p style="color:var(--muted);font-size:12px;margin-bottom:14px;">'+x[1]+'</p><button class="btn btn-p" style="font-size:12px;padding:8px 16px;">Return to Dashboard</button><p style="color:#3a3a3a;font-size:11px;margin-top:8px;">You may close this window.</p></div>';
+}).join('')}
+</div>
+</div></div>`;}},
+];
+
+/* ══════════════════════════════════════════════════════
+   SPECIALIST FORM RENDERER — single function, all spec forms identical
+══════════════════════════════════════════════════════ */
+function sf(o){
+  return `
+<div class="sim"><div class="cw">
+<div class="logo-wrap"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="TEAM Group"></div>
+<div class="cf">
+${specHdr(o.title, o.sub)}
+<h2 class="s">Employee Details</h2>
+${ti(o.tiRows)}
+<h2 class="s">Checklist</h2>
+${cht(o.steps)}
+<div class="act1"><button class="btn btn-p btn-full">Mark Task Finalized</button></div>
+</div></div></div>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════════════════ */
+var TYPE_LABELS={req:'REQUEST FORMS',appr:'APPROVAL FORMS',spec:'SPECIALIST — ONBOARDING',off:'SPECIALIST — OFFBOARDING',std:'STANDARDS'};
+var DOT_MAP={req:'dot-req',appr:'dot-appr',spec:'dot-spec',off:'dot-off',std:'dot-std'};
+var TYPE_MAP={req:'type-req',appr:'type-appr',spec:'type-spec',off:'type-off',std:'type-std'};
+
+function renderAll(){
+  var main=document.getElementById('screens');
+  var sb=document.getElementById('sb-links');
+  var lastGrp=null;
+  SCREENS.forEach(function(s,i){
+    if(s.type!==lastGrp){lastGrp=s.type;var g=document.createElement('div');g.className='sb-group';g.textContent=TYPE_LABELS[s.type];sb.appendChild(g);}
+    var a=document.createElement('div');a.className='sb-link';
+    a.innerHTML='<span class="dot '+DOT_MAP[s.type]+'"></span>'+s.name;
+    a.onclick=(function(id){return function(){document.getElementById('scr-'+id).scrollIntoView({behavior:'smooth'});};})(s.id);
+    sb.appendChild(a);
+    var block=document.createElement('div');block.className='screen-block';block.id='scr-'+s.id;
+    var lbl='<div class="screen-label"><span class="sl-name">'+s.name+'</span><span class="sl-type '+TYPE_MAP[s.type]+'">'+s.typeLabel+'</span><span class="sl-file">'+s.file+'</span></div>';
+    var formDiv='<div id="form-'+s.id+'">'+s.html()+'</div>';
+    var confDiv='';var toggleBar='';
+    if(s.conf){
+      confDiv='<div id="conf-'+s.id+'" style="display:none;">'+confScreen(s.conf.title,s.conf.msg)+'</div>';
+      toggleBar='<div class="conf-toggle-bar"><p>Confirmation screen shown in-place after submit — identical layout for every form</p><button class="ctb" id="ctb-'+s.id+'" onclick="toggleConf(\''+s.id+'\')">Show Confirmation ↓</button></div>';
+    }
+    block.innerHTML=lbl+formDiv+toggleBar+confDiv;
+    main.appendChild(block);
+  });
+}
+
+function toggleConf(id){
+  var f=document.getElementById('form-'+id),c=document.getElementById('conf-'+id),b=document.getElementById('ctb-'+id);
+  var showing=c.style.display!=='none';
+  f.style.display=showing?'block':'none';c.style.display=showing?'none':'block';
+  b.textContent=showing?'Show Confirmation ↓':'Show Form ↑';b.classList.toggle('shown',!showing);
+}
+
+function onScroll(){
+  var links=document.querySelectorAll('.sb-link');
+  SCREENS.forEach(function(s,i){
+    var el=document.getElementById('scr-'+s.id);if(!el)return;
+    var r=el.getBoundingClientRect();
+    if(r.top<=60&&r.bottom>60){links.forEach(function(l){l.classList.remove('active');});if(links[i])links[i].classList.add('active');}
+  });
+}
+
+document.addEventListener('DOMContentLoaded',function(){renderAll();document.getElementById('main').addEventListener('scroll',onScroll);});
+</script>
+</body>
+</html>

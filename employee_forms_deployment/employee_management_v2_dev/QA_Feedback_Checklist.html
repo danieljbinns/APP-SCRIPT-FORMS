@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Feedback Checklist</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --card: #1a1a1a;
+      --border: #2e2e2e;
+      --text: #f0f0f0;
+      --muted: #888;
+      --red: #EB1C2D;
+      --red-dim: rgba(235,28,45,0.12);
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --yellow: #f59e0b;
+      --yellow-dim: rgba(245,158,11,0.10);
+      --blue: #3b82f6;
+      --blue-dim: rgba(59,130,246,0.10);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem;
+      line-height: 1.5;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+
+    .legend {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .badge-plan    { background: var(--blue-dim);   color: var(--blue);   border: 1px solid var(--blue); }
+    .badge-remove  { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red); }
+    .badge-done    { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green); }
+    .badge-clarify { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow); }
+
+    .section { margin-bottom: 2.5rem; }
+    .section-header {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 0;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    thead th {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      background: #111;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    td { padding: 0.75rem; vertical-align: top; }
+    td.num { color: var(--muted); width: 36px; text-align: center; font-size: 0.8rem; }
+    td.feedback { width: 36%; color: var(--text); }
+    td.status { width: 130px; }
+    td.notes { color: var(--muted); font-size: 0.82rem; }
+
+    /* Status select */
+    .status-select {
+      width: 100%;
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      text-align: center;
+    }
+    .status-select:focus { outline: 1px solid var(--border); }
+    .status-select.s-plan    { background: var(--blue-dim);   color: var(--blue);   border-color: var(--blue); }
+    .status-select.s-remove  { background: var(--red-dim);    color: var(--red);    border-color: var(--red); }
+    .status-select.s-done    { background: var(--green-dim);  color: var(--green);  border-color: var(--green); }
+    .status-select.s-clarify { background: var(--yellow-dim); color: var(--yellow); border-color: var(--yellow); }
+
+    /* Notes editable */
+    td.notes[contenteditable="true"]:focus {
+      outline: 1px solid var(--border);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.03);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>QA Feedback — Employee Forms</h1>
+  <p class="subtitle">Third-party testing feedback · 2026-04-22</p>
+
+  <div class="legend">
+    <span class="legend-item"><span class="badge badge-plan">PLAN</span> Needs development</span>
+    <span class="legend-item"><span class="badge badge-clarify">CLARIFY</span> Needs business decision first</span>
+    <span class="legend-item"><span class="badge badge-done">DONE</span> Already handled</span>
+    <span class="legend-item"><span class="badge badge-remove">REMOVE</span> Out of scope / not applicable</span>
+  </div>
+
+  <!-- NEW EE REQUEST -->
+  <div class="section">
+    <div class="section-header">New Employee Request</div>
+    <table>
+      <thead><tr><th>#</th><th>Feedback</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="num">1</td>
+          <td class="feedback">BOSS WIS required (Yes/No)? Operations needs it, Wiswell won't. Requester must request it; assigning department must mandate whether it was required and completed, or not required.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">2</td>
+          <td class="feedback">Can we add a step for hiring managers for operational Salary/Hourly once approved by HR (WIS Assigned)?</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">3</td>
+          <td class="feedback">When terminating someone, if the systems they were assigned to aren't known, IT needs a check to ensure removal from all systems.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">4</td>
+          <td class="feedback">IT Setup: Hiring manager requested a Windows PC with a Windows license — this should be pre-populated in IT Setup so IT doesn't have to guess.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">5</td>
+          <td class="feedback">IT Setup: Trip and Grievance has "Yes" beside it but no checkbox for IT to confirm assignment was made.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">6</td>
+          <td class="feedback">Team Lead or administrator may require Training Coordinator or Training Only User role. Unclear how this is defined — TL could be hourly supervisor or a trainer only.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">7</td>
+          <td class="feedback">Business Cards: Do we offer electronic and paper, or just electronic? Where is the option?</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">8</td>
+          <td class="feedback">Do we confirm that DSS+ courses were assigned?</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- END OF EE (TERMINATION) -->
+  <div class="section">
+    <div class="section-header">End of Employee (Termination Form)</div>
+    <table>
+      <thead><tr><th>#</th><th>Feedback</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="num">9</td>
+          <td class="feedback">Can this be set up to search by employee name?</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">10</td>
+          <td class="feedback">Has work email — can't this search by email too?</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">11</td>
+          <td class="feedback">Site Name: Site Manager may have more than one site assigned — can only select one currently.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">12</td>
+          <td class="feedback">Direct reports search — only one result from first name entered, unclear if comma-separated or manual for multiple.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">13</td>
+          <td class="feedback">IT Systems list on Termination is incomplete — should match the New Hire form.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">14</td>
+          <td class="feedback">ADP: when someone leaves, where does it show that their direct reports now report to someone else (e.g. Wiswell)?</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">15</td>
+          <td class="feedback">BOSS: can't see where direct reports are reassigned in BOSS on termination.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- EMPLOYEE STATUS CHANGE -->
+  <div class="section">
+    <div class="section-header">Employee Change Status</div>
+    <table>
+      <thead><tr><th>#</th><th>Feedback</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="num">16</td>
+          <td class="feedback">Site Name: Director or multi-site employee needs ability to select multiple sites. Also, what if they are moving into a corporate role?</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">17</td>
+          <td class="feedback">Site Transfer: Aurora is already populated as a US regional role. Current Site and New Site fields don't work for this scenario.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">18</td>
+          <td class="feedback">Reporting Manager to new manager change — the manager was already entered above, why enter it again?</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">19</td>
+          <td class="feedback">Reassign previous direct reports — only one email comes up, need ability to add more than one.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">20</td>
+          <td class="feedback">Need to transfer cost from sites to another committee, vehicle, computer, phone, etc.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SYSTEM & EQUIPMENT REQUEST -->
+  <div class="section">
+    <div class="section-header">System &amp; Equipment Request</div>
+    <table>
+      <thead><tr><th>#</th><th>Feedback</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="num">21</td>
+          <td class="feedback">Change initial name of form.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">22</td>
+          <td class="feedback">Why is Job Title required for a System or Equipment request?</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">23</td>
+          <td class="feedback">May have more than 1 site assigned — currently can only select one.</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+        <tr>
+          <td class="num">24</td>
+          <td class="feedback">What about DSS additional courses that may be required?</td>
+          <td class="status"><select class="status-select" onchange="applyStatus(this)"><option value="">— Set —</option><option>PLAN</option><option>CLARIFY</option><option>DONE</option><option>REMOVE</option></select></td>
+          <td class="notes" contenteditable="true"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function applyStatus(sel) {
+      const map = { PLAN: 's-plan', CLARIFY: 's-clarify', DONE: 's-done', REMOVE: 's-remove' };
+      sel.className = 'status-select';
+      if (map[sel.value]) sel.classList.add(map[sel.value]);
+    }
+  </script>
+
+</body>
+</html>

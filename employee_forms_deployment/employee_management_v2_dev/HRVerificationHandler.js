@@ -269,10 +269,7 @@ function submitHRVerification(formData) {
       syncWorkflowState(workflowId);
       const itUrl = buildFormUrl('it_setup', { wf: workflowId });
 
-      // E2: CC payroll if ADP Supervisor access is required
-      const systemsList = Array.isArray(context && context.systems) ? context.systems : [];
-      const hasAdpSupervisor = systemsList.some(s => String(s).toLowerCase().includes('adp supervisor'));
-      const itRecipients = hasAdpSupervisor ? CONFIG.EMAILS.IT + ',' + CONFIG.EMAILS.PAYROLL : CONFIG.EMAILS.IT;
+      const itRecipients = CONFIG.EMAILS.IT;
 
       sendFormEmail({
         to: itRecipients,
@@ -282,7 +279,7 @@ function submitHRVerification(formData) {
         displayName: 'TEAM Group - Employee Onboarding',
         contextData: context
       });
-      Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)' + (hasAdpSupervisor ? ' — CC: Payroll (ADP Supervisor required)' : ''));
+      Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)');
 
       // Notify payroll for salary/expedite new hires after HR verification
       const salaryAccessCallout = adpSalaryAccess

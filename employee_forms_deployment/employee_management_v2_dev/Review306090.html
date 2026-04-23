@@ -41,6 +41,7 @@
 </head>
 <body>
 <div class="container">
+<div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
 <div class="card" id="mainCard">
     <div class="logo-container">
         <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo" alt="TEAM Group">
@@ -54,12 +55,15 @@
         <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate || '-' ?></span></div>
         <div class="info-row"><span class="label">Job Title</span><span class="value"><?= requestData.jobTitle || '-' ?></span></div>
         <div class="info-row"><span class="label">Requested JR</span><span class="value"><?= requestData.jrTitle || '-' ?></span></div>
+        <div class="info-row"><span class="label">Department</span><span class="value"><?= requestData.department || '-' ?></span></div>
         <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName || '-' ?></span></div>
         <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName || '-' ?></span></div>
+        <div class="info-row"><span class="label">Employment Type</span><span class="value"><?= requestData.employmentType || '-' ?></span></div>
+        <div class="info-row"><span class="label">Employee Type</span><span class="value"><?= requestData.employeeType || '-' ?></span></div>
     </div>
 
     <div id="formSection">
-        <form id="specialistForm">
+        <form id="specialistForm" autocomplete="off">
             <input type="hidden" name="workflowId" value="<?= workflowId ?>">
             <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
             <input type="hidden" name="department" value="review">

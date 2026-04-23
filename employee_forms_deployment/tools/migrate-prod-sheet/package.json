@@ -1,0 +1,16 @@
+{
+  "name": "migrate-prod-sheet",
+  "version": "1.0.0",
+  "description": "One-time migration script: transforms prod Google Sheet from v2 format to v2_dev format",
+  "main": "index.js",
+  "scripts": {
+    "preview": "node index.js --dry-run",
+    "migrate": "node index.js --execute"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
