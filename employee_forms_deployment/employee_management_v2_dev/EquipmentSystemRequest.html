@@ -1033,20 +1033,9 @@
         // 4. BOSS Cost Sheets (Column E)
         populateSelect('costSheetJobNumbers', refData.jobs, '', true);
 
-        // 5. Central Purchasing Sites
-        const cpContainer = document.getElementById('purchasingSitesCheckboxes');
-        if (cpContainer && refData.sites && refData.sites.length) {
-          cpContainer.innerHTML = '';
-          refData.sites.forEach(function(site) {
-            const label = document.createElement('label');
-            label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
-            const cb = document.createElement('input');
-            cb.type = 'checkbox'; cb.name = 'purchasingSites'; cb.value = site;
-            cb.style.accentColor = 'var(--brand-red)';
-            const txt = document.createTextNode(' ' + site);
-            label.appendChild(cb); label.appendChild(txt);
-            cpContainer.appendChild(label);
-          });
+        // 5. Central Purchasing Sites — dual-list
+        if (refData.sites && refData.sites.length) {
+          buildDualList('purchasingSitesCheckboxes', refData.sites, 'purchasingSites');
         }
         
         // 5. BOSS Committees (Column F)

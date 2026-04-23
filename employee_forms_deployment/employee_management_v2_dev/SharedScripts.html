@@ -156,6 +156,176 @@ function buildCheckboxGrid(container, items, nameAttr, selected) {
   });
 }
 
+/* ── Dual-list picker builder ───────────────────────────────────── */
+
+/**
+ * Replace a container with a dual-list picker (Available → Selected).
+ * Submits as a single hidden input with comma-joined value.
+ *
+ * @param {string}   containerId  - ID of the div to replace
+ * @param {string[]} items        - All available option strings
+ * @param {string}   fieldName    - The hidden input `name` attribute
+ * @param {string[]} [selected]   - Pre-selected values (edit/draft restore)
+ */
+function buildDualList(containerId, items, fieldName, selected) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  selected = selected || [];
+  items = items || [];
+
+  var available = items.filter(function(i) { return selected.indexOf(i) < 0; });
+  var chosen    = items.filter(function(i) { return selected.indexOf(i) >= 0; });
+
+  function render() {
+    container.innerHTML = '';
+
+    var hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.name = fieldName;
+    hidden.id   = containerId + '_hidden';
+    hidden.value = chosen.join(', ');
+    container.appendChild(hidden);
+
+    var wrapper = document.createElement('div');
+    wrapper.className = 'dual-list-wrapper';
+
+    // --- Available panel ---
+    var avPanel = document.createElement('div');
+    avPanel.className = 'dual-list-panel';
+
+    var avHeader = document.createElement('div');
+    avHeader.className = 'dual-list-panel-header';
+    avHeader.textContent = 'Available (' + available.length + ')';
+    avPanel.appendChild(avHeader);
+
+    var avSearch = document.createElement('input');
+    avSearch.type = 'text';
+    avSearch.className = 'dual-list-search';
+    avSearch.placeholder = 'Filter...';
+    avPanel.appendChild(avSearch);
+
+    var avList = document.createElement('div');
+    avList.className = 'dual-list-list';
+    avPanel.appendChild(avList);
+
+    var avFooter = document.createElement('div');
+    avFooter.className = 'dual-list-footer';
+    var addAllBtn = document.createElement('button');
+    addAllBtn.type = 'button';
+    addAllBtn.className = 'dual-list-btn';
+    addAllBtn.textContent = 'Add visible';
+    avFooter.appendChild(addAllBtn);
+    avPanel.appendChild(avFooter);
+
+    // --- Arrows ---
+    var arrows = document.createElement('div');
+    arrows.className = 'dual-list-arrows';
+    var addBtn = document.createElement('button');
+    addBtn.type = 'button'; addBtn.className = 'dual-list-arrow'; addBtn.textContent = '›';
+    var remBtn = document.createElement('button');
+    remBtn.type = 'button'; remBtn.className = 'dual-list-arrow'; remBtn.textContent = '‹';
+    arrows.appendChild(addBtn);
+    arrows.appendChild(remBtn);
+
+    // --- Selected panel ---
+    var selPanel = document.createElement('div');
+    selPanel.className = 'dual-list-panel';
+
+    var selHeader = document.createElement('div');
+    selHeader.className = 'dual-list-panel-header';
+    selHeader.textContent = 'Selected (' + chosen.length + ')';
+    selPanel.appendChild(selHeader);
+
+    var selSearch = document.createElement('input');
+    selSearch.type = 'text';
+    selSearch.className = 'dual-list-search';
+    selSearch.placeholder = 'Filter...';
+    selPanel.appendChild(selSearch);
+
+    var selList = document.createElement('div');
+    selList.className = 'dual-list-list';
+    selPanel.appendChild(selList);
+
+    var selFooter = document.createElement('div');
+    selFooter.className = 'dual-list-footer';
+    var remAllBtn = document.createElement('button');
+    remAllBtn.type = 'button';
+    remAllBtn.className = 'dual-list-btn';
+    remAllBtn.textContent = 'Remove all';
+    selFooter.appendChild(remAllBtn);
+    selPanel.appendChild(selFooter);
+
+    wrapper.appendChild(avPanel);
+    wrapper.appendChild(arrows);
+    wrapper.appendChild(selPanel);
+    container.appendChild(wrapper);
+
+    function buildItems(list, arr, filterVal) {
+      list.innerHTML = '';
+      var term = (filterVal || '').toLowerCase();
+      arr.forEach(function(val) {
+        if (term && val.toLowerCase().indexOf(term) < 0) return;
+        var item = document.createElement('div');
+        item.className = 'dual-list-item';
+        item.textContent = val;
+        item.dataset.value = val;
+        item.addEventListener('click', function() {
+          item.classList.toggle('selected');
+        });
+        item.addEventListener('dblclick', function() {
+          move(val, list === avList ? 'add' : 'remove');
+        });
+        list.appendChild(item);
+      });
+    }
+
+    function move(val, direction) {
+      if (direction === 'add') {
+        var idx = available.indexOf(val);
+        if (idx >= 0) { available.splice(idx, 1); chosen.push(val); }
+      } else {
+        var idx = chosen.indexOf(val);
+        if (idx >= 0) { chosen.splice(idx, 1); available.push(val); }
+      }
+      available.sort(); chosen.sort();
+      refresh();
+    }
+
+    function moveSelected(fromList, direction) {
+      var vals = [];
+      fromList.querySelectorAll('.dual-list-item.selected').forEach(function(el) {
+        vals.push(el.dataset.value);
+      });
+      vals.forEach(function(v) { move(v, direction); });
+    }
+
+    function refresh() {
+      avHeader.textContent  = 'Available (' + available.length + ')';
+      selHeader.textContent = 'Selected ('  + chosen.length   + ')';
+      buildItems(avList,  available, avSearch.value);
+      buildItems(selList, chosen,    selSearch.value);
+      hidden.value = chosen.join(', ');
+    }
+
+    addBtn.addEventListener('click', function() { moveSelected(avList, 'add'); });
+    remBtn.addEventListener('click', function() { moveSelected(selList, 'remove'); });
+    addAllBtn.addEventListener('click', function() {
+      var term = avSearch.value.toLowerCase();
+      var toAdd = available.filter(function(v) { return !term || v.toLowerCase().indexOf(term) >= 0; });
+      toAdd.forEach(function(v) { move(v, 'add'); });
+    });
+    remAllBtn.addEventListener('click', function() {
+      chosen.slice().forEach(function(v) { move(v, 'remove'); });
+    });
+    avSearch.addEventListener('input', function() { buildItems(avList, available, avSearch.value); });
+    selSearch.addEventListener('input', function() { buildItems(selList, chosen, selSearch.value); });
+
+    refresh();
+  }
+
+  render();
+}
+
 /* ── Tiled checkbox builder ──────────────────────────────────────── */
 
 /**

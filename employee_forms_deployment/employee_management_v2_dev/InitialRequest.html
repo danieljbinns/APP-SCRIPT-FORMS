@@ -1058,36 +1058,14 @@
         // 1. Sites
         populateSelect('siteName', refData.sites);
 
-        // Populate ADP cost sheet checkboxes
-        const adpContainer = document.getElementById('adpSitesCheckboxes');
-        if (adpContainer && refData.jobs && refData.jobs.length) {
-          adpContainer.innerHTML = '';
-          refData.jobs.forEach(function(num) {
-            const label = document.createElement('label');
-            label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
-            const cb = document.createElement('input');
-            cb.type = 'checkbox'; cb.name = 'adpSites'; cb.value = num;
-            cb.style.accentColor = 'var(--brand-red)';
-            const txt = document.createTextNode(' ' + num);
-            label.appendChild(cb); label.appendChild(txt);
-            adpContainer.appendChild(label);
-          });
+        // Populate ADP cost sheet — dual-list
+        if (refData.jobs && refData.jobs.length) {
+          buildDualList('adpSitesCheckboxes', refData.jobs, 'adpSites');
         }
 
-        // Populate Central Purchasing cost sheet checkboxes
-        const purchasingContainer = document.getElementById('purchasingSitesCheckboxes');
-        if (purchasingContainer && refData.jobs && refData.jobs.length) {
-          purchasingContainer.innerHTML = '';
-          refData.jobs.forEach(function(num) {
-            const label = document.createElement('label');
-            label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
-            const cb = document.createElement('input');
-            cb.type = 'checkbox'; cb.name = 'purchasingSites'; cb.value = num;
-            cb.style.accentColor = 'var(--brand-red)';
-            const txt = document.createTextNode(' ' + num);
-            label.appendChild(cb); label.appendChild(txt);
-            purchasingContainer.appendChild(label);
-          });
+        // Populate Central Purchasing cost sheet — dual-list
+        if (refData.jobs && refData.jobs.length) {
+          buildDualList('purchasingSitesCheckboxes', refData.jobs, 'purchasingSites');
         }
         
         // 2. JRs
@@ -1107,52 +1085,19 @@
         populateSelect('jobSiteNumber', refData.jobNumbers);
         populateSelect('jonasJobNumbers', refData.jobNumbers, '', true);
         
-        // 4. BOSS Cost Sheet job numbers — checkboxes
-        var costSheetContainer = document.getElementById('costSheetJobCheckboxes');
-        if (costSheetContainer && refData.jobs && refData.jobs.length) {
-          costSheetContainer.innerHTML = '';
-          refData.jobs.forEach(function(job) {
-            var label = document.createElement('label');
-            label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
-            var cb = document.createElement('input');
-            cb.type = 'checkbox'; cb.name = 'costSheetJobNumbers'; cb.value = job;
-            cb.style.accentColor = 'var(--brand-red)';
-            label.appendChild(cb);
-            label.appendChild(document.createTextNode(' ' + job));
-            costSheetContainer.appendChild(label);
-          });
+        // 4. BOSS Cost Sheet job numbers — dual-list
+        if (refData.jobs && refData.jobs.length) {
+          buildDualList('costSheetJobCheckboxes', refData.jobs, 'costSheetJobNumbers');
         }
 
-        // 5. BOSS Committees — checkboxes inline below BOSS checkbox
-        var bossCommContainer = document.getElementById('bossCommitteesCheckboxes');
-        if (bossCommContainer && refData.committees && refData.committees.length) {
-          bossCommContainer.innerHTML = '';
-          refData.committees.forEach(function(committee) {
-            var label = document.createElement('label');
-            label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
-            var cb = document.createElement('input');
-            cb.type = 'checkbox'; cb.name = 'bossJobSites'; cb.value = committee;
-            cb.style.accentColor = 'var(--brand-red)';
-            label.appendChild(cb);
-            label.appendChild(document.createTextNode(' ' + committee));
-            bossCommContainer.appendChild(label);
-          });
+        // 5. BOSS Committees — dual-list
+        if (refData.committees && refData.committees.length) {
+          buildDualList('bossCommitteesCheckboxes', refData.committees, 'bossJobSites');
         }
 
-        // 6. Jonas Cost Sheets — checkboxes inline below Jonas checkbox
-        var jonasContainer = document.getElementById('jonasJobNumbersCheckboxes');
-        if (jonasContainer && refData.jobs && refData.jobs.length) {
-          jonasContainer.innerHTML = '';
-          refData.jobs.forEach(function(num) {
-            var label = document.createElement('label');
-            label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
-            var cb = document.createElement('input');
-            cb.type = 'checkbox'; cb.name = 'jonasJobNumbers'; cb.value = num;
-            cb.style.accentColor = 'var(--brand-red)';
-            label.appendChild(cb);
-            label.appendChild(document.createTextNode(' ' + num));
-            jonasContainer.appendChild(label);
-          });
+        // 6. Jonas Job Numbers — dual-list
+        if (refData.jobs && refData.jobs.length) {
+          buildDualList('jonasJobNumbersCheckboxes', refData.jobs, 'jonasJobNumbers');
         }
       };
 
