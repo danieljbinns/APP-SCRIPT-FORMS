@@ -8,23 +8,6 @@
   <?!= include('Styles') ?>
   <style>
     /* ── InitialRequest — page-specific overrides ── */
-    #gatekeeperSection { text-align: center; padding: 3rem 1rem; }
-    #gatekeeperSection h1 { font-size: 2rem; margin-bottom: 2rem; }
-    .requirements-toggle { margin: 2rem 0; }
-    .requirements-toggle summary { cursor: pointer; color: var(--brand-red); font-weight: bold; padding: 1rem; background: var(--input-bg); border-radius: 6px; list-style: none; user-select: none; }
-    .requirements-toggle summary:hover { background: var(--input-border); }
-    .requirements-toggle summary::-webkit-details-marker { display: none; }
-    .requirements-toggle summary::before { content: "▶ "; display: inline-block; transition: transform 0.2s; }
-    .requirements-toggle[open] summary::before { transform: rotate(90deg); }
-    .requirements-content { padding: 1.5rem; background: var(--input-bg); border-radius: 0 0 6px 6px; text-align: left; color: var(--text-muted); }
-    .requirements-content ul { margin-left: 1.5rem; line-height: 1.8; }
-    .confirm-button { padding: 1.5rem 3rem; font-size: 1.2rem; background-color: var(--brand-red); color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: bold; margin-top: 2rem; min-width: 300px; }
-    .confirm-button:hover { background-color: var(--brand-red-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(235,28,45,0.3); }
-    #mainForm { display: none; opacity: 0; transition: opacity 0.5s; }
-    #mainForm.show { display: block; opacity: 1; }
-    #equipmentSection { display: none; }
-    #submit-container { text-align: center; margin-top: 30px; }
-    .loading-text { color: var(--text-muted); font-style: italic; text-align: center; margin-top: 1rem; }
   </style>
 </head>
 
@@ -62,10 +45,10 @@
       </div>
 
       <!-- Main Form (hidden initially, loaded in background) -->
-      <form id="mainForm">
-        <h1><?= mode === 'boss_review' ? 'BOSS Setup Review' : (mode === 'equipment' ? 'System & Equipment Request' : 'New Employee Request') ?></h1>
+      <form id="mainForm" class="gated-form">
+        <h1><?= mode === 'it_confirmation' ? 'IT Confirmation' : (mode === 'equipment' ? 'System & Equipment Request' : 'New Employee Request') ?></h1>
         <p style="text-align: center; color: var(--text-muted); margin-bottom: 10px;">
-          <?= mode === 'boss_review' ? 'Review and correct all details before IT proceeds with provisioning.' : (mode === 'equipment' ? 'Complete all required fields to submit a system or equipment request.' : 'Complete all required fields to submit a new employee request.') ?>
+          <?= mode === 'it_confirmation' ? 'Review and confirm all details before IT proceeds with provisioning.' : (mode === 'equipment' ? 'Complete all required fields to submit a system or equipment request.' : 'Complete all required fields to submit a new employee request.') ?>
         </p>
         <div style="text-align: center; margin-bottom: 20px;">
           <!-- Prefill button removed per user request -->
@@ -73,10 +56,10 @@
 
         <hr>
 
-        <!-- Request Header — shown in boss_review mode so Dave can see who this is for -->
-        <? if (mode === 'boss_review' && typeof bossContext !== 'undefined' && bossContext) { ?>
+        <!-- Request Header — shown in it_confirmation mode so Dave can see who this is for -->
+        <? if (mode === 'it_confirmation' && typeof itContext !== 'undefined' && itContext) { ?>
         <div id="requestHeaderWrap" style="margin-bottom:20px;">
-          <?!= includeWithData('RequestHeader', {requestData: bossContext}) ?>
+          <?!= includeWithData('RequestHeader', {requestData: itContext}) ?>
         </div>
         <? } ?>
 
@@ -609,14 +592,14 @@
         </div>
         <!-- END Additional Access Section -->
 
-        <div id="submit-container">
-          <? if (mode === 'boss_review') { ?>
+        <div id="submit-container" style="margin-top: 30px;">
+          <? if (mode === 'it_confirmation') { ?>
           <div style="margin-bottom:20px;">
             <label>Review Notes (Optional)</label>
             <textarea name="notes" rows="3" placeholder="Any changes made, decisions, or context for IT..." style="width:100%;background:var(--input-bg);border:1px solid var(--input-border);border-radius:6px;padding:10px 12px;color:white;font-size:14px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
           </div>
           <? } ?>
-          <button type="submit" id="submitBtn" class="btn btn-primary btn-full"><?= mode === 'boss_review' ? 'Confirm & Send to IT' : 'Submit Request' ?></button>
+          <button type="submit" id="submitBtn" class="btn btn-primary btn-full"><?= mode === 'it_confirmation' ? 'Confirm & Send to IT' : 'Submit Request' ?></button>
         </div>
       </form>
 
@@ -633,10 +616,10 @@
   <datalist id="jobNumbersList"></datalist>
 
   <?!= include('DirectoryAutocomplete') ?>
-  <? if (mode === 'equipment' || mode === 'boss_review') { ?>
+  <? if (mode === 'equipment' || mode === 'it_confirmation') { ?>
   <style>
     #gatekeeperSection { display: none !important; }
-    #mainForm { display: block !important; opacity: 1 !important; }
+    #mainForm { display: block !important; opacity: 1 !important; } /* overrides .gated-form for non-gated modes */
     <? if (mode === 'equipment' || baseMode === 'equipment') { ?>
     .new-hire-only { display: none !important; }
     #systemAccessSection { display: block !important; }
@@ -645,8 +628,9 @@
   </style>
   <? } ?>
   <script>
-    const FORM_MODE = '<?= mode ?>';
-    let BOSS_REVIEW_WF_ID = ''; // populated in DOMContentLoaded; needs module scope for submit handler
+    var FORM_MODE      = '<?= mode ?>';
+    var FORM_BASE_MODE = '<?= baseMode ?>';
+    var IT_CONFIRM_WF_ID = ''; // populated in DOMContentLoaded; needs module scope for submit handler
     window.addEventListener('DOMContentLoaded', function () {
 
       // Helper to populate select elements
@@ -697,16 +681,35 @@
       // Evaluate Synchronous Backend Injection
       const INJECTED_REF_DATA     = <?!= typeof referenceData !== 'undefined' ? referenceData : 'null' ?>;
       const INJECTED_REQUEST_DATA = <?!= requestData ?>;
-      BOSS_REVIEW_WF_ID           = '<?= workflowId ?>';
-      const FORM_BASE_MODE        = '<?= baseMode ?>';
+      IT_CONFIRM_WF_ID           = '<?= workflowId ?>';
 
+      // In equipment mode, new-hire-only fields are hidden via CSS.
+      // Disable them so HTML5 validation skips them entirely (hidden required inputs
+      // can't be focused, causing an "invalid form control is not focusable" error).
+      if (FORM_MODE === 'equipment' || FORM_BASE_MODE === 'equipment') {
+        document.querySelectorAll('.new-hire-only input, .new-hire-only select, .new-hire-only textarea').forEach(function(el) {
+          el.disabled = true;
+          el.required = false;
+        });
+      }
 
       function prefillBossReview(d) {
         if (!d) return;
+        console.log('[prefillBossReview] data:', JSON.stringify({ siteName: d.siteName, jobSiteNumber: d.jobSiteNumber, equipment: d.equipment, systemAccess: d.systemAccess, creditCardUSA: d.creditCardUSA }));
 
         function sv(name, val) {
           var el = document.querySelector('[name="' + name + '"]');
-          if (el && val !== undefined && val !== null && val !== '') el.value = val;
+          if (!el || val === undefined || val === null || val === '') return;
+          el.value = val;
+          // For selects: if value didn't match any option, add it dynamically so data isn't lost
+          if (el.tagName === 'SELECT' && el.value !== String(val)) {
+            var opt = document.createElement('option');
+            opt.value = String(val);
+            opt.textContent = String(val);
+            el.insertBefore(opt, el.firstChild.nextSibling || null);
+            el.value = String(val);
+            console.warn('[prefillBossReview] sv() added missing option for', name, '=', val);
+          }
         }
         function setRadio(name, val) {
           if (!val) return;
@@ -735,9 +738,18 @@
         sv('creditCardLimitCanada',    d.creditCardLimitCanada);
         sv('creditCardLimitHomeDepot', d.creditCardLimitHomeDepot);
 
-        // Selects
+        // Selects — use sv() for fallback-option support
         var siteEl = document.getElementById('siteName');
-        if (siteEl && d.siteName) siteEl.value = d.siteName;
+        if (siteEl && d.siteName) {
+          siteEl.value = d.siteName;
+          if (siteEl.value !== String(d.siteName)) {
+            var siteOpt = document.createElement('option');
+            siteOpt.value = String(d.siteName);
+            siteOpt.textContent = String(d.siteName);
+            siteEl.insertBefore(siteOpt, siteEl.firstChild.nextSibling || null);
+            siteEl.value = String(d.siteName);
+          }
+        }
         var domainEl = document.querySelector('[name="googleDomain"]');
         if (domainEl && d.googleDomain) domainEl.value = d.googleDomain;
 
@@ -841,7 +853,7 @@
           buildDualList('jonasJobNumbersCheckboxes', refData.jobs, 'jonasJobNumbers');
         }
 
-        if (FORM_MODE === 'boss_review' && INJECTED_REQUEST_DATA) {
+        if (FORM_MODE === 'it_confirmation' && INJECTED_REQUEST_DATA) {
           prefillBossReview(INJECTED_REQUEST_DATA);
         }
       };
@@ -1166,7 +1178,8 @@
 
       // Clear fields that belong to hidden sections so stale DOM defaults don't leak into the sheet.
       // FormData includes ALL inputs regardless of display:none, so we enforce here.
-      if (data.systemAccess !== 'Yes') {
+      // Equipment mode always has systems/equipment visible — skip the clear.
+      if (FORM_BASE_MODE !== 'equipment' && data.systemAccess !== 'Yes') {
         data.systems = [];
         data.equipment = [];
       }
@@ -1227,28 +1240,40 @@
       const successHandler = function (response) {
           console.log('Server response:', response);
           if (response && response.success) {
-            if (FORM_MODE === 'boss_review') {
-              document.getElementById('form-container').innerHTML = `
-                <div style="text-align:center;padding:40px;">
-                  <div style="font-size:56px;margin-bottom:16px;">✅</div>
-                  <h2 style="color:var(--brand-red);">BOSS Review Complete</h2>
-                  <p style="color:var(--text-muted);margin-top:8px;">IT has been notified and will proceed with setup.</p>
-                  <div style="margin-top:24px;">
-                    <a href="${response.scriptUrl}?form=dashboard" target="_top"
-                      style="background:var(--brand-red);color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">
-                      Return to Dashboard
-                    </a>
-                  </div>
-                </div>
-              `;
+            var scriptUrl = response.scriptUrl || '';
+            // For it_confirmation and equipment, replace entire form-container to avoid
+            // fighting !important CSS overrides on #mainForm in these modes.
+            if (FORM_MODE === 'it_confirmation') {
+              document.getElementById('form-container').innerHTML =
+                '<div id="success-screen" style="display:block;">' +
+                '<div class="success-icon">✅</div>' +
+                '<h2>IT Confirmation Complete</h2>' +
+                '<p>The request has been reviewed and the appropriate teams have been notified.</p>' +
+                '<div class="actions">' +
+                '<a href="' + scriptUrl + '?form=dashboard" target="_top" class="btn btn-primary">Return to Dashboard</a>' +
+                '</div></div>';
               return;
             }
-            const label = FORM_MODE === 'boss_review' ? 'BOSS Review' : (FORM_MODE === 'equipment' ? 'Equipment Request' : 'New Employee Request');
-            const nextFormParam = FORM_MODE === 'equipment' ? 'equipment_request' : 'initial_request';
-            document.getElementById('successTitle').textContent   = FORM_MODE === 'boss_review' ? 'Review Submitted!' : 'Request Submitted!';
+            if (FORM_MODE === 'equipment') {
+              var empName = ((data.firstName || '') + ' ' + (data.lastName || '')).trim();
+              document.getElementById('form-container').innerHTML =
+                '<div id="success-screen" style="display:block;">' +
+                '<div class="success-icon">✅</div>' +
+                '<h2>Request Submitted!</h2>' +
+                '<p>System &amp; Equipment Access request for <strong>' + empName + '</strong> has been submitted. Dave Langohr has been notified to review.</p>' +
+                '<p><strong>Request ID: ' + (response.workflowId || '—') + '</strong></p>' +
+                '<div class="actions">' +
+                '<a href="' + scriptUrl + '?form=equipment_request" target="_top" class="btn btn-primary">Submit Another</a>' +
+                '<a href="' + scriptUrl + '?form=dashboard" target="_top" class="btn btn-secondary">Return to Dashboard</a>' +
+                '</div></div>';
+              return;
+            }
+            // New hire / initial_request — use embedded SuccessScreen component
+            const label = 'New Employee Request';
+            document.getElementById('successTitle').textContent   = 'Request Submitted!';
             document.getElementById('successMessage').textContent = label + ' has been successfully submitted.';
             document.getElementById('successRequestId').textContent = 'Request ID: ' + (response.requestId || response.workflowId || '—');
-            document.getElementById('successAnotherLink').href    = (response.scriptUrl || '') + '?form=' + nextFormParam;
+            document.getElementById('successAnotherLink').href    = (scriptUrl) + '?form=initial_request';
             document.getElementById('mainForm').style.display     = 'none';
             document.getElementById('success-screen').style.display = 'block';
           } else {
@@ -1266,15 +1291,17 @@
         };
 
       const runner = google.script.run.withSuccessHandler(successHandler).withFailureHandler(failureHandler);
-      if (FORM_MODE === 'boss_review') {
-        data.workflowId = BOSS_REVIEW_WF_ID;
+      if (FORM_MODE === 'it_confirmation') {
+        data.workflowId = IT_CONFIRM_WF_ID;
         data.notes = formData.get('notes') || '';
-        runner.submitBOSSReview(data);
+        runner.submitITConfirmation(data);
       } else if (FORM_MODE === 'equipment') {
         // Map field names to equipment handler's expected shape
-        data.reqName = data.requesterName;
-        data.reqEmail = data.requesterEmail;
-        data.position = data.positionTitle;
+        data.reqName      = data.requesterName;
+        data.reqEmail     = data.requesterEmail;
+        data.position     = data.positionTitle;
+        data.managerEmail = data.reportingManagerEmail || '';
+        data.managerName  = data.reportingManagerName  || '';
         runner.submitEquipmentRequest(data);
       } else {
         runner.submitInitialRequest(data);
