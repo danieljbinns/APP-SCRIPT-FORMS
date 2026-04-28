@@ -149,7 +149,8 @@ function buildNewHireContextBlock(context, opts) {
   // ============================================================
 
   var idRows = '';
-  if (idSt === 'complete') {
+  if (hasId) {
+    // Show all available ID credential fields whenever data exists
     idRows = ''
       + (context.internalEmployeeId ? esRow('Internal ID',   esVal(context.internalEmployeeId, 'mono')) : '')
       + (context.siteDocsWorkerId   ? esRow('Worker ID',     esVal(context.siteDocsWorkerId,   'mono')) : '')
@@ -178,7 +179,8 @@ function buildNewHireContextBlock(context, opts) {
   // ============================================================
 
   var hrRows = '';
-  if (hrSt === 'complete') {
+  if (hasHr) {
+    // Show all available HR fields whenever data exists
     hrRows = ''
       + (context.adpAssociateId ? esRow('ADP Associate ID', esVal(context.adpAssociateId, 'mono')) : '')
       + (context.jobTitle        ? esRow('HR Job Title',    esVal(context.jobTitle))               : '')
@@ -205,7 +207,7 @@ function buildNewHireContextBlock(context, opts) {
     itSection = esSection('IT Setup', 'na', '— N/A', 'Hourly · no system access required', '');
   } else {
     var itRows = '';
-    if (itSt === 'complete') {
+    if (hasIt) {
       // ── Google Account ──────────────────────────────────────────
       itRows += context.assignedEmail ? esRow('Assigned Email', esVal(context.assignedEmail, 'mono')) : '';
       itRows += context.emailTempPassword
@@ -301,6 +303,194 @@ function buildNewHireContextBlock(context, opts) {
 
 
 // ================================================================
+// EQUIPMENT REQUEST
+// ================================================================
+
+/**
+ * Context block for System & Equipment Access Request emails.
+ *
+ * Three sections (mirrors New Hire but without ID Setup / HR Verification):
+ *   1. Request Details  — always Complete
+ *   2. IT Setup         — Google Account + hardware + IT software
+ *   3. Specialists      — Credit Card, Business Cards, Vehicle, Jonas, ADP (if requested)
+ *
+ * @param {Object} context  — from getWorkflowContext() for EQUIP_REQ_* workflows
+ * @param {Object} [opts]   — { showPasswords: boolean }
+ */
+function buildEquipmentContextBlock(context, opts) {
+  opts = opts || {};
+  var showPw = opts.showPasswords === true;
+
+  var systemsList = Array.isArray(context.systems)   ? context.systems   : [];
+  var equipList   = Array.isArray(context.equipment) ? context.equipment
+    : (context.equipmentRaw
+        ? context.equipmentRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean)
+        : []);
+
+  // ── Categorise systems ───────────────────────────────────────
+  var SPECIALIST_SYS_KEYS = ['credit card', 'business card', 'fleetio', 'vehicle', 'jonas', 'adp', 'payroll', '30-60-90', '30/60/90'];
+
+  var googleSystems = systemsList.filter(function(s) {
+    var sl = s.toLowerCase();
+    return sl.indexOf('google') !== -1 || sl.indexOf('email') !== -1;
+  });
+  var otherSystems = systemsList.filter(function(s) {
+    var sl = s.toLowerCase();
+    return sl.indexOf('google') === -1 && sl.indexOf('email') === -1;
+  });
+  var itSoftware = otherSystems.filter(function(s) {
+    var sl = s.toLowerCase();
+    return !SPECIALIST_SYS_KEYS.some(function(k) { return sl.indexOf(k) !== -1; });
+  });
+  var specialistSystems = otherSystems.filter(function(s) {
+    var sl = s.toLowerCase();
+    return SPECIALIST_SYS_KEYS.some(function(k) { return sl.indexOf(k) !== -1; });
+  });
+
+  // ── Categorise equipment ─────────────────────────────────────
+  var itHardware = equipList.filter(function(eq) {
+    var eql = eq.toLowerCase();
+    return eql.indexOf('credit card') === -1
+        && eql.indexOf('business card') === -1
+        && eql.indexOf('vehicle') === -1;
+  });
+  var specialistEquip = equipList.filter(function(eq) {
+    var eql = eq.toLowerCase();
+    return eql.indexOf('credit card') !== -1
+        || eql.indexOf('business card') !== -1
+        || eql.indexOf('vehicle') !== -1;
+  });
+
+  var allItItems     = googleSystems.concat(itHardware).concat(itSoftware);
+  var allSpecialists = specialistSystems.concat(specialistEquip);
+
+  // ── Completion flags ─────────────────────────────────────────
+  // assignedEmail is present once Google Account / IT Setup is done
+  var hasIt = !!(context.assignedEmail);
+  var itSt  = hasIt ? 'complete' : 'active';
+
+  // ── Employee name ────────────────────────────────────────────
+  var empName = (context.firstName && context.lastName)
+    ? (context.firstName + ' ' + context.lastName)
+    : (context.employeeName || '');
+
+  // ============================================================
+  // SECTION 1 — Request Details  (always complete)
+  // ============================================================
+  var reqRows = ''
+    + esRow('Employee', esVal(empName.trim()))
+    + (context.jobTitle  ? esRow('Position', esVal(context.jobTitle))  : '')
+    + (context.siteName  ? esRow('Site',     esVal(context.siteName))  : '')
+    + (context.managerName
+        ? esRow('Manager', esVal(context.managerName
+            + (context.managerEmail ? ' · ' + context.managerEmail : '')))
+        : '')
+    + esDivider()
+    + (context.requesterEmail
+        ? esRow('Requested By', esVal(context.requesterName
+            ? context.requesterName + ' · ' + context.requesterEmail
+            : context.requesterEmail))
+        : '')
+    + (context.requestDate ? esRow('Request Date', esVal(context.requestDate)) : '');
+
+  var reqSection = esSection(
+    'Request Details', 'complete', '✓ Submitted',
+    context.requestDate ? 'Submitted · ' + context.requestDate : '',
+    reqRows
+  );
+
+  // ============================================================
+  // SECTION 2 — IT Setup  (Google Account + hardware + IT software)
+  // ============================================================
+  var itSection = '';
+  if (allItItems.length > 0) {
+    var itRows = '';
+
+    if (hasIt) {
+      // ── Setup complete — show results ──────────────────────
+      if (context.assignedEmail) {
+        itRows += esRow('Assigned Email', esVal(context.assignedEmail, 'mono'));
+      }
+      if (context.emailTempPassword) {
+        itRows += esRow('Temp Password',
+          showPw ? esVal(context.emailTempPassword, 'mono') : esVal('●●●●●●●●', 'masked'));
+      }
+      if (itHardware.length > 0) {
+        itRows += esDivider();
+        itRows += itHardware.map(function(e) { return esRow(e, esVal('✓ Provisioned')); }).join('');
+      }
+      if (itSoftware.length > 0) {
+        itRows += esDivider();
+        itRows += itSoftware.map(function(s) { return esRow(s, esVal('✓ Provisioned')); }).join('');
+      }
+      if (!showPw && context.emailTempPassword) {
+        itRows += '<tr><td colspan="2" style="padding:6px 0 0;">'
+          + '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:4px;'
+          + 'padding:5px 10px;font-size:11px;color:#92400e;">'
+          + '🔒 Google temp password visible only to Manager and Requester</div></td></tr>';
+      }
+    } else {
+      // ── Pending — show what will be provisioned ────────────
+      if (googleSystems.length > 0) {
+        itRows += googleSystems.map(function(s) {
+          return esRow(s, esVal('Pending setup', 'pending'));
+        }).join('');
+      }
+      if (itHardware.length > 0) {
+        if (itRows) itRows += esDivider();
+        itRows += itHardware.map(function(e) {
+          return esRow(e, esVal('Pending provisioning', 'pending'));
+        }).join('');
+      }
+      if (itSoftware.length > 0) {
+        if (itRows) itRows += esDivider();
+        itRows += itSoftware.map(function(s) {
+          return esRow(s, esVal('Pending provisioning', 'pending'));
+        }).join('');
+      }
+    }
+
+    var itBadge = hasIt ? '✓ Complete' : '⏳ In Progress';
+    var itActor = hasIt && context.itSubmittedBy
+      ? 'Completed by ' + context.itSubmittedBy + (context.itTimestamp ? ' · ' + context.itTimestamp : '')
+      : 'Assigned to IT team';
+
+    itSection = esSection('IT Setup', itSt, itBadge, itActor, itRows);
+  }
+
+  // ============================================================
+  // SECTION 3 — Specialists  (Credit Card, Business Cards, Vehicle, Jonas, ADP…)
+  // ============================================================
+  var specSection = '';
+  if (allSpecialists.length > 0) {
+    var specRows = allSpecialists.map(function(s) {
+      return esRow(s, esVal('In Progress', 'pending'));
+    }).join('');
+
+    specSection = esSection(
+      'Specialists', 'active', '⏳ In Progress',
+      'Parallel notifications sent · individual completion tracked separately',
+      specRows
+    );
+  }
+
+  // ============================================================
+  // SECTION 4 — Comments  (if provided)
+  // ============================================================
+  var commentsSection = '';
+  if (context.comments) {
+    commentsSection = esSection(
+      'Notes', 'complete', '',
+      '',
+      esRow('Comments', esVal(context.comments))
+    );
+  }
+
+  return reqSection + itSection + specSection + commentsSection;
+}
+
+
+// ================================================================
 // TERMINATION — PLACEHOLDER
 // ================================================================
 
@@ -311,11 +501,59 @@ function buildNewHireContextBlock(context, opts) {
  * @param {Object} [opts]
  */
 function buildTerminationContextBlock(context, opts) {
-  return esSection(
-    'Termination Details', 'active', '⏳ In Progress',
-    'Template not yet implemented — using legacy context block',
-    ''
-  );
+  opts = opts || {};
+
+  var empName = context.employeeName || '';
+  var termDate = '';
+  if (context.hireDate) {
+    try {
+      var td = context.hireDate instanceof Date ? context.hireDate
+        : new Date(String(context.hireDate).replace(/^(\d{4}-\d{2}-\d{2})$/, '$1T12:00:00'));
+      termDate = !isNaN(td.getTime())
+        ? Utilities.formatDate(td, Session.getScriptTimeZone(), 'MMM d, yyyy')
+        : String(context.hireDate).substring(0, 10);
+    } catch(e) { termDate = String(context.hireDate).substring(0, 10); }
+  }
+
+  // ── Section 1: Employee & EOE Details ────────────────────────
+  var empRows = ''
+    + esRow('Employee',    esVal(empName.trim()))
+    + (context.siteName   ? esRow('Site',       esVal(context.siteName))  : '')
+    + (termDate           ? esRow('EOE Date',   esVal(termDate))          : '')
+    + (context.reason     ? esRow('Reason',     esVal(context.reason))    : '')
+    + esDivider()
+    + (context.managerName
+        ? esRow('Manager', esVal(context.managerName
+            + (context.managerEmail ? ' · ' + context.managerEmail : '')))
+        : '')
+    + (context.requesterEmail
+        ? esRow('Requested By', esVal(context.requesterEmail)) : '');
+
+  var empSection = esSection('Employee — End of Employment', 'complete', '✓ Submitted',
+    context.requestDate ? 'Submitted · ' + context.requestDate : '', empRows);
+
+  // ── Section 2: Equipment to Return ────────────────────────────
+  var eqSection = '';
+  var eqRaw = context.equipmentRaw || '';
+  var eqList = eqRaw ? String(eqRaw).split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+  if (eqList.length > 0) {
+    var eqRows = eqList.map(function(item) {
+      return esRow(item, esVal('Pending Return', 'pending'));
+    }).join('');
+    eqSection = esSection('Equipment to Return', 'active', '⏳ Pending', '', eqRows);
+  }
+
+  // ── Section 3: Systems to Revoke ──────────────────────────────
+  var sysSection = '';
+  var systems = Array.isArray(context.systems) ? context.systems : [];
+  if (systems.length > 0) {
+    var sysRows = systems.map(function(s) {
+      return esRow(s, esVal('Pending Revocation', 'pending'));
+    }).join('');
+    sysSection = esSection('System Access — Revoke', 'active', '⏳ Pending', '', sysRows);
+  }
+
+  return empSection + eqSection + sysSection;
 }
 
 
@@ -330,9 +568,69 @@ function buildTerminationContextBlock(context, opts) {
  * @param {Object} [opts]
  */
 function buildStatusChangeContextBlock(context, opts) {
-  return esSection(
-    'Status Change Details', 'active', '⏳ In Progress',
-    'Template not yet implemented — using legacy context block',
-    ''
-  );
+  opts = opts || {};
+
+  var empName = context.employeeName || '';
+  var effDate = '';
+  if (context.hireDate) {
+    try {
+      var ed = context.hireDate instanceof Date ? context.hireDate
+        : new Date(String(context.hireDate).replace(/^(\d{4}-\d{2}-\d{2})$/, '$1T12:00:00'));
+      effDate = !isNaN(ed.getTime())
+        ? Utilities.formatDate(ed, Session.getScriptTimeZone(), 'MMM d, yyyy')
+        : String(context.hireDate).substring(0, 10);
+    } catch(e) { effDate = String(context.hireDate).substring(0, 10); }
+  }
+
+  // ── Section 1: Employee Info ──────────────────────────────────
+  var empRows = ''
+    + esRow('Employee',    esVal(empName.trim()))
+    + (context.siteName         ? esRow('Site',            esVal(context.siteName))         : '')
+    + (context.currentTitle     ? esRow('Current Title',   esVal(context.currentTitle))     : '')
+    + (context.employmentType   ? esRow('Classification',  esVal(context.employmentType))   : '')
+    + esDivider()
+    + (context.currentManagerName
+        ? esRow('Current Manager', esVal(context.currentManagerName
+            + (context.currentManagerEmail ? ' · ' + context.currentManagerEmail : '')))
+        : '')
+    + (context.requesterEmail   ? esRow('Requested By',    esVal(context.requesterEmail))   : '');
+
+  var empSection = esSection('Employee', 'complete', '✓ Submitted',
+    context.requestDate ? 'Submitted · ' + context.requestDate : '', empRows);
+
+  // ── Section 2: Requested Changes ─────────────────────────────
+  var changeRows = ''
+    + (effDate             ? esRow('Effective Date', esVal(effDate))          : '')
+    + (context.changeTypes ? esRow('Change Types',  esVal(context.changeTypes)) : '')
+    + (context.titleChange
+        ? esRow('Title Change',      esVal(context.titleChange))              : '')
+    + (context.siteTransfer
+        ? esRow('Site Transfer',     esVal(context.siteTransfer))             : '')
+    + (context.classChange
+        ? esRow('Classification',    esVal(context.classChange))              : '')
+    + (context.managerChange
+        ? esRow('Manager Change',    esVal(context.managerChange))            : '')
+    + (context.jobTitle && context.jobTitle !== context.currentTitle
+        ? esRow('New Title',         esVal(context.jobTitle))                 : '')
+    + (context.managerName && context.managerName !== context.currentManagerName
+        ? esRow('New Manager',       esVal(context.managerName
+            + (context.managerEmail ? ' · ' + context.managerEmail : '')))   : '');
+
+  var changeSection = esSection('Requested Changes', 'active', '⏳ In Progress',
+    '', changeRows);
+
+  // ── Section 3: Systems/Equipment (if any) ────────────────────
+  var sysSection = '';
+  var systems = Array.isArray(context.systems) ? context.systems : [];
+  var eqRaw   = context.equipmentRaw || '';
+  var eqList  = eqRaw ? String(eqRaw).split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+  var allItems = systems.concat(eqList);
+  if (allItems.length > 0) {
+    var sysRows = allItems.map(function(s) {
+      return esRow(s, esVal('In Progress', 'pending'));
+    }).join('');
+    sysSection = esSection('Access & Equipment Changes', 'active', '⏳ In Progress', '', sysRows);
+  }
+
+  return empSection + changeSection + sysSection;
 }

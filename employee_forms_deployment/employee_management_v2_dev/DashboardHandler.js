@@ -120,7 +120,7 @@ function getDashboardData() {
         hireDate: fmtDate(row[11]),
         site: String(row[12] || ''),
         empType: String(row[13] || '') || (workflowId.startsWith('TERM_') ? (termEmpTypeMap[workflowId] || '') : ''),
-        type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Status Change' : 'Onboarding')
+        type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Status Change' : (workflowId.startsWith('EQUIP_REQ_') ? 'Equipment' : 'Onboarding'))
       };
     }).filter(wf => {
       if (wf.status === 'Cancelled') return false;
@@ -516,6 +516,11 @@ function getRequestDetails(workflowId) {
       return getChangeDetails(workflowId);
     }
 
+    // Equipment request workflows have a dedicated function
+    if (workflowId.startsWith('EQUIP_REQ_')) {
+      return getEquipmentRequestDetails(workflowId);
+    }
+
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const context = { success: true, id: workflowId, checklist: [] };
 
@@ -523,11 +528,10 @@ function getRequestDetails(workflowId) {
     const reqSheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
     if (!reqSheet) return { success: false, message: 'Initial Requests sheet missing' };
 
-    const isTerm = false;
     const isChange = workflowId.startsWith('CHANGE_');
-    const lookupSheetName = isTerm ? CONFIG.SHEETS.TERMINATIONS : (isChange ? CONFIG.SHEETS.POSITION_CHANGES : CONFIG.SHEETS.INITIAL_REQUESTS);
+    const lookupSheetName = isChange ? CONFIG.SHEETS.POSITION_CHANGES : CONFIG.SHEETS.INITIAL_REQUESTS;
     const lookupSheet = ss.getSheetByName(lookupSheetName);
-    
+
     const foundReq = lookupSheet ? lookupSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (!foundReq) return { success: false, message: 'Request ID not found in database' };
 
@@ -673,7 +677,8 @@ function getRequestDetails(workflowId) {
         // Categories that belong to specialist onboarding (exclude termination categories)
         const SPECIALIST_CATS = new Set([
           'Credit Card', 'Business Cards', 'Fleetio', 'Jonas',
-          'Central Purchasing', 'SiteDocs', '30/60/90 Review', 'Safety'
+          'Central Purchasing', 'Jonas / Central Purchasing',
+          'SiteDocs', '30/60/90 Review', 'Safety'
         ]);
 
         for (let i = 1; i < aiData.length; i++) {
@@ -1061,7 +1066,10 @@ function getStepResultData(workflowId, stepTarget) {
         const SKIP_COLS = new Set(['Workflow ID','Task ID','Form ID','Description','Draft','Form Data','Form Type']);
         for (let i = 1; i < aiD.length; i++) {
           if (String(aiD[i][wIdx]) !== workflowId) continue;
-          if (String(aiD[i][cIdx]) !== targetCat) continue;
+          // Match exact category OR combined 'Jonas / Central Purchasing' for either sub-target
+          const rowCat = String(aiD[i][cIdx] || '');
+          const catMatch = rowCat === targetCat || rowCat.split(' / ').map(function(s){ return s.trim(); }).includes(targetCat);
+          if (!catMatch) continue;
           if (ftIdx >= 0 && aiD[i][ftIdx] && aiD[i][ftIdx] !== stepTarget) continue;
           const prefix = taskNum > 1 ? 'Task ' + taskNum + ' — ' : '';
           aH.forEach((h, j) => {
@@ -1280,6 +1288,94 @@ function getTerminationDetails(workflowId) {
 
   } catch (e) {
     Logger.log('getTerminationDetails Fatal Error: ' + e.toString());
+    return { success: false, message: 'Server error: ' + e.message };
+  }
+}
+
+/**
+ * Get Details for Equipment Request Workflow Modal
+ * Equipment_Requests sheet: Timestamp[0] | WorkflowID[1] | FormID[2] | ReqName[3] | ReqEmail[4]
+ *   | FirstName[5] | LastName[6] | Site[7] | Position[8] | ManagerName[9] | ManagerEmail[10]
+ *   | Equipment[11] | Systems[12] | Comments[13] | Department[14]
+ */
+function getEquipmentRequestDetails(workflowId) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+
+    // Workflow row
+    const wfSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+    const foundWf = wfSheet ? wfSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
+    if (!foundWf) return { success: false, message: 'Workflow not found' };
+    const wfRow = wfSheet.getRange(foundWf.getRow(), 1, 1, 9).getValues()[0];
+
+    // Equipment_Requests row — workflow ID is in column B
+    const eqSheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
+    const foundReq = eqSheet ? eqSheet.getRange('B:B').createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
+    if (!foundReq) return { success: false, message: 'Request ID not found in database' };
+    const row = eqSheet.getRange(foundReq.getRow(), 1, 1, eqSheet.getLastColumn()).getValues()[0];
+
+    const tz = Session.getScriptTimeZone();
+    const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'M/d/yyyy') : String(v || '');
+
+    // Build requestData with header-style keys so RequestDetails.html can render it uniformly
+    const firstName = String(row[5] || '');
+    const lastName  = String(row[6] || '');
+    const requestData = {
+      'First Name':      firstName,
+      'Last Name':       lastName,
+      'Position Title':  String(row[8] || ''),
+      'Site Name':       String(row[7] || ''),
+      'Manager Name':    String(row[9] || ''),
+      'Manager Email':   String(row[10] || ''),
+      'Equipment':       String(row[11] || ''),
+      'Systems':         String(row[12] || ''),
+      'Comments':        String(row[13] || ''),
+      'Department':      String(row[14] || ''),
+      'Requester Name':  String(row[3] || ''),
+      'Requester Email': String(row[4] || ''),
+      'Date Requested':  fmtDate(row[0])
+    };
+
+    const context = {
+      success:     true,
+      id:          workflowId,
+      type:        'Equipment',
+      requestData: requestData,
+      status:      String(wfRow[4] || ''),
+      currentStep: String(wfRow[7] || ''),
+      checklist:   []
+    };
+
+    // Action items — return with properties expected by renderDetails checklist renderer
+    const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    if (aiSheet) {
+      const aiData = aiSheet.getDataRange().getValues();
+      const h = aiData[0];
+      const wfCol    = h.indexOf('Workflow ID');
+      const catCol   = h.indexOf('Category');
+      const nameCol  = h.indexOf('Task Name');
+      const stCol    = h.indexOf('Status');
+      const byCol    = h.indexOf('Closed By');
+      const timeCol  = h.indexOf('Completed Date');
+      const tidCol   = h.indexOf('Task ID');
+      const _tz      = Session.getScriptTimeZone();
+      for (let i = 1; i < aiData.length; i++) {
+        if (String(aiData[i][wfCol]) !== workflowId) continue;
+        const st    = String(aiData[i][stCol] || 'Open');
+        const tDate = aiData[i][timeCol];
+        context.checklist.push({
+          name:   String(aiData[i][nameCol] || aiData[i][catCol] || ''),
+          status: st === 'Closed' ? 'Complete' : st,
+          by:     String(aiData[i][byCol]  || ''),
+          time:   tDate instanceof Date ? Utilities.formatDate(tDate, _tz, 'M/d/yyyy h:mm a') : String(tDate || ''),
+          tid:    String(aiData[i][tidCol] || '')
+        });
+      }
+    }
+
+    return context;
+  } catch (e) {
+    Logger.log('getEquipmentRequestDetails Error: ' + e.toString());
     return { success: false, message: 'Server error: ' + e.message };
   }
 }

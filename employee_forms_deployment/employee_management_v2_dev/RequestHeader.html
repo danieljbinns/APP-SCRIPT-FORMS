@@ -70,6 +70,7 @@
   <div class="rh-sec">
     <div class="rh-hdr">
       <span class="rh-title">Employee</span>
+      <? if (rd.workflowType !== 'Equipment Request') { ?>
       <div class="rh-steps">
         <span class="rh-step rh-s-done">Init ✓</span>
         <? if (rd.internalEmployeeId) { ?><span class="rh-step rh-s-done">ID ✓</span>
@@ -79,16 +80,19 @@
         <? if (rd.assignedEmail) { ?><span class="rh-step rh-s-done">IT ✓</span>
         <? } else { ?><span class="rh-step rh-s-asgn">IT ⏳</span><? } ?>
       </div>
+      <? } ?>
     </div>
     <div class="rh-g">
       <div class="rh-f"><span class="rh-l">First Name</span><span class="rh-v"><?= rd.firstName || '—' ?></span></div>
       <div class="rh-f"><span class="rh-l">Last Name</span><span class="rh-v"><?= rd.lastName || '—' ?></span></div>
       <? if (rd.middleName) { ?><div class="rh-f"><span class="rh-l">Middle Name</span><span class="rh-v"><?= rd.middleName ?></span></div><? } ?>
       <? if (rd.preferredName) { ?><div class="rh-f"><span class="rh-l">Preferred Name</span><span class="rh-v"><?= rd.preferredName ?></span></div><? } ?>
+      <? if (rd.workflowType !== 'Equipment Request') { ?>
       <div class="rh-f"><span class="rh-l">Start Date</span><span class="rh-v"><?= rd.hireDate ? Utilities.formatDate(new Date(rd.hireDate + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') : '—' ?></span></div>
       <div class="rh-f"><span class="rh-l">New/Rehire</span><span class="rh-v"><?= rd.newHireOrRehire || '—' ?></span></div>
       <div class="rh-f"><span class="rh-l">Employee Type</span><span class="rh-v"><?= rd.employeeType || '—' ?></span></div>
       <div class="rh-f"><span class="rh-l">Employment Type</span><span class="rh-v"><?= rd.employmentType || '—' ?></span></div>
+      <? } ?>
       <div class="rh-f"><span class="rh-l">Job Title</span><span class="rh-v"><?= rd.jobTitle || '—' ?></span></div>
       <? if (rd.jrTitle) { ?><div class="rh-f"><span class="rh-l">JR Title</span><span class="rh-v"><?= rd.jrTitle ?></span></div><? } ?>
       <div class="rh-f"><span class="rh-l">Site</span><span class="rh-v"><?= rd.siteName || '—' ?></span></div>
@@ -98,6 +102,7 @@
       <? if (rd.managerEmail) { ?><div class="rh-f"><span class="rh-l">Manager Email</span><span class="rh-v rh-v link"><?= rd.managerEmail ?></span></div><? } ?>
       <? if (rd.requesterEmail) { ?><div class="rh-f"><span class="rh-l">Requested By</span><span class="rh-v link"><?= rd.requesterEmail ?></span></div><? } ?>
 
+      <? if (rd.workflowType !== 'Equipment Request') { ?>
       <!-- ADP — always shown, blank until HR verified -->
       <div class="rh-f">
         <span class="rh-l">ADP Associate ID<? if (rd.adpAssociateId) { ?> <span class="rh-annot">HR ✓</span><? } ?></span>
@@ -140,31 +145,10 @@
         <? } ?>
       </div>
       <? if (rd.bossWisCreated) { ?><div class="rh-f"><span class="rh-l">BOSS WIS</span><span class="rh-v"><?= rd.bossWisCreated ?></span></div><? } ?>
+      <? } ?>
     </div>
   </div>
 
-  <!-- ── BOSS & 30/60/90 Configuration ── -->
-  <? var hasBossConfig = rd.bossJobSites || rd.bossCostSheet || rd.bossCostSheetJobs || rd.bossTripReports || rd.bossGrievances; ?>
-  <? var hasBossOrJr   = hasBossConfig || rd.jrTitle; ?>
-  <? if (hasBossOrJr) { ?>
-  <div class="rh-sec">
-    <div class="rh-hdr"><span class="rh-title">BOSS &amp; Review Config</span></div>
-    <div class="rh-gw">
-      <? if (rd.jrTitle) { ?><div class="rh-f"><span class="rh-l">JR Title</span><span class="rh-v"><?= rd.jrTitle ?></span></div><? } ?>
-      <? if (rd.bossCostSheet) { ?><div class="rh-f"><span class="rh-l">Cost Sheet Access</span><span class="rh-v"><?= rd.bossCostSheet ?></span></div><? } ?>
-      <? if (rd.bossJobSites) { ?>
-      <div class="rh-f"><span class="rh-l">Job Sites (Committee)</span>
-        <div class="rh-tags"><? String(rd.bossJobSites).split(',').forEach(function(s){s=s.trim();if(s){ ?><span class="rh-tag"><?= s ?></span><? }}) ?></div>
-      </div><? } ?>
-      <? if (rd.bossCostSheetJobs) { ?>
-      <div class="rh-f"><span class="rh-l">Cost Sheet Jobs</span>
-        <div class="rh-tags"><? String(rd.bossCostSheetJobs).split(',').forEach(function(s){s=s.trim();if(s){ ?><span class="rh-tag"><?= s ?></span><? }}) ?></div>
-      </div><? } ?>
-      <? if (rd.bossTripReports === 'Yes') { ?><div class="rh-f"><span class="rh-l">Trip Reports</span><span class="rh-v" style="color:var(--accent-green-lt)">✓ Required</span></div><? } ?>
-      <? if (rd.bossGrievances  === 'Yes') { ?><div class="rh-f"><span class="rh-l">Grievances</span><span class="rh-v" style="color:var(--accent-green-lt)">✓ Required</span></div><? } ?>
-    </div>
-  </div>
-  <? } ?>
 
   <!-- ── Access & Equipment ── -->
   <? if (rd.systemAccess || hasSystems || hasEquipment) { ?>

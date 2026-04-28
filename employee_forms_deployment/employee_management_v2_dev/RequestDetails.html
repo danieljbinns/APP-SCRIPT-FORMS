@@ -580,12 +580,12 @@
             const r = data.requestData || {};
             const list = data.checklist || [];
 
-            if (workflowId.startsWith('TERM_') || workflowId.startsWith('CHANGE_')) {
+            if (workflowId.startsWith('TERM_') || workflowId.startsWith('CHANGE_') || workflowId.startsWith('EQUIP_REQ_')) {
                 document.getElementById('flowSection').style.display = 'none';
                 document.getElementById('eoeFlowSection').style.display = 'block';
 
                 var eoeTitle = document.querySelector('#eoeFlowSection h2');
-                if (eoeTitle) eoeTitle.textContent = workflowId.startsWith('CHANGE_') ? 'Live Request Flow \u2014 Status Change' : 'Live Request Flow \u2014 End of Employment';
+                if (eoeTitle) eoeTitle.textContent = workflowId.startsWith('CHANGE_') ? 'Live Request Flow \u2014 Status Change' : workflowId.startsWith('EQUIP_REQ_') ? 'Live Request Flow \u2014 Equipment Request' : 'Live Request Flow \u2014 End of Employment';
 
                 // Dynamically build action item category cards in the EOE/CHANGE diagram
                 const aiContainer = document.getElementById('eoeActionItemNodes');
@@ -695,6 +695,20 @@
                     '<div class="detail-item"><label>Reason</label><div>' + (r['Reason'] || '-') + '</div></div>' +
                     '<div class="detail-item"><label>Requester</label><div>' + (r['Requester Email'] || '-') + '</div></div>' +
                     (termAttach ? '<div class="detail-item"><label>Documentation</label><div><a href="' + termAttach + '" target="_blank" style="color:#EB1C2D;">View Attached File</a></div></div>' : '');
+            } else if (workflowId.startsWith('EQUIP_REQ_')) {
+                document.getElementById('employeeName').innerText = ((r['First Name'] || '') + ' ' + (r['Last Name'] || '')).trim() || data.id;
+                var _diEq = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
+                document.getElementById('snapshotGrid').innerHTML =
+                    _diEq('Workflow ID', data.id) +
+                    _diEq('Position', r['Position Title']) +
+                    _diEq('Site', r['Site Name']) +
+                    _diEq('Department', r['Department']) +
+                    _diEq('Equipment', r['Equipment']) +
+                    _diEq('Systems', r['Systems']) +
+                    _diEq('Date Requested', r['Date Requested']) +
+                    _diEq('Manager', (r['Manager Name'] || '') + (r['Manager Email'] ? ' \xb7 ' + r['Manager Email'] : '')) +
+                    _diEq('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : '')) +
+                    _diEq('Comments', r['Comments']);
             } else {
                 document.getElementById('employeeName').innerText = (r['First Name'] || '') + ' ' + (r['Last Name'] || '');
                 var _di = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
@@ -856,6 +870,7 @@
             }
         });
     </script>
+  <?!= include('SharedComponents') ?>
 </body>
 
 </html>
