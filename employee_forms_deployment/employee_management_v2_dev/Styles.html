@@ -1,24 +1,50 @@
 <style>
 /* ============================================================
-   TEAM Group — Shared Design System v1
+   TEAM Group — Shared Design System v2
    Single source of truth for all employee form styles.
    Include in any .html file:  <?!= include('Styles') ?>
+
+   Standard layout: full-width, no flex centering on body.
+   All forms use .container as the page wrapper.
+   RequestHeader component included at top of every form.
    ============================================================ */
 
 /* ── Variables ─────────────────────────────────────────────── */
 :root {
   --bg-color:        #0c0c0c;
+  --bg-darker:       #111111;   /* top bands, popover backgrounds */
   --card-bg:         #1a1a1a;
   --text-main:       #ffffff;
   --text-muted:      #a0a0a0;
+  --text-dim:        #444444;   /* empty / placeholder field values */
+  --text-secondary:  #cccccc;   /* secondary content in hover stamps */
   --brand-red:       #EB1C2D;
   --brand-red-hover: #c41522;
   --input-bg:        #2a2a2a;
   --input-border:    #444;
   --border-color:    #333;
+  --border-subtle:   #2a2a2a;   /* tight interior dividers */
   --success:         #00c853;
   --warning:         #ffab00;
   --danger:          #f44336;
+  /* ── Semantic accent colours (step badges, credentials) ── */
+  --accent-blue:     #93c5fd;   /* links, IT step, required-later */
+  --accent-amber:    #fcd34d;   /* mono credentials, assigned step */
+  --accent-green:    #86efac;   /* credential values (cred style) */
+  --accent-green-lt: #6ee7b7;   /* done step badge text */
+  --accent-red-lt:   #ff9999;   /* init step badge text */
+  /* ── Workflow ID badge ── */
+  --badge-wf-bg:     #1a1a2e;
+  --badge-wf-text:   #a0a0ff;
+  --badge-wf-border: #3333aa;
+  /* ── Workflow type badge ── */
+  --badge-typ-bg:    #1a2e1a;
+  --badge-typ-text:  #80ff80;
+  --badge-typ-border:#336633;
+  /* ── Employment type badge ── */
+  --badge-emp-bg:    #2e1a1a;
+  --badge-emp-text:  #ffaaaa;
+  --badge-emp-border:#663333;
 }
 
 /* ── Reset ─────────────────────────────────────────────────── */
@@ -34,27 +60,19 @@ body {
   padding: 20px;
 }
 
-/* Card-layout pages (approvals, action items, standalone)
-   Add class="card-layout" to <body>                       */
-body.card-layout {
-  display: flex;
-  justify-content: center;
-}
-
 /* ── Containers ─────────────────────────────────────────────── */
-/* Wide  — full-page forms (InitialRequest, TerminationRequest) */
-.container-wide {
-  max-width: 1600px;
-  width: 95%;
+/* Standard — all forms. Full-width with comfortable padding.   */
+.container {
+  width: 100%;
+  max-width: 1800px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
-/* Narrow — centered card forms */
-.container-narrow {
-  max-width: 960px;
-  width: 100%;
-}
+/* @deprecated — use .container */
+body.card-layout  { display: flex; justify-content: center; }
+.container-wide   { max-width: 1600px; width: 95%; margin: 0 auto; padding: 0 20px; }
+.container-narrow { max-width: 960px; width: 100%; }
 
 /* ── Card ───────────────────────────────────────────────────── */
 /* card       — card-layout pages (rounded, heavy shadow)       */
@@ -77,11 +95,25 @@ body.card-layout {
 
 /* ── Logo ───────────────────────────────────────────────────── */
 .logo-container { text-align: center; margin-bottom: 24px; }
-.logo { height: 60px; }
+.logo { height: 120px; }
 
 /* ── Page header ─────────────────────────────────────────────── */
+/* Use .page-header wrapper or bare h1/.subtitle directly        */
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+  color: var(--text-main);
+}
+.subtitle {
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
 .page-header { text-align: center; margin-bottom: 24px; }
-.page-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+.page-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
 .page-header .subtitle { color: var(--text-muted); font-size: 14px; }
 
 /* ── Section headers ─────────────────────────────────────────── */
@@ -97,7 +129,9 @@ body.card-layout {
   padding-bottom: 8px;
 }
 
-/* h2 — full-page form section divider */
+/* h2 — full-page form section divider. Always var(--text-main).
+   Do NOT override with brand-red or text-transform: uppercase — use
+   .section-title for that treatment instead.                    */
 h2 {
   color: var(--text-main);
   font-size: 1.2rem;
@@ -153,6 +187,12 @@ h3 {
   font-weight: 400;
 }
 
+/* ── Divider ─────────────────────────────────────────────────── */
+hr { border: 0; border-top: 1px solid var(--border-color); margin: 20px 0; }
+
+/* ── Form group ─────────────────────────────────────────────── */
+.form-group { margin-bottom: 20px; }
+
 /* ── Form layout helpers ─────────────────────────────────────── */
 .form-section     { margin-bottom: 30px; }
 .question-wrapper { margin-bottom: 25px; }
@@ -167,7 +207,7 @@ label {
   display: block;
   font-weight: 600;
   margin-bottom: 8px;
-  color: var(--text-muted);
+  color: var(--text-main);
   font-size: 0.9rem;
 }
 .required { color: var(--brand-red); }
@@ -200,7 +240,7 @@ select option    { background: var(--input-bg); color: var(--text-main); }
 textarea         { resize: vertical; min-height: 80px; }
 input[readonly]  { color: var(--text-muted); cursor: default; }
 
-/* Fully-clickable date picker */
+/* ── Date picker — fully-clickable, no visible icon ── */
 input[type="date"] { position: relative; }
 input[type="date"]::-webkit-calendar-picker-indicator {
   position: absolute; top:0; left:0; right:0; bottom:0;
@@ -301,9 +341,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: 10px;
   align-items: stretch;
   width: 100%;
+  box-sizing: border-box;
 }
 .dual-list-panel {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background: #1e1e1e;
@@ -330,7 +372,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: none;
   border-bottom: 1px solid #333;
   color: var(--text-main);
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   outline: none;
   width: 100%;
   box-sizing: border-box;
@@ -344,7 +386,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .dual-list-item {
   padding: 5px 10px;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   cursor: pointer;
   color: var(--text-main);
   user-select: none;
@@ -363,15 +405,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .dual-list-btn {
   flex: 1;
-  padding: 4px 6px;
-  font-size: 0.75rem;
+  padding: 5px 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
   background: #2a2a2a;
-  color: var(--text-muted);
-  border: 1px solid #444;
+  color: var(--text-main);
+  border: 1px solid #555;
   border-radius: 4px;
   cursor: pointer;
+  text-align: center;
 }
-.dual-list-btn:hover { background: #333; color: var(--text-main); }
+.dual-list-btn:hover { background: #3a3a3a; border-color: var(--text-muted); }
 .dual-list-arrows {
   display: flex;
   flex-direction: column;
@@ -379,19 +423,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: 6px;
 }
 .dual-list-arrow {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   background: #2a2a2a;
   border: 1px solid #555;
   border-radius: 4px;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 1.4rem;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.dual-list-arrow:hover { background: var(--brand-red); color: #fff; border-color: var(--brand-red); }
+/* Add arrow — green */
+.dual-list-arrow.add-arrow  { color: var(--success); border-color: rgba(0,200,83,0.4); }
+.dual-list-arrow.add-arrow:hover  { background: var(--success); color: #000; border-color: var(--success); }
+/* Remove arrow — red */
+.dual-list-arrow.remove-arrow { color: var(--brand-red); border-color: rgba(235,28,45,0.4); }
+.dual-list-arrow.remove-arrow:hover { background: var(--brand-red); color: #fff; border-color: var(--brand-red); }
 
 /* ── Sub-section (expands below a parent checkbox) ───────────── */
 .sub-section {
@@ -585,11 +635,63 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .callout-info    { background: rgba(66,133,244,0.1);  border: 1px solid rgba(66,133,244,0.3); color: #64b5f6; }
 .callout-success { background: rgba(0,200,83,0.08);   border: 1px solid rgba(0,200,83,0.3);  color: var(--success); }
 
+/* ── Help / hint text ────────────────────────────────────────── */
+.help-text  { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-style: italic; display: block; }
+.warn-text  { font-size: 0.82rem; color: var(--warning); margin-top: 6px; display: block; }
+
+/* ── Read-only display box ───────────────────────────────────── */
+/* For showing verified/locked data (HR-confirmed fields etc.)   */
+.read-only-box {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.read-only-box strong { color: var(--text-main); font-weight: 600; }
+
+/* ── Info grid / info label ──────────────────────────────────── */
+/* Horizontal key-value display (asset retrieval, approvals)     */
+.info-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.info-grid-item { display: flex; flex-direction: column; min-width: 160px; }
+.info-label {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+.info-value { color: var(--text-main); font-weight: 600; font-size: 13px; }
+
+/* ── Back link ───────────────────────────────────────────────── */
+.back-link {
+  display: inline-block;
+  padding: 6px 0 14px;
+  color: var(--brand-red);
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+}
+.back-link:hover { color: var(--brand-red-hover); text-decoration: underline; }
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
+  .container { padding: 0 12px; }
   .form-row, .form-row-2, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
   .ticket-info { grid-template-columns: 1fr; }
   .actions     { grid-template-columns: 1fr; }
   .card, .card-form { padding: 20px; }
+  .info-grid { flex-direction: column; }
 }
 </style>

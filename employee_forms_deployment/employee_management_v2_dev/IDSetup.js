@@ -44,7 +44,7 @@ function getIDSetupRequestData(workflowId) {
     var col = {};
     var colNames = [
       'Workflow ID', 'Requester Email', 'Hire Date', 'New Hire/Rehire',
-      'Employee Type', 'Employment Type', 'First Name', 'Last Name',
+      'Employee Type', 'Employment Type', 'First Name', 'Middle Name', 'Last Name', 'Preferred Name',
       'Position Title', 'JR Assign', 'Site Name', 'Job Site #',
       'Manager Email', 'Manager Name', 'System Access', 'Systems',
       'Google Email', 'Google Domain', 'Department'
@@ -66,11 +66,16 @@ function getIDSetupRequestData(workflowId) {
         var systemsRaw  = get(row, 'Systems');
         return {
           success: true,
+          workflowId: workflowId,
+          workflowType: 'New Hire',
           employeeName: firstName + ' ' + lastName,
           firstName: firstName,
           lastName: lastName,
+          middleName: get(row, 'Middle Name') || '',
+          preferredName: get(row, 'Preferred Name') || '',
           hireDate: hireDateRaw instanceof Date ? Utilities.formatDate(hireDateRaw, Session.getScriptTimeZone(), 'yyyy-MM-dd') : (hireDateRaw ? String(hireDateRaw).substring(0, 10) : ''),
           position: get(row, 'Position Title'),
+          jobTitle: get(row, 'Position Title'),
           jrTitle: get(row, 'JR Assign') || '',
           siteName: get(row, 'Site Name'),
           jobSiteNumber: get(row, 'Job Site #') || '',
@@ -81,8 +86,11 @@ function getIDSetupRequestData(workflowId) {
           employeeType: get(row, 'Employee Type') || '',
           newHireOrRehire: get(row, 'New Hire/Rehire') || '',
           systemsSelected: systemsRaw,
+          systems: systemsRaw ? systemsRaw.split(', ').filter(Boolean) : [],
           systemAccess: get(row, 'System Access'),
           siteDocsAccess: systemsRaw && systemsRaw.includes('SiteDocs'),
+          googleEmail: get(row, 'Google Email'),
+          googleDomain: get(row, 'Google Domain'),
           requestedUsername: get(row, 'Google Email'),
           requestedDomain: get(row, 'Google Domain'),
           department: get(row, 'Department') || ''
@@ -191,16 +199,25 @@ function submitEmployeeIDSetup(formData) {
 
 function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
   try {
-    const contextData = {
-      workflowType: 'New Hire',
-      employeeName: requestData.employeeName,
-      jobTitle: requestData.position,
-      jrTitle: requestData.jrTitle,
-      siteName: requestData.siteName,
-      hireDate: requestData.hireDate,
-      employmentType: requestData.employmentType,
-      managerName: requestData.managerName
-    };
+    const siteDocsJobCode = (setupData && setupData.siteDocsJobCode) || (function() {
+      try {
+        var sh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
+        if (!sh) return '';
+        var rows = sh.getDataRange().getValues();
+        var row = rows.find(function(r) { return r[0] === workflowId; });
+        return row ? String(row[5] || '') : '';
+      } catch(e) { return ''; }
+    })();
+
+    // Use full workflow context so all Request Details fields are populated in the email
+    var contextData = (typeof getWorkflowContext === 'function' ? getWorkflowContext(workflowId) : null) || {};
+    contextData.workflowType = 'New Hire';
+    // Supplement with any extra fields from requestData that may not yet be in the sheet
+    if (!contextData.employeeName && requestData.employeeName) contextData.employeeName = requestData.employeeName;
+    if (!contextData.jobTitle    && requestData.position)      contextData.jobTitle     = requestData.position;
+    if (!contextData.siteName    && requestData.siteName)      contextData.siteName     = requestData.siteName;
+    if (!contextData.hireDate    && requestData.hireDate)      contextData.hireDate     = requestData.hireDate;
+    if (siteDocsJobCode) contextData.siteDocsJobCode = siteDocsJobCode;
 
     const description = JSON.stringify([
       'Assign SiteDocs locations for employee',
@@ -283,22 +300,18 @@ function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
       sendFormEmail({
         to: recipients.join(','),
         subject: 'Credentials Ready',
-        body: 'The onboarding process has progressed. Credentials have been generated for this hourly employee.\n\n' +
-              '<strong>CREDENTIALS:</strong>\n' +
-              '• DSS: ' + (setupData.dssUsername || 'N/A') + ' (Pwd: ' + (setupData.dssPassword || 'N/A') + ')\n' +
-              '• SiteDocs: ' + (setupData.siteDocsUsername || 'N/A') + ' (Pwd: ' + (setupData.siteDocsPassword || 'N/A') + ')\n' +
-              '• SiteDocs Worker ID: ' + (setupData.siteDocsWorkerId || 'N/A') + '\n\n' +
-              'HR Verification is pending for ADP setup.' + calendarLinkHtml,
-        formUrl: '', // REMOVED BUTTON as per user request (view is inaccurate)
+        body: 'ID Setup is complete. Credentials have been generated — see details below. HR Verification is next.',
+        formUrl: '',
         displayName: 'TEAM Group - Employee Onboarding',
-        contextData: context
+        contextData: context,
+        emailOpts: { showPasswords: true, calendarDate: context.hireDate }
       });
       Logger.log('[SUCCESS] Credentials email sent to requester & manager (Hourly/No System Access - Preliminary)');
     }
 
     // 2. CONTINUE TO HR VERIFICATION (Do not mark complete yet)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
-    const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be skipped for this hourly/no-access employee.' + calendarLinkHtml;
+    const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be skipped for this hourly/no-access employee.';
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
       subject: 'HR Verification Required',
@@ -324,7 +337,7 @@ function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
   } else {
     // Standard Path (Salary OR System Access)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
-    const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be triggered after HR verification.' + calendarLinkHtml;
+    const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be triggered after HR verification.';
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
       subject: 'HR Verification Required',

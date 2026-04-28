@@ -1,0 +1,222 @@
+<style>
+  /* RequestHeader component — all colours via Styles.html CSS vars.
+     Requires Styles.html to be included in the host page's <head>. */
+  .rh { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-subtle); width: 100%; overflow: visible; margin-bottom: 20px; }
+  .rh-top { background: var(--bg-darker); padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); gap: 8px; flex-wrap: wrap; border-radius: 8px 8px 0 0; }
+  .rh-name { font-size: 14px; font-weight: 700; color: var(--text-main); }
+  .rh-badges { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+  .rh-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; }
+  .rh-badge-wf  { background: var(--badge-wf-bg);  color: var(--badge-wf-text);  border: 1px solid var(--badge-wf-border); }
+  .rh-badge-typ { background: var(--badge-typ-bg); color: var(--badge-typ-text); border: 1px solid var(--badge-typ-border); }
+  .rh-badge-emp { background: var(--badge-emp-bg); color: var(--badge-emp-text); border: 1px solid var(--badge-emp-border); }
+  .rh-sec { padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); }
+  .rh-sec:last-child { border-bottom: none; border-radius: 0 0 8px 8px; }
+  .rh-hdr { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .rh-title { font-size: 10px; font-weight: 700; color: var(--brand-red); text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0; }
+  .rh-steps { display: flex; gap: 3px; flex-wrap: wrap; }
+  .rh-step { font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+  .rh-s-init { background: rgba(235,28,45,0.12);   color: var(--accent-red-lt);   border: 1px solid rgba(235,28,45,0.25); }
+  .rh-s-done { background: rgba(0,200,83,0.12);    color: var(--accent-green-lt); border: 1px solid rgba(0,200,83,0.25); }
+  .rh-s-asgn { background: rgba(245,158,11,0.12);  color: var(--accent-amber);    border: 1px solid rgba(245,158,11,0.25); }
+  .rh-s-req  { background: rgba(59,130,246,0.10);  color: var(--accent-blue);     border: 1px solid rgba(59,130,246,0.25); }
+  .rh-g  { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 10px; }
+  .rh-gw { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px 10px; }
+  .rh-f { display: flex; flex-direction: column; gap: 1px; position: relative; min-width: 0; }
+  .rh-l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; line-height: 1.3; }
+  .rh-v { font-size: 12px; font-weight: 600; color: var(--text-main); line-height: 1.4; overflow-wrap: anywhere; word-break: break-word; }
+  .rh-v.dim  { color: var(--text-dim); font-weight: 400; }
+  .rh-v.mono { font-family: 'SF Mono','Fira Code',monospace; color: var(--accent-green-lt); }
+  .rh-v.cred { font-family: 'SF Mono','Fira Code',monospace; color: var(--accent-green-lt); }
+  .rh-v.link { color: var(--text-main); }
+  .rh-annot { font-size: 9px; font-weight: 600; margin-left: 4px; vertical-align: middle; color: var(--success); opacity: 0.8; }
+  .rh-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+  .rh-tag  { font-size: 10px; padding: 1px 6px; border-radius: 3px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); }
+  .rh-subdiv { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+  .rh-subdiv span { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); white-space: nowrap; }
+  .rh-subdiv::before, .rh-subdiv::after { content: ''; flex: 1; border-top: 1px solid var(--border-subtle); }
+  .rh-subdiv::before { max-width: 0; }
+  .rh-hs { display: none; position: absolute; bottom: calc(100% + 5px); left: 0;
+    background: var(--bg-darker); border: 1px solid var(--border-color); border-radius: 6px;
+    padding: 8px 10px; min-width: 180px; max-width: 240px;
+    z-index: 500; box-shadow: 0 6px 24px rgba(0,0,0,0.9); pointer-events: none; white-space: normal; }
+  .rh-f:hover > .rh-hs { display: block; }
+  .rh-hs-hdr { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; color: var(--success); }
+  .rh-hr { display: flex; flex-direction: column; gap: 0; margin-bottom: 4px; }
+  .rh-hr:last-child { margin-bottom: 0; }
+  .rh-hl { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.3px; }
+  .rh-hv { font-size: 11px; font-weight: 500; color: var(--text-secondary); }
+  .rh-hv.mono { font-family: monospace; font-size: 10px; color: var(--accent-amber); }
+  hr.rh-hd { border: none; border-top: 1px solid var(--border-subtle); margin: 4px 0; }
+</style>
+
+<? var rd = requestData || {}; ?>
+<? var hasSystems = rd.systems && rd.systems.length > 0; ?>
+<? var hasEquipment = rd.equipmentRaw && rd.equipmentRaw.length > 0; ?>
+<? var equipment = rd.equipmentRaw ? rd.equipmentRaw.split(',').map(function(s){return s.trim();}).filter(Boolean) : []; ?>
+<? var googleRequested = (rd.googleEmail && rd.googleDomain) ? (rd.googleEmail + '@' + String(rd.googleDomain).replace('@','')) : (rd.googleEmail || ''); ?>
+
+<div class="rh">
+
+  <!-- Top band -->
+  <div class="rh-top">
+    <div class="rh-badges">
+      <? if (rd.workflowId) { ?><span class="rh-badge rh-badge-wf"><?= rd.workflowId ?></span><? } ?>
+      <? if (rd.workflowType) { ?><span class="rh-badge rh-badge-typ"><?= rd.workflowType ?></span><? } ?>
+      <? if (rd.employmentType) { ?><span class="rh-badge rh-badge-emp"><?= rd.employmentType ?></span><? } ?>
+    </div>
+  </div>
+
+  <!-- ── Employee ── -->
+  <div class="rh-sec">
+    <div class="rh-hdr">
+      <span class="rh-title">Employee</span>
+      <div class="rh-steps">
+        <span class="rh-step rh-s-done">Init ✓</span>
+        <? if (rd.internalEmployeeId) { ?><span class="rh-step rh-s-done">ID ✓</span>
+        <? } else { ?><span class="rh-step rh-s-asgn">ID ⏳</span><? } ?>
+        <? if (rd.adpAssociateId) { ?><span class="rh-step rh-s-done">HR ✓</span>
+        <? } else { ?><span class="rh-step rh-s-asgn">HR ⏳</span><? } ?>
+        <? if (rd.assignedEmail) { ?><span class="rh-step rh-s-done">IT ✓</span>
+        <? } else { ?><span class="rh-step rh-s-asgn">IT ⏳</span><? } ?>
+      </div>
+    </div>
+    <div class="rh-g">
+      <div class="rh-f"><span class="rh-l">First Name</span><span class="rh-v"><?= rd.firstName || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">Last Name</span><span class="rh-v"><?= rd.lastName || '—' ?></span></div>
+      <? if (rd.middleName) { ?><div class="rh-f"><span class="rh-l">Middle Name</span><span class="rh-v"><?= rd.middleName ?></span></div><? } ?>
+      <? if (rd.preferredName) { ?><div class="rh-f"><span class="rh-l">Preferred Name</span><span class="rh-v"><?= rd.preferredName ?></span></div><? } ?>
+      <div class="rh-f"><span class="rh-l">Start Date</span><span class="rh-v"><?= rd.hireDate ? Utilities.formatDate(new Date(rd.hireDate + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') : '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">New/Rehire</span><span class="rh-v"><?= rd.newHireOrRehire || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">Employee Type</span><span class="rh-v"><?= rd.employeeType || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">Employment Type</span><span class="rh-v"><?= rd.employmentType || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">Job Title</span><span class="rh-v"><?= rd.jobTitle || '—' ?></span></div>
+      <? if (rd.jrTitle) { ?><div class="rh-f"><span class="rh-l">JR Title</span><span class="rh-v"><?= rd.jrTitle ?></span></div><? } ?>
+      <div class="rh-f"><span class="rh-l">Site</span><span class="rh-v"><?= rd.siteName || '—' ?></span></div>
+      <? if (rd.jobSiteNumber) { ?><div class="rh-f"><span class="rh-l">Job Site #</span><span class="rh-v"><?= rd.jobSiteNumber ?></span></div><? } ?>
+      <? if (rd.department) { ?><div class="rh-f"><span class="rh-l">Department</span><span class="rh-v"><?= rd.department ?></span></div><? } ?>
+      <div class="rh-f"><span class="rh-l">Manager</span><span class="rh-v"><?= rd.managerName || '—' ?></span></div>
+      <? if (rd.managerEmail) { ?><div class="rh-f"><span class="rh-l">Manager Email</span><span class="rh-v rh-v link"><?= rd.managerEmail ?></span></div><? } ?>
+      <? if (rd.requesterEmail) { ?><div class="rh-f"><span class="rh-l">Requested By</span><span class="rh-v link"><?= rd.requesterEmail ?></span></div><? } ?>
+
+      <!-- ADP — always shown, blank until HR verified -->
+      <div class="rh-f">
+        <span class="rh-l">ADP Associate ID<? if (rd.adpAssociateId) { ?> <span class="rh-annot">HR ✓</span><? } ?></span>
+        <span class="rh-v <?= rd.adpAssociateId ? 'mono' : 'dim' ?>"><?= rd.adpAssociateId || '—' ?></span>
+        <? if (rd.adpAssociateId) { ?>
+        <div class="rh-hs"><div class="rh-hs-hdr">HR Verified</div>
+          <? if (rd.hrSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span><span class="rh-hv"><?= rd.hrSubmittedBy ?></span></div><? } ?>
+          <? if (rd.hrTimestamp) { ?><div class="rh-hr"><span class="rh-hl">Date</span><span class="rh-hv"><?= rd.hrTimestamp ?></span></div><? } ?>
+        </div>
+        <? } ?>
+      </div>
+
+      <!-- Credentials — always shown, blank until ID Setup done -->
+      <div class="rh-f">
+        <span class="rh-l">Internal Employee ID<? if (rd.internalEmployeeId) { ?> <span class="rh-annot">ID ✓</span><? } ?></span>
+        <span class="rh-v <?= rd.internalEmployeeId ? 'mono' : 'dim' ?>"><?= rd.internalEmployeeId || '—' ?></span>
+        <? if (rd.internalEmployeeId && rd.idTimestamp) { ?>
+        <div class="rh-hs"><div class="rh-hs-hdr">ID Setup</div>
+          <? if (rd.idSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span><span class="rh-hv"><?= rd.idSubmittedBy ?></span></div><? } ?>
+          <div class="rh-hr"><span class="rh-hl">Date</span><span class="rh-hv"><?= rd.idTimestamp ?></span></div>
+        </div>
+        <? } ?>
+      </div>
+      <div class="rh-f"><span class="rh-l">SiteDocs Worker ID</span><span class="rh-v <?= rd.siteDocsWorkerId ? 'mono' : 'dim' ?>"><?= rd.siteDocsWorkerId || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">SiteDocs Job Code</span><span class="rh-v <?= rd.siteDocsJobCode ? '' : 'dim' ?>"><?= rd.siteDocsJobCode || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">SiteDocs Username</span><span class="rh-v <?= rd.siteDocsUsername ? 'cred' : 'dim' ?>"><?= rd.siteDocsUsername || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">SiteDocs Password</span><span class="rh-v <?= rd.siteDocsPassword ? 'cred' : 'dim' ?>"><?= rd.siteDocsPassword || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">DSS Username</span><span class="rh-v <?= rd.dssUsername ? 'cred' : 'dim' ?>"><?= rd.dssUsername || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">DSS Password</span><span class="rh-v <?= rd.dssPassword ? 'cred' : 'dim' ?>"><?= rd.dssPassword || '—' ?></span></div>
+
+      <!-- IT — assigned email, always shown blank until IT done -->
+      <div class="rh-f">
+        <span class="rh-l">Assigned Email<? if (rd.assignedEmail) { ?> <span class="rh-annot">IT ✓</span><? } ?></span>
+        <span class="rh-v <?= rd.assignedEmail ? 'link' : 'dim' ?>"><?= rd.assignedEmail || '—' ?></span>
+        <? if (rd.assignedEmail) { ?>
+        <div class="rh-hs"><div class="rh-hs-hdr">IT Setup</div>
+          <? if (rd.itSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span><span class="rh-hv"><?= rd.itSubmittedBy ?></span></div><? } ?>
+          <? if (rd.itTimestamp) { ?><div class="rh-hr"><span class="rh-hl">Date</span><span class="rh-hv"><?= rd.itTimestamp ?></span></div><? } ?>
+        </div>
+        <? } ?>
+      </div>
+      <? if (rd.bossWisCreated) { ?><div class="rh-f"><span class="rh-l">BOSS WIS</span><span class="rh-v"><?= rd.bossWisCreated ?></span></div><? } ?>
+    </div>
+  </div>
+
+  <!-- ── BOSS & 30/60/90 Configuration ── -->
+  <? var hasBossConfig = rd.bossJobSites || rd.bossCostSheet || rd.bossCostSheetJobs || rd.bossTripReports || rd.bossGrievances; ?>
+  <? var hasBossOrJr   = hasBossConfig || rd.jrTitle; ?>
+  <? if (hasBossOrJr) { ?>
+  <div class="rh-sec">
+    <div class="rh-hdr"><span class="rh-title">BOSS &amp; Review Config</span></div>
+    <div class="rh-gw">
+      <? if (rd.jrTitle) { ?><div class="rh-f"><span class="rh-l">JR Title</span><span class="rh-v"><?= rd.jrTitle ?></span></div><? } ?>
+      <? if (rd.bossCostSheet) { ?><div class="rh-f"><span class="rh-l">Cost Sheet Access</span><span class="rh-v"><?= rd.bossCostSheet ?></span></div><? } ?>
+      <? if (rd.bossJobSites) { ?>
+      <div class="rh-f"><span class="rh-l">Job Sites (Committee)</span>
+        <div class="rh-tags"><? String(rd.bossJobSites).split(',').forEach(function(s){s=s.trim();if(s){ ?><span class="rh-tag"><?= s ?></span><? }}) ?></div>
+      </div><? } ?>
+      <? if (rd.bossCostSheetJobs) { ?>
+      <div class="rh-f"><span class="rh-l">Cost Sheet Jobs</span>
+        <div class="rh-tags"><? String(rd.bossCostSheetJobs).split(',').forEach(function(s){s=s.trim();if(s){ ?><span class="rh-tag"><?= s ?></span><? }}) ?></div>
+      </div><? } ?>
+      <? if (rd.bossTripReports === 'Yes') { ?><div class="rh-f"><span class="rh-l">Trip Reports</span><span class="rh-v" style="color:var(--accent-green-lt)">✓ Required</span></div><? } ?>
+      <? if (rd.bossGrievances  === 'Yes') { ?><div class="rh-f"><span class="rh-l">Grievances</span><span class="rh-v" style="color:var(--accent-green-lt)">✓ Required</span></div><? } ?>
+    </div>
+  </div>
+  <? } ?>
+
+  <!-- ── Access & Equipment ── -->
+  <? if (rd.systemAccess || hasSystems || hasEquipment) { ?>
+  <div class="rh-sec">
+    <div class="rh-hdr"><span class="rh-title">Access &amp; Equipment</span></div>
+    <div class="rh-gw">
+      <? if (rd.systemAccess) { ?><div class="rh-f"><span class="rh-l">System Access</span><span class="rh-v"><?= rd.systemAccess ?></span></div><? } ?>
+      <? if (hasSystems) { ?>
+      <div class="rh-f"><span class="rh-l">Systems</span>
+        <div class="rh-tags"><? for (var i=0; i<rd.systems.length; i++) { ?><span class="rh-tag"><?= rd.systems[i] ?></span><? } ?></div>
+      </div><? } ?>
+      <? if (hasEquipment) { ?>
+      <div class="rh-f"><span class="rh-l">Equipment</span>
+        <div class="rh-tags"><? for (var j=0; j<equipment.length; j++) { ?><span class="rh-tag"><?= equipment[j] ?></span><? } ?></div>
+      </div><? } ?>
+      <? if (googleRequested) { ?>
+      <div class="rh-f">
+        <span class="rh-l">Google Account<? if (rd.assignedEmail) { ?> <span class="rh-annot">IT ✓</span><? } ?></span>
+        <span class="rh-v"><?= googleRequested ?></span>
+        <? if (rd.assignedEmail && rd.itTimestamp) { ?>
+        <div class="rh-hs"><div class="rh-hs-hdr">IT Setup</div>
+          <? if (rd.itSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span><span class="rh-hv"><?= rd.itSubmittedBy ?></span></div><? } ?>
+          <? if (rd.itTimestamp) { ?><div class="rh-hr"><span class="rh-hl">Date</span><span class="rh-hv"><?= rd.itTimestamp ?></span></div><? } ?>
+          <div class="rh-hr"><span class="rh-hl">Assigned Email</span><span class="rh-hv"><?= rd.assignedEmail ?></span></div>
+        </div>
+        <? } ?>
+      </div><? } ?>
+      <? if (rd.computerType || rd.computerRequestType) { ?>
+      <div class="rh-f">
+        <span class="rh-l">Computer<? if (rd.assignedEmail) { ?> <span class="rh-annot">IT ✓</span><? } ?></span>
+        <span class="rh-v"><?= rd.computerType || '' ?><?= (rd.computerType && rd.computerRequestType) ? ' — ' : '' ?><?= rd.computerRequestType || '' ?></span>
+        <div class="rh-hs"><div class="rh-hs-hdr">Computer Details</div>
+          <? if (rd.computerRequestType) { ?><div class="rh-hr"><span class="rh-hl">Request Type</span><span class="rh-hv"><?= rd.computerRequestType ?></span></div><? } ?>
+          <? if (rd.computerType) { ?><div class="rh-hr"><span class="rh-hl">Type</span><span class="rh-hv"><?= rd.computerType ?></span></div><? } ?>
+          <? if (rd.itSubmittedBy) { ?><hr class="rh-hd"><div class="rh-hr"><span class="rh-hl">Set by</span><span class="rh-hv"><?= rd.itSubmittedBy ?></span></div><? } ?>
+        </div>
+      </div><? } ?>
+      <? if (rd.phoneRequestType) { ?>
+      <div class="rh-f">
+        <span class="rh-l">Mobile Phone<? if (rd.assignedEmail) { ?> <span class="rh-annot">IT ✓</span><? } ?></span>
+        <span class="rh-v"><?= rd.phoneRequestType ?></span>
+      </div><? } ?>
+      <? if (rd.adpSites) { ?>
+      <div class="rh-f"><span class="rh-l">ADP Sites</span>
+        <div class="rh-tags"><? var adpArr = String(rd.adpSites).split(','); for (var a=0; a<adpArr.length; a++) { if(adpArr[a].trim()) { ?><span class="rh-tag"><?= adpArr[a].trim() ?></span><? } } ?></div>
+      </div><? } ?>
+      <? if (rd.purchasingSites) { ?>
+      <div class="rh-f"><span class="rh-l">Jonas Job Numbers</span>
+        <div class="rh-tags"><? var pArr = String(rd.purchasingSites).split(','); for (var p=0; p<pArr.length; p++) { if(pArr[p].trim()) { ?><span class="rh-tag"><?= pArr[p].trim() ?></span><? } } ?></div>
+      </div><? } ?>
+    </div>
+  </div>
+  <? } ?>
+
+</div>

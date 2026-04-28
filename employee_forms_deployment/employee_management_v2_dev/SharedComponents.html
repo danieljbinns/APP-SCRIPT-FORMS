@@ -1,0 +1,115 @@
+<!--
+  ══════════════════════════════════════════════════════════════════
+  Boss Review Pattern — reusable gatekeeper between HR and IT Setup
+  ══════════════════════════════════════════════════════════════════
+  Purpose:
+    Dave Langohr reviews the full request after HR has verified and corrected
+    employee details. He can edit any field before IT proceeds with provisioning.
+    Applies to: new hire (NEW_EMP_), equipment request (EQUIP_REQ_), status
+    change (CHANGE_). Does NOT apply to terminations.
+
+  Server-side (BOSSReviewHandler.js → serveBOSSReview):
+    - Detects workflow type from ID prefix (NEW_EMP_ / EQUIP_REQ_ → InitialRequest.html,
+      CHANGE_ → PositionSiteChangeRequest.html).
+    - Passes to template: mode='boss_review', baseMode=<original mode>,
+      workflowId, requestData (JSON string), referenceData (JSON string).
+    - getFullNewHireData / getFullPositionChangeData read the full row from the
+      relevant sheet and return all fields as a flat object.
+    - submitBOSSReview writes corrections back in-place to Initial Requests sheet,
+      appends an audit row to BOSS Review Results, and triggers the IT Setup email.
+
+  Client-side (InitialRequest.html / PositionSiteChangeRequest.html):
+    - FORM_MODE='boss_review' detected from <?= mode ?> template var.
+    - INJECTED_REQUEST_DATA holds the full request JSON (parsed from requestData).
+    - BOSS_REVIEW_WF_ID holds the workflow ID for the submit call.
+    - After populateAll() populates all dropdowns and dual-lists, prefillBossReview()
+      is called to pre-populate all form fields with the existing request data.
+    - prefillBossReview() rebuilds dual-lists with selected values, sets radios/
+      checkboxes, and fires UI toggle functions to reveal dependent sections.
+    - Submit routes to google.script.run.submitBOSSReview(data) instead of the
+      normal submitInitialRequest / submitPositionChangeRequest.
+
+  Adding boss_review to a new form:
+    1. Add FORM_MODE / INJECTED_REQUEST_DATA / BOSS_REVIEW_WF_ID var injection.
+    2. Skip any gatekeeper/intro section when FORM_MODE==='boss_review'.
+    3. Write a prefill<FormName>(d) function that sets all field values from d.
+    4. Call prefill at end of dropdown population callback.
+    5. Add notes textarea + change button label in boss_review mode.
+    6. Route submit to submitBOSSReview and show boss-review success screen.
+  ══════════════════════════════════════════════════════════════════
+-->
+<script>
+  /* ══════════════════════════════════════════════════════════════
+     Dual-List Picker — shared widget
+     Usage: buildDualList(containerId, items, fieldName, selected)
+       containerId — id of the placeholder <div>
+       items       — full list of options (string[])
+       fieldName   — hidden input name written to the form
+       selected    — pre-selected values (string[], optional)
+     The widget writes a comma-separated hidden input on every
+     change so standard form serialisation picks it up.
+  ══════════════════════════════════════════════════════════════ */
+  function buildDualList(containerId, items, fieldName, selected) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    selected = selected || [];
+    items = items || [];
+    var available = items.filter(function(i) { return selected.indexOf(i) < 0; });
+    var chosen    = items.filter(function(i) { return selected.indexOf(i) >= 0; });
+    function render() {
+      container.style.cssText = 'width:100%;display:block;';
+      container.innerHTML = '';
+      var hidden = document.createElement('input');
+      hidden.type = 'hidden'; hidden.name = fieldName; hidden.value = chosen.join(', ');
+      container.appendChild(hidden);
+      var wrapper = document.createElement('div'); wrapper.className = 'dual-list-wrapper';
+      function makePanel(headerText, searchId, listId) {
+        var panel = document.createElement('div'); panel.className = 'dual-list-panel';
+        var hdr = document.createElement('div'); hdr.className = 'dual-list-panel-header'; hdr.textContent = headerText; panel.appendChild(hdr);
+        var srch = document.createElement('input'); srch.type = 'text'; srch.className = 'dual-list-search'; srch.placeholder = 'Filter...'; srch.id = searchId; panel.appendChild(srch);
+        var lst = document.createElement('div'); lst.className = 'dual-list-list'; lst.id = listId; panel.appendChild(lst);
+        var ftr = document.createElement('div'); ftr.className = 'dual-list-footer'; panel.appendChild(ftr);
+        return { panel: panel, search: srch, list: lst, footer: ftr, header: hdr };
+      }
+      var av = makePanel('Available', containerId+'_av_s', containerId+'_av_l');
+      var addAllBtn = document.createElement('button'); addAllBtn.type = 'button'; addAllBtn.className = 'dual-list-btn'; addAllBtn.textContent = 'Add All'; av.footer.appendChild(addAllBtn);
+      var arrows = document.createElement('div'); arrows.className = 'dual-list-arrows';
+      var addBtn = document.createElement('button'); addBtn.type = 'button'; addBtn.className = 'dual-list-arrow add-arrow'; addBtn.textContent = '›'; arrows.appendChild(addBtn);
+      var remBtn = document.createElement('button'); remBtn.type = 'button'; remBtn.className = 'dual-list-arrow remove-arrow'; remBtn.textContent = '‹'; arrows.appendChild(remBtn);
+      var sel = makePanel('Selected', containerId+'_sel_s', containerId+'_sel_l');
+      var remAllBtn = document.createElement('button'); remAllBtn.type = 'button'; remAllBtn.className = 'dual-list-btn'; remAllBtn.textContent = 'Remove All'; sel.footer.appendChild(remAllBtn);
+      wrapper.appendChild(av.panel); wrapper.appendChild(arrows); wrapper.appendChild(sel.panel);
+      container.appendChild(wrapper);
+      function buildItems(lst, arr, term) {
+        lst.innerHTML = '';
+        arr.forEach(function(val) {
+          if (term && val.toLowerCase().indexOf(term.toLowerCase()) < 0) return;
+          var item = document.createElement('div'); item.className = 'dual-list-item'; item.textContent = val; item.dataset.value = val;
+          item.addEventListener('click', function() { item.classList.toggle('selected'); });
+          item.addEventListener('dblclick', function() { move(val, lst === av.list ? 'add' : 'remove'); });
+          lst.appendChild(item);
+        });
+      }
+      function move(val, dir) {
+        if (dir === 'add') { var i = available.indexOf(val); if (i >= 0) { available.splice(i,1); chosen.push(val); } }
+        else               { var i = chosen.indexOf(val);    if (i >= 0) { chosen.splice(i,1); available.push(val); } }
+        available.sort(); chosen.sort(); refresh();
+      }
+      function refresh() {
+        av.header.textContent  = 'Available (' + available.length + ')';
+        sel.header.textContent = 'Selected ('  + chosen.length   + ')';
+        buildItems(av.list,  available, av.search.value);
+        buildItems(sel.list, chosen,    sel.search.value);
+        hidden.value = chosen.join(', ');
+      }
+      addBtn.addEventListener('click',    function() { av.list.querySelectorAll('.dual-list-item.selected').forEach(function(el) { move(el.dataset.value, 'add'); }); });
+      remBtn.addEventListener('click',    function() { sel.list.querySelectorAll('.dual-list-item.selected').forEach(function(el) { move(el.dataset.value, 'remove'); }); });
+      addAllBtn.addEventListener('click', function() { var t = av.search.value.toLowerCase(); available.filter(function(v) { return !t || v.toLowerCase().indexOf(t) >= 0; }).slice().forEach(function(v) { move(v, 'add'); }); });
+      remAllBtn.addEventListener('click', function() { chosen.slice().forEach(function(v) { move(v, 'remove'); }); });
+      av.search.addEventListener('input',  function() { buildItems(av.list,  available, av.search.value); });
+      sel.search.addEventListener('input', function() { buildItems(sel.list, chosen,    sel.search.value); });
+      refresh();
+    }
+    render();
+  }
+</script>

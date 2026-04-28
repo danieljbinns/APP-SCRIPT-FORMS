@@ -44,17 +44,8 @@ function getHRVerificationData(workflowId) {
         ...result,
         ...context,
         success: true,
-        firstName: context.employeeName ? context.employeeName.split(' ')[0] : '',
-        lastName: context.employeeName ? context.employeeName.split(' ').slice(1).join(' ') : '',
         position: context.jobTitle,
-        jrTitle: context.jrTitle,
-        jrRequired: jrRequired,
-        siteName: context.siteName,
-        hireDate: context.hireDate ? (context.hireDate instanceof Date ? Utilities.formatDate(context.hireDate, Session.getScriptTimeZone(), 'yyyy-MM-dd') : context.hireDate) : '',
-        managerName: context.managerName,
-        managerEmail: context.managerEmail,
-        requesterEmail: context.requesterEmail,
-        employmentType: context.employmentType
+        jrRequired: jrRequired
       };
     }
     
@@ -115,6 +106,7 @@ function submitHRVerification(formData) {
     const siteNameCol = headers.indexOf('Site/Office Location');
     const jrTitleCol = headers.indexOf('Position Title'); // Col 14 - Fixed header name match
     const jrAssignCol = headers.indexOf('JR Assign'); // Col 46 (Now map to jrTitle)
+    const departmentCol = headers.indexOf('Department');
     
     // Detect existing submission for update-vs-insert logic
     let existingHRRowIndex = -1;
@@ -156,6 +148,7 @@ function submitHRVerification(formData) {
         if (siteNameCol !== -1) mainSheet.getRange(i + 1, siteNameCol + 1).setValue(formData.siteName);
         if (jrTitleCol !== -1) mainSheet.getRange(i + 1, jrTitleCol + 1).setValue(formData.jobTitle);
         if (jrAssignCol !== -1) mainSheet.getRange(i + 1, jrAssignCol + 1).setValue(formData.jrTitle);
+        if (departmentCol !== -1 && formData.department !== undefined) mainSheet.getRange(i + 1, departmentCol + 1).setValue(formData.department);
 
         employmentType = mainData[i][9] || '';
         systemAccess = mainData[i][19] || '';
@@ -230,37 +223,14 @@ function submitHRVerification(formData) {
         recipients.push(formData.managerEmail);
       }
 
-      // E5: Build Google Calendar link for hourly employee start date
-      let calendarLinkHtml = '';
-      if (context && context.hireDate) {
-        try {
-          // Avoid new Date(string) UTC shift — use Utilities.formatDate for Date objects,
-          // or strip dashes directly for already-formatted strings
-          const rawHireDate = context.hireDate;
-          const dateStr = rawHireDate instanceof Date
-            ? Utilities.formatDate(rawHireDate, Session.getScriptTimeZone(), 'yyyyMMdd')
-            : String(rawHireDate).replace(/-/g, '').substring(0, 8);
-          const calTitle = encodeURIComponent((formData.firstName + ' ' + formData.lastName) + ' - Start Date');
-          const calDetails = encodeURIComponent('Site: ' + (context.siteName || '') + ' | ADP ID: ' + formData.adpAssociateId);
-          const calUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + calTitle + '&dates=' + dateStr + '/' + dateStr + '&details=' + calDetails;
-          calendarLinkHtml = '<br><br><a href="' + calUrl + '" style="display:inline-block; padding:10px 20px; background:#4285f4; color:#ffffff; text-decoration:none; border-radius:6px; font-weight:600;">📅 Add Start Date to Calendar</a>';
-        } catch (calErr) {
-          Logger.log('Could not build calendar link: ' + calErr.message);
-        }
-      }
-
       sendFormEmail({
         to: recipients.join(','),
         subject: 'Onboarding Complete',
-        body: 'The onboarding process has been completed successfully. All required setup steps have been finished for this hourly employee.\n\n' +
-              'Verified ADP ID: ' + formData.adpAssociateId + '\n\n' +
-              '<strong>CREDENTIALS:</strong>\n' +
-              '• DSS: ' + (context.dssUsername || 'N/A') + ' (Pwd: ' + (context.dssPassword || 'N/A') + ')\n' +
-              '• SiteDocs: ' + (context.siteDocsUsername || 'N/A') + ' (Pwd: ' + (context.siteDocsPassword || 'N/A') + ')\n\n' +
-              calendarLinkHtml,
+        body: 'The onboarding process has been completed successfully. All required setup steps have been finished for this hourly employee.',
         displayName: 'TEAM Group - Employee Onboarding',
         formUrl: '',
-        contextData: context
+        contextData: context,
+        emailOpts: { showPasswords: true, calendarDate: context.hireDate }
       });
       Logger.log('[SUCCESS] Completion email sent to requester & manager (Hourly/No System Access)');
     } else {

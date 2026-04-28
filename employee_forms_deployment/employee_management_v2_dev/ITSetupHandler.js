@@ -30,48 +30,61 @@ function getITContextData(workflowId) {
 
     for (let i = 1; i < mainData.length; i++) {
       if (mainData[i][0] === workflowId) {
+        const googleEmailRaw = String(mainData[i][22] || '').replace(/^"|"$/g, '').trim();
+        const googleDomain   = String(mainData[i][23] || '').replace('@', '').trim();
+        const equipmentRaw   = mainData[i][21] || '';
+        const systemsRaw     = mainData[i][20] || '';
         context = {
           success: true,
+          workflowType: 'New Hire',
           employeeName: mainData[i][10] + ' ' + mainData[i][12],
           firstName: mainData[i][10],
           lastName: mainData[i][12],
           hireDate: (function(d){ return d instanceof Date ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd') : (d ? String(d).substring(0, 10) : ''); })(mainData[i][6]),
-          jobTitle: mainData[i][14], // Job Title (Text)
-          jrTitle: mainData[i][46],  // JR Title (Assigned/Verified)
-          jrRequested: mainData[i][45], // JR Title as originally requested
+          newHireOrRehire: mainData[i][7]  || '',  // Col 7 = New Hire/Rehire
+          employeeType:    mainData[i][8]  || '',  // Col 8 = Employee Type
+          employmentType:  mainData[i][9]  || '',  // Col 9 = Employment Type
+          jobTitle: mainData[i][14], // Col 14 = Position Title
+          jrTitle: mainData[i][46],  // Col 46 = JR Assign (verified)
+          jrRequested: mainData[i][45], // Col 45 = JR Req
           siteName: mainData[i][15],
+          jobSiteNumber: mainData[i][16],
           managerName: mainData[i][18],
-          managerEmail: mainData[i][17], // Added for notifications
-          requesterEmail: mainData[i][5], // Requester Email (Col 6, Index 5)
-          employmentType: mainData[i][9],
-          emailRequested: mainData[i][22] + (mainData[i][23] ? '@' + mainData[i][23].replace('@', '') : ''),
-          // Additional Context for Pre-populating IT Form
-          computerReq: mainData[i][24],      // Col 24 = Computer Req (New/Reassign/None)
-          computerType: mainData[i][25],     // Col 25 = Computer Type
-          computerPrevUser: mainData[i][26], // Col 26 = Computer Prev User (reassignment)
-          computerPrevType: mainData[i][27], // Col 27 = Computer Prev Type
-          computerSerial: mainData[i][28],   // Col 28 = Serial # (reassignment)
-          phoneReq: mainData[i][36],         // Col 36 = Phone Req (Yes/No/type)
-          phonePrevUser: mainData[i][37],    // Col 37 = Phone Prev User
-          phonePrevNumber: mainData[i][38],  // Col 38 = Phone Prev Number
-          requestedDomains: mainData[i][23], // Col 23 = Google Domain
-          bossJobSites: mainData[i][39], // Col 39 = BOSS Job Sites
-          bossCostSheet: mainData[i][40], // Col 40 = Cost Sheet Yes/No
-          bossCostSheetJobs: mainData[i][41], // Col 41 = Cost Sheet Job #s
-          bossTripReports: mainData[i][42], // Col 42 = Trip Reports Yes/No
-          bossGrievances: mainData[i][43], // Col 43 = Grievances Yes/No
-          jonasJobNumbers: mainData[i][44], // Col 44 = Jonas Job #s
-          creditCardUSA: mainData[i][30], // Col 30 = CC USA Yes/No
+          managerEmail: mainData[i][17],
+          requesterEmail: mainData[i][5],
+          systemAccess: mainData[i][19] || '',     // Col 19 = System Access
+          systems: systemsRaw ? systemsRaw.split(',').map(function(s){return s.trim();}).filter(Boolean) : [],
+          equipmentRaw: equipmentRaw,
+          googleEmail: googleEmailRaw,             // Col 22, quotes stripped
+          googleDomain: googleDomain ? '@' + googleDomain : '',
+          emailRequested: googleEmailRaw + (googleDomain ? '@' + googleDomain : ''),
+          requestedDomains: mainData[i][23],       // Col 23 = Google Domain (original)
+          // Computer / Phone
+          computerReq: mainData[i][24],
+          computerType: mainData[i][25],
+          computerPrevUser: mainData[i][26],
+          computerPrevType: mainData[i][27],
+          computerSerial: mainData[i][28],
+          phoneReq: mainData[i][36],
+          phonePrevUser: mainData[i][37],
+          phonePrevNumber: mainData[i][38],
+          // BOSS
+          bossJobSites: mainData[i][39],
+          bossCostSheet: mainData[i][40],
+          bossCostSheetJobs: mainData[i][41],
+          bossTripReports: mainData[i][42],
+          bossGrievances: mainData[i][43],
+          jonasJobNumbers: mainData[i][44],
+          // Misc
+          creditCardUSA: mainData[i][30],
           creditCardLimitUSA: mainData[i][31],
           creditCardLimitCanada: mainData[i][32],
           creditCardLimitHomeDepot: mainData[i][35],
-          businessCards: mainData[i][21] && mainData[i][21].includes('Business Cards') ? 'Yes' : 'No',
-          vehicleRequested: mainData[i][21] && mainData[i][21].includes('Vehicle') ? 'Yes' : 'No',
-          fleetioAccess: mainData[i][20] && mainData[i][20].includes('Fleetio') ? 'Yes' : 'No',
-          jobSiteNumber: mainData[i][16], // Col 16 = Job Site #
+          businessCards: equipmentRaw.includes('Business Cards') ? 'Yes' : 'No',
+          vehicleRequested: equipmentRaw.includes('Vehicle') ? 'Yes' : 'No',
+          fleetioAccess: systemsRaw.includes('Fleetio') ? 'Yes' : 'No',
           department: headers.indexOf('Department') !== -1 ? mainData[i][headers.indexOf('Department')] : '',
-          purchasingSites: mainData[i][51] || '', // Col 51 = Purchasing Sites (joined)
-          workflowType: 'New Hire'
+          purchasingSites: mainData[i][51] || ''
         };
         break;
       }
@@ -208,22 +221,15 @@ function submitITSetup(formData) {
         }
 
         if (recipients.length > 0) {
-          const itCompletedBody = 'IT setup has been completed for ' + context.employeeName + '.\n\n' +
-            '<strong>Assigned Email:</strong> ' + assignedEmail + '\n' +
-            (formData.Computer_Assigned === 'Yes'
-              ? '<strong>Computer:</strong> ' + (formData.Computer_Type || 'Assigned') + (formData.Computer_Serial ? ' (S/N: ' + formData.Computer_Serial + ')' : '') + '\n'
-              : '') +
-            (formData.Phone_Assigned === 'Yes'
-              ? '<strong>Phone:</strong> ' + (formData.Phone_Number || 'Assigned') + '\n'
-              : '') +
-            '\nSpecialist requests (Credit Cards, Jonas, etc.) have been triggered in parallel.';
+          const itCompletedBody = 'IT setup has been completed for ' + context.employeeName + '. Account, equipment, and system access details are below. Specialist requests have been triggered in parallel.';
           sendFormEmail({
             to: recipients.join(','),
             subject: 'IT Setup Complete',
             body: itCompletedBody,
             formUrl: '',
             displayName: 'Onboarding System',
-            contextData: context
+            contextData: context,
+            emailOpts: { showPasswords: true, calendarDate: context.hireDate }
           });
           Logger.log('Notified ' + recipients.join(', ') + ' of IT completion');
         }
