@@ -40,7 +40,7 @@ var EXPECTED_SCHEMA = {
     'Workflow ID', 'Form ID', 'Submission Timestamp', 'Internal Employee ID',
     'SiteDocs Worker ID', 'SiteDocs Job Code', 'SiteDocs Username',
     'SiteDocs Password', 'DSS Username', 'DSS Password',
-    'Setup Notes', 'Submitted By'
+    'Setup Notes', 'BOSS WIS Created', 'Submitted By'
   ],
   'HR Verification Results': [
     'Workflow ID', 'Form ID', 'Submission Timestamp', 'ADP Associate ID',

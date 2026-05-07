@@ -69,7 +69,7 @@ function getIDSetupRequestData(workflowId) {
           employeeName: firstName + ' ' + lastName,
           firstName: firstName,
           lastName: lastName,
-          hireDate: hireDateRaw ? Utilities.formatDate(new Date(hireDateRaw), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+          hireDate: hireDateRaw instanceof Date ? Utilities.formatDate(hireDateRaw, 'UTC', 'yyyy-MM-dd') : (hireDateRaw ? String(hireDateRaw).substring(0, 10) : ''),
           position: get(row, 'Position Title'),
           jrTitle: get(row, 'JR Assign') || '',
           siteName: get(row, 'Site Name'),
@@ -156,9 +156,9 @@ function submitEmployeeIDSetup(formData) {
         'Workflow ID', 'Form ID', 'Submission Timestamp', 'Internal Employee ID',
         'SiteDocs Worker ID', 'SiteDocs Job Code', 'SiteDocs Username',
         'SiteDocs Password', 'DSS Username', 'DSS Password',
-        'Setup Notes', 'Submitted By'
+        'Setup Notes', 'BOSS WIS Created', 'Submitted By'
       ]);
-      resultsSheet.getRange(1, 1, 1, 12).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
+      resultsSheet.getRange(1, 1, 1, 13).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
     
     resultsSheet.appendRow([
@@ -195,7 +195,7 @@ function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
     sendFormEmail({
       to: CONFIG.EMAILS.SAFETY,
       subject: 'Safety Onboarding Required — ' + requestData.employeeName,
-      body: 'Please confirm that SiteDocs locations and DSS learning paths have been assigned for this employee.',
+      body: 'Please assign SiteDocs locations and DSS learning paths for this employee. Use the form link below to confirm completion when done.',
       formUrl: safetyUrl,
       displayName: 'TEAM Group - Employee Onboarding',
       contextData: {
@@ -217,18 +217,40 @@ function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
   }
 }
 
+function buildStartDateCalendarLink_(requestData) {
+  try {
+    var rawDate = requestData.hireDate;
+    if (!rawDate) return '';
+    var dateStr;
+    if (rawDate instanceof Date) {
+      dateStr = Utilities.formatDate(rawDate, Session.getScriptTimeZone(), 'yyyyMMdd');
+    } else {
+      // Avoid new Date(string) UTC shift — extract YYYYMMDD directly from formatted string
+      dateStr = String(rawDate).replace(/-/g, '').substring(0, 8);
+    }
+    var calTitle = encodeURIComponent((requestData.employeeName || 'New Employee') + ' - Start Date');
+    var calDetails = encodeURIComponent('Site: ' + (requestData.siteName || '') + ' | Title: ' + (requestData.position || ''));
+    var calUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + calTitle + '&dates=' + dateStr + '/' + dateStr + '&details=' + calDetails;
+    return '<br><br><a href="' + calUrl + '" style="display:inline-block; padding:10px 20px; background:#4285f4; color:#ffffff; text-decoration:none; border-radius:6px; font-weight:600;">Add Start Date to Calendar</a>';
+  } catch(e) {
+    Logger.log('Could not build start date calendar link: ' + e.message);
+    return '';
+  }
+}
+
 function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
   if (!requestData) requestData = getIDSetupRequestData(workflowId);
   if (!requestData.success) return;
-  
+
   // Optimization: Use already fetched requestData instead of re-reading sheet
   const employmentType = requestData.employmentType || '';
   const systemAccess = requestData.systemAccess || '';
-  
+
   Logger.log('Routing from ID Setup: Type=' + employmentType + ', SystemAccess=' + systemAccess);
-  
+
   // Get workflow context for email
   const context = getWorkflowContext(workflowId);
+  const calendarLinkHtml = buildStartDateCalendarLink_(requestData);
   
   if (employmentType === 'Hourly' && systemAccess === 'No') {
     // PHASE 2 UDPATE: User requested to notify requester/manager directly with credentials...
@@ -262,7 +284,7 @@ function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
 
     // 2. CONTINUE TO HR VERIFICATION (Do not mark complete yet)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
-    const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be skipped for this hourly/no-access employee.';
+    const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be skipped for this hourly/no-access employee.' + calendarLinkHtml;
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
       subject: 'HR Verification Required',
@@ -288,7 +310,7 @@ function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
   } else {
     // Standard Path (Salary OR System Access)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
-    const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be triggered after HR verification.';
+    const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be triggered after HR verification.' + calendarLinkHtml;
     sendFormEmail({
       to: CONFIG.EMAILS.HR,
       subject: 'HR Verification Required',

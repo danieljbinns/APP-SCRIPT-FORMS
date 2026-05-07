@@ -55,7 +55,7 @@
     <div class="section-title">Request Details</div>
     <div class="ticket-info">
         <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName || '-' ?></span></div>
-        <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate || '-' ?></span></div>
+        <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate ? Utilities.formatDate(new Date(requestData.hireDate + 'T12:00:00Z'), 'UTC', 'M/d/yyyy') : '-' ?></span></div>
         <div class="info-row"><span class="label">Job Title</span><span class="value"><?= requestData.jobTitle || '-' ?></span></div>
         <div class="info-row"><span class="label">JR Title</span><span class="value"><?= requestData.jrTitle || '-' ?></span></div>
         <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName || '-' ?></span></div>
@@ -107,7 +107,12 @@
     <div id="success-screen">
         <div style="font-size: 56px; margin-bottom: 16px;">✅</div>
         <h2 style="color: var(--success);">Safety Onboarding Confirmed</h2>
-        <p style="color: var(--text-muted); margin-top: 8px;">Returning to dashboard...</p>
+        <p style="color: var(--text-muted); margin-top: 8px;">SiteDocs and DSS assignments have been recorded.</p>
+        <div style="margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <button class="btn btn-primary" style="max-width: 220px;"
+                onclick="window.open('<?= getBaseUrl() ?>?form=dashboard', '_top')">Return to Dashboard</button>
+            <p style="color: #888; font-size: 13px;">You may now close this window.</p>
+        </div>
     </div>
 </div>
 </div>
@@ -118,13 +123,6 @@
 </div>
 
 <script>
-    function navigateToDashboard() {
-        google.script.run
-            .withSuccessHandler(function(url) { window.top.location.href = url + '?form=dashboard'; })
-            .withFailureHandler(function() { window.top.location.href = '?form=dashboard'; })
-            .getBaseUrl();
-    }
-
     document.getElementById('safetyForm').onsubmit = function(e) {
         e.preventDefault();
         var siteDocsConfirmed = document.getElementById('siteDocsConfirm').checked;
@@ -150,7 +148,6 @@
                 } else {
                     document.getElementById('formSection').style.display = 'none';
                     document.getElementById('success-screen').style.display = 'block';
-                    setTimeout(navigateToDashboard, 2000);
                 }
             })
             .withFailureHandler(function(err) {

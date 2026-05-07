@@ -625,8 +625,8 @@
                When updating systems in one form, update the other. -->
           <!-- Systems/Apps Checkboxes (Alphabetical) -->
           <h3 class="systems-only" style="margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.1rem;">Systems/Apps</h3>
-          <p class="systems-only" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; padding: 0.6rem 0.8rem; background: #252525; border-radius: 4px; border-left: 3px solid var(--border-color);">
-            All employees receive <strong>DSS+</strong> and <strong>Sitedocs</strong>. Most hourly employees need no further access.
+          <p class="systems-only" style="font-size: 0.9rem; color: #fbbf24; margin-bottom: 1rem; padding: 0.75rem 1rem; background: rgba(245, 158, 11, 0.08); border-radius: 4px; border-left: 4px solid #F59E0B;">
+            <strong>⚠️ Note:</strong> All employees receive <strong>DSS+</strong> and <strong>SiteDocs</strong>. Most hourly employees need no further access.
           </p>
           <div class="checkbox-group systems-only">
             <label class="checkbox-label">
@@ -653,6 +653,40 @@
               <input type="checkbox" name="systems" value="BOSS" onchange="toggleSections()">
               <span>BOSS</span>
             </label>
+            <!-- BOSS sub-section (inline, shown when BOSS checked) -->
+            <div id="bossDetailsSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+              <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Committee(s) To Be Assigned</label>
+              <div id="bossCommitteesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin-bottom: 12px;">
+                <!-- Populated dynamically -->
+              </div>
+              <div style="margin-top: 8px;">
+                <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Cost Sheet Module Access?</label>
+                <div class="radio-group" style="max-width: 260px;">
+                  <label><input type="radio" name="bossCostSheet" value="Yes" onchange="toggleCostSheetJobs()"><span class="radio-button">Yes</span></label>
+                  <label><input type="radio" name="bossCostSheet" value="No" onchange="toggleCostSheetJobs()"><span class="radio-button">No</span></label>
+                </div>
+              </div>
+              <div id="costSheetJobs" style="display: none; margin-top: 8px;">
+                <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Job Number(s) for Cost Sheet</label>
+                <div id="costSheetJobCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+              <div style="margin-top: 8px;">
+                <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Trip Reports Access?</label>
+                <div class="radio-group" style="max-width: 260px;">
+                  <label><input type="radio" name="bossTripReports" value="Yes"><span class="radio-button">Yes</span></label>
+                  <label><input type="radio" name="bossTripReports" value="No"><span class="radio-button">No</span></label>
+                </div>
+              </div>
+              <div style="margin-top: 8px;">
+                <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Corrective Counselling &amp; Grievances Access?</label>
+                <div class="radio-group" style="max-width: 260px;">
+                  <label><input type="radio" name="bossGrievance" value="Yes"><span class="radio-button">Yes</span></label>
+                  <label><input type="radio" name="bossGrievance" value="No"><span class="radio-button">No</span></label>
+                </div>
+              </div>
+            </div>
             <label class="checkbox-label">
               <input type="checkbox" name="systems" value="CAA" onchange="toggleSections()">
               <span>CAA</span>
@@ -669,6 +703,29 @@
               <input type="checkbox" name="systems" value="Google Account" onchange="toggleSections()">
               <span>Google Account</span>
             </label>
+            <!-- Google Account sub-section (inline) -->
+            <div id="googleAccountDetailsSection" class="systems-only" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+              <div class="form-row-2">
+                <div class="form-field">
+                  <label style="font-size: 0.85rem; color: var(--text-muted);">Requested Email Address</label>
+                  <input type="text" name="googleEmailLocal" id="googleEmailLocal" placeholder="firstname.lastname"
+                    style="width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                  <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 4px;">Default format: firstname.lastname (domain selected separately)</small>
+                </div>
+                <div class="form-field">
+                  <label style="font-size: 0.85rem; color: var(--text-muted);">Email Domain</label>
+                  <select name="googleDomain" id="googleDomain"
+                    style="width: 100%; padding: 10px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
+                    <option value="">-- Select Domain --</option>
+                    <!-- TODO BACKEND: Default to manager's domain -->
+                    <option value="team-group.com">team-group.com</option>
+                    <option value="robinsonsolutions.com">robinsonsolutions.com</option>
+                    <option value="industrialappliedtech.com">industrialappliedtech.com</option>
+                    <option value="stgroup.ca">stgroup.ca</option>
+                  </select>
+                </div>
+              </div>
+            </div>
             <label class="checkbox-label">
               <input type="checkbox" name="systems" value="Incidents" onchange="toggleSections()">
               <span>Incidents</span>
@@ -677,6 +734,13 @@
               <input type="checkbox" name="systems" value="Jonas Purchasing" onchange="toggleSections()">
               <span>Jonas Purchasing</span>
             </label>
+            <!-- Jonas sub-section (inline) -->
+            <div id="jonasDetailsSection" class="systems-only" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
+              <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted);">Job Number(s) To Be Assigned</label>
+              <div id="jonasJobNumbersCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
             <label class="checkbox-label">
               <input type="checkbox" name="systems" value="Net Promoter Score" onchange="toggleSections()">
               <span>Net Promoter Score</span>
@@ -837,125 +901,6 @@
             </label>
           </div>
 
-          <hr style="margin-top: 2rem;">
-
-          <!-- Google Account Details (conditional on Google Account checkbox) -->
-          <div id="googleAccountDetailsSection" class="systems-only" style="display: none;">
-            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Google Account Details</h3>
-
-            <div class="form-row-2">
-              <div class="form-field">
-                <label>Requested Email Address</label>
-                <input type="text" name="googleEmailLocal" id="googleEmailLocal" placeholder="firstname.lastname"
-                  style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                <small
-                  style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Default
-                  format: firstname.lastname (domain selected separately)</small>
-              </div>
-
-              <div class="form-field">
-                <label>Email Domain</label>
-                <select name="googleDomain" id="googleDomain"
-                  style="width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                  <option value="">-- Select Domain --</option>
-                  <!-- TODO BACKEND: Default to manager's domain -->
-                  <option value="team-group.com">team-group.com</option>
-                  <option value="robinsonsolutions.com">robinsonsolutions.com</option>
-                  <option value="industrialappliedtech.com">industrialappliedtech.com</option>
-                  <option value="stgroup.ca">stgroup.ca</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- BOSS Details (conditional on BOSS checkbox) -->
-          <div id="bossDetailsSection" class="systems-only" style="display: none;">
-            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">BOSS System Details</h3>
-
-            <div class="form-field">
-              <label>Committee(s) To Be Assigned</label>
-              <select name="bossJobSites" id="bossJobSites" multiple size="5"
-                style="width: 100%; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                <option value="">Loading sites...</option>
-              </select>
-              <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Hold
-                Ctrl (Windows) or Cmd (Mac) to select multiple sites</small>
-            </div>
-
-            <div class="form-row">
-              <div class="form-field">
-                <label>Cost Sheet Module Access?</label>
-                <div class="radio-group">
-                  <label>
-                    <input type="radio" name="bossCostSheet" value="Yes" onchange="toggleCostSheetJobs()">
-                    <span class="radio-button">Yes</span>
-                  </label>
-                  <label>
-                    <input type="radio" name="bossCostSheet" value="No" onchange="toggleCostSheetJobs()">
-                    <span class="radio-button">No</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div id="costSheetJobs" style="display: none;">
-              <div class="form-field">
-                <label>Job Number(s) for Cost Sheet</label>
-                <select name="costSheetJobNumbers" id="costSheetJobNumbers" multiple size="4"
-                  style="width: 100%; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                  <option value="">Loading job numbers...</option>
-                </select>
-                <small
-                  style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Hold
-                  Ctrl (Windows) or Cmd (Mac) to select multiple job numbers</small>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-field">
-                <label>Trip Reports Access?</label>
-                <div class="radio-group">
-                  <label>
-                    <input type="radio" name="bossTripReports" value="Yes">
-                    <span class="radio-button">Yes</span>
-                  </label>
-                  <label>
-                    <input type="radio" name="bossTripReports" value="No">
-                    <span class="radio-button">No</span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="form-field">
-                <label>Corrective Counselling and Grievances Module Access?</label>
-                <div class="radio-group">
-                  <label>
-                    <input type="radio" name="bossGrievance" value="Yes">
-                    <span class="radio-button">Yes</span>
-                  </label>
-                  <label>
-                    <input type="radio" name="bossGrievance" value="No">
-                    <span class="radio-button">No</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Jonas Details (conditional on Jonas checkbox) -->
-          <div id="jonasDetailsSection" class="systems-only" style="display: none;">
-            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Jonas Purchasing Details</h3>
-
-            <div class="form-field">
-              <label>Job Number(s) To Be Assigned</label>
-              <select name="jonasJobNumbers" id="jonasJobNumbers" multiple size="4"
-                style="width: 100%; padding: 8px; border-radius: 6px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border);">
-                <option value="">Loading job numbers...</option>
-              </select>
-              <small style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Hold
-                Ctrl (Windows) or Cmd (Mac) to select multiple job numbers</small>
-            </div>
-          </div>
 
           <!-- JR Assignment -->
           <div class="new-hire-only" style="margin-top: 2rem;">
@@ -1147,11 +1092,53 @@
         populateSelect('jobSiteNumber', refData.jobNumbers);
         populateSelect('jonasJobNumbers', refData.jobNumbers, '', true);
         
-        // 4. BOSS Cost Sheets (Column E)
-        populateSelect('costSheetJobNumbers', refData.jobs, '', true);
-        
-        // 5. BOSS Committees (Column F)
-        populateSelect('bossJobSites', refData.committees, '', true);
+        // 4. BOSS Cost Sheet job numbers — checkboxes
+        var costSheetContainer = document.getElementById('costSheetJobCheckboxes');
+        if (costSheetContainer && refData.jobs && refData.jobs.length) {
+          costSheetContainer.innerHTML = '';
+          refData.jobs.forEach(function(job) {
+            var label = document.createElement('label');
+            label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox'; cb.name = 'costSheetJobNumbers'; cb.value = job;
+            cb.style.accentColor = 'var(--brand-red)';
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(' ' + job));
+            costSheetContainer.appendChild(label);
+          });
+        }
+
+        // 5. BOSS Committees — checkboxes inline below BOSS checkbox
+        var bossCommContainer = document.getElementById('bossCommitteesCheckboxes');
+        if (bossCommContainer && refData.committees && refData.committees.length) {
+          bossCommContainer.innerHTML = '';
+          refData.committees.forEach(function(committee) {
+            var label = document.createElement('label');
+            label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox'; cb.name = 'bossJobSites'; cb.value = committee;
+            cb.style.accentColor = 'var(--brand-red)';
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(' ' + committee));
+            bossCommContainer.appendChild(label);
+          });
+        }
+
+        // 6. Jonas Job Numbers — checkboxes inline below Jonas checkbox
+        var jonasContainer = document.getElementById('jonasJobNumbersCheckboxes');
+        if (jonasContainer && refData.jobNumbers && refData.jobNumbers.length) {
+          jonasContainer.innerHTML = '';
+          refData.jobNumbers.forEach(function(num) {
+            var label = document.createElement('label');
+            label.style.cssText = 'display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox'; cb.name = 'jonasJobNumbers'; cb.value = num;
+            cb.style.accentColor = 'var(--brand-red)';
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(' ' + num));
+            jonasContainer.appendChild(label);
+          });
+        }
       };
 
       if (INJECTED_REF_DATA) {
@@ -1229,14 +1216,7 @@
           toggleSystemAccess(); // Show the section
         }
 
-        // Auto-check ADP Supervisor Access + salary data access for salary employees
-        const adpSupervisorAccess = document.getElementById('adpSupervisorAccess');
-        if (adpSupervisorAccess) {
-          adpSupervisorAccess.checked = true;
-          toggleSections(); // Show ADP sub-section
-        }
-        const adpSalaryAccess = document.getElementById('adpSalaryAccess');
-        if (adpSalaryAccess) adpSalaryAccess.checked = true;
+        // ADP Supervisor and ADP Salary Access are not auto-checked — user selects manually
       }
     }
 

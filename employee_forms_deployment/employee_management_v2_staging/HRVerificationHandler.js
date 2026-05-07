@@ -28,6 +28,18 @@ function getHRVerificationData(workflowId) {
     
     const context = getWorkflowContext(workflowId);
     if (context) {
+      // Look up jrRequired from the Initial Requests sheet
+      var jrRequired = 'No';
+      try {
+        var jrReqCol = mainData[0].indexOf('JR Req');
+        for (var ri = 1; ri < mainData.length; ri++) {
+          if (mainData[ri][0] === workflowId) {
+            jrRequired = jrReqCol !== -1 ? (mainData[ri][jrReqCol] || 'No') : 'No';
+            break;
+          }
+        }
+      } catch(e) { /* leave as No */ }
+
       result = {
         ...result,
         ...context,
@@ -36,6 +48,7 @@ function getHRVerificationData(workflowId) {
         lastName: context.employeeName ? context.employeeName.split(' ').slice(1).join(' ') : '',
         position: context.jobTitle,
         jrTitle: context.jrTitle,
+        jrRequired: jrRequired,
         siteName: context.siteName,
         hireDate: context.hireDate ? (context.hireDate instanceof Date ? Utilities.formatDate(context.hireDate, Session.getScriptTimeZone(), 'yyyy-MM-dd') : context.hireDate) : '',
         managerName: context.managerName,
@@ -146,8 +159,12 @@ function submitHRVerification(formData) {
       let calendarLinkHtml = '';
       if (context && context.hireDate) {
         try {
-          const startDate = context.hireDate instanceof Date ? context.hireDate : new Date(context.hireDate);
-          const dateStr = Utilities.formatDate(startDate, Session.getScriptTimeZone(), 'yyyyMMdd');
+          // Avoid new Date(string) UTC shift — use Utilities.formatDate for Date objects,
+          // or strip dashes directly for already-formatted strings
+          const rawHireDate = context.hireDate;
+          const dateStr = rawHireDate instanceof Date
+            ? Utilities.formatDate(rawHireDate, Session.getScriptTimeZone(), 'yyyyMMdd')
+            : String(rawHireDate).replace(/-/g, '').substring(0, 8);
           const calTitle = encodeURIComponent((formData.firstName + ' ' + formData.lastName) + ' - Start Date');
           const calDetails = encodeURIComponent('Site: ' + (context.siteName || '') + ' | ADP ID: ' + formData.adpAssociateId);
           const calUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + calTitle + '&dates=' + dateStr + '/' + dateStr + '&details=' + calDetails;

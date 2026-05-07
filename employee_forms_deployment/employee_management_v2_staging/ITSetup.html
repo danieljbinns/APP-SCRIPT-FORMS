@@ -395,7 +395,7 @@
                     <div class="info-row">
                         <span class="label">Hire Date:</span>
                         <span class="value">
-                            <?= requestData.hireDate ?>
+                            <?= requestData.hireDate ? Utilities.formatDate(new Date(requestData.hireDate + 'T12:00:00Z'), 'UTC', 'M/d/yyyy') : '-' ?>
                         </span>
                     </div>
                     <div class="info-row">

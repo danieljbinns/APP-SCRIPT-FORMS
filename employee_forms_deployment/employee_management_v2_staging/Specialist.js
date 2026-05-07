@@ -130,51 +130,50 @@ function submitSpecialistForm(formData) {
 
     Logger.log('[SUCCESS] Specialist form submitted: ' + dept + ' for ' + workflowId);
     
-    // Notify Requester
-    try {
-        // We need to fetch requester email. 
-        // Reuse getITContextData logic if available since we don't have it passed in formData
+    // Notify Requester — skipped for safety/safetyterm (rolled into workflow complete email)
+    if (dept !== 'safety' && dept !== 'safetyterm') {
+      try {
         let requesterEmail = null;
         let employeeName = 'Employee';
-        
+
         if (typeof getITContextData === 'function') {
-           const ctx = getITContextData(workflowId);
-           if (ctx.success) {
-             requesterEmail = ctx.requesterEmail; // Fixed: Use true Requester Email, not new user email
-             employeeName = ctx.employeeName;
-           }
+          const ctx = getITContextData(workflowId);
+          if (ctx.success) {
+            requesterEmail = ctx.requesterEmail;
+            employeeName = ctx.employeeName;
+          }
         }
-        
+
         const recipients = [];
         if (requesterEmail) recipients.push(requesterEmail);
-        
-        // Try to get manager email from IT Context if possible
+
         let managerEmail = null;
         if (typeof getITContextData === 'function') {
-           const ctx = getITContextData(workflowId);
-           if (ctx.success && ctx.managerEmail) {
-              managerEmail = ctx.managerEmail;
-           }
+          const ctx = getITContextData(workflowId);
+          if (ctx.success && ctx.managerEmail) {
+            managerEmail = ctx.managerEmail;
+          }
         }
         if (managerEmail && managerEmail !== requesterEmail) recipients.push(managerEmail);
 
         if (recipients.length > 0) {
-             let friendlyDept = dept.charAt(0).toUpperCase() + dept.slice(1);
-             if (dept === 'creditcard') { friendlyDept = 'Credit Card'; } // Fix space
+          let friendlyDept = dept.charAt(0).toUpperCase() + dept.slice(1);
+          if (dept === 'creditcard') { friendlyDept = 'Credit Card'; }
 
-             var specContext = (typeof getWorkflowContext === 'function') ? (getWorkflowContext(workflowId) || {}) : {};
+          var specContext = (typeof getWorkflowContext === 'function') ? (getWorkflowContext(workflowId) || {}) : {};
 
-             sendFormEmail({
-               to: recipients.join(','),
-               subject: friendlyDept + ' Setup Complete',
-               body: friendlyDept + ' setup has been completed for ' + employeeName + '.\n\nNotes: ' + (formData.notes || 'None') + '\n\n',
-               formUrl: '',
-               displayName: 'Onboarding System',
-               contextData: specContext
-             });
+          sendFormEmail({
+            to: recipients.join(','),
+            subject: friendlyDept + ' Setup Complete',
+            body: friendlyDept + ' setup has been completed for ' + employeeName + '.\n\nNotes: ' + (formData.notes || 'None') + '\n\n',
+            formUrl: '',
+            displayName: 'Onboarding System',
+            contextData: specContext
+          });
         }
-    } catch (e) {
-      Logger.log('Error notifying requester for specialist: ' + e.toString());
+      } catch (e) {
+        Logger.log('Error notifying requester for specialist: ' + e.toString());
+      }
     }
     
     return {

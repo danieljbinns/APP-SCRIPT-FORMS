@@ -353,14 +353,18 @@
                         <input type="text" name="jobTitle" value="<?= requestData.position ?>" required>
                     </div>
 
+                    <? if (requestData.jrRequired === 'Yes') { ?>
                     <div class="form-group">
                         <label>JR Title (Verified Position) <span class="required">*</span></label>
                         <select name="jrTitle" id="jrTitle"
-                            data-original-value="<?= requestData.jrTitle || requestData.position ?>" required
+                            data-original-value="<?= requestData.jrTitle || '' ?>" required
                             style="width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; color: white; font-size: 15px;">
                             <option value="">Loading titles...</option>
                         </select>
                     </div>
+                    <? } else { ?>
+                    <input type="hidden" name="jrTitle" value="">
+                    <? } ?>
 
                     <div class="section-title">ADP Assignment</div>
                     <div class="form-group">
