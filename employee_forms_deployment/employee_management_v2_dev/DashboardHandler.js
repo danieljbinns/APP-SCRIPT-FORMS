@@ -677,7 +677,6 @@ function getRequestDetails(workflowId) {
         // Categories that belong to specialist onboarding (exclude termination categories)
         const SPECIALIST_CATS = new Set([
           'Credit Card', 'Business Cards', 'Fleetio', 'Jonas',
-          'Central Purchasing', 'Jonas / Central Purchasing',
           'SiteDocs', '30/60/90 Review', 'Safety'
         ]);
 
@@ -1034,6 +1033,32 @@ function getStepResultData(workflowId, stepTarget) {
         if (taskNum === 1) result['Status'] = 'No tasks found for category: ' + catLabel;
         return result;
       }
+      case 'equipment_request': {
+        const eqSh = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
+        if (!eqSh) return {};
+        // Workflow ID is stored in column B (index 1)
+        const eqFound = eqSh.getRange('B:B').createTextFinder(workflowId).matchEntireCell(true).findNext();
+        if (!eqFound) return {};
+        const eqRow = eqSh.getRange(eqFound.getRow(), 1, 1, eqSh.getLastColumn()).getValues()[0];
+        const eqTz = Session.getScriptTimeZone();
+        const fd3 = (v) => v instanceof Date ? Utilities.formatDate(v, eqTz, 'M/d/yyyy') : String(v || '');
+        const eqOut = {};
+        const eqAdd = (label, val) => { const s = fd3(val); if (s && s !== 'N/A') eqOut[label] = s; };
+        eqAdd('Requester Name',  eqRow[3]);
+        eqAdd('Requester Email', eqRow[4]);
+        eqAdd('First Name',      eqRow[5]);
+        eqAdd('Last Name',       eqRow[6]);
+        eqAdd('Site',            eqRow[7]);
+        eqAdd('Position',        eqRow[8]);
+        eqAdd('Manager Name',    eqRow[9]);
+        eqAdd('Manager Email',   eqRow[10]);
+        eqAdd('Equipment',       eqRow[11]);
+        eqAdd('Systems',         eqRow[12]);
+        eqAdd('Comments',        eqRow[13]);
+        eqAdd('Department',      eqRow[14]);
+        eqAdd('Date Requested',  eqRow[0]);
+        return eqOut;
+      }
       case 'id_setup': sheetName = CONFIG.SHEETS.ID_SETUP_RESULTS; break;
       case 'hr_verification': sheetName = CONFIG.SHEETS.HR_VERIFICATION_RESULTS; break;
       case 'it_setup': sheetName = CONFIG.SHEETS.IT_RESULTS; break;
@@ -1049,7 +1074,7 @@ function getStepResultData(workflowId, stepTarget) {
       case 'safety_term': {
         const ftMap = {
           'creditcard': 'Credit Card', 'businesscards': 'Business Cards',
-          'fleetio': 'Fleetio', 'jonas': 'Jonas', 'centralpurchasing': 'Central Purchasing',
+          'fleetio': 'Fleetio', 'jonas': 'Jonas',
           'sitedocs': 'SiteDocs', 'review_306090': '30/60/90 Review',
           'safety_onboarding': 'Safety', 'safety_term': 'Safety'
         };
@@ -1177,12 +1202,25 @@ function getTerminationDetails(workflowId) {
         if (h === 'Employee Name') r['First Name'] = strVal;
         if (h === 'Site') r['Site'] = strVal;
         if (h === 'Term Date') r['Start Date'] = strVal;
+        if (h === 'Term Date') r['Term Date'] = strVal;
         if (h === 'Manager Email') r['Job Title'] = 'Manager Email: ' + strVal;
         if (h === 'Requester Email') r['Requester Email'] = strVal;
+        // Normalise both possible employment type header spellings to 'Employee Type'
+        if (h === 'Employee Type' || h === 'Employment Type') {
+          r['Employee Type']   = strVal;
+          r['Employment Type'] = strVal;
+        }
 
         r[h] = strVal;
       }
     });
+
+    // Index-based fallbacks for key fields that may be absent if sheet schema predates current headers
+    const _sv = function(v) { return v instanceof Date ? v.toString() : String(v === null || v === undefined ? '' : v); };
+    if (!r['Employee Type']) r['Employee Type'] = _sv(reqRow[7]);   // empType always at col 7
+    if (!r['Term Date'])     r['Term Date']     = _sv(reqRow[12]);  // termDate always at col 12
+    if (!r['Site'])          r['Site']          = _sv(reqRow[11]);  // siteName always at col 11
+    if (!r['Reason'])        r['Reason']        = _sv(reqRow[13]);  // reason always at col 13
 
     context.requestData = r;
 
@@ -1282,6 +1320,9 @@ function getTerminationDetails(workflowId) {
     const userEmail = Session.getActiveUser().getEmail();
     context.isAdmin = AccessControlService.isAdmin(userEmail);
 
+    const termWf = getWorkflow(workflowId);
+    context.status = termWf ? String(termWf['Status'] || '') : '';
+
     context.checklist = checklist;
     context.type = 'End of Employment';
     return context;
@@ -1345,6 +1386,15 @@ function getEquipmentRequestDetails(workflowId) {
       currentStep: String(wfRow[7] || ''),
       checklist:   []
     };
+
+    // Initial Request is always complete — static entry so the flow diagram node updates
+    context.checklist.push({
+      name:   'Initial Request',
+      status: 'Complete',
+      target: 'equipment_request',
+      by:     requestData['Requester Email'] || 'Unknown',
+      time:   requestData['Date Requested']  || ''
+    });
 
     // Action items — return with properties expected by renderDetails checklist renderer
     const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);

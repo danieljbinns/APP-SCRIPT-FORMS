@@ -83,8 +83,8 @@ function doGet(e) {
       case 'asset_retrieval':
         return serveAssetRetrieval(workflowId);
 
-      case 'boss_review':
-        return serveBOSSReview(workflowId);
+      case 'it_confirmation':
+        return serveITConfirmation(workflowId);
 
       case 'action_item_view':
         return ActionItemService.serveActionItem(e.parameter.tid);

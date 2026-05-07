@@ -93,7 +93,7 @@ function initializeSystem() {
     initSheet(ss, CONFIG.SHEETS.EQUIPMENT_REQUESTS, [
       'Timestamp', 'Workflow ID', 'Form ID', 'Requester Name', 'Requester Email', 
       'Employee First Name', 'Employee Last Name', 'Site Name', 'Job Title', 'Manager Name', 'Manager Email',
-      'Equipment Requested', 'Systems Requested', 'Comments'
+      'Equipment Requested', 'Systems Requested', 'Comments', 'Department'
     ]);
 
     // 8. Initialize Approval & Collection Results

@@ -641,18 +641,33 @@
                     aiContainer.appendChild(card);
                 });
 
-                // Update EOE/CHANGE static node badges
+                // Update EOE/CHANGE static node labels & badges
+                const isEquipReq = workflowId.startsWith('EQUIP_REQ_');
+                const isChangeWf = workflowId.startsWith('CHANGE_');
+                const reqNode    = document.getElementById('eoe_node_term_req');
+                const apprNode   = document.getElementById('eoe_node_approval');
+
+                // Relabel the Initial Request node based on workflow type
+                if (reqNode) {
+                    const h3el = reqNode.querySelector('h3');
+                    if (h3el) {
+                        if (isChangeWf)  h3el.textContent = 'Change Request';
+                        else if (isEquipReq) h3el.textContent = 'Equipment Request';
+                        // TERM_ already says "EOE Request" — leave as-is
+                    }
+                }
+                // Hide the HR Approval node for equipment requests (no approval step)
+                if (apprNode && isEquipReq) apprNode.style.display = 'none';
+
                 const termReqItem = list.find(i => i.name === 'Initial Request');
                 const approvalItem = list.find(i => i.name === 'Approval' || i.name === 'HR Approval');
                 if (termReqItem) {
-                    const n = document.getElementById('eoe_node_term_req');
-                    if (n) { n.className = 'flow-card ' + (termReqItem.status === 'Complete' ? 'complete' : 'pending'); }
+                    if (reqNode) { reqNode.className = 'flow-card ' + (termReqItem.status === 'Complete' ? 'complete' : 'pending'); }
                     const b = document.getElementById('eoe_badge_term_req');
                     if (b) b.innerText = termReqItem.status;
                 }
                 if (approvalItem) {
-                    const n = document.getElementById('eoe_node_approval');
-                    if (n) { n.className = 'flow-card ' + (approvalItem.status === 'Complete' ? 'complete' : 'pending'); }
+                    if (apprNode) { apprNode.className = 'flow-card ' + (approvalItem.status === 'Complete' ? 'complete' : 'pending'); }
                     const b = document.getElementById('eoe_badge_approval');
                     if (b) b.innerText = approvalItem.status;
                 }
@@ -782,7 +797,10 @@
                 } else if (isComplete && item.target) {
                     actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
                 } else if (isComplete && item.name === 'Initial Request') {
-                    var targetData = workflowId.startsWith('TERM_') ? 'termination_request' : (workflowId.startsWith('CHANGE_') ? 'change_request' : 'initial_request');
+                    var targetData = workflowId.startsWith('TERM_')      ? 'termination_request'
+                                   : workflowId.startsWith('CHANGE_')    ? 'change_request'
+                                   : workflowId.startsWith('EQUIP_REQ_') ? 'equipment_request'
+                                   : 'initial_request';
                     actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + targetData + '\')">View Data</button>';
                 }
 
@@ -818,7 +836,7 @@
         function viewStepData(stepType) {
             document.getElementById('dataModal').style.display = 'flex';
             document.getElementById('stepDataBody').innerHTML = `<tr><td colspan="2" style="text-align:center;">Loading...</td></tr>`;
-            document.getElementById('stepDataTitle').innerText = 'Step Details: ' + stepType.toUpperCase().replace('_', ' ');
+            document.getElementById('stepDataTitle').innerText = 'Step Details: ' + stepType.toUpperCase().replace(/_/g, ' ');
 
             google.script.run
                 .withSuccessHandler(renderStepData)

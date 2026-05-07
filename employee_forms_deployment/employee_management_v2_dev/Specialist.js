@@ -74,7 +74,6 @@ function serveSpecialist(workflowId, dept) {
     'businesscards': 'BusinessCards',
     'fleetio': 'Fleetio',
     'jonas': 'Jonas',
-    'centralpurchasing': 'CentralPurchasing',
     'sitedocs': 'SiteDocs',
     'review': 'Review306090',
     'safety': 'SafetyOnboarding',
@@ -96,12 +95,19 @@ function serveSpecialist(workflowId, dept) {
     if (typeof getWorkflowContext === 'function') {
       const wfContext = getWorkflowContext(workflowId);
       if (wfContext) {
-        requestData = Object.assign({}, requestData, wfContext);
+        // Smarter merge: only override with truthy values from wfContext
+        // so itContext values (which have fallback index lookups) are never
+        // clobbered by undefined/empty properties from wfContext.
+        Object.keys(wfContext).forEach(function(k) {
+          const v = wfContext[k];
+          if (v !== undefined && v !== null && v !== '') {
+            requestData[k] = v;
+          }
+        });
       }
     }
   } else {
-    // Fallback if IT function not available in this scope (should act as library)
-    requestData = { employeeName: 'Loading...' }; 
+    requestData = { employeeName: 'Loading...' };
   }
   template.requestData = requestData;
   
@@ -124,7 +130,6 @@ function submitSpecialistForm(formData) {
       'businesscards': CONFIG.SHEETS.BUSINESS_CARDS_RESULTS,
       'fleetio': CONFIG.SHEETS.FLEETIO_RESULTS,
       'jonas': CONFIG.SHEETS.JONAS_RESULTS,
-      'centralpurchasing': CONFIG.SHEETS.CENTRAL_PURCHASING_RESULTS,
       'sitedocs': CONFIG.SHEETS.SITEDOCS_RESULTS,
       'review': CONFIG.SHEETS.REVIEW_306090_RESULTS,
       'safety': CONFIG.SHEETS.SAFETY_ONBOARDING_RESULTS,
@@ -222,17 +227,39 @@ function submitSpecialistForm(formData) {
 
         if (recipients.length > 0) {
           let friendlyDept = dept.charAt(0).toUpperCase() + dept.slice(1);
-          if (dept === 'creditcard') { friendlyDept = 'Credit Card'; }
+          if (dept === 'creditcard')       { friendlyDept = 'Credit Card'; }
+          if (dept === 'businesscards')    { friendlyDept = 'Business Cards'; }
+          if (dept === 'sitedocs')         { friendlyDept = 'SiteDocs / DSS'; }
+          if (dept === 'safetyterm')       { friendlyDept = 'Safety Offboarding'; }
 
           var specContext = (typeof getWorkflowContext === 'function') ? (getWorkflowContext(workflowId) || {}) : {};
+          // Ensure V2 email template is used (shows all ID/HR/IT credential sections)
+          if (!specContext.workflowType) specContext.workflowType = 'New Hire';
+
+          // Build email body — Fleetio shows conditional Fleetio/Vehicle lines
+          var emailBody;
+          if (dept === 'fleetio') {
+            var fDetails = {};
+            try { fDetails = JSON.parse(formData.details || '{}'); } catch(fe) {}
+            var lines = [];
+            if (fDetails.fleetioCreated !== false) lines.push('Fleetio account has been created for <b>' + employeeName + '</b>.');
+            if (fDetails.vehicleAssigned)           lines.push('Company vehicle has been assigned.');
+            emailBody = (lines.length > 0 ? lines.join('<br>') : 'Fleetio setup completed for <b>' + employeeName + '</b>.')
+              + (formData.notes ? '<br><br><b>Notes:</b> ' + formData.notes : '');
+          } else {
+            emailBody = friendlyDept + ' setup has been completed for ' + employeeName + '.\n\nNotes: ' + (formData.notes || 'None') + '\n\n';
+          }
+
+          const portalUrl = (typeof getBaseUrl === 'function') ? getBaseUrl() : '';
 
           sendFormEmail({
             to: recipients.join(','),
             subject: friendlyDept + ' Setup Complete',
-            body: friendlyDept + ' setup has been completed for ' + employeeName + '.\n\nNotes: ' + (formData.notes || 'None') + '\n\n',
-            formUrl: '',
-            displayName: 'Onboarding System',
-            contextData: specContext
+            body: emailBody,
+            formUrl: portalUrl || '',
+            displayName: 'TEAM Group — Employee Onboarding',
+            contextData: specContext,
+            emailOpts: { showPasswords: false }
           });
         }
       } catch (e) {

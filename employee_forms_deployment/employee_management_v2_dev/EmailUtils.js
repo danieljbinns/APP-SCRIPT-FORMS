@@ -28,11 +28,10 @@ function buildEmailSubject(action, contextData, opts) {
   // Flag this in the subject so HR/Payroll don't treat them as standard hourly (skip-IT) cases.
   var isExpedite = employmentType === 'Hourly' && contextData.systemAccess && contextData.systemAccess !== 'No';
 
-  // Tag: Status Change uses change types in tag; others use employment type
+  // Tag: Status Change uses a compact tag (change types go in the body, not subject — subjects must stay under 250 chars)
   var tag;
   if (workflowType === 'Status Change') {
-    var changeTypes = contextData.changeTypes || '';
-    tag = '[Status Change' + (changeTypes ? ': ' + changeTypes : '') +
+    tag = '[Status Change' +
           (employmentType ? ' | ' + employmentType : '') +
           (isExpedite ? ' | EXPEDITE' : '') + ']';
   } else {
@@ -65,20 +64,24 @@ function buildEmailSubject(action, contextData, opts) {
 
   if (workflowType === 'Status Change') {
     // Site: prefer siteTransfer (old -> new), fall back to siteName
+    // Trim long site names to keep subject under 250 chars
     var siteTransfer = contextData.siteTransfer || '';
-    if (siteTransfer && siteTransfer.indexOf('N/A') === -1) parts.push(siteTransfer);
-    else if (site) parts.push(site);
-    // Classification / employment type change (old -> new)
+    var siteForSubject = (siteTransfer && siteTransfer.indexOf('N/A') === -1) ? siteTransfer : site;
+    if (siteForSubject && siteForSubject.length > 60) siteForSubject = siteForSubject.substring(0, 57) + '…';
+    if (siteForSubject) parts.push(siteForSubject);
+    // Classification change (old -> new) — skip if unchanged or N/A
     var classChange = contextData.classChange || '';
-    if (classChange && classChange.indexOf('N/A') === -1) parts.push(classChange);
-    else if (employmentType) parts.push(employmentType);
+    if (classChange && classChange.indexOf('N/A') === -1) {
+      var idx = classChange.indexOf(' -> ');
+      if (idx === -1 || classChange.substring(0, idx).trim() !== classChange.substring(idx + 4).trim()) {
+        parts.push(classChange);
+      }
+    } else if (employmentType) {
+      parts.push(employmentType);
+    }
     // Date
     if (dateLabel && dateStr) parts.push(dateLabel + ': ' + dateStr);
-    // Manager: show old -> new if both present and different
-    var managerOld = contextData.managerOldEmail || '';
-    var managerNew = contextData.managerNewEmail || manager;
-    if (managerOld && managerNew && managerOld !== managerNew) parts.push(managerOld + ' -> ' + managerNew);
-    else if (managerNew) parts.push(managerNew);
+    // Manager emails intentionally omitted from subject — body has full details
   } else if (workflowType === 'Termination') {
     if (site) parts.push(site);
     if (dateLabel && dateStr) parts.push(dateLabel + ': ' + dateStr);
@@ -105,6 +108,9 @@ function buildEmailSubject(action, contextData, opts) {
     subject = 'REMINDER [Requested: ' + reqStr + ']: ' + subject;
   }
 
+  // Hard safety cap — GAS MailApp throws "Argument too large: subject" above ~250 chars
+  if (subject.length > 250) subject = subject.substring(0, 247) + '…';
+
   return subject;
 }
 
@@ -122,18 +128,30 @@ function getWorkflowContext(workflowId) {
     if (workflowId && workflowId.startsWith('TERM')) {
       const termData = typeof getTerminationData === 'function' ? getTerminationData(workflowId) : null;
       if (termData) {
+        const g = termData.googleOffboarding || {};
         return {
-          workflowType: 'Termination',
-          employeeName: termData.employeeName,
-          siteName: termData.siteName,
-          managerName: termData.managerName,
-          managerEmail: termData.managerEmail,
-          requesterEmail: termData.requesterEmail,
-          hireDate: termData.termDate,
-          equipmentRaw: termData.eqToReturn,
-          systems: termData.systems ? termData.systems.split(',').map(s => s.trim()) : [],
-          empPhone: termData.empPhone,
-          reason: termData.reason
+          workflowType:    'Termination',
+          employeeName:    termData.employeeName,
+          employmentType:  termData.empType || '',
+          siteName:        termData.siteName,
+          managerName:     termData.managerName,
+          managerEmail:    termData.managerEmail,
+          requesterEmail:  termData.requesterEmail,
+          hireDate:        termData.termDate,
+          lastDayWorked:   termData.lastDayWorked  || '',
+          equipmentRaw:    termData.eqToReturn,
+          systems:         termData.systems ? termData.systems.split(',').map(function(s){ return s.trim(); }) : [],
+          empPhone:        termData.empPhone,
+          reason:          termData.reason,
+          hasReports:      termData.hasReports  || '',
+          reportsToNew:    termData.reportsToNew || '',
+          googleOffboarding: g,
+          googleForward:   g.forward  || '',
+          googleFiles:     g.files    || '',
+          googleDelegate:  g.delegate || '',
+          googleDuration:  g.duration || '',
+          googleVacation:  g.vacation || '',
+          originalComments: termData.originalComments || ''
         };
       }
     }
@@ -181,8 +199,42 @@ function getWorkflowContext(workflowId) {
       }
     }
 
+    // Support for Equipment Request Workflows
+    if (workflowId && workflowId.startsWith('EQUIP_REQ_')) {
+      const eqSheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
+      if (eqSheet) {
+        const eqData = eqSheet.getDataRange().getValues();
+        const eqRow = eqData.find(function(r, i) { return i > 0 && r[1] === workflowId; });
+        if (eqRow) {
+          const systems   = eqRow[12] ? String(eqRow[12]).split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+          const equipment = eqRow[11] ? String(eqRow[11]).split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+          return {
+            workflowType:   'Equipment Request',
+            workflowId:     workflowId,
+            employeeName:   ((eqRow[5] || '') + ' ' + (eqRow[6] || '')).trim(),
+            firstName:      eqRow[5]  || '',
+            lastName:       eqRow[6]  || '',
+            siteName:       eqRow[7]  || '',
+            jobTitle:       eqRow[8]  || '',
+            managerName:    eqRow[9]  || '',
+            managerEmail:   eqRow[10] || '',
+            requesterEmail: eqRow[4]  || '',
+            requesterName:  eqRow[3]  || '',
+            systems:        systems,
+            equipmentRaw:   eqRow[11] || '',
+            equipment:      equipment,
+            comments:       eqRow[13] || '',
+            requestDate:    eqRow[0] instanceof Date
+              ? Utilities.formatDate(eqRow[0], Session.getScriptTimeZone(), 'yyyy-MM-dd')
+              : String(eqRow[0] || '').substring(0, 10)
+          };
+        }
+      }
+      return null;
+    }
+
     const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
-    
+
     if (!sheet) {
       Logger.log('Initial Requests sheet not found');
       return null;
@@ -227,7 +279,7 @@ function getWorkflowContext(workflowId) {
       employmentType: row[headers.indexOf('Employment Type')],
       department:    row[headers.indexOf('Department')] || '',
       employeeType:  row[headers.indexOf('Employee Type')],
-      newHireOrRehire: row[headers.indexOf('New Hire/Rehire')],
+      newHireOrRehire: row[headers.indexOf('New Hire/Rehire')] || row[7] || '',
       jobSiteNumber: row[headers.indexOf('Job Site #')],
       systemAccess:  row[headers.indexOf('System Access')],
       systems:       systemsList,
@@ -239,7 +291,15 @@ function getWorkflowContext(workflowId) {
       googleEmail:   row[headers.indexOf('Google Email')]  || '',
       googleDomain:  row[headers.indexOf('Google Domain')] || '',
       adpSites:      row[headers.indexOf('ADP Sites')]     || '',
-      purchasingSites: row[headers.indexOf('Purchasing Sites')] || ''
+      purchasingSites: row[headers.indexOf('Purchasing Sites')] || '',
+      // BOSS & Review Config fields
+      bossJobSites:     row[headers.indexOf('BOSS Job Sites')]          || row[headers.indexOf('Boss Job Sites')] || '',
+      bossCostSheet:    row[headers.indexOf('BOSS Cost Sheet Access')]  || row[headers.indexOf('Cost Sheet Access')] || '',
+      bossCostSheetJobs: row[headers.indexOf('BOSS Cost Sheet Jobs')]   || row[headers.indexOf('Cost Sheet Jobs')] || '',
+      bossTripReports:  row[headers.indexOf('BOSS Trip Reports')]       || row[headers.indexOf('Trip Reports')] || '',
+      bossGrievances:   row[headers.indexOf('BOSS Grievances')]         || row[headers.indexOf('Grievances')] || '',
+      vehicleRequested: row[headers.indexOf('Vehicle Requested')]       || row[headers.indexOf('Company Vehicle')] || '',
+      fleetioAccess:    row[headers.indexOf('Fleetio Access')]          || ''
     };
     
     // PHASE 4 FIX: Check HR Verification Results for verified titles and ADP ID
@@ -273,16 +333,17 @@ function getWorkflowContext(workflowId) {
         // Workflow ID is Col A, Headers: WFID, FormID, Time, EmpID, WorkerID, JobCode, SD User, SD Pass, DSS User, DSS Pass
         const idRow = idData.find(r => r[0] === workflowId);
         if (idRow) {
-            context.internalEmployeeId = idRow[3];
-            context.siteDocsWorkerId   = idRow[4];
-            context.siteDocsJobCode    = idRow[5];
-            context.siteDocsUsername   = idRow[6];
-            context.siteDocsPassword   = idRow[7];
-            context.dssUsername        = idRow[8];
-            context.dssPassword        = idRow[9];
-            context.bossWisCreated     = idRow[11] || '';
+            context.internalEmployeeId    = idRow[3];
+            context.siteDocsWorkerId      = idRow[4];
+            context.siteDocsJobCode       = idRow[5];
+            context.siteDocsUsername      = idRow[6];
+            context.siteDocsPassword      = idRow[7];
+            context.dssUsername           = idRow[8];
+            context.dssPassword           = idRow[9];
+            context.bossWisCreated        = idRow[11] || '';
+            context.siteDocsBadgeCreated  = idRow[12] || '';
             if (idRow[2])  context.idTimestamp   = idRow[2] instanceof Date ? Utilities.formatDate(idRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(idRow[2]);
-            if (idRow[12]) context.idSubmittedBy  = idRow[12];
+            if (idRow[13]) context.idSubmittedBy  = idRow[13];
         }
     }
 
@@ -358,8 +419,14 @@ function sendFormEmail(options) {
       finalBody = `[DEVELOPMENT MODE - REDIRECTED FROM: ${to}]\n\n` + body;
     }
 
-    // V2 template for New Hire; all other workflows use legacy template until their builders are complete
-    const htmlBody = (contextData && contextData.workflowType === 'New Hire')
+    // V2 template for all supported workflow types
+    const useV2 = contextData && (
+      contextData.workflowType === 'New Hire'          ||
+      contextData.workflowType === 'Equipment Request' ||
+      contextData.workflowType === 'Termination'       ||
+      contextData.workflowType === 'Status Change'
+    );
+    const htmlBody = useV2
       ? createEmailTemplateV2(finalSubject, finalBody, formUrl, contextData, emailOpts || {})
       : createEmailTemplate(finalSubject, finalBody, formUrl, contextData);
     
@@ -885,11 +952,13 @@ function esBtn(url, text) {
  * @param {string} empName
  * @param {string} siteName
  * @param {string} [adpId]
+ * @param {string} [label]   — event label, e.g. 'Start Date' (default) or 'Effective Date'
  */
-function esCalBtn(dateStr, empName, siteName, adpId) {
+function esCalBtn(dateStr, empName, siteName, adpId, label) {
   try {
+    var dateLabel = label || 'Start Date';
     var d       = String(dateStr).replace(/-/g, '').substring(0, 8);
-    var title   = encodeURIComponent((empName || 'Employee') + ' — Start Date');
+    var title   = encodeURIComponent((empName || 'Employee') + ' — ' + dateLabel);
     var details = encodeURIComponent('Site: ' + (siteName || '') + (adpId ? ' | ADP ID: ' + adpId : ''));
     var url     = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + title
                 + '&dates=' + d + '/' + d + '&details=' + details;
@@ -897,7 +966,7 @@ function esCalBtn(dateStr, empName, siteName, adpId) {
       + 'background:linear-gradient(135deg,' + ES.btnCal + ',' + ES.btnCalDark + ');'
       + 'color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-size:13px;'
       + 'font-family:' + ES.fontStack + ';box-shadow:0 3px 10px ' + ES.btnCalShadow + ';">'
-      + '📅 Add Start Date to Calendar</a>';
+      + '📅 Add ' + dateLabel + ' to Calendar</a>';
   } catch (e) { return ''; }
 }
 
@@ -912,7 +981,7 @@ function esBtnRow(formUrl, opts) {
   return '<div style="margin:18px 0;">'
     + (formUrl ? esBtn(formUrl, 'Open Form →') : '')
     + (formUrl && opts.calendarDate ? '&nbsp;&nbsp;' : '')
-    + (opts.calendarDate ? esCalBtn(opts.calendarDate, opts.employeeName, opts.siteName, opts.adpId) : '')
+    + (opts.calendarDate ? esCalBtn(opts.calendarDate, opts.employeeName, opts.siteName, opts.adpId, opts.calendarLabel) : '')
     + '</div>';
 }
 
@@ -929,9 +998,10 @@ function esBtnRow(formUrl, opts) {
 function createContextBlockV2(context, opts) {
   if (!context) return '';
   var type = context.workflowType || 'New Hire';
-  if (type === 'New Hire')      return buildNewHireContextBlock(context, opts);
-  if (type === 'Termination')   return buildTerminationContextBlock(context, opts);
-  if (type === 'Status Change') return buildStatusChangeContextBlock(context, opts);
+  if (type === 'New Hire')           return buildNewHireContextBlock(context, opts);
+  if (type === 'Termination')        return buildTerminationContextBlock(context, opts);
+  if (type === 'Status Change')      return buildStatusChangeContextBlock(context, opts);
+  if (type === 'Equipment Request')  return buildEquipmentContextBlock(context, opts);
   return buildNewHireContextBlock(context, opts); // safe fallback
 }
 
@@ -958,6 +1028,13 @@ function createEmailTemplateV2(subject, body, formUrl, contextData, opts) {
     if (!opts.siteName)     opts.siteName     = contextData.siteName      || '';
     if (!opts.adpId)        opts.adpId        = contextData.adpAssociateId || '';
     if (!opts.calendarDate && contextData.hireDate) opts.calendarDate = String(contextData.hireDate).substring(0, 10);
+    // Calendar button label — match workflow type so Termination says "Termination Date" not "Start Date"
+    if (!opts.calendarLabel) {
+      var _wt = contextData.workflowType || '';
+      opts.calendarLabel = _wt === 'Termination'   ? 'Termination Date'
+                         : _wt === 'Status Change' ? 'Effective Date'
+                         : 'Start Date';
+    }
   }
 
   var sectionsHtml   = contextData ? createContextBlockV2(contextData, opts) : '';

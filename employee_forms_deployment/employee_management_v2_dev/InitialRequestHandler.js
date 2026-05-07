@@ -5,7 +5,10 @@
 function serveInitialRequest() {
   const template = HtmlService.createTemplateFromFile('InitialRequest');
   template.referenceData = JSON.stringify(getInitialFormData());
-  template.mode = 'new_hire';
+  template.mode          = 'new_hire';
+  template.baseMode      = 'new_hire';
+  template.workflowId    = '';
+  template.requestData   = 'null';
   return template.evaluate()
     .setTitle('New Employee Request')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);

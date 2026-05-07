@@ -1,146 +1,70 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <base target="_top">
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>WIS Assignment</title>
-    <style>
-        :root {
-            --bg-color: #0c0c0c; --card-bg: #1a1a1a; --text-main: #ffffff;
-            --text-muted: #a0a0a0; --brand-red: #EB1C2D; --border-color: #333;
-            --input-bg: #2a2a2a; --input-border: #444; --success: #00c853;
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .container { width: 100%; max-width: 900px; }
-        .card { background: var(--card-bg); border-radius: 12px; padding: 32px; border: 1px solid var(--border-color); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-        .logo-container { text-align: center; margin-bottom: 24px; }
-        .logo { height: 40px; }
-        h1 { font-size: 22px; text-align: center; margin-bottom: 8px; }
-        .subtitle { color: var(--text-muted); text-align: center; margin-bottom: 24px; font-size: 14px; }
-        .section-title { font-size: 12px; font-weight: 600; color: var(--brand-red); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
-        .ticket-info { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 16px; margin-bottom: 24px; border: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .info-row { display: flex; flex-direction: column; font-size: 13px; }
-        .info-row .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
-        .info-row .value { color: var(--text-main); font-weight: 600; }
-        .form-group { margin-bottom: 20px; margin-top: 20px; }
-        label { display: block; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); }
-        textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; padding: 12px; color: white; font-size: 14px; box-sizing: border-box; resize: vertical; }
-        textarea:focus { outline: none; border-color: var(--brand-red); }
-        .confirm-item { display: flex; align-items: flex-start; gap: 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.2s; }
-        .confirm-item:has(input:checked) { border-color: var(--success); background: rgba(0,200,83,0.05); }
-        .confirm-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--success); flex-shrink: 0; margin-top: 2px; cursor: pointer; }
-        .confirm-item label { cursor: pointer; }
-        .confirm-item label strong { display: block; font-size: 14px; margin-bottom: 4px; }
-        .confirm-item label span { font-size: 12px; color: var(--text-muted); }
-        .btn { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 15px; }
-        .btn-primary { background: var(--brand-red); color: white; }
-        .btn-primary:hover { opacity: 0.9; }
-        .btn-primary:disabled { background: #555; cursor: not-allowed; opacity: 1; }
-        #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; flex-direction: column; z-index: 1000; }
-        .spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.2); border-radius: 50%; border-top-color: var(--brand-red); animation: spin 1s linear infinite; margin-bottom: 14px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        #success-screen { display: none; text-align: center; padding: 40px 0; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WIS Assignment</title>
+  <?!= include('Styles') ?>
 </head>
 <body>
-<div class="container">
-<div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
-<div class="card" id="mainCard">
+  <div class="container">
+    <a href="<?= getBaseUrl() ?>" target="_top" class="back-link">&#8592; Back to Portal</a>
     <div class="logo-container">
-        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo" alt="TEAM Group">
+      <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="Team Group Companies" class="logo">
     </div>
-    <h1>WIS Assignment</h1>
-    <p class="subtitle">Confirm that Work Instructions & Safety (WIS) has been assigned in BOSS for this employee.</p>
+    <div id="form-container" class="card-form">
+      <h1>WIS Assignment</h1>
+      <p class="subtitle">Confirm that Work Instructions &amp; Safety (WIS) has been assigned in BOSS for this employee.</p>
+      <hr>
+      <div id="requestHeaderWrap">
+        <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
+      </div>
+      <form id="taskForm" autocomplete="off">
+        <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+        <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+        <input type="hidden" name="department" value="wis">
 
-    <div class="section-title">Employee Details</div>
-    <div class="ticket-info">
-        <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName || '-' ?></span></div>
-        <div class="info-row"><span class="label">Start Date</span><span class="value"><?= requestData.hireDate ? Utilities.formatDate(new Date(requestData.hireDate + 'T12:00:00Z'), 'UTC', 'M/d/yyyy') : '-' ?></span></div>
-        <div class="info-row"><span class="label">Job Title</span><span class="value"><?= requestData.jobTitle || '-' ?></span></div>
-        <div class="info-row"><span class="label">JR Title</span><span class="value"><?= requestData.jrTitle || '-' ?></span></div>
-        <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName || '-' ?></span></div>
-        <div class="info-row"><span class="label">Department</span><span class="value"><?= requestData.department || '-' ?></span></div>
-        <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName || '-' ?></span></div>
-        <div class="info-row"><span class="label">Work Email</span><span class="value"><?= requestData.assignedEmail || '-' ?></span></div>
-    </div>
-
-    <div id="formSection">
-        <div class="section-title">Confirm Assignment</div>
-        <form id="wisForm" autocomplete="off">
-            <input type="hidden" name="workflowId" value="<?= workflowId ?>">
-            <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
-            <input type="hidden" name="department" value="wis">
-
-            <div class="confirm-item">
-                <input type="checkbox" id="wisAssigned" name="wisAssigned" value="true" required>
-                <label for="wisAssigned">
-                    <strong>WIS Assigned in BOSS</strong>
-                    <span>Employee has been assigned the appropriate Work Instructions & Safety module(s) in BOSS for their role and site.</span>
-                </label>
-            </div>
-
-            <div class="form-group">
-                <label>Notes (Optional)</label>
-                <textarea name="notes" rows="3" placeholder="WIS module names, any exceptions, or additional details..."></textarea>
-            </div>
-
-            <button type="submit" id="submitBtn" class="btn btn-primary">Confirm & Complete</button>
-        </form>
-    </div>
-
-    <div id="success-screen">
-        <div style="font-size: 56px; margin-bottom: 16px;">✅</div>
-        <h2 style="color: var(--success);">WIS Assignment Confirmed</h2>
-        <p style="color: var(--text-muted); margin-top: 8px;">Onboarding is now complete.</p>
-        <div style="margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
-            <button class="btn btn-primary" style="max-width: 220px;"
-                onclick="window.open('<?= getBaseUrl() ?>?form=dashboard', '_top')">Return to Dashboard</button>
-            <p style="color: #888; font-size: 13px;">You may now close this window.</p>
+        <div class="confirm-item">
+          <input type="checkbox" id="wisAssigned" name="wisAssigned" value="true">
+          <label for="wisAssigned">
+            <strong>WIS Assigned in BOSS</strong>
+            <span>Employee has been assigned the appropriate Work Instructions &amp; Safety module(s) in BOSS for their role and site.</span>
+          </label>
         </div>
+
+        <div class="form-field">
+          <label>Notes <span class="optional">(Optional)</span></label>
+          <textarea name="notes" rows="3" placeholder="WIS module names, any exceptions, or additional details..."></textarea>
+        </div>
+        <div id="statusMessage"></div>
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-full">Confirm &amp; Complete</button>
+      </form>
+      <?!= includeWithData('SuccessScreen', {baseUrl: getBaseUrl()}) ?>
     </div>
-</div>
-</div>
+  </div>
 
-<div id="loading-overlay">
+  <div id="loading-overlay">
     <div class="spinner"></div>
-    <div style="color: white;">Saving...</div>
-</div>
+    <p>Saving...</p>
+  </div>
 
-<script>
-    document.getElementById('wisForm').onsubmit = function(e) {
-        e.preventDefault();
-        if (!document.getElementById('wisAssigned').checked) {
-            alert('Please confirm WIS has been assigned before submitting.');
-            return;
-        }
-        document.getElementById('loading-overlay').style.display = 'flex';
-        document.getElementById('submitBtn').disabled = true;
-        var form = this;
-        var data = {
-            workflowId: form.workflowId.value,
-            department: form.department.value,
-            notes: form.notes.value,
-            details: JSON.stringify({ wisAssigned: true })
-        };
-        google.script.run
-            .withSuccessHandler(function(result) {
-                document.getElementById('loading-overlay').style.display = 'none';
-                if (result && result.success === false) {
-                    document.getElementById('submitBtn').disabled = false;
-                    alert('Error: ' + (result.message || 'Server error.'));
-                } else {
-                    document.getElementById('formSection').style.display = 'none';
-                    document.getElementById('success-screen').style.display = 'block';
-                }
-            })
-            .withFailureHandler(function(err) {
-                document.getElementById('loading-overlay').style.display = 'none';
-                document.getElementById('submitBtn').disabled = false;
-                alert('Error: ' + err.message);
-            })
-            .submitSpecialistForm(data);
-    };
-</script>
+  <script>
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (!document.getElementById('wisAssigned').checked) {
+        document.getElementById('statusMessage').innerHTML = '<div class="callout callout-warning">&#10060; Please confirm WIS has been assigned before submitting.</div>';
+        return;
+      }
+      var form = e.target;
+      var data = {
+        workflowId: form.workflowId.value,
+        department: form.department.value,
+        notes: form.notes.value,
+        details: JSON.stringify({ wisAssigned: true })
+      };
+      submitSpecialistTask(e.target, data, 'WIS Assignment Confirmed', 'Onboarding is now complete.');
+    });
+  </script>
+  <?!= include('SharedComponents') ?>
 </body>
 </html>

@@ -266,12 +266,12 @@ function launchRemainingEquipmentTasks(workflowId) {
 
     if (jonas) {
       const tid = ActionItemService.createActionItem(
-        workflowId, 'Finance', 'Jonas Purchasing Setup',
-        JSON.stringify(['Set up Jonas Purchasing access for ' + employeeName]),
+        workflowId, 'Finance', 'Central Purchasing/Jonas Setup',
+        JSON.stringify(['Set up Central Purchasing/Jonas access for ' + employeeName]),
         CONFIG.EMAILS.JONAS, 'jonas'
       );
       _notifyEquipmentTask(workflowId, tid, 'Finance', CONFIG.EMAILS.JONAS, context,
-        'Please set up Jonas Purchasing access for <b>' + employeeName + '</b>.');
+        'Please set up Central Purchasing/Jonas access for <b>' + employeeName + '</b>.');
     }
 
     if (creditCard) {

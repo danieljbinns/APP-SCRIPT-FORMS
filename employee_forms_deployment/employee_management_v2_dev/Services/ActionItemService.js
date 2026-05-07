@@ -191,26 +191,55 @@ var ActionItemService = (function() {
   }
 
   /**
-   * Checks if a workflow is complete (all tasks closed).
-   * GUARD: Only auto-completes when the current workflow step indicates all upstream
-   * gates have been passed:
-   *   - 'Specialist Forms Needed'  → onboarding (IT Setup done, specialists outstanding)
-   *   - 'Action Items Pending'     → termination or position-change (approval done, tasks outstanding)
-   * This prevents early action items (e.g. Safety at HR Verification stage) from
-   * prematurely closing a workflow that still requires IT setup.
+   * Checks if a workflow is complete (all non-background tasks closed).
+   *
+   * Step-based guards:
+   *   - 'Specialist Forms Needed'  → onboarding (IT done, specialists outstanding)
+   *   - 'Action Items Pending'     → term / position-change / equipment (tasks outstanding)
+   *   - 'Email Setup Needed'       → equipment request waiting on Google Account setup only
+   *
+   * WIS tasks (Category === 'WIS') are background/post-hire — they never block completion.
    */
   function checkWorkflowCompletion(workflowId) {
     const workflow = getWorkflow(workflowId);
     const currentStep = workflow ? String(workflow['Current Step'] || '') : '';
+
+    if (currentStep === 'Email Setup Needed') {
+      // Equipment request: only IT email task(s) pending — when closed, launch remaining tasks
+      const pending = getPendingTasks(workflowId);
+      if (pending.length === 0) {
+        Logger.log(`[ActionItemService] Email Setup closed for ${workflowId}. Launching remaining equipment tasks.`);
+        if (typeof launchRemainingEquipmentTasks === 'function') {
+          launchRemainingEquipmentTasks(workflowId);
+        }
+      }
+      return;
+    }
+
     const ALLOWED_STEPS = ['Specialist Forms Needed', 'Action Items Pending'];
     if (!ALLOWED_STEPS.includes(currentStep)) {
       Logger.log(`[ActionItemService] Skipping auto-complete for ${workflowId} — step is '${currentStep}', not in allowed completion steps.`);
       return;
     }
 
-    const pending = getPendingTasks(workflowId);
-    if (pending.length === 0) {
-      Logger.log(`[ActionItemService] All tasks closed for Workflow ${workflowId}. Marking complete.`);
+    // Re-read with header awareness for WIS category filter (WIS = post-hire background task, never blocks)
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const wfIdCol   = headers.indexOf('Workflow ID');
+    const statusCol = headers.indexOf('Status');
+    const catCol    = headers.indexOf('Category');
+
+    const nonWisPending = data.filter(function(row, i) {
+      return i > 0
+        && row[wfIdCol]   === workflowId
+        && row[statusCol] === 'Open'
+        && String(row[catCol] || '').toUpperCase() !== 'WIS';
+    });
+
+    if (nonWisPending.length === 0) {
+      Logger.log(`[ActionItemService] All blocking tasks closed for Workflow ${workflowId}. Marking complete.`);
       updateWorkflow(workflowId, 'Complete', 'All Action Items Closed');
       syncWorkflowState(workflowId);
 
@@ -356,12 +385,16 @@ var ActionItemService = (function() {
 
       const context = getWorkflowContext(workflowId) || { employeeName: workflow['Employee Name'] };
 
+      // showPasswords: true for all closure emails — all parties receive full credential summary
+      const closureEmailOpts = { showPasswords: true };
+
       // Notify HR
       sendFormEmail({
         to: CONFIG.EMAILS.HR,
         subject: subject,
         body: body,
-        contextData: context
+        contextData: context,
+        emailOpts: closureEmailOpts
       });
 
       // Notify Initiator & Manager
@@ -374,7 +407,8 @@ var ActionItemService = (function() {
           to: recipients.join(','),
           subject: subject,
           body: body,
-          contextData: context
+          contextData: context,
+          emailOpts: closureEmailOpts
         });
       }
 

@@ -254,18 +254,18 @@
             </label>
             <!-- ADP sub-section (shown when ADP Supervisor is checked) -->
             <div id="adpSitesSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 0; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
-              <label>Required ADP Job Site Numbers <span class="required">*</span></label>
-              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Select all job site numbers this employee needs ADP access for.</p>
-              <div id="adpSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin-bottom: 12px;">
-                <!-- Populated dynamically -->
-              </div>
-              <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin-top: 8px;">
+              <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin-bottom: 12px;">
                 <input type="checkbox" name="adpSalaryAccess" id="adpSalaryAccess" value="Yes" style="width:18px;height:18px;accent-color:var(--brand-red);flex-shrink:0;margin-top:2px;">
                 <span>
                   <span style="display:block; color:var(--text-main); font-size:0.9rem;">Requires access to salary data?</span>
                   <span style="display:block; color:var(--text-muted); font-size:0.8rem;">If checked, HR/Payroll will be notified to grant salary data permissions in ADP before the start date.</span>
                 </span>
               </label>
+              <label>Required ADP Job Site Numbers <span class="required">*</span></label>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Select all job site numbers this employee needs ADP access for.</p>
+              <div id="adpSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin-bottom: 12px;">
+                <!-- Populated dynamically -->
+              </div>
             </div>
             <label class="checkbox-label">
               <input type="checkbox" name="systems" value="BOSS" onchange="toggleSections()">
@@ -359,12 +359,17 @@
               <span>Incidents</span>
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" name="systems" value="Jonas Purchasing" onchange="toggleSections()">
-              <span>Jonas Purchasing</span>
+              <input type="checkbox" name="systems" value="Central Purchasing/Jonas" onchange="toggleSections()">
+              <span>Central Purchasing/Jonas</span>
             </label>
-            <!-- Jonas sub-section (inline) -->
+            <!-- Central Purchasing / Jonas sub-section (inline) -->
             <div id="jonasDetailsSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 0; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
-              <label>Job Number(s) To Be Assigned</label>
+              <label>Required Purchasing Job Site Numbers <span class="required">*</span></label>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Select all job site numbers this employee needs Central Purchasing access for.</p>
+              <div id="purchasingSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;">
+                <!-- Populated dynamically -->
+              </div>
+              <label style="margin-top: 12px; display: block;">Job Number(s) To Be Assigned</label>
               <div id="jonasJobNumbersCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;">
                 <!-- Populated dynamically -->
               </div>
@@ -377,19 +382,6 @@
               <input type="checkbox" name="systems" value="SiteDocs" onchange="toggleSections()">
               <span>Sitedocs Supervisor<br><span class="warn-text">⚠️ Do not add to hourly employees</span></span>
             </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="systems" value="Central Purchasing" id="centralPurchasingAccess"
-                onchange="toggleSections()">
-              <span>Central Purchasing</span>
-            </label>
-            <!-- Central Purchasing sub-section (shown when Central Purchasing is checked) -->
-            <div id="purchasingSitesSection" style="display: none; grid-column: 1 / -1; margin: 4px 0 8px 0; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444;">
-              <label>Required Purchasing Job Site Numbers <span class="required">*</span></label>
-              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Select all job site numbers this employee needs Central Purchasing access for.</p>
-              <div id="purchasingSitesCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;">
-                <!-- Populated dynamically -->
-              </div>
-            </div>
           </div>
 
           <!-- ⚠️ SYNC REQUIRED: The equipment checkboxes and inline sub-sections below must be kept in sync with
@@ -691,6 +683,11 @@
           el.disabled = true;
           el.required = false;
         });
+        // jobSiteNumber is new-hire-only — not applicable to equipment/EQUIP_REQ_ requests
+        var _jnEl = document.getElementById('jobSiteNumber');
+        if (_jnEl) { _jnEl.required = false; _jnEl.disabled = true; }
+        var _jnWrap = _jnEl && _jnEl.closest('.form-field');
+        if (_jnWrap) _jnWrap.style.display = 'none';
       }
 
       function prefillBossReview(d) {
@@ -730,7 +727,22 @@
         sv('position',       d.positionTitle);
         sv('managerEmail',   d.managerEmail);
         sv('managerName',    d.managerName);
-        sv('jobSiteNumber',  d.jobSiteNumber);
+        // jobSiteNumber — use getElementById for reliable select prefill
+        (function() {
+          if (FORM_BASE_MODE === 'equipment') return; // not applicable to equipment requests
+          var jnEl = document.getElementById('jobSiteNumber');
+          if (!jnEl || !d.jobSiteNumber) return;
+          var jnVal = String(d.jobSiteNumber);
+          jnEl.value = jnVal;
+          if (jnEl.value !== jnVal) {
+            // Value not in dropdown options — add it so data is preserved
+            var jnOpt = document.createElement('option');
+            jnOpt.value = jnVal;
+            jnOpt.textContent = jnVal;
+            jnEl.insertBefore(jnOpt, jnEl.options[1] || null);
+            jnEl.value = jnVal;
+          }
+        })();
         sv('googleEmailLocal', d.googleEmail);
         sv('department',     d.department);
         sv('comments',       d.comments);
@@ -816,7 +828,7 @@
           buildDualList('adpSitesCheckboxes', refData.jobs, 'adpSites');
         }
 
-        // Populate Central Purchasing cost sheet — dual-list
+        // Populate Central Purchasing/Jonas — purchasing site numbers dual-list
         if (refData.jobs && refData.jobs.length) {
           buildDualList('purchasingSitesCheckboxes', refData.jobs, 'purchasingSites');
         }
@@ -978,18 +990,13 @@
       const adpChecked = document.getElementById('adpSupervisorAccess').checked;
       document.getElementById('adpSitesSection').style.display = adpChecked ? 'block' : 'none';
 
-      // Check if Central Purchasing is checked (I6)
-      const purchasingEl = document.getElementById('centralPurchasingAccess');
-      const purchasingChecked = purchasingEl && purchasingEl.checked;
-      document.getElementById('purchasingSitesSection').style.display = purchasingChecked ? 'block' : 'none';
-
       // Check if BOSS is checked
       const bossChecked = document.querySelector('[name="systems"][value="BOSS"]').checked;
       const bossDetails = document.getElementById('bossDetailsSection');
       bossDetails.style.display = bossChecked ? 'block' : 'none';
 
       // Check if Jonas is checked
-      const jonasChecked = document.querySelector('[name="systems"][value="Jonas Purchasing"]').checked;
+      const jonasChecked = document.querySelector('[name="systems"][value="Central Purchasing/Jonas"]').checked;
       const jonasDetails = document.getElementById('jonasDetailsSection');
       jonasDetails.style.display = jonasChecked ? 'block' : 'none';
 
@@ -1225,8 +1232,9 @@
         data.bossTripReports = '';
         data.bossGrievances = '';
       }
-      if (!data.systems || !data.systems.includes('Jonas Purchasing')) {
+      if (!data.systems || !data.systems.includes('Central Purchasing/Jonas')) {
         data.jonasJobNumbers = '';
+        data.purchasingSites = [];
       }
       if (!data.systems || !data.systems.includes('Google Account')) {
         data.googleEmail = '';

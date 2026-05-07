@@ -128,6 +128,7 @@ function submitHRVerification(formData) {
     let requesterEmail = '';
     let adpSalaryAccess = false;
     let originalHireDate = '';
+    let hrOriginal = null;
     const adpSalaryAccessCol = headers.indexOf('ADP Salary Access');
 
     for (let i = 1; i < mainData.length; i++) {
@@ -139,6 +140,19 @@ function submitHRVerification(formData) {
             ? Utilities.formatDate(rawOrig, Session.getScriptTimeZone(), 'yyyy-MM-dd')
             : String(rawOrig || '').substring(0, 10);
         }
+
+        // Capture all original values for change detection BEFORE any writes
+        hrOriginal = {
+          firstName:    firstNameCol !== -1    ? String(mainData[i][firstNameCol]    || '') : '',
+          lastName:     lastNameCol !== -1     ? String(mainData[i][lastNameCol]     || '') : '',
+          hireDate:     originalHireDate,
+          siteName:     siteNameCol !== -1     ? String(mainData[i][siteNameCol]     || '') : '',
+          department:   departmentCol !== -1   ? String(mainData[i][departmentCol]   || '') : '',
+          managerName:  managerNameCol !== -1  ? String(mainData[i][managerNameCol]  || '') : '',
+          managerEmail: managerEmailCol !== -1 ? String(mainData[i][managerEmailCol] || '') : '',
+          jobTitle:     jrTitleCol !== -1      ? String(mainData[i][jrTitleCol]      || '') : '',
+          jrTitle:      jrAssignCol !== -1     ? String(mainData[i][jrAssignCol]     || '') : ''
+        };
 
         if (firstNameCol !== -1) mainSheet.getRange(i + 1, firstNameCol + 1).setValue(formData.firstName);
         if (lastNameCol !== -1) mainSheet.getRange(i + 1, lastNameCol + 1).setValue(formData.lastName);
@@ -212,7 +226,33 @@ function submitHRVerification(formData) {
       context.jrTitle = formData.jrTitle;             // Override JR Title
       context.adpAssociateId = formData.adpAssociateId; // Inject ADP ID for context block
     }
-    
+
+    // Change detection — notify downstream teams if any fields were modified vs. original request
+    if (hrOriginal) {
+      const hrSubmitted = {
+        firstName:    formData.firstName    || '',
+        lastName:     formData.lastName     || '',
+        hireDate:     formData.hireDate     || '',
+        siteName:     formData.siteName     || '',
+        department:   formData.department   || '',
+        managerName:  formData.managerName  || '',
+        managerEmail: formData.managerEmail || '',
+        jobTitle:     formData.jobTitle     || '',
+        jrTitle:      formData.jrTitle      || ''
+      };
+      const hrChanges = diffFormFields(hrOriginal, hrSubmitted, CHANGE_FIELDS_HR_VERIFICATION);
+      if (hrChanges.length > 0) {
+        const safetyTriggers  = ['hireDate', 'jobTitle', 'siteName', 'jrTitle'];
+        const idSetupTriggers = ['firstName', 'lastName', 'hireDate', 'jobTitle'];
+        sendChangeNotifications(workflowId, 'HR Verification', hrChanges, context, {
+          requesterEmail: requesterEmail,
+          managerEmail:   formData.managerEmail || '',
+          notifySafety:   hrChanges.some(function(c) { return safetyTriggers.indexOf(c.field)  !== -1; }),
+          notifyIdSetup:  hrChanges.some(function(c) { return idSetupTriggers.indexOf(c.field) !== -1; })
+        });
+      }
+    }
+
     const verifiedName = formData.firstName + ' ' + formData.lastName;
 
     if (employmentType === 'Hourly' && systemAccess === 'No') {
@@ -238,18 +278,18 @@ function submitHRVerification(formData) {
       const hasBOSSAccess = Array.isArray(systems) ? systems.includes('BOSS') : String(systems || '').includes('BOSS');
 
       if (hasBOSSAccess) {
-        updateWorkflow(workflowId, 'In Progress', 'BOSS Review Needed', verifiedName, actingUser);
+        updateWorkflow(workflowId, 'In Progress', 'IT Confirmation Needed', verifiedName, actingUser);
         syncWorkflowState(workflowId);
-        const bossReviewUrl = buildFormUrl('boss_review', { wf: workflowId });
+        const itConfirmationUrl = buildFormUrl('it_confirmation', { wf: workflowId });
         sendFormEmail({
           to: 'davelangohr@team-group.com',
-          subject: 'BOSS Setup Review Required — ' + verifiedName,
-          body: 'HR has verified ' + verifiedName + '. Please review and confirm the BOSS access configuration before IT proceeds with provisioning.',
-          formUrl: bossReviewUrl,
+          subject: 'IT Confirmation Required — ' + verifiedName,
+          body: 'HR has verified ' + verifiedName + '. Please review and confirm the access configuration before IT proceeds with provisioning.',
+          formUrl: itConfirmationUrl,
           displayName: 'TEAM Group - Employee Onboarding',
           contextData: context
         });
-        Logger.log('[SUCCESS] BOSS Review email sent to Dave Langohr for: ' + verifiedName);
+        Logger.log('[SUCCESS] IT Confirmation email sent to Dave Langohr for: ' + verifiedName);
       } else {
         updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed', verifiedName, actingUser);
         syncWorkflowState(workflowId);

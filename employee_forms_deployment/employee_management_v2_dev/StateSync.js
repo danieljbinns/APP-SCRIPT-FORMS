@@ -51,16 +51,22 @@ function syncWorkflowState(workflowId) {
       dateRequested: '', items: {} 
     };
     
-    const isTerm = workflowId.startsWith('TERM_');
+    const isTerm   = workflowId.startsWith('TERM_');
     const isChange = workflowId.startsWith('CHANGE_');
-    const lookupSheetName = isTerm ? CONFIG.SHEETS.TERMINATIONS : (isChange ? CONFIG.SHEETS.POSITION_CHANGES : CONFIG.SHEETS.INITIAL_REQUESTS);
+    const isEquip  = workflowId.startsWith('EQUIP_REQ_');
+    const lookupSheetName = isTerm   ? CONFIG.SHEETS.TERMINATIONS
+                          : isChange ? CONFIG.SHEETS.POSITION_CHANGES
+                          : isEquip  ? CONFIG.SHEETS.EQUIPMENT_REQUESTS
+                          :            CONFIG.SHEETS.INITIAL_REQUESTS;
     const lookupSheet = ss.getSheetByName(lookupSheetName);
 
     const tz = Session.getScriptTimeZone();
     const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd') : String(v || '').replace(/-/g, '/');
     const fmtDateTime = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd HH:mm') : String(v || '').replace(/-/g, '/');
 
-    const foundReq = lookupSheet ? lookupSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
+    // Equipment_Requests has Workflow ID in column B (index 1); all others use column A.
+    const searchCol = isEquip ? 'B:B' : 'A:A';
+    const foundReq = lookupSheet ? lookupSheet.getRange(searchCol).createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (foundReq) {
       const lastCol = lookupSheet.getLastColumn();
       const reqHeaders = lookupSheet.getRange(1, 1, 1, lastCol).getValues()[0];
@@ -80,8 +86,6 @@ function syncWorkflowState(workflowId) {
         };
       } else if (isChange) {
         // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | Emp ID | Effective Date[7] | Current Site[8] | Changes[9] | ... | Class Change[12] | ... | Current Class[27]
-        // Extract old classification from classChange field: "Hourly -> Salary" → "Hourly"
-        // Fall back to currentClass field (index 27) when no classification change was made
         const classChange = String(row[12] || '');
         const classOld = classChange.includes(' -> ') ? classChange.split(' -> ')[0].trim() : '';
         const currentClass = String(row[27] || '');
@@ -95,6 +99,20 @@ function syncWorkflowState(workflowId) {
           site: String(row[8] || ''),
           empType: empTypeFromClass,
           items: {}
+        };
+      } else if (isEquip) {
+        // Equipment_Requests: Timestamp[0] | WorkflowID[1] | FormID[2] | ReqName[3] | ReqEmail[4]
+        //   | FirstName[5] | LastName[6] | Site[7] | Position[8] | ManagerName[9] | ManagerEmail[10]
+        //   | Equipment[11] | Systems[12] | Comments[13] | Department[14]
+        reqInfo = {
+          requesterName:  row[3] || 'Unknown',
+          requesterEmail: row[4] || '',
+          managerEmail:   row[10] || '',
+          dateRequested:  fmtDate(row[0]),  // Timestamp as request date
+          hireDate:       '',               // No start date for equipment requests
+          site:           String(row[7] || ''),
+          empType:        '',
+          items:          { isEquip: true }
         };
       } else {
         reqInfo = {
@@ -134,7 +152,7 @@ function syncWorkflowState(workflowId) {
           const wfCol = aiHdrs.indexOf('Workflow ID');
           const catCol = aiHdrs.indexOf('Category');
           const stCol  = aiHdrs.indexOf('Status');
-          const SPECIALIST_CATS = new Set(['Credit Card','Business Cards','Fleetio','Jonas','Central Purchasing','SiteDocs','30/60/90 Review','Safety']);
+          const SPECIALIST_CATS = new Set(['Credit Card','Business Cards','Fleetio','Jonas','SiteDocs','30/60/90 Review','Safety']);
           for (let i = 1; i < aiData.length; i++) {
             if (String(aiData[i][wfCol]) !== workflowId) continue;
             const cat = String(aiData[i][catCol] || '');

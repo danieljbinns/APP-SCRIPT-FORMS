@@ -160,7 +160,8 @@ function buildNewHireContextBlock(context, opts) {
       + (context.siteDocsPassword   ? esRow('SiteDocs Pwd',    esVal(context.siteDocsPassword,  'mono')) : '')
       + (context.dssUsername        ? esRow('DSS Login',       esVal(context.dssUsername,        'mono')) : '')
       + (context.dssPassword        ? esRow('DSS Pwd',         esVal(context.dssPassword,        'mono')) : '')
-      + (context.bossWisCreated     ? esRow('BOSS WIS',        esVal(context.bossWisCreated))            : '');
+      + (context.bossWisCreated        ? esRow('BOSS WIS',             esVal(context.bossWisCreated))           : '')
+      + (context.siteDocsBadgeCreated  ? esRow('SiteDocs Badge Link',  esVal(context.siteDocsBadgeCreated))    : '');
   } else if (idSt === 'active') {
     idRows = pRow('ID Setup', 'In progress — awaiting ID Setup team');
   } else {
@@ -491,146 +492,437 @@ function buildEquipmentContextBlock(context, opts) {
 
 
 // ================================================================
-// TERMINATION — PLACEHOLDER
+// TERMINATION
 // ================================================================
 
 /**
- * TODO: Implement termination email sections.
- * Expected sections: Employee Info, Systems to Revoke, Equipment Return, Final Steps.
- * @param {Object} context
+ * Full progressive context block for Termination (EOE) emails.
+ *
+ * Six sections — state driven by context.hrDecision:
+ *   1. Employee — End of Employment  always Complete
+ *   2. HR Approval                   Awaiting / Approved / Rejected
+ *   3. Google Account Offboarding    only when Google Account in systems; Queued → In Progress
+ *   4. System Deactivations          selected systems + mandatory (SiteDocs, DSS, BOSS WIS)
+ *   5. Equipment to Return           Queued → Pending Collection
+ *   6. Direct Reports                only when hasReports === 'Yes'
+ *
+ * Handler sets context.hrDecision = 'Approved' on all post-approval emails so
+ * sections 3–6 flip from Queued to In Progress.
+ *
+ * @param {Object} context   — from getWorkflowContext() / handler-built object
  * @param {Object} [opts]
  */
 function buildTerminationContextBlock(context, opts) {
   opts = opts || {};
 
   var empName = context.employeeName || '';
-  var termDate = '';
-  if (context.hireDate) {
+
+  // ── Date display helper ──────────────────────────────────────
+  function _fmtDisp(val) {
+    if (!val) return '';
+    var s = String(val).trim();
+    // Already M/D/YYYY
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) return s;
     try {
-      var td = context.hireDate instanceof Date ? context.hireDate
-        : new Date(String(context.hireDate).replace(/^(\d{4}-\d{2}-\d{2})$/, '$1T12:00:00'));
-      termDate = !isNaN(td.getTime())
-        ? Utilities.formatDate(td, Session.getScriptTimeZone(), 'MMM d, yyyy')
-        : String(context.hireDate).substring(0, 10);
-    } catch(e) { termDate = String(context.hireDate).substring(0, 10); }
+      var d = new Date(s.replace(/^(\d{4}-\d{2}-\d{2})$/, '$1T12:00:00'));
+      if (!isNaN(d.getTime()))
+        return Utilities.formatDate(d, Session.getScriptTimeZone(), 'MMM d, yyyy');
+    } catch(e) { /* fall through */ }
+    return s.substring(0, 10);
   }
 
-  // ── Section 1: Employee & EOE Details ────────────────────────
-  var empRows = ''
-    + esRow('Employee',    esVal(empName.trim()))
-    + (context.siteName   ? esRow('Site',       esVal(context.siteName))  : '')
-    + (termDate           ? esRow('EOE Date',   esVal(termDate))          : '')
-    + (context.reason     ? esRow('Reason',     esVal(context.reason))    : '')
+  // hireDate in Termination context is always the term date (set by handler)
+  var termDateDisp     = _fmtDisp(context.hireDate);
+  var lastDayDisp      = _fmtDisp(context.lastDayWorked);
+
+  // ── HR decision flags ─────────────────────────────────────────
+  var hrDecision = context.hrDecision || '';
+  var hrApproved = hrDecision === 'Approved';
+  var hrRejected = hrDecision === 'Rejected';
+
+  // ── Systems (normalise to array) ──────────────────────────────
+  var systems = Array.isArray(context.systems)
+    ? context.systems
+    : (context.systems
+        ? String(context.systems).split(',').map(function(s){ return s.trim(); }).filter(Boolean)
+        : []);
+
+  var hasGoogleAccount = systems.some(function(s) {
+    return s === 'Google Account';
+  });
+
+  // ── Equipment (normalise to array) ───────────────────────────
+  var eqList = context.equipmentRaw
+    ? String(context.equipmentRaw).split(',')
+        .map(function(s){ return s.trim(); })
+        .filter(function(s){ return s && s !== 'N/A'; })
+    : [];
+
+  // ── Google offboarding details ────────────────────────────────
+  // Populated from termData.googleOffboarding spread into context by handler
+  var g          = context.googleOffboarding || {};
+  var gForward   = g.forward   || context.google_forward   || '';
+  var gFiles     = g.files     || context.google_files     || '';
+  var gDelegate  = g.delegate  || context.google_delegate  || '';
+  var gDuration  = g.duration  || context.google_duration  || '';
+  var gVacation  = g.vacation  || context.google_vacation  || '';
+
+  // ============================================================
+  // SECTION 1 — Employee — End of Employment  (always complete)
+  // ============================================================
+  var reqRows = ''
+    + esRow('Employee',        esVal(empName.trim()))
+    + (context.employmentType  ? esRow('Type',             esVal(context.employmentType))                                           : '')
+    + (context.siteName        ? esRow('Site',             esVal(context.siteName))                                                 : '')
+    + esDivider()
+    + (termDateDisp            ? esRow('Termination Date', esVal(termDateDisp))                                                     : '')
+    + (lastDayDisp             ? esRow('Last Day Worked',  esVal(lastDayDisp))                                                      : '')
+    + (context.reason          ? esRow('Reason',           esVal(context.reason))                                                   : '')
     + esDivider()
     + (context.managerName
-        ? esRow('Manager', esVal(context.managerName
-            + (context.managerEmail ? ' · ' + context.managerEmail : '')))
+        ? esRow('Manager', esVal(context.managerName + (context.managerEmail ? ' · ' + context.managerEmail : '')))
         : '')
-    + (context.requesterEmail
-        ? esRow('Requested By', esVal(context.requesterEmail)) : '');
+    + (context.requesterEmail  ? esRow('Requested By',     esVal(context.requesterEmail))                                           : '');
 
-  var empSection = esSection('Employee — End of Employment', 'complete', '✓ Submitted',
-    context.requestDate ? 'Submitted · ' + context.requestDate : '', empRows);
+  var reqSection = esSection(
+    'Employee — End of Employment', 'complete', '✓ Submitted',
+    context.requestDate ? 'Submitted · ' + context.requestDate : '',
+    reqRows
+  );
 
-  // ── Section 2: Equipment to Return ────────────────────────────
+  // ============================================================
+  // SECTION 2 — HR Approval
+  // ============================================================
+  var hrRows, hrStatus, hrBadge, hrActor;
+
+  if (hrApproved) {
+    hrStatus = 'complete';
+    hrBadge  = '✓ Approved';
+    hrActor  = context.hrSubmittedBy
+      ? 'Approved by ' + context.hrSubmittedBy + (context.hrTimestamp ? ' · ' + context.hrTimestamp : '')
+      : 'Approved by HR';
+    hrRows = esRow('Decision', esVal('Approved'))
+           + (context.hrNotes ? esRow('Notes', esVal(context.hrNotes)) : '');
+  } else if (hrRejected) {
+    hrStatus = 'active';
+    hrBadge  = '✗ Rejected';
+    hrActor  = context.hrSubmittedBy
+      ? 'Rejected by ' + context.hrSubmittedBy + (context.hrTimestamp ? ' · ' + context.hrTimestamp : '')
+      : 'Rejected by HR';
+    hrRows = esRow('Decision', esVal('Rejected', 'pending'))
+           + (context.hrNotes ? esRow('Notes', esVal(context.hrNotes)) : '');
+  } else {
+    hrStatus = 'active';
+    hrBadge  = '⏳ Awaiting HR';
+    hrActor  = 'Assigned to HR team';
+    hrRows   = esRow('Decision', esVal('Pending review', 'pending'));
+  }
+
+  var hrSection = esSection('HR Approval', hrStatus, hrBadge, hrActor, hrRows);
+
+  // ============================================================
+  // SECTION 3 — Google Account Offboarding  (only when selected)
+  // ============================================================
+  var googleSection = '';
+  if (hasGoogleAccount) {
+    var gStatus = hrApproved ? 'active' : 'queued';
+    var gBadge  = hrApproved ? '⏳ In Progress' : '— Queued';
+
+    var gRows = '';
+    if (gForward  && gForward  !== 'N/A') gRows += esRow('Email Forwarding',   esVal(gForward));
+    if (gFiles    && gFiles    !== 'N/A') gRows += esRow('Drive File Transfer', esVal(gFiles));
+    if (gDelegate && gDelegate !== 'N/A') gRows += esRow('Delegated Access',    esVal(gDelegate));
+    if (gVacation && gVacation !== 'N/A') {
+      gRows += esDivider();
+      gRows += esRow('Vacation Responder', esVal(gVacation));
+    }
+    if (gDuration && gDuration !== 'N/A') {
+      if (!gRows) gRows += '';
+      else gRows += esDivider();
+      gRows += esRow('Account Deletion', esVal('After ' + gDuration + ' — IT will schedule calendar event'));
+    }
+    if (!gRows) {
+      gRows = esRow('Google Account', hrApproved
+        ? esVal('Deactivation in progress', 'pending')
+        : esVal('— Queued', 'queued'));
+    }
+
+    googleSection = esSection(
+      'Google Account Offboarding', gStatus, gBadge,
+      hrApproved ? 'IT notified via action item' : '',
+      gRows
+    );
+  }
+
+  // ============================================================
+  // SECTION 4 — System Deactivations
+  // Selected systems (excl. Google Account, handled above) +
+  // always-required: SiteDocs · DSS · BOSS WIS
+  // ============================================================
+  var selectedSys  = systems.filter(function(s) { return s !== 'Google Account'; });
+  var mandatorySys = ['SiteDocs', 'DSS', 'BOSS WIS'];
+  var allDeact     = selectedSys.concat(mandatorySys.filter(function(m) {
+    return selectedSys.indexOf(m) === -1;
+  }));
+
+  var sysStatus = hrApproved ? 'active' : 'queued';
+  var sysBadge  = hrApproved ? '⏳ In Progress' : '— Queued';
+  var sysActor  = hrApproved ? 'Notifications sent to respective teams' : '';
+  var sysRows   = allDeact.map(function(s) {
+    var isMandatory = mandatorySys.indexOf(s) !== -1 && selectedSys.indexOf(s) === -1;
+    var label = s + (isMandatory ? ' ✦' : '');
+    return esRow(label, hrApproved
+      ? esVal('Deactivation in progress', 'pending')
+      : esVal('— Queued', 'queued'));
+  }).join('');
+  if (hrApproved) {
+    sysRows += esDivider()
+      + '<tr><td colspan="2" style="padding:4px 0 0;font-size:10px;color:#888;">✦ Always required — handled by ID Setup team</td></tr>';
+  }
+
+  var sysSection = esSection('System Deactivations', sysStatus, sysBadge, sysActor, sysRows);
+
+  // ============================================================
+  // SECTION 5 — Equipment to Return
+  // ============================================================
   var eqSection = '';
-  var eqRaw = context.equipmentRaw || '';
-  var eqList = eqRaw ? String(eqRaw).split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
   if (eqList.length > 0) {
-    var eqRows = eqList.map(function(item) {
-      return esRow(item, esVal('Pending Return', 'pending'));
+    var eqStatus = hrApproved ? 'active' : 'queued';
+    var eqBadge  = hrApproved ? '⏳ Pending Collection' : '— Queued';
+    var eqRows   = eqList.map(function(item) {
+      return esRow(item, hrApproved
+        ? esVal('Pending Return', 'pending')
+        : esVal('— Queued', 'queued'));
     }).join('');
-    eqSection = esSection('Equipment to Return', 'active', '⏳ Pending', '', eqRows);
+    eqSection = esSection(
+      'Equipment to Return', eqStatus, eqBadge,
+      hrApproved ? 'Asset collection checklist sent to manager/requester' : '',
+      eqRows
+    );
   }
 
-  // ── Section 3: Systems to Revoke ──────────────────────────────
-  var sysSection = '';
-  var systems = Array.isArray(context.systems) ? context.systems : [];
-  if (systems.length > 0) {
-    var sysRows = systems.map(function(s) {
-      return esRow(s, esVal('Pending Revocation', 'pending'));
-    }).join('');
-    sysSection = esSection('System Access — Revoke', 'active', '⏳ Pending', '', sysRows);
+  // ============================================================
+  // SECTION 6 — Direct Reports  (only when applicable)
+  // ============================================================
+  var reportsSection = '';
+  if (context.hasReports === 'Yes') {
+    var rrRows = esRow('Has Direct Reports', esVal('Yes'));
+    if (context.reportsToNew && context.reportsToNew !== 'N/A') {
+      rrRows += esRow('Reassigned To', esVal(context.reportsToNew, 'mono'));
+    } else {
+      rrRows += esRow('Reassignment', esVal('Confirm with HR', 'pending'));
+    }
+    var rrStatus = hrApproved ? 'active' : 'queued';
+    var rrBadge  = hrApproved ? '⏳ Action Required' : '— Queued';
+    reportsSection = esSection('Direct Reports', rrStatus, rrBadge, '', rrRows);
   }
 
-  return empSection + eqSection + sysSection;
+  return reqSection + hrSection + googleSection + sysSection + eqSection + reportsSection;
 }
 
 
 // ================================================================
-// STATUS CHANGE — PLACEHOLDER
+// STATUS CHANGE
 // ================================================================
 
 /**
- * TODO: Implement status change email sections.
- * Expected sections: Current Status, Requested Changes, Effective Date, Approvals.
- * @param {Object} context
+ * Full progressive context block for Status Change emails.
+ *
+ * Six sections — state driven by context.hrDecision:
+ *   1. Employee                 always Complete (current state snapshot)
+ *   2. Requested Changes        always Complete (captures the full change request)
+ *   3. HR Review                Awaiting / Approved / Rejected
+ *   4. HR Confirmed Details     only post-approval (confirmed title, JR title, new manager)
+ *   5. Access & Equipment       Queued → In Progress (systems + equipment being provisioned)
+ *   6. Action Items Assigned    only post-approval (teams notified)
+ *
+ * Handler sets context.hrDecision = 'Approved' + confirmedTitle/confirmedJrTitle/
+ * confirmedNewManager + actionTeams[] on all post-approval emails.
+ *
+ * @param {Object} context   — from getWorkflowContext() / handler-built object
  * @param {Object} [opts]
  */
 function buildStatusChangeContextBlock(context, opts) {
   opts = opts || {};
 
   var empName = context.employeeName || '';
-  var effDate = '';
-  if (context.hireDate) {
+
+  // ── Date display helper ──────────────────────────────────────
+  function _fmtDisp(val) {
+    if (!val) return '';
+    var s = String(val).trim();
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) return s;
     try {
-      var ed = context.hireDate instanceof Date ? context.hireDate
-        : new Date(String(context.hireDate).replace(/^(\d{4}-\d{2}-\d{2})$/, '$1T12:00:00'));
-      effDate = !isNaN(ed.getTime())
-        ? Utilities.formatDate(ed, Session.getScriptTimeZone(), 'MMM d, yyyy')
-        : String(context.hireDate).substring(0, 10);
-    } catch(e) { effDate = String(context.hireDate).substring(0, 10); }
+      var d = new Date(s.replace(/^(\d{4}-\d{2}-\d{2})$/, '$1T12:00:00'));
+      if (!isNaN(d.getTime()))
+        return Utilities.formatDate(d, Session.getScriptTimeZone(), 'MMM d, yyyy');
+    } catch(e) { /* fall through */ }
+    return s.substring(0, 10);
   }
 
-  // ── Section 1: Employee Info ──────────────────────────────────
+  // hireDate in Status Change context is always the effective date (set by handler)
+  var effDateDisp = _fmtDisp(context.hireDate);
+
+  // ── HR decision flags ─────────────────────────────────────────
+  var hrDecision = context.hrDecision || '';
+  var hrApproved = hrDecision === 'Approved';
+  var hrRejected = hrDecision === 'Rejected';
+
+  // ── Systems & Equipment (normalise to arrays) ─────────────────
+  var systems = Array.isArray(context.systems)
+    ? context.systems
+    : (context.systems
+        ? String(context.systems).split(',').map(function(s){ return s.trim(); }).filter(Boolean)
+        : []);
+  var eqList = context.equipmentRaw
+    ? String(context.equipmentRaw).split(',')
+        .map(function(s){ return s.trim(); })
+        .filter(function(s){ return s && s !== 'N/A'; })
+    : [];
+  var allItems = systems.concat(eqList);
+
+  // ── Change display helper — hide identical / N/A -> N/A ──────
+  function _showChange(val) {
+    if (!val) return null;
+    var v = String(val).trim();
+    if (!v || v === 'N/A -> N/A' || v === 'N/A (N/A) -> N/A (N/A)') return null;
+    var idx = v.indexOf(' -> ');
+    if (idx !== -1 && v.substring(0, idx).trim() === v.substring(idx + 4).trim()) return null;
+    return v;
+  }
+
+  var stChange = _showChange(context.siteTransfer);
+  var tcChange = _showChange(context.titleChange);
+  var ccChange = _showChange(context.classChange);
+  var mcChange = _showChange(context.managerChange);
+
+  // ============================================================
+  // SECTION 1 — Employee  (always complete — current state snapshot)
+  // ============================================================
   var empRows = ''
-    + esRow('Employee',    esVal(empName.trim()))
-    + (context.siteName         ? esRow('Site',            esVal(context.siteName))         : '')
-    + (context.currentTitle     ? esRow('Current Title',   esVal(context.currentTitle))     : '')
-    + (context.employmentType   ? esRow('Classification',  esVal(context.employmentType))   : '')
+    + esRow('Employee',        esVal(empName.trim()))
+    + (context.employmentType  ? esRow('Classification',  esVal(context.employmentType))                                    : '')
+    + (context.siteName        ? esRow('Site',            esVal(context.siteName))                                          : '')
+    + (context.currentTitle    ? esRow('Current Title',   esVal(context.currentTitle))                                      : '')
     + esDivider()
     + (context.currentManagerName
         ? esRow('Current Manager', esVal(context.currentManagerName
             + (context.currentManagerEmail ? ' · ' + context.currentManagerEmail : '')))
         : '')
-    + (context.requesterEmail   ? esRow('Requested By',    esVal(context.requesterEmail))   : '');
+    + (context.requesterEmail  ? esRow('Requested By',    esVal(context.requesterEmail))                                    : '');
 
   var empSection = esSection('Employee', 'complete', '✓ Submitted',
     context.requestDate ? 'Submitted · ' + context.requestDate : '', empRows);
 
-  // ── Section 2: Requested Changes ─────────────────────────────
-  var changeRows = ''
-    + (effDate             ? esRow('Effective Date', esVal(effDate))          : '')
-    + (context.changeTypes ? esRow('Change Types',  esVal(context.changeTypes)) : '')
-    + (context.titleChange
-        ? esRow('Title Change',      esVal(context.titleChange))              : '')
-    + (context.siteTransfer
-        ? esRow('Site Transfer',     esVal(context.siteTransfer))             : '')
-    + (context.classChange
-        ? esRow('Classification',    esVal(context.classChange))              : '')
-    + (context.managerChange
-        ? esRow('Manager Change',    esVal(context.managerChange))            : '')
-    + (context.jobTitle && context.jobTitle !== context.currentTitle
-        ? esRow('New Title',         esVal(context.jobTitle))                 : '')
-    + (context.managerName && context.managerName !== context.currentManagerName
-        ? esRow('New Manager',       esVal(context.managerName
-            + (context.managerEmail ? ' · ' + context.managerEmail : '')))   : '');
-
-  var changeSection = esSection('Requested Changes', 'active', '⏳ In Progress',
-    '', changeRows);
-
-  // ── Section 3: Systems/Equipment (if any) ────────────────────
-  var sysSection = '';
-  var systems = Array.isArray(context.systems) ? context.systems : [];
-  var eqRaw   = context.equipmentRaw || '';
-  var eqList  = eqRaw ? String(eqRaw).split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
-  var allItems = systems.concat(eqList);
+  // ============================================================
+  // SECTION 2 — Requested Changes  (always complete)
+  // ============================================================
+  var changeRows = '';
+  if (effDateDisp) changeRows += esRow('Effective Date', esVal(effDateDisp));
+  if (context.changeTypes) {
+    changeRows += esDivider();
+    changeRows += esRow('Change Types', esVal(context.changeTypes));
+  }
+  if (stChange) changeRows += esRow('Site Transfer',    esVal(stChange));
+  if (tcChange) changeRows += esRow('Title Change',     esVal(tcChange));
+  if (ccChange) changeRows += esRow('Classification',   esVal(ccChange));
+  if (mcChange) changeRows += esRow('Manager Change',   esVal(mcChange));
   if (allItems.length > 0) {
-    var sysRows = allItems.map(function(s) {
-      return esRow(s, esVal('In Progress', 'pending'));
-    }).join('');
-    sysSection = esSection('Access & Equipment Changes', 'active', '⏳ In Progress', '', sysRows);
+    changeRows += esDivider();
+    allItems.forEach(function(s) { changeRows += esRow(s, esVal('Requested')); });
+  }
+  if (context.department) {
+    changeRows += esDivider();
+    changeRows += esRow('Department', esVal(context.department));
+  }
+  if (context.purchasingSites && context.purchasingSites !== 'N/A') {
+    changeRows += esRow('Purchasing Sites', esVal(context.purchasingSites));
+  }
+  if (context.comments) {
+    changeRows += esDivider();
+    changeRows += esRow('Comments', esVal(context.comments));
   }
 
-  return empSection + changeSection + sysSection;
+  var changeSection = esSection('Requested Changes', 'complete', '✓ Submitted', '', changeRows);
+
+  // ============================================================
+  // SECTION 3 — HR Review
+  // ============================================================
+  var hrRows, hrStatus, hrBadge, hrActor;
+
+  if (hrApproved) {
+    hrStatus = 'complete';
+    hrBadge  = '✓ Approved';
+    hrActor  = context.hrSubmittedBy
+      ? 'Approved by ' + context.hrSubmittedBy + (context.hrTimestamp ? ' · ' + context.hrTimestamp : '')
+      : 'Approved by HR';
+    hrRows = esRow('Decision', esVal('Approved'))
+           + (context.hrNotes ? esRow('Notes', esVal(context.hrNotes)) : '');
+  } else if (hrRejected) {
+    hrStatus = 'active';
+    hrBadge  = '✗ Rejected';
+    hrActor  = context.hrSubmittedBy
+      ? 'Rejected by ' + context.hrSubmittedBy + (context.hrTimestamp ? ' · ' + context.hrTimestamp : '')
+      : 'Rejected by HR';
+    hrRows = esRow('Decision', esVal('Rejected', 'pending'))
+           + (context.hrNotes ? esRow('Notes', esVal(context.hrNotes)) : '');
+  } else {
+    hrStatus = 'active';
+    hrBadge  = '⏳ Awaiting HR';
+    hrActor  = 'Assigned to HR team';
+    hrRows   = esRow('Decision', esVal('Pending review', 'pending'));
+  }
+
+  var hrSection = esSection('HR Review', hrStatus, hrBadge, hrActor, hrRows);
+
+  // ============================================================
+  // SECTION 4 — HR Confirmed Details  (post-approval only)
+  // ============================================================
+  var confirmedSection = '';
+  if (hrApproved) {
+    var confRows = '';
+    if (context.confirmedTitle)      confRows += esRow('Confirmed Title',    esVal(context.confirmedTitle));
+    if (context.confirmedJrTitle)    confRows += esRow('Confirmed JR Title', esVal(context.confirmedJrTitle, 'mono'));
+    if (context.confirmedNewManager) confRows += esRow('New Manager Email',  esVal(context.confirmedNewManager, 'mono'));
+    else if (context.managerEmail)   confRows += esRow('New Manager Email',  esVal(context.managerEmail, 'mono'));
+    if (confRows) {
+      confirmedSection = esSection(
+        'HR Confirmed Details', 'complete', '✓ Confirmed',
+        'Confirmed by HR at time of approval', confRows
+      );
+    }
+  }
+
+  // ============================================================
+  // SECTION 5 — Access & Equipment Changes  (Queued → In Progress)
+  // ============================================================
+  var accessSection = '';
+  if (allItems.length > 0) {
+    var acStatus = hrApproved ? 'active' : 'queued';
+    var acBadge  = hrApproved ? '⏳ In Progress' : '— Queued';
+    var acActor  = hrApproved ? 'Notifications sent to respective teams' : '';
+    var acRows   = allItems.map(function(s) {
+      return esRow(s, hrApproved
+        ? esVal('In Progress', 'pending')
+        : esVal('— Queued', 'queued'));
+    }).join('');
+    accessSection = esSection('Access & Equipment Changes', acStatus, acBadge, acActor, acRows);
+  }
+
+  // ============================================================
+  // SECTION 6 — Action Items Assigned  (post-approval summary)
+  // context.actionTeams = array of team names e.g. ['IT', 'Safety', 'ID Setup', ...]
+  // ============================================================
+  var actionSection = '';
+  if (hrApproved && context.actionTeams && context.actionTeams.length > 0) {
+    var atRows = context.actionTeams.map(function(team) {
+      return esRow(team, esVal('Action item assigned & emailed', 'pending'));
+    }).join('');
+    actionSection = esSection(
+      'Action Items Assigned', 'active', '⏳ In Progress',
+      'Each team received a checklist link via email', atRows
+    );
+  }
+
+  return empSection + changeSection + hrSection + confirmedSection + accessSection + actionSection;
 }

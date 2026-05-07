@@ -346,8 +346,16 @@
       google.script.run
         .withSuccessHandler(() => {
           if (overlay) overlay.style.display = 'none';
-          if (btn) { btn.disabled = false; btn.textContent = 'Save Progress'; }
-          location.reload();
+          if (btn) { btn.textContent = '✓ Saved'; }
+          // location.reload() reloads the sandbox iframe (blank) — navigate via top instead
+          google.script.run
+            .withSuccessHandler(function(url) {
+              window.top.location.href = url + '?form=action_item_view&tid=' + encodeURIComponent(taskId);
+            })
+            .withFailureHandler(function() {
+              if (btn) { btn.disabled = false; btn.textContent = 'Save Progress'; }
+            })
+            .getBaseUrl();
         })
         .withFailureHandler(function(err) {
           if (overlay) overlay.style.display = 'none';

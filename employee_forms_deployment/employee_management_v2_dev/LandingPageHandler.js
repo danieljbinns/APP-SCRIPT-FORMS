@@ -16,3 +16,13 @@ function getCurrentUserEmail() {
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
+
+function includeWithData(filename, data) {
+  var tmpl = HtmlService.createTemplateFromFile(filename);
+  if (data) {
+    for (var key in data) {
+      if (data.hasOwnProperty(key)) tmpl[key] = data[key];
+    }
+  }
+  return tmpl.evaluate().getContent();
+}

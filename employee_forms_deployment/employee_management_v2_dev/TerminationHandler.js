@@ -117,7 +117,16 @@ function submitTerminationRequest(formData) {
       lastDayWorked: fmtDate_(formData.lastDayWorked),
       reason: formData.reason,
       equipmentRaw: equipment,
-      systems: systems
+      systems: systems,
+      hasReports: formData.has_reports || '',
+      reportsToNew: formData.reports_to_new || '',
+      googleOffboarding: {
+        forward:  formData.google_forward  || '',
+        files:    formData.google_files    || '',
+        delegate: formData.google_delegate || '',
+        duration: formData.google_duration || '',
+        vacation: formData.google_vacation || ''
+      }
     };
 
     const hrEmailBody = `A new end of employment request has been submitted for ${formData.empName} and requires your approval to proceed.` +
@@ -290,10 +299,10 @@ function submitTerminationApproval(formData) {
         tasksCreated++;
       }
 
-      // Jonas/Finance Group (Jonas Purchasing + Central Purchasing — same team, same email)
-      const financeItems = selectedSystems.filter(s => s === 'Jonas Purchasing' || s === 'Central Purchasing').map(s => 'Remove from ' + s);
-      if (financeItems.length > 0) {
-        const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Jonas/Purchasing Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
+      // Central Purchasing/Jonas Group
+      if (selectedSystems.includes('Central Purchasing/Jonas')) {
+        const financeItems = ['Remove from Central Purchasing/Jonas'];
+        const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Central Purchasing/Jonas Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
         sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Finance Action Required', tid, termData, financeItems);
         tasksCreated++;
       }
@@ -314,7 +323,9 @@ function submitTerminationApproval(formData) {
         equipmentRaw: termData.eqToReturn,
         lastDayWorked: fmtDate_(termData.lastDayWorked),
         hasReports: termData.hasReports,
-        reportsToNew: termData.reportsToNew
+        reportsToNew: termData.reportsToNew,
+        hrDecision: 'Approved',
+        hrNotes: notes || ''
       };
       sendFormEmail({
         to: CONFIG.EMAILS.SAFETY,
@@ -333,7 +344,18 @@ function submitTerminationApproval(formData) {
       // 2. CONSOLIDATED ASSET CHECKLIST (Manager/Requester) — always created on approval
       const termRecipients = [termData.requesterEmail];
       if (termData.managerEmail && termData.managerEmail !== termData.requesterEmail) termRecipients.push(termData.managerEmail);
-      const termApprovalContext = { ...termData, workflowType: 'Termination', employmentType: termData.empType, hireDate: termData.termDate, equipmentRaw: termData.eqToReturn };
+      const termApprovalContext = {
+        ...termData,
+        workflowType: 'Termination',
+        employmentType: termData.empType,
+        hireDate: fmtDate_(termData.termDate),
+        equipmentRaw: termData.eqToReturn,
+        lastDayWorked: fmtDate_(termData.lastDayWorked),
+        hasReports: termData.hasReports,
+        reportsToNew: termData.reportsToNew,
+        hrDecision: 'Approved',
+        hrNotes: notes || ''
+      };
 
       const rawAssets = termData.eqToReturn || '';
       const assets = rawAssets ? rawAssets.split(',').map(s => s.trim()).filter(s => s && s !== 'N/A') : [];
@@ -362,35 +384,24 @@ function submitTerminationApproval(formData) {
       updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Processing');
       syncWorkflowState(workflowId);
 
-      // E4: Payroll approval notification with direct reports and last day worked info
+      // E4: Payroll approval notification — full context block
       sendFormEmail({
         to: CONFIG.EMAILS.PAYROLL,
         subject: 'Termination Approved',
-        body: `HR has approved the end of employment for ${termData.employeeName}.<br><br>` +
-              `<b>Employee:</b> ${termData.employeeName}<br>` +
-              `<b>Termination Date:</b> ${fmtDate_(termData.termDate)}<br>` +
-              `<b>Last Day Worked:</b> ${fmtDate_(termData.lastDayWorked)}<br>` +
-              `<b>Manager:</b> ${termData.managerName}<br>` +
-              `<b>Site:</b> ${termData.siteName}<br>` +
-              `<b>Employee Type:</b> ${termData.empType || 'N/A'}<br>` +
-              `<b>Has Direct Reports:</b> ${termData.hasReports || 'N/A'}<br>` +
-              `<b>Reports Reassigned To:</b> ${termData.reportsToNew || 'N/A'}<br>` +
-              `<b>Reason:</b> ${termData.reason || 'N/A'}<br>` +
-              `<b>HR Notes:</b> ${notes || 'None'}<br>`,
+        body: `HR has approved the end of employment for <strong>${termData.employeeName}</strong>. All offboarding steps have been initiated. Full details are shown below.` +
+              (notes ? `<br><br><em>HR Notes: ${notes}</em>` : ''),
         formUrl: '',
         contextData: {
+          ...termData,
           workflowType: 'Termination',
-          employeeName: termData.employeeName,
-          siteName: termData.siteName,
           employmentType: termData.empType,
-          hireDate: termData.termDate,
-          managerName: termData.managerName,
-          managerEmail: termData.managerEmail,
-          reason: termData.reason,
-          lastDayWorked: termData.lastDayWorked,
+          hireDate: fmtDate_(termData.termDate),
+          equipmentRaw: termData.eqToReturn,
+          lastDayWorked: fmtDate_(termData.lastDayWorked),
           hasReports: termData.hasReports,
           reportsToNew: termData.reportsToNew,
-          requesterEmail: termData.requesterEmail
+          hrDecision: 'Approved',
+          hrNotes: notes || ''
         }
       });
       
@@ -405,10 +416,20 @@ function submitTerminationApproval(formData) {
       if (termData.managerEmail && termData.managerEmail !== termData.requesterEmail) recipients.push(termData.managerEmail);
 
       sendFormEmail({
-          to: recipients.join(','),
-          subject: 'Termination Rejected',
-          body: `The end of employment request for ${termData.employeeName} has been rejected by HR.<br><br><b>Notes:</b> ${notes || 'No notes provided.'}`,
-          contextData: { ...termData, workflowType: 'Termination', employmentType: termData.empType, hireDate: termData.termDate }
+        to: recipients.join(','),
+        subject: 'Termination Rejected',
+        body: `The end of employment request for <strong>${termData.employeeName}</strong> has been rejected by HR.` +
+              `<br><br><em>HR Notes: ${notes || 'No notes provided.'}</em>`,
+        contextData: {
+          ...termData,
+          workflowType: 'Termination',
+          employmentType: termData.empType,
+          hireDate: fmtDate_(termData.termDate),
+          equipmentRaw: termData.eqToReturn,
+          lastDayWorked: fmtDate_(termData.lastDayWorked),
+          hrDecision: 'Rejected',
+          hrNotes: notes || ''
+        }
       });
 
       return { success: true, message: 'End of employment rejected. Notification sent to requester.' };
@@ -467,19 +488,20 @@ function sendActionItemEmail(to, subject, tid, termData, items) {
   sendFormEmail({
     to: to,
     subject: subject,
-    body: 'HR has approved the end of employment for ' + termData.employeeName + '. Please complete the following checklist using the button below.',
+    body: 'HR has approved the end of employment for <strong>' + termData.employeeName + '</strong>. Please complete the following checklist using the button below.',
     formUrl: buildFormUrl('action_item_view', { tid: tid }),
     contextData: {
-        ...termData,
-        workflowType: 'Termination',
-        employmentType: termData.empType,
-        hireDate: fmtDate_(termData.termDate),
-        equipmentRaw: termData.eqToReturn,
-        systems: termData.systems,
-        lastDayWorked: fmtDate_(termData.lastDayWorked),
-        hasReports: termData.hasReports,
-        reportsToNew: termData.reportsToNew,
-        checklistItems: items || null
+      ...termData,
+      workflowType: 'Termination',
+      employmentType: termData.empType,
+      hireDate: fmtDate_(termData.termDate),
+      equipmentRaw: termData.eqToReturn,
+      systems: termData.systems,
+      lastDayWorked: fmtDate_(termData.lastDayWorked),
+      hasReports: termData.hasReports,
+      reportsToNew: termData.reportsToNew,
+      hrDecision: 'Approved',
+      checklistItems: items || null
     }
   });
 }

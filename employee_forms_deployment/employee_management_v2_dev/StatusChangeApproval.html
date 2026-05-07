@@ -6,242 +6,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HR Status Change Approval</title>
-    <style>
-        :root {
-            --bg-color: #0c0c0c;
-            --card-bg: #1a1a1a;
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-            --brand-red: #EB1C2D;
-            --input-bg: #2a2a2a;
-            --input-border: #444;
-            --border-color: #333;
-            --success: #00c853;
-        }
-
-        body {
-            font-family: -apple-system, sans-serif;
-            background: var(--bg-color);
-            color: white;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1000px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 32px;
-            border: 1px solid var(--border-color);
-        }
-
-        .info-grid {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 16px;
-            border-radius: 8px;
-            margin: 20px 0;
-            font-size: 14px;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-
-        .section-title {
-            color: var(--brand-red);
-            font-size: 14px;
-            text-transform: uppercase;
-            border-bottom: 1px solid #333;
-            padding-bottom: 5px;
-            margin: 20px 0 15px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            font-size: 13px;
-            color: #aaa;
-            margin-bottom: 8px;
-        }
-
-        select,
-        textarea,
-        input {
-            width: 100%;
-            background: #222;
-            border: 1px solid #444;
-            padding: 12px;
-            color: white;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
-            cursor: pointer;
-        }
-
-        .status-btn-group {
-            display: flex;
-            background: #222;
-            border: 1px solid #444;
-            border-radius: 6px;
-            overflow: hidden;
-            width: fit-content;
-            margin-top: 8px;
-        }
-
-        .status-btn {
-            padding: 10px 20px;
-            border: none;
-            background: transparent;
-            color: #888;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: 0.2s;
-            border-right: 1px solid #444;
-        }
-
-        .status-btn:last-child {
-            border-right: none;
-        }
-
-        .status-btn.active {
-            background: var(--brand-red);
-            color: white;
-        }
-
-        .status-btn:not(.active):hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            background: var(--brand-red);
-            color: white;
-        }
-    </style>
+    <?!= include('Styles') ?>
 </head>
 
-<body>
-    <div class="container">
-        <div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
+<body class="card-layout">
+    <div class="container-narrow">
+        <a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" class="back-link">&#8592; Back to Portal</a>
         <div class="card">
             <h1>Status Change Approval</h1>
-            <p style="color:#888; text-align:center;">HR Review required for position/site changes</p>
+            <p class="subtitle">HR Review required for position/site changes</p>
 
-            <div class="info-grid">
-                <div class="info-row"><span>Employee:</span><span>
-                        <?= requestData.employeeName ?>
-                    </span></div>
-                <div class="info-row"><span>Effective Date:</span><span>
-                        <?= requestData.effDate ?>
-                    </span></div>
-                <div class="info-row"><span>Changes Requested:</span><span>
-                        <?= requestData.changes ?>
-                    </span></div>
-                <!-- Current manager — always shown so HR can confirm who they report to -->
+            <div class="ticket-info">
+                <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName ?></span></div>
+                <div class="info-row"><span class="label">Effective Date</span><span class="value"><?= requestData.effDate ?></span></div>
+                <div class="info-row span-2"><span class="label">Changes Requested</span><span class="value"><?= requestData.changes ?></span></div>
                 <? if (requestData.currentManagerName || requestData.currentManagerEmail) { ?>
-                <div class="info-row"><span>Current Manager:</span><span>
-                        <?= (requestData.currentManagerName || '') + (requestData.currentManagerName && requestData.currentManagerEmail ? ' — ' : '') + (requestData.currentManagerEmail || '') ?>
-                    </span></div>
+                <div class="info-row span-2"><span class="label">Current Manager</span><span class="value"><?= (requestData.currentManagerName || '') + (requestData.currentManagerName && requestData.currentManagerEmail ? ' — ' : '') + (requestData.currentManagerEmail || '') ?></span></div>
                 <? } ?>
                 <? if (requestData.currentClass) { ?>
-                <div class="info-row"><span>Current Classification:</span><span>
-                        <?= requestData.currentClass ?>
-                    </span></div>
+                <div class="info-row"><span class="label">Current Classification</span><span class="value"><?= requestData.currentClass ?></span></div>
                 <? } ?>
                 <? if (requestData.currentTitle) { ?>
-                <div class="info-row"><span>Current Title:</span><span>
-                        <?= requestData.currentTitle ?>
-                    </span></div>
+                <div class="info-row"><span class="label">Current Title</span><span class="value"><?= requestData.currentTitle ?></span></div>
                 <? } ?>
                 <?
-                  // Site transfer — only show if it's a real change (not N/A -> N/A or identical sides)
                   var stVal = String(requestData.siteTransfer || '');
                   var stParts = stVal.split(' -> ');
                   var showSt = stVal && stVal.indexOf('N/A') === -1 && (stParts.length < 2 || stParts[0].trim() !== stParts[1].trim());
                   if (showSt) {
                 ?>
-                <div class="info-row"><span>Site Transfer:</span><span>
-                        <?= requestData.siteTransfer ?>
-                    </span></div>
+                <div class="info-row span-2"><span class="label">Site Transfer</span><span class="value"><?= requestData.siteTransfer ?></span></div>
                 <? } ?>
                 <?
-                  // Title change — only show if it's a real change
                   var tcVal = String(requestData.titleChange || '');
                   var tcParts = tcVal.split(' -> ');
                   var showTc = tcVal && tcVal.indexOf('N/A') === -1 && (tcParts.length < 2 || tcParts[0].trim() !== tcParts[1].trim());
                   if (showTc) {
                 ?>
-                <div class="info-row"><span>Title Change:</span><span>
-                        <?= requestData.titleChange ?>
-                    </span></div>
+                <div class="info-row span-2"><span class="label">Title Change</span><span class="value"><?= requestData.titleChange ?></span></div>
                 <? } ?>
                 <?
-                  // Classification change — only show if it's a real change
                   var ccVal = String(requestData.classChange || '');
                   var ccParts = ccVal.split(' -> ');
                   var showCc = ccVal && ccVal.indexOf('N/A') === -1 && (ccParts.length < 2 || ccParts[0].trim() !== ccParts[1].trim());
                   if (showCc) {
                 ?>
-                <div class="info-row"><span>Classification Change:</span><span>
-                        <?= requestData.classChange ?>
-                    </span></div>
+                <div class="info-row span-2"><span class="label">Classification Change</span><span class="value"><?= requestData.classChange ?></span></div>
                 <? } ?>
                 <?
-                  // Manager change — only show if it's a real change (excludes N/A (N/A) -> N/A (N/A))
                   var mcVal = String(requestData.managerChange || '');
                   var mcNoNA = mcVal && mcVal.indexOf('N/A (N/A)') === -1 && mcVal.indexOf('N/A -> N/A') === -1;
                   var mcParts2 = mcVal.split(' -> ');
                   var showMc = mcNoNA && (mcParts2.length < 2 || mcParts2[0].trim() !== mcParts2[1].trim());
                   if (showMc) {
                 ?>
-                <div class="info-row"><span>Manager Change:</span><span>
-                        <?= requestData.managerChange ?>
-                    </span></div>
+                <div class="info-row span-2"><span class="label">Manager Change</span><span class="value"><?= requestData.managerChange ?></span></div>
                 <? } ?>
                 <? if (requestData.systems && requestData.systems !== 'N/A') { ?>
-                <div class="info-row"><span>Access Requests:</span><span>
-                        <?= requestData.systems ?>
-                    </span></div>
+                <div class="info-row span-2"><span class="label">Access Requests</span><span class="value"><?= requestData.systems ?></span></div>
                 <? } ?>
                 <? if (requestData.equipment && requestData.equipment !== 'N/A') { ?>
-                <div class="info-row"><span>Equipment:</span><span>
-                        <?= requestData.equipment ?>
-                    </span></div>
+                <div class="info-row span-2"><span class="label">Equipment</span><span class="value"><?= requestData.equipment ?></span></div>
                 <? } ?>
                 <? if (requestData.department) { ?>
-                <div class="info-row"><span>Department:</span><span>
-                        <?= requestData.department ?>
-                    </span></div>
+                <div class="info-row"><span class="label">Department</span><span class="value"><?= requestData.department ?></span></div>
                 <? } ?>
                 <? if (requestData.comments) { ?>
-                <div class="info-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-                    <span style="color: #888;">Comments:</span>
-                    <span style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; width: 100%;">
-                        <?= requestData.comments ?>
-                    </span>
-                </div>
+                <div class="info-row comments"><span class="label">Comments</span><span class="value"><?= requestData.comments ?></span></div>
                 <? } ?>
             </div>
 
@@ -255,7 +86,7 @@
                     <input type="email" name="confirmedNewManager" id="confirmedNewManager"
                         value="<?= requestData.receivingManagerEmail || requestData.mgrNewEmail || '' ?>"
                         placeholder="Receiving or new direct manager email">
-                    <p style="font-size:11px; color:#666; margin-top:5px;">Pre-filled from request. Update if the effective manager has changed.</p>
+                    <p class="help-text">Pre-filled from request. Update if the effective manager has changed.</p>
                 </div>
 
                 <div class="form-group">
@@ -263,21 +94,21 @@
                     <input type="text" name="confirmedTitle" id="confirmedTitle"
                         value="<?= requestData.titleNew || requestData.currentTitle || '' ?>"
                         placeholder="Free-text job title as it should appear on record...">
-                    <p style="font-size:11px; color:#666; margin-top:5px;">
+                    <p class="help-text">
                         <?= requestData.currentTitle ? 'Current: ' + requestData.currentTitle : '' ?>
                         <?= requestData.titleNew ? ' | Requested new: ' + requestData.titleNew : '' ?>
                     </p>
                 </div>
 
                 <div class="form-group">
-                    <label>Confirmed JR Title <span style="color:#666; font-weight:400; font-size:11px;">(select from JR list — leave blank if not applicable)</span></label>
+                    <label>Confirmed JR Title <span class="help-text" style="display:inline;">(select from JR list — leave blank if not applicable)</span></label>
                     <select name="confirmedJrTitle" id="confirmedJrTitle">
                         <option value="">— No JR / Not applicable —</option>
                         <? for (var i = 0; i < jrList.length; i++) { ?>
                         <option value="<?= jrList[i] ?>"><?= jrList[i] ?></option>
                         <? } ?>
                     </select>
-                    <p style="font-size:11px; color:#666; margin-top:5px;">JR titles drive safety, learning, and system access assignments. Select the correct JR for the new role.</p>
+                    <p class="help-text">JR titles drive safety, learning, and system access assignments. Select the correct JR for the new role.</p>
                 </div>
 
                 <div class="form-group">
@@ -294,7 +125,7 @@
                     <textarea name="notes" rows="3"></textarea>
                 </div>
 
-                <button type="submit" class="btn" id="submitBtn">Submit Decision</button>
+                <button type="submit" class="btn btn-primary btn-full" id="submitBtn">Submit Decision</button>
             </form>
         </div>
     </div>
@@ -339,6 +170,7 @@
                 .submitPositionChangeApproval(formData);
         }
     </script>
+  <?!= include('SharedComponents') ?>
 </body>
 
 </html>

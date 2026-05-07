@@ -41,8 +41,8 @@ function getITContextData(workflowId) {
           firstName: mainData[i][10],
           lastName: mainData[i][12],
           hireDate: (function(d){ return d instanceof Date ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd') : (d ? String(d).substring(0, 10) : ''); })(mainData[i][6]),
-          newHireOrRehire: mainData[i][7]  || '',  // Col 7 = New Hire/Rehire
-          employeeType:    mainData[i][8]  || '',  // Col 8 = Employee Type
+          newHireOrRehire: (headers.indexOf('New Hire/Rehire') !== -1 ? mainData[i][headers.indexOf('New Hire/Rehire')] : mainData[i][7]) || '',
+          employeeType:   (headers.indexOf('Employee Type')    !== -1 ? mainData[i][headers.indexOf('Employee Type')]    : mainData[i][8])  || '',
           employmentType:  mainData[i][9]  || '',  // Col 9 = Employment Type
           jobTitle: mainData[i][14], // Col 14 = Position Title
           jrTitle: mainData[i][46],  // Col 46 = JR Assign (verified)
@@ -92,8 +92,8 @@ function getITContextData(workflowId) {
     
     if (!context.success) return context;
 
-    // Overlay BOSS Review Results if Dave has already reviewed this workflow
-    const bossReview = (typeof getBOSSReviewData === 'function') ? getBOSSReviewData(workflowId) : null;
+    // Overlay IT Confirmation data if Dave has already reviewed this workflow
+    const bossReview = (typeof getITConfirmationData === 'function') ? getITConfirmationData(workflowId) : null;
     if (bossReview) {
       if (bossReview.bossJobSites !== undefined) context.bossJobSites = bossReview.bossJobSites;
       if (bossReview.bossCostSheet) context.bossCostSheet = bossReview.bossCostSheet;
@@ -116,11 +116,36 @@ function getITContextData(workflowId) {
           context.siteDocsPassword = idData[j][7];
           context.dssUsername = idData[j][8];
           context.dssPassword = idData[j][9];
+          if (idData[j][2]) context.idTimestamp  = idData[j][2] instanceof Date ? Utilities.formatDate(idData[j][2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(idData[j][2]);
+          if (idData[j][12]) context.idSubmittedBy = String(idData[j][12]);
           break;
         }
       }
     }
-    
+
+    // HR Verification Results — ADP ID, verified names, timestamps
+    const hrSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
+    if (hrSheet) {
+      const hrData = hrSheet.getDataRange().getValues();
+      for (let k = hrData.length - 1; k >= 1; k--) {
+        if (hrData[k][0] === workflowId && String(hrData[k][1]) !== 'DATE_CHANGE') {
+          if (hrData[k][3]) context.adpAssociateId   = String(hrData[k][3]);
+          if (hrData[k][5]) context.managerName       = String(hrData[k][5]);  // HR-verified manager
+          if (hrData[k][6]) context.managerEmail      = String(hrData[k][6]);
+          if (hrData[k][2]) context.hrTimestamp       = hrData[k][2] instanceof Date ? Utilities.formatDate(hrData[k][2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(hrData[k][2]);
+          if (hrData[k][9]) context.hrSubmittedBy     = String(hrData[k][9]);
+          // Use HR-verified job title if present
+          const verifiedTitles = hrData[k][7] ? String(hrData[k][7]) : '';
+          if (verifiedTitles.includes(' / ')) {
+            const parts = verifiedTitles.split(' / ');
+            context.jobTitle = parts[0].trim();
+            context.jrTitle  = parts.slice(1).join(' / ').trim();
+          }
+          break;
+        }
+      }
+    }
+
     return context;
     
   } catch (error) {
@@ -212,7 +237,8 @@ function submitITSetup(formData) {
       const context = getITContextData(workflowId);
       if (context.success) {
         // Inject IT result data so the context block shows assigned email and credentials
-        context.assignedEmail = assignedEmail;
+        context.assignedEmail     = assignedEmail;
+        context.emailTempPassword = formData.Email_Temp_Password || '';
 
         const requesterEmail = context.requesterEmail;
         const recipients = [requesterEmail];
@@ -227,7 +253,7 @@ function submitITSetup(formData) {
             subject: 'IT Setup Complete',
             body: itCompletedBody,
             formUrl: '',
-            displayName: 'Onboarding System',
+            displayName: 'TEAM Group — Employee Onboarding',
             contextData: context,
             emailOpts: { showPasswords: true, calendarDate: context.hireDate }
           });
@@ -287,28 +313,24 @@ function triggerSpecialists(workflowId, itData) {
 
   // 2. Business Cards
   if (context.businessCards === 'Yes') {
-    const bcItems = ['Create and send digital business card'];
-    if (assignedEmail && assignedEmail !== '[Pending]') bcItems.push('Email: ' + assignedEmail);
-    if (context.phoneNumber) bcItems.push('Phone: ' + context.phoneNumber);
     specialists.push({
       email: CONFIG.EMAILS.BUSINESS_CARDS,
       category: 'Business Cards',
       name: 'Business Cards — ' + context.employeeName,
-      description: JSON.stringify(bcItems),
+      description: JSON.stringify(['Create and send digital business cards']),
       formType: 'businesscards'
     });
   }
 
   // 3. Fleetio
   if (context.fleetioAccess === 'Yes') {
+    const fleetioItems = ['Assign Fleetio account for employee'];
+    if (context.vehicleRequested === 'Yes') fleetioItems.push('Assign company vehicle');
     specialists.push({
       email: CONFIG.EMAILS.FLEETIO,
       category: 'Fleetio',
       name: 'Fleetio Access — ' + context.employeeName,
-      description: JSON.stringify([
-        'Assign Fleetio account for employee',
-        'Assign vehicle (if applicable)'
-      ]),
+      description: JSON.stringify(fleetioItems),
       formType: 'fleetio'
     });
   }
@@ -328,12 +350,20 @@ function triggerSpecialists(workflowId, itData) {
     });
   }
 
-  // 5. Jonas + Central Purchasing — combined into one action item when both apply
+  // 5. Central Purchasing/Jonas — single combined action item
   const hasJonas = context.jonasJobNumbers && context.jonasJobNumbers.toString().trim().length > 0;
-  const hasCentralPurchasing = context.purchasingSites && context.purchasingSites.toString().trim().length > 0;
+  const hasPurchasingSites = context.purchasingSites && context.purchasingSites.toString().trim().length > 0;
 
-  if (hasJonas || hasCentralPurchasing) {
+  if (hasJonas || hasPurchasingSites) {
     const combinedItems = [];
+    if (hasPurchasingSites) {
+      const cpSites = context.purchasingSites.toString().split(',').map(s => s.trim()).filter(s => s);
+      if (cpSites.length > 0) {
+        cpSites.forEach(s => combinedItems.push('Central Purchasing: Set up access — ' + s));
+      } else {
+        combinedItems.push('Central Purchasing: Set up access for employee');
+      }
+    }
     if (hasJonas) {
       const jonasJobs = context.jonasJobNumbers.toString().split(',').map(s => s.trim()).filter(s => s);
       if (jonasJobs.length > 0) {
@@ -342,23 +372,12 @@ function triggerSpecialists(workflowId, itData) {
         combinedItems.push('Jonas: Provision access for employee');
       }
     }
-    if (hasCentralPurchasing) {
-      const cpSites = context.purchasingSites.toString().split(',').map(s => s.trim()).filter(s => s);
-      if (cpSites.length > 0) {
-        cpSites.forEach(s => combinedItems.push('Central Purchasing: Set up access — ' + s));
-      } else {
-        combinedItems.push('Central Purchasing: Set up access for employee');
-      }
-    }
-    const combinedName = (hasJonas && hasCentralPurchasing)
-      ? 'Jonas & Central Purchasing Setup — ' + context.employeeName
-      : (hasJonas ? 'Jonas Setup — ' + context.employeeName : 'Central Purchasing Setup — ' + context.employeeName);
     specialists.push({
       email: CONFIG.EMAILS.JONAS,
-      category: hasJonas && hasCentralPurchasing ? 'Jonas / Central Purchasing' : (hasJonas ? 'Jonas' : 'Central Purchasing'),
-      name: combinedName,
+      category: 'Jonas',
+      name: 'Central Purchasing/Jonas Setup — ' + context.employeeName,
       description: JSON.stringify(combinedItems),
-      formType: hasJonas ? 'jonas' : 'centralpurchasing'
+      formType: 'jonas'
     });
   }
 

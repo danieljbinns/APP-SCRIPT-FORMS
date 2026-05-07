@@ -49,10 +49,14 @@
   hr.rh-hd { border: none; border-top: 1px solid var(--border-subtle); margin: 4px 0; }
 </style>
 
-<? var rd = requestData || {}; ?>
-<? var hasSystems = rd.systems && rd.systems.length > 0; ?>
-<? var hasEquipment = rd.equipmentRaw && rd.equipmentRaw.length > 0; ?>
-<? var equipment = rd.equipmentRaw ? rd.equipmentRaw.split(',').map(function(s){return s.trim();}).filter(Boolean) : []; ?>
+<? var rd          = requestData || {}; ?>
+<? var isNewHire   = !rd.workflowType || rd.workflowType === 'New Hire'; ?>
+<? var isTerm      = rd.workflowType === 'Termination'; ?>
+<? var isChange    = rd.workflowType === 'Status Change'; ?>
+<? var isEquipment = rd.workflowType === 'Equipment Request'; ?>
+<? var hasSystems  = rd.systems && rd.systems.length > 0; ?>
+<? var hasEquip    = rd.equipmentRaw && rd.equipmentRaw.length > 0; ?>
+<? var equipment   = rd.equipmentRaw ? rd.equipmentRaw.split(',').map(function(s){return s.trim();}).filter(Boolean) : []; ?>
 <? var googleRequested = (rd.googleEmail && rd.googleDomain) ? (rd.googleEmail + '@' + String(rd.googleDomain).replace('@','')) : (rd.googleEmail || ''); ?>
 
 <div class="rh">
@@ -60,8 +64,8 @@
   <!-- Top band -->
   <div class="rh-top">
     <div class="rh-badges">
-      <? if (rd.workflowId) { ?><span class="rh-badge rh-badge-wf"><?= rd.workflowId ?></span><? } ?>
-      <? if (rd.workflowType) { ?><span class="rh-badge rh-badge-typ"><?= rd.workflowType ?></span><? } ?>
+      <? if (rd.workflowId)     { ?><span class="rh-badge rh-badge-wf"><?=  rd.workflowId    ?></span><? } ?>
+      <? if (rd.workflowType)   { ?><span class="rh-badge rh-badge-typ"><?= rd.workflowType  ?></span><? } ?>
       <? if (rd.employmentType) { ?><span class="rh-badge rh-badge-emp"><?= rd.employmentType ?></span><? } ?>
     </div>
   </div>
@@ -70,7 +74,9 @@
   <div class="rh-sec">
     <div class="rh-hdr">
       <span class="rh-title">Employee</span>
-      <? if (rd.workflowType !== 'Equipment Request') { ?>
+
+      <!-- Progress steps — New Hire: ID → HR → IT; TERM/CHANGE: HR only -->
+      <? if (isNewHire) { ?>
       <div class="rh-steps">
         <span class="rh-step rh-s-done">Init ✓</span>
         <? if (rd.internalEmployeeId) { ?><span class="rh-step rh-s-done">ID ✓</span>
@@ -80,78 +86,122 @@
         <? if (rd.assignedEmail) { ?><span class="rh-step rh-s-done">IT ✓</span>
         <? } else { ?><span class="rh-step rh-s-asgn">IT ⏳</span><? } ?>
       </div>
+      <? } else if (isTerm || isChange) { ?>
+      <div class="rh-steps">
+        <span class="rh-step rh-s-done">Init ✓</span>
+        <? if (rd.hrDecision === 'Approved') { ?><span class="rh-step rh-s-done">HR ✓</span>
+        <? } else if (rd.hrDecision === 'Rejected') { ?><span class="rh-step" style="background:rgba(235,28,45,0.15);color:var(--brand-red);border:1px solid rgba(235,28,45,0.3);">HR ✗</span>
+        <? } else { ?><span class="rh-step rh-s-asgn">HR ⏳</span><? } ?>
+      </div>
       <? } ?>
     </div>
-    <div class="rh-g">
-      <div class="rh-f"><span class="rh-l">First Name</span><span class="rh-v"><?= rd.firstName || '—' ?></span></div>
-      <div class="rh-f"><span class="rh-l">Last Name</span><span class="rh-v"><?= rd.lastName || '—' ?></span></div>
-      <? if (rd.middleName) { ?><div class="rh-f"><span class="rh-l">Middle Name</span><span class="rh-v"><?= rd.middleName ?></span></div><? } ?>
-      <? if (rd.preferredName) { ?><div class="rh-f"><span class="rh-l">Preferred Name</span><span class="rh-v"><?= rd.preferredName ?></span></div><? } ?>
-      <? if (rd.workflowType !== 'Equipment Request') { ?>
-      <div class="rh-f"><span class="rh-l">Start Date</span><span class="rh-v"><?= rd.hireDate ? Utilities.formatDate(new Date(rd.hireDate + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') : '—' ?></span></div>
-      <div class="rh-f"><span class="rh-l">New/Rehire</span><span class="rh-v"><?= rd.newHireOrRehire || '—' ?></span></div>
-      <div class="rh-f"><span class="rh-l">Employee Type</span><span class="rh-v"><?= rd.employeeType || '—' ?></span></div>
-      <div class="rh-f"><span class="rh-l">Employment Type</span><span class="rh-v"><?= rd.employmentType || '—' ?></span></div>
-      <? } ?>
-      <div class="rh-f"><span class="rh-l">Job Title</span><span class="rh-v"><?= rd.jobTitle || '—' ?></span></div>
-      <? if (rd.jrTitle) { ?><div class="rh-f"><span class="rh-l">JR Title</span><span class="rh-v"><?= rd.jrTitle ?></span></div><? } ?>
-      <div class="rh-f"><span class="rh-l">Site</span><span class="rh-v"><?= rd.siteName || '—' ?></span></div>
-      <? if (rd.jobSiteNumber) { ?><div class="rh-f"><span class="rh-l">Job Site #</span><span class="rh-v"><?= rd.jobSiteNumber ?></span></div><? } ?>
-      <? if (rd.department) { ?><div class="rh-f"><span class="rh-l">Department</span><span class="rh-v"><?= rd.department ?></span></div><? } ?>
-      <div class="rh-f"><span class="rh-l">Manager</span><span class="rh-v"><?= rd.managerName || '—' ?></span></div>
-      <? if (rd.managerEmail) { ?><div class="rh-f"><span class="rh-l">Manager Email</span><span class="rh-v rh-v link"><?= rd.managerEmail ?></span></div><? } ?>
-      <? if (rd.requesterEmail) { ?><div class="rh-f"><span class="rh-l">Requested By</span><span class="rh-v link"><?= rd.requesterEmail ?></span></div><? } ?>
 
-      <? if (rd.workflowType !== 'Equipment Request') { ?>
-      <!-- ADP — always shown, blank until HR verified -->
+    <div class="rh-g">
+      <!-- Name — split for New Hire/Equipment; combined for TERM/CHANGE -->
+      <? if (rd.firstName || rd.lastName) { ?>
+      <div class="rh-f"><span class="rh-l">First Name</span><span class="rh-v"><?= rd.firstName || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">Last Name</span> <span class="rh-v"><?= rd.lastName  || '—' ?></span></div>
+      <? if (rd.middleName)    { ?><div class="rh-f"><span class="rh-l">Middle Name</span>   <span class="rh-v"><?= rd.middleName    ?></span></div><? } ?>
+      <? if (rd.preferredName) { ?><div class="rh-f"><span class="rh-l">Preferred Name</span><span class="rh-v"><?= rd.preferredName ?></span></div><? } ?>
+      <? } else { ?>
+      <div class="rh-f" style="grid-column:1/-1;"><span class="rh-l">Employee</span><span class="rh-v"><?= rd.employeeName || '—' ?></span></div>
+      <? } ?>
+
+      <!-- Job identity -->
+      <? if (isNewHire || isEquipment || rd.jobTitle) { ?>
+      <div class="rh-f"><span class="rh-l">Job Title</span><span class="rh-v"><?= rd.jobTitle || '—' ?></span></div>
+      <? } ?>
+      <? if (rd.jrTitle)       { ?><div class="rh-f"><span class="rh-l">JR Title</span>   <span class="rh-v"><?= rd.jrTitle   ?></span></div><? } ?>
+      <div class="rh-f"><span class="rh-l">Site</span><span class="rh-v"><?= rd.siteName || '—' ?></span></div>
+      <? if (rd.jobSiteNumber) { ?><div class="rh-f"><span class="rh-l">Job Site #</span>  <span class="rh-v"><?= rd.jobSiteNumber ?></span></div><? } ?>
+      <? if (rd.department)    { ?><div class="rh-f"><span class="rh-l">Department</span>  <span class="rh-v"><?= rd.department    ?></span></div><? } ?>
+      <div class="rh-f"><span class="rh-l">Manager</span><span class="rh-v"><?= rd.managerName || '—' ?></span></div>
+      <? if (rd.managerEmail)  { ?><div class="rh-f"><span class="rh-l">Manager Email</span><span class="rh-v link"><?= rd.managerEmail  ?></span></div><? } ?>
+      <? if (rd.requesterEmail){ ?><div class="rh-f"><span class="rh-l">Requested By</span><span class="rh-v link"><?= rd.requesterEmail ?></span></div><? } ?>
+
+      <!-- ── New Hire: employment type + full credential trail ── -->
+      <? if (isNewHire) { ?>
+      <div class="rh-f"><span class="rh-l">Start Date</span>       <span class="rh-v"><?= rd.hireDate ? Utilities.formatDate(new Date(rd.hireDate + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') : '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">New / Rehire</span>     <span class="rh-v"><?= rd.newHireOrRehire || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">Employee Type</span>    <span class="rh-v"><?= rd.employeeType   || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">Employment Type</span>  <span class="rh-v"><?= rd.employmentType || '—' ?></span></div>
+
       <div class="rh-f">
         <span class="rh-l">ADP Associate ID<? if (rd.adpAssociateId) { ?> <span class="rh-annot">HR ✓</span><? } ?></span>
         <span class="rh-v <?= rd.adpAssociateId ? 'mono' : 'dim' ?>"><?= rd.adpAssociateId || '—' ?></span>
         <? if (rd.adpAssociateId) { ?>
         <div class="rh-hs"><div class="rh-hs-hdr">HR Verified</div>
-          <? if (rd.hrSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span><span class="rh-hv"><?= rd.hrSubmittedBy ?></span></div><? } ?>
-          <? if (rd.hrTimestamp) { ?><div class="rh-hr"><span class="rh-hl">Date</span><span class="rh-hv"><?= rd.hrTimestamp ?></span></div><? } ?>
-        </div>
-        <? } ?>
+          <? if (rd.hrSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span>  <span class="rh-hv"><?= rd.hrSubmittedBy ?></span></div><? } ?>
+          <? if (rd.hrTimestamp)   { ?><div class="rh-hr"><span class="rh-hl">Date</span><span class="rh-hv"><?= rd.hrTimestamp   ?></span></div><? } ?>
+        </div><? } ?>
       </div>
 
-      <!-- Credentials — always shown, blank until ID Setup done -->
       <div class="rh-f">
         <span class="rh-l">Internal Employee ID<? if (rd.internalEmployeeId) { ?> <span class="rh-annot">ID ✓</span><? } ?></span>
         <span class="rh-v <?= rd.internalEmployeeId ? 'mono' : 'dim' ?>"><?= rd.internalEmployeeId || '—' ?></span>
         <? if (rd.internalEmployeeId && rd.idTimestamp) { ?>
         <div class="rh-hs"><div class="rh-hs-hdr">ID Setup</div>
-          <? if (rd.idSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span><span class="rh-hv"><?= rd.idSubmittedBy ?></span></div><? } ?>
+          <? if (rd.idSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span>  <span class="rh-hv"><?= rd.idSubmittedBy ?></span></div><? } ?>
           <div class="rh-hr"><span class="rh-hl">Date</span><span class="rh-hv"><?= rd.idTimestamp ?></span></div>
-        </div>
-        <? } ?>
+        </div><? } ?>
       </div>
       <div class="rh-f"><span class="rh-l">SiteDocs Worker ID</span><span class="rh-v <?= rd.siteDocsWorkerId ? 'mono' : 'dim' ?>"><?= rd.siteDocsWorkerId || '—' ?></span></div>
-      <div class="rh-f"><span class="rh-l">SiteDocs Job Code</span><span class="rh-v <?= rd.siteDocsJobCode ? '' : 'dim' ?>"><?= rd.siteDocsJobCode || '—' ?></span></div>
-      <div class="rh-f"><span class="rh-l">SiteDocs Username</span><span class="rh-v <?= rd.siteDocsUsername ? 'cred' : 'dim' ?>"><?= rd.siteDocsUsername || '—' ?></span></div>
-      <div class="rh-f"><span class="rh-l">SiteDocs Password</span><span class="rh-v <?= rd.siteDocsPassword ? 'cred' : 'dim' ?>"><?= rd.siteDocsPassword || '—' ?></span></div>
-      <div class="rh-f"><span class="rh-l">DSS Username</span><span class="rh-v <?= rd.dssUsername ? 'cred' : 'dim' ?>"><?= rd.dssUsername || '—' ?></span></div>
-      <div class="rh-f"><span class="rh-l">DSS Password</span><span class="rh-v <?= rd.dssPassword ? 'cred' : 'dim' ?>"><?= rd.dssPassword || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">SiteDocs Job Code</span> <span class="rh-v <?= rd.siteDocsJobCode  ? ''     : 'dim' ?>"><?= rd.siteDocsJobCode  || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">SiteDocs Username</span> <span class="rh-v <?= rd.siteDocsUsername ? 'cred' : 'dim' ?>"><?= rd.siteDocsUsername || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">SiteDocs Password</span> <span class="rh-v <?= rd.siteDocsPassword ? 'cred' : 'dim' ?>"><?= rd.siteDocsPassword || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">DSS Username</span>      <span class="rh-v <?= rd.dssUsername ? 'cred' : 'dim' ?>"><?= rd.dssUsername || '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">DSS Password</span>      <span class="rh-v <?= rd.dssPassword ? 'cred' : 'dim' ?>"><?= rd.dssPassword || '—' ?></span></div>
 
-      <!-- IT — assigned email, always shown blank until IT done -->
       <div class="rh-f">
         <span class="rh-l">Assigned Email<? if (rd.assignedEmail) { ?> <span class="rh-annot">IT ✓</span><? } ?></span>
         <span class="rh-v <?= rd.assignedEmail ? 'link' : 'dim' ?>"><?= rd.assignedEmail || '—' ?></span>
         <? if (rd.assignedEmail) { ?>
         <div class="rh-hs"><div class="rh-hs-hdr">IT Setup</div>
-          <? if (rd.itSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span><span class="rh-hv"><?= rd.itSubmittedBy ?></span></div><? } ?>
-          <? if (rd.itTimestamp) { ?><div class="rh-hr"><span class="rh-hl">Date</span><span class="rh-hv"><?= rd.itTimestamp ?></span></div><? } ?>
-        </div>
-        <? } ?>
+          <? if (rd.itSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span>  <span class="rh-hv"><?= rd.itSubmittedBy ?></span></div><? } ?>
+          <? if (rd.itTimestamp)   { ?><div class="rh-hr"><span class="rh-hl">Date</span><span class="rh-hv"><?= rd.itTimestamp   ?></span></div><? } ?>
+        </div><? } ?>
       </div>
       <? if (rd.bossWisCreated) { ?><div class="rh-f"><span class="rh-l">BOSS WIS</span><span class="rh-v"><?= rd.bossWisCreated ?></span></div><? } ?>
-      <? } ?>
+      <? } /* end isNewHire */ ?>
+
+      <!-- ── Termination: date + reason ── -->
+      <? if (isTerm) { ?>
+      <div class="rh-f"><span class="rh-l">Termination Date</span><span class="rh-v"><?= rd.hireDate ? Utilities.formatDate(new Date(rd.hireDate + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') : '—' ?></span></div>
+      <? if (rd.lastDayWorked) { ?><div class="rh-f"><span class="rh-l">Last Day Worked</span><span class="rh-v"><?= Utilities.formatDate(new Date(rd.lastDayWorked + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') ?></span></div><? } ?>
+      <? if (rd.employmentType) { ?><div class="rh-f"><span class="rh-l">Employee Type</span><span class="rh-v"><?= rd.employmentType ?></span></div><? } ?>
+      <? if (rd.reason)   { ?><div class="rh-f"><span class="rh-l">Reason</span>         <span class="rh-v"><?= rd.reason   ?></span></div><? } ?>
+      <? if (rd.empPhone) { ?><div class="rh-f"><span class="rh-l">Employee Phone</span> <span class="rh-v"><?= rd.empPhone ?></span></div><? } ?>
+      <? if (rd.hasReports) { ?><div class="rh-f"><span class="rh-l">Has Direct Reports</span><span class="rh-v"><?= rd.hasReports ?></span></div><? } ?>
+      <? if (rd.hasReports === 'Yes' && rd.reportsToNew) { ?><div class="rh-f"><span class="rh-l">Reports Reassigned To</span><span class="rh-v"><?= rd.reportsToNew ?></span></div><? } ?>
+      <? var hasGoogleTerm = Array.isArray(rd.systems) && rd.systems.indexOf('Google Account') !== -1; ?>
+      <? if (hasGoogleTerm) { ?>
+      <? if (rd.googleForward  && rd.googleForward  !== 'N/A') { ?><div class="rh-f"><span class="rh-l">Email Forwarding</span>      <span class="rh-v"><?= rd.googleForward  ?></span></div><? } ?>
+      <? if (rd.googleFiles    && rd.googleFiles    !== 'N/A') { ?><div class="rh-f"><span class="rh-l">Drive Files Transfer</span>  <span class="rh-v"><?= rd.googleFiles    ?></span></div><? } ?>
+      <? if (rd.googleDelegate && rd.googleDelegate !== 'N/A') { ?><div class="rh-f"><span class="rh-l">Inbox Delegate</span>        <span class="rh-v"><?= rd.googleDelegate ?></span></div><? } ?>
+      <? if (rd.googleDuration && rd.googleDuration !== 'N/A') { ?><div class="rh-f"><span class="rh-l">Account Duration</span>      <span class="rh-v"><?= rd.googleDuration ?></span></div><? } ?>
+      <? if (rd.googleVacation && rd.googleVacation !== 'N/A') { ?><div class="rh-f rh-f--full"><span class="rh-l">Vacation Message</span>    <span class="rh-v"><?= rd.googleVacation ?></span></div><? } ?>
+      <? } /* end hasGoogleTerm */ ?>
+      <? if (rd.originalComments) { ?><div class="rh-f rh-f--full"><span class="rh-l">Comments</span><span class="rh-v"><?= rd.originalComments ?></span></div><? } ?>
+      <? } /* end isTerm */ ?>
+
+      <!-- ── Status Change: effective date + change summary ── -->
+      <? if (isChange) { ?>
+      <div class="rh-f"><span class="rh-l">Effective Date</span><span class="rh-v"><?= rd.hireDate ? Utilities.formatDate(new Date(rd.hireDate + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') : '—' ?></span></div>
+      <? if (rd.changeTypes) { ?><div class="rh-f"><span class="rh-l">Change Types</span><span class="rh-v"><?= rd.changeTypes ?></span></div><? } ?>
+      <? var tcVal = String(rd.titleChange || ''); var tcParts = tcVal.split(' -> '); var showTc = tcVal && tcVal.indexOf('N/A') === -1 && (tcParts.length < 2 || tcParts[0].trim() !== tcParts[1].trim()); ?>
+      <? if (showTc) { ?><div class="rh-f"><span class="rh-l">Title Change</span>         <span class="rh-v"><?= rd.titleChange ?></span></div><? } ?>
+      <? var stVal = String(rd.siteTransfer || ''); var stParts = stVal.split(' -> '); var showSt = stVal && stVal.indexOf('N/A') === -1 && (stParts.length < 2 || stParts[0].trim() !== stParts[1].trim()); ?>
+      <? if (showSt) { ?><div class="rh-f"><span class="rh-l">Site Transfer</span>        <span class="rh-v"><?= rd.siteTransfer ?></span></div><? } ?>
+      <? var ccVal = String(rd.classChange || ''); var ccParts = ccVal.split(' -> '); var showCc = ccVal && ccVal.indexOf('N/A') === -1 && (ccParts.length < 2 || ccParts[0].trim() !== ccParts[1].trim()); ?>
+      <? if (showCc) { ?><div class="rh-f"><span class="rh-l">Classification</span>       <span class="rh-v"><?= rd.classChange ?></span></div><? } ?>
+      <? var mcVal = String(rd.managerChange || ''); var showMc = mcVal && mcVal.indexOf('N/A (N/A)') === -1 && mcVal.indexOf('N/A -> N/A') === -1 && mcVal.indexOf(' -> ') !== -1; var mcParts = mcVal.split(' -> '); var showMcFinal = showMc && (mcParts.length < 2 || mcParts[0].trim() !== mcParts[1].trim()); ?>
+      <? if (showMcFinal) { ?><div class="rh-f"><span class="rh-l">Manager Change</span>  <span class="rh-v"><?= rd.managerChange ?></span></div><? } ?>
+      <? } /* end isChange */ ?>
     </div>
   </div>
 
-
-  <!-- ── Access & Equipment ── -->
-  <? if (rd.systemAccess || hasSystems || hasEquipment) { ?>
+  <!-- ── Access & Equipment — New Hire / Equipment Request ── -->
+  <? if ((isNewHire || isEquipment) && (rd.systemAccess || hasSystems || hasEquip)) { ?>
   <div class="rh-sec">
     <div class="rh-hdr"><span class="rh-title">Access &amp; Equipment</span></div>
     <div class="rh-gw">
@@ -160,7 +210,7 @@
       <div class="rh-f"><span class="rh-l">Systems</span>
         <div class="rh-tags"><? for (var i=0; i<rd.systems.length; i++) { ?><span class="rh-tag"><?= rd.systems[i] ?></span><? } ?></div>
       </div><? } ?>
-      <? if (hasEquipment) { ?>
+      <? if (hasEquip) { ?>
       <div class="rh-f"><span class="rh-l">Equipment</span>
         <div class="rh-tags"><? for (var j=0; j<equipment.length; j++) { ?><span class="rh-tag"><?= equipment[j] ?></span><? } ?></div>
       </div><? } ?>
@@ -170,11 +220,10 @@
         <span class="rh-v"><?= googleRequested ?></span>
         <? if (rd.assignedEmail && rd.itTimestamp) { ?>
         <div class="rh-hs"><div class="rh-hs-hdr">IT Setup</div>
-          <? if (rd.itSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span><span class="rh-hv"><?= rd.itSubmittedBy ?></span></div><? } ?>
-          <? if (rd.itTimestamp) { ?><div class="rh-hr"><span class="rh-hl">Date</span><span class="rh-hv"><?= rd.itTimestamp ?></span></div><? } ?>
+          <? if (rd.itSubmittedBy) { ?><div class="rh-hr"><span class="rh-hl">By</span>            <span class="rh-hv"><?= rd.itSubmittedBy ?></span></div><? } ?>
+          <? if (rd.itTimestamp)   { ?><div class="rh-hr"><span class="rh-hl">Date</span>          <span class="rh-hv"><?= rd.itTimestamp   ?></span></div><? } ?>
           <div class="rh-hr"><span class="rh-hl">Assigned Email</span><span class="rh-hv"><?= rd.assignedEmail ?></span></div>
-        </div>
-        <? } ?>
+        </div><? } ?>
       </div><? } ?>
       <? if (rd.computerType || rd.computerRequestType) { ?>
       <div class="rh-f">
@@ -182,8 +231,8 @@
         <span class="rh-v"><?= rd.computerType || '' ?><?= (rd.computerType && rd.computerRequestType) ? ' — ' : '' ?><?= rd.computerRequestType || '' ?></span>
         <div class="rh-hs"><div class="rh-hs-hdr">Computer Details</div>
           <? if (rd.computerRequestType) { ?><div class="rh-hr"><span class="rh-hl">Request Type</span><span class="rh-hv"><?= rd.computerRequestType ?></span></div><? } ?>
-          <? if (rd.computerType) { ?><div class="rh-hr"><span class="rh-hl">Type</span><span class="rh-hv"><?= rd.computerType ?></span></div><? } ?>
-          <? if (rd.itSubmittedBy) { ?><hr class="rh-hd"><div class="rh-hr"><span class="rh-hl">Set by</span><span class="rh-hv"><?= rd.itSubmittedBy ?></span></div><? } ?>
+          <? if (rd.computerType)        { ?><div class="rh-hr"><span class="rh-hl">Type</span>        <span class="rh-hv"><?= rd.computerType        ?></span></div><? } ?>
+          <? if (rd.itSubmittedBy)       { ?><hr class="rh-hd"><div class="rh-hr"><span class="rh-hl">Set by</span><span class="rh-hv"><?= rd.itSubmittedBy ?></span></div><? } ?>
         </div>
       </div><? } ?>
       <? if (rd.phoneRequestType) { ?>
@@ -196,8 +245,46 @@
         <div class="rh-tags"><? var adpArr = String(rd.adpSites).split(','); for (var a=0; a<adpArr.length; a++) { if(adpArr[a].trim()) { ?><span class="rh-tag"><?= adpArr[a].trim() ?></span><? } } ?></div>
       </div><? } ?>
       <? if (rd.purchasingSites) { ?>
-      <div class="rh-f"><span class="rh-l">Jonas Job Numbers</span>
+      <div class="rh-f"><span class="rh-l">Purchasing Sites</span>
         <div class="rh-tags"><? var pArr = String(rd.purchasingSites).split(','); for (var p=0; p<pArr.length; p++) { if(pArr[p].trim()) { ?><span class="rh-tag"><?= pArr[p].trim() ?></span><? } } ?></div>
+      </div><? } ?>
+    </div>
+  </div>
+  <? } ?>
+
+  <!-- ── Offboarding Scope — Termination ── -->
+  <? if (isTerm && (hasSystems || hasEquip)) { ?>
+  <div class="rh-sec">
+    <div class="rh-hdr"><span class="rh-title">Offboarding Scope</span></div>
+    <div class="rh-gw">
+      <? if (hasSystems) { ?>
+      <div class="rh-f"><span class="rh-l">Systems to Deactivate</span>
+        <div class="rh-tags"><? for (var si=0; si<rd.systems.length; si++) { ?><span class="rh-tag"><?= rd.systems[si] ?></span><? } ?></div>
+      </div><? } ?>
+      <? if (hasEquip) { ?>
+      <div class="rh-f"><span class="rh-l">Equipment to Return</span>
+        <div class="rh-tags"><? for (var ei=0; ei<equipment.length; ei++) { ?><span class="rh-tag"><?= equipment[ei] ?></span><? } ?></div>
+      </div><? } ?>
+    </div>
+  </div>
+  <? } ?>
+
+  <!-- ── Access & Equipment Changes — Status Change ── -->
+  <? if (isChange && (hasSystems || hasEquip || rd.purchasingSites)) { ?>
+  <div class="rh-sec">
+    <div class="rh-hdr"><span class="rh-title">Access &amp; Equipment Changes</span></div>
+    <div class="rh-gw">
+      <? if (hasSystems) { ?>
+      <div class="rh-f"><span class="rh-l">Systems to Add</span>
+        <div class="rh-tags"><? for (var sci=0; sci<rd.systems.length; sci++) { ?><span class="rh-tag"><?= rd.systems[sci] ?></span><? } ?></div>
+      </div><? } ?>
+      <? if (hasEquip) { ?>
+      <div class="rh-f"><span class="rh-l">Equipment</span>
+        <div class="rh-tags"><? for (var eci=0; eci<equipment.length; eci++) { ?><span class="rh-tag"><?= equipment[eci] ?></span><? } ?></div>
+      </div><? } ?>
+      <? if (rd.purchasingSites) { ?>
+      <div class="rh-f"><span class="rh-l">Purchasing Sites</span>
+        <div class="rh-tags"><? var psArr = String(rd.purchasingSites).split(','); for (var psi=0; psi<psArr.length; psi++) { if(psArr[psi].trim()) { ?><span class="rh-tag"><?= psArr[psi].trim() ?></span><? } } ?></div>
       </div><? } ?>
     </div>
   </div>

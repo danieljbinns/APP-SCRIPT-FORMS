@@ -313,6 +313,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--brand-red);
   font-weight: 600;
 }
+/* Toggle variant — centered tile, hides native input, ✓ prefix when checked */
+.checkbox-label.toggle { justify-content: center; }
+.checkbox-label.toggle input { display: none; }
+.checkbox-label.toggle:has(input:checked)::before { content: "✓ "; font-weight: bold; }
 
 /* ── Checkbox grid (compact dynamic, inside sub-sections) ────── */
 .checkbox-grid {
@@ -486,6 +490,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin-top: 2px;
   cursor: pointer;
 }
+.confirm-item label  { cursor: pointer; margin: 0; }
 .confirm-item strong { display: block; font-size: 14px; margin-bottom: 4px; }
 .confirm-item span   { font-size: 12px; color: var(--text-muted); }
 
@@ -549,6 +554,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .status-btn:last-child           { border-right: none; }
 .status-btn:hover:not(.active)   { background: rgba(255,255,255,0.05); color: var(--text-main); }
+.status-btn.active               { background: var(--brand-red); color: white; }
 .status-btn.active.pending       { background: var(--warning); color: #000; }
 .status-btn.active.complete      { background: var(--success); color: white; }
 .status-btn.active.not-returned  { background: var(--danger);  color: white; }
@@ -684,6 +690,28 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 500;
 }
 .back-link:hover { color: var(--brand-red-hover); text-decoration: underline; }
+
+/* ── Gatekeeper screen ───────────────────────────────────────── */
+/* Intro screen shown before the main form. Any form using a     */
+/* gatekeeper pattern wraps it in #gatekeeperSection and uses    */
+/* .confirm-button for the CTA and .requirements-toggle for the  */
+/* optional prereq accordion.                                     */
+#gatekeeperSection { text-align: center; padding: 3rem 1rem; }
+#gatekeeperSection h1 { font-size: 2rem; margin-bottom: 2rem; }
+.requirements-toggle { margin: 2rem 0; }
+.requirements-toggle summary { cursor: pointer; color: var(--brand-red); font-weight: bold; padding: 1rem; background: var(--input-bg); border-radius: 6px; list-style: none; user-select: none; }
+.requirements-toggle summary:hover { background: var(--input-border); }
+.requirements-toggle summary::-webkit-details-marker { display: none; }
+.requirements-toggle summary::before { content: "▶ "; display: inline-block; transition: transform 0.2s; }
+.requirements-toggle[open] summary::before { transform: rotate(90deg); }
+.requirements-content { padding: 1.5rem; background: var(--input-bg); border-radius: 0 0 6px 6px; text-align: left; color: var(--text-muted); }
+.requirements-content ul { margin-left: 1.5rem; line-height: 1.8; }
+.confirm-button { padding: 1.5rem 3rem; font-size: 1.2rem; background-color: var(--brand-red); color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: bold; margin-top: 2rem; min-width: 300px; }
+.confirm-button:hover { background-color: var(--brand-red-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(235,28,45,0.3); }
+
+/* ── Gated form (hidden until gatekeeper confirmed) ──────────── */
+.gated-form { display: none; opacity: 0; transition: opacity 0.5s; }
+.gated-form.show { display: block; opacity: 1; }
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {

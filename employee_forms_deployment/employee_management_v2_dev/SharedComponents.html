@@ -1,6 +1,6 @@
 <!--
   ══════════════════════════════════════════════════════════════════
-  Boss Review Pattern — reusable gatekeeper between HR and IT Setup
+  IT Confirmation Pattern — reusable gatekeeper between HR and IT Setup
   ══════════════════════════════════════════════════════════════════
   Purpose:
     Dave Langohr reviews the full request after HR has verified and corrected
@@ -8,34 +8,34 @@
     Applies to: new hire (NEW_EMP_), equipment request (EQUIP_REQ_), status
     change (CHANGE_). Does NOT apply to terminations.
 
-  Server-side (BOSSReviewHandler.js → serveBOSSReview):
+  Server-side (BOSSReviewHandler.js → serveITConfirmation):
     - Detects workflow type from ID prefix (NEW_EMP_ / EQUIP_REQ_ → InitialRequest.html,
       CHANGE_ → PositionSiteChangeRequest.html).
-    - Passes to template: mode='boss_review', baseMode=<original mode>,
+    - Passes to template: mode='it_confirmation', baseMode=<original mode>,
       workflowId, requestData (JSON string), referenceData (JSON string).
     - getFullNewHireData / getFullPositionChangeData read the full row from the
       relevant sheet and return all fields as a flat object.
-    - submitBOSSReview writes corrections back in-place to Initial Requests sheet,
-      appends an audit row to BOSS Review Results, and triggers the IT Setup email.
+    - submitITConfirmation writes corrections back in-place to Initial Requests sheet,
+      appends an audit row to IT Confirmation Results, and triggers the IT Setup email.
 
   Client-side (InitialRequest.html / PositionSiteChangeRequest.html):
-    - FORM_MODE='boss_review' detected from <?= mode ?> template var.
+    - FORM_MODE='it_confirmation' detected from <?= mode ?> template var.
     - INJECTED_REQUEST_DATA holds the full request JSON (parsed from requestData).
-    - BOSS_REVIEW_WF_ID holds the workflow ID for the submit call.
+    - IT_CONFIRM_WF_ID holds the workflow ID for the submit call.
     - After populateAll() populates all dropdowns and dual-lists, prefillBossReview()
       is called to pre-populate all form fields with the existing request data.
     - prefillBossReview() rebuilds dual-lists with selected values, sets radios/
       checkboxes, and fires UI toggle functions to reveal dependent sections.
-    - Submit routes to google.script.run.submitBOSSReview(data) instead of the
+    - Submit routes to google.script.run.submitITConfirmation(data) instead of the
       normal submitInitialRequest / submitPositionChangeRequest.
 
-  Adding boss_review to a new form:
-    1. Add FORM_MODE / INJECTED_REQUEST_DATA / BOSS_REVIEW_WF_ID var injection.
-    2. Skip any gatekeeper/intro section when FORM_MODE==='boss_review'.
+  Adding it_confirmation to a new form:
+    1. Add FORM_MODE / INJECTED_REQUEST_DATA / IT_CONFIRM_WF_ID var injection.
+    2. Skip any gatekeeper/intro section when FORM_MODE==='it_confirmation'.
     3. Write a prefill<FormName>(d) function that sets all field values from d.
     4. Call prefill at end of dropdown population callback.
-    5. Add notes textarea + change button label in boss_review mode.
-    6. Route submit to submitBOSSReview and show boss-review success screen.
+    5. Add notes textarea + change button label in it_confirmation mode.
+    6. Route submit to submitITConfirmation and show success screen.
   ══════════════════════════════════════════════════════════════════
 -->
 <script>
@@ -49,6 +49,57 @@
      The widget writes a comma-separated hidden input on every
      change so standard form serialisation picks it up.
   ══════════════════════════════════════════════════════════════ */
+  /* ══════════════════════════════════════════════════════════════
+     submitSpecialistTask — shared submit handler for all specialist
+     and simple action forms that call submitSpecialistForm().
+
+     Usage:
+       document.getElementById('taskForm').addEventListener('submit', function(e) {
+         e.preventDefault();
+         // optional pre-submit validation here — return early if invalid
+         var data = { workflowId: ..., department: ..., notes: ..., details: ... };
+         submitSpecialistTask(e.target, data, 'Setup Complete', 'Submission recorded.');
+       });
+
+     Parameters:
+       formEl         — the <form> element to hide on success (pass e.target)
+       data           — object passed to submitSpecialistForm()
+       successTitle   — text shown in #successTitle
+       successMessage — text shown in #successMessage
+  ══════════════════════════════════════════════════════════════ */
+  function submitSpecialistTask(formEl, data, successTitle, successMessage) {
+    var submitBtn = document.getElementById('submitBtn');
+    var statusMsg = document.getElementById('statusMessage');
+    var overlay   = document.getElementById('loading-overlay');
+
+    submitBtn.disabled = true;
+    overlay.classList.add('active');
+    statusMsg.innerHTML = '';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        overlay.classList.remove('active');
+        if (result && result.success === false) {
+          submitBtn.disabled = false;
+          statusMsg.innerHTML = '<div class="callout callout-warning">&#10060; ' + (result.message || 'Server returned an error.') + '</div>';
+        } else {
+          formEl.style.display = 'none';
+          document.getElementById('requestHeaderWrap').style.display = 'none';
+          document.getElementById('successTitle').textContent    = successTitle;
+          document.getElementById('successMessage').textContent  = successMessage || 'Submission recorded.';
+          document.getElementById('successRequestId').textContent = 'Workflow: ' + data.workflowId;
+          document.getElementById('successAnotherLink').style.display = 'none';
+          document.getElementById('success-screen').style.display = 'block';
+        }
+      })
+      .withFailureHandler(function(err) {
+        overlay.classList.remove('active');
+        submitBtn.disabled = false;
+        statusMsg.innerHTML = '<div class="callout callout-warning">&#10060; ' + err.message + '</div>';
+      })
+      .submitSpecialistForm(data);
+  }
+
   function buildDualList(containerId, items, fieldName, selected) {
     var container = document.getElementById(containerId);
     if (!container) return;

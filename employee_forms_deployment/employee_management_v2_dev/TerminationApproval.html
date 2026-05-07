@@ -6,196 +6,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HR Termination Approval</title>
-    <style>
-        :root {
-            --bg-color: #0c0c0c;
-            --card-bg: #1a1a1a;
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-            --brand-red: #EB1C2D;
-            --input-bg: #2a2a2a;
-            --input-border: #444;
-            --border-color: #333;
-            --success: #00c853;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 900px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 32px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-        }
-
-        .logo-container {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .logo {
-            height: 40px;
-        }
-
-        h1 {
-            font-size: 22px;
-            text-align: center;
-            margin-bottom: 8px;
-        }
-
-        .subtitle {
-            color: var(--text-muted);
-            text-align: center;
-            margin-bottom: 24px;
-            font-size: 14px;
-        }
-
-        .info-grid {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 24px;
-            border: 1px solid var(--border-color);
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .info-label {
-            color: var(--text-muted);
-        }
-
-        .section-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--brand-red);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 24px 0 16px 0;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 8px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            font-size: 13px;
-            margin-bottom: 8px;
-            color: var(--text-muted);
-        }
-
-        select,
-        textarea {
-            width: 100%;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 6px;
-            padding: 12px;
-            color: white;
-            font-size: 14px;
-        }
-
-        .checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            color: #ddd;
-        }
-
-        input[type="checkbox"] {
-            accent-color: var(--brand-red);
-            width: 18px;
-            height: 18px;
-        }
-
-        .status-btn-group {
-            display: flex;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 6px;
-            overflow: hidden;
-            width: fit-content;
-            margin-top: 8px;
-        }
-
-        .status-btn {
-            padding: 10px 20px;
-            border: none;
-            background: transparent;
-            color: #888;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: 0.2s;
-            border-right: 1px solid var(--input-border);
-        }
-
-        .status-btn:last-child {
-            border-right: none;
-        }
-
-        .status-btn.active {
-            background: var(--brand-red);
-            color: white;
-        }
-
-        .status-btn:not(.active):hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .btn-primary {
-            background: var(--brand-red);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            opacity: 0.9;
-        }
-    </style>
+    <?!= include('Styles') ?>
 </head>
 
-<body>
-    <div class="container">
-        <div style="padding:6px 0 14px;"><a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" style="color:#666;text-decoration:none;font-size:12px;font-family:inherit;">&#8592; Back to Portal</a></div>
+<body class="card-layout">
+    <div class="container-narrow">
+        <a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" class="back-link">&#8592; Back to Portal</a>
         <div class="card">
             <div class="logo-container">
                 <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
@@ -204,50 +20,26 @@
             <h1>Termination Approval</h1>
             <p class="subtitle">Review request and trigger follow-up steps</p>
 
-            <div class="info-grid">
-                <div class="info-row"><span class="info-label">Employee:</span><span>
-                        <?= requestData.employeeName ?>
-                    </span></div>
-                <div class="info-row"><span class="info-label">Type:</span><span>
-                        <?= requestData.empType ?>
-                    </span></div>
-                <div class="info-row"><span class="info-label">Site:</span><span>
-                        <?= requestData.siteName ?>
-                    </span></div>
-                <div class="info-row"><span class="info-label">Manager:</span><span>
-                        <?= requestData.managerName ?>
-                    </span></div>
-                <div class="info-row"><span class="info-label">Term Date:</span><span>
-                        <?= requestData.termDate ?>
-                    </span></div>
-                <div class="info-row"><span class="info-label">Reason:</span><span>
-                        <?= requestData.reason ?>
-                    </span></div>
+            <div class="ticket-info">
+                <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName ?></span></div>
+                <div class="info-row"><span class="label">Type</span><span class="value"><?= requestData.empType ?></span></div>
+                <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName ?></span></div>
+                <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName ?></span></div>
+                <div class="info-row"><span class="label">Term Date</span><span class="value"><?= requestData.termDate ?></span></div>
+                <div class="info-row"><span class="label">Reason</span><span class="value"><?= requestData.reason ?></span></div>
                 <? if (requestData.empPhone && requestData.empPhone !== 'N/A') { ?>
-                <div class="info-row"><span class="info-label">Assigned Phone:</span><span>
-                        <?= requestData.empPhone ?>
-                    </span></div>
+                <div class="info-row"><span class="label">Assigned Phone</span><span class="value"><?= requestData.empPhone ?></span></div>
                 <? } ?>
                 <? if (requestData.systems && requestData.systems !== 'N/A') { ?>
-                <div class="info-row"><span class="info-label">System Access:</span><span>
-                        <?= requestData.systems ?>
-                    </span></div>
+                <div class="info-row"><span class="label">System Access</span><span class="value"><?= requestData.systems ?></span></div>
                 <? } ?>
                 <? if (requestData.eqToReturn && requestData.eqToReturn !== 'N/A') { ?>
-                <div class="info-row"><span class="info-label">Equipment to Return:</span><span>
-                        <?= requestData.eqToReturn ?>
-                    </span></div>
+                <div class="info-row"><span class="label">Equipment to Return</span><span class="value"><?= requestData.eqToReturn ?></span></div>
                 <? } ?>
-                <div class="info-row"><span class="info-label">Direct Reports:</span><span>
-                        <?= requestData.hasReports === 'Yes' ? 'Yes, routing to ' + requestData.reportsToNew : 'No' ?>
-                    </span></div>
-                <div class="info-row"><span class="info-label">Submitted By:</span><span>
-                        <?= requestData.requesterEmail ?>
-                    </span></div>
+                <div class="info-row"><span class="label">Direct Reports</span><span class="value"><?= requestData.hasReports === 'Yes' ? 'Yes, routing to ' + requestData.reportsToNew : 'No' ?></span></div>
+                <div class="info-row"><span class="label">Submitted By</span><span class="value"><?= requestData.requesterEmail ?></span></div>
                 <? if (requestData.attachmentUrl) { ?>
-                <div class="info-row"><span class="info-label">Documentation:</span><span>
-                        <a href="<?= requestData.attachmentUrl ?>" target="_blank" style="color:#EB1C2D;">View Attached File</a>
-                    </span></div>
+                <div class="info-row span-2"><span class="label">Documentation</span><span class="value"><a href="<?= requestData.attachmentUrl ?>" target="_blank" style="color:var(--brand-red);">View Attached File</a></span></div>
                 <? } ?>
             </div>
 
@@ -268,7 +60,7 @@
                     <textarea name="notes" rows="3" placeholder="Approval/Rejection notes..."></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-primary" id="submitBtn">Process Approval</button>
+                <button type="submit" class="btn btn-primary btn-full" id="submitBtn">Process Approval</button>
             </form>
         </div>
     </div>
@@ -323,6 +115,7 @@
                 .submitTerminationApproval(formData);
         }
     </script>
+  <?!= include('SharedComponents') ?>
 </body>
 
 </html>
