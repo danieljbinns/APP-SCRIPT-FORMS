@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Forms Deployment — Project Summary</title>
+<style>
+  /* ── Design tokens — matches company app CSS ──────────────────────────── */
+  :root {
+    --bg:      #0c0c0c;
+    --surface: #161616;
+    --surface2:#1e1e1e;
+    --border:  #2e2e2e;
+    --accent:  #EB1C2D;   /* TEAM Group red */
+    --accent2: #2196f3;
+    --green:   #00c853;
+    --yellow:  #ffab00;
+    --text:    #ececec;
+    --muted:   #909090;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+  }
+
+  /* ── Sticky app header ────────────────────────────────────────────────── */
+  .app-header {
+    background: rgba(22,22,22,.97);
+    border-bottom: 2px solid var(--accent);
+    padding: 18px 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .app-header .header-brand { font-size: 15px; font-weight: 700; color: #fff; }
+  .app-header .header-brand span { color: var(--accent); }
+  .app-header .header-meta { font-size: 13px; color: var(--muted); }
+
+  /* ── Page layout ──────────────────────────────────────────────────────── */
+  .page { max-width: 1280px; margin: 0 auto; padding: 56px 72px 100px; }
+
+  /* ── Hero ─────────────────────────────────────────────────────────────── */
+  .hero {
+    text-align: center;
+    padding: 72px 120px 64px;
+    background: var(--surface);
+    border-radius: 16px;
+    border-top: 5px solid var(--accent);
+    margin-bottom: 48px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.5);
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(235,28,45,.08) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .hero .subtitle { color: var(--muted); font-size: 12px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+  .hero h1 { font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 22px; letter-spacing: -.4px; line-height: 1.2; }
+  .hero .tagline { font-size: 17px; color: var(--text); line-height: 1.85; max-width: 960px; margin: 0 auto; }
+  .hero .tagline strong { color: #fff; }
+
+  /* ── Stat pills ───────────────────────────────────────────────────────── */
+  .stats-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 48px; }
+  .stat-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    flex: 1; min-width: 140px; text-align: center;
+    transition: border-color .2s;
+  }
+  .stat-pill:hover { border-color: #444; }
+  .stat-pill .num { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .stat-pill .lbl { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .6px; }
+
+  /* ── Section cards ────────────────────────────────────────────────────── */
+  section {
+    margin-bottom: 28px;
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 52px 60px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.3);
+  }
+
+  /* Section heading: red left border, large, bold */
+  h2 {
+    font-size: 22px; font-weight: 800; color: #fff;
+    margin-bottom: 6px;
+    padding-left: 18px;
+    border-left: 5px solid var(--accent);
+    letter-spacing: -.2px; line-height: 1.2;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2 .icon { color: var(--accent); font-size: 17px; }
+
+  /* Italic tagline under h2 */
+  .section-sub {
+    font-size: 14px; color: var(--muted); font-style: italic;
+    margin-bottom: 32px; padding: 6px 0 22px 23px;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.6;
+  }
+
+  h3 { font-size: 15px; font-weight: 700; color: var(--accent2); margin: 28px 0 12px; }
+  p { color: var(--text); margin-bottom: 14px; line-height: 1.8; }
+  p:last-child { margin-bottom: 0; }
+  strong { color: #fff; }
+  em { color: var(--muted); font-style: normal; }
+  a { color: var(--accent2); text-decoration: none; }
+
+  /* ── Tables ───────────────────────────────────────────────────────────── */
+  .tbl-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead tr { background: var(--surface2); }
+  thead th {
+    padding: 14px 20px; text-align: left;
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .7px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:nth-child(even) { background: rgba(255,255,255,.02); }
+  tbody tr:hover { background: rgba(235,28,45,.05); }
+  tbody td { padding: 13px 20px; color: var(--text); vertical-align: top; line-height: 1.65; }
+  tbody td:first-child { white-space: nowrap; font-weight: 600; color: #fff; }
+  .num-cell { font-family: 'SF Mono','Cascadia Code','Fira Code', monospace; color: var(--accent2); font-size: 13px; }
+
+  /* Highlighted / total rows */
+  .row-hl td { background: rgba(0,200,83,.06); }
+  .row-hl td:first-child { color: var(--green); }
+  .total-row td { background: rgba(235,28,45,.09); font-weight: 700; color: #fff; border-top: 2px solid rgba(235,28,45,.4); }
+
+  /* ── Tags ─────────────────────────────────────────────────────────────── */
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px;
+  }
+  .tag-green  { background: rgba(0,200,83,.15);   color: var(--green); }
+  .tag-blue   { background: rgba(33,150,243,.18); color: #90caf9; }
+  .tag-accent { background: rgba(235,28,45,.18);  color: #f48a92; }
+  .tag-cyan   { background: rgba(33,150,243,.18); color: var(--accent2); }
+  .tag-yellow { background: rgba(255,171,0,.15);  color: var(--yellow); }
+  .tag-red    { background: rgba(235,28,45,.15);  color: #f48a92; }
+
+  /* ── Callouts ─────────────────────────────────────────────────────────── */
+  .callout {
+    border-radius: 10px; padding: 20px 26px;
+    margin-bottom: 20px; font-size: 14.5px; line-height: 1.8; color: var(--text);
+    background: rgba(33,150,243,.07); border: 1px solid rgba(33,150,243,.28);
+  }
+  .callout strong { color: #fff; }
+  .callout.green  { background: rgba(0,200,83,.07);  border-color: rgba(0,200,83,.3); }
+  .callout.yellow { background: rgba(255,171,0,.07); border-color: rgba(255,171,0,.3); }
+  .callout.red    { background: rgba(235,28,45,.07); border-color: rgba(235,28,45,.3); }
+
+  /* ── Env cards ────────────────────────────────────────────────────────── */
+  .env-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .env-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 24px;
+    border-top: 3px solid var(--border);
+  }
+  .env-card h4 { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .env-card code { font-size: 11px; display: block; margin-bottom: 14px; }
+  .env-card .env-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .env-card .env-row:last-child { border-bottom: none; }
+  .env-card .env-row span:first-child { color: var(--muted); }
+  .env-card .env-row span:last-child { color: #fff; font-weight: 500; }
+  .env-badge { font-size: 10px; padding: 2px 7px; border-radius: 3px; margin-left: 8px; vertical-align: middle; }
+
+  /* ── Day-by-day hour bars ─────────────────────────────────────────────── */
+  .day-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 7px; }
+  .day-bar .day-lbl { font-size: 12px; font-family: 'SF Mono','Cascadia Code', monospace; width: 72px; flex-shrink: 0; }
+  .day-bar .bar-track { flex: 1; background: rgba(255,255,255,.04); border-radius: 4px; height: 18px; overflow: hidden; }
+  .day-bar .bar-fill { height: 100%; border-radius: 4px; background: rgba(235,28,45,.55); transition: width .3s; }
+  .day-bar .bar-fill.peak { background: rgba(0,200,83,.65); }
+  .day-bar .day-hrs { font-size: 12px; color: var(--text); width: 52px; text-align: right; font-family: monospace; flex-shrink: 0; }
+  .day-bar .day-note { font-size: 11.5px; color: var(--muted); flex: 1.2; }
+
+  /* ── Timeline ─────────────────────────────────────────────────────────── */
+  .timeline { position: relative; padding-left: 26px; }
+  .timeline::before { content: ''; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .tl-group { margin-bottom: 32px; }
+  .tl-month {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .tl-month::before {
+    content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0; margin-left: -30px;
+  }
+  .tl-item { position: relative; padding: 12px 16px; margin-bottom: 8px; background: var(--surface2); border-radius: 8px; border-left: 3px solid var(--border); }
+  .tl-item.big { border-left-color: var(--accent); }
+  .tl-item.milestone { border-left-color: var(--green); }
+  .tl-date { font-size: 11px; color: var(--muted); margin-bottom: 3px; font-family: monospace; }
+  .tl-title { font-size: 14px; color: var(--text); font-weight: 500; }
+  .tl-title strong { color: #fff; }
+  .tl-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* ── Code / pre ───────────────────────────────────────────────────────── */
+  code {
+    background: rgba(33,150,243,.1); color: #90caf9;
+    padding: 2px 6px; border-radius: 4px;
+    font-family: 'Cascadia Code','Fira Code', monospace; font-size: 12.5px;
+  }
+  pre {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 24px; overflow-x: auto; font-size: 13px;
+    color: #90caf9; font-family: 'Cascadia Code', monospace; margin-bottom: 16px; line-height: 1.7;
+  }
+
+  /* ── Footer ───────────────────────────────────────────────────────────── */
+  footer {
+    margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--muted); text-align: center; line-height: 2.2;
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-brand">TEAM Group &nbsp;<span>·</span>&nbsp; Employee Management</div>
+  <div class="header-meta">Project Summary &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; Internal Use Only</div>
+</header>
+
+<div class="page">
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="subtitle">TEAM Group &nbsp;·&nbsp; Internal Tooling &nbsp;·&nbsp; Generated 2026-04-29</div>
+    <h1>Employee Forms Deployment — Project Summary</h1>
+    <p class="tagline">
+      From a blank repository to a <strong>production multi-step HR workflow engine</strong> spanning
+      three Google Apps Script environments — built entirely inside Google Workspace with
+      <strong>zero external servers, zero paid SaaS, zero database</strong>.
+      331 tracked changes. 273,598 lines added. ~174 hours across 48 active days over 5 months —
+      <strong>~133 h development · ~41 h QA</strong>.
+      <strong>105 staging test workflows</strong> and 6 major developer QA sessions conducted across staging and dev before launch.
+    </p>
+  </div>
+
+  <!-- ── STAT PILLS ── -->
+  <div class="stats-row">
+    <div class="stat-pill"><div class="num">331</div><div class="lbl">Tracked Changes</div></div>
+    <div class="stat-pill"><div class="num">273K</div><div class="lbl">Lines Added</div></div>
+    <div class="stat-pill"><div class="num">232</div><div class="lbl">Source Files</div></div>
+    <div class="stat-pill"><div class="num">48</div><div class="lbl">Active Dev Days</div></div>
+    <div class="stat-pill"><div class="num">~174</div><div class="lbl">Human Hours</div></div>
+    <div class="stat-pill"><div class="num">3</div><div class="lbl">Environments</div></div>
+    <div class="stat-pill"><div class="num">4</div><div class="lbl">Workflow Types</div></div>
+    <div class="stat-pill"><div class="num">105</div><div class="lbl">Staging Test Cases</div></div>
+    <div class="stat-pill"><div class="num">6</div><div class="lbl">Major QA Sessions</div></div>
+    <div class="stat-pill"><div class="num">5 mo</div><div class="lbl">Dec 25 → Apr 26</div></div>
+  </div>
+
+  <!-- ── WHAT WAS BUILT ── -->
+  <section>
+    <h2><span class="icon">⚙</span> What Was Built</h2>
+    <div class="section-sub">A gated multi-step workflow engine on Google Workspace — <em>zero external servers, zero paid SaaS, zero database.</em></div>
+    <p>
+      A fully custom HR workflow orchestration system built entirely on Google Apps Script + Google Sheets.
+      The prior process was a series of <strong>Excel or Word forms emailed between departments</strong> —
+      no tracking, no step enforcement, no audit trail, and no visibility on who had acted or when.
+      Items fell through the gaps. Follow-up relied entirely on individual memory.
+    </p>
+    <p>
+      This system replaces that with a <strong>gated, multi-step request pipeline</strong>. Every step
+      is locked until the prior one completes. Every specialist is notified and routed automatically the
+      moment they're needed. Every action is timestamped, logged, and audited — with full change
+      notifications dispatched any time submitted data is modified.
+    </p>
+
+    <h3>Workflow Types</h3>
+    <ul style="margin:0 0 20px 20px;line-height:2.1;color:var(--text);">
+      <li><strong>New Hire</strong></li>
+      <li><strong>Termination / End of Employment (TERM + EOE)</strong></li>
+      <li><strong>Equipment Request</strong></li>
+      <li><strong>Status / Position Change</strong></li>
+    </ul>
+
+    <h3>Key Capabilities</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Capability</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>Sequential gating</td><td>Each step unlocks only after the prior completes — no skipping, no out-of-order</td></tr>
+          <tr><td>Role-based dashboard</td><td>HR, IT, Safety, and Managers each see their own view via Google Group membership</td></tr>
+          <tr><td>Specialist routing</td><td>Credit Card, Business Cards, Fleetio, Jonas, SiteDocs, DSS, BOSS, ADP, 30-60-90 — each auto-routed</td></tr>
+          <tr><td>Unified Action Items</td><td>6 legacy specialist sheets retired; replaced with a single normalized task table</td></tr>
+          <tr><td>Form edit mode</td><td>HR Verification and IT Confirmation can re-open and modify data with full change-audit email</td></tr>
+          <tr><td>Email engine</td><td>Dark-mode HTML templates, conditional routing, change-diff tables, 250-char subject cap</td></tr>
+          <tr><td>Process map tab</td><td>Live flowchart of the current workflow rendered inside the dashboard</td></tr>
+          <tr><td>Dual-list picker</td><td>Systems/equipment selection replaced large checkbox grids with a drag-style dual-panel UX</td></tr>
+          <tr><td>Migration tooling</td><td>Local Node.js + PowerShell scripts for safe prod sheet migration without touching live GAS</td></tr>
+          <tr><td>Environment-aware config</td><td>Script Properties drive all env differences — same codebase deploys to all three targets</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── CHANGE HISTORY ── -->
+  <section>
+    <h2><span class="icon">📊</span> Change History</h2>
+    <div class="section-sub">331 tracked changes across 48 active days — <em>Dec 2025 through Apr 2026.</em></div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>First tracked change</td><td class="num-cell">2025-12-04</td></tr>
+          <tr><td>Last tracked change</td><td class="num-cell">2026-04-29</td></tr>
+          <tr><td>Active development span</td><td>~147 days &nbsp;(≈ 5 months)</td></tr>
+          <tr><td>Active dev days (coding + QA — both are dev work)</td><td class="num-cell">48</td></tr>
+          <tr class="row-hl"><td>Total tracked changes (git commits + Apps Script saves)</td><td class="num-cell">331</td></tr>
+          <tr class="row-hl"><td>Total lines added</td><td class="num-cell">273,598</td></tr>
+          <tr><td>Total lines deleted</td><td class="num-cell">25,173</td></tr>
+          <tr><td>Net lines written</td><td class="num-cell">~248,425</td></tr>
+          <tr><td>Unique file paths touched in history</td><td class="num-cell">1,426 &nbsp;<em>(includes renames, moves, deletions)</em></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Commits by Month</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Month</th><th>Commits</th><th>Phase</th></tr></thead>
+        <tbody>
+          <tr><td>Dec 2025</td><td class="num-cell">20</td><td>Foundations, architecture, initial 3-form system, deployment pipeline</td></tr>
+          <tr><td>Jan 2026</td><td class="num-cell">26</td><td>V2 architecture consolidation, comprehensive system initialization, prod deployment</td></tr>
+          <tr><td>Feb 2026</td><td class="num-cell">17</td><td>Environment-aware config, staging + dev environments stood up</td></tr>
+          <tr><td>Mar 2026</td><td class="num-cell">91</td><td>Equipment requests, dashboard optimization, staging feature build marathon</td></tr>
+          <tr class="row-hl"><td>Apr 2026</td><td class="num-cell">177</td><td>Action Items refactor + all new workflow types + full QA sprint</td></tr>
+          <tr class="total-row"><td>Total</td><td class="num-cell">331</td><td>48 active dev days · Dec 2025–Apr 2026</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout yellow">
+      <strong>April sprint:</strong> 177 of 331 total commits — 53% of the entire project —
+      landed in 10 active days across April 2026. This was a focused delivery sprint: architectural
+      refactor, three new workflow types, dual-list picker UX, and full QA pass, all in sequence.
+    </div>
+  </section>
+
+  <!-- ── CODEBASE ── -->
+  <section>
+    <h2><span class="icon">📁</span> Codebase by Environment</h2>
+    <div class="section-sub">3 isolated GCP projects — prod, staging, dev — <em>same codebase, environment-aware config.</em></div>
+
+    <div class="env-grid">
+      <div class="env-card">
+        <h4>Production <span class="tag tag-green env-badge">Live</span></h4>
+        <code>employee_management_v2/</code>
+        <div class="env-row"><span>HTML files</span><span>16</span></div>
+        <div class="env-row"><span>JS files</span><span>0 (HTML-embedded)</span></div>
+        <div class="env-row"><span>Lines of code</span><span>~7,393</span></div>
+        <div class="env-row"><span>GCP project</span><span>Separate</span></div>
+      </div>
+      <div class="env-card">
+        <h4>Staging <span class="tag tag-cyan env-badge">QA</span></h4>
+        <code>employee_management_v2_staging/</code>
+        <div class="env-row"><span>JS files</span><span>21</span></div>
+        <div class="env-row"><span>HTML files</span><span>29</span></div>
+        <div class="env-row"><span>Service manifests</span><span>4</span></div>
+        <div class="env-row"><span>Lines of code</span><span>~18,639</span></div>
+      </div>
+      <div class="env-card">
+        <h4>Dev <span class="tag tag-yellow env-badge">Next</span></h4>
+        <code>employee_management_v2_dev/</code>
+        <div class="env-row"><span>JS files</span><span>23</span></div>
+        <div class="env-row"><span>HTML files</span><span>31</span></div>
+        <div class="env-row"><span>Service manifests</span><span>4</span></div>
+        <div class="env-row"><span>Lines of code</span><span>~19,355</span></div>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>File</th><th>~Lines</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>Dashboard.html</code></td><td class="num-cell">2,400</td><td>Main operator dashboard — role-gated, multi-view, live status + flowchart</td></tr>
+          <tr><td><code>WorkflowEngine.js</code></td><td class="num-cell">600</td><td>Sequential gating, step transitions, state machine</td></tr>
+          <tr><td><code>EmailUtils.js</code></td><td class="num-cell">750</td><td>Email templating, subject builder, change audit emails</td></tr>
+          <tr><td><code>InitialRequest.html</code></td><td class="num-cell">900</td><td>New hire request form — dual-list pickers, BOSS, Jonas cost sheets</td></tr>
+          <tr><td><code>ActionItemsManager.js</code></td><td class="num-cell">450</td><td>Unified task CRUD, lifecycle (Pending→Closed), specialist routing</td></tr>
+          <tr><td><code>PositionChangeHandler.js</code></td><td class="num-cell">380</td><td>Status/position change workflow orchestration</td></tr>
+          <tr><td><code>ChangeNotify.js</code></td><td class="num-cell">179</td><td>Field-level change detection + change-diff notification dispatch</td></tr>
+          <tr><td><code>tools/migrate-prod-sheet/index.js</code></td><td class="num-cell">325</td><td>Node.js Google Sheets API migration — dry-run / execute modes</td></tr>
+          <tr><td><code>tools/migrate-from-excel/run.ps1</code></td><td class="num-cell">400</td><td>PowerShell Excel migration for demo data (EPPlus + ImportExcel)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── HOURS ── -->
+  <section>
+    <h2><span class="icon">⏱</span> Human Hours — ~174 h</h2>
+    <div class="section-sub">~133 h development · ~41 h QA · 48 active dev days — <em>solo, part-time.</em></div>
+
+    <p>
+      Each day's active window is the earliest-to-latest commit of the day. Hours add a modest overhead
+      for prompting, review, and testing beyond the raw window — weighted by commit density and changeset size.
+      Every day was shared with meetings and other work; no day is treated as a full uninterrupted session.
+    </p>
+
+    <h3>Complete Day-by-Day Record</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      All times Eastern. Bar color reflects which environment(s) were active.
+      <span style="color:var(--accent)">●</span> prod/staging builds &nbsp;
+      <span style="color:var(--accent2)">●</span> dev/environment setup &nbsp;
+      <span style="color:var(--green)">●</span> multi-environment &nbsp;&nbsp;
+      Window = first→last commit of the day.
+    </p>
+
+    <div style="margin-bottom:4px;">
+
+      <!-- ── Dec 2025 ── -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:18px 0 8px;">December 2025 &nbsp;·&nbsp; 4 days &nbsp;·&nbsp; ~15 h</div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent)">Dec 04</div><div class="bar-track"><div class="bar-fill" style="width:32%"></div></div><div class="day-hrs">~3 h</div><div class="day-note">17:59 · 1 change · Initial commit — REQUEST_FORMS demo system</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent)">Dec 08</div><div class="bar-track"><div class="bar-fill" style="width:32%"></div></div><div class="day-hrs">~3 h</div><div class="day-note">15:17–16:42 · 7 changes · Consolidation, docs, session guides</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent)">Dec 09</div><div class="bar-track"><div class="bar-fill" style="width:32%"></div></div><div class="day-hrs">~3 h</div><div class="day-note">16:43–16:50 · 4 changes · MAJOR REORGANIZATION — modular structure</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent)">Dec 17</div><div class="bar-track"><div class="bar-fill" style="width:63%"></div></div><div class="day-hrs">~6 h</div><div class="day-note">16:48–21:42 · 8 changes · Deploy all 9 forms, clasp pipeline, Styles library</div></div>
+
+      <!-- ── Jan 2026 ── -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:18px 0 8px;">January 2026 &nbsp;·&nbsp; 6 days &nbsp;·&nbsp; ~28 h</div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent)">Jan 15</div><div class="bar-track"><div class="bar-fill" style="width:58%"></div></div><div class="day-hrs">~5.5 h</div><div class="day-note">10:03–13:27 · 4 changes · Phase 8 &amp; 9 — Premium UI refactor, data visibility</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent)">Jan 16</div><div class="bar-track"><div class="bar-fill" style="width:32%"></div></div><div class="day-hrs">~3 h</div><div class="day-note">18:19 · 1 change · V2 architecture consolidation</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent)">Jan 22</div><div class="bar-track"><div class="bar-fill" style="width:63%"></div></div><div class="day-hrs">~6 h</div><div class="day-note">20:33 · 2 changes · <strong>Initialize comprehensive employee management system (V2)</strong></div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent2)">Jan 23</div><div class="bar-track"><div class="bar-fill" style="width:58%"></div></div><div class="day-hrs">~5.5 h</div><div class="day-note">13:43–17:15 · 13 changes · First prod deployment &amp; new hire testing session [prod]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent2)">Jan 27</div><div class="bar-track"><div class="bar-fill" style="width:74%"></div></div><div class="day-hrs">~7 h</div><div class="day-note">10:30–15:55 · 5 changes · "Safety Notification &amp; Config Cleanup" · "Safety/HR Email Fixes" [prod]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent2)">Jan 28</div><div class="bar-track"><div class="bar-fill" style="width:16%"></div></div><div class="day-hrs">~1.5 h</div><div class="day-note">10:22 · 1 change · "Fix Dashboard Syntax Error" [prod]</div></div>
+
+      <!-- ── Feb 2026 ── -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:18px 0 8px;">February 2026 &nbsp;·&nbsp; 2 days &nbsp;·&nbsp; ~10 h</div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent)">Feb 20</div><div class="bar-track"><div class="bar-fill" style="width:26%"></div></div><div class="day-hrs">~2.5 h</div><div class="day-note">16:01–17:18 · 2 changes · Environment-aware config via Script Properties</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent2)">Feb 24</div><div class="bar-track"><div class="bar-fill" style="width:74%"></div></div><div class="day-hrs">~7 h</div><div class="day-note">10:37–15:51 · 15 changes · Staging + dev environments set up from scratch [staging+dev]</div></div>
+
+      <!-- ── Mar 2026 ── -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:18px 0 8px;">March 2026 &nbsp;·&nbsp; 11 days &nbsp;·&nbsp; ~46 h</div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Mar 04</div><div class="bar-track"><div class="bar-fill" style="width:32%"></div></div><div class="day-hrs">~3 h</div><div class="day-note">15:17–15:50 · 7 changes · Port staging to prod, "DASHBOARD ACCESS" [prod]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Mar 05</div><div class="bar-track"><div class="bar-fill" style="width:16%"></div></div><div class="day-hrs">~1.5 h</div><div class="day-note">09:58–10:02 · 3 changes · OAuth scope fix [prod]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent2)">Mar 06</div><div class="bar-track"><div class="bar-fill" style="width:74%"></div></div><div class="day-hrs">~7 h</div><div class="day-note">12:34–17:10 · <strong>27 changes</strong> · Major staging feature build — specialist forms, dashboard [staging]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent2)">Mar 09</div><div class="bar-track"><div class="bar-fill" style="width:58%"></div></div><div class="day-hrs">~5.5 h</div><div class="day-note">11:52–15:50 · 10 changes · Staging continued — workflow routing, specialist forms [staging]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent2)">Mar 17</div><div class="bar-track"><div class="bar-fill" style="width:11%"></div></div><div class="day-hrs">~1 h</div><div class="day-note">14:10 · 1 change · Staging checkpoint save [staging]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Mar 19</div><div class="bar-track"><div class="bar-fill" style="width:26%"></div></div><div class="day-hrs">~2.5 h</div><div class="day-note">15:44–16:44 · 2 changes · JSON checklist fix — "Working state" checkpoint [staging]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Mar 20</div><div class="bar-track"><div class="bar-fill" style="width:74%"></div></div><div class="day-hrs">~7 h</div><div class="day-note">09:29–14:08 · 19 changes · CSS scaling, empID removal, staging push marathon [staging]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Mar 23</div><div class="bar-track"><div class="bar-fill" style="width:42%"></div></div><div class="day-hrs">~4 h</div><div class="day-note">14:41–17:19 · 5 changes · Action item emails, button groups, dashboard UX [staging]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent2)">Mar 24</div><div class="bar-track"><div class="bar-fill" style="width:11%"></div></div><div class="day-hrs">~1 h</div><div class="day-note">14:23 · 1 change · Minor staging fix [staging]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Mar 25</div><div class="bar-track"><div class="bar-fill peak" style="width:95%"></div></div><div class="day-hrs">~9 h</div><div class="day-note">09:26–16:25 · 17 changes · Equipment requests, dashboard optimization [staging+prod]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent2)">Mar 30</div><div class="bar-track"><div class="bar-fill" style="width:47%"></div></div><div class="day-hrs">~4.5 h</div><div class="day-note">09:39–13:27 · 4 changes · Prod + staging maintenance [prod+staging]</div></div>
+
+      <!-- ── Apr 2026 ── -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:18px 0 8px;">April 2026 — The Sprint &nbsp;·&nbsp; 10 days &nbsp;·&nbsp; ~75 h</div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent)">Apr 14</div><div class="bar-track"><div class="bar-fill" style="width:42%"></div></div><div class="day-hrs">~4 h</div><div class="day-note">16:55–17:44 · 2 changes · Phase 8 QA — regressions R1–R5, form improvements</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent)">Apr 16</div><div class="bar-track"><div class="bar-fill" style="width:84%"></div></div><div class="day-hrs">~8 h</div><div class="day-note">12:48–17:28 · 26 changes · Central Purchasing, buildEmailSubject, Phase 8 Groups A–F</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Apr 17</div><div class="bar-track"><div class="bar-fill" style="width:84%"></div></div><div class="day-hrs">~8 h</div><div class="day-note">12:12–15:57 · 27 changes · Hotfixes — empType, dates, HR verification [staging]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Apr 20</div><div class="bar-track"><div class="bar-fill peak" style="width:100%"></div></div><div class="day-hrs">~9.5 h</div><div class="day-note">10:05–17:31 · 12 changes · <strong>Action Items refactor phases 1–6</strong> [staging]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Apr 21</div><div class="bar-track"><div class="bar-fill peak" style="width:100%"></div></div><div class="day-hrs">~9.5 h</div><div class="day-note">09:45–18:03 · 32 changes · <strong>Status Change, EOE, form edit, ChangeNotify</strong> [dev]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Apr 22</div><div class="bar-track"><div class="bar-fill" style="width:84%"></div></div><div class="day-hrs">~8 h</div><div class="day-note">09:04–15:23 · 16 changes · Equipment form, Jonas/Central Purchasing fix [dev]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Apr 23</div><div class="bar-track"><div class="bar-fill peak" style="width:95%"></div></div><div class="day-hrs">~9 h</div><div class="day-note">09:43–17:02 · 12 changes · Dual-list picker, BOSS gatekeeper, full QA pass [dev]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent2)">Apr 27</div><div class="bar-track"><div class="bar-fill peak" style="width:95%"></div></div><div class="day-hrs">~9 h</div><div class="day-note">09:06–16:35 · <strong>20 changes</strong> · Major dev sprint — entire session in iterative pushes [dev]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--green)">Apr 28</div><div class="bar-track"><div class="bar-fill" style="width:84%"></div></div><div class="day-hrs">~8 h</div><div class="day-note">12:12–18:10 · 22 changes · Email subject overflow fix, EQUIP_REQ dashboard [prod+dev]</div></div>
+      <div class="day-bar"><div class="day-lbl" style="color:var(--accent2)">Apr 29</div><div class="bar-track"><div class="bar-fill" style="width:21%"></div></div><div class="day-hrs">~2 h</div><div class="day-note">18:25–19:42 · 3 changes · Final dev push [dev]</div></div>
+
+    </div>
+
+    <h3>Summary by Month</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Month</th><th>Tracked Changes</th><th>Total Hours</th><th>Dev Hours</th><th>QA Hours</th></tr></thead>
+        <tbody>
+          <tr><td>Dec 2025</td><td class="num-cell">20</td><td class="num-cell">~15 h</td><td class="num-cell">~15 h</td><td class="num-cell">—</td></tr>
+          <tr><td>Jan 2026</td><td class="num-cell">26</td><td class="num-cell">~28 h</td><td class="num-cell">~24 h</td><td class="num-cell">~4 h</td></tr>
+          <tr><td>Feb 2026</td><td class="num-cell">17</td><td class="num-cell">~10 h</td><td class="num-cell">~7 h</td><td class="num-cell">~3 h</td></tr>
+          <tr><td>Mar 2026</td><td class="num-cell">91</td><td class="num-cell">~46 h</td><td class="num-cell">~38 h</td><td class="num-cell">~8 h</td></tr>
+          <tr class="row-hl"><td>Apr 2026</td><td class="num-cell">177</td><td class="num-cell">~75 h</td><td class="num-cell">~49 h</td><td class="num-cell">~26 h</td></tr>
+          <tr class="total-row"><td>Total — 48 active dev days</td><td class="num-cell">331</td><td class="num-cell">~174 h</td><td class="num-cell">~133 h</td><td class="num-cell">~41 h</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:-10px;margin-bottom:20px;">
+      Dev hours = architecture, coding, review, and direction. QA hours = deliberate testing sessions:
+      form submissions, workflow walkthroughs, email and edge-case verification — all developer-run.
+    </p>
+
+    <div class="callout green">
+      <strong>Cost avoidance — not hypothetical savings.</strong><br>
+      This was a solo, part-time effort — a full-time dev team wasn't available, and outsourcing was
+      the realistic alternative. A senior contractor building an equivalent system would cost an estimated
+      <strong>$65,000–$115,000</strong> as a one-time build ($125–$175/hr over 500–650 hours), before
+      ongoing maintenance. That's the direct cost avoided.<br><br>
+      The broader picture: workflow automation platforms with comparable multi-step gating and routing —
+      Kissflow, Process Street, Nintex — run <strong>$10–$25/user/month</strong>, or
+      <strong>$180K–$450K+/year</strong> at TEAM Group's scale. Basic HR tools like BambooHR or Rippling
+      cost <strong>$6–$9/user/month</strong> (~$108K–$162K/yr) but cover data collection only —
+      no step enforcement, no specialist routing, no audit trail. This system runs on
+      <strong>Google Workspace TEAM Group already pays for</strong> — zero incremental cost.<br><br>
+      The most important gain is operational: tracked, enforced, accountable workflows replacing
+      emailed spreadsheets with no visibility or follow-through mechanism.
+    </div>
+  </section>
+
+  <!-- ── QAT ── -->
+  <section>
+    <h2><span class="icon">🧪</span> QAT &amp; Testing Evidence</h2>
+    <div class="section-sub">6 deliberate QA sessions · 105 staging workflows · ~305 confirmed sheet writes — <em>all 4 workflow types exercised.</em></div>
+
+    <p style="margin-bottom:20px;">
+      All quality assurance and integration testing was performed by the developer personally — every
+      form submission, every multi-step workflow walkthrough, and every email routing and edge-case
+      verification was deliberate solo QA. Testing ran across three phases as the environment
+      topology evolved.
+    </p>
+
+    <div class="callout" style="margin-bottom:16px;">
+      <strong>Phase 1 — Prod-only (Jan 23 – Feb 24):</strong> No staging yet. Developer tested
+      directly on prod. The ~72 NEW_EMP test workflows accumulated in the prod spreadsheet during
+      this window.
+    </div>
+    <div class="callout yellow" style="margin-bottom:16px;">
+      <strong>Phase 2 — Staging as primary (Feb 24 – Apr 20):</strong> Staging was stood up once
+      direct prod testing became unwieldy. At the cutover, prod was <strong>cleaned of test
+      data</strong> — those ~72 NEW_EMP entries moved to staging. From Feb 24 onward prod received
+      real HR submissions only. Staging became the active QA surface, adding 30 TERM/EOE + 3 CHANGE
+      on top of the migrated NEW_EMP data.
+    </div>
+    <div class="callout red" style="margin-bottom:24px;">
+      <strong>Phase 3 — Dev for refactor (Apr 21 – Apr 29):</strong> Dev project (created Feb 24,
+      kept dormant while staging was the active branch) activated for the Action Items refactor.
+      Dev was seeded with ~244 NEW_EMP entries <strong>imported from prod</strong> for realistic
+      reference data — those are <em>not</em> QA submissions. All dev testing was the developer
+      running the new schema against all 4 workflow types during the Apr 21–29 sprint.
+    </div>
+
+    <!-- QA Sessions -->
+    <h3 style="margin-bottom:12px;">Developer QA Sessions <span style="color:var(--muted);font-weight:normal;font-size:13px;">— 6 sessions · ~41 h · each clasp deploy = one live test iteration</span></h3>
+    <div class="tbl-wrap" style="margin-bottom:24px;">
+      <table>
+        <thead><tr><th>Session</th><th>Date</th><th>Clasp Saves</th><th>Est. Duration</th><th>Focus</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>New Hire prod rollout</strong></td>
+            <td style="white-space:nowrap">Jan 23, 2026</td>
+            <td class="num-cell">13 prod</td>
+            <td>~3.5 h</td>
+            <td>First prod deployment — full NEW_EMP walkthrough; produced ~72 test records later migrated to staging (13:43–17:15 UTC)</td>
+          </tr>
+          <tr>
+            <td><strong>Staging standup + cutover</strong></td>
+            <td style="white-space:nowrap">Feb 24, 2026</td>
+            <td class="num-cell">10 staging</td>
+            <td>~3 h</td>
+            <td>Staging &amp; dev created; prod test data moved to staging; prod cleaned for real HR use only</td>
+          </tr>
+          <tr class="row-hl">
+            <td><strong>Termination / EOE sprint</strong></td>
+            <td style="white-space:nowrap">Mar 6–9, 2026</td>
+            <td class="num-cell">37 staging</td>
+            <td>~7.5 h</td>
+            <td>Full TERM + EOE workflow across two sessions (same workflow type) — gating, Action Items generation, approval routing, specialist routing, email edge cases</td>
+          </tr>
+          <tr class="row-hl">
+            <td><strong>Action Items refactor QA</strong></td>
+            <td style="white-space:nowrap">Apr 21, 2026</td>
+            <td class="num-cell">15 dev</td>
+            <td>~6.7 h</td>
+            <td>Unified Action Items schema — all 4 workflow types on new data model (14:45–21:29 UTC)</td>
+          </tr>
+          <tr>
+            <td><strong>Final validation I</strong></td>
+            <td style="white-space:nowrap">Apr 27, 2026</td>
+            <td class="num-cell">20 dev</td>
+            <td>~7.5 h</td>
+            <td>Cross-environment check; email edge cases; status change pipeline (14:06–21:35 UTC)</td>
+          </tr>
+          <tr>
+            <td><strong>Final validation II</strong></td>
+            <td style="white-space:nowrap">Apr 28, 2026</td>
+            <td class="num-cell">18 dev</td>
+            <td>~4.8 h</td>
+            <td>IT confirmation gate; Equipment Request type; pre-launch final checks (17:12–22:02 UTC)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Staging test record -->
+    <h3 style="margin-bottom:12px;">Staging Test Record (all entries are developer QA submissions)</h3>
+    <div class="tbl-wrap" style="margin-bottom:24px;">
+      <table>
+        <tbody>
+          <tr><td>Total developer test workflows</td><td class="num-cell">105</td></tr>
+          <tr><td style="padding-left:16px;color:var(--muted)">↳ New Hire — migrated from prod-only phase</td><td class="num-cell">72</td></tr>
+          <tr><td style="padding-left:16px;color:var(--muted)">↳ Termination / EOE — submitted directly on staging</td><td class="num-cell">30</td></tr>
+          <tr><td style="padding-left:16px;color:var(--muted)">↳ Position / Site Change — submitted directly on staging</td><td class="num-cell">3</td></tr>
+          <tr><td>Initial Requests submitted</td><td class="num-cell">70</td></tr>
+          <tr><td>ID Setup completions</td><td class="num-cell">63</td></tr>
+          <tr><td>HR Verification submissions</td><td class="num-cell">47</td></tr>
+          <tr><td>IT Setup completions</td><td class="num-cell">8</td></tr>
+          <tr><td>Action Items generated</td><td class="num-cell">117</td></tr>
+          <tr class="row-hl"><td>Total confirmed sheet write events</td><td class="num-cell">~305</td></tr>
+          <tr><td>Active date range</td><td style="color:var(--muted)">Jan 20 – Apr 20, 2026</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <strong>QA scope:</strong>
+      6 major developer testing sessions &nbsp;·&nbsp;
+      ~41 hours of active QA time &nbsp;·&nbsp;
+      105 staging test workflows across all 4 workflow types &nbsp;·&nbsp;
+      ~305 confirmed staging sheet write events &nbsp;·&nbsp;
+      Every gating step, every email path, and every edge case exercised before prod promotion.
+    </div>
+
+  </section>
+
+  <!-- ── TIMELINE ── -->
+  <section>
+    <h2><span class="icon">📅</span> Development Timeline</h2>
+    <div class="section-sub">Dec 2025 → Apr 2026 — <em>from blank repo to production system across 5 calendar months.</em></div>
+
+    <div class="timeline">
+
+      <div class="tl-group">
+        <div class="tl-month">December 2025 &nbsp;·&nbsp; 20 commits &nbsp;·&nbsp; 4 days</div>
+        <div class="tl-item">
+          <div class="tl-date">2025-12-04</div>
+          <div class="tl-title">Initial commit — REQUEST_FORMS demo system</div>
+          <div class="tl-sub">Complete prototype with 3-form workflow and tracking</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2025-12-08</div>
+          <div class="tl-title">Repository consolidation, session guides, demo features</div>
+        </div>
+        <div class="tl-item big">
+          <div class="tl-date">2025-12-09</div>
+          <div class="tl-title"><strong>MAJOR REORGANIZATION</strong> — clean modular structure</div>
+          <div class="tl-sub">Architecture decision: clear module boundaries, shared libraries</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2025-12-17</div>
+          <div class="tl-title">Deploy all 9 forms to shared drive, automated spreadsheet creation</div>
+          <div class="tl-sub">clasp, shared Styles library, deployment links</div>
+        </div>
+      </div>
+
+      <div class="tl-group">
+        <div class="tl-month">January 2026 &nbsp;·&nbsp; 26 changes &nbsp;·&nbsp; 6 days</div>
+        <div class="tl-item big">
+          <div class="tl-date">2026-01-15</div>
+          <div class="tl-title"><strong>Phase 8 & 9</strong> — Premium UI refactor, data visibility enhancements</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-01-16</div>
+          <div class="tl-title">Consolidate to V2 architecture, archive legacy projects</div>
+        </div>
+        <div class="tl-item milestone">
+          <div class="tl-date">2026-01-22</div>
+          <div class="tl-title"><strong>Initialize comprehensive employee management system (V2)</strong></div>
+          <div class="tl-sub">Offboarding, asset management, dashboards, full module structure — all in one session</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-01-23</div>
+          <div class="tl-title">First prod deployment &amp; new hire testing — 13 commits [prod]</div>
+          <div class="tl-sub">13:43–17:15</div>
+        </div>
+        <div class="tl-item big">
+          <div class="tl-date">2026-01-27</div>
+          <div class="tl-title"><strong>Safety Notification &amp; Config Cleanup</strong> · Safety/HR Email Fixes [prod]</div>
+          <div class="tl-sub">10:30–15:55 · 5 commits</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-01-28</div>
+          <div class="tl-title">Fix Dashboard Syntax Error [prod]</div>
+        </div>
+      </div>
+
+      <div class="tl-group">
+        <div class="tl-month">February 2026 &nbsp;·&nbsp; 17 changes &nbsp;·&nbsp; 2 days</div>
+        <div class="tl-item">
+          <div class="tl-date">2026-02-20</div>
+          <div class="tl-title">Environment-aware configuration via Script Properties</div>
+          <div class="tl-sub">No more hardcoded IDs — same codebase deploys to all three environments</div>
+        </div>
+        <div class="tl-item big">
+          <div class="tl-date">2026-02-24</div>
+          <div class="tl-title"><strong>Staging + Dev environments stood up</strong> — 15 commits [staging+dev]</div>
+          <div class="tl-sub">10:37–15:51</div>
+        </div>
+      </div>
+
+      <div class="tl-group">
+        <div class="tl-month">March 2026 &nbsp;·&nbsp; 91 changes &nbsp;·&nbsp; 11 days</div>
+        <div class="tl-item">
+          <div class="tl-date">2026-03-04 – 03-05</div>
+          <div class="tl-title">Port staging to prod — dashboard group-access, UI, specialist forms</div>
+        </div>
+        <div class="tl-item big">
+          <div class="tl-date">2026-03-06</div>
+          <div class="tl-title"><strong>Major staging feature build</strong> — 27 commits [staging]</div>
+          <div class="tl-sub">12:34–17:10 · Specialist forms, dashboard, workflow routing</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-03-09</div>
+          <div class="tl-title">Staging continued — 10 iterative pushes [staging]</div>
+          <div class="tl-sub">11:52–15:50 · Workflow routing, specialist forms</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-03-17</div>
+          <div class="tl-title">Staging checkpoint save [staging]</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-03-19 – 03-20</div>
+          <div class="tl-title">Staging: JSON checklist rendering, status change name fix, CSS scaling</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-03-23 – 03-24</div>
+          <div class="tl-title">Action item emails, button groups, dashboard UX, minor fix [staging]</div>
+        </div>
+        <div class="tl-item big">
+          <div class="tl-date">2026-03-25</div>
+          <div class="tl-title"><strong>Equipment requests workflow</strong>, dashboard performance optimization</div>
+          <div class="tl-sub">09:26–16:25 · 17 changes across staging + prod</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-03-30</div>
+          <div class="tl-title">Prod + staging maintenance pushes [prod+staging]</div>
+        </div>
+      </div>
+
+      <div class="tl-group">
+        <div class="tl-month">April 2026 — The Sprint &nbsp;·&nbsp; 177 changes &nbsp;·&nbsp; 10 days</div>
+        <div class="tl-item">
+          <div class="tl-date">2026-04-14</div>
+          <div class="tl-title">Phase 8 QA — staging regressions R1–R5, form improvements I1–I6, email E1–E6</div>
+        </div>
+        <div class="tl-item big">
+          <div class="tl-date">2026-04-16 &nbsp;·&nbsp; 26 commits</div>
+          <div class="tl-title"><strong>Central Purchasing, buildEmailSubject standardization, Phase 8 Groups A–F</strong></div>
+          <div class="tl-sub">EXPEDITE subject tag, payroll mirroring HR, specialist email standardization</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-04-17</div>
+          <div class="tl-title">Staging hotfixes — empType column, date format standardization (yyyy/MM/dd), HR verification</div>
+        </div>
+        <div class="tl-item milestone">
+          <div class="tl-date">2026-04-20</div>
+          <div class="tl-title"><strong>ACTION ITEMS REFACTOR — Phases 1–6</strong></div>
+          <div class="tl-sub">6 legacy specialist sheets retired → unified Action Items system with task IDs, JSON form data, lifecycle</div>
+        </div>
+        <div class="tl-item milestone">
+          <div class="tl-date">2026-04-21 &nbsp;·&nbsp; 17 commits &nbsp;·&nbsp; peak day</div>
+          <div class="tl-title"><strong>Status Change pipeline + EOE workflow + Form edit mode + ChangeNotify</strong></div>
+          <div class="tl-sub">10:41 first commit → 18:03 last commit. All four capabilities in one day.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-04-22</div>
+          <div class="tl-title">Equipment form overhaul — Jonas/Central Purchasing use correct data source (cost sheets)</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-04-23</div>
+          <div class="tl-title">Dual-list picker UX, BOSS gatekeeper, WIS task, full QA pass</div>
+        </div>
+        <div class="tl-item big">
+          <div class="tl-date">2026-04-27</div>
+          <div class="tl-title"><strong>Major dev sprint</strong> — 20 commits [dev]</div>
+          <div class="tl-sub">09:06–16:35 · 7.5-hour session</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-04-28</div>
+          <div class="tl-title">Email subject overflow fix, EQUIP_REQ dashboard, routing, demo data migration</div>
+          <div class="tl-sub">225 prod workflows migrated to dev Google Sheet for demo</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-date">2026-04-29</div>
+          <div class="tl-title">Final dev push — 3 iterative saves [dev]</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── ARCHITECTURE ── -->
+  <section>
+    <h2><span class="icon">🏗</span> Architecture Highlights</h2>
+    <div class="section-sub">Enterprise workflow capabilities — <em>inside a Google Sheet.</em></div>
+
+    <h3>The Action Items Refactor</h3>
+    <p>
+      The single largest architectural decision of the project. Six independent specialist result sheets
+      were retired and replaced with a single normalized <strong>Action Items</strong> tab.
+      Every task across every workflow type is now one row. Task lifecycle is uniform.
+      Form data is stored as a JSON blob — schema changes don't require sheet migrations.
+      Migration was handled by <code>tools/migrate-prod-sheet/index.js</code> — a local Node.js script
+      with <code>--dry-run</code> / <code>--execute</code> modes. Zero changes to live GAS code during cutover.
+    </p>
+
+    <h3>Email Engine</h3>
+    <p>
+      ~1,200 lines across <code>EmailUtils.js</code> and <code>ChangeNotify.js</code>.
+      Dark-mode inline-styled HTML templates. Per-workflow subject builder with a hard 250-character cap
+      (GAS <code>MailApp.sendEmail</code> throws <code>Argument too large: subject</code> beyond that —
+      hit in production on Status Change workflows with long site names and classification strings).
+      Change-audit diff tables show field / original value / updated value inline in the email body.
+      Conditional routing: Safety team notified on SiteDocs/DSS-impacted changes, ID Setup notified on credential changes.
+    </p>
+
+    <h3>Sequential Gating Engine</h3>
+    <p>
+      Each workflow defines its steps as a config object. The engine evaluates current state,
+      identifies the next pending step, generates a gated form URL, and refuses to advance if
+      prior steps are incomplete. The same engine powers all 4 workflow types with zero duplication.
+    </p>
+
+    <h3>Why This Is Unusual for "No-Code" Infrastructure</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Typically a GAS script does…</th><th>This project does…</th></tr></thead>
+        <tbody>
+          <tr><td>A form submission hook</td><td>A full multi-step, multi-role workflow state machine</td></tr>
+          <tr><td>A spreadsheet helper formula</td><td>A normalized relational data model across 10+ sheets with joins</td></tr>
+          <tr><td>A simple HTML sidebar</td><td>A live web app with session state, role checks, RPC via <code>google.script.run</code></td></tr>
+          <tr><td>One GCP project, one clasp ID</td><td>Three isolated GCP projects, environment-aware config, local migration tooling</td></tr>
+          <tr><td>No deployment process</td><td>clasp push/pull workflow, 3 clasp.json targets, dry-run migration scripts</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── TECHNICAL DECISIONS ── -->
+  <section>
+    <h2><span class="icon">🔧</span> Key Technical Decisions</h2>
+    <div class="section-sub">Every decision here solved a real constraint — <em>version-controlled, maintainable, and safe to hand off.</em></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Decision</th><th>Rationale</th></tr></thead>
+        <tbody>
+          <tr><td><code>.js</code> over <code>.gs</code></td><td>Editors treat <code>.js</code> as JavaScript properly; cleaner clasp push/pull diffs</td></tr>
+          <tr><td>JSON blobs for form data</td><td>Schema-flexible — specialist forms can evolve without a sheet column migration</td></tr>
+          <tr><td>Script Properties for config</td><td>Environment switching without code changes; no hardcoded spreadsheet or script IDs</td></tr>
+          <tr><td>Local migration tooling</td><td>Prod GAS untouched during data model migrations; safe dry-run workflow before execute</td></tr>
+          <tr><td>Inline styles in emails</td><td>Google Workspace strips <code>&lt;style&gt;</code> tags in some email clients; inline-only is safe</td></tr>
+          <tr><td>250-char subject cap</td><td>GAS throws <code>Argument too large: subject</code> above ~250 chars — hit in prod on Status Change</td></tr>
+          <tr><td>EPPlus for Excel migration</td><td><code>Import-Excel</code> fails on duplicate column headers; EPPlus positional copy bypasses this</td></tr>
+          <tr><td>Separate GCP projects per env</td><td>Prod OAuth scopes and service account permissions isolated from staging/dev experiments</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Generated 2026-04-29 &nbsp;·&nbsp; TEAM Group Internal Tooling &nbsp;·&nbsp; Hour estimates derived from commit timestamps and changeset density across all 331 tracked changes.
+  </footer>
+
+</div>
+</body>
+</html>
