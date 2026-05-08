@@ -8,6 +8,16 @@ function fmtDate_(iso) {
   return (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear();
 }
 
+/**
+ * Parse a duration string like "1 Month", "3 Months", "Default 1 Month then delete" → integer months.
+ * Falls back to 1.
+ */
+function parseDurationMonths_(durationStr) {
+  if (!durationStr || durationStr === 'N/A') return 1;
+  const match = String(durationStr).match(/(\d+)/);
+  return match ? Math.max(1, parseInt(match[1], 10)) : 1;
+}
+
 function serveTerminationRequest() {
   const template = HtmlService.createTemplateFromFile('TerminationRequest');
   template.referenceData = JSON.stringify(getInitialFormData());
@@ -29,6 +39,24 @@ function submitTerminationRequest(formData) {
     // Flatten arrays
     const systems = Array.isArray(formData.systems) ? formData.systems.join(', ') : (formData.systems || '');
     const equipment = Array.isArray(formData.equip) ? formData.equip.join(', ') : (formData.equip || '');
+
+    // Upload attachment to Drive if provided
+    let attachmentUrl = '';
+    let attachmentBlob = null;
+    if (formData.attachmentBase64 && formData.attachmentName) {
+      try {
+        const bytes = Utilities.base64Decode(formData.attachmentBase64);
+        attachmentBlob = Utilities.newBlob(bytes, formData.attachmentMimeType || 'application/octet-stream', formData.attachmentName);
+        const safeName = 'TERM_' + String(formData.empName || workflowId).replace(/\s/g, '_') + '_' + formData.attachmentName;
+        attachmentBlob.setName(safeName);
+        const mainFolder = DriveApp.getFolderById(CONFIG.MAIN_FOLDER_ID);
+        const driveFile = mainFolder.createFile(attachmentBlob);
+        attachmentUrl = driveFile.getUrl();
+        Logger.log('[TerminationHandler] Attachment saved to Drive: ' + attachmentUrl);
+      } catch (attErr) {
+        Logger.log('[TerminationHandler] Attachment upload failed: ' + attErr.message);
+      }
+    }
 
     const rowData = [
       formData.workflowId,
@@ -58,9 +86,10 @@ function submitTerminationRequest(formData) {
       formData.google_vacation || 'N/A',
       equipment,
       formData.comments || '',
-      formData.lastDayWorked || ''
+      formData.lastDayWorked || '',
+      attachmentUrl
     ];
-    
+
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATIONS, rowData);
     if (!sheetSuccess) throw new Error('Failed to record termination in sheet');
     
@@ -88,26 +117,28 @@ function submitTerminationRequest(formData) {
       lastDayWorked: fmtDate_(formData.lastDayWorked),
       reason: formData.reason,
       equipmentRaw: equipment,
-      systems: systems
+      systems: systems,
+      hasReports: formData.has_reports || '',
+      reportsToNew: formData.reports_to_new || '',
+      googleOffboarding: {
+        forward:  formData.google_forward  || '',
+        files:    formData.google_files    || '',
+        delegate: formData.google_delegate || '',
+        duration: formData.google_duration || '',
+        vacation: formData.google_vacation || ''
+      }
     };
 
-    const emailConfig = {
+    const hrEmailBody = `A new end of employment request has been submitted for ${formData.empName} and requires your approval to proceed.` +
+      (attachmentUrl ? `<br><br><b>Supporting Documentation:</b> <a href="${attachmentUrl}">View attached file</a>` : '');
+
+    sendFormEmail({
       to: CONFIG.EMAILS.HR,
       subject: 'HR Approval Required',
-      body: `A new end of employment request has been submitted for ${formData.empName} and requires your approval to proceed.`,
+      body: hrEmailBody,
       formUrl: approvalUrl,
       contextData: finalContext
-    };
-
-    // If an attachment was uploaded, pass the blob along
-    if (formData.attachment && formData.attachment.length && formData.attachment.length > 0) {
-      emailConfig.attachment = formData.attachment;
-    } else if (formData.attachment && formData.attachment.getBytes) {
-      // In case the Blob object structure is direct
-      emailConfig.attachment = formData.attachment;
-    }
-
-    sendFormEmail(emailConfig);
+    });
 
     // Notify payroll — advance notice only, no form link until HR approves
     sendFormEmail({
@@ -162,7 +193,8 @@ function getTerminationData(workflowId) {
       vacation: data[24]
     },
     originalComments: data[26],
-    lastDayWorked: data[27] ? (data[27] instanceof Date ? Utilities.formatDate(new Date(data[27]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[27]) : ''
+    lastDayWorked: data[27] ? (data[27] instanceof Date ? Utilities.formatDate(new Date(data[27]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[27]) : '',
+    attachmentUrl: data[28] || ''
   };
 }
 
@@ -171,12 +203,12 @@ function getTerminationData(workflowId) {
  */
 function submitTerminationApproval(formData) {
   try {
-    const { workflowId, decision, notes, collectAssets, itDisable } = formData;
+    const { workflowId, decision, notes } = formData;
     const formId = generateFormId('TERM_APP');
     
     // Record approval
     addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATION_APPROVALS, [
-      workflowId, formId, new Date(), decision, notes, collectAssets ? 'YES' : 'NO', Session.getActiveUser().getEmail()
+      workflowId, formId, new Date(), decision, notes, 'YES', Session.getActiveUser().getEmail()
     ]);
     
     if (decision === 'Approved') {
@@ -188,91 +220,147 @@ function submitTerminationApproval(formData) {
       const selectedSystems = rawSystems ? rawSystems.split(',').map(s => s.trim()).filter(s => s && s !== 'N/A') : [];
 
       // IT Group (BOSS, Delivery, Incidents, Google, CAA)
-      const itItems = selectedSystems.filter(s => ['BOSS', 'Delivery', 'Incidents', 'Google Account', 'CAA'].includes(s)).map(s => 'Deactivate ' + s);
+      const itItems = selectedSystems.filter(s => ['BOSS', 'Delivery', 'Incidents', 'Google Account', 'CAA'].includes(s)).map(s => {
+        if (s === 'BOSS') return 'Delete BOSS account';
+        return 'Deactivate ' + s;
+      });
       
       const g = termData.googleOffboarding;
-      if (g.forward && g.forward !== 'N/A') itItems.push(`Email Forwarding to ${g.forward}`);
-      if (g.files && g.files !== 'N/A') itItems.push(`Drive Files Transfer to ${g.files}`);
-      if (g.delegate && g.delegate !== 'N/A') itItems.push(`Delegated Inbox Access to ${g.delegate}`);
-      if (g.vacation && g.vacation !== 'N/A') itItems.push(`Set Vacation Responder. Body: "${g.vacation}"`);
-      
-      const duration = (g.duration && g.duration !== 'N/A') ? g.duration : 'Default 1 Month then delete';
-      itItems.push(`Account Duration: ${duration}`);
+      const hasGoogleAccount = selectedSystems.includes('Google Account');
 
-      // Direct reports reassignment
-      if (termData.hasReports === 'Yes') {
+      // Google Account offboarding sub-tasks — ONLY when Google Account is in selected systems
+      if (hasGoogleAccount) {
+        if (g.forward && g.forward !== 'N/A') itItems.push('Email Forwarding to ' + g.forward);
+        if (g.files && g.files !== 'N/A') itItems.push('Drive Files Transfer to ' + g.files);
+        if (g.delegate && g.delegate !== 'N/A') itItems.push('Delegated Inbox Access to ' + g.delegate);
+        if (g.vacation && g.vacation !== 'N/A') {
+          let vacationMsg = g.vacation;
+          // Replace [RECIPIENT] placeholder if the form didn't substitute it (e.g. autocomplete bypass)
+          if (vacationMsg.includes('[RECIPIENT]')) {
+            const recipient = (g.forward && g.forward !== 'N/A') ? g.forward
+                            : (g.delegate && g.delegate !== 'N/A') ? g.delegate
+                            : (termData.managerEmail && termData.managerEmail !== 'N/A') ? termData.managerEmail
+                            : 'HR';
+            vacationMsg = vacationMsg.replace('[RECIPIENT]', recipient);
+          }
+          itItems.push('Set Vacation Responder — Message: ' + vacationMsg);
+        }
+        // Embed calendar marker so IT action item form shows "Add to Calendar" for account deletion date
+        const rawDuration = (g.duration && g.duration !== 'N/A') ? g.duration : '1 Month';
+        const confirmWith = (g.forward && g.forward !== 'N/A') ? g.forward : '';
+        itItems.push('__CAL__' + rawDuration + '__' + confirmWith);
+      }
+
+      // Mobile phone suspension — conditional on equipment list, not Google Account
+      const eqList = (termData.eqToReturn || '').split(',').map(function(s) { return s.trim(); });
+      if (eqList.some(function(e) { return e.toLowerCase().includes('mobile phone'); })) {
+        const phoneInfo = (termData.empPhone && termData.empPhone !== 'N/A') ? ' — ' + termData.empPhone : '';
+        itItems.push('Suspend/Cancel Mobile Phone' + phoneInfo);
+      }
+
+      // Direct reports reassignment — conditional on Google Account (Google org chart)
+      if (hasGoogleAccount && termData.hasReports === 'Yes') {
         const newMgr = (termData.reportsToNew && termData.reportsToNew !== 'N/A') ? termData.reportsToNew : 'new manager (see HR)';
         itItems.push('Reassign Google direct reports to: ' + newMgr);
+        itItems.push('Reassign BOSS direct reports to: ' + newMgr);
+      } else if (!hasGoogleAccount && termData.hasReports === 'Yes') {
+        // No Google account but has reports — BOSS reassignment only
+        const newMgr = (termData.reportsToNew && termData.reportsToNew !== 'N/A') ? termData.reportsToNew : 'new manager (see HR)';
         itItems.push('Reassign BOSS direct reports to: ' + newMgr);
       }
 
       if (itItems.length > 0) {
-        const tid = ActionItemService.createActionItem(workflowId, 'IT', `IT Systems Deactivation - ${termData.employeeName}`, JSON.stringify(itItems), CONFIG.EMAILS.IT);
+        itItems.push('Confirm employee had no additional systems or equipment not listed above — verify with manager if unsure');
+        const tid = ActionItemService.createActionItem(workflowId, 'IT', 'IT Systems Deactivation - ' + termData.employeeName, JSON.stringify(itItems), CONFIG.EMAILS.IT);
         sendActionItemEmail(CONFIG.EMAILS.IT, 'IT Action Required', tid, termData, itItems);
         tasksCreated++;
       }
 
       // HR Group (ADP) — CC Payroll since different locations handle this differently
-      const hrItems = selectedSystems.filter(s => s === 'ADP Supervisor Access');
+      const hrItems = selectedSystems.filter(s => s === 'ADP Supervisor Access').map(s => 'Remove from ' + s);
       if (hrItems.length > 0) {
         const hrAndPayroll = CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL;
-        const tid = ActionItemService.createActionItem(workflowId, 'HR', `HR Systems Deactivation - ${termData.employeeName}`, JSON.stringify(hrItems), hrAndPayroll);
+        const hrDescItems = hrItems.slice();
+        if (termData.hasReports === 'Yes') {
+          const newMgr = (termData.reportsToNew && termData.reportsToNew !== 'N/A') ? termData.reportsToNew : 'TBD — confirm with HR';
+          hrDescItems.push('Direct reports to be reassigned to: ' + newMgr);
+          hrDescItems.push('Update ADP reporting structure to reflect direct report reassignment');
+        }
+        const tid = ActionItemService.createActionItem(workflowId, 'HR', 'HR Systems Deactivation - ' + termData.employeeName, JSON.stringify(hrDescItems), hrAndPayroll);
         sendActionItemEmail(hrAndPayroll, 'HR Action Required', tid, termData, hrItems);
         tasksCreated++;
       }
 
       // Fleet Group (Fleetio)
-      const fleetItems = selectedSystems.filter(s => s === 'Fleetio');
+      const fleetItems = selectedSystems.filter(s => s === 'Fleetio').map(s => 'Remove from ' + s);
       if (fleetItems.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'Fleet', `Fleet Systems Deactivation - ${termData.employeeName}`, JSON.stringify(fleetItems), CONFIG.EMAILS.FLEETIO);
         sendActionItemEmail(CONFIG.EMAILS.FLEETIO, 'Fleet Action Required', tid, termData, fleetItems);
         tasksCreated++;
       }
 
-      // Jonas/Finance Group (Jonas Purchasing + Central Purchasing — same team, same email)
-      const financeItems = selectedSystems.filter(s => s === 'Jonas Purchasing' || s === 'Central Purchasing');
-      if (financeItems.length > 0) {
-        const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Jonas/Purchasing Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
+      // Central Purchasing/Jonas Group
+      if (selectedSystems.includes('Central Purchasing/Jonas')) {
+        const financeItems = ['Remove from Central Purchasing/Jonas'];
+        const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Central Purchasing/Jonas Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
         sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Finance Action Required', tid, termData, financeItems);
         tasksCreated++;
       }
 
       // Employee Deactivation Group (SiteDocs, DSS, BOSS WIS) - Always Mandatory
-      const deactItems = ['SiteDocs', 'DSS User', 'BOSS WIS Module'];
+      const deactItems = ['Remove from SiteDocs', 'Remove DSS User', 'Remove from BOSS WIS Module'];
       const tidDeact = ActionItemService.createActionItem(workflowId, 'Deactivation', `Employee Deactivation - ${termData.employeeName}`, JSON.stringify(deactItems), CONFIG.EMAILS.IDSETUP);
       sendActionItemEmail(CONFIG.EMAILS.IDSETUP, 'Employee Deactivation Required', tidDeact, termData, deactItems);
       tasksCreated++;
 
-      // Safety — send form link for offboarding confirmation
-      const safetyTermUrl = buildFormUrl('specialist', { wf: workflowId, dept: 'safetyterm' });
+      // Safety Offboarding — FYI notification only. No action item needed;
+      // deactivation (SiteDocs, DSS, BOSS WIS) is handled by the ID Setup team above.
+      const safetyTermCtx = {
+        ...termData,
+        workflowType: 'Termination',
+        employmentType: termData.empType,
+        hireDate: fmtDate_(termData.termDate),
+        equipmentRaw: termData.eqToReturn,
+        lastDayWorked: fmtDate_(termData.lastDayWorked),
+        hasReports: termData.hasReports,
+        reportsToNew: termData.reportsToNew,
+        hrDecision: 'Approved',
+        hrNotes: notes || ''
+      };
       sendFormEmail({
         to: CONFIG.EMAILS.SAFETY,
-        subject: 'Safety Offboarding Required — ' + termData.employeeName,
-        body: 'HR has approved the end of employment for ' + termData.employeeName + '. Please confirm SiteDocs removal and BOSS records update using the form below.',
-        formUrl: safetyTermUrl,
+        subject: 'FYI — Employee Offboarding: ' + termData.employeeName,
+        body: 'HR has approved the end of employment for <b>' + termData.employeeName + '</b>.' +
+          '<br><b>Site:</b> ' + (termData.siteName || 'N/A') +
+          '<br><b>Term Date:</b> ' + fmtDate_(termData.termDate) +
+          '<br><b>Last Day Worked:</b> ' + fmtDate_(termData.lastDayWorked) +
+          '<br><br>This is an advance notification only — no action is required from Safety. Employee deactivation (SiteDocs, DSS, BOSS WIS) will be handled by the ID Setup team.',
+        formUrl: '',
         displayName: 'TEAM Group - Employee Management',
-        contextData: {
-          ...termData,
-          workflowType: 'Termination',
-          employmentType: termData.empType,
-          hireDate: fmtDate_(termData.termDate),
-          equipmentRaw: termData.eqToReturn,
-          lastDayWorked: fmtDate_(termData.lastDayWorked),
-          hasReports: termData.hasReports,
-          reportsToNew: termData.reportsToNew
-        }
+        contextData: safetyTermCtx
       });
+      // No tasksCreated++ — this is informational only
 
-      // 2. CONSOLIDATED ASSET CHECKLIST (Manager/Requester)
+      // 2. CONSOLIDATED ASSET CHECKLIST (Manager/Requester) — always created on approval
       const termRecipients = [termData.requesterEmail];
       if (termData.managerEmail && termData.managerEmail !== termData.requesterEmail) termRecipients.push(termData.managerEmail);
-      const termApprovalContext = { ...termData, workflowType: 'Termination', employmentType: termData.empType, hireDate: termData.termDate, equipmentRaw: termData.eqToReturn };
+      const termApprovalContext = {
+        ...termData,
+        workflowType: 'Termination',
+        employmentType: termData.empType,
+        hireDate: fmtDate_(termData.termDate),
+        equipmentRaw: termData.eqToReturn,
+        lastDayWorked: fmtDate_(termData.lastDayWorked),
+        hasReports: termData.hasReports,
+        reportsToNew: termData.reportsToNew,
+        hrDecision: 'Approved',
+        hrNotes: notes || ''
+      };
 
-      if (collectAssets) {
-        const rawAssets = termData.eqToReturn || '';
-        let assets = rawAssets ? rawAssets.split(',').map(s => s.trim()).filter(s => s && s !== 'N/A') : [];
-        if (assets.length === 0) assets = ['Building Access Card/Keys']; // Default if none selected
+      const rawAssets = termData.eqToReturn || '';
+      const assets = rawAssets ? rawAssets.split(',').map(s => s.trim()).filter(s => s && s !== 'N/A') : [];
 
+      if (assets.length > 0) {
         const tid = ActionItemService.createActionItem(workflowId, 'Assets', `Asset Collection Checklist - ${termData.employeeName}`, JSON.stringify(assets), termData.requesterEmail);
         sendFormEmail({
           to: termRecipients.join(','),
@@ -283,7 +371,7 @@ function submitTerminationApproval(formData) {
         });
         tasksCreated++;
       } else {
-        // No assets — still notify requester/manager that termination was approved
+        // No equipment listed — notify requester/manager that termination was approved
         sendFormEmail({
           to: termRecipients.join(','),
           subject: 'Termination Approved',
@@ -296,35 +384,24 @@ function submitTerminationApproval(formData) {
       updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Processing');
       syncWorkflowState(workflowId);
 
-      // E4: Payroll approval notification with direct reports and last day worked info
+      // E4: Payroll approval notification — full context block
       sendFormEmail({
         to: CONFIG.EMAILS.PAYROLL,
         subject: 'Termination Approved',
-        body: `HR has approved the end of employment for ${termData.employeeName}.<br><br>` +
-              `<b>Employee:</b> ${termData.employeeName}<br>` +
-              `<b>Termination Date:</b> ${fmtDate_(termData.termDate)}<br>` +
-              `<b>Last Day Worked:</b> ${fmtDate_(termData.lastDayWorked)}<br>` +
-              `<b>Manager:</b> ${termData.managerName}<br>` +
-              `<b>Site:</b> ${termData.siteName}<br>` +
-              `<b>Employee Type:</b> ${termData.empType || 'N/A'}<br>` +
-              `<b>Has Direct Reports:</b> ${termData.hasReports || 'N/A'}<br>` +
-              `<b>Reports Reassigned To:</b> ${termData.reportsToNew || 'N/A'}<br>` +
-              `<b>Reason:</b> ${termData.reason || 'N/A'}<br>` +
-              `<b>HR Notes:</b> ${notes || 'None'}<br>`,
+        body: `HR has approved the end of employment for <strong>${termData.employeeName}</strong>. All offboarding steps have been initiated. Full details are shown below.` +
+              (notes ? `<br><br><em>HR Notes: ${notes}</em>` : ''),
         formUrl: '',
         contextData: {
+          ...termData,
           workflowType: 'Termination',
-          employeeName: termData.employeeName,
-          siteName: termData.siteName,
           employmentType: termData.empType,
-          hireDate: termData.termDate,
-          managerName: termData.managerName,
-          managerEmail: termData.managerEmail,
-          reason: termData.reason,
-          lastDayWorked: termData.lastDayWorked,
+          hireDate: fmtDate_(termData.termDate),
+          equipmentRaw: termData.eqToReturn,
+          lastDayWorked: fmtDate_(termData.lastDayWorked),
           hasReports: termData.hasReports,
           reportsToNew: termData.reportsToNew,
-          requesterEmail: termData.requesterEmail
+          hrDecision: 'Approved',
+          hrNotes: notes || ''
         }
       });
       
@@ -339,10 +416,20 @@ function submitTerminationApproval(formData) {
       if (termData.managerEmail && termData.managerEmail !== termData.requesterEmail) recipients.push(termData.managerEmail);
 
       sendFormEmail({
-          to: recipients.join(','),
-          subject: 'Termination Rejected',
-          body: `The end of employment request for ${termData.employeeName} has been rejected by HR.<br><br><b>Notes:</b> ${notes || 'No notes provided.'}`,
-          contextData: { ...termData, workflowType: 'Termination', employmentType: termData.empType, hireDate: termData.termDate }
+        to: recipients.join(','),
+        subject: 'Termination Rejected',
+        body: `The end of employment request for <strong>${termData.employeeName}</strong> has been rejected by HR.` +
+              `<br><br><em>HR Notes: ${notes || 'No notes provided.'}</em>`,
+        contextData: {
+          ...termData,
+          workflowType: 'Termination',
+          employmentType: termData.empType,
+          hireDate: fmtDate_(termData.termDate),
+          equipmentRaw: termData.eqToReturn,
+          lastDayWorked: fmtDate_(termData.lastDayWorked),
+          hrDecision: 'Rejected',
+          hrNotes: notes || ''
+        }
       });
 
       return { success: true, message: 'End of employment rejected. Notification sent to requester.' };
@@ -354,25 +441,67 @@ function submitTerminationApproval(formData) {
 }
 
 /**
+ * Called from ActionItemForm when IT clicks "Add to Calendar" for account deletion.
+ * Creates an all-day Google Calendar event on the deletion date and invites IT.
+ * @param {string} taskId
+ * @param {string} duration  - e.g. "1 Month", "3 Months"
+ * @param {string} confirmWith - email to confirm with before deleting (may be empty)
+ * @returns {{ success: boolean, dateStr: string, message: string }}
+ */
+function scheduleAccountDeletion(taskId, duration, confirmWith) {
+  try {
+    const task = ActionItemService.getTask(taskId);
+    if (!task) return { success: false, message: 'Task not found' };
+
+    const empName = task.TaskName ? task.TaskName.replace(/^IT Systems Deactivation - /, '') : 'Employee';
+    const months = parseDurationMonths_(duration);
+    const deletionDate = new Date();
+    deletionDate.setMonth(deletionDate.getMonth() + months);
+
+    const evtDesc = [
+      'Delete Google account for: ' + empName,
+      confirmWith ? 'Confirm deletion with: ' + confirmWith : '',
+      'Duration setting: ' + duration,
+      'Workflow: ' + task.WorkflowID
+    ].filter(Boolean).join('\n');
+
+    const cal = CalendarApp.getDefaultCalendar();
+    cal.createAllDayEvent(
+      'Delete Google Account — ' + empName,
+      deletionDate,
+      { description: evtDesc, guests: CONFIG.EMAILS.IT, sendInvites: true }
+    );
+
+    const dateStr = fmtDate_(deletionDate);
+    Logger.log('[scheduleAccountDeletion] Calendar event created for ' + empName + ' on ' + dateStr);
+    return { success: true, dateStr: dateStr, message: 'Calendar event added for ' + dateStr };
+  } catch (e) {
+    Logger.log('[scheduleAccountDeletion] Error: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
  * Helper to send action item emails
  */
 function sendActionItemEmail(to, subject, tid, termData, items) {
   sendFormEmail({
     to: to,
     subject: subject,
-    body: 'HR has approved the end of employment for ' + termData.employeeName + '. Please complete the following checklist using the button below.',
+    body: 'HR has approved the end of employment for <strong>' + termData.employeeName + '</strong>. Please complete the following checklist using the button below.',
     formUrl: buildFormUrl('action_item_view', { tid: tid }),
     contextData: {
-        ...termData,
-        workflowType: 'Termination',
-        employmentType: termData.empType,
-        hireDate: fmtDate_(termData.termDate),
-        equipmentRaw: termData.eqToReturn,
-        systems: termData.systems,
-        lastDayWorked: fmtDate_(termData.lastDayWorked),
-        hasReports: termData.hasReports,
-        reportsToNew: termData.reportsToNew,
-        checklistItems: items || null
+      ...termData,
+      workflowType: 'Termination',
+      employmentType: termData.empType,
+      hireDate: fmtDate_(termData.termDate),
+      equipmentRaw: termData.eqToReturn,
+      systems: termData.systems,
+      lastDayWorked: fmtDate_(termData.lastDayWorked),
+      hasReports: termData.hasReports,
+      reportsToNew: termData.reportsToNew,
+      hrDecision: 'Approved',
+      checklistItems: items || null
     }
   });
 }

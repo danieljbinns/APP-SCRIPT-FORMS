@@ -3,7 +3,7 @@
  * Single source of truth for ALL form URLs and settings
  */
 
-const ENVIRONMENT = 'STAGING';
+const ENVIRONMENT = 'DEV';
 
 const CONFIG = {
 
@@ -30,15 +30,9 @@ const CONFIG = {
     ID_SETUP_RESULTS: 'ID Setup Results',
     HR_VERIFICATION_RESULTS: 'HR Verification Results',
     IT_RESULTS: 'IT Results',
-    CREDIT_CARD_RESULTS: 'Credit Card Results',
-    BUSINESS_CARDS_RESULTS: 'Business Cards Results',
-    FLEETIO_RESULTS: 'Fleetio Results',
-    JONAS_RESULTS: 'JONAS Results',
-    CENTRAL_PURCHASING_RESULTS: 'Central Purchasing Results',
-    SITEDOCS_RESULTS: 'SiteDocs Results',
-    REVIEW_306090_RESULTS: '30-60-90 Review Results',
+    // Specialist result sheets removed — specialist steps now use Action Items.
+    // Asset collection removed — asset collection now uses Action Items.
     TERMINATION_APPROVALS: 'Termination Approval Results',
-    ASSET_COLLECTION_RESULTS: 'Asset Collection Results',
     POSITION_CHANGE_APPROVALS: 'Position Change Approval Results',
     TERMINATIONS: 'Terminations',
     POSITION_CHANGES: 'Position Changes',
@@ -50,8 +44,8 @@ const CONFIG = {
     REFERENCE_JRS: 'Reference_JRs',
     REFERENCE_JOBS_JONAS: 'Reference_JobsJonas',
     ACTION_ITEMS: 'Action Items',
-    SAFETY_ONBOARDING_RESULTS: 'Safety Onboarding Results',
-    SAFETY_TERMINATION_RESULTS: 'Safety Termination Results'
+    // Safety Onboarding and Safety Termination removed — now Action Items with formType.
+    FORM_EDIT_LOG: 'Form Edit Log'
   },
   
   // ==========================================================================

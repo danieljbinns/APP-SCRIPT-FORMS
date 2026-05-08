@@ -51,16 +51,22 @@ function syncWorkflowState(workflowId) {
       dateRequested: '', items: {} 
     };
     
-    const isTerm = workflowId.startsWith('TERM_');
+    const isTerm   = workflowId.startsWith('TERM_');
     const isChange = workflowId.startsWith('CHANGE_');
-    const lookupSheetName = isTerm ? CONFIG.SHEETS.TERMINATIONS : (isChange ? CONFIG.SHEETS.POSITION_CHANGES : CONFIG.SHEETS.INITIAL_REQUESTS);
+    const isEquip  = workflowId.startsWith('EQUIP_REQ_');
+    const lookupSheetName = isTerm   ? CONFIG.SHEETS.TERMINATIONS
+                          : isChange ? CONFIG.SHEETS.POSITION_CHANGES
+                          : isEquip  ? CONFIG.SHEETS.EQUIPMENT_REQUESTS
+                          :            CONFIG.SHEETS.INITIAL_REQUESTS;
     const lookupSheet = ss.getSheetByName(lookupSheetName);
 
     const tz = Session.getScriptTimeZone();
     const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd') : String(v || '').replace(/-/g, '/');
     const fmtDateTime = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd HH:mm') : String(v || '').replace(/-/g, '/');
 
-    const foundReq = lookupSheet ? lookupSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
+    // Equipment_Requests has Workflow ID in column B (index 1); all others use column A.
+    const searchCol = isEquip ? 'B:B' : 'A:A';
+    const foundReq = lookupSheet ? lookupSheet.getRange(searchCol).createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (foundReq) {
       const lastCol = lookupSheet.getLastColumn();
       const reqHeaders = lookupSheet.getRange(1, 1, 1, lastCol).getValues()[0];
@@ -75,19 +81,38 @@ function syncWorkflowState(workflowId) {
           dateRequested: fmtDate(row[2]),
           hireDate: fmtDate(row[12]), // Term Date → shown in Effective Date column
           site: String(row[11] || ''),
+          empType: String(row[7] || ''), // Employee Type
           items: { isTerm: true }
         };
       } else if (isChange) {
-        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | Emp ID | Effective Date[7] | Current Site[8] | ...
+        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | Emp ID | Effective Date[7] | Current Site[8] | Changes[9] | ... | Class Change[12] | ... | Current Class[27]
+        const classChange = String(row[12] || '');
+        const classOld = classChange.includes(' -> ') ? classChange.split(' -> ')[0].trim() : '';
+        const currentClass = String(row[27] || '');
+        const empTypeFromClass = (classOld && classOld !== 'N/A') ? classOld : (currentClass || '');
         reqInfo = {
           requesterName: row[3] || 'Unknown',
           requesterEmail: row[4] || '',
-          managerEmail: '',
+          managerEmail: String(row[25] || ''), // currentManagerEmail
           dateRequested: fmtDate(row[2]),
           hireDate: fmtDate(row[7]), // Effective Date → shown in Effective Date column
           site: String(row[8] || ''),
-          empType: '',
+          empType: empTypeFromClass,
           items: {}
+        };
+      } else if (isEquip) {
+        // Equipment_Requests: Timestamp[0] | WorkflowID[1] | FormID[2] | ReqName[3] | ReqEmail[4]
+        //   | FirstName[5] | LastName[6] | Site[7] | Position[8] | ManagerName[9] | ManagerEmail[10]
+        //   | Equipment[11] | Systems[12] | Comments[13] | Department[14]
+        reqInfo = {
+          requesterName:  row[3] || 'Unknown',
+          requesterEmail: row[4] || '',
+          managerEmail:   row[10] || '',
+          dateRequested:  fmtDate(row[0]),  // Timestamp as request date
+          hireDate:       '',               // No start date for equipment requests
+          site:           String(row[7] || ''),
+          empType:        '',
+          items:          { isEquip: true }
         };
       } else {
         reqInfo = {
@@ -118,23 +143,23 @@ function syncWorkflowState(workflowId) {
     
     if (baseStatus !== 'Cancelled' && baseStatus !== 'Completed') {
       if (currentStep === 'Specialist Forms Needed') {
-        let pending = [];
-        
-        // Helper to check if ID exists in a specific result sheet
-        const checkDone = (sheetName) => {
-          const sheet = ss.getSheetByName(sheetName);
-          if (!sheet) return false;
-          return sheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() !== null;
-        };
-        
-        if (reqInfo.items.jonas && !checkDone(CONFIG.SHEETS.JONAS_RESULTS)) pending.push('Jonas');
-        if (reqInfo.items.creditCard && !checkDone(CONFIG.SHEETS.CREDIT_CARD_RESULTS)) pending.push('Credit Card');
-        if (reqInfo.items.fleetio && !checkDone(CONFIG.SHEETS.FLEETIO_RESULTS)) pending.push('Fleetio');
-        if (reqInfo.items.businessCards && !checkDone(CONFIG.SHEETS.BUSINESS_CARDS_RESULTS)) pending.push('Business Cards');
-        if (reqInfo.items.siteDocs && !checkDone(CONFIG.SHEETS.SITEDOCS_RESULTS)) pending.push('SiteDocs');
-        if (reqInfo.items.review && !checkDone(CONFIG.SHEETS.REVIEW_306090_RESULTS)) pending.push('30/60/90');
-        if (reqInfo.items.safety && !checkDone(CONFIG.SHEETS.SAFETY_ONBOARDING_RESULTS)) pending.push('Safety Onboarding');
-        
+        // Check Action Items sheet for open specialist tasks
+        const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+        const pending = [];
+        if (aiSheet) {
+          const aiData = aiSheet.getDataRange().getValues();
+          const aiHdrs = aiData[0];
+          const wfCol = aiHdrs.indexOf('Workflow ID');
+          const catCol = aiHdrs.indexOf('Category');
+          const stCol  = aiHdrs.indexOf('Status');
+          const SPECIALIST_CATS = new Set(['Credit Card','Business Cards','Fleetio','Jonas','SiteDocs','30/60/90 Review','Safety']);
+          for (let i = 1; i < aiData.length; i++) {
+            if (String(aiData[i][wfCol]) !== workflowId) continue;
+            const cat = String(aiData[i][catCol] || '');
+            if (!SPECIALIST_CATS.has(cat)) continue;
+            if (String(aiData[i][stCol]) !== 'Closed') pending.push(cat);
+          }
+        }
         if (pending.length > 0) {
           granularStatus = 'Pending: ' + pending.join(', ');
         } else {

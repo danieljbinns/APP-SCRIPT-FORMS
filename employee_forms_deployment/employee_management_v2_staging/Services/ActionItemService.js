@@ -8,8 +8,15 @@ var ActionItemService = (function() {
 
   /**
    * Creates a new Action Item (Ticket)
+   * @param {string} workflowId
+   * @param {string} category   - Display category (e.g. 'Credit Card', 'Safety')
+   * @param {string} name       - Task name
+   * @param {string} description - Checklist items as JSON array string
+   * @param {string} assignedTo  - Email of responsible party
+   * @param {string} [formType]  - Specialist form type key (e.g. 'creditcard', 'safety_onboarding')
+   * @returns {string|null} taskId
    */
-  function createActionItem(workflowId, category, name, description, assignedTo) {
+  function createActionItem(workflowId, category, name, description, assignedTo, formType) {
     try {
       const taskId = "TK-" + Utilities.getUuid().substring(0, 8).toUpperCase();
       const rowData = [
@@ -23,11 +30,14 @@ var ActionItemService = (function() {
         new Date(),
         '', // Completed Date
         '', // Notes
-        ''  // Closed By
+        '', // Closed By
+        '', // Draft
+        formType || '', // Form Type
+        ''  // Form Data
       ];
-      
+
       addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.ACTION_ITEMS, rowData);
-      Logger.log(`[ActionItemService] Created Task ${taskId} for Workflow ${workflowId}`);
+      Logger.log(`[ActionItemService] Created Task ${taskId} (${formType || 'no-form'}) for Workflow ${workflowId}`);
       return taskId;
     } catch (e) {
       Logger.log(`[ERROR] Failed to create action item: ${e.message}`);
@@ -37,8 +47,13 @@ var ActionItemService = (function() {
 
   /**
    * Closes an Action Item
+   * @param {string} taskId
+   * @param {string} notes
+   * @param {string} closedBy
+   * @param {string} [draftJSON]    - Full checklist draft state JSON
+   * @param {string} [formDataJSON] - Specialist-specific structured form data JSON
    */
-  function closeActionItem(taskId, notes, closedBy, draftJSON) {
+  function closeActionItem(taskId, notes, closedBy, draftJSON, formDataJSON) {
     try {
       const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
       const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
@@ -74,7 +89,12 @@ var ActionItemService = (function() {
       if (draftCol !== -1 && draftJSON) {
         sheet.getRange(rowIndex, draftCol + 1).setValue(draftJSON);
       }
-      
+
+      const formDataCol = headers.indexOf('Form Data');
+      if (formDataCol !== -1 && formDataJSON) {
+        sheet.getRange(rowIndex, formDataCol + 1).setValue(formDataJSON);
+      }
+
       // Ensure data is written before notifyTaskClosure reads it
       SpreadsheetApp.flush();
       
@@ -171,14 +191,58 @@ var ActionItemService = (function() {
   }
 
   /**
-   * Checks if a workflow is complete (all tasks closed)
+   * Checks if a workflow is complete (all non-background tasks closed).
+   *
+   * Step-based guards:
+   *   - 'Specialist Forms Needed'  → onboarding (IT done, specialists outstanding)
+   *   - 'Action Items Pending'     → term / position-change / equipment (tasks outstanding)
+   *   - 'Email Setup Needed'       → equipment request waiting on Google Account setup only
+   *
+   * WIS tasks (Category === 'WIS') are background/post-hire — they never block completion.
    */
   function checkWorkflowCompletion(workflowId) {
-    const pending = getPendingTasks(workflowId);
-    if (pending.length === 0) {
-      Logger.log(`[ActionItemService] All tasks closed for Workflow ${workflowId}. Marking complete.`);
+    const workflow = getWorkflow(workflowId);
+    const currentStep = workflow ? String(workflow['Current Step'] || '') : '';
+
+    if (currentStep === 'Email Setup Needed') {
+      // Equipment request: only IT email task(s) pending — when closed, launch remaining tasks
+      const pending = getPendingTasks(workflowId);
+      if (pending.length === 0) {
+        Logger.log(`[ActionItemService] Email Setup closed for ${workflowId}. Launching remaining equipment tasks.`);
+        if (typeof launchRemainingEquipmentTasks === 'function') {
+          launchRemainingEquipmentTasks(workflowId);
+        }
+      }
+      return;
+    }
+
+    const ALLOWED_STEPS = ['Specialist Forms Needed', 'Action Items Pending'];
+    if (!ALLOWED_STEPS.includes(currentStep)) {
+      Logger.log(`[ActionItemService] Skipping auto-complete for ${workflowId} — step is '${currentStep}', not in allowed completion steps.`);
+      return;
+    }
+
+    // Re-read with header awareness for WIS category filter (WIS = post-hire background task, never blocks)
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const wfIdCol   = headers.indexOf('Workflow ID');
+    const statusCol = headers.indexOf('Status');
+    const catCol    = headers.indexOf('Category');
+
+    const nonWisPending = data.filter(function(row, i) {
+      return i > 0
+        && row[wfIdCol]   === workflowId
+        && row[statusCol] === 'Open'
+        && String(row[catCol] || '').toUpperCase() !== 'WIS';
+    });
+
+    if (nonWisPending.length === 0) {
+      Logger.log(`[ActionItemService] All blocking tasks closed for Workflow ${workflowId}. Marking complete.`);
       updateWorkflow(workflowId, 'Complete', 'All Action Items Closed');
-      
+      syncWorkflowState(workflowId);
+
       // Notify HR and Requester of full closure
       notifyWorkflowClosure(workflowId);
     }
@@ -195,7 +259,13 @@ var ActionItemService = (function() {
       const workflow = getWorkflow(task.WorkflowID);
       const context = getWorkflowContext(task.WorkflowID) || {};
       
-      const subject = `Task Completed: ${task.TaskName} - ${workflow ? workflow['Employee Name'] : 'Action Item'}`;
+      // Strip any "- Employee Name" suffix from the task name — buildEmailSubject appends
+      // employeeName from contextData, so including it here causes duplication.
+      const empName = workflow ? workflow['Employee Name'] : '';
+      const baseTaskName = empName && task.TaskName
+        ? task.TaskName.replace(new RegExp('\\s*[-\u2014]\\s*' + empName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$'), '').trim()
+        : (task.TaskName || task.Category || 'Action Item');
+      const subject = `Task Completed: ${baseTaskName}`;
       let body = `The following action item has been marked as <b>Closed</b>.
         <br><br><b>Task:</b> ${task.TaskName}
         <br><b>Completed By:</b> ${closedBy}
@@ -246,25 +316,25 @@ var ActionItemService = (function() {
 
             sendFormEmail({
               to: CONFIG.EMAILS.IT,
-              subject: `Assets Returned: IT Equipment - ${workflow['Employee Name']}`,
+              subject: 'Assets Returned: IT Equipment',
               body: itBody,
               contextData: context
             });
           }
-          
+
           if (financeReturns.length > 0) {
             sendFormEmail({
               to: CONFIG.EMAILS.CREDIT_CARD,
-              subject: `Assets Returned: Credit Card - ${workflow['Employee Name']}`,
+              subject: 'Assets Returned: Credit Card',
               body: `The credit card for ${workflow['Employee Name']} has been collected and is ready for processing.`,
               contextData: context
             });
           }
-          
+
           if (fleetReturns.length > 0) {
             sendFormEmail({
               to: CONFIG.EMAILS.FLEETIO,
-              subject: `Assets Returned: Vehicle and Keys - ${workflow['Employee Name']}`,
+              subject: 'Assets Returned: Vehicle and Keys',
               body: `The vehicle and keys for ${workflow['Employee Name']} have been collected.`,
               contextData: context
             });
@@ -315,12 +385,16 @@ var ActionItemService = (function() {
 
       const context = getWorkflowContext(workflowId) || { employeeName: workflow['Employee Name'] };
 
+      // showPasswords: true for all closure emails — all parties receive full credential summary
+      const closureEmailOpts = { showPasswords: true };
+
       // Notify HR
       sendFormEmail({
         to: CONFIG.EMAILS.HR,
         subject: subject,
         body: body,
-        contextData: context
+        contextData: context,
+        emailOpts: closureEmailOpts
       });
 
       // Notify Initiator & Manager
@@ -333,7 +407,8 @@ var ActionItemService = (function() {
           to: recipients.join(','),
           subject: subject,
           body: body,
-          contextData: context
+          contextData: context,
+          emailOpts: closureEmailOpts
         });
       }
 
@@ -371,8 +446,8 @@ var ActionItemService = (function() {
 /**
  * Global bridge for google.script.run
  */
-function closeActionItemWithNotes(taskId, notes, draftJSON) {
-  return ActionItemService.closeActionItem(taskId, notes, Session.getActiveUser().getEmail(), draftJSON);
+function closeActionItemWithNotes(taskId, notes, draftJSON, formDataJSON) {
+  return ActionItemService.closeActionItem(taskId, notes, Session.getActiveUser().getEmail(), draftJSON, formDataJSON);
 }
 
 function saveActionItemDraft(taskId, notes, draftJSON) {

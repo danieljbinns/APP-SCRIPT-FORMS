@@ -83,9 +83,25 @@ function doGet(e) {
       case 'asset_retrieval':
         return serveAssetRetrieval(workflowId);
 
+      case 'it_confirmation':
+        return serveITConfirmation(workflowId);
+
       case 'action_item_view':
         return ActionItemService.serveActionItem(e.parameter.tid);
-        
+
+      // ── Reference guides ──────────────────────────────────────────────────
+      case 'ref_deck':
+        return serveRefPage('Employee-Portal-Training-Deck', 'Portal Overview — Employee Management');
+      case 'ref_new_hire':
+        return serveRefPage('new-hire-submitter', 'New Employee Request — Reference Guide');
+      case 'ref_equipment':
+        return serveRefPage('equipment-request-submitter', 'Equipment and Systems Request — Reference Guide');
+      case 'ref_termination':
+        return serveRefPage('termination-submitter', 'End of Employment — Reference Guide');
+      case 'ref_status_change':
+        return serveRefPage('status-change-submitter', 'Status & Position Change — Reference Guide');
+      // ──────────────────────────────────────────────────────────────────────
+
       default:
         return HtmlService.createHtmlOutput('<h1>Form not found</h1><p>Form: ' + form + '</p>');
     }
@@ -121,6 +137,16 @@ function buildFormUrl(formName, params) {
   }
   
   return baseUrl + '?' + queryParams.join('&');
+}
+
+/**
+ * Serve a static reference guide HTML file
+ */
+function serveRefPage(filename, title) {
+  return HtmlService.createTemplateFromFile(filename)
+    .evaluate()
+    .setTitle(title)
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function serveAccessDenied() {

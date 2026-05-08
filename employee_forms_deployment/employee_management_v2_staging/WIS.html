@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Business Cards Setup</title>
+  <title>WIS Assignment</title>
   <?!= include('Styles') ?>
 </head>
 <body>
@@ -13,8 +13,8 @@
       <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="Team Group Companies" class="logo">
     </div>
     <div id="form-container" class="card-form">
-      <h1>Business Cards Setup</h1>
-      <p class="subtitle">Confirm that digital business cards have been created and sent for this employee.</p>
+      <h1>WIS Assignment</h1>
+      <p class="subtitle">Confirm that Work Instructions &amp; Safety (WIS) has been assigned in BOSS for this employee.</p>
       <hr>
       <div id="requestHeaderWrap">
         <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
@@ -22,22 +22,22 @@
       <form id="taskForm" autocomplete="off">
         <input type="hidden" name="workflowId" value="<?= workflowId ?>">
         <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
-        <input type="hidden" name="department" value="businesscards">
+        <input type="hidden" name="department" value="wis">
 
         <div class="confirm-item">
-          <input type="checkbox" id="bizCardsCreated" name="bizCardsCreated" value="true">
-          <label for="bizCardsCreated">
-            <strong>Create and Send Digital Business Cards</strong>
-            <span>Digital business cards have been created and sent to the employee for their role and contact details.</span>
+          <input type="checkbox" id="wisAssigned" name="wisAssigned" value="true">
+          <label for="wisAssigned">
+            <strong>WIS Assigned in BOSS</strong>
+            <span>Employee has been assigned the appropriate Work Instructions &amp; Safety module(s) in BOSS for their role and site.</span>
           </label>
         </div>
 
         <div class="form-field">
           <label>Notes <span class="optional">(Optional)</span></label>
-          <textarea name="notes" rows="3" placeholder="Card details, template used, or any other notes..."></textarea>
+          <textarea name="notes" rows="3" placeholder="WIS module names, any exceptions, or additional details..."></textarea>
         </div>
         <div id="statusMessage"></div>
-        <button type="submit" id="submitBtn" class="btn btn-primary btn-full">Confirm Complete</button>
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-full">Confirm &amp; Complete</button>
       </form>
       <?!= includeWithData('SuccessScreen', {baseUrl: getBaseUrl()}) ?>
     </div>
@@ -51,8 +51,8 @@
   <script>
     document.getElementById('taskForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      if (!document.getElementById('bizCardsCreated').checked) {
-        document.getElementById('statusMessage').innerHTML = '<div class="callout callout-warning">&#10060; Please confirm digital business cards have been created and sent before submitting.</div>';
+      if (!document.getElementById('wisAssigned').checked) {
+        document.getElementById('statusMessage').innerHTML = '<div class="callout callout-warning">&#10060; Please confirm WIS has been assigned before submitting.</div>';
         return;
       }
       var form = e.target;
@@ -60,9 +60,9 @@
         workflowId: form.workflowId.value,
         department: form.department.value,
         notes: form.notes.value,
-        details: JSON.stringify({ bizCardsCreated: true })
+        details: JSON.stringify({ wisAssigned: true })
       };
-      submitSpecialistTask(e.target, data, 'Business Cards Complete', 'Submission recorded.');
+      submitSpecialistTask(e.target, data, 'WIS Assignment Confirmed', 'Onboarding is now complete.');
     });
   </script>
   <?!= include('SharedComponents') ?>

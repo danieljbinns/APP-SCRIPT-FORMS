@@ -70,26 +70,7 @@ function initializeSystem() {
       'IT Notes', 'Submitted By'
     ]);
     
-    // 6. Initialize Specialist Sheets
-    const specialistHeaders = ['Workflow ID', 'Form ID', 'Submission Timestamp', 'Details', 'Notes', 'Submitted By'];
-    
-    initSheet(ss, CONFIG.SHEETS.CREDIT_CARD_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.BUSINESS_CARDS_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.FLEETIO_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.JONAS_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.SITEDOCS_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.REVIEW_306090_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.CENTRAL_PURCHASING_RESULTS, specialistHeaders);
-    initSheet(ss, CONFIG.SHEETS.SAFETY_ONBOARDING_RESULTS, [
-      'Workflow ID', 'Form ID', 'Submission Timestamp',
-      'SiteDocs Locations Confirmed', 'DSS Learning Paths Confirmed',
-      'Notes', 'Submitted By'
-    ]);
-    initSheet(ss, CONFIG.SHEETS.SAFETY_TERMINATION_RESULTS, [
-      'Workflow ID', 'Form ID', 'Submission Timestamp',
-      'SiteDocs Removed', 'BOSS WIS Deactivated',
-      'Notes', 'Submitted By'
-    ]);
+    // 6. Specialist sheets removed — specialist steps now use Action Items.
     
     // 7. Initialize Termination & Change Status Sheets
     initSheet(ss, CONFIG.SHEETS.TERMINATIONS, [
@@ -112,7 +93,7 @@ function initializeSystem() {
     initSheet(ss, CONFIG.SHEETS.EQUIPMENT_REQUESTS, [
       'Timestamp', 'Workflow ID', 'Form ID', 'Requester Name', 'Requester Email', 
       'Employee First Name', 'Employee Last Name', 'Site Name', 'Job Title', 'Manager Name', 'Manager Email',
-      'Equipment Requested', 'Systems Requested', 'Comments'
+      'Equipment Requested', 'Systems Requested', 'Comments', 'Department'
     ]);
 
     // 8. Initialize Approval & Collection Results
@@ -120,14 +101,13 @@ function initializeSystem() {
     initSheet(ss, CONFIG.SHEETS.TERMINATION_APPROVALS, approvalHeaders);
     initSheet(ss, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, approvalHeaders);
     
-    initSheet(ss, CONFIG.SHEETS.ASSET_COLLECTION_RESULTS, [
-      'Workflow ID', 'Form ID', 'Timestamp', 'Phone Collected', 'Computer Collected', 
-      'Serial Verified', 'Keys/Badge Collected', 'Notes', 'Submitted By'
-    ]);
+    // Asset Collection Results sheet removed — asset collection now uses Action Items.
 
     // 9. Initialize Action Items
     initSheet(ss, CONFIG.SHEETS.ACTION_ITEMS, [
-      'Workflow ID', 'Task ID', 'Category', 'Task Name', 'Description', 'Assigned To', 'Status', 'Created Date', 'Completed Date', 'Notes', 'Closed By', 'Draft'
+      'Workflow ID', 'Task ID', 'Category', 'Task Name', 'Description', 'Assigned To',
+      'Status', 'Created Date', 'Completed Date', 'Notes', 'Closed By', 'Draft',
+      'Form Type', 'Form Data'
     ]);
 
     // 10. Initialize Lookups
