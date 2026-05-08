@@ -289,9 +289,14 @@
                 </h1>
             </div>
             <div
-                style="font-size: 11px; color: var(--warning); border: 1px solid var(--warning); padding: 5px; border-radius: 4px; margin-right: auto; margin-left: 20px;">
+                style="font-size: 11px; color: var(--warning); border: 1px solid var(--warning); padding: 5px; border-radius: 4px; margin-left: 20px;">
                 <strong>Source:</strong>
                 <?= spreadsheetId ?>
+            </div>
+            <div
+                style="font-size: 11px; padding: 5px; border-radius: 4px; margin-right: auto; <?= emailRedirect ? 'color: #ff6b35; border: 1px solid #ff6b35;' : 'color: #00c853; border: 1px solid #00c853;' ?>">
+                <strong>Email:</strong>
+                <?= emailRedirect ? 'Override ON -> ' + emailRedirect : 'Normal routing' ?>
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
                 <a href="<?= getBaseUrl() ?>" class="action-link"

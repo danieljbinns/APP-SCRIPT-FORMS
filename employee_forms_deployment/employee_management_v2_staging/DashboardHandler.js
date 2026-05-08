@@ -6,8 +6,9 @@
 function serveDashboard() {
   const template = HtmlService.createTemplateFromFile('Dashboard');
   template.baseUrl = getBaseUrl(); // Pass server-side URL to client
-  template.spreadsheetId = CONFIG.SPREADSHEET_ID; // Pass active Sheet ID
+  template.spreadsheetId = CONFIG.SPREADSHEET_ID;
   template.environment = typeof ENVIRONMENT !== 'undefined' ? ENVIRONMENT : 'PROD';
+  template.emailRedirect = ConfigurationService.getSetting('EMAIL_REDIRECT_ALL') || '';
 
   return template.evaluate()
     .setTitle('Employee Onboarding Dashboard')
