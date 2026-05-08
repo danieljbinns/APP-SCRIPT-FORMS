@@ -18,8 +18,10 @@ Write-Host "Dev : $devPath"
 
 function New-TaskId { 'TK-' + [guid]::NewGuid().ToString('N').Substring(0,8).ToUpper() }
 
-# Convert DateTime objects to ISO strings. Only converts actual [DateTime] values that
-# ImportExcel returns for date-formatted cells — avoids false-positives on numeric IDs.
+# Column names that are known timestamps — OA double conversion is safe for these.
+# All other doubles are left alone to avoid converting numeric IDs that fall in date range.
+$TIMESTAMP_COLS = @('Submission Timestamp','Created Date','Completed Date','Last Updated','Timestamp','Date Requested')
+
 function Format-Dates {
     param($rows)
     $rows | ForEach-Object {
@@ -27,12 +29,17 @@ function Format-Dates {
         foreach ($prop in $row.PSObject.Properties) {
             $val = $prop.Value
             if ($val -is [DateTime]) {
-                # Date-only (midnight) → yyyy-MM-dd; timestamps → yyyy-MM-dd HH:mm:ss
                 if ($val.TimeOfDay.TotalSeconds -eq 0) {
                     $prop.Value = $val.ToString('yyyy-MM-dd')
                 } else {
                     $prop.Value = $val.ToString('yyyy-MM-dd HH:mm:ss')
                 }
+            } elseif ($val -is [double] -and $TIMESTAMP_COLS -contains $prop.Name -and $val -gt 40000 -and $val -lt 60000) {
+                # 40000 = 2009-07-06, 60000 = 2064-02-20 — safe window for real submission timestamps
+                try {
+                    $dt = [DateTime]::FromOADate($val)
+                    $prop.Value = $dt.ToString('yyyy-MM-dd HH:mm:ss')
+                } catch {}
             }
         }
         $row
