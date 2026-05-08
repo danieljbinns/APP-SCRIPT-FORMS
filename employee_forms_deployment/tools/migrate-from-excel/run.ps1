@@ -18,7 +18,8 @@ Write-Host "Dev : $devPath"
 
 function New-TaskId { 'TK-' + [guid]::NewGuid().ToString('N').Substring(0,8).ToUpper() }
 
-# Convert DateTime objects and Excel OA date serials to readable strings on every property
+# Convert DateTime objects to ISO strings. Only converts actual [DateTime] values that
+# ImportExcel returns for date-formatted cells — avoids false-positives on numeric IDs.
 function Format-Dates {
     param($rows)
     $rows | ForEach-Object {
@@ -26,10 +27,12 @@ function Format-Dates {
         foreach ($prop in $row.PSObject.Properties) {
             $val = $prop.Value
             if ($val -is [DateTime]) {
-                $prop.Value = $val.ToString('M/d/yyyy H:mm:ss')
-            } elseif ($val -is [double] -and $val -gt 25569 -and $val -lt 109574) {
-                # OA date serial range covers 1970-01-01 through 2199-12-31
-                try { $prop.Value = [DateTime]::FromOADate($val).ToString('M/d/yyyy H:mm:ss') } catch {}
+                # Date-only (midnight) → yyyy-MM-dd; timestamps → yyyy-MM-dd HH:mm:ss
+                if ($val.TimeOfDay.TotalSeconds -eq 0) {
+                    $prop.Value = $val.ToString('yyyy-MM-dd')
+                } else {
+                    $prop.Value = $val.ToString('yyyy-MM-dd HH:mm:ss')
+                }
             }
         }
         $row
@@ -70,7 +73,15 @@ function Convert-CellValue {
     param($cell)
     $val = $cell.Value
     if ($val -is [double] -and $val -gt 25569 -and $val -lt 109574) {
-        try { return [DateTime]::FromOADate($val).ToString('M/d/yyyy H:mm:ss') } catch {}
+        $nf = $cell.Style.Numberformat.Format
+        # Only convert if Excel tagged the cell with a date/time number format
+        if ($nf -and $nf -ne 'General' -and $nf -match 'yy|dd|hh|mm\/|\/mm') {
+            try {
+                $dt = [DateTime]::FromOADate($val)
+                if ($dt.TimeOfDay.TotalSeconds -eq 0) { return $dt.ToString('yyyy-MM-dd') }
+                else { return $dt.ToString('yyyy-MM-dd HH:mm:ss') }
+            } catch {}
+        }
     }
     return $val
 }
@@ -133,7 +144,7 @@ foreach ($m in $legacyMap) {
       $subBy = "$($row.'Submitted By')"
       $fmId  = "$($row.'Form ID')"
       $rawTs = $row.'Submission Timestamp'
-      $ts    = if ($rawTs -is [DateTime]) { $rawTs.ToString('M/d/yyyy H:mm:ss') } elseif ($rawTs -is [double] -and $rawTs -gt 25569) { [DateTime]::FromOADate($rawTs).ToString('M/d/yyyy H:mm:ss') } else { "$rawTs" }
+      $ts    = if ($rawTs -is [DateTime]) { $rawTs.ToString('yyyy-MM-dd HH:mm:ss') } elseif ($rawTs -is [double] -and $rawTs -gt 25569) { [DateTime]::FromOADate($rawTs).ToString('yyyy-MM-dd HH:mm:ss') } else { "$rawTs" }
       $aiRows.Add([PSCustomObject]@{
         'Workflow ID'    = $wfId
         'Task ID'        = (New-TaskId)
