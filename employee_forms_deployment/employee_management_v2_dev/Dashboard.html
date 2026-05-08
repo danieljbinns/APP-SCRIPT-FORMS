@@ -293,11 +293,14 @@
                 <strong>Source:</strong>
                 <?= spreadsheetId ?>
             </div>
-            <div>
-                <a href="<?= getBaseUrl() ?>?form=workflow_map" class="action-link"
-                    style="margin-right: 15px; color: #fff; background: #333; padding: 10px 15px; border-radius: 6px; text-decoration: none;">View
-                    Process Map</a>
+            <div style="display: flex; align-items: center; gap: 10px;">
                 <a href="<?= getBaseUrl() ?>" class="action-link"
+                    style="background: var(--brand-red); color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">
+                    &#8962; Home</a>
+                <a href="<?= getBaseUrl() ?>?form=workflow_map" class="action-link"
+                    style="background: var(--brand-red); color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none;">View
+                    Process Map</a>
+                <a href="<?= getBaseUrl() ?>?form=initial_request" class="action-link"
                     style="background: var(--brand-red); color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none;">+
                     New Request</a>
             </div>

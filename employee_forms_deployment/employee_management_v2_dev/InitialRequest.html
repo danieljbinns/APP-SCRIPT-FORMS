@@ -25,7 +25,7 @@
 
       <!-- Gatekeeper Section (shown first) -->
       <div id="gatekeeperSection">
-        <h1><?= mode === 'equipment' ? 'System & Equipment Request' : 'New Employee Request' ?></h1>
+        <h1><?= mode === 'equipment' ? 'Equipment and Systems Request' : 'New Employee Request' ?></h1>
         <p style="color: var(--text-muted); margin-bottom: 2rem;">
           <?= mode === 'equipment' ? 'Request equipment or system access for an existing employee.' : 'Before proceeding, please confirm all recruiting requirements have been met.' ?>
         </p>
@@ -46,7 +46,7 @@
 
       <!-- Main Form (hidden initially, loaded in background) -->
       <form id="mainForm" class="gated-form">
-        <h1><?= mode === 'it_confirmation' ? 'IT Confirmation' : (mode === 'equipment' ? 'System & Equipment Request' : 'New Employee Request') ?></h1>
+        <h1><?= mode === 'it_confirmation' ? 'IT Confirmation' : (mode === 'equipment' ? 'Equipment and Systems Request' : 'New Employee Request') ?></h1>
         <p style="text-align: center; color: var(--text-muted); margin-bottom: 10px;">
           <?= mode === 'it_confirmation' ? 'Review and confirm all details before IT proceeds with provisioning.' : (mode === 'equipment' ? 'Complete all required fields to submit a system or equipment request.' : 'Complete all required fields to submit a new employee request.') ?>
         </p>

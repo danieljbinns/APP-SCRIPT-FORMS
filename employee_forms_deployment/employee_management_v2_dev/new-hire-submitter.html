@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Hire Request — Submitter Guide</title>
+
+<!-- ================================================================
+     TEAM Group Shared Design System (Styles.html inline)
+     ================================================================ -->
+<style>
+:root {
+  --bg-color:        #0c0c0c;
+  --bg-darker:       #111111;
+  --card-bg:         #1a1a1a;
+  --text-main:       #ffffff;
+  --text-muted:      #a0a0a0;
+  --text-secondary:  #cccccc;
+  --brand-red:       #EB1C2D;
+  --brand-red-hover: #c41522;
+  --input-bg:        #2a2a2a;
+  --input-border:    #444;
+  --border-color:    #333;
+  --success:         #00c853;
+  --warning:         #ffab00;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.6;
+  padding: 0;
+}
+h1 { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+h2 { color: var(--text-main); font-size: 1.2rem; font-weight: 600; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin: 30px 0 20px; }
+h3 { font-size: 14px; font-weight: 600; color: var(--text-main); margin: 0 0 12px; }
+hr { border: 0; border-top: 1px solid var(--border-color); margin: 20px 0; }
+label { display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-main); font-size: 0.9rem; }
+.required { color: var(--brand-red); }
+small { display: block; margin-top: 5px; font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
+.warn-text  { font-size: 0.82rem; color: var(--warning); margin-top: 6px; display: block; }
+
+input[type="text"], input[type="email"], input[type="date"], select, textarea {
+  width: 100%; padding: 12px; font-size: 1rem; font-family: inherit;
+  border: 1px solid var(--input-border); border-radius: 6px;
+  background-color: var(--input-bg); color: var(--text-main); box-sizing: border-box;
+}
+select option { background: var(--input-bg); color: var(--text-main); }
+textarea { resize: vertical; min-height: 80px; }
+input[disabled], select[disabled], textarea[disabled] { opacity: 0.75; cursor: default; }
+
+.form-section   { margin-bottom: 30px; }
+.question-wrapper { margin-bottom: 25px; }
+.form-field     { display: flex; flex-direction: column; }
+.form-row       { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 20px; margin-bottom: 25px; }
+.form-row-2     { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+.form-row-4     { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; margin-bottom: 25px; }
+
+.radio-group { display: flex; gap: 0; margin-top: 10px; border: 2px solid var(--input-border); border-radius: 6px; overflow: hidden; background: var(--input-bg); }
+.radio-group label { flex: 1; position: relative; margin: 0; font-weight: 500; }
+.radio-group label:not(:last-child) { border-right: 1px solid var(--input-border); }
+.radio-group input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.radio-button { display: block; padding: 12px 20px; text-align: center; cursor: default; color: var(--text-main); }
+.radio-button.checked { background: var(--brand-red); color: white; }
+
+.checkbox-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 10px; margin-top: 10px; }
+.checkbox-label { display: flex; align-items: center; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; cursor: default; line-height: 1.4; }
+.checkbox-label.checked { background: rgba(235,28,45,0.1); border-color: var(--brand-red); }
+.checkbox-label.checked span { color: var(--brand-red); font-weight: 600; }
+.checkbox-label input[type="checkbox"] { accent-color: var(--brand-red); width: 20px; height: 20px; margin-right: 10px; flex-shrink: 0; }
+
+.sub-section { grid-column: 1 / -1; margin: 4px 0 8px 0; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444; }
+
+.card-form { background: var(--card-bg); padding: 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(255,255,255,0.05); border: 1px solid var(--border-color); }
+.callout { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 14px; }
+.callout-warning { background: rgba(255,171,0,0.08); border: 1px solid rgba(255,171,0,0.3); color: #ffcc02; }
+.callout-info    { background: rgba(66,133,244,0.1);  border: 1px solid rgba(66,133,244,0.3); color: #64b5f6; }
+
+.domain-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block; }
+
+@media (max-width: 768px) {
+  .form-row, .form-row-2, .form-row-4 { grid-template-columns: 1fr; }
+}
+
+/* ================================================================
+   SOP-SPECIFIC STYLES
+   ================================================================ */
+
+/* Page wrapper */
+.sop-page { max-width: 1400px; margin: 0 auto; padding: 32px 48px 64px; }
+
+/* SOP document header */
+.sop-doc-header {
+  text-align: center;
+  padding: 32px 24px;
+  border-bottom: 2px solid var(--brand-red);
+  margin-bottom: 40px;
+}
+.sop-doc-header .sop-logo { height: 80px; margin-bottom: 20px; }
+.sop-doc-header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+.sop-doc-header .sop-meta { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+.sop-meta-item { font-size: 12px; color: var(--text-muted); background: #1e1e1e; border: 1px solid var(--border-color); border-radius: 20px; padding: 4px 14px; }
+.sop-meta-item strong { color: var(--text-main); }
+
+/* Step number badge + section heading */
+.sop-step-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 40px 0 16px;
+}
+.sop-step-num {
+  background: var(--brand-red);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.sop-step-heading h2 { margin: 0; border: none; padding: 0; font-size: 18px; font-weight: 700; }
+.sop-step-heading .sop-who { font-size: 11px; font-weight: 600; color: var(--text-muted); background: #1e1e1e; border: 1px solid var(--border-color); border-radius: 10px; padding: 2px 10px; white-space: nowrap; }
+
+/* Annotation boxes */
+.sop-note {
+  background: #0e1a2e;
+  border: 1px solid rgba(66,133,244,0.35);
+  border-left: 3px solid #4285f4;
+  border-radius: 0 6px 6px 0;
+  padding: 11px 14px;
+  font-size: 13px;
+  color: #c8dcf8;
+  margin: 12px 0;
+  line-height: 1.55;
+}
+.sop-note strong { color: #93c5fd; }
+
+.sop-tip {
+  background: #0e1e0e;
+  border: 1px solid rgba(0,200,83,0.3);
+  border-left: 3px solid var(--success);
+  border-radius: 0 6px 6px 0;
+  padding: 11px 14px;
+  font-size: 13px;
+  color: #a7f3d0;
+  margin: 12px 0;
+  line-height: 1.55;
+}
+.sop-tip strong { color: #86efac; }
+
+.sop-warn {
+  background: #1e1500;
+  border: 1px solid rgba(255,171,0,0.3);
+  border-left: 3px solid var(--warning);
+  border-radius: 0 6px 6px 0;
+  padding: 11px 14px;
+  font-size: 13px;
+  color: #fde68a;
+  margin: 12px 0;
+  line-height: 1.55;
+}
+.sop-warn strong { color: var(--warning); }
+
+.sop-branch {
+  background: #1e1000;
+  border: 1px solid rgba(235,28,45,0.3);
+  border-left: 3px solid var(--brand-red);
+  border-radius: 0 6px 6px 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #fecaca;
+  margin: 12px 0;
+  line-height: 1.6;
+}
+.sop-branch strong { color: #fca5a5; }
+.sop-branch .branch-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--brand-red); margin-bottom: 7px; display: block;
+}
+.branch-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 5px; }
+.branch-row:last-child { margin-bottom: 0; }
+.branch-if { font-size: 11px; font-weight: 700; background: rgba(235,28,45,0.15); color: var(--brand-red); border: 1px solid rgba(235,28,45,0.3); border-radius: 4px; padding: 2px 7px; white-space: nowrap; flex-shrink: 0; }
+.branch-then { font-size: 13px; color: #fecaca; line-height: 1.5; }
+
+/* Form preview wrapper */
+.sop-form-preview {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 24px;
+  margin: 16px 0;
+  position: relative;
+}
+.sop-form-preview::before {
+  content: 'FORM PREVIEW';
+  position: absolute;
+  top: -1px; right: 16px;
+  background: #333;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 0 0 4px 4px;
+}
+
+/* Field annotation — inline note below a field */
+.field-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 5px;
+  padding-left: 4px;
+  border-left: 2px solid #444;
+  line-height: 1.5;
+}
+.field-note.fn-warn { color: #fde68a; border-color: var(--warning); }
+.field-note.fn-branch { color: #fca5a5; border-color: var(--brand-red); }
+.field-note.fn-tip { color: #a7f3d0; border-color: var(--success); }
+
+/* "What happens next" timeline */
+.whn-grid { display: flex; flex-direction: column; gap: 0; margin: 16px 0; }
+.whn-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.whn-row:last-child { border-bottom: none; }
+.whn-step {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  background: #1e1e1e;
+  border: 2px solid var(--brand-red);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--brand-red);
+  display: flex; align-items: center; justify-content: center;
+}
+.whn-content { flex: 1; }
+.whn-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.whn-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.whn-cond { font-size: 11px; color: var(--warning); margin-top: 3px; }
+
+/* Dual-list static preview */
+.dl-preview { display: flex; gap: 10px; }
+.dl-panel { flex: 1; background: #1e1e1e; border: 1px solid #444; border-radius: 6px; overflow: hidden; }
+.dl-hdr { padding: 6px 10px; background: #2a2a2a; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #444; }
+.dl-item { padding: 6px 10px; font-size: 13px; color: var(--text-muted); border-bottom: 1px solid #2a2a2a; }
+.dl-item.sel { background: rgba(235,28,45,0.12); color: #fff; }
+.dl-arrows { display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.dl-arrow { width: 36px; height: 36px; background: #2a2a2a; border: 1px solid #555; border-radius: 4px; font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
+
+/* Quick reference table */
+.qr-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+.qr-table th { text-align: left; padding: 9px 12px; background: #1e1e1e; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-color); }
+.qr-table td { padding: 9px 12px; border-bottom: 1px solid var(--border-color); vertical-align: top; line-height: 1.5; }
+.qr-table tr:last-child td { border-bottom: none; }
+.qr-table .col-field { font-weight: 600; white-space: nowrap; }
+.qr-table .col-note { color: var(--text-muted); }
+.qr-table .col-branch { color: #fde68a; }
+.tag-req  { display: inline-block; background: rgba(235,28,45,0.12); color: var(--brand-red); border: 1px solid rgba(235,28,45,0.3); border-radius: 4px; font-size: 10px; font-weight: 700; padding: 1px 6px; margin-left: 4px; }
+.tag-opt  { display: inline-block; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid #444; border-radius: 4px; font-size: 10px; font-weight: 700; padding: 1px 6px; margin-left: 4px; }
+.tag-auto { display: inline-block; background: rgba(0,200,83,0.1); color: var(--success); border: 1px solid rgba(0,200,83,0.3); border-radius: 4px; font-size: 10px; font-weight: 700; padding: 1px 6px; margin-left: 4px; }
+.tag-cond { display: inline-block; background: rgba(255,171,0,0.1); color: var(--warning); border: 1px solid rgba(255,171,0,0.3); border-radius: 4px; font-size: 10px; font-weight: 700; padding: 1px 6px; margin-left: 4px; }
+</style>
+</head>
+<body>
+
+<div class="sop-page">
+
+  <!-- ── Document Header ── -->
+  <div class="sop-doc-header">
+    <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+         alt="TEAM Group" class="sop-logo">
+    <h1>New Hire Request — Submitter Guide</h1>
+    <p style="color:var(--text-muted);font-size:14px;margin-top:6px">Step-by-step instructions for completing the New Employee Request form</p>
+    <div class="sop-meta">
+      <span class="sop-meta-item"><strong>Audience:</strong> Managers &amp; Supervisors</span>
+      <span class="sop-meta-item"><strong>Form:</strong> New Employee Request (Initial Request)</span>
+      <span class="sop-meta-item"><strong>System:</strong> TEAM Group Employee Portal</span>
+      <span class="sop-meta-item"><strong>Updated:</strong> May 2026</span>
+    </div>
+  </div>
+
+  <!-- ── Before You Begin ── -->
+  <div class="sop-step-heading">
+    <div class="sop-step-num">!</div>
+    <h2>Before You Begin</h2>
+  </div>
+
+  <div class="sop-warn">
+    <strong>US Employees — Background Check Required</strong><br>
+    Do not submit this form until the employee's background check has been completed and cleared.
+    Submitting early may result in system access being provisioned before clearance is confirmed.
+  </div>
+
+  <div class="sop-note">
+    <strong>What this form does:</strong> Submitting the New Employee Request starts the entire onboarding workflow.
+    The ID Setup team, HR, and IT are all notified automatically in sequence.
+    Your choices here determine which systems get set up, which specialist teams are contacted, and how fast the process moves.
+  </div>
+
+  <div class="sop-form-preview" style="text-align:center;padding:32px;">
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px">The form begins with a confirmation screen before the main form loads.</div>
+    <div style="max-width:520px;margin:0 auto;background:#1e1e00;border:1px solid #F59E0B;border-radius:6px;padding:1rem 1.25rem;text-align:left;margin-bottom:20px">
+      <strong style="color:#F59E0B">⚠️ US Employees — Background Check Required</strong>
+      <p style="color:#d4b44a;margin-top:0.5rem;margin-bottom:0;font-size:0.9rem">Do not submit this request until the employee's background check has been completed and cleared.</p>
+    </div>
+    <button disabled style="padding:1.25rem 3rem;font-size:1.1rem;background:var(--brand-red);color:white;border:none;border-radius:8px;font-weight:700;opacity:0.7;cursor:default;min-width:260px">✓ Yes, all requirements are met</button>
+  </div>
+
+  <div class="sop-tip">
+    <strong>Tip:</strong> Click the confirmation button as soon as requirements are met. The main form pre-loads in the background so it opens instantly.
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 1 — REQUESTER INFORMATION
+       ═══════════════════════════════════════════════ -->
+  <div class="sop-step-heading">
+    <div class="sop-step-num">1</div>
+    <h2>Requester Information</h2>
+    <span class="sop-who">Auto-filled — nothing to enter</span>
+  </div>
+
+  <div class="sop-note">
+    <strong>Nothing to fill in.</strong> This section populates automatically from your Google account.
+    Verify the details look correct before continuing.
+  </div>
+
+  <div class="sop-form-preview">
+    <div class="form-section">
+      <h2>Requester Information</h2>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Date Requested <span class="required">*</span></label>
+          <input type="date" value="2026-05-07" disabled style="background:var(--border-color);cursor:not-allowed">
+          <div class="field-note fn-tip">Auto-set to today's date. Cannot be changed.</div>
+        </div>
+        <div class="form-field">
+          <label>Requester Email <span class="required">*</span></label>
+          <input type="email" value="jdoe@team-group.com" disabled style="color:var(--text-muted)">
+          <div class="field-note fn-tip">Auto-filled from your Google login.</div>
+        </div>
+        <div class="form-field">
+          <label>Requester Name <span class="required">*</span></label>
+          <input type="text" value="John Doe" disabled style="color:var(--text-muted)">
+          <div class="field-note fn-tip">Auto-filled from your Google login.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 2 — EMPLOYEE INFORMATION
+       ═══════════════════════════════════════════════ -->
+  <div class="sop-step-heading">
+    <div class="sop-step-num">2</div>
+    <h2>Employee Information</h2>
+    <span class="sop-who">Fill in carefully — drives workflow routing</span>
+  </div>
+
+  <div class="sop-note">
+    The employee information section captures the core details and contains two key fields —
+    <strong>Hourly or Salary</strong> and <strong>System Access Needed</strong> — that determine
+    how the entire workflow is routed. Fill these in accurately.
+  </div>
+
+  <div class="sop-form-preview">
+    <div class="form-section">
+      <h2>Employee Information</h2>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Hire Date <span class="required">*</span></label>
+          <input type="date" value="2026-06-02" disabled>
+          <div class="field-note fn-warn">If less than 3 business days away, a warning appears. Contact HR to expedite.</div>
+          <div class="callout callout-warning" style="margin-top:8px;display:none" id="hireDateWarning">
+            <strong>⚠️ Notice:</strong> &lt; 3 business days. Please contact HR to expedite.
+          </div>
+        </div>
+        <div class="form-field">
+          <label>New Hire or Rehire <span class="required">*</span></label>
+          <div class="radio-group">
+            <label><input type="radio" disabled><span class="radio-button checked">New Hire</span></label>
+            <label><input type="radio" disabled><span class="radio-button">Rehire</span></label>
+          </div>
+          <div class="field-note">Rehire = someone who was previously employed and is returning.</div>
+        </div>
+        <div class="form-field">
+          <label>Employee Type <span class="required">*</span></label>
+          <div class="radio-group">
+            <label><input type="radio" disabled><span class="radio-button checked">Direct Hire</span></label>
+            <label><input type="radio" disabled><span class="radio-button">Agency</span></label>
+          </div>
+          <div class="field-note">Agency = temporary or contractor through a staffing agency.</div>
+        </div>
+        <div class="form-field">
+          <label>Hourly or Salary <span class="required">*</span></label>
+          <div class="radio-group">
+            <label><input type="radio" disabled><span class="radio-button">Hourly</span></label>
+            <label><input type="radio" disabled><span class="radio-button checked">Salary</span></label>
+          </div>
+          <div class="field-note fn-branch">Drives routing. See branching notes below.</div>
+        </div>
+      </div>
+
+      <div class="form-row-4">
+        <div class="form-field">
+          <label>First Name <span class="required">*</span></label>
+          <input type="text" value="Jane" disabled>
+        </div>
+        <div class="form-field">
+          <label>Middle Name</label>
+          <input type="text" value="" placeholder="Optional" disabled>
+        </div>
+        <div class="form-field">
+          <label>Last Name <span class="required">*</span></label>
+          <input type="text" value="Smith" disabled>
+        </div>
+        <div class="form-field">
+          <label>Preferred Name</label>
+          <input type="text" value="" placeholder="Optional" disabled>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Job Title <span class="required">*</span></label>
+          <input type="text" value="Operations Manager" disabled>
+          <div class="field-note">Enter the working title, e.g. <em>"Operations Manager"</em> (salary) or <em>"Industrial Cleaner"</em> (hourly). HR will confirm or adjust the official title.</div>
+        </div>
+        <div class="form-field">
+          <label>Site Name <span class="required">*</span></label>
+          <select disabled>
+            <option>Aurora</option>
+            <option>Blue Bird Corporation</option>
+            <option>Decostar Industries</option>
+            <option>Eastern Janitorial</option>
+            <option>GM CAMI Assembly</option>
+            <option>GM Edmonton PDC</option>
+            <option>GM Lansing Delta Township Assembly</option>
+            <option>GM Lansing Grand River Assembly</option>
+            <option>GM Montréal PDC</option>
+            <option selected>GM Oshawa Assembly</option>
+            <option>GM Oshawa TR220 HKB</option>
+            <option>GM Oshawa TR230 PPS</option>
+            <option>GM Oshawa TR240 C-MT</option>
+            <option>GM Vancouver PDC</option>
+            <option>GM Woodstock PDC</option>
+            <option>Hyundai Motor Mfg Alabama</option>
+            <option>Industrial Applied Technologies Inc.</option>
+            <option>Inoac Toronto</option>
+            <option>International San Antonio</option>
+            <option>International Springfield</option>
+            <option>Invista</option>
+            <option>KIA Georgia Inc</option>
+            <option>Kingston Projects</option>
+            <option>Kitchener</option>
+            <option>Lockheed Martin Aeronautics</option>
+            <option>Markham Projects</option>
+            <option>Plastic Omnium Anderson</option>
+            <option>Polaris Spirit Lake</option>
+            <option>Prescott Projects</option>
+            <option>Rollstamp Manufacturing</option>
+            <option>SECO Ecoplastic</option>
+            <option>Taylor</option>
+            <option>Tiercon Corporation</option>
+            <option>Toyota Cambridge Industrial</option>
+            <option>Toyota Cambridge Janitorial</option>
+            <option>Toyota Woodstock Industrial</option>
+            <option>Ventra Plastics</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Job Site Number <span class="required">*</span></label>
+          <select disabled>
+            <option>INDIRECT - Aurora</option>
+            <option>INDIRECT - Kitchener</option>
+            <option>INDIRECT - Taylor</option>
+            <option>TJ008 - Invista Kingston Janitorial</option>
+            <option>TR210 - GM Oshawa Annex-A</option>
+            <option>TR220 - GM Oshawa HKB</option>
+            <option>TR230 - GM Oshawa PPS</option>
+            <option selected>TR240 - GM Oshawa C-MT</option>
+            <option>TR300 - GM Ingersoll</option>
+            <option>TR400 - Toyota Cambridge</option>
+            <option>TR480 - Toyota Cambridge Janitorial</option>
+            <option>TR500 - Toyota Woodstock</option>
+            <option>TR600 - GM Edmonton</option>
+            <option>TR650 - GM Woodstock</option>
+            <option>TR700 - GM Vancouver</option>
+            <option>TR750 - GM Montréal</option>
+            <option>TW019 - Inoac Toronto</option>
+            <option>TW050 - Invista Canada Maintenance</option>
+            <option>TW142 - Rollstamp</option>
+            <option>TW144 - Tiercon</option>
+            <option>TW154 - Ventra Group</option>
+            <option>TW993 - Team Prescott Miscellaneous Waterblasting</option>
+            <option>TW995 - Team Kingston Miscellaneous Waterblasting</option>
+            <option>TW999 - Markham Project Miscellaneous Jobs</option>
+            <option>UC123 - GM Lansing Delta Township</option>
+            <option>UC166 - Plastic Omnium Anderson</option>
+            <option>UC167 - Lockheed Martin Aeronautics</option>
+            <option>UC171 - GM Lansing Grand River</option>
+            <option>UC211 - Polaris Industries</option>
+            <option>UC213 - Decostar Industries</option>
+            <option>UC217 - HMMA Paint, Engine, PDI</option>
+            <option>UC220 - Blue Bird Corporation</option>
+            <option>UC222 - International San Antonio</option>
+            <option>UC240 - International Springfield</option>
+            <option>UC241 - Kia Georgia</option>
+            <option>UC242 - SECO Ecoplastic</option>
+            <option>UT400 - IAT Miscellaneous Customers</option>
+          </select>
+          <div class="field-note fn-warn">Required — select the correct job site number for this employee's primary assignment. Does not auto-select.</div>
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-field">
+          <label>Department <span style="color:var(--text-muted);font-weight:normal">(Optional)</span></label>
+          <input type="text" value="Operations" placeholder="e.g. Operations, Finance, Field Services" disabled>
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-field">
+          <label>Reporting Manager Email <span class="required">*</span></label>
+          <input type="email" value="rdaniels@team-group.com" disabled>
+          <span class="domain-hint">Must be a company email address (@team-group.com, @robinsonsolutions.com, @industrialappliedtech.com, or @stgroup.ca)</span>
+          <div class="field-note fn-tip">Start typing a name or email — autocomplete will search the employee directory.</div>
+        </div>
+        <div class="form-field">
+          <label>Reporting Manager Name <span class="required">*</span></label>
+          <input type="text" value="Rob Daniels" disabled style="color:var(--text-muted)">
+          <div class="field-note fn-tip">Auto-fills after selecting from the autocomplete list.</div>
+        </div>
+      </div>
+
+      <div class="question-wrapper">
+        <label>System Access Needed? <span class="required">*</span></label>
+        <div class="radio-group" style="max-width:300px">
+          <label><input type="radio" disabled><span class="radio-button checked">Yes</span></label>
+          <label><input type="radio" disabled><span class="radio-button">No</span></label>
+        </div>
+        <div class="field-note fn-branch">Selecting <strong>No</strong> hides the entire System Access section. See branching notes below.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Branching notes for this section -->
+  <div class="sop-branch">
+    <span class="branch-label">⬡ Workflow Branching — This Section</span>
+    <div class="branch-row">
+      <span class="branch-if">Salary selected</span>
+      <span class="branch-then">System Access automatically switches to <strong>Yes</strong> and the System Access section expands. You still choose which systems.</span>
+    </div>
+    <div class="branch-row">
+      <span class="branch-if">Hourly + System Access = No</span>
+      <span class="branch-then">The entire System Access section is hidden. The workflow will skip IT Setup entirely — the employee receives SiteDocs and DSS access only, and the workflow closes after HR Verification.</span>
+    </div>
+    <div class="branch-row">
+      <span class="branch-if">Hourly + System Access = Yes</span>
+      <span class="branch-then">System Access section appears. Typical for hourly supervisors or field coordinators who need BOSS or other systems.</span>
+    </div>
+  </div>
+
+  <!-- Quick reference table for this section -->
+  <table class="qr-table">
+    <tr><th>Field</th><th>Required?</th><th>Notes</th></tr>
+    <tr><td class="col-field">Hire Date</td><td><span class="tag-req">Required</span></td><td class="col-note">Contact HR if &lt; 3 business days away</td></tr>
+    <tr><td class="col-field">New Hire or Rehire</td><td><span class="tag-req">Required</span></td><td class="col-note">Select Rehire if employee has worked here before</td></tr>
+    <tr><td class="col-field">Employee Type</td><td><span class="tag-req">Required</span></td><td class="col-note">Agency = staffing agency / temp contractor</td></tr>
+    <tr><td class="col-field">Hourly or Salary</td><td><span class="tag-req">Required</span></td><td class="col-branch">Key routing field — affects entire workflow path</td></tr>
+    <tr><td class="col-field">First / Last Name</td><td><span class="tag-req">Required</span></td><td class="col-note">HR will verify spelling against official records</td></tr>
+    <tr><td class="col-field">Middle / Preferred Name</td><td><span class="tag-opt">Optional</span></td><td class="col-note">Include if known</td></tr>
+    <tr><td class="col-field">Job Title</td><td><span class="tag-req">Required</span></td><td class="col-note">Working title — HR may adjust the official HR title</td></tr>
+    <tr><td class="col-field">Site Name</td><td><span class="tag-req">Required</span></td><td class="col-note">Primary work site</td></tr>
+    <tr><td class="col-field">Job Site Number</td><td><span class="tag-req">Required</span></td><td class="col-note">Confirm after selecting site</td></tr>
+    <tr><td class="col-field">Department</td><td><span class="tag-opt">Optional</span></td><td class="col-note">e.g. Operations, Finance, Field Services</td></tr>
+    <tr><td class="col-field">Manager Email</td><td><span class="tag-req">Required</span></td><td class="col-note">Use autocomplete — must be a company email address</td></tr>
+    <tr><td class="col-field">System Access Needed?</td><td><span class="tag-req">Required</span></td><td class="col-branch">Key routing field — No hides all system/equipment fields</td></tr>
+  </table>
+
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 3 — SYSTEM ACCESS (conditional)
+       ═══════════════════════════════════════════════ -->
+  <div class="sop-step-heading">
+    <div class="sop-step-num">3</div>
+    <h2>System Access &amp; Equipment</h2>
+    <span class="sop-who">Only shown when System Access = Yes</span>
+  </div>
+
+  <div class="sop-note">
+    <strong>This entire section only appears when System Access = Yes.</strong>
+    Select every system and piece of equipment the employee needs on day one.
+    For each selection that expands a sub-section, fill in the details that appear.
+    <br><br>
+    <strong>Note:</strong> All employees automatically receive <strong>DSS+</strong> (safety training platform) and <strong>SiteDocs</strong> (worker access) through the ID Setup step — you do not need to request these here. <strong>Almost all hourly employees need nothing additional.</strong> This section is primarily for salary employees or hourly supervisors/coordinators who require system access.
+  </div>
+
+  <!-- SYSTEMS SUB-SECTION -->
+  <h3 style="margin:20px 0 8px;color:var(--text-muted);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Systems / Apps</h3>
+
+  <div class="sop-warn">
+    <strong>⚠️ Note:</strong> All employees automatically receive DSS+ and SiteDocs worker access through the ID Setup step — you do not need to request these here. <strong>Almost all hourly employees need nothing additional beyond this.</strong> The fields below are primarily for salary employees or hourly supervisors who require system access.
+  </div>
+
+  <!-- ADP Supervisor Access -->
+  <div class="sop-form-preview">
+    <div class="checkbox-group" style="grid-template-columns:1fr">
+      <label class="checkbox-label checked">
+        <input type="checkbox" checked disabled>
+        <span>ADP Supervisor Access</span>
+      </label>
+      <div class="sub-section" style="display:block">
+        <div style="margin-bottom:12px">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:default">
+            <input type="checkbox" disabled style="width:18px;height:18px;accent-color:var(--brand-red);flex-shrink:0;margin-top:2px">
+            <span>
+              <span style="display:block;font-size:0.9rem">Requires access to salary data?</span>
+              <span style="display:block;color:var(--text-muted);font-size:0.8rem">If checked, HR/Payroll will be notified to grant salary data permissions in ADP before the start date.</span>
+            </span>
+          </label>
+        </div>
+        <label>Required ADP Job Site Numbers <span class="required">*</span></label>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px">Select all job site numbers this employee needs ADP access for.</p>
+        <div class="dl-preview">
+          <div class="dl-panel">
+            <div class="dl-hdr">Available Sites</div>
+            <div class="dl-item">INDIRECT - Aurora</div>
+            <div class="dl-item">INDIRECT - Kitchener</div>
+            <div class="dl-item">TR210 - GM Oshawa Annex-A</div>
+            <div class="dl-item">TR300 - GM Ingersoll</div>
+            <div class="dl-item">TR400 - Toyota Cambridge</div>
+          </div>
+          <div class="dl-arrows">
+            <div class="dl-arrow" style="color:var(--success);border-color:rgba(0,200,83,0.4)">›</div>
+            <div class="dl-arrow" style="color:var(--brand-red);border-color:rgba(235,28,45,0.4)">‹</div>
+          </div>
+          <div class="dl-panel">
+            <div class="dl-hdr">Selected Sites</div>
+            <div class="dl-item sel">TR240 - GM Oshawa C-MT</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sop-note" style="margin-top:-4px">
+    <strong>ADP Supervisor Access:</strong> Select all job site numbers this person needs to see in ADP.
+    Use the dual-list picker — click items on the left to move them to the right.
+    Check "salary data" only if this person needs to view payroll information.
+  </div>
+
+  <!-- BOSS -->
+  <div class="sop-form-preview">
+    <div class="checkbox-group" style="grid-template-columns:1fr">
+      <label class="checkbox-label checked">
+        <input type="checkbox" checked disabled>
+        <span>BOSS</span>
+      </label>
+      <div class="sub-section" style="display:block">
+        <div style="margin-bottom:12px">
+          <label>Training User Only?</label>
+          <div class="radio-group" style="max-width:260px">
+            <label><input type="radio" disabled><span class="radio-button">Yes</span></label>
+            <label><input type="radio" disabled><span class="radio-button checked">No</span></label>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-top:4px">If Yes, user only receives BOSS training access — no committees, cost sheet, trip reports, or grievances.</p>
+        </div>
+        <div>
+          <label>Committee(s) To Be Assigned</label>
+          <div class="dl-preview">
+            <div class="dl-panel">
+              <div class="dl-hdr">Available Committees</div>
+              <div class="dl-item">Accounts Receivable</div>
+              <div class="dl-item">Canadian Operations</div>
+              <div class="dl-item">Finance</div>
+              <div class="dl-item">GM CAMI Assembly</div>
+              <div class="dl-item">Safety</div>
+            </div>
+            <div class="dl-arrows">
+              <div class="dl-arrow" style="color:var(--success);border-color:rgba(0,200,83,0.4)">›</div>
+              <div class="dl-arrow" style="color:var(--brand-red);border-color:rgba(235,28,45,0.4)">‹</div>
+            </div>
+            <div class="dl-panel">
+              <div class="dl-hdr">Assigned Committees</div>
+              <div class="dl-item sel">Canadian Operations</div>
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <label>Cost Sheet Module Access?</label>
+            <div class="radio-group" style="max-width:260px">
+              <label><input type="radio" disabled><span class="radio-button checked">Yes</span></label>
+              <label><input type="radio" disabled><span class="radio-button">No</span></label>
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <label>Job Number(s) for Cost Sheet</label>
+            <div class="dl-preview">
+              <div class="dl-panel">
+                <div class="dl-hdr">Available Jobs</div>
+                <div class="dl-item">TJ008 - Invista Kingston Janitorial</div>
+                <div class="dl-item">TR200 - GM Oshawa</div>
+                <div class="dl-item">TR210 - GM Oshawa Annex-A</div>
+                <div class="dl-item">TR300 - GM Ingersoll</div>
+                <div class="dl-item">TR400 - Toyota Cambridge</div>
+              </div>
+              <div class="dl-arrows">
+                <div class="dl-arrow" style="color:var(--success);border-color:rgba(0,200,83,0.4)">›</div>
+                <div class="dl-arrow" style="color:var(--brand-red);border-color:rgba(235,28,45,0.4)">‹</div>
+              </div>
+              <div class="dl-panel">
+                <div class="dl-hdr">Selected Jobs</div>
+                <div class="dl-item sel">TR300 - GM Ingersoll</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <label>Trip Reports Access?</label>
+            <div class="radio-group" style="max-width:260px">
+              <label><input type="radio" disabled><span class="radio-button checked">Yes</span></label>
+              <label><input type="radio" disabled><span class="radio-button">No</span></label>
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <label>Corrective Counselling &amp; Grievances Access?</label>
+            <div class="radio-group" style="max-width:260px">
+              <label><input type="radio" disabled><span class="radio-button">Yes</span></label>
+              <label><input type="radio" disabled><span class="radio-button checked">No</span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sop-branch">
+    <span class="branch-label">⬡ BOSS — IT Confirmation Gate</span>
+    <div class="branch-row">
+      <span class="branch-if">Any system/equipment access</span>
+      <span class="branch-then">After HR Verification, Dave Langohr receives a confirmation email to review the request before IT Setup proceeds. This applies to any workflow that includes system or equipment access — not just BOSS.</span>
+    </div>
+    <div class="branch-row">
+      <span class="branch-if">Training User Only = Yes</span>
+      <span class="branch-then">Committees, Cost Sheet, Trip Reports, and Grievances fields are all hidden. User receives read-only BOSS training access only.</span>
+    </div>
+  </div>
+
+  <!-- Remaining systems -->
+  <div class="sop-form-preview">
+    <div class="checkbox-group">
+      <label class="checkbox-label"><input type="checkbox" disabled><span>CAA</span></label>
+      <label class="checkbox-label"><input type="checkbox" disabled><span>Delivery</span></label>
+      <label class="checkbox-label"><input type="checkbox" disabled><span>Fleetio</span></label>
+      <label class="checkbox-label checked">
+        <input type="checkbox" checked disabled><span>Google Account</span>
+      </label>
+      <label class="checkbox-label"><input type="checkbox" disabled><span>Incidents</span></label>
+      <label class="checkbox-label checked">
+        <input type="checkbox" checked disabled><span>Central Purchasing/Jonas</span>
+      </label>
+      <label class="checkbox-label"><input type="checkbox" disabled><span>Net Promoter Score</span></label>
+      <label class="checkbox-label">
+        <input type="checkbox" disabled>
+        <span>SiteDocs Supervisor<br><span class="warn-text">⚠️ Do not add to hourly employees</span></span>
+      </label>
+
+      <!-- Google Account sub-section -->
+      <div class="sub-section" style="display:block">
+        <p style="font-size:0.8rem;font-weight:600;color:var(--text-muted);margin-bottom:8px">Google Account Details</p>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label>Requested Email Address</label>
+            <input type="text" value="jane.smith" disabled>
+            <small>Default: firstname.lastname (domain selected separately)</small>
+          </div>
+          <div class="form-field">
+            <label>Email Domain</label>
+            <select disabled>
+              <option>team-group.com</option>
+              <option>robinsonsolutions.com</option>
+              <option>industrialappliedtech.com</option>
+              <option>stgroup.ca</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Jonas sub-section -->
+      <div class="sub-section" style="display:block;grid-column:1/-1">
+        <p style="font-size:0.8rem;font-weight:600;color:var(--text-muted);margin-bottom:8px">Central Purchasing / Jonas Details</p>
+        <label>Required Purchasing Job Site Numbers <span class="required">*</span></label>
+        <div class="dl-preview" style="margin-bottom:12px">
+          <div class="dl-panel">
+            <div class="dl-hdr">Available Sites</div>
+            <div class="dl-item">INDIRECT - Aurora</div>
+            <div class="dl-item">INDIRECT - Kitchener</div>
+            <div class="dl-item">TR210 - GM Oshawa Annex-A</div>
+            <div class="dl-item">TR300 - GM Ingersoll</div>
+            <div class="dl-item">TR400 - Toyota Cambridge</div>
+          </div>
+          <div class="dl-arrows">
+            <div class="dl-arrow" style="color:var(--success);border-color:rgba(0,200,83,0.4)">›</div>
+            <div class="dl-arrow" style="color:var(--brand-red);border-color:rgba(235,28,45,0.4)">‹</div>
+          </div>
+          <div class="dl-panel">
+            <div class="dl-hdr">Selected</div>
+            <div class="dl-item sel">TR210 - GM Oshawa Annex-A</div>
+            <div class="dl-item sel">TR240 - GM Oshawa C-MT</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sop-note">
+    <strong>Systems — key notes:</strong>
+    <ul style="margin: 8px 0 0 18px; line-height: 2">
+      <li><strong>Google Account</strong> — Required for email. Auto-fills email as firstname.lastname. Select the correct domain (usually matches your own).</li>
+      <li><strong>Central Purchasing/Jonas</strong> — Select every purchasing job site number this employee needs Jonas access for. Specialist team is notified after IT Setup.</li>
+      <li><strong>Fleetio</strong> — Select if the employee needs fleet management access or will be assigned a company vehicle.</li>
+      <li><strong>SiteDocs Supervisor</strong> — Only for employees who supervise others in SiteDocs. Do not add to hourly employees.</li>
+    </ul>
+  </div>
+
+  <!-- EQUIPMENT SUB-SECTION -->
+  <h3 style="margin:28px 0 8px;color:var(--text-muted);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Equipment</h3>
+
+  <div class="sop-form-preview">
+    <div class="checkbox-group">
+      <label class="checkbox-label checked">
+        <input type="checkbox" checked disabled><span>Digital Business Cards</span>
+      </label>
+      <label class="checkbox-label checked">
+        <input type="checkbox" checked disabled><span>Computer</span>
+      </label>
+      <label class="checkbox-label checked"><input type="checkbox" checked disabled><span>Credit Card</span></label>
+      <label class="checkbox-label checked"><input type="checkbox" checked disabled><span>Mobile Phone</span></label>
+      <label class="checkbox-label"><input type="checkbox" disabled><span>SiteDocs Tablet</span></label>
+      <label class="checkbox-label"><input type="checkbox" disabled><span>Vehicle</span></label>
+    </div>
+
+    <!-- Computer sub-section -->
+    <div class="sub-section" style="display:block;margin-top:10px">
+      <h4 style="margin-bottom:12px;font-size:0.95rem;color:var(--text-muted)">Computer Details</h4>
+      <div class="form-field" style="margin-bottom:12px">
+        <label>Request Type <span class="required">*</span></label>
+        <div class="radio-group" style="max-width:300px">
+          <label><input type="radio" disabled><span class="radio-button checked">New Request</span></label>
+          <label><input type="radio" disabled><span class="radio-button">Reassignment</span></label>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Computer Type Requested</label>
+        <div class="radio-group" style="max-width:360px">
+          <label><input type="radio" disabled><span class="radio-button checked">Chromebook</span></label>
+          <label><input type="radio" disabled><span class="radio-button">Windows</span></label>
+          <label><input type="radio" disabled><span class="radio-button">Mac</span></label>
+        </div>
+        <div style="margin-top:0.75rem;padding:0.75rem;background:#DBEAFE;border-left:4px solid #3B82F6;color:#1E40AF;border-radius:4px;font-size:0.9rem">
+          <strong>Note:</strong> Chromebook is the default option. Windows or Mac computers require IT Director approval.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sop-note">
+    <strong>Computer:</strong> Default is Chromebook. If Windows or Mac is required, select it — IT will need Director approval before provisioning.
+    <br><strong>Reassignment:</strong> If handing off an existing computer, select "Reassignment" and provide the previous user and serial number.
+  </div>
+
+  <div class="sop-form-preview">
+    <div style="background:#252525;border:1px solid #444;border-radius:6px;padding:12px;margin-top:8px">
+      <h4 style="margin-bottom:8px;font-size:0.95rem;color:var(--text-muted)">Credit Card Details</h4>
+      <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1rem">Select one or more credit card types needed and enter the monthly spending limit for each:</p>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="checkbox-label checked" style="padding:12px;background:rgba(235,28,45,0.08);border:1px solid rgba(235,28,45,0.35);border-radius:6px">
+            <input type="checkbox" checked disabled style="width:20px;height:20px;accent-color:var(--brand-red)"><span style="font-weight:600;color:var(--brand-red)">USA Credit Card</span>
+          </label>
+          <input type="text" value="$2,000" disabled style="margin-top:0.5rem">
+        </div>
+        <div class="form-field">
+          <label class="checkbox-label checked" style="padding:12px;background:rgba(235,28,45,0.08);border:1px solid rgba(235,28,45,0.35);border-radius:6px">
+            <input type="checkbox" checked disabled style="width:20px;height:20px;accent-color:var(--brand-red)"><span style="font-weight:600;color:var(--brand-red)">Canada Credit Card</span>
+          </label>
+          <input type="text" value="$2,500 CAD" disabled style="margin-top:0.5rem">
+        </div>
+        <div class="form-field">
+          <label class="checkbox-label" style="padding:12px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:6px">
+            <input type="checkbox" disabled style="width:20px;height:20px"><span>Home Depot Credit Card</span>
+          </label>
+          <input type="text" placeholder="Monthly Limit (e.g., $1,000)" disabled style="margin-top:0.5rem;opacity:0.4">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sop-note">
+    <strong>Credit Card:</strong> Check each card type needed and enter the monthly spending limit for each. The Credit Card team is notified after IT Setup completes — they handle the application.
+  </div>
+
+  <div class="sop-form-preview">
+    <div style="background:#252525;border:1px solid #444;border-radius:6px;padding:12px">
+      <h4 style="margin-bottom:12px;font-size:0.95rem;color:var(--text-muted)">Mobile Phone Details</h4>
+      <div class="form-field">
+        <label>Request Type <span class="required">*</span></label>
+        <div class="radio-group" style="max-width:300px">
+          <label><input type="radio" disabled><span class="radio-button checked">New Request</span></label>
+          <label><input type="radio" disabled><span class="radio-button">Reassignment</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sop-note">
+    <strong>Mobile Phone:</strong> Reassignment — provide the previous user name and phone number so IT can transfer the line.
+  </div>
+
+  <div class="sop-branch">
+    <span class="branch-label">⬡ Equipment — What Gets Triggered</span>
+    <div class="branch-row">
+      <span class="branch-if">Business Cards</span>
+      <span class="branch-then">Business Cards action item created after IT Setup. Business Cards team is notified to order digital cards.</span>
+    </div>
+    <div class="branch-row">
+      <span class="branch-if">Credit Card</span>
+      <span class="branch-then">Credit Card action item created after IT Setup. Credit Card team handles the application for each card type selected.</span>
+    </div>
+    <div class="branch-row">
+      <span class="branch-if">Vehicle</span>
+      <span class="branch-then">Fleetio action item created after IT Setup (same as selecting Fleetio system). Fleet team assigns the vehicle.</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 4 — JR ASSIGNMENT
+       ═══════════════════════════════════════════════ -->
+  <div class="sop-step-heading">
+    <div class="sop-step-num">4</div>
+    <h2>JR Assignment</h2>
+    <span class="sop-who">Required for all Salary employees</span>
+  </div>
+
+  <div class="sop-form-preview">
+    <div style="margin-top:1rem">
+      <h3 style="margin-bottom:1rem">JR Assignment</h3>
+      <div class="form-field" style="margin-bottom:16px">
+        <label>JR Required?</label>
+        <div class="radio-group" style="max-width:260px">
+          <label><input type="radio" disabled><span class="radio-button checked">Yes</span></label>
+          <label><input type="radio" disabled><span class="radio-button">No</span></label>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Select JR Title to Assign</label>
+        <select disabled>
+          <option>-- Select JR --</option>
+          <option>A/P Admin</option>
+          <option>A/P and Administration Support</option>
+          <option>A/R Clerk</option>
+          <option>A/R Coordinator</option>
+          <option>Account Manager / General Manager</option>
+          <option>Accounting Analyst</option>
+          <option>Accounts Receivable Coordinator</option>
+          <option>Administrative Assistant</option>
+          <option>Administrator - Site</option>
+          <option>Assistant Controller</option>
+          <option>Brand Content Manager</option>
+          <option>Certifications</option>
+          <option>Certifications RSI</option>
+          <option>Conformance Coordinator</option>
+          <option>Conformance Manager - TMMC</option>
+          <option>Contract Services Coordinator - RSI</option>
+          <option>Director of Health and Safety Canada</option>
+          <option>Electrical Engineer</option>
+          <option>Filter Specialist</option>
+          <option>Finance Office Support</option>
+          <option>Financial Controller</option>
+          <option>Front Desk Administrator</option>
+          <option>General Accountant</option>
+          <option>General Manager</option>
+          <option>GMS Coordinator - Oshawa</option>
+          <option>Health &amp; Safety Administrator</option>
+          <option>Health &amp; Safety Coordinator Canada</option>
+          <option>Health &amp; Safety Manager USA</option>
+          <option>Health &amp; Safety Site Coordinator Canada</option>
+          <option>Health &amp; Safety Specialist - TMMC</option>
+          <option>Health And Safety Coordinator - Oshawa</option>
+          <option>HR Benefits Coordinator</option>
+          <option>Human Resource and Labour Relations Manager</option>
+          <option>Human Resources Coordinator</option>
+          <option>Human Resources Generalist</option>
+          <option>Human Resources Manager</option>
+          <option>IFM Integration Manager</option>
+          <option>Information Systems Manager</option>
+          <option>Information Technology Administrator</option>
+          <option>Information Technology Manager</option>
+          <option>Labor Relations Specialist</option>
+          <option>Labour Relations Generalist</option>
+          <option>Landscape Supervisor</option>
+          <option>Launch Manager</option>
+          <option>Maximo Coordinator - Oshawa</option>
+          <option>Mechanical Engineer</option>
+          <option>Office Administrator</option>
+          <option>Office &amp; HR Administrator Taylor Office</option>
+          <option selected>Operations Manager / Site Supervisor</option>
+          <option>Operations Support Specialist</option>
+          <option>Pay Roll Manager</option>
+          <option>Payroll Administrator</option>
+          <option>Project Planner</option>
+          <option>Purchasing Agent</option>
+          <option>Purchasing Coordinator</option>
+          <option>Purchasing Manager</option>
+          <option>Purchasing Manager - Oshawa</option>
+          <option>Quality Manager</option>
+          <option>Receptionist / Office Support</option>
+          <option>Recruitment Coordinator</option>
+          <option>Regional Manager</option>
+          <option>Regional Manager, Industrial Services Eastern Ontario</option>
+          <option>RSI General Accountant</option>
+          <option>RSI Payroll Supervisor</option>
+          <option>Safety &amp; Quality Coordinator</option>
+          <option>Senior Accounting Analyst</option>
+          <option>Senior Labour Relations Manager</option>
+          <option>Site Administrator - TMMC</option>
+          <option>Site Administrator - TMMC Janitorial</option>
+          <option>Supervisor</option>
+          <option>Team Leader</option>
+          <option>Team Payroll Supervisor</option>
+          <option>Training and Development Coordinator</option>
+          <option>Vice-President - Operations</option>
+          <option>Vice-President Health and Safety</option>
+          <option>VP Business Development</option>
+          <option>Warehouse Labourer</option>
+        </select>
+        <span class="warn-text">⚠️ JR Title will be confirmed and may be changed by HR.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sop-note">
+    <strong>JR titles are BOSS Job Rating titles and are required for all Salary employees.</strong>
+    Select the title that most closely matches the role. HR will verify the assignment during HR Verification and may change it — your selection is a starting point, not a final assignment.
+    If you're unsure which title applies, make your best selection — HR will confirm.
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 5 — 30-60-90 DAY PLAN
+       ═══════════════════════════════════════════════ -->
+  <div class="sop-step-heading">
+    <div class="sop-step-num">5</div>
+    <h2>30-60-90 Day Plan</h2>
+    <span class="sop-who">Salary employees typically</span>
+  </div>
+
+  <div class="sop-form-preview">
+    <div style="margin-top:1rem">
+      <h3 style="margin-bottom:1rem">30-60-90 Day Plan</h3>
+      <div class="form-field">
+        <label>30-60-90 Day Plan Required?</label>
+        <div class="radio-group" style="max-width:260px">
+          <label><input type="radio" disabled><span class="radio-button checked">Yes</span></label>
+          <label><input type="radio" disabled><span class="radio-button">No</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sop-branch">
+    <span class="branch-label">⬡ 30-60-90 — What Gets Triggered</span>
+    <div class="branch-row">
+      <span class="branch-if">Yes selected (or non-hourly)</span>
+      <span class="branch-then">A 30/60/90 Day Review action item is automatically created after IT Setup and assigned to the designated review team. They schedule milestones with the reporting manager.</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 6 — COMMENTS & SUBMIT
+       ═══════════════════════════════════════════════ -->
+  <div class="sop-step-heading">
+    <div class="sop-step-num">6</div>
+    <h2>Additional Comments &amp; Submit</h2>
+    <span class="sop-who">Final step</span>
+  </div>
+
+  <div class="sop-form-preview">
+    <div style="margin-top:1rem">
+      <h3 style="margin-bottom:1rem">Additional Comments</h3>
+      <div class="form-field">
+        <label>Comments</label>
+        <textarea disabled rows="4" placeholder="Enter any additional information, special requests, or notes...">Starting at Calgary North. Will need parking access on day one. Laptop should be ready before 8am start.</textarea>
+      </div>
+    </div>
+    <div style="margin-top:24px">
+      <button disabled style="width:100%;padding:14px;background:var(--brand-red);color:white;border:none;border-radius:8px;font-weight:700;font-size:15px;opacity:0.7;cursor:default">Submit Request</button>
+    </div>
+  </div>
+
+  <div class="sop-tip">
+    <strong>Use Comments for:</strong> Parking access, day-one timing requirements, special equipment needs, access to multiple sites, anything the ID Setup / IT teams should know.
+    The field is visible to every team involved in onboarding.
+  </div>
+
+  <div class="sop-note">
+    After clicking <strong>Submit Request</strong>, you will see a confirmation screen with a Request ID. Save this ID — you can reference it if you need to follow up.
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       WHAT HAPPENS NEXT
+       ═══════════════════════════════════════════════ -->
+  <div class="sop-step-heading">
+    <div class="sop-step-num" style="background:var(--success)">✓</div>
+    <h2>What Happens After You Submit</h2>
+    <span class="sop-who">For your reference</span>
+  </div>
+
+  <div class="sop-note">
+    You don't need to do anything further — the workflow proceeds automatically.
+    Each team receives an email with a direct link to their form at the right time.
+    You will receive a notification email when onboarding is complete.
+  </div>
+
+  <div class="whn-grid">
+    <div class="whn-row">
+      <div class="whn-step">1</div>
+      <div class="whn-content">
+        <div class="whn-title">ID Setup</div>
+        <div class="whn-desc">The ID Setup team receives an email and assigns the employee's internal ID, SiteDocs worker access, and DSS training account.</div>
+      </div>
+    </div>
+    <div class="whn-row">
+      <div class="whn-step">2</div>
+      <div class="whn-content">
+        <div class="whn-title">Safety — DSS+ &amp; SiteDocs Learning Paths</div>
+        <div class="whn-desc">Safety receives an email to configure the employee's DSS+ and SiteDocs learning paths and assign their site location. This happens for <strong>all employees</strong> immediately after ID Setup.</div>
+      </div>
+    </div>
+    <div class="whn-row">
+      <div class="whn-step">3</div>
+      <div class="whn-content">
+        <div class="whn-title">HR Verification</div>
+        <div class="whn-desc">HR receives an email to verify employee details against ADP and assign the ADP Associate ID. HR may correct the name, hire date, title, or site — you and your manager will receive a notification if any changes are made. <strong>For salary employees or employees needing system/email access, this is completed before any additional setup begins.</strong> For hourly employees with no system access, HR Verification is typically completed on or near the start date.</div>
+      </div>
+    </div>
+    <div class="whn-row">
+      <div class="whn-step" style="border-color:var(--warning);color:var(--warning)">4a</div>
+      <div class="whn-content">
+        <div class="whn-title">IT Confirmation — Dave Langohr</div>
+        <div class="whn-desc">Dave Langohr receives a confirmation request whenever system or equipment access is included in the workflow. He reviews the configuration before IT Setup proceeds.</div>
+        <div class="whn-cond">⬦ Applies when system or equipment access is requested (after HR Verification)</div>
+      </div>
+    </div>
+    <div class="whn-row">
+      <div class="whn-step" style="border-color:var(--warning);color:var(--warning)">4b</div>
+      <div class="whn-content">
+        <div class="whn-title">Skipped for Hourly / No System Access</div>
+        <div class="whn-desc">If you selected Hourly + No System Access, the workflow ends after HR Verification. No IT Setup or specialist steps are required.</div>
+        <div class="whn-cond">⬦ Only applies to Hourly + No System Access employees</div>
+      </div>
+    </div>
+    <div class="whn-row">
+      <div class="whn-step">5</div>
+      <div class="whn-content">
+        <div class="whn-title">IT Setup</div>
+        <div class="whn-desc">IT provisions the email account, computer, phone, and all requested system access. You and your manager receive an email with the employee's credentials and account details.</div>
+      </div>
+    </div>
+    <div class="whn-row">
+      <div class="whn-step">6</div>
+      <div class="whn-content">
+        <div class="whn-title">Specialist Action Items (parallel)</div>
+        <div class="whn-desc">Each specialist team is notified simultaneously: Business Cards, Credit Card, Fleetio, 30/60/90 Review, Jonas/Purchasing, and WIS Assignment (sent to you as the reporting manager). These run in parallel and each team works independently.</div>
+        <div class="whn-cond">⬦ Only the specialists matching your equipment and system selections are notified</div>
+      </div>
+    </div>
+    <div class="whn-row">
+      <div class="whn-step" style="border-color:var(--success);color:var(--success)">✓</div>
+      <div class="whn-content">
+        <div class="whn-title">Onboarding Complete</div>
+        <div class="whn-desc">When all specialist items are closed, you and HR receive a completion email summarizing everything that was set up. The employee is ready to start.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       QUICK REFERENCE
+       ═══════════════════════════════════════════════ -->
+  <div class="sop-step-heading">
+    <div class="sop-step-num" style="background:#333;color:var(--text-muted)">?</div>
+    <h2>Common Questions</h2>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:0">
+    <div style="padding:16px 0;border-bottom:1px solid var(--border-color)">
+      <div style="font-weight:700;margin-bottom:6px">I submitted with the wrong hire date — what do I do?</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.6">HR can correct the hire date during HR Verification. Contact HR directly and let them know. They will update it and the correction is automatically logged.</div>
+    </div>
+    <div style="padding:16px 0;border-bottom:1px solid var(--border-color)">
+      <div style="font-weight:700;margin-bottom:6px">I forgot to add a system — can I go back and edit?</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.6">Once submitted, the initial request cannot be edited directly. Contact IT or the relevant specialist team to add access manually, or submit an Equipment / System Request through the portal for an existing employee.</div>
+    </div>
+    <div style="padding:16px 0;border-bottom:1px solid var(--border-color)">
+      <div style="font-weight:700;margin-bottom:6px">The hire date is less than 3 business days away — what do I do?</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.6">Submit the form immediately and contact HR directly to expedite. The form will still be processed but HR should be made aware of the urgent timeline so they can prioritize.</div>
+    </div>
+    <div style="padding:16px 0;border-bottom:1px solid var(--border-color)">
+      <div style="font-weight:700;margin-bottom:6px">Which domain should I select for the Google Account email?</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.6">Select the same domain as the reporting manager wherever possible (e.g. if the manager is @team-group.com, the employee should also be @team-group.com). If unsure, check with HR or IT.</div>
+    </div>
+    <div style="padding:16px 0;border-bottom:1px solid var(--border-color)">
+      <div style="font-weight:700;margin-bottom:6px">What is WIS Assignment?</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.6">WIS (Work Instructions &amp; Safety) is a BOSS module. After IT Setup, you as the reporting manager will receive a WIS action item email asking you to assign the appropriate WIS modules to the employee in BOSS. This is always created regardless of what systems were selected.</div>
+    </div>
+    <div style="padding:16px 0">
+      <div style="font-weight:700;margin-bottom:6px">I haven't received any confirmation or update emails — what do I do?</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.6">Check your spam folder first. If not there, log into the TEAM Group Employee Portal and check the workflow status yourself from the Dashboard using your Request ID. You can see the current stage and which step is pending.</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="margin-top:48px;padding-top:20px;border-top:1px solid var(--border-color);text-align:center;font-size:12px;color:var(--text-muted)">
+    TEAM Group &mdash; Employee Onboarding System &mdash; Internal Use Only
+  </div>
+
+</div>
+</body>
+</html>
