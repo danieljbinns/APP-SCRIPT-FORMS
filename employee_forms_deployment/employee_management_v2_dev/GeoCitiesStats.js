@@ -2,6 +2,8 @@
  * GeoCitiesStats.js
  * Server-side stats for the GeoCities easter egg mode.
  * Called via google.script.run.getGeoCitiesStats() from GeoCities.html.
+ *
+ * DEV ONLY — do not migrate to staging or prod.
  */
 
 function getGeoCitiesStats() {
