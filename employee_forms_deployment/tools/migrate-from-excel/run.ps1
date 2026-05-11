@@ -101,18 +101,24 @@ function Convert-CellValue {
 $irRowCount = 0
 for ($r = 2; $r -le $srcIR.Dimension.Rows; $r++) {
     for ($c = 1; $c -le 49; $c++) { $dstIR.Cells[$r, $c].Value = Convert-CellValue $srcIR.Cells[$r, $c] }
+    # Dev cols 50-52 (ADP Sites, Department, Purchasing Sites) — not in prod, left blank (future-proof)
     $dstIR.Cells[$r, 53].Value = Convert-CellValue $srcIR.Cells[$r, 50]  # Status: prod col 50 -> dev col 53
+    # Dev col 54 (ADP Salary Access) — not in prod, left blank (future-proof)
     $irRowCount++
 }
 $devPkg.Save()
 $prodPkg.Dispose(); $devPkg.Dispose()
 Write-Host "  Initial Requests: $irRowCount rows (EPPlus positional copy)"
 
-# ID Setup Results -- dev has BOSS WIS Created inserted before Submitted By
+# ID Setup Results
+# Dev schema (0-based): 0=Workflow ID, 1=Form ID, 2=Submission Timestamp, 3=Internal Employee ID,
+#   4=SiteDocs Worker ID, 5=SiteDocs Job Code, 6=SiteDocs Username, 7=SiteDocs Password,
+#   8=DSS Username, 9=DSS Password, 10=Setup Notes, 11=Submitted By, 12=BOSS WIS Created
+# Bug fix: Submitted By (11) comes before BOSS WIS Created (12) — matches live sheet and schema
 $id = Format-Dates (Import-Excel $prodPath -WorksheetName 'ID Setup Results')
 $idCols = @('Workflow ID','Form ID','Submission Timestamp','Internal Employee ID',
   'SiteDocs Worker ID','SiteDocs Job Code','SiteDocs Username','SiteDocs Password',
-  'DSS Username','DSS Password','Setup Notes','BOSS WIS Created','Submitted By')
+  'DSS Username','DSS Password','Setup Notes','Submitted By','BOSS WIS Created')
 $id = Pad-Objects $id $idCols
 Export-Excel -Path $devPath -WorksheetName 'ID Setup Results' -InputObject $id -ClearSheet -NoNumberConversion *
 Write-Host "  ID Setup Results: $($id.Count) rows"
