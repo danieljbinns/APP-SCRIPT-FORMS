@@ -343,6 +343,32 @@ const SCHEMA = {
     NOTES:             4,  // string   — Notes
     FOLLOWUP_REQUIRED: 5,  // boolean  — Follow-up Required
     SUBMITTED_BY:      6   // string   — Submitted By
+  },
+
+  // ─────────────────────────────────────────────
+  // DATA_LOOKUP — numeric column indexes (0-based)
+  // Sheet: Data_Lookup
+  // Columns are positional (accessed by index, not header name).
+  // When adding a new column here, also add its header string to DATA_LOOKUP_HEADERS below.
+  // ─────────────────────────────────────────────
+  DATA_LOOKUP: {
+    SITES:            0,  // string — Column A — Site names
+    JOB_NUMBERS:      3,  // string — Column D — Job site numbers (Initial Request field)
+    BOSS_COST_SHEETS: 4,  // string — Column E — Boss cost sheet job numbers
+    COMMITTEES:       5   // string — Column F — Boss job sites / committees
+  },
+
+  // ─────────────────────────────────────────────
+  // DATA_LOOKUP_HEADERS — column header name strings
+  // Sheet: Data_Lookup
+  // Used wherever columns are located by header name (indexOf lookups and write-back).
+  // When a new Data_Lookup column is needed, add its header string here first.
+  // ─────────────────────────────────────────────
+  DATA_LOOKUP_HEADERS: {
+    SITES:        'Sites',
+    JOB_CODES:    'Job Codes',
+    JRS:          'JRs',
+    JOB_NUMBERS:  'Job Numbers'
   }
 
 };

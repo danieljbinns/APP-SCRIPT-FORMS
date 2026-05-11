@@ -41,12 +41,10 @@ function getDataLookupColumn(columnName) {
 
 /**
  * Get list of sites for dropdown
- * PHASE 4.1 UPDATE: Use Column A (Index 0) per user request
  * @returns {Array<string>} Array of site names
  */
 function getSitesList() {
-  // return getDataLookupColumn('Sites');
-  return getDataLookupByIndex(0); // Column A
+  return getDataLookupByIndex(SCHEMA.DATA_LOOKUP.SITES);
 }
 
 /**
@@ -54,7 +52,7 @@ function getSitesList() {
  * @returns {Array<string>} Array of job codes
  */
 function getJobCodesList() {
-  return getDataLookupColumn('Job Codes');
+  return getDataLookupColumn(SCHEMA.DATA_LOOKUP_HEADERS.JOB_CODES);
 }
 
 /**
@@ -62,40 +60,31 @@ function getJobCodesList() {
  * @returns {Array<string>} Array of JR names (e.g., "Project Manager", "Site Supervisor")
  */
 function getJRsList() {
-  return getDataLookupColumn('JRs');
+  return getDataLookupColumn(SCHEMA.DATA_LOOKUP_HEADERS.JRS);
 }
 
 /**
- * Get list of job numbers for dropdown
- * Used for both Jonas and Boss systems
- * PHASE 4 UPDATE: Use Column E (Index 4) per user request
- * @returns {Array<string>} Array of job numbers
- */
-/**
  * Get list of job numbers for basic Job Site Number field (Initial Request)
- * PHASE 4.1 UPDATE: Use Column D (Index 3) per user request "Job Site Number on initial... should be column D"
  * @returns {Array<string>} Array of job numbers
  */
 function getJobNumbersList() {
-  return getDataLookupByIndex(3); // Column D
+  return getDataLookupByIndex(SCHEMA.DATA_LOOKUP.JOB_NUMBERS);
 }
 
 /**
  * Get list of Committees (formerly Job Sites) for BOSS
- * PHASE 4.1 UPDATE: Use Column F (Index 5) per user request "Committee(s) data validation should be column F"
  * @returns {Array<string>} Array of committee names
  */
 function getBossJobSitesList() {
-  return getDataLookupByIndex(5); // Column F
+  return getDataLookupByIndex(SCHEMA.DATA_LOOKUP.COMMITTEES);
 }
 
 /**
- * Get list of Boss cost sheets - specific validation rule
- * PHASE 4.1 UPDATE: Use Column E (Index 4) per user request "Cost Sheet... should look at column E"
+ * Get list of Boss cost sheets
  * @returns {Array<string>} Array of job numbers
  */
 function getBossCostSheetsList() {
-  return getDataLookupByIndex(4); // Column E
+  return getDataLookupByIndex(SCHEMA.DATA_LOOKUP.BOSS_COST_SHEETS);
 }
 
 
@@ -186,19 +175,21 @@ function getInitialFormData() {
     if (!sheet) return { sites: [], committees: [], jobs: [], jrs: [], jobNumbers: [] };
 
     const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const rows = data.slice(1);
-    const jrsIdx = headers.indexOf('JRs');
+    const headers = data[SCHEMA.ROW.HEADER];
+    const rows = data.slice(SCHEMA.ROW.FIRST_DATA);
+    const DL = SCHEMA.DATA_LOOKUP;
+    const DLH = SCHEMA.DATA_LOOKUP_HEADERS;
+    const jrsIdx = headers.indexOf(DLH.JRS);
 
     const extract = (colIdx) => rows
       .map(r => r[colIdx])
       .filter(v => v !== undefined && v !== null && String(v).trim() !== '');
 
     return {
-      sites:       extract(0),                             // Column A
-      jobNumbers:  extract(3),                             // Column D
-      jobs:        extract(4),                             // Column E (Boss Cost Sheets)
-      committees:  extract(5),                             // Column F (Boss Job Sites)
+      sites:       extract(DL.SITES),
+      jobNumbers:  extract(DL.JOB_NUMBERS),
+      jobs:        extract(DL.BOSS_COST_SHEETS),
+      committees:  extract(DL.COMMITTEES),
       jrs:         jrsIdx >= 0 ? extract(jrsIdx) : []
     };
   } catch (e) {
@@ -316,15 +307,19 @@ function removeReferenceItem(type, value) {
 }
 
 /**
- * Helper to map type to column header
+ * Helper to map type to column header name.
+ * Returns strings from SCHEMA.DATA_LOOKUP_HEADERS — single source of truth.
+ * To add a new reference type: add the header string to DATA_LOOKUP_HEADERS first,
+ * then add a case here.
  */
 function getColumnNameFromType(type) {
+  const DLH = SCHEMA.DATA_LOOKUP_HEADERS;
   switch(type) {
-    case 'site': return 'Sites';
-    case 'job_code': return 'Job Codes';
-    case 'jr': return 'JRs';
-    case 'job_number': return 'Job Numbers';
-    default: return null;
+    case 'site':       return DLH.SITES;
+    case 'job_code':   return DLH.JOB_CODES;
+    case 'jr':         return DLH.JRS;
+    case 'job_number': return DLH.JOB_NUMBERS;
+    default:           return null;
   }
 }
 
