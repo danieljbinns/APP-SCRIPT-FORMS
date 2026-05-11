@@ -205,8 +205,8 @@ function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
         var sh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
         if (!sh) return '';
         var rows = sh.getDataRange().getValues();
-        var row = rows.find(function(r) { return r[0] === workflowId; });
-        return row ? String(row[5] || '') : '';
+        var row = rows.find(function(r) { return r[SCHEMA.ID_SETUP_RESULTS.WORKFLOW_ID] === workflowId; });
+        return row ? String(row[SCHEMA.ID_SETUP_RESULTS.SITEDOCS_JOB_CODE] || '') : '';
       } catch(e) { return ''; }
     })();
 

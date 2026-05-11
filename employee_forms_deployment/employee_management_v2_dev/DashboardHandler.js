@@ -154,7 +154,7 @@ function getDashboardData() {
       const termData = termSheet.getDataRange().getValues();
       if (termData.length > 1) {
         termData.slice(1).forEach(row => {
-          const wfId = String(row[0] || '');
+          const wfId = String(row[SCHEMA.TERMINATIONS.WORKFLOW_ID] || '');
           if (!wfId || flowIds.has(wfId)) return;
 
           // Apply access filter to fallback rows

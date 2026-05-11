@@ -23,6 +23,18 @@
 const SCHEMA = {
 
   // ─────────────────────────────────────────────
+  // ROW INDEX CONSTANTS
+  // Used for getDataRange().getValues() array access patterns.
+  //   data[SCHEMA.ROW.HEADER]         — the header row
+  //   for (let i = SCHEMA.ROW.FIRST_DATA; ...)  — data row loops
+  //   i > SCHEMA.ROW.HEADER           — filter to skip header
+  // ─────────────────────────────────────────────
+  ROW: {
+    HEADER:     0,  // Header row index in a getValues() 2D array
+    FIRST_DATA: 1   // First data row index; use in for-loop starts and i > checks
+  },
+
+  // ─────────────────────────────────────────────
   // WORKFLOWS  (9 columns)
   // ─────────────────────────────────────────────
   WORKFLOWS: {

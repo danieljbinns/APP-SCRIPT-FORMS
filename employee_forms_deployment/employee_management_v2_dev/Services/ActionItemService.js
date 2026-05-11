@@ -57,42 +57,33 @@ var ActionItemService = (function() {
     try {
       const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
       const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+      const AI = SCHEMA.ACTION_ITEMS;
       const data = sheet.getDataRange().getValues();
-      const headers = data[0];
-      
-      const taskIdCol = headers.indexOf('Task ID');
-      const statusCol = headers.indexOf('Status');
-      const compDateCol = headers.indexOf('Completed Date');
-      const notesCol = headers.indexOf('Notes');
-      const closedByCol = headers.indexOf('Closed By');
-      const wfIdCol = headers.indexOf('Workflow ID');
-      
+
       let rowIndex = -1;
       let workflowId = '';
-      
-      for (let i = 1; i < data.length; i++) {
-        if (data[i][taskIdCol] === taskId) {
+
+      for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+        if (data[i][AI.TASK_ID] === taskId) {
           rowIndex = i + 1;
-          workflowId = data[i][wfIdCol];
+          workflowId = data[i][AI.WORKFLOW_ID];
           break;
         }
       }
-      
+
       if (rowIndex === -1) throw new Error('Task not found: ' + taskId);
-      
-      sheet.getRange(rowIndex, statusCol + 1).setValue('Closed');
-      sheet.getRange(rowIndex, compDateCol + 1).setValue(new Date());
-      sheet.getRange(rowIndex, notesCol + 1).setValue(notes);
-      sheet.getRange(rowIndex, closedByCol + 1).setValue(closedBy);
-      
-      const draftCol = headers.indexOf('Draft');
-      if (draftCol !== -1 && draftJSON) {
-        sheet.getRange(rowIndex, draftCol + 1).setValue(draftJSON);
+
+      sheet.getRange(rowIndex, AI.STATUS + 1).setValue('Closed');
+      sheet.getRange(rowIndex, AI.COMPLETED_DATE + 1).setValue(new Date());
+      sheet.getRange(rowIndex, AI.NOTES + 1).setValue(notes);
+      sheet.getRange(rowIndex, AI.CLOSED_BY + 1).setValue(closedBy);
+
+      if (draftJSON) {
+        sheet.getRange(rowIndex, AI.DRAFT + 1).setValue(draftJSON);
       }
 
-      const formDataCol = headers.indexOf('Form Data');
-      if (formDataCol !== -1 && formDataJSON) {
-        sheet.getRange(rowIndex, formDataCol + 1).setValue(formDataJSON);
+      if (formDataJSON) {
+        sheet.getRange(rowIndex, AI.FORM_DATA + 1).setValue(formDataJSON);
       }
 
       // Ensure data is written before notifyTaskClosure reads it
@@ -120,31 +111,21 @@ var ActionItemService = (function() {
     try {
       const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
       const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+      const AI = SCHEMA.ACTION_ITEMS;
       const data = sheet.getDataRange().getValues();
-      const headers = data[0];
-      
-      const taskIdCol = headers.indexOf('Task ID');
-      const notesCol = headers.indexOf('Notes');
-      let draftCol = headers.indexOf('Draft');
-      
-      // Auto-append Draft column if it doesn't exist (schema migration)
-      if (draftCol === -1) {
-        draftCol = headers.length;
-        sheet.getRange(1, draftCol + 1).setValue('Draft');
-      }
-      
+
       let rowIndex = -1;
-      for (let i = 1; i < data.length; i++) {
-        if (data[i][taskIdCol] === taskId) {
+      for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+        if (data[i][AI.TASK_ID] === taskId) {
           rowIndex = i + 1;
           break;
         }
       }
-      
+
       if (rowIndex === -1) throw new Error('Task not found: ' + taskId);
-      
-      if (notesCol !== -1 && notes !== undefined) sheet.getRange(rowIndex, notesCol + 1).setValue(notes);
-      if (draftCol !== -1 && draftJSON !== undefined) sheet.getRange(rowIndex, draftCol + 1).setValue(draftJSON);
+
+      if (notes !== undefined) sheet.getRange(rowIndex, AI.NOTES + 1).setValue(notes);
+      if (draftJSON !== undefined) sheet.getRange(rowIndex, AI.DRAFT + 1).setValue(draftJSON);
       
       Logger.log(`[ActionItemService] Saved draft for Task ${taskId}`);
       return { success: true };
@@ -162,12 +143,10 @@ var ActionItemService = (function() {
     const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
     if (!sheet) return [];
     
+    const AI = SCHEMA.ACTION_ITEMS;
     const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const wfIdCol = headers.indexOf('Workflow ID');
-    const statusCol = headers.indexOf('Status');
-    
-    return data.filter((row, i) => i > 0 && row[wfIdCol] === workflowId && row[statusCol] === 'Open');
+
+    return data.filter((row, i) => i > SCHEMA.ROW.HEADER && row[AI.WORKFLOW_ID] === workflowId && row[AI.STATUS] === 'Open');
   }
 
   /**
@@ -179,12 +158,11 @@ var ActionItemService = (function() {
     if (!sheet) return null;
     
     const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const taskIdCol = headers.indexOf('Task ID');
-    
-    const rowData = data.find(r => r[taskIdCol] === taskId);
+    const headers = data[SCHEMA.ROW.HEADER];
+
+    const rowData = data.find(r => r[SCHEMA.ACTION_ITEMS.TASK_ID] === taskId);
     if (!rowData) return null;
-    
+
     const task = {};
     headers.forEach((h, i) => task[h.replace(/\s+/g, '')] = rowData[i]);
     return task;
@@ -222,20 +200,17 @@ var ActionItemService = (function() {
       return;
     }
 
-    // Re-read with header awareness for WIS category filter (WIS = post-hire background task, never blocks)
+    // Re-read with schema constants for WIS category filter (WIS = post-hire background task, never blocks)
+    const AI = SCHEMA.ACTION_ITEMS;
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
     const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const wfIdCol   = headers.indexOf('Workflow ID');
-    const statusCol = headers.indexOf('Status');
-    const catCol    = headers.indexOf('Category');
 
     const nonWisPending = data.filter(function(row, i) {
-      return i > 0
-        && row[wfIdCol]   === workflowId
-        && row[statusCol] === 'Open'
-        && String(row[catCol] || '').toUpperCase() !== 'WIS';
+      return i > SCHEMA.ROW.HEADER
+        && row[AI.WORKFLOW_ID] === workflowId
+        && row[AI.STATUS]      === 'Open'
+        && String(row[AI.CATEGORY] || '').toUpperCase() !== 'WIS';
     });
 
     if (nonWisPending.length === 0) {
@@ -356,11 +331,10 @@ var ActionItemService = (function() {
     try {
       const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
       const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+      const AI = SCHEMA.ACTION_ITEMS;
       const data = sheet.getDataRange().getValues();
-      const headers = data[0];
-      const wfIdCol = headers.indexOf('Workflow ID');
-      
-      const wfTasks = data.filter(r => r[wfIdCol] === workflowId);
+
+      const wfTasks = data.filter((r, i) => i > SCHEMA.ROW.HEADER && r[AI.WORKFLOW_ID] === workflowId);
       if (wfTasks.length === 0) return;
 
       const workflow = getWorkflow(workflowId);
@@ -368,13 +342,13 @@ var ActionItemService = (function() {
 
       let logHtml = `<table border="1" cellpadding="5" style="border-collapse: collapse; width: 100%; color: #333;">
         <tr style="background: #f4f4f4;"><th>Task</th><th>Status</th><th>Completed By</th><th>Notes</th></tr>`;
-      
+
       wfTasks.forEach(task => {
         logHtml += `<tr>
-          <td>${task[headers.indexOf('Task Name')]}</td>
-          <td>${task[headers.indexOf('Status')]}</td>
-          <td>${task[headers.indexOf('Closed By')]}</td>
-          <td>${task[headers.indexOf('Notes')]}</td>
+          <td>${task[AI.TASK_NAME]}</td>
+          <td>${task[AI.STATUS]}</td>
+          <td>${task[AI.CLOSED_BY]}</td>
+          <td>${task[AI.NOTES]}</td>
         </tr>`;
       });
       logHtml += `</table>`;

@@ -119,20 +119,15 @@ function updateWorkflow(workflowId, status, currentStep, employeeName) {
     
     if (!workflowsSheet) return false;
     
+    const WF = SCHEMA.WORKFLOWS;
     const data = workflowsSheet.getDataRange().getValues();
-    const headers = data[0];
-    
-    const statusCol = headers.indexOf('Status');
-    const lastUpdatedCol = headers.indexOf('Last Updated');
-    const currentStepCol = headers.indexOf('Current Step');
-    const employeeNameCol = headers.indexOf('Employee Name');
-    
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === workflowId) {
-        if (statusCol !== -1) workflowsSheet.getRange(i + 1, statusCol + 1).setValue(status);
-        if (lastUpdatedCol !== -1) workflowsSheet.getRange(i + 1, lastUpdatedCol + 1).setValue(new Date());
-        if (currentStepCol !== -1 && currentStep) workflowsSheet.getRange(i + 1, currentStepCol + 1).setValue(currentStep);
-        if (employeeNameCol !== -1 && employeeName) workflowsSheet.getRange(i + 1, employeeNameCol + 1).setValue(employeeName);
+
+    for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+      if (data[i][WF.WORKFLOW_ID] === workflowId) {
+        workflowsSheet.getRange(i + 1, WF.STATUS + 1).setValue(status);
+        workflowsSheet.getRange(i + 1, WF.LAST_UPDATED + 1).setValue(new Date());
+        if (currentStep) workflowsSheet.getRange(i + 1, WF.CURRENT_STEP + 1).setValue(currentStep);
+        if (employeeName) workflowsSheet.getRange(i + 1, WF.EMPLOYEE_NAME + 1).setValue(employeeName);
         
         Logger.log('[SUCCESS] Updated workflow: ' + workflowId + ' -> ' + status);
     // Sync to Initial Requests sheet as well (if found)
@@ -162,20 +157,23 @@ function syncStatusToRequestSheet(ss, workflowId, status) {
       CONFIG.SHEETS.POSITION_CHANGES
     ];
 
+    const STATUS_COL_BY_SHEET = {
+      [CONFIG.SHEETS.INITIAL_REQUESTS]: SCHEMA.INITIAL_REQUESTS.STATUS,
+      [CONFIG.SHEETS.TERMINATIONS]:     SCHEMA.TERMINATIONS.HR_APPROVED_STATUS
+      // POSITION_CHANGES has no status column in schema — skip
+    };
+
     for (const sheetName of originSheets) {
       if (!sheetName) continue;
       const sheet = ss.getSheetByName(sheetName);
       if (!sheet) continue;
 
-      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-      let statusColIndex = headers.indexOf('Status');
-      if (statusColIndex === -1) statusColIndex = headers.indexOf('Current Status');
-      if (statusColIndex === -1) continue;
+      const statusColIndex = STATUS_COL_BY_SHEET[sheetName];
+      if (statusColIndex === undefined) continue;
 
       const data = sheet.getDataRange().getValues();
-      // Assume Workflow ID is in Col A (index 0)
-      for (let i = 1; i < data.length; i++) {
-        if (data[i][0] === workflowId) {
+      for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+        if (data[i][SCHEMA.WORKFLOWS.WORKFLOW_ID] === workflowId) {
           sheet.getRange(i + 1, statusColIndex + 1).setValue(status);
           Logger.log(`Synced status to ${sheetName} sheet`);
           return; // Found and updated, done
@@ -198,10 +196,10 @@ function getWorkflow(workflowId) {
     if (!workflowsSheet) return null;
     
     const data = workflowsSheet.getDataRange().getValues();
-    const headers = data[0];
-    
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === workflowId) {
+    const headers = data[SCHEMA.ROW.HEADER];
+
+    for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+      if (data[i][SCHEMA.WORKFLOWS.WORKFLOW_ID] === workflowId) {
         const workflow = {};
         headers.forEach((header, index) => {
           workflow[header] = data[i][index];
