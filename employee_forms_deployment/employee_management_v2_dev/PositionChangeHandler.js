@@ -138,35 +138,36 @@ function servePositionChangeApproval(workflowId) {
 function getPositionChangeData(workflowId) {
   const data = getRowByRequestId(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGES, workflowId);
   if (!data) return null;
+  const PC = SCHEMA.POSITION_CHANGES;
   return {
-    workflowId: data[0],
-    employeeName: data[5],
-    empID: data[6],
-    effDate: data[7] ? (data[7] instanceof Date ? Utilities.formatDate(new Date(data[7]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[7]) : '',
-    siteName: data[8],
-    changes: data[9],
-    jobTitle: (function() { var t = data[11] || ''; var idx = t.indexOf(' -> '); var v = idx !== -1 ? t.substring(idx + 4).trim() : t.trim(); return (v && v !== 'N/A') ? v : ''; })(),
-    siteTransfer: data[10],
-    titleChange: data[11],
-    classChange: data[12],
-    managerChange: data[13],
-    systems: data[17],
-    equipment: data[18],
-    requesterEmail: data[4],
-    comments: data[20],
-    department: data[21] || '',
-    purchasingSites: data[22] || '',
-    receivingManagerEmail: data[23] || '',
-    currentTitle: data[24] || '',
-    currentManagerEmail: data[25] || '',
-    currentManagerName: data[26] || '',
-    currentClass: data[27] || '',
+    workflowId:            data[PC.WORKFLOW_ID],
+    employeeName:          data[PC.EMPLOYEE_NAME],
+    empID:                 data[PC.EMPLOYEE_ID],
+    effDate:               data[PC.EFFECTIVE_DATE] ? (data[PC.EFFECTIVE_DATE] instanceof Date ? Utilities.formatDate(new Date(data[PC.EFFECTIVE_DATE]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[PC.EFFECTIVE_DATE]) : '',
+    siteName:              data[PC.CURRENT_SITE],
+    changes:               data[PC.CHANGE_TYPES],
+    jobTitle:              (function() { var t = data[PC.TITLE_CHANGE] || ''; var idx = t.indexOf(' -> '); var v = idx !== -1 ? t.substring(idx + 4).trim() : t.trim(); return (v && v !== 'N/A') ? v : ''; })(),
+    siteTransfer:          data[PC.SITE_TRANSFER],
+    titleChange:           data[PC.TITLE_CHANGE],
+    classChange:           data[PC.CLASSIFICATION],
+    managerChange:         data[PC.MANAGER_CHANGE],
+    systems:               data[PC.SYSTEMS_ADDED],
+    equipment:             data[PC.EQUIPMENT],
+    requesterEmail:        data[PC.REQUESTER_EMAIL],
+    comments:              data[PC.COMMENTS],
+    department:            data[PC.DEPARTMENT]             || '',
+    purchasingSites:       data[22]                        || '',  // extended field
+    receivingManagerEmail: data[23]                        || '',  // extended field
+    currentTitle:          data[24]                        || '',  // extended field
+    currentManagerEmail:   data[25]                        || '',  // extended field
+    currentManagerName:    data[26]                        || '',  // extended field
+    currentClass:          data[27]                        || '',  // extended field
     mgrNewEmail: (function() {
-      var m = (String(data[13] || '')).match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
+      var m = (String(data[PC.MANAGER_CHANGE] || '')).match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
       return m.length > 1 ? m[1].replace(/[()]/g, '') : (m.length === 1 ? m[0].replace(/[()]/g, '') : '');
     })(),
-    oldReportsTo: data[14] || '',
-    newReportsFrom: data[15] || ''
+    oldReportsTo:          data[PC.REASSIGN_OLD_REPORTS]   || '',
+    newReportsFrom:        data[PC.GAIN_NEW_REPORTS]        || ''
   };
 }
 

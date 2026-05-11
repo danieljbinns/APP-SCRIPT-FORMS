@@ -64,8 +64,7 @@ function syncWorkflowState(workflowId) {
     const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy-MM-dd') : String(v || '').replace(/\//g, '-').substring(0, 10);
     const fmtDateTime = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy-MM-dd HH:mm:ss') : (function(s){ if(!s) return ''; s = s.replace(/\//g,'-'); try{ var d=new Date(s); if(!isNaN(d.getTime())) return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss'); }catch(e){} return s; })(String(v||''));
 
-    // Equipment_Requests has Workflow ID in column B (index 1); all others use column A.
-    const searchCol = isEquip ? 'B:B' : 'A:A';
+    const searchCol = 'A:A'; // Workflow ID is always in column A across all sheets
     const foundReq = lookupSheet ? lookupSheet.getRange(searchCol).createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (foundReq) {
       const lastCol = lookupSheet.getLastColumn();
@@ -73,72 +72,74 @@ function syncWorkflowState(workflowId) {
       const empTypeIdx = reqHeaders.indexOf('Employment Type');
       const row = lookupSheet.getRange(foundReq.getRow(), 1, 1, lastCol).getValues()[0];
       if (isTerm) {
-        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | ... | Site[11] | Term Date[12] | Manager Name[14] | Manager Email[15]
+        const TR = SCHEMA.TERMINATIONS;
         reqInfo = {
-          requesterName: row[3] || 'Unknown',
-          requesterEmail: row[4] || '',
-          managerEmail: row[15] || '',
-          dateRequested: fmtDate(row[2]),
-          hireDate: fmtDate(row[12]), // Term Date → shown in Effective Date column
-          site: String(row[11] || ''),
-          empType: String(row[7] || ''), // Employee Type
+          requesterName:  row[TR.REQUESTER_NAME]  || 'Unknown',
+          requesterEmail: row[TR.REQUESTER_EMAIL]  || '',
+          managerEmail:   row[TR.MANAGER_EMAIL]    || '',
+          dateRequested:  fmtDate(row[TR.TIMESTAMP]),
+          hireDate:       fmtDate(row[TR.TERM_DATE]), // Term Date → shown in Effective Date column
+          site:           String(row[TR.SITE]      || ''),
+          empType:        String(row[TR.EMPLOYEE_TYPE] || ''),
           items: { isTerm: true }
         };
       } else if (isChange) {
-        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | Emp ID | Effective Date[7] | Current Site[8] | Changes[9] | ... | Class Change[12] | ... | Current Class[27]
-        const classChange = String(row[12] || '');
+        const PC = SCHEMA.POSITION_CHANGES;
+        const classChange = String(row[PC.CLASSIFICATION] || '');
         const classOld = classChange.includes(' -> ') ? classChange.split(' -> ')[0].trim() : '';
-        const currentClass = String(row[27] || '');
+        const currentClass = String(row[27] || ''); // col 27 — extended field (currentClass), not in base schema
         const empTypeFromClass = (classOld && classOld !== 'N/A') ? classOld : (currentClass || '');
         reqInfo = {
-          requesterName: row[3] || 'Unknown',
-          requesterEmail: row[4] || '',
-          managerEmail: String(row[25] || ''), // currentManagerEmail
-          dateRequested: fmtDate(row[2]),
-          hireDate: fmtDate(row[7]), // Effective Date → shown in Effective Date column
-          site: String(row[8] || ''),
-          empType: empTypeFromClass,
+          requesterName:  row[PC.REQUESTER_NAME]   || 'Unknown',
+          requesterEmail: row[PC.REQUESTER_EMAIL]   || '',
+          managerEmail:   String(row[25] || ''),    // col 25 — currentManagerEmail (extended field, not in base schema)
+          dateRequested:  fmtDate(row[PC.TIMESTAMP]),
+          hireDate:       fmtDate(row[PC.EFFECTIVE_DATE]), // Effective Date → shown in Effective Date column
+          site:           String(row[PC.CURRENT_SITE] || ''),
+          empType:        empTypeFromClass,
           items: {}
         };
       } else if (isEquip) {
-        // Equipment_Requests: Timestamp[0] | WorkflowID[1] | FormID[2] | ReqName[3] | ReqEmail[4]
+        // Equipment_Requests: WorkflowID[0] | FormID[1] | Timestamp[2] | ReqName[3] | ReqEmail[4]
         //   | FirstName[5] | LastName[6] | Site[7] | Position[8] | ManagerName[9] | ManagerEmail[10]
         //   | Equipment[11] | Systems[12] | Comments[13] | Department[14]
+        const EQ = SCHEMA.EQUIPMENT_REQUESTS;
         reqInfo = {
-          requesterName:  row[3] || 'Unknown',
-          requesterEmail: row[4] || '',
-          managerEmail:   row[10] || '',
-          dateRequested:  fmtDate(row[0]),  // Timestamp as request date
-          hireDate:       '',               // No start date for equipment requests
-          site:           String(row[7] || ''),
+          requesterName:  row[EQ.REQUESTER_NAME]        || 'Unknown',
+          requesterEmail: row[EQ.REQUESTER_EMAIL]        || '',
+          managerEmail:   row[EQ.MANAGER_EMAIL]          || '',
+          dateRequested:  fmtDate(row[EQ.TIMESTAMP]),    // Timestamp as request date
+          hireDate:       '',                            // No start date for equipment requests
+          site:           String(row[EQ.SITE_NAME]      || ''),
           empType:        '',
           items:          { isEquip: true }
         };
       } else {
+        const IR = SCHEMA.INITIAL_REQUESTS;
         reqInfo = {
-          requesterName: row[4] || 'Unknown',
-          requesterEmail: row[5] || '',
-          managerEmail: row[17] || '',
-          dateRequested: fmtDate(row[3]),
-          hireDate: fmtDate(row[6]), // Hire Date → shown in Start Date column
-          site: String(row[15] || ''), // Site Name
-          empType: empTypeIdx >= 0 ? String(row[empTypeIdx] || '') : '',
+          requesterName:  row[IR.REQUESTER_NAME]   || 'Unknown',
+          requesterEmail: row[IR.REQUESTER_EMAIL]   || '',
+          managerEmail:   row[IR.MANAGER_EMAIL]     || '',
+          dateRequested:  fmtDate(row[IR.DATE_REQUESTED]),
+          hireDate:       fmtDate(row[IR.HIRE_DATE]), // Hire Date → shown in Start Date column
+          site:           String(row[IR.SITE_NAME]  || ''),
+          empType:        empTypeIdx >= 0 ? String(row[empTypeIdx] || '') : '',
           items: {
-            jonas: (row[44] && row[44].toString().length > 0),
-            creditCard: (row[30] === 'Yes' || row[32] === 'Yes' || row[34] === 'Yes'),
-            fleetio: (row[20] && row[20].includes('Fleetio')),
-            businessCards: (row[21] && row[21].includes('Business Cards')),
-            siteDocs: ((row[20] && row[20].includes('SiteDocs')) || (row[21] && row[21].includes('SiteDocs Tablet'))),
-            review: (row[47] === 'Yes'),
-            safety: true
+            jonas:         (row[IR.JONAS_JOB_NUMBERS] && row[IR.JONAS_JOB_NUMBERS].toString().length > 0),
+            creditCard:    (row[IR.CC_USA] === 'Yes' || row[IR.CC_CAN] === 'Yes' || row[IR.CC_HD] === 'Yes'),
+            fleetio:       (row[IR.SYSTEMS] && row[IR.SYSTEMS].includes('Fleetio')),
+            businessCards: (row[IR.EQUIPMENT] && row[IR.EQUIPMENT].includes('Business Cards')),
+            siteDocs:      ((row[IR.SYSTEMS] && row[IR.SYSTEMS].includes('SiteDocs')) || (row[IR.EQUIPMENT] && row[IR.EQUIPMENT].includes('SiteDocs Tablet'))),
+            review:        (row[IR.PLAN_306090] === 'Yes'),
+            safety:        true
           }
         };
       }
     }
     
     // 2. Determine Pre-Calculated Status String
-    const baseStatus = wfRow[4]; // 'Pending', 'In Progress', 'Completed', 'Cancelled'
-    const currentStep = wfRow[7]; 
+    const baseStatus  = wfRow[SCHEMA.WORKFLOWS.STATUS];        // 'Pending', 'In Progress', 'Completed', 'Cancelled'
+    const currentStep = wfRow[SCHEMA.WORKFLOWS.CURRENT_STEP];
     let granularStatus = currentStep;
     
     if (baseStatus !== 'Cancelled' && baseStatus !== 'Completed') {
@@ -176,9 +177,9 @@ function syncWorkflowState(workflowId) {
     
     // 3. Prepare the flat row for the View sheet
     // Headers: Workflow ID | Employee Name | Global Status | Granular Step Details | Requester Name | Requester Email | Initiator Email | Date Requested | Last Updated | Manager Email | Requested Items JSON | Start/Term Date | Site
-    const lastUpdated = fmtDateTime(wfRow[6]);
-    const initEmail = wfRow[3];
-    const empName = wfRow[8];
+    const lastUpdated = fmtDateTime(wfRow[SCHEMA.WORKFLOWS.LAST_UPDATED]);
+    const initEmail   = wfRow[SCHEMA.WORKFLOWS.INITIATOR_EMAIL];
+    const empName     = wfRow[SCHEMA.WORKFLOWS.EMPLOYEE_NAME];
 
     const outputRow = [
       workflowId,
@@ -192,9 +193,9 @@ function syncWorkflowState(workflowId) {
       lastUpdated,
       reqInfo.managerEmail,
       JSON.stringify(reqInfo.items),
-      reqInfo.hireDate || '',  // col 11: Start/Effective Date
-      reqInfo.site || '',      // col 12: Site
-      reqInfo.empType || ''    // col 13: Employment Type
+      reqInfo.hireDate || '',  // DASHBOARD_VIEW.HIRE_DATE (col 11): Start/Effective Date
+      reqInfo.site || '',      // DASHBOARD_VIEW.SITE (col 12): Site
+      reqInfo.empType || ''    // DASHBOARD_VIEW.EMPLOYMENT_TYPE (col 13): Employment Type
     ];
 
     // 4. Overwrite or Append to Dashboard_View

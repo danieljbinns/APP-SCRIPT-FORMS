@@ -115,8 +115,8 @@ function generateEmployeeId() {
       return '30000';
     }
     
-    // Get all employee IDs from column D (Internal Employee ID)
-    const data = sheet.getRange(2, 4, sheet.getLastRow() - 1, 1).getValues();
+    // Get all employee IDs from Internal Employee ID column (SCHEMA.ID_SETUP_RESULTS.INTERNAL_EMP_ID + 1)
+    const data = sheet.getRange(2, SCHEMA.ID_SETUP_RESULTS.INTERNAL_EMP_ID + 1, sheet.getLastRow() - 1, 1).getValues();
     let maxId = 29999; // Start below 30000
     
     data.forEach(row => {

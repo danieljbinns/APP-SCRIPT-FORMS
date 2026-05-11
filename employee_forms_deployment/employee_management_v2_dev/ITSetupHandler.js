@@ -41,8 +41,8 @@ function getITContextData(workflowId) {
           firstName: mainData[i][10],
           lastName: mainData[i][12],
           hireDate: (function(d){ return d instanceof Date ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd') : (d ? String(d).substring(0, 10) : ''); })(mainData[i][6]),
-          newHireOrRehire: (headers.indexOf('New Hire/Rehire') !== -1 ? mainData[i][headers.indexOf('New Hire/Rehire')] : mainData[i][7]) || '',
-          employeeType:   (headers.indexOf('Employee Type')    !== -1 ? mainData[i][headers.indexOf('Employee Type')]    : mainData[i][8])  || '',
+          newHireOrRehire: (headers.indexOf('New Hire/Rehire') !== -1 ? mainData[i][headers.indexOf('New Hire/Rehire')] : mainData[i][SCHEMA.INITIAL_REQUESTS.NEW_HIRE_OR_REHIRE]) || '',
+          employeeType:   (headers.indexOf('Employee Type')    !== -1 ? mainData[i][headers.indexOf('Employee Type')]    : mainData[i][SCHEMA.INITIAL_REQUESTS.EMPLOYEE_TYPE])          || '',
           employmentType:  mainData[i][9]  || '',  // Col 9 = Employment Type
           jobTitle: mainData[i][14], // Col 14 = Position Title
           jrTitle: mainData[i][46],  // Col 46 = JR Assign (verified)

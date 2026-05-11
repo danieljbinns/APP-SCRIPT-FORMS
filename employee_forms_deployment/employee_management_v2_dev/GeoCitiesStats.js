@@ -27,16 +27,17 @@ function getGeoCitiesStats() {
     if (dvSheet && dvSheet.getLastRow() > 1) {
       var dvData = dvSheet.getRange(2, 1, dvSheet.getLastRow() - 1, 14).getValues();
 
+      var DV = SCHEMA.DASHBOARD_VIEW;
       for (var i = 0; i < dvData.length; i++) {
         var row       = dvData[i];
-        var wfId      = String(row[0]  || '').trim();
+        var wfId      = String(row[DV.WORKFLOW_ID]    || '').trim();
         if (!wfId) continue;
 
-        var status    = String(row[2]  || '').trim();
-        var requester = String(row[4]  || '').trim();
-        var manager   = String(row[9]  || '').trim();
-        var dateVal   = row[7];
-        var site      = String(row[12] || '').trim();
+        var status    = String(row[DV.GLOBAL_STATUS]  || '').trim();
+        var requester = String(row[DV.REQUESTER_NAME] || '').trim();
+        var manager   = String(row[DV.MANAGER_EMAIL]  || '').trim();
+        var dateVal   = row[DV.DATE_REQUESTED];
+        var site      = String(row[DV.SITE]           || '').trim();
 
         totals.total++;
 

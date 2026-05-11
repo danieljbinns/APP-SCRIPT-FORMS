@@ -204,29 +204,30 @@ function getWorkflowContext(workflowId) {
       const eqSheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
       if (eqSheet) {
         const eqData = eqSheet.getDataRange().getValues();
-        const eqRow = eqData.find(function(r, i) { return i > 0 && r[1] === workflowId; });
+        const EQ = SCHEMA.EQUIPMENT_REQUESTS;
+        const eqRow = eqData.find(function(r, i) { return i > 0 && r[EQ.WORKFLOW_ID] === workflowId; });
         if (eqRow) {
-          const systems   = eqRow[12] ? String(eqRow[12]).split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
-          const equipment = eqRow[11] ? String(eqRow[11]).split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+          const systems   = eqRow[EQ.SYSTEMS_REQUESTED]    ? String(eqRow[EQ.SYSTEMS_REQUESTED]).split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+          const equipment = eqRow[EQ.EQUIPMENT_REQUESTED]  ? String(eqRow[EQ.EQUIPMENT_REQUESTED]).split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
           return {
             workflowType:   'Equipment Request',
             workflowId:     workflowId,
-            employeeName:   ((eqRow[5] || '') + ' ' + (eqRow[6] || '')).trim(),
-            firstName:      eqRow[5]  || '',
-            lastName:       eqRow[6]  || '',
-            siteName:       eqRow[7]  || '',
-            jobTitle:       eqRow[8]  || '',
-            managerName:    eqRow[9]  || '',
-            managerEmail:   eqRow[10] || '',
-            requesterEmail: eqRow[4]  || '',
-            requesterName:  eqRow[3]  || '',
+            employeeName:   ((eqRow[EQ.EMPLOYEE_FIRST_NAME] || '') + ' ' + (eqRow[EQ.EMPLOYEE_LAST_NAME] || '')).trim(),
+            firstName:      eqRow[EQ.EMPLOYEE_FIRST_NAME]  || '',
+            lastName:       eqRow[EQ.EMPLOYEE_LAST_NAME]   || '',
+            siteName:       eqRow[EQ.SITE_NAME]            || '',
+            jobTitle:       eqRow[EQ.JOB_TITLE]            || '',
+            managerName:    eqRow[EQ.MANAGER_NAME]         || '',
+            managerEmail:   eqRow[EQ.MANAGER_EMAIL]        || '',
+            requesterEmail: eqRow[EQ.REQUESTER_EMAIL]      || '',
+            requesterName:  eqRow[EQ.REQUESTER_NAME]       || '',
             systems:        systems,
-            equipmentRaw:   eqRow[11] || '',
+            equipmentRaw:   eqRow[EQ.EQUIPMENT_REQUESTED]  || '',
             equipment:      equipment,
-            comments:       eqRow[13] || '',
-            requestDate:    eqRow[0] instanceof Date
-              ? Utilities.formatDate(eqRow[0], Session.getScriptTimeZone(), 'yyyy-MM-dd')
-              : String(eqRow[0] || '').substring(0, 10)
+            comments:       eqRow[EQ.COMMENTS]             || '',
+            requestDate:    eqRow[EQ.TIMESTAMP] instanceof Date
+              ? Utilities.formatDate(eqRow[EQ.TIMESTAMP], Session.getScriptTimeZone(), 'yyyy-MM-dd')
+              : String(eqRow[EQ.TIMESTAMP] || '').substring(0, 10)
           };
         }
       }
@@ -274,20 +275,20 @@ function getWorkflowContext(workflowId) {
       hireDate:      (function(d){ return d instanceof Date ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd') : (d ? String(d).substring(0, 10) : ''); })(row[headers.indexOf('Hire Date')]),
       managerName:   row[headers.indexOf('Manager Name')],
       managerEmail:  row[headers.indexOf('Manager Email')],
-      requesterEmail: row[5], // Hardcoded to Col F (Index 5) for reliability
+      requesterEmail: row[headers.indexOf('Requester Email')] || row[SCHEMA.INITIAL_REQUESTS.REQUESTER_EMAIL] || '',
       requestDate:   Utilities.formatDate(new Date(row[headers.indexOf('Timestamp')]), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
       employmentType: row[headers.indexOf('Employment Type')],
       department:    row[headers.indexOf('Department')] || '',
       employeeType:  row[headers.indexOf('Employee Type')],
-      newHireOrRehire: row[headers.indexOf('New Hire/Rehire')] || row[7] || '',
+      newHireOrRehire: row[headers.indexOf('New Hire/Rehire')] || row[SCHEMA.INITIAL_REQUESTS.NEW_HIRE_OR_REHIRE] || '',
       jobSiteNumber: row[headers.indexOf('Job Site #')],
       systemAccess:  row[headers.indexOf('System Access')],
       systems:       systemsList,
       workType:      row[headers.indexOf('Work Type')] || '',
       equipmentRaw:  row[headers.indexOf('Equipment')] || '',
-      computerType:        row[headers.indexOf('Computer Type')]              || row[25],
-      computerRequestType: row[headers.indexOf('Computer Request Type')]     || row[24],
-      phoneRequestType:    row[headers.indexOf('Mobile Phone Request Type')] || row[36],
+      computerType:        row[headers.indexOf('Computer Type')]              || row[SCHEMA.INITIAL_REQUESTS.COMPUTER_TYPE],
+      computerRequestType: row[headers.indexOf('Computer Request Type')]     || row[SCHEMA.INITIAL_REQUESTS.COMPUTER_REQ],
+      phoneRequestType:    row[headers.indexOf('Mobile Phone Request Type')] || row[SCHEMA.INITIAL_REQUESTS.PHONE_REQ],
       googleEmail:   row[headers.indexOf('Google Email')]  || '',
       googleDomain:  row[headers.indexOf('Google Domain')] || '',
       adpSites:      row[headers.indexOf('ADP Sites')]     || '',
@@ -308,21 +309,21 @@ function getWorkflowContext(workflowId) {
     if (hrSheet) {
         const hrData = hrSheet.getDataRange().getValues();
         // Workflow ID is Col A (0), ADP ID is Col D (3), Verified Title is Col H (7)
+        const HR = SCHEMA.HR_VERIFICATION_RESULTS;
         const hrRow = hrData.find(r => r[0] === workflowId);
         if (hrRow) {
-             if (hrRow[3]) context.adpAssociateId = hrRow[3];
-             if (hrRow[4]) context.verifiedName   = String(hrRow[4]);
-             // hrRow[5] = Verified Manager Name, hrRow[6] = Verified Manager Email
-             if (hrRow[5]) context.verifiedManagerName  = String(hrRow[5]);
-             if (hrRow[6]) context.verifiedManagerEmail = String(hrRow[6]);
-             const verifiedTitles = hrRow[7];
+             if (hrRow[HR.ADP_ASSOCIATE_ID]) context.adpAssociateId = hrRow[HR.ADP_ASSOCIATE_ID];
+             if (hrRow[HR.VERIFIED_NAME])    context.verifiedName   = String(hrRow[HR.VERIFIED_NAME]);
+             if (hrRow[HR.VERIFIED_MANAGER])       context.verifiedManagerName  = String(hrRow[HR.VERIFIED_MANAGER]);
+             if (hrRow[HR.VERIFIED_MANAGER_EMAIL]) context.verifiedManagerEmail = String(hrRow[HR.VERIFIED_MANAGER_EMAIL]);
+             const verifiedTitles = hrRow[HR.VERIFIED_JR_TITLE];
              if (verifiedTitles && String(verifiedTitles).includes(' / ')) {
                  const parts = String(verifiedTitles).split(' / ');
                  context.jobTitle = parts[0].trim();
                  context.jrTitle  = parts.slice(1).join(' / ').trim();
              }
-             if (hrRow[2]) context.hrTimestamp   = hrRow[2] instanceof Date ? Utilities.formatDate(hrRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(hrRow[2]);
-             if (hrRow[9]) context.hrSubmittedBy = String(hrRow[9]); // Col J — was incorrectly hrRow[12]
+             if (hrRow[HR.SUBMISSION_TS]) context.hrTimestamp   = hrRow[HR.SUBMISSION_TS] instanceof Date ? Utilities.formatDate(hrRow[HR.SUBMISSION_TS], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(hrRow[HR.SUBMISSION_TS]);
+             if (hrRow[HR.SUBMITTED_BY])  context.hrSubmittedBy = String(hrRow[HR.SUBMITTED_BY]);
         }
     }
 
@@ -331,52 +332,49 @@ function getWorkflowContext(workflowId) {
     if (idSheet) {
         const idData = idSheet.getDataRange().getValues();
         // Workflow ID is Col A, Headers: WFID, FormID, Time, EmpID, WorkerID, JobCode, SD User, SD Pass, DSS User, DSS Pass
+        const ID = SCHEMA.ID_SETUP_RESULTS;
         const idRow = idData.find(r => r[0] === workflowId);
         if (idRow) {
-            context.internalEmployeeId    = idRow[3];
-            context.siteDocsWorkerId      = idRow[4];
-            context.siteDocsJobCode       = idRow[5];
-            context.siteDocsUsername      = idRow[6];
-            context.siteDocsPassword      = idRow[7];
-            context.dssUsername           = idRow[8];
-            context.dssPassword           = idRow[9];
-            context.bossWisCreated        = idRow[11] || '';
-            context.siteDocsBadgeCreated  = idRow[12] || '';
-            if (idRow[2])  context.idTimestamp   = idRow[2] instanceof Date ? Utilities.formatDate(idRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(idRow[2]);
-            if (idRow[13]) context.idSubmittedBy  = idRow[13];
+            context.internalEmployeeId    = idRow[ID.INTERNAL_EMP_ID];
+            context.siteDocsWorkerId      = idRow[ID.SITEDOCS_WORKER_ID];
+            context.siteDocsJobCode       = idRow[ID.SITEDOCS_JOB_CODE];
+            context.siteDocsUsername      = idRow[ID.SITEDOCS_USERNAME];
+            context.siteDocsPassword      = idRow[ID.SITEDOCS_PASSWORD];
+            context.dssUsername           = idRow[ID.DSS_USERNAME];
+            context.dssPassword           = idRow[ID.DSS_PASSWORD];
+            context.bossWisCreated        = idRow[ID.BOSS_WIS_CREATED]  || '';
+            context.siteDocsBadgeCreated  = idRow[12]                   || '';  // extended field — not in SCHEMA
+            if (idRow[ID.SUBMISSION_TS]) context.idTimestamp  = idRow[ID.SUBMISSION_TS] instanceof Date ? Utilities.formatDate(idRow[ID.SUBMISSION_TS], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(idRow[ID.SUBMISSION_TS]);
+            if (idRow[13])               context.idSubmittedBy = idRow[13];  // extended field — not in SCHEMA
         }
     }
 
     // Fetch all IT Results fields
-    // Columns: 0=WF ID, 1=Form ID, 2=Timestamp, 3=Email Created, 4=Assigned Email,
-    //          5=Email Temp Pwd, 6=Computer Assigned, 7=Computer Serial, 8=Computer Model,
-    //          9=Computer Type, 10=Phone Assigned, 11=Phone Carrier, 12=Phone Model,
-    //          13=Phone Number, 14=Phone VM Password, 15=BOSS Access, 16=Incidents,
-    //          17=CAA, 18=Delivery App, 19=Net Promoter, 20=IT Notes, 21=Submitted By
+    const IT = SCHEMA.IT_RESULTS;
     const itSheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
     if (itSheet) {
         const itData = itSheet.getDataRange().getValues();
         const itRow = itData.find(r => r[0] === workflowId);
         if (itRow) {
-            context.assignedEmail      = itRow[4]  || '';
-            context.emailTempPassword  = (itRow[5]  && itRow[5]  !== 'N/A') ? String(itRow[5])  : '';
-            context.computerAssigned   = itRow[6]  || '';
-            context.computerSerial     = (itRow[7]  && itRow[7]  !== 'N/A') ? String(itRow[7])  : '';
-            context.computerModel      = (itRow[8]  && itRow[8]  !== 'N/A') ? String(itRow[8])  : '';
-            if (itRow[9]  && itRow[9]  !== 'N/A') context.computerType = String(itRow[9]);  // overrides request-time value
-            context.phoneAssigned      = itRow[10] || '';
-            context.phoneCarrier       = (itRow[11] && itRow[11] !== 'N/A') ? String(itRow[11]) : '';
-            context.phoneModel         = (itRow[12] && itRow[12] !== 'N/A') ? String(itRow[12]) : '';
-            context.phoneNumber        = (itRow[13] && itRow[13] !== 'N/A') ? String(itRow[13]) : '';
-            context.phoneVMPassword    = (itRow[14] && itRow[14] !== 'N/A') ? String(itRow[14]) : '';
-            context.bossAccess         = itRow[15] || '';
-            context.incidentsAccess    = itRow[16] || '';
-            context.caaAccess          = itRow[17] || '';
-            context.deliveryAppAccess  = itRow[18] || '';
-            context.netPromoterAccess  = itRow[19] || '';
-            context.itNotes            = itRow[20]  || '';
-            if (itRow[2])  context.itTimestamp   = itRow[2] instanceof Date ? Utilities.formatDate(itRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(itRow[2]);
-            if (itRow[21]) context.itSubmittedBy = String(itRow[21]); // Col V — was incorrectly itRow[12]
+            context.assignedEmail      = itRow[IT.ASSIGNED_EMAIL]      || '';
+            context.emailTempPassword  = (itRow[IT.EMAIL_PASSWORD]     && itRow[IT.EMAIL_PASSWORD]     !== 'N/A') ? String(itRow[IT.EMAIL_PASSWORD])     : '';
+            context.computerAssigned   = itRow[IT.COMPUTER_ASSIGNED]   || '';
+            context.computerSerial     = (itRow[IT.COMPUTER_MAKE]      && itRow[IT.COMPUTER_MAKE]      !== 'N/A') ? String(itRow[IT.COMPUTER_MAKE])      : '';
+            context.computerModel      = (itRow[IT.COMPUTER_MODEL]     && itRow[IT.COMPUTER_MODEL]     !== 'N/A') ? String(itRow[IT.COMPUTER_MODEL])     : '';
+            if (itRow[IT.COMPUTER_TYPE] && itRow[IT.COMPUTER_TYPE] !== 'N/A') context.computerType = String(itRow[IT.COMPUTER_TYPE]);  // overrides request-time value
+            context.phoneAssigned      = itRow[IT.PHONE_ASSIGNED]      || '';
+            context.phoneCarrier       = (itRow[IT.PHONE_CARRIER]      && itRow[IT.PHONE_CARRIER]      !== 'N/A') ? String(itRow[IT.PHONE_CARRIER])      : '';
+            context.phoneModel         = (itRow[IT.PHONE_MODEL]        && itRow[IT.PHONE_MODEL]        !== 'N/A') ? String(itRow[IT.PHONE_MODEL])        : '';
+            context.phoneNumber        = (itRow[IT.PHONE_NUMBER]       && itRow[IT.PHONE_NUMBER]       !== 'N/A') ? String(itRow[IT.PHONE_NUMBER])       : '';
+            context.phoneVMPassword    = (itRow[IT.PHONE_VM_PASSWORD]  && itRow[IT.PHONE_VM_PASSWORD]  !== 'N/A') ? String(itRow[IT.PHONE_VM_PASSWORD])  : '';
+            context.bossAccess         = itRow[IT.BOSS_ACCESS]         || '';
+            context.incidentsAccess    = itRow[IT.INCIDENTS_ACCESS]    || '';
+            context.caaAccess          = itRow[IT.CAA_ACCESS]          || '';
+            context.deliveryAppAccess  = itRow[IT.DELIVERY_APP_ACCESS] || '';
+            context.netPromoterAccess  = itRow[IT.NET_PROMOTER_ACCESS] || '';
+            context.itNotes            = itRow[IT.IT_NOTES]            || '';
+            if (itRow[IT.SUBMISSION_TS]) context.itTimestamp   = itRow[IT.SUBMISSION_TS] instanceof Date ? Utilities.formatDate(itRow[IT.SUBMISSION_TS], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(itRow[IT.SUBMISSION_TS]);
+            if (itRow[IT.SUBMITTED_BY])  context.itSubmittedBy = String(itRow[IT.SUBMITTED_BY]);
         }
     }
     

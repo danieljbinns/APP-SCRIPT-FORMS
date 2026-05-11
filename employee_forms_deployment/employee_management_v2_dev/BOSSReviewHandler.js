@@ -57,58 +57,59 @@ function getFullNewHireData(workflowId) {
       const splitCSV = function(v) {
         return v ? String(v).split(', ').map(function(s) { return s.trim(); }).filter(Boolean) : [];
       };
+      const IR = SCHEMA.INITIAL_REQUESTS;
       return {
-        workflowId:               r[0],
-        dateRequested:            fmtDate(r[3]),
-        requesterName:            r[4]  || '',
-        requesterEmail:           r[5]  || '',
-        hireDate:                 fmtDate(r[6]),
-        hireType:                 r[7]  || '',
-        employeeType:             r[8]  || '',
-        employmentType:           r[9]  || '',
-        firstName:                r[10] || '',
-        middleName:               r[11] || '',
-        lastName:                 r[12] || '',
-        preferredName:            r[13] || '',
-        positionTitle:            r[14] || '',
-        siteName:                 r[15] || '',
-        jobSiteNumber:            r[16] || '',
-        managerEmail:             r[17] || '',
-        managerName:              r[18] || '',
-        systemAccess:             r[19] || '',
-        systems:                  splitCSV(r[20]),
-        equipment:                splitCSV(r[21]),
-        googleEmail:              r[22] || '',
-        googleDomain:             r[23] || '',
-        computerReq:              r[24] || '',
-        computerType:             r[25] || '',
-        computerPrevUser:         r[26] || '',
-        computerPrevType:         r[27] || '',
-        computerSerial:           r[28] || '',
-        office365Required:        r[29] || '',
-        creditCardUSA:            r[30] || '',
-        creditCardLimitUSA:       r[31] || '',
-        creditCardCanada:         r[32] || '',
-        creditCardLimitCanada:    r[33] || '',
-        creditCardHomeDepot:      r[34] || '',
-        creditCardLimitHomeDepot: r[35] || '',
-        phoneReq:                 r[36] || '',
-        phonePrevUser:            r[37] || '',
-        phonePrevNumber:          r[38] || '',
-        bossJobSites:             r[39] || '',
-        bossCostSheet:            r[40] || '',
-        bossCostSheetJobs:        r[41] || '',
-        bossTripReports:          r[42] || '',
-        bossGrievances:           r[43] || '',
-        jonasJobNumbers:          r[44] || '',
-        jrRequired:               r[45] || '',
-        jrAssignment:             r[46] || '',
-        plan306090:               r[47] || '',
-        comments:                 r[48] || '',
-        adpSites:                 splitCSV(r[49]),
-        department:               r[50] || '',
-        purchasingSites:          splitCSV(r[51]),
-        adpSalaryAccess:          r[53] || 'No'
+        workflowId:               r[IR.WORKFLOW_ID],
+        dateRequested:            fmtDate(r[IR.DATE_REQUESTED]),
+        requesterName:            r[IR.REQUESTER_NAME]            || '',
+        requesterEmail:           r[IR.REQUESTER_EMAIL]           || '',
+        hireDate:                 fmtDate(r[IR.HIRE_DATE]),
+        hireType:                 r[IR.NEW_HIRE_OR_REHIRE]        || '',
+        employeeType:             r[IR.EMPLOYEE_TYPE]             || '',
+        employmentType:           r[IR.EMPLOYMENT_TYPE]           || '',
+        firstName:                r[IR.FIRST_NAME]                || '',
+        middleName:               r[IR.MIDDLE_NAME]               || '',
+        lastName:                 r[IR.LAST_NAME]                 || '',
+        preferredName:            r[IR.PREFERRED_NAME]            || '',
+        positionTitle:            r[IR.POSITION_TITLE]            || '',
+        siteName:                 r[IR.SITE_NAME]                 || '',
+        jobSiteNumber:            r[IR.JOB_SITE_NUMBER]           || '',
+        managerEmail:             r[IR.MANAGER_EMAIL]             || '',
+        managerName:              r[IR.MANAGER_NAME]              || '',
+        systemAccess:             r[IR.SYSTEM_ACCESS]             || '',
+        systems:                  splitCSV(r[IR.SYSTEMS]),
+        equipment:                splitCSV(r[IR.EQUIPMENT]),
+        googleEmail:              r[IR.GOOGLE_EMAIL]              || '',
+        googleDomain:             r[IR.GOOGLE_DOMAIN]             || '',
+        computerReq:              r[IR.COMPUTER_REQ]              || '',
+        computerType:             r[IR.COMPUTER_TYPE]             || '',
+        computerPrevUser:         r[IR.COMPUTER_PREV_USER]        || '',
+        computerPrevType:         r[IR.COMPUTER_PREV_TYPE]        || '',
+        computerSerial:           r[IR.COMPUTER_SERIAL]           || '',
+        office365Required:        r[IR.OFFICE_365]                || '',
+        creditCardUSA:            r[IR.CC_USA]                    || '',
+        creditCardLimitUSA:       r[IR.CC_LIMIT_USA]              || '',
+        creditCardCanada:         r[IR.CC_CAN]                    || '',
+        creditCardLimitCanada:    r[IR.CC_LIMIT_CAN]              || '',
+        creditCardHomeDepot:      r[IR.CC_HD]                     || '',
+        creditCardLimitHomeDepot: r[IR.CC_LIMIT_HD]               || '',
+        phoneReq:                 r[IR.PHONE_REQ]                 || '',
+        phonePrevUser:            r[IR.PHONE_PREV_USER]           || '',
+        phonePrevNumber:          r[IR.PHONE_PREV_NUMBER]         || '',
+        bossJobSites:             r[IR.BOSS_SITES]                || '',
+        bossCostSheet:            r[IR.BOSS_COST_SHEET]           || '',
+        bossCostSheetJobs:        r[IR.BOSS_JOBS]                  || '',
+        bossTripReports:          r[IR.BOSS_TRIP]                  || '',
+        bossGrievances:           r[IR.BOSS_GRIEVANCES]           || '',
+        jonasJobNumbers:          r[IR.JONAS_JOB_NUMBERS]         || '',
+        jrRequired:               r[IR.JR_REQUIRED]               || '',
+        jrAssignment:             r[IR.JR_ASSIGNMENT]             || '',
+        plan306090:               r[IR.PLAN_306090]               || '',
+        comments:                 r[IR.COMMENTS]                  || '',
+        adpSites:                 splitCSV(r[IR.ADP_SITES]),
+        department:               r[IR.DEPARTMENT]                || '',
+        purchasingSites:          splitCSV(r[IR.PURCHASING_SITES]),
+        adpSalaryAccess:          r[IR.ADP_SALARY_ACCESS]         || 'No'
       };
     }
     return null;
@@ -126,25 +127,27 @@ function getFullEquipmentRequestData(workflowId) {
     const splitCSV = function(v) {
       return v ? String(v).split(', ').map(function(s) { return s.trim(); }).filter(Boolean) : [];
     };
-    // Scan all rows — col[1] holds Workflow ID; scanning from 0 is robust whether or not
-    // a header row exists (header value 'Workflow ID' will never match an EQUIP_REQ_* id).
+    // Scan all rows — WORKFLOW_ID is now col 0 (new layout: WorkflowID[0]|FormID[1]|Timestamp[2]).
+    // Scanning from 0 is robust whether or not a header row exists
+    // (header value 'Workflow ID' will never match an EQUIP_REQ_* id).
+    const EQ = SCHEMA.EQUIPMENT_REQUESTS;
     for (let i = 0; i < data.length; i++) {
-      if (data[i][1] !== workflowId) continue;
+      if (data[i][EQ.WORKFLOW_ID] !== workflowId) continue;
       const r = data[i];
       return {
-        workflowId:    r[1],
-        reqName:       r[3]  || '',
-        reqEmail:      r[4]  || '',
-        firstName:     r[5]  || '',
-        lastName:      r[6]  || '',
-        siteName:      r[7]  || '',
-        positionTitle: r[8]  || '',
-        managerName:   r[9]  || '',
-        managerEmail:  r[10] || '',
-        equipment:     splitCSV(r[11]),
-        systems:       splitCSV(r[12]),
-        comments:      r[13] || '',
-        department:    r[14] || ''
+        workflowId:    r[EQ.WORKFLOW_ID],
+        reqName:       r[EQ.REQUESTER_NAME]       || '',
+        reqEmail:      r[EQ.REQUESTER_EMAIL]       || '',
+        firstName:     r[EQ.EMPLOYEE_FIRST_NAME]   || '',
+        lastName:      r[EQ.EMPLOYEE_LAST_NAME]    || '',
+        siteName:      r[EQ.SITE_NAME]             || '',
+        positionTitle: r[EQ.JOB_TITLE]             || '',
+        managerName:   r[EQ.MANAGER_NAME]          || '',
+        managerEmail:  r[EQ.MANAGER_EMAIL]         || '',
+        equipment:     splitCSV(r[EQ.EQUIPMENT_REQUESTED]),
+        systems:       splitCSV(r[EQ.SYSTEMS_REQUESTED]),
+        comments:      r[EQ.COMMENTS]              || '',
+        department:    r[EQ.DEPARTMENT]            || ''
       };
     }
     return null;
@@ -177,26 +180,27 @@ function getFullPositionChangeData(workflowId) {
       const splitCSV = function(v) {
         return v ? String(v).split(', ').filter(Boolean) : [];
       };
-      const site  = splitPair(r[10]);
-      const title = splitPair(r[11]);
-      const cls   = splitPair(r[12]);
+      const PC = SCHEMA.POSITION_CHANGES;
+      const site  = splitPair(r[PC.SITE_TRANSFER]);
+      const title = splitPair(r[PC.TITLE_CHANGE]);
+      const cls   = splitPair(r[PC.CLASSIFICATION]);
       return {
-        workflowId:      r[0],
-        reqName:         r[3]  || '',
-        reqEmail:        r[4]  || '',
-        employeeName:    r[5]  || '',
-        effDate:         fmtDate(r[7]),
-        siteName:        r[8]  || '',
-        changeType:      splitCSV(r[9]),
+        workflowId:      r[PC.WORKFLOW_ID],
+        reqName:         r[PC.REQUESTER_NAME]   || '',
+        reqEmail:        r[PC.REQUESTER_EMAIL]  || '',
+        employeeName:    r[PC.EMPLOYEE_NAME]    || '',
+        effDate:         fmtDate(r[PC.EFFECTIVE_DATE]),
+        siteName:        r[PC.CURRENT_SITE]     || '',
+        changeType:      splitCSV(r[PC.CHANGE_TYPES]),
         siteOld:         site[0],  siteNew:  site[1],
         titleOld:        title[0], titleNew: title[1],
         classOld:        cls[0],   classNew: cls[1],
-        systems:         splitCSV(r[17]),
-        equipment:       splitCSV(r[18]),
-        removal:         splitCSV(r[19]),
-        comments:        r[20] || '',
-        department:      r[21] || '',
-        purchasingSites: splitCSV(r[22])
+        systems:         splitCSV(r[PC.SYSTEMS_ADDED]),
+        equipment:       splitCSV(r[PC.EQUIPMENT]),
+        removal:         splitCSV(r[PC.REMOVED_ACCESS]),
+        comments:        r[PC.COMMENTS]         || '',
+        department:      r[PC.DEPARTMENT]       || '',
+        purchasingSites: splitCSV(r[22])  // col 22 — extended field, not in base schema
       };
     }
     return null;
@@ -225,23 +229,23 @@ function submitITConfirmation(formData) {
       // Write corrections back to Equipment_Requests sheet in-place
       const eqSheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
       const eqRows  = eqSheet.getDataRange().getValues();
+      const EQ = SCHEMA.EQUIPMENT_REQUESTS;
       for (let i = 0; i < eqRows.length; i++) {
-        if (eqRows[i][1] !== workflowId) continue;
+        if (eqRows[i][EQ.WORKFLOW_ID] !== workflowId) continue;
         const rowNum = i + 1;
-        const updates = {
-          5:  formData.firstName                              || '',
-          6:  formData.lastName                               || '',
-          7:  formData.siteName                               || '',
-          8:  formData.positionTitle || formData.position     || '',
-          9:  formData.reportingManagerName  || formData.managerName  || '',
-          10: formData.reportingManagerEmail || formData.managerEmail || '',
-          11: csvOrStr(formData.equipment),
-          12: csvOrStr(formData.systems),
-          13: formData.comments || formData.notes || '',
-          14: formData.department || ''
-        };
-        Object.entries(updates).forEach(function(pair) {
-          eqSheet.getRange(rowNum, parseInt(pair[0]) + 1).setValue(pair[1]);
+        [
+          [EQ.EMPLOYEE_FIRST_NAME,  formData.firstName                              || ''],
+          [EQ.EMPLOYEE_LAST_NAME,   formData.lastName                               || ''],
+          [EQ.SITE_NAME,            formData.siteName                               || ''],
+          [EQ.JOB_TITLE,            formData.positionTitle || formData.position     || ''],
+          [EQ.MANAGER_NAME,         formData.reportingManagerName  || formData.managerName  || ''],
+          [EQ.MANAGER_EMAIL,        formData.reportingManagerEmail || formData.managerEmail || ''],
+          [EQ.EQUIPMENT_REQUESTED,  csvOrStr(formData.equipment)],
+          [EQ.SYSTEMS_REQUESTED,    csvOrStr(formData.systems)],
+          [EQ.COMMENTS,             formData.comments || formData.notes || ''],
+          [EQ.DEPARTMENT,           formData.department || '']
+        ].forEach(function(pair) {
+          eqSheet.getRange(rowNum, pair[0] + 1).setValue(pair[1]);
         });
         break;
       }
@@ -249,42 +253,42 @@ function submitITConfirmation(formData) {
       // Write corrections back to Initial Requests sheet in-place
       const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
       const rows  = sheet.getDataRange().getValues();
+      const IR = SCHEMA.INITIAL_REQUESTS;
       for (let i = 1; i < rows.length; i++) {
         if (rows[i][0] !== workflowId) continue;
         const rowNum  = i + 1;
-        const updates = {
-          7:  formData.hireType            || '',
-          8:  formData.employeeType        || '',
-          9:  formData.employmentType      || '',
-          10: formData.firstName           || '',
-          11: formData.middleName          || '',
-          12: formData.lastName            || '',
-          13: formData.preferredName       || '',
-          14: formData.positionTitle       || '',
-          15: formData.siteName            || '',
-          16: formData.jobSiteNumber       || '',
-          17: formData.reportingManagerEmail || formData.managerEmail || '',
-          18: formData.reportingManagerName  || formData.managerName  || '',
-          19: formData.systemAccess        || '',
-          20: csvOrStr(formData.systems),
-          21: csvOrStr(formData.equipment),
-          22: formData.googleEmail         || '',
-          23: formData.googleDomain        || '',
-          24: formData.computerRequestType || '',
-          25: formData.computerType        || '',
-          36: formData.phoneRequestType    || '',
-          39: csvOrStr(formData.bossJobSites),
-          40: formData.bossCostSheet       || '',
-          41: csvOrStr(formData.bossCostSheetJobs),
-          42: formData.bossTripReports     || '',
-          43: formData.bossGrievances      || '',
-          44: csvOrStr(formData.jonasJobNumbers),
-          49: csvOrStr(formData.adpSites),
-          50: formData.department          || '',
-          51: csvOrStr(formData.purchasingSites)
-        };
-        Object.entries(updates).forEach(function(pair) {
-          sheet.getRange(rowNum, parseInt(pair[0]) + 1).setValue(pair[1]);
+        [
+          [IR.NEW_HIRE_OR_REHIRE,  formData.hireType            || ''],
+          [IR.EMPLOYEE_TYPE,       formData.employeeType        || ''],
+          [IR.EMPLOYMENT_TYPE,     formData.employmentType      || ''],
+          [IR.FIRST_NAME,          formData.firstName           || ''],
+          [IR.MIDDLE_NAME,         formData.middleName          || ''],
+          [IR.LAST_NAME,           formData.lastName            || ''],
+          [IR.PREFERRED_NAME,      formData.preferredName       || ''],
+          [IR.POSITION_TITLE,      formData.positionTitle       || ''],
+          [IR.SITE_NAME,           formData.siteName            || ''],
+          [IR.JOB_SITE_NUMBER,     formData.jobSiteNumber       || ''],
+          [IR.MANAGER_EMAIL,       formData.reportingManagerEmail || formData.managerEmail || ''],
+          [IR.MANAGER_NAME,        formData.reportingManagerName  || formData.managerName  || ''],
+          [IR.SYSTEM_ACCESS,       formData.systemAccess        || ''],
+          [IR.SYSTEMS,             csvOrStr(formData.systems)],
+          [IR.EQUIPMENT,           csvOrStr(formData.equipment)],
+          [IR.GOOGLE_EMAIL,        formData.googleEmail         || ''],
+          [IR.GOOGLE_DOMAIN,       formData.googleDomain        || ''],
+          [IR.COMPUTER_REQ,        formData.computerRequestType || ''],
+          [IR.COMPUTER_TYPE,       formData.computerType        || ''],
+          [IR.PHONE_REQ,           formData.phoneRequestType    || ''],
+          [IR.BOSS_SITES,          csvOrStr(formData.bossJobSites)],
+          [IR.BOSS_COST_SHEET,     formData.bossCostSheet       || ''],
+          [IR.BOSS_JOBS,           csvOrStr(formData.bossCostSheetJobs)],
+          [IR.BOSS_TRIP,           formData.bossTripReports      || ''],
+          [IR.BOSS_GRIEVANCES,     formData.bossGrievances      || ''],
+          [IR.JONAS_JOB_NUMBERS,   csvOrStr(formData.jonasJobNumbers)],
+          [IR.ADP_SITES,           csvOrStr(formData.adpSites)],
+          [IR.DEPARTMENT,          formData.department          || ''],
+          [IR.PURCHASING_SITES,    csvOrStr(formData.purchasingSites)]
+        ].forEach(function(pair) {
+          sheet.getRange(rowNum, pair[0] + 1).setValue(pair[1]);
         });
         break;
       }
@@ -297,22 +301,22 @@ function submitITConfirmation(formData) {
           if (pcRows[i][0] !== workflowId) continue;
           const rowNum = i + 1;
           // Preserve the "old" side of site/title/class change pairs
-          const siteOldVal  = String(pcRows[i][10] || '').split(' -> ')[0] || '';
-          const titleOldVal = String(pcRows[i][11] || '').split(' -> ')[0] || '';
-          const classOldVal = String(pcRows[i][12] || '').split(' -> ')[0] || '';
-          const pcUpdates = {
-            10: siteOldVal  + (formData.siteNew  ? ' -> ' + formData.siteNew  : ''),
-            11: titleOldVal + (formData.titleNew  ? ' -> ' + formData.titleNew : ''),
-            12: classOldVal + (formData.classNew  ? ' -> ' + formData.classNew : ''),
-            17: csvOrStr(formData.sys),
-            18: csvOrStr(formData.equip),
-            19: csvOrStr(formData.rem),
-            20: formData.comments || pcRows[i][20] || '',
-            21: formData.department || pcRows[i][21] || '',
-            22: csvOrStr(formData.purchasingSites)
-          };
-          Object.entries(pcUpdates).forEach(function(pair) {
-            pcSheet.getRange(rowNum, parseInt(pair[0]) + 1).setValue(pair[1]);
+          const PCC = SCHEMA.POSITION_CHANGES;
+          const siteOldVal  = String(pcRows[i][PCC.SITE_TRANSFER]  || '').split(' -> ')[0] || '';
+          const titleOldVal = String(pcRows[i][PCC.TITLE_CHANGE]   || '').split(' -> ')[0] || '';
+          const classOldVal = String(pcRows[i][PCC.CLASSIFICATION]  || '').split(' -> ')[0] || '';
+          [
+            [PCC.SITE_TRANSFER,   siteOldVal  + (formData.siteNew  ? ' -> ' + formData.siteNew  : '')],
+            [PCC.TITLE_CHANGE,    titleOldVal + (formData.titleNew  ? ' -> ' + formData.titleNew : '')],
+            [PCC.CLASSIFICATION,  classOldVal + (formData.classNew  ? ' -> ' + formData.classNew : '')],
+            [PCC.SYSTEMS_ADDED,   csvOrStr(formData.sys)],
+            [PCC.EQUIPMENT,       csvOrStr(formData.equip)],
+            [PCC.REMOVED_ACCESS,  csvOrStr(formData.rem)],
+            [PCC.COMMENTS,        formData.comments || pcRows[i][PCC.COMMENTS] || ''],
+            [PCC.DEPARTMENT,      formData.department || pcRows[i][PCC.DEPARTMENT] || ''],
+            [22,                  csvOrStr(formData.purchasingSites)]  // col 22 — extended field, not in base schema
+          ].forEach(function(pair) {
+            pcSheet.getRange(rowNum, pair[0] + 1).setValue(pair[1]);
           });
           break;
         }
@@ -470,15 +474,16 @@ function getITConfirmationData(workflowId) {
     const data = sheet.getDataRange().getValues();
     for (let i = data.length - 1; i >= 1; i--) {
       if (data[i][0] === workflowId) {
+        const ITC = SCHEMA.IT_CONFIRMATION_RESULTS;
         return {
-          bossJobSites:      data[i][3],
-          bossCostSheet:     data[i][4],
-          bossCostSheetJobs: data[i][5],
-          bossTripReports:   data[i][6],
-          bossGrievances:    data[i][7],
-          computerReq:       data[i][8],
-          computerType:      data[i][9],
-          phoneReq:          data[i][10]
+          bossJobSites:      data[i][ITC.BOSS_JOB_SITES],
+          bossCostSheet:     data[i][ITC.BOSS_COST_SHEET],
+          bossCostSheetJobs: data[i][ITC.BOSS_COST_SHEET_JOBS],
+          bossTripReports:   data[i][ITC.BOSS_TRIP_REPORTS],
+          bossGrievances:    data[i][ITC.BOSS_GRIEVANCES],
+          computerReq:       data[i][ITC.COMPUTER_REQ],
+          computerType:      data[i][ITC.COMPUTER_TYPE],
+          phoneReq:          data[i][ITC.PHONE_REQ]
         };
       }
     }

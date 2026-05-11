@@ -186,7 +186,7 @@ function submitSpecialistForm(formData) {
               // Col H (index 7) stores "Job Title / JR Title" — preserve job title, update JR
               const existing = String(hrData[i][7] || '');
               const jobTitle = existing.includes(' / ') ? existing.split(' / ')[0].trim() : existing;
-              hrSheet.getRange(i + 1, 8).setValue(jobTitle + ' / ' + formData.jrTitle);
+              hrSheet.getRange(i + 1, SCHEMA.HR_VERIFICATION_RESULTS.VERIFIED_JR_TITLE + 1).setValue(jobTitle + ' / ' + formData.jrTitle);
               Logger.log('[30/60/90] Confirmed JR title written back: ' + formData.jrTitle);
               break;
             }
