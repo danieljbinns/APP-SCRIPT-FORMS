@@ -61,8 +61,8 @@ function syncWorkflowState(workflowId) {
     const lookupSheet = ss.getSheetByName(lookupSheetName);
 
     const tz = Session.getScriptTimeZone();
-    const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd') : String(v || '').replace(/-/g, '/');
-    const fmtDateTime = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy/MM/dd HH:mm') : String(v || '').replace(/-/g, '/');
+    const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy-MM-dd') : String(v || '').replace(/\//g, '-').substring(0, 10);
+    const fmtDateTime = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy-MM-dd HH:mm:ss') : (function(s){ if(!s) return ''; s = s.replace(/\//g,'-'); try{ var d=new Date(s); if(!isNaN(d.getTime())) return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss'); }catch(e){} return s; })(String(v||''));
 
     // Equipment_Requests has Workflow ID in column B (index 1); all others use column A.
     const searchCol = isEquip ? 'B:B' : 'A:A';

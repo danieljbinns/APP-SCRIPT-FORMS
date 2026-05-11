@@ -58,7 +58,7 @@ function getHRVerificationData(workflowId) {
       for (let i = 1; i < hrData.length; i++) {
         if (String(hrData[i][0]) === workflowId && String(hrData[i][1]) !== 'DATE_CHANGE') {
           const submittedAt = hrData[i][2] instanceof Date
-            ? Utilities.formatDate(hrData[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm')
+            ? Utilities.formatDate(hrData[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss')
             : String(hrData[i][2] || '');
           const combined = String(hrData[i][7] || ''); // "Job Title / JR Title"
           result.isEdit = true;

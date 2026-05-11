@@ -26,8 +26,8 @@ function logFormEdit(workflowId, formType, changedBy, oldRow, newRow) {
     const changes = [];
     const len = Math.max(oldRow.length, newRow.length);
     for (let i = 0; i < len; i++) {
-      const oldVal = String(oldRow[i] instanceof Date ? Utilities.formatDate(oldRow[i], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm') : (oldRow[i] || ''));
-      const newVal = String(newRow[i] instanceof Date ? Utilities.formatDate(newRow[i], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm') : (newRow[i] || ''));
+      const oldVal = String(oldRow[i] instanceof Date ? Utilities.formatDate(oldRow[i], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss') : (oldRow[i] || ''));
+      const newVal = String(newRow[i] instanceof Date ? Utilities.formatDate(newRow[i], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss') : (newRow[i] || ''));
       if (oldVal !== newVal && i > 1) { // skip WF ID (0) and Form ID (1)
         changes.push('col' + (i + 1) + ': [' + oldVal + '] → [' + newVal + ']');
       }

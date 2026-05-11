@@ -85,19 +85,17 @@ function getDashboardData() {
 
     const tz = Session.getScriptTimeZone();
     const fmtDate = (v) => {
-      if (v instanceof Date) return Utilities.formatDate(v, tz, 'yyyy/MM/dd');
+      if (v instanceof Date) return Utilities.formatDate(v, tz, 'M/d/yyyy');
       const s = String(v || '');
       if (!s) return '';
-      if (/^\d{4}\/\d{2}\/\d{2}/.test(s)) return s;  // already yyyy/MM/dd
-      try { const d = new Date(s.replace(/-/g, '/')); if (!isNaN(d.getTime())) return Utilities.formatDate(d, tz, 'yyyy/MM/dd'); } catch(e) {}
+      try { const d = new Date(s.replace(/\//g, '-').substring(0, 10) + 'T00:00:00'); if (!isNaN(d.getTime())) return Utilities.formatDate(d, tz, 'M/d/yyyy'); } catch(e) {}
       return s;
     };
     const fmtDateTime = (v) => {
-      if (v instanceof Date) return Utilities.formatDate(v, tz, 'yyyy/MM/dd HH:mm');
+      if (v instanceof Date) return Utilities.formatDate(v, tz, 'M/d/yyyy h:mm a');
       const s = String(v || '');
       if (!s) return '';
-      if (/^\d{4}\/\d{2}\/\d{2}/.test(s)) return s;  // already yyyy/MM/dd ...
-      try { const d = new Date(s.replace(/-/g, '/')); if (!isNaN(d.getTime())) return Utilities.formatDate(d, tz, 'yyyy/MM/dd HH:mm'); } catch(e) {}
+      try { const d = new Date(s.replace(/\//g, '-')); if (!isNaN(d.getTime())) return Utilities.formatDate(d, tz, 'M/d/yyyy h:mm a'); } catch(e) {}
       return s;
     };
 
@@ -1622,7 +1620,7 @@ function getMyPendingTasks() {
       const wf   = getWorkflow(wfId);
       const createdVal = row[createdIdx];
       const createdStr = createdVal instanceof Date
-        ? Utilities.formatDate(createdVal, tz, 'yyyy/MM/dd')
+        ? Utilities.formatDate(createdVal, tz, 'M/d/yyyy')
         : String(createdVal || '');
 
       tasks.push({

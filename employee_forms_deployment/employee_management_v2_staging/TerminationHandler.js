@@ -4,8 +4,11 @@
 
 function fmtDate_(iso) {
   if (!iso) return 'N/A';
-  var d = new Date(String(iso).replace(/T.*/, '') + 'T00:00:00');
-  return (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear();
+  var tz = Session.getScriptTimeZone();
+  try {
+    var d = new Date(String(iso).replace(/\//g, '-').replace(/T.*/, '') + 'T00:00:00');
+    return Utilities.formatDate(d, tz, 'M/d/yyyy');
+  } catch(e) { return String(iso); }
 }
 
 /**
