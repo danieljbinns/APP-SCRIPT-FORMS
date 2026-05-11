@@ -348,9 +348,9 @@ function _notifyEquipmentTask(workflowId, taskId, teamLabel, assignedTo, context
  */
 function formatEquipmentRequestData(formData) {
   return [
-    new Date(),
     formData.workflowId || '',
     formData.formId     || '',
+    new Date(),
     formData.reqName    || '',
     formData.reqEmail   || '',
     formData.firstName  || '',

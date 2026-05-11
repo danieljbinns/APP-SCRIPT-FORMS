@@ -38,9 +38,9 @@ function initializeSystem() {
       'First Name', 'Middle Name', 'Last Name', 'Preferred Name', 'Position Title',
       'Site Name', 'Job Site #', 'Manager Email', 'Manager Name',
       'System Access', 'Systems', 'Equipment', 'Google Email', 'Google Domain',
-      'Computer Req', 'Computer Type', 'Prev User', 'Prev Type', 'Serial #',
+      'Computer Req', 'Computer Type', 'Prev User (Computer)', 'Prev Type', 'Serial #',
       'Office 365', 'CC USA', 'Limit USA', 'CC CAN', 'Limit CAN', 'CC HD', 'Limit HD',
-      'Phone Req', 'Prev User', 'Prev Number', 'BOSS Sites', 'BOSS Cost Sheet',
+      'Phone Req', 'Prev User (Phone)', 'Prev Number', 'BOSS Sites', 'BOSS Cost Sheet',
       'BOSS Jobs', 'BOSS Trip', 'BOSS Grievances', 'Jonas Job #s', 'JR Req', 'JR Assign',
       '30/60/90', 'Comments', 'ADP Sites', 'Department', 'Purchasing Sites', 'Status',
       'ADP Salary Access'
@@ -91,7 +91,7 @@ function initializeSystem() {
 
     // 7b. Initialize Equipment Requests
     initSheet(ss, CONFIG.SHEETS.EQUIPMENT_REQUESTS, [
-      'Timestamp', 'Workflow ID', 'Form ID', 'Requester Name', 'Requester Email', 
+      'Workflow ID', 'Form ID', 'Timestamp', 'Requester Name', 'Requester Email',
       'Employee First Name', 'Employee Last Name', 'Site Name', 'Job Title', 'Manager Name', 'Manager Email',
       'Equipment Requested', 'Systems Requested', 'Comments', 'Department'
     ]);
