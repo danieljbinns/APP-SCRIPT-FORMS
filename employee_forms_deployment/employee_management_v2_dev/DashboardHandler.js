@@ -24,14 +24,6 @@ function serveWorkflowMap() {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
-function serveDataManager() {
-  return HtmlService.createTemplateFromFile('DataManager')
-    .evaluate()
-    .setTitle('Data Manager - Employee Onboarding')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-
-}
 
 function serveRequestDetails(workflowId) {
   const template = HtmlService.createTemplateFromFile('RequestDetails');

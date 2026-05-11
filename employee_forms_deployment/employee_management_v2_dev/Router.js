@@ -35,12 +35,6 @@ function doGet(e) {
         if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return serveRequestDetails(workflowId);
 
-      case 'data_manager':
-        // Admin access check (reusing dashboard access for now)
-        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
-        return serveDataManager();
-
-        
       case 'id_setup':
         // Allow domain users - typically accessed via email link
         // Access check removed as requested
