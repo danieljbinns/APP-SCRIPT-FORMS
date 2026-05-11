@@ -64,8 +64,13 @@ function Pad-Objects {
 ##############################################################################
 Write-Host "`n--- Step 1: Copy main sheets ---"
 
-# Workflows (identical headers)
+# Workflows -- normalize legacy status values to current canonical format
 $wf = Format-Dates (Import-Excel $prodPath -WorksheetName 'Workflows')
+$statusMap = @{ 'Complete' = 'Completed'; 'Done' = 'Completed'; 'Closed' = 'Completed'; 'Active' = 'In Progress'; 'Open' = 'Pending' }
+$wf | ForEach-Object {
+    $s = "$($_.'Status')"
+    if ($statusMap.ContainsKey($s)) { $_.'Status' = $statusMap[$s] }
+}
 Export-Excel -Path $devPath -WorksheetName 'Workflows' -InputObject $wf -ClearSheet -NoNumberConversion *
 Write-Host "  Workflows: $($wf.Count) rows"
 
@@ -183,7 +188,7 @@ Write-Host "  Action Items total: $($aiRows.Count)"
 ##############################################################################
 Write-Host "`n--- Step 3: Build Dashboard_View ---"
 
-$wfData = Format-Dates (Import-Excel $prodPath -WorksheetName 'Workflows')
+$wfData = $wf  # reuse already-normalized Workflows data from Step 1
 
 # Initial Requests has duplicate "Prev User" headers — read positionally via EPPlus
 $irIndex = @{}
