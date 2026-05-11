@@ -62,9 +62,10 @@ function getDashboardData() {
     const termSheetForType = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
     if (termSheetForType) {
       const tData = termSheetForType.getDataRange().getValues();
-      for (let i = 1; i < tData.length; i++) {
-        const wfId = String(tData[i][0] || '');
-        if (wfId) termEmpTypeMap[wfId] = String(tData[i][7] || ''); // col 7 = Employee Type
+      const TR = SCHEMA.TERMINATIONS;
+      for (let i = SCHEMA.ROW.FIRST_DATA; i < tData.length; i++) {
+        const wfId = String(tData[i][TR.WORKFLOW_ID] || '');
+        if (wfId) termEmpTypeMap[wfId] = String(tData[i][TR.EMPLOYEE_TYPE] || '');
       }
     }
 
@@ -1242,8 +1243,8 @@ function getTerminationDetails(workflowId) {
           name: "Approval",
           status: "Complete",
           target: "termination_approval",
-          by: apprRow[apprRow.length - 1] || 'HR Approval',
-          time: apprRow[2] instanceof Date ? apprRow[2].toLocaleString() : String(apprRow[2] || '')
+          by: apprRow[SCHEMA.TERMINATION_APPROVAL_RESULTS.SUBMITTED_BY] || 'HR Approval',
+          time: apprRow[SCHEMA.TERMINATION_APPROVAL_RESULTS.TIMESTAMP] instanceof Date ? apprRow[SCHEMA.TERMINATION_APPROVAL_RESULTS.TIMESTAMP].toLocaleString() : String(apprRow[SCHEMA.TERMINATION_APPROVAL_RESULTS.TIMESTAMP] || '')
         });
       } else {
         checklist.push({ name: "Approval", status: "Pending", target: "termination_approval" });

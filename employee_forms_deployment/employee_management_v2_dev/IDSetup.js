@@ -57,8 +57,8 @@ function getIDSetupRequestData(workflowId) {
       return col[name] !== -1 ? row[col[name]] : '';
     }
 
-    for (var i = 1; i < data.length; i++) {
-      if (data[i][0] === workflowId) {
+    for (var i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+      if (data[i][SCHEMA.INITIAL_REQUESTS.WORKFLOW_ID] === workflowId) {
         var row = data[i];
         var firstName = get(row, 'First Name');
         var lastName  = get(row, 'Last Name');

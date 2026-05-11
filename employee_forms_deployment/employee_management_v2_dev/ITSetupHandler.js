@@ -169,8 +169,8 @@ function submitITSetup(formData) {
     const itSheetCheck = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
     if (itSheetCheck) {
       const itCheckData = itSheetCheck.getDataRange().getValues();
-      for (let ei = 1; ei < itCheckData.length; ei++) {
-        if (String(itCheckData[ei][0]) === workflowId) {
+      for (let ei = SCHEMA.ROW.FIRST_DATA; ei < itCheckData.length; ei++) {
+        if (String(itCheckData[ei][SCHEMA.IT_RESULTS.WORKFLOW_ID]) === workflowId) {
           existingITRowIndex = ei + 1;
           existingITRowData = itCheckData[ei];
           break;
