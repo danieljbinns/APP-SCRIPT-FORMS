@@ -87,12 +87,12 @@ function syncWorkflowState(workflowId) {
         const PC = SCHEMA.POSITION_CHANGES;
         const classChange = String(row[PC.CLASSIFICATION] || '');
         const classOld = classChange.includes(' -> ') ? classChange.split(' -> ')[0].trim() : '';
-        const currentClass = String(row[27] || ''); // col 27 — extended field (currentClass), not in base schema
+        const currentClass = String(row[PC.CURRENT_CLASS] || '');
         const empTypeFromClass = (classOld && classOld !== 'N/A') ? classOld : (currentClass || '');
         reqInfo = {
           requesterName:  row[PC.REQUESTER_NAME]   || 'Unknown',
           requesterEmail: row[PC.REQUESTER_EMAIL]   || '',
-          managerEmail:   String(row[25] || ''),    // col 25 — currentManagerEmail (extended field, not in base schema)
+          managerEmail:   String(row[PC.CURRENT_MANAGER_EMAIL] || ''),
           dateRequested:  fmtDate(row[PC.TIMESTAMP]),
           hireDate:       fmtDate(row[PC.EFFECTIVE_DATE]), // Effective Date → shown in Effective Date column
           site:           String(row[PC.CURRENT_SITE] || ''),

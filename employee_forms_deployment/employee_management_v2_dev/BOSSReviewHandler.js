@@ -200,7 +200,7 @@ function getFullPositionChangeData(workflowId) {
         removal:         splitCSV(r[PC.REMOVED_ACCESS]),
         comments:        r[PC.COMMENTS]         || '',
         department:      r[PC.DEPARTMENT]       || '',
-        purchasingSites: splitCSV(r[22])  // col 22 — extended field, not in base schema
+        purchasingSites: splitCSV(r[PC.PURCHASING_SITES])
       };
     }
     return null;

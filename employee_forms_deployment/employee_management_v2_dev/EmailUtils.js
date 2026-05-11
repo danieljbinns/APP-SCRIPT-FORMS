@@ -343,9 +343,8 @@ function getWorkflowContext(workflowId) {
             context.dssUsername           = idRow[ID.DSS_USERNAME];
             context.dssPassword           = idRow[ID.DSS_PASSWORD];
             context.bossWisCreated        = idRow[ID.BOSS_WIS_CREATED]  || '';
-            context.siteDocsBadgeCreated  = idRow[12]                   || '';  // extended field — not in SCHEMA
-            if (idRow[ID.SUBMISSION_TS]) context.idTimestamp  = idRow[ID.SUBMISSION_TS] instanceof Date ? Utilities.formatDate(idRow[ID.SUBMISSION_TS], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(idRow[ID.SUBMISSION_TS]);
-            if (idRow[13])               context.idSubmittedBy = idRow[13];  // extended field — not in SCHEMA
+            context.idSubmittedBy         = idRow[ID.SUBMITTED_BY]     || '';
+            if (idRow[ID.SUBMISSION_TS]) context.idTimestamp = idRow[ID.SUBMISSION_TS] instanceof Date ? Utilities.formatDate(idRow[ID.SUBMISSION_TS], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(idRow[ID.SUBMISSION_TS]);
         }
     }
 

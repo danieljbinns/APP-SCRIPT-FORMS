@@ -156,12 +156,12 @@ function getPositionChangeData(workflowId) {
     requesterEmail:        data[PC.REQUESTER_EMAIL],
     comments:              data[PC.COMMENTS],
     department:            data[PC.DEPARTMENT]             || '',
-    purchasingSites:       data[22]                        || '',  // extended field
-    receivingManagerEmail: data[23]                        || '',  // extended field
-    currentTitle:          data[24]                        || '',  // extended field
-    currentManagerEmail:   data[25]                        || '',  // extended field
-    currentManagerName:    data[26]                        || '',  // extended field
-    currentClass:          data[27]                        || '',  // extended field
+    purchasingSites:       data[PC.PURCHASING_SITES]        || '',
+    receivingManagerEmail: data[PC.RECEIVING_MANAGER_EMAIL] || '',
+    currentTitle:          data[PC.CURRENT_TITLE]           || '',
+    currentManagerEmail:   data[PC.CURRENT_MANAGER_EMAIL]   || '',
+    currentManagerName:    data[PC.CURRENT_MANAGER_NAME]    || '',
+    currentClass:          data[PC.CURRENT_CLASS]           || '',
     mgrNewEmail: (function() {
       var m = (String(data[PC.MANAGER_CHANGE] || '')).match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
       return m.length > 1 ? m[1].replace(/[()]/g, '') : (m.length === 1 ? m[0].replace(/[()]/g, '') : '');

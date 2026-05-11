@@ -198,7 +198,7 @@ function getTerminationData(workflowId) {
     },
     originalComments: data[TR.COMMENTS],
     lastDayWorked:  data[TR.LAST_DAY_WORKED] ? (data[TR.LAST_DAY_WORKED] instanceof Date ? Utilities.formatDate(new Date(data[TR.LAST_DAY_WORKED]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[TR.LAST_DAY_WORKED]) : '',
-    attachmentUrl:  data[28] || ''  // col 28 — attachment URL (extended field)
+    attachmentUrl:  data[SCHEMA.TERMINATIONS.ATTACHMENT_URL] || ''
   };
 }
 

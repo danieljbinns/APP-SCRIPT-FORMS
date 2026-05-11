@@ -246,7 +246,8 @@ const SCHEMA = {
     VACATION_RESPONDER:     24,  // string   — Vacation Responder Auto Reply
     EQUIPMENT_TO_RETURN:    25,  // csv      — Equipment to Return
     COMMENTS:               26,  // string   — Comments
-    LAST_DAY_WORKED:        27   // date     — Last Day Worked
+    LAST_DAY_WORKED:        27,  // date     — Last Day Worked
+    ATTACHMENT_URL:         28   // string   — Attachment URL (Drive link)
   },
 
   // ─────────────────────────────────────────────
@@ -271,31 +272,37 @@ const SCHEMA = {
   },
 
   // ─────────────────────────────────────────────
-  // POSITION CHANGES  (22 columns)
+  // POSITION CHANGES  (28 columns)
   // ─────────────────────────────────────────────
   POSITION_CHANGES: {
-    WORKFLOW_ID:           0,   // string   — Workflow ID
-    FORM_ID:               1,   // string   — Form ID
-    TIMESTAMP:             2,   // datetime — Timestamp
-    REQUESTER_NAME:        3,   // string   — Requester Name
-    REQUESTER_EMAIL:       4,   // string   — Requester Email
-    EMPLOYEE_NAME:         5,   // string   — Employee Name
-    EMPLOYEE_ID:           6,   // string   — Employee ID
-    EFFECTIVE_DATE:        7,   // date     — Effective Date
-    CURRENT_SITE:          8,   // string   — Current Site
-    CHANGE_TYPES:          9,   // csv      — Change Types
-    SITE_TRANSFER:         10,  // string   — Site Transfer (Old -> New)
-    TITLE_CHANGE:          11,  // string   — Title Change (Old -> New)
-    CLASSIFICATION:        12,  // string   — Classification (Old -> New)
-    MANAGER_CHANGE:        13,  // string   — Manager Change (Old -> New Email)
-    REASSIGN_OLD_REPORTS:  14,  // boolean  — Reassign Old Reports
-    GAIN_NEW_REPORTS:      15,  // boolean  — Gain New Reports
-    GOOGLE_ACCOUNT:        16,  // string   — Google Account
-    SYSTEMS_ADDED:         17,  // csv      — Systems Added
-    EQUIPMENT:             18,  // csv      — Equipment
-    REMOVED_ACCESS:        19,  // csv      — Removed Access
-    COMMENTS:              20,  // string   — Comments
-    DEPARTMENT:            21   // string   — Department
+    WORKFLOW_ID:              0,   // string   — Workflow ID
+    FORM_ID:                  1,   // string   — Form ID
+    TIMESTAMP:                2,   // datetime — Timestamp
+    REQUESTER_NAME:           3,   // string   — Requester Name
+    REQUESTER_EMAIL:          4,   // string   — Requester Email
+    EMPLOYEE_NAME:            5,   // string   — Employee Name
+    EMPLOYEE_ID:              6,   // string   — Employee ID
+    EFFECTIVE_DATE:           7,   // date     — Effective Date
+    CURRENT_SITE:             8,   // string   — Current Site
+    CHANGE_TYPES:             9,   // csv      — Change Types
+    SITE_TRANSFER:            10,  // string   — Site Transfer (Old -> New)
+    TITLE_CHANGE:             11,  // string   — Title Change (Old -> New)
+    CLASSIFICATION:           12,  // string   — Classification (Old -> New)
+    MANAGER_CHANGE:           13,  // string   — Manager Change (Old -> New Email)
+    REASSIGN_OLD_REPORTS:     14,  // boolean  — Reassign Old Reports
+    GAIN_NEW_REPORTS:         15,  // boolean  — Gain New Reports
+    GOOGLE_ACCOUNT:           16,  // string   — Google Account
+    SYSTEMS_ADDED:            17,  // csv      — Systems Added
+    EQUIPMENT:                18,  // csv      — Equipment
+    REMOVED_ACCESS:           19,  // csv      — Removed Access
+    COMMENTS:                 20,  // string   — Comments
+    DEPARTMENT:               21,  // string   — Department
+    PURCHASING_SITES:         22,  // csv      — Purchasing Sites
+    RECEIVING_MANAGER_EMAIL:  23,  // string   — Receiving Manager Email
+    CURRENT_TITLE:            24,  // string   — Current Title
+    CURRENT_MANAGER_EMAIL:    25,  // string   — Current Manager Email
+    CURRENT_MANAGER_NAME:     26,  // string   — Current Manager Name
+    CURRENT_CLASS:            27   // string   — Current Class (Hourly/Salary)
   },
 
   // ─────────────────────────────────────────────

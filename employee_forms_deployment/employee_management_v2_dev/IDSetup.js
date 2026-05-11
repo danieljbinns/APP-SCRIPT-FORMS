@@ -164,7 +164,7 @@ function submitEmployeeIDSetup(formData) {
         'Workflow ID', 'Form ID', 'Submission Timestamp', 'Internal Employee ID',
         'SiteDocs Worker ID', 'SiteDocs Job Code', 'SiteDocs Username',
         'SiteDocs Password', 'DSS Username', 'DSS Password',
-        'Setup Notes', 'BOSS WIS Created', 'SiteDocs Badge Created', 'Submitted By'
+        'Setup Notes', 'Submitted By', 'BOSS WIS Created'
       ]);
       resultsSheet.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
@@ -174,8 +174,8 @@ function submitEmployeeIDSetup(formData) {
       formData.siteDocsWorkerId, formData.siteDocsJobCode,
       formData.siteDocsUsername || 'N/A', formData.siteDocsPassword || 'N/A',
       formData.dssUsername, formData.dssPassword,
-      formData.setupNotes || '', formData.bossWisCreated || 'No',
-      formData.siteDocsBadgeCreated || 'No', Session.getActiveUser().getEmail()
+      formData.setupNotes || '', Session.getActiveUser().getEmail(),
+      formData.bossWisCreated || 'No'
     ]);
     
     const actingUser = Session.getActiveUser().getEmail();

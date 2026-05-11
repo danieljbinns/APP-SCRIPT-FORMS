@@ -940,7 +940,7 @@ function getStepResultData(workflowId, stepTarget) {
         add('Phone',           tr[TRN.PHONE]);
         add('Computer Serial', tr[TRN.COMPUTER_SERIAL]);
         add('Comments',        tr[TRN.COMMENTS]);
-        if (tr[28]) add('Documentation', fd(tr[28]));  // col 28 — attachment URL (extended field)
+        if (tr[SCHEMA.TERMINATIONS.ATTACHMENT_URL]) add('Documentation', fd(tr[SCHEMA.TERMINATIONS.ATTACHMENT_URL]));
 
         return out;
       }
