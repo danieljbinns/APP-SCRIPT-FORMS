@@ -75,7 +75,7 @@ Export-Excel -Path $devPath -WorksheetName 'Workflows' -InputObject $wf -ClearSh
 Write-Host "  Workflows: $($wf.Count) rows"
 
 # Initial Requests -- has duplicate "Prev User" headers (cols 27 & 38); use EPPlus for direct positional copy.
-# Prod: cols 1-48 same positions; prod col 49 (Status) -> dev col 53; dev cols 49-52, 54 blank.
+# Prod: cols 1-49 copied 1:1; prod col 50 (Status) -> dev col 53; dev cols 50-52, 54 blank.
 $prodPkg = Open-ExcelPackage $prodPath
 $devPkg  = [OfficeOpenXml.ExcelPackage]::new([System.IO.FileInfo]$devPath)
 $srcIR   = $prodPkg.Workbook.Worksheets['Initial Requests']
@@ -100,8 +100,8 @@ function Convert-CellValue {
 
 $irRowCount = 0
 for ($r = 2; $r -le $srcIR.Dimension.Rows; $r++) {
-    for ($c = 1; $c -le 48; $c++) { $dstIR.Cells[$r, $c].Value = Convert-CellValue $srcIR.Cells[$r, $c] }
-    $dstIR.Cells[$r, 53].Value = Convert-CellValue $srcIR.Cells[$r, 49]  # Status: prod col 49 -> dev col 53
+    for ($c = 1; $c -le 49; $c++) { $dstIR.Cells[$r, $c].Value = Convert-CellValue $srcIR.Cells[$r, $c] }
+    $dstIR.Cells[$r, 53].Value = Convert-CellValue $srcIR.Cells[$r, 50]  # Status: prod col 50 -> dev col 53
     $irRowCount++
 }
 $devPkg.Save()

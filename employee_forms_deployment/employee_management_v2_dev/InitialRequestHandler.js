@@ -152,7 +152,8 @@ function formatInitialRequestData(data) {
     Array.isArray(data.adpSites) ? data.adpSites.join(', ') : (data.adpSites || ''),
     data.department || '',
     Array.isArray(data.purchasingSites) ? data.purchasingSites.join(', ') : (data.purchasingSites || ''),
-    data.adpSalaryAccess || 'No'
+    '',                        // col 52 — Status (written later by BOSSReviewHandler)
+    data.adpSalaryAccess || 'No'  // col 53 — ADP Salary Access
   ];
 }
 

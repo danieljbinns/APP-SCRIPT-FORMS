@@ -108,7 +108,7 @@ function getFullNewHireData(workflowId) {
         adpSites:                 splitCSV(r[49]),
         department:               r[50] || '',
         purchasingSites:          splitCSV(r[51]),
-        adpSalaryAccess:          r[52] || 'No'
+        adpSalaryAccess:          r[53] || 'No'
       };
     }
     return null;
