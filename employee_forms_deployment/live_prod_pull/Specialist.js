@@ -27,6 +27,12 @@ function serveSpecialist(workflowId, dept) {
   let requestData = {};
   if (typeof getITContextData === 'function') {
     requestData = getITContextData(workflowId);
+    if (typeof getWorkflowContext === 'function') {
+        const wfContext = getWorkflowContext(workflowId);
+        if (wfContext) {
+            requestData = Object.assign({}, requestData, wfContext);
+        }
+    }
   } else {
     // Fallback if IT function not available in this scope (should act as library)
     requestData = { employeeName: 'Loading...' }; 
@@ -68,9 +74,17 @@ function submitSpecialistForm(formData) {
       resultsSheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
     
+    let finalNotes = formData.notes || '';
+    if (formData.documentLink) {
+        finalNotes = 'Doc Link: ' + formData.documentLink + '\n' + finalNotes;
+    }
+    if (formData.jrTitle) {
+        finalNotes = 'Confirmed JR: ' + formData.jrTitle + '\n' + finalNotes;
+    }
+    
     resultsSheet.appendRow([
       workflowId, formId, new Date(),
-      formData.details || JSON.stringify(formData), formData.notes || '', Session.getActiveUser().getEmail()
+      formData.details || JSON.stringify(formData), finalNotes, Session.getActiveUser().getEmail()
     ]);
     
     Logger.log('[SUCCESS] Specialist form submitted: ' + dept + ' for ' + workflowId);
@@ -111,6 +125,8 @@ function submitSpecialistForm(formData) {
                to: recipients.join(','),
                subject: `${friendlyDept} Setup Complete: ${employeeName}`,
                body: `${friendlyDept} setup has been completed for ${employeeName}.\n\n` +
+                     (formData.jrTitle ? `Confirmed JR Title: ${formData.jrTitle}\n` : '') +
+                     (formData.documentLink ? `Document Link: ${formData.documentLink}\n` : '') +
                      `Notes: ${formData.notes || 'None'}\n\n`,
                      // `View full request details using the button below.`,
                // formUrl: getBaseUrl() + '?form=request_details&id=' + workflowId,

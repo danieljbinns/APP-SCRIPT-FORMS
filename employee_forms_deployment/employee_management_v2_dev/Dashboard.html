@@ -19,6 +19,27 @@
             --info: #2196f3;
         }
 
+        /* ── Light mode ─────────────────────────────────────────── */
+        body.light-mode {
+            --bg-color: #f4f4f4;
+            --card-bg: #ffffff;
+            --text-main: #111111;
+            --text-muted: #555555;
+            --border-color: #cccccc;
+        }
+
+        /* ── AODA high-contrast mode ─────────────────────────────── */
+        body.aoda-mode {
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --text-main: #000000;
+            --text-muted: #000000;
+            --border-color: #000000;
+            --brand-red: #a50000;
+            font-size: 17px;
+            line-height: 1.8;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -275,6 +296,58 @@
             padding-bottom: 5px;
             border-bottom: 1px solid #333;
         }
+
+        /* ── Admin select column — hidden until .is-admin is set on body ── */
+        .admin-col { display: none; }
+        body.is-admin .admin-col { display: table-cell; }
+
+        /* Admin delete button */
+        #btnDeleteSelected {
+            display: none;
+            background: #b71c1c;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        #btnDeleteSelected:hover { background: #7f0000; }
+
+        /* Confirm delete modal */
+        #deleteConfirmModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        #deleteConfirmModal.open { display: flex; }
+        #deleteConfirmBox {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 28px 32px;
+            max-width: 480px;
+            width: 94%;
+        }
+        #deleteConfirmBox h3 { color: #ef4444; margin-bottom: 10px; font-size: 17px; }
+        #deleteIdList {
+            margin: 12px 0 20px;
+            max-height: 180px;
+            overflow-y: auto;
+            font-size: 12px;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 12px;
+        }
+        #deleteIdList div { padding: 2px 0; font-family: monospace; }
+        .del-confirm-btns { display: flex; gap: 10px; justify-content: flex-end; }
     </style>
 </head>
 
@@ -332,6 +405,7 @@
             </select>
 
             <button class="refresh-btn" onclick="loadData()">Refresh</button>
+            <button id="btnDeleteSelected" onclick="openDeleteConfirm()">🚫 Hide Selected (<span id="selCount">0</span>)</button>
         </div>
 
         <!-- My Tasks Panel — shown only when current user has pending action items -->
@@ -347,6 +421,7 @@
             <table id="workflowTable">
                 <thead>
                     <tr>
+                        <th class="admin-col" style="width:36px; text-align:center; padding:10px 6px;"></th>
                         <th>Type</th>
                         <th>Employee</th>
                         <th>Emp Type</th>
@@ -362,7 +437,7 @@
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="11" style="text-align:center; padding: 40px;">Loading requests...</td>
+                        <td colspan="12" style="text-align:center; padding: 40px;">Loading requests...</td>
                     </tr>
                 </tbody>
             </table>
@@ -423,6 +498,8 @@
         let allWorkflows = [];
         let filteredWorkflows = []; // For search + pagination combo
         let currentWorkflowId = null;
+        let isAdmin = false;
+        let selectedIds = new Set(); // Workflow IDs checked for deletion
         // Filtering and Sorting State
         let currentSort = 'DATE_DESC';
         let activeTypeFilters = new Set();
@@ -481,6 +558,10 @@
                 return;
             }
             allWorkflows = response.workflows;
+            if (response.isAdmin) {
+                isAdmin = true;
+                document.body.classList.add('is-admin');
+            }
             applyFiltersAndSort(); // Triggers sorting and initially setting filteredWorkflows
         }
 
@@ -514,7 +595,7 @@
             const currentData = filteredWorkflows.slice(startIndex, endIndex);
 
             if (currentData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
                 updatePaginationUI(0, 0, 0);
                 return;
             }
@@ -542,7 +623,14 @@
 
                 const empTypeBadge = wf.empType ? '<span style="background:#333; color:#ccc; padding: 2px 6px; border-radius: 4px; font-size: 10px;">' + escapeHtml(wf.empType) + '</span>' : '-';
 
+                const isChecked = selectedIds.has(wf.id);
+                const checkCell = '<td class="admin-col" style="text-align:center; padding:8px 6px;" onclick="event.stopPropagation()">' +
+                    '<input type="checkbox" class="wf-select" data-id="' + escapeHtml(wf.id) + '" ' +
+                    (isChecked ? 'checked' : '') +
+                    ' onchange="toggleSelect(this.dataset.id, this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:var(--brand-red);"></td>';
+
                 html += '<tr data-id="' + escapeHtml(wf.id) + '" data-type="' + escapeHtml(wf.type) + '" onclick="openDetails(this.dataset.id,this.dataset.type)">' +
+                    checkCell +
                     '<td>' + typeCellHtml + '</td>' +
                     '<td><strong>' + escapeHtml(wf.employee || 'Pending Name') + '</strong></td>' +
                     '<td>' + empTypeBadge + '</td>' +
@@ -595,7 +683,7 @@
         }
 
         function showError(msg) {
-            document.getElementById('tableBody').innerHTML = '<tr><td colspan="11" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="12" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
         }
 
         // Setup Search and Filter Event Listeners
@@ -671,16 +759,16 @@
                 return true;
             });
 
-            // 2. Sort — dateRequested is yyyy/MM/dd so plain string compare is chronological
+            // 2. Sort — parse dates properly so M/d/yyyy format compares correctly
             filteredWorkflows.sort((a, b) => {
                 if (currentSort === 'NAME_ASC') {
                     return (a.employee || '').localeCompare(b.employee || '');
                 } else if (currentSort === 'STATUS') {
                     return (a.status || '').localeCompare(b.status || '');
                 } else if (currentSort === 'DATE_ASC') {
-                    return (a.dateRequested || '').localeCompare(b.dateRequested || '');
-                } else {
-                    return (b.dateRequested || '').localeCompare(a.dateRequested || '');
+                    return new Date(a.dateRequested || 0) - new Date(b.dateRequested || 0);
+                } else { // DATE_DESC — default
+                    return new Date(b.dateRequested || 0) - new Date(a.dateRequested || 0);
                 }
             });
 
@@ -958,7 +1046,86 @@
                 .withFailureHandler(function(err) { btn.innerText = 'Cancel Request'; btn.disabled = false; alert('Error: ' + err.message); })
                 .cancelRequest(currentWorkflowId);
         }
+
+        /* ── Admin: workflow selection & delete ──────────────────────── */
+
+        function toggleSelect(id, checked) {
+            if (checked) {
+                selectedIds.add(id);
+            } else {
+                selectedIds.delete(id);
+            }
+            updateDeleteBtn();
+        }
+
+        function updateDeleteBtn() {
+            const btn = document.getElementById('btnDeleteSelected');
+            const cnt = document.getElementById('selCount');
+            if (!btn) return;
+            const n = selectedIds.size;
+            cnt.textContent = n;
+            btn.style.display = (isAdmin && n > 0) ? 'inline-block' : 'none';
+        }
+
+        function openDeleteConfirm() {
+            if (selectedIds.size === 0) return;
+            const list = document.getElementById('deleteIdList');
+            list.innerHTML = [...selectedIds].sort().map(function(id) {
+                return '<div>' + escapeHtml(id) + '</div>';
+            }).join('');
+            document.getElementById('deleteConfirmModal').classList.add('open');
+        }
+
+        function closeDeleteConfirm() {
+            document.getElementById('deleteConfirmModal').classList.remove('open');
+        }
+
+        function confirmDelete() {
+            const ids = [...selectedIds];
+            if (ids.length === 0) return;
+
+            const confirmBtn = document.getElementById('btnConfirmDelete');
+            confirmBtn.textContent = 'Hiding…';
+            confirmBtn.disabled = true;
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    confirmBtn.textContent = 'Hide';
+                    confirmBtn.disabled = false;
+                    closeDeleteConfirm();
+                    if (res.success) {
+                        selectedIds.clear();
+                        updateDeleteBtn();
+                        loadData();
+                    } else {
+                        alert('Hide failed: ' + (res.message || 'Unknown error'));
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    confirmBtn.textContent = 'Hide';
+                    confirmBtn.disabled = false;
+                    alert('Error: ' + err.message);
+                })
+                .adminDeleteWorkflows(ids);
+        }
     </script>
+
+    <!-- Admin: Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" onclick="if(event.target===this)closeDeleteConfirm()">
+        <div id="deleteConfirmBox">
+            <h3>🚫 Hide Workflows</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:6px;">
+                The following workflows will be marked <strong>Inactive</strong> and hidden from the dashboard.
+                All underlying data is preserved. An admin can restore them by setting the status back in the Workflows sheet and running a re-sync.
+            </p>
+            <div id="deleteIdList"></div>
+            <div class="del-confirm-btns">
+                <button class="action-btn" style="background:#555;" onclick="closeDeleteConfirm()">Cancel</button>
+                <button id="btnConfirmDelete" class="action-btn" style="background:#b71c1c;" onclick="confirmDelete()">Hide</button>
+            </div>
+        </div>
+    </div>
+
   <?!= include('SharedComponents') ?>
   <?!= include('GeoCities') ?>
 </body>

@@ -32,6 +32,9 @@ var AccessControlService = (function() {
   function isGroupMember(userEmail, groupEmail) {
     if (!userEmail || !groupEmail) return false;
     
+    // Support for individual specialist emails (non-groups)
+    if (userEmail.toLowerCase() === groupEmail.toLowerCase()) return true;
+    
     try {
       var hasMember = AdminDirectory.Members.hasMember(groupEmail, userEmail);
       return hasMember.isMember;
@@ -54,7 +57,7 @@ var AccessControlService = (function() {
     if (isGroupMember(userEmail, conf.MASTER_ADMIN_GROUP)) return true;
     if (isGroupMember(userEmail, conf.ALL_FORMS_GROUP)) return true;
     
-    // 2. Check if user is from any allowed domain
+    // 2. Check if user is from any allowed domain (They get filtered data by default)
     if (conf.ALLOWED_DOMAINS.some(domain => userEmail.endsWith('@' + domain))) return true;
 
     return false;
@@ -112,13 +115,36 @@ var AccessControlService = (function() {
       if (isGroupMember(userEmail, conf.HR_GROUP)) return true;
       if (isGroupMember(userEmail, conf.IT_GROUP)) return true;
 
+      // Make sure anyone in a group that receives forms can see the whole board
+      if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_IDSETUP'))) return true;
+      if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_SAFETY'))) return true;
+      
+      // Since some emails are just strings in Config.gs and not settings, we check those too
+      if (isGroupMember(userEmail, CONFIG.EMAILS.FLEETIO)) return true;
+      if (isGroupMember(userEmail, CONFIG.EMAILS.CREDIT_CARD)) return true;
+      if (isGroupMember(userEmail, CONFIG.EMAILS.BUSINESS_CARDS)) return true;
+      if (isGroupMember(userEmail, CONFIG.EMAILS.REVIEW_306090_JR)) return true;
+      if (isGroupMember(userEmail, CONFIG.EMAILS.JONAS)) return true;
+
       return false;
+  }
+
+  /**
+   * General Admin check
+   */
+  function isAdmin(userEmail) {
+    if (!userEmail) return false;
+    var conf = getConfig();
+    if (userEmail === 'no-reply@team-group.com' || userEmail === 'dbinns@robinsonsolutions.com' || userEmail === 'dbinns@team-group.com') return true;
+    if (isGroupMember(userEmail, conf.MASTER_ADMIN_GROUP)) return true;
+    return false;
   }
 
   return {
     canAccessDashboard: canAccessDashboard,
     canAccessForm: canAccessForm,
-    canAccessWorkflow: canAccessWorkflow
+    canAccessWorkflow: canAccessWorkflow,
+    isAdmin: isAdmin
   };
 
 })();

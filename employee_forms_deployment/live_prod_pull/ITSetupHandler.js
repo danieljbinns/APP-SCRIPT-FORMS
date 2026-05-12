@@ -57,7 +57,7 @@ function getITContextData(workflowId) {
           creditCardLimitUSA: mainData[i][31],
           creditCardLimitCanada: mainData[i][32],
           creditCardLimitHomeDepot: mainData[i][35],
-          businessCards: mainData[i][20] && mainData[i][20].includes('Business Cards') ? 'Yes' : 'No',
+          businessCards: mainData[i][21] && mainData[i][21].includes('Business Cards') ? 'Yes' : 'No',
           fleetioAccess: mainData[i][20] && mainData[i][20].includes('Fleetio') ? 'Yes' : 'No',
           jobSiteNumber: mainData[i][16], // Col 16 = Job Site #
         };
@@ -205,14 +205,24 @@ function triggerSpecialists(workflowId, itData) {
   const assignedEmail = itData.Email_Username ? (itData.Email_Username + itData.Email_Domain) : '[Pending]';
   
   // Get full context data again to ensure we have all initial request info
-  const context = getITContextData(workflowId);
+  const itContext = getITContextData(workflowId);
+  let emailContext = itContext;
+  if (typeof getWorkflowContext === 'function') {
+      const wfContext = getWorkflowContext(workflowId);
+      if (wfContext) {
+          emailContext = Object.assign({}, itContext, wfContext);
+      }
+  }
   
   // Add IT Result data to context for emails
-  context.assignedEmail = assignedEmail;
-  context.computerAssigned = itData.Computer_Assigned;
-  context.computerType = itData.Computer_Type;
-  context.phoneAssigned = itData.Phone_Assigned;
-  context.phoneNumber = itData.Phone_Number;
+  emailContext.assignedEmail = assignedEmail;
+  emailContext.computerAssigned = itData.Computer_Assigned;
+  emailContext.computerType = itData.Computer_Type;
+  emailContext.phoneAssigned = itData.Phone_Assigned;
+  emailContext.phoneNumber = itData.Phone_Number;
+  
+  // For logic conditionals, use the original itContext to ensure no breaking changes
+  const context = itContext;
   
   const specialists = [];
   
@@ -285,7 +295,7 @@ function triggerSpecialists(workflowId, itData) {
       body: spec.body, // This body content is injected into the rich template
       formUrl: specUrl,
       displayName: 'TEAM Group - Employee Onboarding',
-      contextData: context // Pass full context for the rich table
+      contextData: emailContext // Pass full context for the rich table
     });
   });
   

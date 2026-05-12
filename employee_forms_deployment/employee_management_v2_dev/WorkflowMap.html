@@ -19,6 +19,28 @@
             --info: #2196f3;
             --line-color: #444;
         }
+        body.light-mode {
+            --bg-color: #f4f4f4;
+            --card-bg: #ffffff;
+            --text-main: #111111;
+            --text-muted: #555555;
+            --brand-red: #c41522;
+            --border-color: #cccccc;
+            --info: #1565c0;
+            --line-color: #bbbbbb;
+        }
+        body.aoda-mode {
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --text-main: #000000;
+            --text-muted: #000000;
+            --brand-red: #a50000;
+            --border-color: #000000;
+            --info: #0000cc;
+            --line-color: #000000;
+            font-size: 17px;
+            line-height: 1.8;
+        }
 
         body {
             font-family: 'Segoe UI', Roboto, sans-serif;
@@ -483,6 +505,7 @@
         loadStats();
     </script>
   <?!= include('GeoCities') ?>
+  <?!= include('SharedComponents') ?>
 </body>
 
 </html>

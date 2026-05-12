@@ -6,6 +6,7 @@
 function serveDashboard() {
   const template = HtmlService.createTemplateFromFile('Dashboard');
   template.baseUrl = getBaseUrl(); // Pass server-side URL to client
+  template.spreadsheetId = CONFIG.SPREADSHEET_ID; // Pass active Sheet ID
   return template.evaluate()
     .setTitle('Employee Onboarding Dashboard')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -58,6 +59,9 @@ function getDashboardData() {
     
     // Get Request Data (for specific details not in workflow sheet)
     const reqData = requestSheet.getDataRange().getValues();
+    const reqHeaders = reqData[0] || [];
+    const empTypeIdx = reqHeaders.indexOf("Employment Type");
+    
     // Cache request data by Workflow ID for fast lookup
     const reqMap = {};
     reqData.slice(1).forEach(row => {
@@ -66,13 +70,15 @@ function getDashboardData() {
         requesterEmail: row[5],
         managerEmail: row[17],
         dateRequested: row[3] instanceof Date ? row[3].toLocaleDateString() : String(row[3]),
+        empType: empTypeIdx >= 0 ? row[empTypeIdx] : '',
         // Store requested items for status calculation
         requestedItems: {
           jonas: (row[44] && row[44].toString().length > 0), // Jonas requested
           creditCard: (row[30] === 'Yes' || row[32] === 'Yes' || row[34] === 'Yes'),
           fleetio: (row[20] && row[20].includes('Fleetio')),
-          businessCards: (row[20] && row[20].includes('Business Cards')),
-          siteDocs: true // Always required
+          businessCards: (row[21] && row[21].includes('Business Cards')),
+          siteDocs: ((row[20] && row[20].includes('SiteDocs')) || (row[21] && row[21].includes('SiteDocs Tablet'))),
+          review: (row[47] === 'Yes')
         }
       };
     });
@@ -107,8 +113,8 @@ function getDashboardData() {
            if (items.creditCard && !finishedForms.creditCard.has(id)) pendingItems.push('Credit Card');
            if (items.fleetio && !finishedForms.fleetio.has(id)) pendingItems.push('Fleetio');
            if (items.businessCards && !finishedForms.businessCards.has(id)) pendingItems.push('Business Cards');
-           if (!finishedForms.siteDocs.has(id)) pendingItems.push('SiteDocs');
-           if (!finishedForms.review.has(id)) pendingItems.push('30/60/90');
+           if (items.siteDocs && !finishedForms.siteDocs.has(id)) pendingItems.push('SiteDocs');
+           if (items.review && !finishedForms.review.has(id)) pendingItems.push('30/60/90');
            
            if (pendingItems.length > 0) {
              displayStatus = 'Pending: ' + pendingItems.join(', ');
@@ -131,10 +137,11 @@ function getDashboardData() {
            requesterEmail: reqInfo.requesterEmail || '',
            managerEmail: reqInfo.managerEmail || '',
            dateRequested: reqInfo.dateRequested || '',
+           empType: reqInfo.empType || '',
            lastUpdated: row[6] instanceof Date ? row[6].toLocaleString() : String(row[6]),
            pendingItems: pendingItems // For UI actions
         };
-    }).filter(wf => AccessControlService.canAccessWorkflow(userEmail, wf)).reverse();
+    }).filter(wf => wf.status !== 'Cancelled' && AccessControlService.canAccessWorkflow(userEmail, wf)).reverse();
     
     return {
       success: true,
@@ -153,10 +160,13 @@ function getFinishedForms(ss, sheetName) {
   const set = new Set();
   const sheet = ss.getSheetByName(sheetName);
   if (sheet) {
-    const data = sheet.getDataRange().getValues();
-    // Skip header, ID is usuall Col A (index 0)
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0]) set.add(data[i][0]);
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      // Only read Col A (ID) to save immense memory
+      const data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+      for (let i = 0; i < data.length; i++) {
+        if (data[i][0]) set.add(data[i][0]);
+      }
     }
   }
   return set;
@@ -266,14 +276,13 @@ function getRequestDetails(workflowId) {
      const reqSheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
      if (!reqSheet) return { success: false, message: 'Initial Requests sheet missing' };
      
-     const reqData = reqSheet.getDataRange().getValues();
-     if (reqData.length < 2) return { success: false, message: 'No requests found' };
-
-     const reqHeaders = reqData[0];
-     // First column is usually ID
-     const reqRow = reqData.find(r => r[0] === workflowId);
+     const foundReq = reqSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
+     if (!foundReq) return { success: false, message: 'Request ID not found in database' };
      
-     if (!reqRow) return { success: false, message: 'Request ID not found in database' };
+     const reqRowIndex = foundReq.getRow();
+     const reqLastCol = reqSheet.getLastColumn();
+     const reqHeaders = reqSheet.getRange(1, 1, 1, reqLastCol).getValues()[0];
+     const reqRow = reqSheet.getRange(reqRowIndex, 1, 1, reqLastCol).getValues()[0];
      
      const r = {}; 
      // Safer mapping: Ensure no undefined values which break google.script.run serialization
@@ -293,9 +302,9 @@ function getRequestDetails(workflowId) {
      // MERGE HR VERIFIED DATA
      const hrSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
      if (hrSheet) {
-         const hrData = hrSheet.getDataRange().getValues();
-         const hrRow = hrData.find(row => row[0] === workflowId);
-         if (hrRow) {
+         const foundHr = hrSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
+         if (foundHr) {
+             const hrRow = hrSheet.getRange(foundHr.getRow(), 1, 1, hrSheet.getLastColumn()).getValues()[0];
              // Verified Title is Col H (7)
              const vTitle = hrRow[7];
              if (vTitle) {
@@ -313,13 +322,9 @@ function getRequestDetails(workflowId) {
      // MERGE IT DATA (Computer/Phone)
      const itSheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
      if (itSheet) {
-         const itData = itSheet.getDataRange().getValues();
-         // Col A is ID. 
-         // Col G (6) = Computer Assigned
-         // Col K (10) = Phone Assigned
-         // Col E (4) = Assigned Email
-         const itRow = itData.find(row => row[0] === workflowId);
-         if (itRow) {
+         const foundIt = itSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
+         if (foundIt) {
+             const itRow = itSheet.getRange(foundIt.getRow(), 1, 1, itSheet.getLastColumn()).getValues()[0];
              if (itRow[6] && itRow[6] !== 'N/A') r['Computer Assigned'] = itRow[6];
              if (itRow[10] && itRow[10] !== 'N/A') r['Phone Assigned'] = itRow[10];
              if (itRow[4] && itRow[4] !== 'N/A') r['Email Assigned'] = itRow[4];
@@ -340,13 +345,11 @@ function getRequestDetails(workflowId) {
            const sheet = ss.getSheetByName(sheetName);
            if (!sheet) return { status: 'Pending', target: target, details: 'Sheet missing' }; // Treat missing sheet as pending/not done
            
-           const rows = sheet.getDataRange().getValues();
-           // Assume standard format: ID is Col A (0), Timestamp Col C (2), Submitted By is Last Col
-           const match = rows.find(row => row[0] === workflowId);
-           
-           if (match) {
-               const submittedBy = rows[0].length > 0 ? match[match.length - 1] : 'Unknown';
-               const timestamp = match[2] instanceof Date ? match[2].toLocaleString() : String(match[2]);
+           const found = sheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
+           if (found) {
+               const rowData = sheet.getRange(found.getRow(), 1, 1, sheet.getLastColumn()).getValues()[0];
+               const submittedBy = rowData.length > 0 ? rowData[rowData.length - 1] : 'Unknown';
+               const timestamp = rowData[2] instanceof Date ? rowData[2].toLocaleString() : String(rowData[2]);
                return { status: 'Complete', by: submittedBy, time: timestamp };
            }
            return { status: 'Pending', target: target };
@@ -367,42 +370,86 @@ function getRequestDetails(workflowId) {
      checklist.push({ name: "ID Setup", ...checkSheet(CONFIG.SHEETS.ID_SETUP_RESULTS, 'id_setup') });
      
      // -- Stage 3: HR Verification --
-     checklist.push({ name: "HR Verification", ...checkSheet(CONFIG.SHEETS.HR_VERIFICATION_RESULTS, 'hr_verification') });
+     checklist.push({ name: "HR Verification", target: "hr_verification", ...checkSheet(CONFIG.SHEETS.HR_VERIFICATION_RESULTS, 'hr_verification') });
      
      // -- Stage 4: IT Setup --
-     checklist.push({ name: "IT Setup", ...checkSheet(CONFIG.SHEETS.IT_RESULTS, 'it_setup') });
+     // Check if IT Setup is REQUIRED based on request data first
+     const sysAccessVal = r['System Access'] || '';
+     const empType = r['Employment Type'] || '';
+     const eqp = r['Equipment'] || '';
+     const sysReq = r['Systems'] || '';
+     
+     const needsIT = sysAccessVal === 'Yes' && (
+      (r['Google Email'] && r['Google Email'] !== '') ||
+      (eqp.includes('Computer') || eqp.includes('Phone')) ||
+      (sysReq.includes('BOSS') || sysReq.includes('Delivery App') || sysReq.includes('Net Promoter'))
+     );
+     
+     // Hourly employees without system access skip IT
+     const isHourlyNoAccess = (empType === 'Hourly' && sysAccessVal === 'No');
+     
+     // Get IT Sheet Data
+     const itSheetData = checkSheet(CONFIG.SHEETS.IT_RESULTS, 'it_setup');
+     
+     // Override IT status if implicitly not needed & not yet completed
+     if (itSheetData.status === 'Pending' && (isHourlyNoAccess || !needsIT)) {
+         itSheetData.status = 'N/A';
+     }
+     
+     checklist.push({ name: "IT Setup", target: "it_setup", ...itSheetData });
+     
+     // -- Stage 5: Specialists (Conditional) --
      
      // -- Stage 5: Specialists (Conditional) --
      
      // Jonas
-     if (r['Jonas Job Numbers'] && r['Jonas Job Numbers'].toString().length > 0) {
-        checklist.push({ name: "Jonas Setup", ...checkSheet(CONFIG.SHEETS.JONAS_RESULTS, 'jonas') });
+     const jonasData = checkSheet(CONFIG.SHEETS.JONAS_RESULTS, 'jonas');
+     if (!(r['Jonas Job Numbers'] && r['Jonas Job Numbers'].toString().length > 0) && jonasData.status === 'Pending') {
+         jonasData.status = 'N/A';
      }
+     checklist.push({ name: "Jonas Setup", target: "jonas", ...jonasData });
      
      // Credit Card (Check multiple versions of Yes)
      const ccUsa = r['Credit Card (USA)'];
      const ccCan = r['Credit Card (Canada)'];
      const ccHd = r['Credit Card (Home Depot)'];
-     if ((ccUsa === 'Yes') || (ccCan === 'Yes') || (ccHd === 'Yes')) {
-         checklist.push({ name: "Credit Card", ...checkSheet(CONFIG.SHEETS.CREDIT_CARD_RESULTS, 'credit_card') });
+     const ccData = checkSheet(CONFIG.SHEETS.CREDIT_CARD_RESULTS, 'credit_card');
+     if (!((ccUsa === 'Yes') || (ccCan === 'Yes') || (ccHd === 'Yes')) && ccData.status === 'Pending') {
+         ccData.status = 'N/A';
      }
+     checklist.push({ name: "Credit Card", target: "creditcard", ...ccData });
      
      // Fleetio
      const sysAccess = r['Systems'] || '';
-     if (sysAccess.includes('Fleetio')) {
-         checklist.push({ name: "Fleetio", ...checkSheet(CONFIG.SHEETS.FLEETIO_RESULTS, 'fleetio') });
+     const fleetioData = checkSheet(CONFIG.SHEETS.FLEETIO_RESULTS, 'fleetio');
+     if (!sysAccess.includes('Fleetio') && fleetioData.status === 'Pending') {
+         fleetioData.status = 'N/A';
      }
+     checklist.push({ name: "Fleetio", target: "fleetio", ...fleetioData });
      
      // Business Cards
-     if (sysAccess.includes('Business Cards')) {
-         checklist.push({ name: "Business Cards", ...checkSheet(CONFIG.SHEETS.BUSINESS_CARDS_RESULTS, 'business_cards') });
+     const bcData = checkSheet(CONFIG.SHEETS.BUSINESS_CARDS_RESULTS, 'business_cards');
+     if (!eqp.includes('Business Cards') && bcData.status === 'Pending') {
+         bcData.status = 'N/A';
      }
+     checklist.push({ name: "Business Cards", target: "businesscards", ...bcData });
      
-     // SiteDocs (Always)
-     checklist.push({ name: "SiteDocs", ...checkSheet(CONFIG.SHEETS.SITEDOCS_RESULTS, 'sitedocs') });
+     // SiteDocs
+     const sdData = checkSheet(CONFIG.SHEETS.SITEDOCS_RESULTS, 'sitedocs');
+     if (!(sysAccess.includes('SiteDocs') || eqp.includes('SiteDocs Tablet')) && sdData.status === 'Pending') {
+         sdData.status = 'N/A';
+     }
+     checklist.push({ name: "SiteDocs", target: "sitedocs", ...sdData });
      
-     // 30/60/90 (Always)
-     checklist.push({ name: "30/60/90 Review", ...checkSheet(CONFIG.SHEETS.REVIEW_306090_RESULTS, 'review') });
+     // 30/60/90
+     const reviewData = checkSheet(CONFIG.SHEETS.REVIEW_306090_RESULTS, 'review');
+     if (!(reqRow && reqRow[47] === 'Yes') && reviewData.status === 'Pending') {
+         reviewData.status = 'N/A';
+     }
+     checklist.push({ name: "30/60/90 Review", target: "review", ...reviewData });
+     
+     const userEmail = Session.getActiveUser().getEmail();
+     context.isAdmin = (userEmail === 'dbinns@team-group.com' || userEmail === 'dbinns@robinsonsolutions.com');
      
      context.checklist = checklist;
      return context;
@@ -440,9 +487,11 @@ function getStepResultData(workflowId, stepTarget) {
      
      const data = sheet.getDataRange().getValues();
      const headers = data[0];
-     const row = data.find(r => r[0] === workflowId); // Assume ID is Col 0
      
-     if (!row) return {};
+     const found = sheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
+     if (!found) return {};
+     
+     const row = sheet.getRange(found.getRow(), 1, 1, sheet.getLastColumn()).getValues()[0];
      
      const result = {};
      headers.forEach((h, i) => {

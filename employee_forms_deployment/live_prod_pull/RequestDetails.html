@@ -331,7 +331,7 @@
         </div>
 
         <div id="loading" style="text-align:center; padding: 50px; color: var(--text-muted);">
-            Running Flight Check...
+            Loading Details...
         </div>
 
         <div id="content" style="display:none;">
@@ -428,7 +428,7 @@
 
             <!-- Workflow Steps Table (Legacy/Detail) -->
             <div class="card">
-                <h2>Flight Check Details</h2>
+                <h2>Request Details Checklist</h2>
                 <table id="checklistTable">
                     <thead>
                         <tr>
@@ -535,8 +535,9 @@
             let rows = '';
             list.forEach(item => {
                 const isComplete = item.status === 'Complete';
-                const statusClass = isComplete ? 'complete' : 'pending';
-                const icon = isComplete ? '&#10003;' : '&#8987;'; // Checkmark or Hourglass
+                const isNA = item.status === 'N/A';
+                const statusClass = isComplete ? 'complete' : (isNA ? 'future' : 'pending');
+                const icon = isComplete ? '&#10003;' : (isNA ? '&empty;' : '&#8987;');
 
 
                 // Update Node
@@ -550,16 +551,24 @@
                     if (node) {
                         node.className = 'flow-card ' + statusClass;
                         node.querySelector('.status-badge').innerText = item.status;
+                        if (isNA) {
+                            node.style.opacity = '0.3';
+                        }
                     }
                 }
 
                 var actions = '-';
-                if (!isComplete && item.target) {
+                if (!isComplete && !isNA && item.target) {
                     actions = '<button class="btn" style="background:var(--warning); color:black;" onclick="bump(\'' + item.target + '\')">Remind</button>';
                 } else if (isComplete && item.target) {
                     actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
                 } else if (isComplete && item.name === 'Initial Request') {
                     actions = '<button class="btn view-data-btn" onclick="viewStepData(\'initial_request\')">View Data</button>';
+                }
+
+                // Append Admin Testing Links
+                if (data.isAdmin && item.target && !isNA) {
+                    actions += ' <button class="btn" style="background:var(--brand-red); margin-left:5px;" onclick="openAdminForm(\'' + item.target + '\', \'' + data.id + '\')">Open Form</button>';
                 }
 
                 rows += '<tr>' +
@@ -571,6 +580,23 @@
                     '</tr>';
             });
             document.getElementById('checklistBody').innerHTML = rows;
+        }
+
+        function openAdminForm(target, id) {
+            let formName = target;
+            let query = '?wf=' + id;
+
+            // Map simple targets to form route names
+            if (target === 'id_setup') formName = 'id_setup';
+            if (target === 'hr_verification') formName = 'hr_verification';
+            if (target === 'it_setup') formName = 'it_setup';
+            if (['jonas', 'creditcard', 'fleetio', 'businesscards', 'sitedocs', 'review'].includes(target)) {
+                formName = 'specialist';
+                query += '&dept=' + target;
+            }
+
+            const url = SERVER_BASE_URL + '?form=' + formName + '&' + query.replace('?', '');
+            window.open(url, '_blank');
         }
 
         function bump(target) {

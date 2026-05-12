@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<!-- StarTrekTOS_demo.html
+     DEV ONLY — style concept demo, always-active (no activation cheat needed).
+     Production file: StarTrekTOS.html (scoped to body.startrek, toggled by cheat)
+     Activation cheat (production): type B-E-A-M on keyboard OR click logo 3x within 2s
+     localStorage key: tg_trek_v1
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STARDATE 2265.4 — TEAM GROUP EMPLOYEE MANAGEMENT</title>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+
+/* ============================================================
+   STAR TREK TOS MODE
+   Production: all rules scoped to body.startrek — zero impact inactive.
+   Demo: body treated as body.startrek (always on).
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ---- DESIGN TOKENS --------------------------------------- */
+:root {
+  --amber:       #FF8C00;
+  --amber-light: #FFAA44;
+  --amber-dim:   #7A3E00;
+  --amber-faint: #3A1A00;
+  --bg:          #030100;
+  --panel:       #080400;
+  --panel-2:     #0D0600;
+  --red:         #FF2200;
+  --green:       #00CC44;
+  --blue:        #1A55CC;
+  --cyan:        #00AACC;
+  --fd:          'VT323', 'Courier New', monospace;       /* display font */
+  --fm:          'Share Tech Mono', 'Courier New', monospace; /* mono font */
+}
+
+/* ---- ANIMATIONS ------------------------------------------ */
+@keyframes blink       { 0%,49%{opacity:1}  50%,100%{opacity:0} }
+@keyframes flicker     { 0%,91%,93%,96%,100%{opacity:1} 92%{opacity:.93} 94%,97%{opacity:.96} }
+@keyframes pulse-amber { 0%,100%{box-shadow:0 0 5px var(--amber)} 50%{box-shadow:0 0 18px var(--amber),0 0 5px #FF4400} }
+@keyframes pulse-red   { 0%,100%{background:#1A0000;border-color:#FF2200} 50%{background:#330000;border-color:#FF4400} }
+@keyframes glow-text   { 0%,100%{text-shadow:0 0 6px var(--amber)} 50%{text-shadow:0 0 16px var(--amber),0 0 4px #FFCC44} }
+@keyframes scroll-l    { from{transform:translateX(100%)} to{transform:translateX(-100%)} }
+@keyframes scanline    { 0%{top:-15%} 100%{top:115%} }
+@keyframes data-in     { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes warp-in     { 0%{opacity:0;letter-spacing:18px} 100%{opacity:1;letter-spacing:4px} }
+@keyframes rotate-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+/* ---- STARFIELD BODY -------------------------------------- */
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(1px 1px at  5% 12%, rgba(255,200,120,.75) 0%, transparent 100%),
+    radial-gradient(1px 1px at 18% 65%, rgba(200,220,255,.85) 0%, transparent 100%),
+    radial-gradient(1px 1px at 33% 28%, rgba(255,255,255,.90) 0%, transparent 100%),
+    radial-gradient(1px 1px at 46% 82%, rgba(255,200,120,.60) 0%, transparent 100%),
+    radial-gradient(2px 2px at 59% 43%, rgba(255,255,255,.80) 0%, transparent 100%),
+    radial-gradient(1px 1px at 72% 88%, rgba(200,220,255,.70) 0%, transparent 100%),
+    radial-gradient(1px 1px at 84% 14%, rgba(255,255,255,.90) 0%, transparent 100%),
+    radial-gradient(1px 1px at 93% 56%, rgba(255,200,120,.60) 0%, transparent 100%),
+    radial-gradient(1px 1px at 13% 93%, rgba(255,255,255,.70) 0%, transparent 100%),
+    radial-gradient(1px 1px at 68% 7%,  rgba(200,220,255,.80) 0%, transparent 100%),
+    radial-gradient(1px 1px at 39% 51%, rgba(255,255,255,.50) 0%, transparent 100%),
+    radial-gradient(1px 1px at 78% 73%, rgba(255,200,120,.60) 0%, transparent 100%),
+    radial-gradient(1px 1px at 23% 37%, rgba(255,255,255,.80) 0%, transparent 100%),
+    radial-gradient(1px 1px at 56% 19%, rgba(200,220,255,.70) 0%, transparent 100%),
+    radial-gradient(1px 1px at  3% 55%, rgba(255,255,255,.60) 0%, transparent 100%),
+    radial-gradient(1px 1px at 51% 96%, rgba(255,200,120,.50) 0%, transparent 100%);
+  background-size: 280px 280px;
+  font-family: var(--fm);
+  color: var(--amber);
+  min-height: 100vh;
+  padding-bottom: 50px;
+  animation: flicker 9s infinite;
+}
+
+/* ---- SCANLINE OVERLAY (fixed, pointer-events:none) ------- */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent        0px,
+    transparent        2px,
+    rgba(0,0,0,.20)    2px,
+    rgba(0,0,0,.20)    4px
+  );
+  pointer-events: none;
+  z-index: 10000;
+}
+
+/* ---- MOVING SCANLINE HIGHLIGHT --------------------------- */
+.trek-sweep {
+  position: fixed;
+  left: 0; right: 0;
+  height: 100px;
+  background: linear-gradient(180deg, transparent, rgba(255,140,0,.04), transparent);
+  pointer-events: none;
+  z-index: 9999;
+  animation: scanline 7s linear infinite;
+}
+
+/* ===========================================================
+   STRUCTURAL CHROME
+   =========================================================== */
+
+/* ---- STARDATE TICKER BAR --------------------------------- */
+.trek-ticker-bar {
+  background: #000;
+  border-bottom: 2px solid var(--amber-dim);
+  padding: 3px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--fd);
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: var(--amber-dim);
+  overflow: hidden;
+  z-index: 9998;
+  position: relative;
+}
+.trek-ticker-bar-side { white-space: nowrap; flex-shrink: 0; }
+.trek-ticker-bar-center { flex: 1; overflow: hidden; height: 20px; position: relative; }
+.trek-ticker-text {
+  position: absolute;
+  white-space: nowrap;
+  top: 2px;
+  color: var(--amber);
+  font-size: 14px;
+  letter-spacing: 3px;
+  animation: scroll-l 28s linear infinite;
+}
+
+/* ---- RED ALERT BAR --------------------------------------- */
+.trek-alert-bar {
+  border-top: 2px solid var(--red);
+  border-bottom: 2px solid var(--red);
+  padding: 5px 0;
+  text-align: center;
+  font-family: var(--fd);
+  font-size: 17px;
+  color: var(--red);
+  letter-spacing: 4px;
+  animation: pulse-red .85s infinite;
+  z-index: 9997;
+  position: relative;
+}
+.blink { animation: blink .5s infinite; }
+
+/* ---- HEADER --------------------------------------------- */
+.trek-header {
+  background: linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 100%);
+  border-bottom: 3px solid var(--amber);
+  padding: 14px 20px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: pulse-amber 5s infinite;
+}
+.trek-header-main {}
+.trek-header-title {
+  font-family: var(--fd);
+  font-size: 38px;
+  color: var(--amber-light);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  line-height: 1;
+  animation: warp-in 1.2s ease-out both, glow-text 4s 1.2s infinite;
+}
+.trek-header-sub {
+  font-family: var(--fm);
+  font-size: 11px;
+  color: var(--amber-dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+.trek-insignia {
+  font-size: 56px;
+  color: var(--amber);
+  animation: glow-text 4s infinite;
+  line-height: 1;
+  user-select: none;
+  cursor: pointer;  /* 3x click triggers in production */
+}
+.trek-stardate {
+  text-align: right;
+  font-family: var(--fd);
+}
+.trek-stardate-num   { font-size: 30px; color: var(--amber-light); display: block; line-height: 1; }
+.trek-stardate-label { font-size: 10px; color: var(--amber-dim); letter-spacing: 3px; text-transform: uppercase; margin-top: 3px; display: block; }
+
+/* ---- NAV ------------------------------------------------- */
+.trek-nav {
+  background: #000;
+  border-bottom: 2px solid var(--amber-dim);
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0 16px;
+}
+.trek-nav-btn {
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--amber-faint);
+  color: var(--amber-dim);
+  font-family: var(--fm);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background .12s, color .12s;
+}
+.trek-nav-btn:first-child { border-left: 1px solid var(--amber-faint); }
+.trek-nav-btn:hover, .trek-nav-btn.active { background: var(--amber); color: #000; }
+
+/* ---- CONTAINER ------------------------------------------- */
+.trek-container { max-width: 1100px; margin: 0 auto; padding: 16px 20px; }
+
+/* ---- SECTION HEADING ------------------------------------ */
+.trek-sh {
+  font-family: var(--fd);
+  font-size: 19px;
+  color: var(--amber);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--amber-dim);
+  padding-bottom: 5px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.trek-sh::before { content: '▶'; font-size: 11px; color: var(--amber-dim); }
+
+/* ---- SEPARATOR ------------------------------------------ */
+.trek-sep {
+  border: none;
+  border-top: 1px solid var(--amber-faint);
+  margin: 12px 0;
+  position: relative;
+}
+.trek-sep::before {
+  content: '◆';
+  position: absolute; left: 50%; top: -7px;
+  transform: translateX(-50%);
+  background: var(--panel);
+  padding: 0 6px;
+  color: var(--amber-faint);
+  font-size: 9px;
+}
+
+/* ===========================================================
+   TRICORDER STATS PANEL
+   =========================================================== */
+.trek-tricorder {
+  background: var(--panel);
+  border: 2px solid var(--amber);
+  margin-bottom: 20px;
+  animation: pulse-amber 5s infinite;
+}
+.trek-tri-header {
+  background: var(--panel-2);
+  border-bottom: 2px solid var(--amber);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+.trek-tri-title {
+  font-family: var(--fd);
+  font-size: 19px;
+  color: var(--amber-light);
+  letter-spacing: 3px;
+  animation: glow-text 4s infinite;
+}
+.trek-tri-hint { font-size: 11px; color: var(--amber-faint); letter-spacing: 1px; }
+.trek-tri-body { padding: 14px; }
+
+/* visitor counter */
+.trek-visitor { text-align: center; padding: 10px 0 14px; border-bottom: 1px solid var(--amber-faint); margin-bottom: 14px; }
+.trek-visitor-label { font-size: 9px; letter-spacing: 3px; color: var(--amber-dim); text-transform: uppercase; margin-bottom: 5px; }
+.trek-visitor-box {
+  background: #000;
+  border: 2px solid var(--green);
+  display: inline-block;
+  padding: 6px 20px;
+  font-family: var(--fd);
+  font-size: 34px;
+  color: var(--green);
+  letter-spacing: 9px;
+  box-shadow: 0 0 14px var(--green);
+}
+.trek-visitor-sub { font-size: 9px; color: #2a2a2a; letter-spacing: 2px; margin-top: 4px; }
+
+/* stats grid */
+.trek-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.trek-stat-box {
+  background: #000;
+  border: 2px solid var(--amber-faint);
+  border-top: 3px solid var(--amber);
+  padding: 8px 10px;
+  text-align: center;
+}
+.trek-stat-box.s-green  { border-color: var(--green);  border-top-color: var(--green); }
+.trek-stat-box.s-red    { border-color: var(--red);    border-top-color: var(--red); }
+.trek-stat-box.s-cyan   { border-color: var(--cyan);   border-top-color: var(--cyan); }
+.trek-stat-box.s-blue   { border-color: #4488FF;       border-top-color: #4488FF; }
+.trek-stat-num {
+  font-family: var(--fd);
+  font-size: 30px;
+  color: var(--amber-light);
+  display: block;
+  line-height: 1;
+}
+.trek-stat-box.s-green .trek-stat-num { color: var(--green); }
+.trek-stat-box.s-red   .trek-stat-num { color: var(--red); }
+.trek-stat-box.s-cyan  .trek-stat-num { color: var(--cyan); }
+.trek-stat-box.s-blue  .trek-stat-num { color: #4488FF; }
+.trek-stat-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: #555; margin-top: 3px; display: block; }
+
+/* leaderboard */
+.trek-lb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 10px; }
+.trek-lb-panel { background: #000; border: 1px solid var(--amber-faint); padding: 8px 10px; }
+.trek-lb-panel.lb-green { border-color: #005522; }
+.trek-lb-panel.lb-blue  { border-color: #112244; }
+.trek-lb-title {
+  font-family: var(--fd);
+  font-size: 15px;
+  color: var(--amber);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--amber-faint);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+.trek-lb-panel.lb-green .trek-lb-title { color: var(--green); border-color: #005522; }
+.trek-lb-panel.lb-blue  .trek-lb-title { color: #4488FF; border-color: #112244; }
+.trek-lb-row   { display: flex; align-items: center; padding: 2px 0; font-size: 12px; }
+.trek-lb-rank  { color: var(--amber-dim); width: 22px; flex-shrink: 0; }
+.trek-lb-name  { flex: 1; color: #CC8833; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trek-lb-count { font-family: var(--fd); font-size: 16px; color: var(--green); }
+
+/* ===========================================================
+   MISSION LOG CARDS
+   =========================================================== */
+.trek-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.trek-card {
+  background: var(--panel);
+  border: 2px solid var(--amber-faint);
+  border-top: 3px solid var(--amber);
+  animation: data-in .4s ease-out both;
+}
+.trek-card-header {
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--amber-faint);
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.trek-card-id    { font-size: 10px; color: var(--amber-faint); letter-spacing: 2px; text-transform: uppercase; }
+.trek-card-title { font-family: var(--fd); font-size: 18px; color: var(--amber-light); letter-spacing: 1px; line-height: 1.1; margin-top: 3px; }
+.trek-card-body  { padding: 10px 12px; }
+.trek-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255,140,0,.08);
+  gap: 8px;
+}
+.trek-card-row:last-child { border-bottom: none; }
+.trek-card-key { font-size: 9px; color: var(--amber-faint); letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+.trek-card-val { font-family: var(--fd); font-size: 15px; color: var(--amber-light); text-align: right; }
+.trek-card-footer {
+  padding: 8px 12px;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid var(--amber-faint);
+}
+
+/* ===========================================================
+   STATUS BADGES
+   =========================================================== */
+.trek-status {
+  font-family: var(--fd);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid currentColor;
+  display: inline-block;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.trek-status.st-progress  { color: var(--amber-light); }
+.trek-status.st-pending   { color: var(--cyan);  animation: blink 2s infinite; }
+.trek-status.st-complete  { color: var(--green); }
+.trek-status.st-cancelled { color: var(--red); }
+.trek-status.st-action    { color: #FF5500; animation: blink .7s infinite; }
+
+/* ===========================================================
+   BUTTONS
+   =========================================================== */
+.trek-btn {
+  background: var(--panel);
+  border: 2px solid var(--amber);
+  color: var(--amber);
+  font-family: var(--fm);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  border-radius: 0;
+  transition: background .12s, color .12s;
+}
+.trek-btn:hover    { background: var(--amber);  color: #000; }
+.trek-btn.btn-green{ border-color: var(--green); color: var(--green); }
+.trek-btn.btn-green:hover { background: var(--green); color: #000; }
+.trek-btn.btn-red  { border-color: var(--red); color: var(--red); }
+.trek-btn.btn-red:hover   { background: var(--red); color: #fff; }
+.trek-btn.btn-sm   { padding: 5px 10px; font-size: 10px; }
+
+/* ===========================================================
+   FORM SECTION
+   =========================================================== */
+.trek-form-panel {
+  background: var(--panel);
+  border: 2px solid var(--amber-faint);
+  border-top: 3px solid var(--amber);
+  margin-bottom: 20px;
+}
+.trek-form-header {
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--amber-faint);
+  padding: 10px 14px;
+  font-family: var(--fd);
+  font-size: 19px;
+  color: var(--amber-light);
+  letter-spacing: 3px;
+}
+.trek-form-body { padding: 16px 14px; }
+.trek-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.trek-field { display: flex; flex-direction: column; gap: 4px; }
+.trek-field label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--amber-dim); }
+.trek-field input,
+.trek-field select,
+.trek-field textarea {
+  background: #000;
+  border: 1px solid var(--amber-faint);
+  border-radius: 0;
+  color: var(--amber-light);
+  font-family: var(--fm);
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  caret-color: var(--amber);
+  transition: border-color .15s, box-shadow .15s;
+}
+.trek-field input:focus,
+.trek-field select:focus,
+.trek-field textarea:focus { border-color: var(--amber); box-shadow: 0 0 8px rgba(255,140,0,.25); }
+.trek-field input::placeholder,
+.trek-field textarea::placeholder { color: #2A1200; }
+.trek-field select option { background: #0A0500; color: var(--amber-light); }
+
+/* computer readout lines above form */
+.trek-computer-line { font-family: var(--fd); font-size: 15px; color: var(--amber-faint); letter-spacing: 2px; padding: 2px 0; }
+.trek-computer-line span { color: var(--amber-light); }
+
+/* ===========================================================
+   CALLOUT BOXES
+   =========================================================== */
+.trek-callout {
+  background: var(--panel-2);
+  border: 1px solid var(--amber-dim);
+  border-left: 4px solid var(--amber);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--amber-dim);
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+.trek-callout.callout-red  { border-color: #440000; border-left-color: var(--red); color: #AA3300; background: #0A0000; }
+.trek-callout.callout-cyan { border-color: #003344; border-left-color: var(--cyan); color: #006688; }
+.trek-callout-title { font-family: var(--fd); font-size: 16px; letter-spacing: 2px; margin-bottom: 4px; color: var(--amber); }
+.trek-callout.callout-red  .trek-callout-title { color: var(--red); }
+.trek-callout.callout-cyan .trek-callout-title { color: var(--cyan); }
+
+/* ===========================================================
+   FIXED FOOTER
+   =========================================================== */
+.trek-footer {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #000;
+  border-top: 2px solid var(--amber-faint);
+  padding: 4px 0;
+  overflow: hidden;
+  z-index: 9998;
+}
+.trek-footer-scroll {
+  white-space: nowrap;
+  display: inline-block;
+  font-family: var(--fm);
+  font-size: 10px;
+  color: var(--amber-faint);
+  letter-spacing: 2px;
+  animation: scroll-l 35s linear infinite;
+}
+
+/* ---- DEMO LABEL ------------------------------------------ */
+.trek-demo-badge {
+  position: fixed;
+  top: 12px; right: 12px;
+  background: #000;
+  border: 1px solid var(--amber-faint);
+  color: var(--amber-faint);
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 3px 8px;
+  z-index: 9997;
+  text-transform: uppercase;
+}
+
+  </style>
+</head>
+<body>
+
+<!-- Moving scanline highlight sweep -->
+<div class="trek-sweep"></div>
+
+<!-- ── STARDATE TICKER BAR ─────────────────────────────────── -->
+<div class="trek-ticker-bar">
+  <span class="trek-ticker-bar-side">NCC-1701</span>
+  <div class="trek-ticker-bar-center">
+    <span class="trek-ticker-text">
+      &nbsp;&nbsp; COMPUTER ONLINE &nbsp;◆&nbsp;
+      ALL SYSTEMS NOMINAL &nbsp;◆&nbsp;
+      WARP 6 SUSTAINED &nbsp;◆&nbsp;
+      SHIELDS AT 100% &nbsp;◆&nbsp;
+      TRANSPORTER ROOM 3 STANDBY &nbsp;◆&nbsp;
+      SEQUENTIAL GATING PROTOCOL ACTIVE &nbsp;◆&nbsp;
+      NO KLINGON VESSELS DETECTED IN THIS SECTOR &nbsp;◆&nbsp;
+      NEXT CREW ROTATION: STARDATE 2265.5 &nbsp;◆&nbsp;
+      MR. SPOCK REPORTS: SYSTEM LOGIC IS SOUND &nbsp;◆&nbsp;
+      DR. McCOY REPORTS: HE'S AN ADMIN, NOT A MAGICIAN &nbsp;◆&nbsp;&nbsp;&nbsp;
+    </span>
+  </div>
+  <span class="trek-ticker-bar-side">SECTOR 001</span>
+</div>
+
+<!-- ── RED ALERT BAR ───────────────────────────────────────── -->
+<div class="trek-alert-bar">
+  <span class="blink">⚠ RED ALERT ⚠</span>
+  &nbsp;—&nbsp; 3 REQUESTS REQUIRE IMMEDIATE ATTENTION — CAPTAIN TO THE BRIDGE &nbsp;—&nbsp;
+  <span class="blink">⚠ RED ALERT ⚠</span>
+</div>
+
+<!-- ── HEADER ─────────────────────────────────────────────── -->
+<header class="trek-header">
+  <div class="trek-header-main">
+    <div class="trek-header-title">SHIP'S COMPUTER</div>
+    <div class="trek-header-sub">TEAM GROUP EMPLOYEE MANAGEMENT SYSTEM V2 &nbsp;|&nbsp; AUTHORIZED PERSONNEL ONLY</div>
+  </div>
+  <div class="trek-insignia" title="Click 3x quickly to activate in production">✦</div>
+  <div class="trek-stardate">
+    <span class="trek-stardate-num">2265.4</span>
+    <span class="trek-stardate-label">STARDATE</span>
+  </div>
+</header>
+
+<!-- ── NAV ───────────────────────────────────────────────── -->
+<nav class="trek-nav">
+  <a class="trek-nav-btn active" href="#">MISSION LOG</a>
+  <a class="trek-nav-btn" href="#">NEW REQUEST</a>
+  <a class="trek-nav-btn" href="#">ACTION ITEMS</a>
+  <a class="trek-nav-btn" href="#">PERSONNEL</a>
+  <a class="trek-nav-btn" href="#">SHIP'S LOG</a>
+</nav>
+
+<!-- Demo watermark -->
+<div class="trek-demo-badge">STYLE DEMO</div>
+
+<!-- ── MAIN ───────────────────────────────────────────────── -->
+<div class="trek-container">
+
+  <!-- ── TRICORDER STATS PANEL ─────────────────────────────── -->
+  <div class="trek-tricorder">
+    <div class="trek-tri-header" id="tri-hdr" onclick="toggleTri()">
+      <span class="trek-tri-title">◈ TRICORDER ANALYSIS — SYSTEM TELEMETRY ◈</span>
+      <span class="trek-tri-hint" id="tri-hint">[CLICK TO COLLAPSE]</span>
+    </div>
+    <div class="trek-tri-body" id="tri-body">
+
+      <div class="trek-visitor">
+        <div class="trek-visitor-label">TOTAL CREW ASSIGNMENTS PROCESSED — STARFLEET RECORDS OFFICE</div>
+        <div class="trek-visitor-box">0 0 0 1 4 7</div>
+        <div class="trek-visitor-sub">EARTH SPACEDOCK — AUTHORIZED ACCESS ONLY</div>
+      </div>
+
+      <div class="trek-stats-grid">
+        <div class="trek-stat-box s-green">
+          <span class="trek-stat-num">48</span>
+          <span class="trek-stat-label">NEW CREW ASSIGNMENTS</span>
+        </div>
+        <div class="trek-stat-box s-red">
+          <span class="trek-stat-num">12</span>
+          <span class="trek-stat-label">CREW SEPARATIONS</span>
+        </div>
+        <div class="trek-stat-box s-cyan">
+          <span class="trek-stat-num">23</span>
+          <span class="trek-stat-label">TRANSFER ORDERS</span>
+        </div>
+        <div class="trek-stat-box">
+          <span class="trek-stat-num">64</span>
+          <span class="trek-stat-label">MISSIONS COMPLETE</span>
+        </div>
+        <div class="trek-stat-box">
+          <span class="trek-stat-num">18</span>
+          <span class="trek-stat-label">AWAY TEAM DEPLOYED</span>
+        </div>
+        <div class="trek-stat-box s-cyan">
+          <span class="trek-stat-num">9</span>
+          <span class="trek-stat-label">AWAITING ORDERS</span>
+        </div>
+        <div class="trek-stat-box s-red">
+          <span class="trek-stat-num">3</span>
+          <span class="trek-stat-label">MISSIONS ABORTED</span>
+        </div>
+        <div class="trek-stat-box s-green">
+          <span class="trek-stat-num">78%</span>
+          <span class="trek-stat-label">MISSION SUCCESS RATE</span>
+        </div>
+        <div class="trek-stat-box">
+          <span class="trek-stat-num">247</span>
+          <span class="trek-stat-label">OPEN ACTION ITEMS</span>
+        </div>
+        <div class="trek-stat-box s-blue">
+          <span class="trek-stat-num">14</span>
+          <span class="trek-stat-label">THIS STARDATE CYCLE</span>
+        </div>
+        <div class="trek-stat-box">
+          <span class="trek-stat-num">MAY</span>
+          <span class="trek-stat-label">PEAK MISSION MONTH</span>
+        </div>
+        <div class="trek-stat-box">
+          <span class="trek-stat-num">31</span>
+          <span class="trek-stat-label">PEAK MONTH RECORD</span>
+        </div>
+      </div>
+
+      <hr class="trek-sep">
+
+      <div class="trek-lb-grid">
+        <div class="trek-lb-panel">
+          <div class="trek-lb-title">HALL OF MERIT — TOP SUBMITTERS</div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#1</span><span class="trek-lb-name">jdoe</span><span class="trek-lb-count">24</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#2</span><span class="trek-lb-name">asmith</span><span class="trek-lb-count">18</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#3</span><span class="trek-lb-name">bjohnson</span><span class="trek-lb-count">12</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#4</span><span class="trek-lb-name">clee</span><span class="trek-lb-count">9</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#5</span><span class="trek-lb-name">mwilliams</span><span class="trek-lb-count">7</span></div>
+        </div>
+        <div class="trek-lb-panel lb-green">
+          <div class="trek-lb-title">MOST ACTIVE OUTPOSTS</div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#1</span><span class="trek-lb-name">Atlanta Base</span><span class="trek-lb-count">41</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#2</span><span class="trek-lb-name">Nashville Sector</span><span class="trek-lb-count">28</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#3</span><span class="trek-lb-name">Charlotte Outpost</span><span class="trek-lb-count">19</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#4</span><span class="trek-lb-name">Birmingham</span><span class="trek-lb-count">15</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#5</span><span class="trek-lb-name">Knoxville Station</span><span class="trek-lb-count">12</span></div>
+        </div>
+        <div class="trek-lb-panel lb-blue">
+          <div class="trek-lb-title">TOP COMMANDING OFFICERS</div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#1</span><span class="trek-lb-name">mgr.reynolds</span><span class="trek-lb-count">31</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#2</span><span class="trek-lb-name">mgr.patel</span><span class="trek-lb-count">22</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#3</span><span class="trek-lb-name">mgr.kim</span><span class="trek-lb-count">17</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#4</span><span class="trek-lb-name">mgr.torres</span><span class="trek-lb-count">11</span></div>
+          <div class="trek-lb-row"><span class="trek-lb-rank">#5</span><span class="trek-lb-name">mgr.davis</span><span class="trek-lb-count">8</span></div>
+        </div>
+      </div>
+
+    </div><!-- /tri-body -->
+  </div><!-- /tricorder -->
+
+  <!-- ── MISSION LOG CARDS ─────────────────────────────────── -->
+  <div class="trek-sh">MISSION LOG — ACTIVE REQUESTS</div>
+
+  <div class="trek-grid">
+
+    <div class="trek-card">
+      <div class="trek-card-header">
+        <div>
+          <div class="trek-card-id">MISSION ID: NEW_EMP_2265-04-081</div>
+          <div class="trek-card-title">CREW ASSIGNMENT — T'PAL, SARAH</div>
+        </div>
+        <div class="trek-status st-progress">AWAY TEAM DEPLOYED</div>
+      </div>
+      <div class="trek-card-body">
+        <div class="trek-card-row"><span class="trek-card-key">STARDATE FILED</span><span class="trek-card-val">2265.4.01</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">REPORTING OFFICER</span><span class="trek-card-val">J. DOE</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">OUTPOST</span><span class="trek-card-val">ATLANTA BASE</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">CURRENT STATION</span><span class="trek-card-val">IT SETUP — PENDING</span></div>
+      </div>
+      <div class="trek-card-footer">
+        <button class="trek-btn btn-green btn-sm">REVIEW</button>
+        <button class="trek-btn btn-sm">LOG ENTRY</button>
+      </div>
+    </div>
+
+    <div class="trek-card">
+      <div class="trek-card-header">
+        <div>
+          <div class="trek-card-id">MISSION ID: TERM_2265-04-019</div>
+          <div class="trek-card-title">CREW SEPARATION — MARCUS, D.</div>
+        </div>
+        <div class="trek-status st-pending">AWAITING ORDERS</div>
+      </div>
+      <div class="trek-card-body">
+        <div class="trek-card-row"><span class="trek-card-key">STARDATE FILED</span><span class="trek-card-val">2265.4.08</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">REPORTING OFFICER</span><span class="trek-card-val">A. SMITH</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">OUTPOST</span><span class="trek-card-val">NASHVILLE SECTOR</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">CURRENT STATION</span><span class="trek-card-val">HR/PAYROLL PENDING</span></div>
+      </div>
+      <div class="trek-card-footer">
+        <button class="trek-btn btn-green btn-sm">REVIEW</button>
+        <button class="trek-btn btn-sm">LOG ENTRY</button>
+      </div>
+    </div>
+
+    <div class="trek-card">
+      <div class="trek-card-header">
+        <div>
+          <div class="trek-card-id">MISSION ID: CHANGE_2265-03-044</div>
+          <div class="trek-card-title">TRANSFER ORDER — CHEN, LILY</div>
+        </div>
+        <div class="trek-status st-complete">MISSION SUCCESS</div>
+      </div>
+      <div class="trek-card-body">
+        <div class="trek-card-row"><span class="trek-card-key">STARDATE FILED</span><span class="trek-card-val">2265.3.22</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">REPORTING OFFICER</span><span class="trek-card-val">B. JOHNSON</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">OUTPOST</span><span class="trek-card-val">CHARLOTTE OUTPOST</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">COMPLETED STARDATE</span><span class="trek-card-val">2265.3.29</span></div>
+      </div>
+      <div class="trek-card-footer">
+        <button class="trek-btn btn-sm">VIEW RECORD</button>
+      </div>
+    </div>
+
+    <div class="trek-card">
+      <div class="trek-card-header">
+        <div>
+          <div class="trek-card-id">MISSION ID: NEW_EMP_2265-04-092</div>
+          <div class="trek-card-title">CREW ASSIGNMENT — VASQUEZ, M.</div>
+        </div>
+        <div class="trek-status st-action">!! CAPTAIN TO BRIDGE</div>
+      </div>
+      <div class="trek-card-body">
+        <div class="trek-card-row"><span class="trek-card-key">STARDATE FILED</span><span class="trek-card-val">2265.4.10</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">REPORTING OFFICER</span><span class="trek-card-val">C. LEE</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">OUTPOST</span><span class="trek-card-val">BIRMINGHAM SECTOR</span></div>
+        <div class="trek-card-row"><span class="trek-card-key">ALERT CONDITION</span><span class="trek-card-val" style="color:#FF4400">OVERDUE — 3 CYCLES</span></div>
+      </div>
+      <div class="trek-card-footer">
+        <button class="trek-btn btn-red btn-sm">TAKE ACTION</button>
+        <button class="trek-btn btn-sm">LOG ENTRY</button>
+      </div>
+    </div>
+
+  </div><!-- /trek-grid -->
+
+  <!-- ── CALLOUT ───────────────────────────────────────────── -->
+  <div class="trek-callout callout-red">
+    <div class="trek-callout-title">⚠ STARFLEET ADVISORY — EQUIPMENT REQUISITIONS</div>
+    Equipment requests submitted after Stardate 2265.4.15 will be processed in the next duty cycle.
+    Contact the Operations Officer for urgent requisitions. Standard turnaround: 3 stardate cycles.
+  </div>
+
+  <div class="trek-callout callout-cyan">
+    <div class="trek-callout-title">◈ SHIP'S COMPUTER — SYSTEM NOTICE</div>
+    Sequential gating protocol active. All specialists must complete their stations in order.
+    Attempting to bypass gating will trigger a security lockout. Compliance is logical.
+  </div>
+
+  <!-- ── FORM SECTION ──────────────────────────────────────── -->
+  <div class="trek-sh">SUBMIT NEW MISSION REQUEST</div>
+
+  <div class="trek-form-panel">
+    <div class="trek-form-header">◈ CREW ASSIGNMENT FORM — NEW HIRE REQUEST ◈</div>
+    <div class="trek-form-body">
+
+      <div class="trek-computer-line">COMPUTER: ENTER CREW ASSIGNMENT DETAILS BELOW. ALL FIELDS REQUIRED UNLESS MARKED OPTIONAL.</div>
+      <div class="trek-computer-line" style="margin-bottom:14px;">COMPUTER: <span>STARDATE 2265.4 — AUTHORIZED PERSONNEL ONLY — STARFLEET RECORDS WILL BE UPDATED UPON SUBMISSION.</span></div>
+
+      <div class="trek-field-grid">
+        <div class="trek-field">
+          <label>CREW MEMBER NAME</label>
+          <input type="text" placeholder="LAST, FIRST M.">
+        </div>
+        <div class="trek-field">
+          <label>REPORTING DATE</label>
+          <input type="date">
+        </div>
+        <div class="trek-field">
+          <label>OUTPOST / SECTOR</label>
+          <select>
+            <option value="">— SELECT OUTPOST —</option>
+            <option>ATLANTA BASE</option>
+            <option>NASHVILLE SECTOR</option>
+            <option>CHARLOTTE OUTPOST</option>
+            <option>BIRMINGHAM SECTOR</option>
+            <option>KNOXVILLE STATION</option>
+          </select>
+        </div>
+        <div class="trek-field">
+          <label>COMMANDING OFFICER EMAIL</label>
+          <input type="email" placeholder="OFFICER@TEAM-GROUP.COM">
+        </div>
+        <div class="trek-field">
+          <label>POSITION / RANK DESIGNATION</label>
+          <input type="text" placeholder="TITLE OR CLASSIFICATION">
+        </div>
+        <div class="trek-field">
+          <label>CREW CLASSIFICATION</label>
+          <select>
+            <option value="">— SELECT TYPE —</option>
+            <option>FULL-TIME CREW</option>
+            <option>PART-TIME CREW</option>
+            <option>TEMPORARY ASSIGNMENT</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="trek-field" style="margin-bottom:16px;">
+        <label>SUPPLEMENTAL LOG ENTRY (OPTIONAL)</label>
+        <textarea rows="3" placeholder="ENTER ADDITIONAL MISSION NOTES OR SPECIAL ORDERS..."></textarea>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="trek-btn btn-green">TRANSMIT TO STARFLEET</button>
+        <button class="trek-btn">SAVE AS DRAFT</button>
+        <button class="trek-btn btn-red">ABORT MISSION</button>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- ── FIXED FOOTER ──────────────────────────────────────── -->
+<div class="trek-footer">
+  <span class="trek-footer-scroll">
+    &nbsp;&nbsp;&nbsp;
+    TEAM GROUP EMPLOYEE MANAGEMENT &nbsp;◆&nbsp;
+    U.S.S. ENTERPRISE NCC-1701 SHIP'S COMPUTER &nbsp;◆&nbsp;
+    AUTHORIZED PERSONNEL ONLY &nbsp;◆&nbsp;
+    STARFLEET COMMAND — EARTH SPACEDOCK &nbsp;◆&nbsp;
+    RUNNING ON GOOGLE APPS SCRIPT — SPACE-AGE CLOUD TECHNOLOGY &nbsp;◆&nbsp;
+    SEQUENTIAL GATING PROTOCOL V2 ACTIVE &nbsp;◆&nbsp;
+    NO UNAUTHORIZED MODIFICATIONS &nbsp;◆&nbsp;
+    PAPERLESS SINCE 2024 — SAVING RESOURCES ONE FORM AT A TIME &nbsp;◆&nbsp;
+    LIVE LONG AND PROSPER &nbsp;◆&nbsp;
+    &nbsp;&nbsp;&nbsp;
+  </span>
+</div>
+
+<script>
+// Tricorder collapse/expand
+function toggleTri() {
+  var body   = document.getElementById('tri-body');
+  var hint   = document.getElementById('tri-hint');
+  var open   = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  hint.textContent   = open ? '[CLICK TO EXPAND]' : '[CLICK TO COLLAPSE]';
+}
+
+// Advance stardate counter in header (cosmetic)
+(function() {
+  var el = document.querySelector('.trek-stardate-num');
+  if (!el) return;
+  var base = 2265.4;
+  var tick = setInterval(function() {
+    base += 0.0001;
+    el.textContent = base.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+  }, 5000);
+})();
+</script>
+
+</body>
+</html>

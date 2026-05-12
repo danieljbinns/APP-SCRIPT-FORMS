@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 
 <head>
@@ -43,7 +43,8 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1600px;
+            width: 95%;
             margin: 60px auto;
             padding: 0 40px;
             flex: 1;
@@ -54,6 +55,7 @@
             margin-bottom: 10px;
             background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -112,6 +114,7 @@
             line-height: 1.6;
         }
 
+        /* ── Section titles ── */
         .section-title {
             font-size: 1.5rem;
             margin-top: 50px;
@@ -120,6 +123,259 @@
             border-bottom: 1px solid #333;
             padding-bottom: 10px;
         }
+
+        /* ── Help & Reference collapsible ── */
+        .help-section {
+            margin-top: 0;
+            margin-bottom: 50px;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .help-toggle {
+            width: 100%;
+            background: rgba(20, 20, 20, 0.9);
+            border: none;
+            color: #a0a0a0;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .help-toggle:hover {
+            background: rgba(30, 30, 30, 0.95);
+            color: #fff;
+        }
+
+        .help-toggle .toggle-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .help-toggle .toggle-left i {
+            color: #EB1C2D;
+            font-size: 0.95rem;
+        }
+
+        .help-toggle .chevron {
+            color: #555;
+            font-size: 0.85rem;
+            transition: transform 0.25s ease;
+        }
+
+        .help-toggle[aria-expanded="true"] .chevron {
+            transform: rotate(180deg);
+        }
+
+        .expand-hint {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: #484858;
+            margin-left: 10px;
+            letter-spacing: 0.01em;
+        }
+
+        .help-toggle[aria-expanded="true"] .expand-hint {
+            display: none;
+        }
+
+        .help-body {
+            display: none;
+            padding: 28px 28px 32px;
+            background: rgba(14, 14, 18, 0.6);
+        }
+
+        .help-body.open {
+            display: block;
+        }
+
+        .help-intro {
+            color: #ffffff;
+            font-size: 0.88rem;
+            margin-bottom: 24px;
+            line-height: 1.65;
+        }
+
+        /* ── FAQ ── */
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 14px;
+            margin-bottom: 32px;
+        }
+
+        .faq-item {
+            background: rgba(20, 20, 30, 0.7);
+            border: 1px solid #242432;
+            border-radius: 10px;
+            padding: 16px 20px;
+        }
+
+        .faq-q {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #d8d8e8;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .faq-q::before {
+            content: "Q";
+            flex-shrink: 0;
+            background: #EB1C2D;
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            width: 17px;
+            height: 17px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1px;
+        }
+
+        .faq-a {
+            font-size: 0.83rem;
+            color: #707080;
+            line-height: 1.65;
+            padding-left: 25px;
+        }
+
+        .faq-a strong {
+            color: #a8a8b8;
+        }
+
+        /* ── Reference guide cards ── */
+        .ref-guides-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #484858;
+            margin-bottom: 14px;
+        }
+
+        .ref-card {
+            border-color: #222232 !important;
+            padding: 22px 24px;
+        }
+
+        .ref-card:hover {
+            border-color: #EB1C2D !important;
+            transform: translateY(-3px);
+        }
+
+        .ref-card .card-icon {
+            background: linear-gradient(135deg, #EB1C2D 0%, #c41828 100%) !important;
+            border: none;
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+            margin-bottom: 14px;
+        }
+
+        .ref-card .card-icon i {
+            color: #ffffff;
+        }
+
+        .ref-card .card-title {
+            font-size: 0.95rem;
+        }
+
+        .ref-card .card-description {
+            font-size: 0.82rem;
+        }
+
+        /* ── Light mode ─────────────────────────────────────────── */
+        body.light-mode {
+            background: #f4f4f4 !important;
+            color: #111 !important;
+        }
+        body.light-mode .header {
+            background: rgba(255,255,255,0.97) !important;
+            border-bottom-color: #EB1C2D;
+        }
+        body.light-mode h1 {
+            background: linear-gradient(135deg, #111 0%, #444 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+        body.light-mode .subtitle { color: #444 !important; }
+        body.light-mode .user-info { color: #555 !important; }
+        body.light-mode .card {
+            background: #ffffff !important;
+            border-color: #cccccc !important;
+            color: #111 !important;
+        }
+        body.light-mode .card:hover { border-color: #EB1C2D !important; }
+        body.light-mode .card-description { color: #555 !important; }
+        body.light-mode .section-title { color: #444 !important; border-bottom-color: #ccc !important; }
+        body.light-mode .help-section { border-color: #cccccc !important; }
+        body.light-mode .help-toggle {
+            background: #f9f9f9 !important;
+            color: #333 !important;
+        }
+        body.light-mode .help-toggle:hover { background: #f0f0f0 !important; color: #111 !important; }
+        body.light-mode .help-body { background: #fafafa !important; }
+        body.light-mode .help-intro { color: #111 !important; }
+        body.light-mode .faq-item { background: #fff !important; border-color: #ddd !important; }
+        body.light-mode .faq-q { color: #111 !important; }
+        body.light-mode .faq-a { color: #444 !important; }
+        body.light-mode .faq-a strong { color: #222 !important; }
+        body.light-mode .ref-guides-label { color: #666 !important; }
+        body.light-mode .expand-hint { color: #888 !important; }
+
+        /* ── AODA high-contrast mode ─────────────────────────────── */
+        body.aoda-mode {
+            background: #ffffff !important;
+            color: #000000 !important;
+            font-size: 17px !important;
+            line-height: 1.8 !important;
+        }
+        body.aoda-mode .header {
+            background: #ffffff !important;
+            border-bottom: 3px solid #a50000 !important;
+        }
+        body.aoda-mode h1 {
+            background: none !important;
+            -webkit-text-fill-color: #000000 !important;
+            color: #000000 !important;
+        }
+        body.aoda-mode .subtitle,
+        body.aoda-mode .user-info,
+        body.aoda-mode .card-description,
+        body.aoda-mode .section-title,
+        body.aoda-mode .faq-a,
+        body.aoda-mode .faq-q { color: #000000 !important; }
+        body.aoda-mode .card {
+            background: #ffffff !important;
+            border: 2px solid #000000 !important;
+            color: #000000 !important;
+        }
+        body.aoda-mode .card:hover { border-color: #a50000 !important; }
+        body.aoda-mode .section-title { border-bottom: 2px solid #000 !important; }
+        body.aoda-mode .help-section { border: 2px solid #000 !important; }
+        body.aoda-mode .help-toggle {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border-bottom: 1px solid #000 !important;
+        }
+        body.aoda-mode .help-body { background: #ffffff !important; }
+        body.aoda-mode .help-intro { color: #000000 !important; }
+        body.aoda-mode .faq-item { background: #fff !important; border: 2px solid #000 !important; }
+        body.aoda-mode a { color: #0000cc !important; text-decoration: underline !important; }
     </style>
 </head>
 
@@ -137,32 +393,155 @@
         <h1>Employee Management Portal</h1>
         <p class="subtitle">Access workflows, dashboards, and administrative tools</p>
 
-        <div class="section-title"><i class="fa-solid fa-clipboard-list"></i> Workflows</div>
-        <div class="cards-grid">
-            <a href="<?= getBaseUrl() ?>?form=initial_request" class="card" target="_top">
-                <div class="card-icon"><i class="fa-solid fa-user-plus"></i></div>
-                <div class="card-title">New Employee Request</div>
-                <div class="card-description">Submit a new employee onboarding request to begin the provisioning
-                    workflow</div>
-            </a>
-        </div>
+        <!-- ── Help & Reference (collapsed by default) ── -->
+        <div class="help-section">
+            <button class="help-toggle" id="helpToggle" aria-expanded="false" onclick="toggleHelp()">
+                <span class="toggle-left">
+                    <i class="fa-solid fa-circle-question"></i>
+                    Help &amp; Reference
+                    <span class="expand-hint">— click to expand</span>
+                </span>
+                <i class="fa-solid fa-chevron-down chevron"></i>
+            </button>
+            <div class="help-body" id="helpBody">
 
+                <p class="help-intro">
+                    The forms are fully guided and validated &mdash; you don&rsquo;t need to read anything before submitting.
+                    Required fields are clearly marked, conditional sections appear automatically, and each form
+                    tells you exactly what to fill in. The reference guides below are here when you want context
+                    on how a workflow fits together, or to answer a specific &ldquo;what happens next?&rdquo; question.
+                </p>
+
+                <div class="faq-grid">
+                    <div class="faq-item">
+                        <div class="faq-q">Which form do I use?</div>
+                        <div class="faq-a">
+                            <strong>Hiring someone new</strong> &rarr; New Employee Request.<br>
+                            <strong>Existing employee needs access or equipment</strong> &rarr; Equipment and Systems Request.<br>
+                            <strong>Someone is leaving</strong> &rarr; End of Employment Request.<br>
+                            <strong>Role, site, or manager change</strong> &rarr; Position / Site Change.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-q">Do I need to follow up after submitting?</div>
+                        <div class="faq-a">
+                            No. The system automatically emails each person when it&rsquo;s their turn. You don&rsquo;t
+                            need to contact HR or IT separately. If something stalls, the
+                            <strong>Workflow Dashboard</strong> shows exactly which step is waiting.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-q">What if I need to change something after submitting?</div>
+                        <div class="faq-a">
+                            Submitted requests can only be modified by an admin. Contact HR or IT directly and
+                            include the employee name and which form you submitted. Don&rsquo;t re-submit &mdash; that
+                            creates a duplicate workflow.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-q">How do I know if something is stuck?</div>
+                        <div class="faq-a">
+                            Open the <strong>Workflow Dashboard</strong> and find the employee&rsquo;s row &mdash; it
+                            shows exactly which step is waiting and who it&rsquo;s assigned to. You can use the
+                            <strong>Remind</strong> button on the dashboard to re-send the notification to whoever
+                            has the open action item.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-q">My request isn&rsquo;t showing up on the dashboard.</div>
+                        <div class="faq-a">
+                            Search by the employee&rsquo;s name or email on the dashboard. If it&rsquo;s missing,
+                            the submission may not have completed &mdash; check for a confirmation message when
+                            you submitted. If unsure, contact an admin before re-submitting.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ref-guides-label"><i class="fa-solid fa-book-open"></i> &nbsp;Reference Guides</div>
+                <div class="cards-grid">
+                    <a href="<?= buildFormUrl('ref_deck') ?>" class="card ref-card" target="_blank">
+                        <div class="card-icon"><i class="fa-solid fa-person-chalkboard"></i></div>
+                        <div class="card-title">Portal Overview</div>
+                        <div class="card-description">Walkthrough of all four workflows, how sequential gating works, and what happens at each step.</div>
+                    </a>
+                    <a href="<?= buildFormUrl('ref_new_hire') ?>" class="card ref-card" target="_blank">
+                        <div class="card-icon"><i class="fa-solid fa-user-plus"></i></div>
+                        <div class="card-title">New Employee Request &mdash; Reference</div>
+                        <div class="card-description">Field-by-field guide to the new hire form, routing rules, and the full step sequence after you submit.</div>
+                    </a>
+                    <a href="<?= buildFormUrl('ref_equipment') ?>" class="card ref-card" target="_blank">
+                        <div class="card-icon"><i class="fa-solid fa-laptop"></i></div>
+                        <div class="card-title">Equipment and Systems Request &mdash; Reference</div>
+                        <div class="card-description">When to use this form vs the new hire form, what IT Confirmation covers, and what happens after submission.</div>
+                    </a>
+                    <a href="<?= buildFormUrl('ref_termination') ?>" class="card ref-card" target="_blank">
+                        <div class="card-icon"><i class="fa-solid fa-user-minus"></i></div>
+                        <div class="card-title">End of Employment &mdash; Reference</div>
+                        <div class="card-description">Resignation vs termination routing, Google offboarding options, equipment return, and the HR approval gate.</div>
+                    </a>
+                    <a href="<?= buildFormUrl('ref_status_change') ?>" class="card ref-card" target="_blank">
+                        <div class="card-icon"><i class="fa-solid fa-user-gear"></i></div>
+                        <div class="card-title">Status &amp; Position Change &mdash; Reference</div>
+                        <div class="card-description">Site transfers, classification changes, manager changes, and simultaneous access add/remove in one request.</div>
+                    </a>
+                </div>
+
+            </div><!-- /help-body -->
+        </div><!-- /help-section -->
+
+        <!-- ── Dashboards ── -->
         <div class="section-title"><i class="fa-solid fa-chart-line"></i> Dashboards</div>
         <div class="cards-grid">
             <a href="<?= getBaseUrl() ?>?form=dashboard" class="card" target="_top">
                 <div class="card-icon"><i class="fa-solid fa-table-list"></i></div>
                 <div class="card-title">Workflow Dashboard</div>
-                <div class="card-description">View and manage all active employee onboarding workflows and their current
-                    status</div>
+                <div class="card-description">View and manage all active employee workflows and their current status</div>
             </a>
         </div>
-    </div>
+
+        <!-- ── Forms ── -->
+        <div class="section-title"><i class="fa-solid fa-clipboard-list"></i> Forms</div>
+        <div class="cards-grid">
+            <a href="<?= buildFormUrl('initial_request') ?>" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-user-plus"></i></div>
+                <div class="card-title">New Employee Request</div>
+                <div class="card-description">Submit a new employee onboarding request to begin the provisioning workflow</div>
+            </a>
+            <a href="<?= buildFormUrl('termination_request') ?>" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-user-minus"></i></div>
+                <div class="card-title">End of Employment Request</div>
+                <div class="card-description">Submit an end of employment request to begin the deprovisioning workflow</div>
+            </a>
+            <a href="<?= buildFormUrl('position_site_change') ?>" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-user-gear"></i></div>
+                <div class="card-title">Position / Site Change</div>
+                <div class="card-description">Submit a request for employee status changes, site transfers, or promotions</div>
+            </a>
+            <a href="<?= buildFormUrl('equipment_request') ?>" class="card" target="_top">
+                <div class="card-icon"><i class="fa-solid fa-laptop"></i></div>
+                <div class="card-title">Equipment and Systems Request</div>
+                <div class="card-description">Request one-off systems, software, or hardware for existing personnel</div>
+            </a>
+        </div>
+
+    </div><!-- /container -->
 
     <script>
+        function toggleHelp() {
+            var btn  = document.getElementById('helpToggle');
+            var body = document.getElementById('helpBody');
+            var open = body.classList.toggle('open');
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
         google.script.run.withSuccessHandler(function (email) {
             document.getElementById('userEmail').textContent = email || 'Not signed in';
+        }).withFailureHandler(function() {
+            document.getElementById('userEmail').textContent = 'Not signed in';
         }).getCurrentUserEmail();
     </script>
+  <?!= include('SharedComponents') ?>
+  <?!= include('GeoCities') ?>
 </body>
 
 </html>

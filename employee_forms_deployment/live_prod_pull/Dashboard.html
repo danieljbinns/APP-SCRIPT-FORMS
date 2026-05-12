@@ -192,7 +192,8 @@
 
         .modal {
             background: var(--card-bg);
-            width: 800px;
+            width: 1000px;
+            max-width: 95vw;
             max-height: 90vh;
             border-radius: 8px;
             border: 1px solid var(--border-color);
@@ -261,6 +262,7 @@
                     class="logo">
                 <h1>Onboarding Dashboard</h1>
             </div>
+
             <div>
                 <a href="<?= getBaseUrl() ?>?form=workflow_map" class="action-link"
                     style="margin-right: 15px; color: #fff; background: #333; padding: 10px 15px; border-radius: 6px; text-decoration: none;">View
@@ -281,6 +283,7 @@
                 <thead>
                     <tr>
                         <th>Employee</th>
+                        <th>Type</th>
                         <th>Status</th>
                         <th>Current Action Pending</th>
                         <th>Requester</th>
@@ -290,10 +293,22 @@
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="6" style="text-align:center; padding: 40px;">Loading requests...</td>
+                        <td colspan="7" style="text-align:center; padding: 40px;">Loading requests...</td>
                     </tr>
                 </tbody>
             </table>
+            <div id="paginationControls"
+                style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#252525; border-top:1px solid var(--border-color);">
+                <div id="pageInfo" style="color:var(--text-muted); font-size:14px;">Showing 0 to 0 of 0 entries</div>
+                <div style="display:flex; gap:10px;">
+                    <button id="btnPrevPage" class="action-btn"
+                        style="background:#444; color:white; padding:6px 12px; font-weight:normal;"
+                        onclick="changePage(-1)" disabled>Previous</button>
+                    <button id="btnNextPage" class="action-btn"
+                        style="background:#444; color:white; padding:6px 12px; font-weight:normal;"
+                        onclick="changePage(1)" disabled>Next</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -312,6 +327,8 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button class="action-btn" style="background:var(--info); color:white; margin-right:auto;"
+                    onclick="openFullPage()">View Full Data Page &rarr;</button>
                 <button id="btnCancel" class="action-btn cancel-btn" onclick="cancelCurrentRequest()">Cancel Entire
                     Request</button>
                 <button class="action-btn" style="background:#555; color:white;" onclick="closeModal()">Close</button>
@@ -331,11 +348,16 @@
 
         document.addEventListener('DOMContentLoaded', loadData);
         let allWorkflows = [];
+        let filteredWorkflows = []; // For search + pagination combo
         let currentWorkflowId = null;
+
+        // Pagination State
+        const ITEMS_PER_PAGE = 25;
+        let currentPage = 1;
 
         function loadData() {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
             google.script.run.withSuccessHandler(displayData).withFailureHandler(showError).getDashboardData();
         }
 
@@ -345,7 +367,9 @@
                 return;
             }
             allWorkflows = response.workflows;
-            renderTable(allWorkflows);
+            filteredWorkflows = [...allWorkflows]; // Initialize
+            currentPage = 1; // Reset to page 1 on fresh load
+            renderTable();
         }
 
         // Helper to safely format dates
@@ -356,21 +380,37 @@
             return d.toLocaleDateString();
         }
 
-        function renderTable(data) {
+        function renderTable() {
             const tbody = document.getElementById('tableBody');
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
+
+            // Calculate Pagination
+            const totalItems = filteredWorkflows.length;
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+
+            // Boundary checks
+            if (currentPage < 1) currentPage = 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+
+            const currentData = filteredWorkflows.slice(startIndex, endIndex);
+
+            if (currentData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px;">No requests found.</td></tr>';
+                updatePaginationUI(0, 0, 0);
                 return;
             }
 
             let html = '';
-            data.forEach(wf => {
-                const statusClass = wf.status === 'Completed' ? 'completed' :
+            currentData.forEach(wf => {
+                const statusClass = (wf.status === 'Completed' || wf.status === 'Complete') ? 'completed' :
                     (wf.status === 'Cancelled' ? 'cancelled' :
                         (wf.status === 'Pending' ? 'pending' : 'in-progress'));
 
                 html += '<tr onclick="openDetails(\'' + wf.id + '\')">' +
                     '<td><strong>' + (wf.employee || 'Pending Name') + '</strong></td>' +
+                    '<td><span class="badge" style="background:#333; color:#ccc;">' + (wf.empType || 'N/A') + '</span></td>' +
                     '<td><span class="badge ' + statusClass + '">' + wf.status + '</span></td>' +
                     '<td style="color: ' + (wf.step.includes('Pending:') ? '#ffab00' : '#a0a0a0') + '">' + wf.step + '</td>' +
                     '<td>' +
@@ -382,20 +422,55 @@
                     '</tr>';
             });
             tbody.innerHTML = html;
+
+            // Update Page Status
+            updatePaginationUI(startIndex + 1, endIndex, totalItems);
+        }
+
+        function updatePaginationUI(start, end, total) {
+            const info = document.getElementById('pageInfo');
+            const btnPrev = document.getElementById('btnPrevPage');
+            const btnNext = document.getElementById('btnNextPage');
+
+            if (total === 0) {
+                info.innerText = 'Showing 0 to 0 of 0 entries';
+                btnPrev.disabled = true;
+                btnNext.disabled = true;
+                return;
+            }
+
+            info.innerText = `Showing ${start} to ${end} of ${total} entries`;
+
+            const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+            btnPrev.disabled = currentPage === 1;
+            btnNext.disabled = currentPage === totalPages || totalPages === 0;
+
+            btnPrev.style.opacity = btnPrev.disabled ? "0.5" : "1";
+            btnNext.style.opacity = btnNext.disabled ? "0.5" : "1";
+            btnPrev.style.cursor = btnPrev.disabled ? "default" : "pointer";
+            btnNext.style.cursor = btnNext.disabled ? "default" : "pointer";
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            renderTable();
         }
 
         function showError(msg) {
-            document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
         }
 
         // Search
         document.getElementById('searchInput').addEventListener('input', function (e) {
             const term = e.target.value.toLowerCase();
-            const filtered = allWorkflows.filter(wf =>
+            filteredWorkflows = allWorkflows.filter(wf =>
                 (wf.employee && wf.employee.toLowerCase().includes(term)) ||
-                (wf.requesterName && wf.requesterName.toLowerCase().includes(term))
+                (wf.requesterName && wf.requesterName.toLowerCase().includes(term)) ||
+                (wf.initiator && wf.initiator.toLowerCase().includes(term)) ||
+                (wf.id && wf.id.toLowerCase().includes(term))
             );
-            renderTable(filtered);
+            currentPage = 1; // Reset to page 1 on search
+            renderTable();
         });
 
         // Modal Functions
@@ -506,19 +581,28 @@
                 '<tbody>';
 
             if (checklist && checklist.length > 0) {
-                checklist.forEach(function (item) {
-
+                details.checklist.forEach(function (item) {
                     var isComplete = item.status === 'Complete';
                     var isPending = item.status === 'Pending';
                     var isNA = item.status === 'N/A' || item.status === 'Skipped';
 
-                    var statusColor = isComplete ? 'var(--success)' : (isPending ? 'var(--warning)' : (isNA ? '#666' : 'var(--warning)')); // In Progress = Yellow/Warning
-                    var statusIcon = isComplete ? '&#10003;' : (isNA ? '-' : '&#8987;');
+                    var statusColor = isComplete ? 'var(--success)' : (isPending ? 'var(--warning)' : (isNA ? '#666' : 'var(--warning)'));
+                    var statusIcon = isComplete ? '&#10003;' : (isNA ? '&empty;' : '&#8987;');
                     var badge = '<span style="display:inline-flex; align-items:center; gap:5px; color:' + statusColor + '; font-weight:600;">' + statusIcon + ' ' + item.status + '</span>';
 
                     var actionBtn = '-';
+
                     if (!isComplete && !isNA && item.target) {
-                        actionBtn = '<button class="action-btn bump-btn" style="font-size: 11px; padding: 4px 10px;" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
+                        actionBtn = '<button class="action-btn" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
+                    } else if (isComplete && item.target) {
+                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openFullPage()">View</button>';
+                    } else if (isComplete && item.name === 'Initial Request') {
+                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openFullPage()">View</button>';
+                    }
+
+                    // Append Admin Testing Links
+                    if (details.isAdmin && item.target && !isNA) {
+                        actionBtn += '&nbsp;<button class="action-btn" style="background:var(--brand-red); color:white; font-size: 11px; padding: 4px 10px;" onclick="openAdminForm(\'' + item.target + '\', \'' + details.id + '\')">Open Form</button>';
                     }
 
                     html +=
@@ -543,10 +627,44 @@
             document.getElementById('modalContent').innerHTML = html;
         }
 
+        function openAdminForm(target, id) {
+            let formName = target;
+            let query = '?wf=' + id;
+
+            // Map simple targets to form route names
+            if (target === 'id_setup') formName = 'id_setup';
+            if (target === 'hr_verification') formName = 'hr_verification';
+            if (target === 'it_setup') formName = 'it_setup';
+            if (['jonas', 'creditcard', 'fleetio', 'businesscards', 'sitedocs', 'review'].includes(target)) {
+                formName = 'specialist';
+                query += '&dept=' + target;
+            }
+
+            const url = SERVER_BASE_URL + '?form=' + formName + '&' + query.replace('?', '');
+            window.open(url, '_blank');
+        }
+
         function closeModal() {
             document.getElementById('detailsModal').style.display = 'none';
             currentWorkflowId = null;
         }
+
+        // Close modal when clicking outside of it
+        document.getElementById('detailsModal').addEventListener('click', function (event) {
+            if (event.target === this) {
+                closeModal();
+            }
+        });
+
+        // Close modal on Escape key press
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('detailsModal');
+                if (modal.style.display === 'flex') {
+                    closeModal();
+                }
+            }
+        });
 
         function openFullPage() {
             if (currentWorkflowId) {
