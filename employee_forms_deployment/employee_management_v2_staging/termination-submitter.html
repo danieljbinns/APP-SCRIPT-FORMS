@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -11,6 +11,19 @@
   --brand-red:#EB1C2D; --brand-red-hover:#c41522;
   --input-bg:#2a2a2a; --input-border:#444; --border-color:#333;
   --success:#00c853; --warning:#ffab00;
+}
+body.light-mode {
+  --bg-color:#f4f4f4; --bg-darker:#e8e8e8; --card-bg:#ffffff;
+  --text-main:#111111; --text-muted:#555555; --text-secondary:#333333;
+  --brand-red:#c41522; --brand-red-hover:#a50000;
+  --input-bg:#f9f9f9; --input-border:#bbbbbb; --border-color:#cccccc;
+}
+body.aoda-mode {
+  --bg-color:#ffffff; --bg-darker:#f0f0f0; --card-bg:#ffffff;
+  --text-main:#000000; --text-muted:#000000; --text-secondary:#000000;
+  --brand-red:#a50000; --brand-red-hover:#800000;
+  --input-bg:#ffffff; --input-border:#000000; --border-color:#000000;
+  font-size:17px; line-height:1.8;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background-color:var(--bg-color);color:var(--text-main);line-height:1.6;}
@@ -633,5 +646,8 @@ input[disabled],select[disabled],textarea[disabled]{opacity:0.75;cursor:default;
   </div>
 
 </div>
+  <?!= include('GeoCities') ?>
+  <?!= include('StarTrekTOS') ?>
+  <?!= include('SharedComponents') ?>
 </body>
 </html>

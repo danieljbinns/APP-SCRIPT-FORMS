@@ -6,9 +6,8 @@
 function serveDashboard() {
   const template = HtmlService.createTemplateFromFile('Dashboard');
   template.baseUrl = getBaseUrl(); // Pass server-side URL to client
-  template.spreadsheetId = CONFIG.SPREADSHEET_ID;
+  template.spreadsheetId = CONFIG.SPREADSHEET_ID; // Pass active Sheet ID
   template.environment = typeof ENVIRONMENT !== 'undefined' ? ENVIRONMENT : 'PROD';
-  template.emailRedirect = ConfigurationService.getSetting('EMAIL_REDIRECT_ALL') || '';
 
   return template.evaluate()
     .setTitle('Employee Onboarding Dashboard')
@@ -25,14 +24,6 @@ function serveWorkflowMap() {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
-function serveDataManager() {
-  return HtmlService.createTemplateFromFile('DataManager')
-    .evaluate()
-    .setTitle('Data Manager - Employee Onboarding')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-
-}
 
 function serveRequestDetails(workflowId) {
   const template = HtmlService.createTemplateFromFile('RequestDetails');
@@ -71,9 +62,10 @@ function getDashboardData() {
     const termSheetForType = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
     if (termSheetForType) {
       const tData = termSheetForType.getDataRange().getValues();
-      for (let i = 1; i < tData.length; i++) {
-        const wfId = String(tData[i][0] || '');
-        if (wfId) termEmpTypeMap[wfId] = String(tData[i][7] || ''); // col 7 = Employee Type
+      const TR = SCHEMA.TERMINATIONS;
+      for (let i = SCHEMA.ROW.FIRST_DATA; i < tData.length; i++) {
+        const wfId = String(tData[i][TR.WORKFLOW_ID] || '');
+        if (wfId) termEmpTypeMap[wfId] = String(tData[i][TR.EMPLOYEE_TYPE] || '');
       }
     }
 
@@ -99,33 +91,31 @@ function getDashboardData() {
       return s;
     };
 
+    const DV = SCHEMA.DASHBOARD_VIEW;
     const flows = data.slice(1).map(row => {
       let items = {};
-      try { if (row[10]) items = JSON.parse(String(row[10])); } catch (e) {}
-      const workflowId = String(row[0] || '');
+      try { if (row[DV.REQUESTED_ITEMS_JSON]) items = JSON.parse(String(row[DV.REQUESTED_ITEMS_JSON])); } catch (e) {}
+      const workflowId = String(row[DV.WORKFLOW_ID] || '');
       return {
         id: workflowId,
-        employee: String(row[1] || ''),
-        status: String(row[2] || ''),
-        step: String(row[3] || ''),
-        requesterName: String(row[4] || ''),
-        requesterEmail: String(row[5] || ''),
-        initiator: String(row[5] || row[6] || '-'),
-        dateRequested: fmtDate(row[7]),
-        lastUpdated: fmtDateTime(row[8]),
-        managerEmail: String(row[9] || ''),
+        employee:       String(row[DV.EMPLOYEE_NAME]    || ''),
+        status:         String(row[DV.GLOBAL_STATUS]    || ''),
+        step:           String(row[DV.GRANULAR_STEP]    || ''),
+        requesterName:  String(row[DV.REQUESTER_NAME]   || ''),
+        requesterEmail: String(row[DV.REQUESTER_EMAIL]  || ''),
+        initiator:      String(row[DV.REQUESTER_EMAIL]  || row[DV.INITIATOR_EMAIL] || '-'),
+        dateRequested:  fmtDate(row[DV.DATE_REQUESTED]),
+        lastUpdated:    fmtDateTime(row[DV.LAST_UPDATED]),
+        managerEmail:   String(row[DV.MANAGER_EMAIL]    || ''),
         requestedItems: items,
-        pendingItems: [],
-        hireDate: fmtDate(row[11]),
-        site: String(row[12] || ''),
-        empType: String(row[13] || '') || (workflowId.startsWith('TERM_') ? (termEmpTypeMap[workflowId] || '') : ''),
+        pendingItems:   [],
+        hireDate:       fmtDate(row[DV.HIRE_DATE]),
+        site:           String(row[DV.SITE]             || ''),
+        empType:        String(row[DV.EMPLOYMENT_TYPE]  || '') || (workflowId.startsWith('TERM_') ? (termEmpTypeMap[workflowId] || '') : ''),
         type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Status Change' : (workflowId.startsWith('EQUIP_REQ_') ? 'Equipment' : 'Onboarding'))
       };
     }).filter(wf => {
-      if (wf.status === 'Cancelled') return false;
-      if (isFullAccess) return true;
-      return wf.requesterEmail.toLowerCase() === userEmailLower ||
-             wf.managerEmail.toLowerCase() === userEmailLower;
+      return wf.status !== 'Cancelled' && wf.status !== 'Inactive';
     });
 
     // Termination fallback — catches pre-existing terminations not yet in Dashboard_View.
@@ -154,40 +144,37 @@ function getDashboardData() {
       const termData = termSheet.getDataRange().getValues();
       if (termData.length > 1) {
         termData.slice(1).forEach(row => {
-          const wfId = String(row[0] || '');
+          const wfId = String(row[SCHEMA.TERMINATIONS.WORKFLOW_ID] || '');
           if (!wfId || flowIds.has(wfId)) return;
 
-          // Apply access filter to fallback rows
-          const reqEmail = String(row[4] || '').toLowerCase();
-          const mgrEmail = String(row[15] || '').toLowerCase();
-          if (!isFullAccess && reqEmail !== userEmailLower && mgrEmail !== userEmailLower) return;
+          const TR = SCHEMA.TERMINATIONS;
 
-          let statusStr = row[16] ? 'Approved' : 'Pending Approval';
-          let stepStr   = row[16] ? 'Action Items Pending' : 'HR Approval Needed';
+          let statusStr = row[TR.HR_APPROVED_STATUS] ? 'Approved' : 'Pending Approval';
+          let stepStr   = row[TR.HR_APPROVED_STATUS] ? 'Action Items Pending' : 'HR Approval Needed';
 
           if (wfMap[wfId]) {
             if      (wfMap[wfId].status === 'Complete')   { statusStr = 'Complete';   stepStr = wfMap[wfId].step || 'All Actions Completed'; }
             else if (wfMap[wfId].status === 'Rejected')   { statusStr = 'Rejected';   stepStr = wfMap[wfId].step || 'Rejected'; }
-            else if (wfMap[wfId].status === 'Cancelled')  { return; }
+            else if (wfMap[wfId].status === 'Cancelled' || wfMap[wfId].status === 'Inactive') { return; }
             else if (wfMap[wfId].status === 'In Progress') { stepStr  = wfMap[wfId].step || stepStr; } // B3 fix
           }
 
           flows.push({
-            id: wfId,
-            employee:      String(row[5]  || ''),
-            status:        statusStr,
-            step:          stepStr,
-            requesterName: String(row[3]  || ''),
-            requesterEmail:String(row[4]  || ''),
-            initiator:     String(row[4]  || '-'),
-            dateRequested: fmtDate(row[2]),
-            lastUpdated:   fmtDateTime(row[2]),
-            managerEmail:  String(row[15] || ''),
-            hireDate:      fmtDate(row[12]),
-            site:          String(row[11] || ''),
-            empType:       String(row[7]  || ''), // Employee Type
+            id:             wfId,
+            employee:       String(row[TR.EMPLOYEE_NAME]    || ''),
+            status:         statusStr,
+            step:           stepStr,
+            requesterName:  String(row[TR.REQUESTER_NAME]   || ''),
+            requesterEmail: String(row[TR.REQUESTER_EMAIL]  || ''),
+            initiator:      String(row[TR.REQUESTER_EMAIL]  || '-'),
+            dateRequested:  fmtDate(row[TR.TIMESTAMP]),
+            lastUpdated:    fmtDateTime(row[TR.TIMESTAMP]),
+            managerEmail:   String(row[TR.MANAGER_EMAIL]    || ''),
+            hireDate:       fmtDate(row[TR.TERM_DATE]),
+            site:           String(row[TR.SITE]             || ''),
+            empType:        String(row[TR.EMPLOYEE_TYPE]    || ''),
             requestedItems: {},
-            pendingItems: [],
+            pendingItems:   [],
             type: 'End of Employment'
           });
         });
@@ -196,7 +183,8 @@ function getDashboardData() {
 
     flows.reverse();
 
-    return JSON.stringify({ success: true, workflows: flows, currentUser: userEmail, canEditDates: canEditDates });
+    const isAdmin = AccessControlService.isAdmin(userEmail);
+    return JSON.stringify({ success: true, workflows: flows, currentUser: userEmail, canEditDates: canEditDates, isAdmin: isAdmin });
 
   } catch (error) {
     Logger.log('Dashboard Error: ' + error.toString());
@@ -562,8 +550,8 @@ function getRequestDetails(workflowId) {
       const foundHr = hrSheet.getRange("A:A").createTextFinder(workflowId).findNext();
       if (foundHr) {
         const hrRow = hrSheet.getRange(foundHr.getRow(), 1, 1, hrSheet.getLastColumn()).getValues()[0];
-        // Verified Title is Col H (7)
-        const vTitle = hrRow[7];
+        // Verified Title is SCHEMA.HR_VERIFICATION_RESULTS.VERIFIED_JR_TITLE (col 7)
+        const vTitle = hrRow[SCHEMA.HR_VERIFICATION_RESULTS.VERIFIED_JR_TITLE];
         if (vTitle) {
           // Check if it looks like "Title / JR" and parse, or just use whole string
           if (vTitle.includes(' / ')) {
@@ -582,9 +570,10 @@ function getRequestDetails(workflowId) {
       const foundIt = itSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
       if (foundIt) {
         const itRow = itSheet.getRange(foundIt.getRow(), 1, 1, itSheet.getLastColumn()).getValues()[0];
-        if (itRow[6] && itRow[6] !== 'N/A') r['Computer Assigned'] = itRow[6];
-        if (itRow[10] && itRow[10] !== 'N/A') r['Phone Assigned'] = itRow[10];
-        if (itRow[4] && itRow[4] !== 'N/A') r['Email Assigned'] = itRow[4];
+        const ITS = SCHEMA.IT_RESULTS;
+        if (itRow[ITS.COMPUTER_ASSIGNED] && itRow[ITS.COMPUTER_ASSIGNED] !== 'N/A') r['Computer Assigned'] = itRow[ITS.COMPUTER_ASSIGNED];
+        if (itRow[ITS.PHONE_ASSIGNED]    && itRow[ITS.PHONE_ASSIGNED]    !== 'N/A') r['Phone Assigned']    = itRow[ITS.PHONE_ASSIGNED];
+        if (itRow[ITS.ASSIGNED_EMAIL]    && itRow[ITS.ASSIGNED_EMAIL]    !== 'N/A') r['Email Assigned']    = itRow[ITS.ASSIGNED_EMAIL];
       }
     }
 
@@ -838,12 +827,13 @@ function getStepResultData(workflowId, stepTarget) {
         if (!pcaFound) return {};
         const pcaRow = pcaSh.getRange(pcaFound.getRow(), 1, 1, pcaSh.getLastColumn()).getValues()[0];
         const fd2 = function(v) { return v instanceof Date ? v.toLocaleString() : String(v || ''); };
+        const PCA = SCHEMA.POSITION_CHANGE_APPROVAL;
         return {
-          'Decision':     fd2(pcaRow[3]),
-          'Notes':        fd2(pcaRow[4]),
-          'Next Steps':   fd2(pcaRow[5]),
-          'Submitted By': fd2(pcaRow[6]),
-          'Timestamp':    fd2(pcaRow[2])
+          'Decision':     fd2(pcaRow[PCA.DECISION]),
+          'Notes':        fd2(pcaRow[PCA.NOTES]),
+          'Next Steps':   fd2(pcaRow[PCA.FOLLOWUP_REQUIRED]),
+          'Submitted By': fd2(pcaRow[PCA.SUBMITTED_BY]),
+          'Timestamp':    fd2(pcaRow[PCA.TIMESTAMP])
         };
       }
       case 'change_manager':
@@ -911,39 +901,40 @@ function getStepResultData(workflowId, stepTarget) {
         // Helper: only add if value is not empty / N/A
         const out = {};
         const add = (label, val) => { const s = fd(val); if (s && s !== 'N/A') out[label] = s; };
+        const TRN = SCHEMA.TERMINATIONS;
 
-        add('Employee Name',    tr[5]);
-        add('Employee Type',    tr[7]);
-        add('Site',             tr[11]);
-        add('Term Date',        tr[12]);
-        add('Reason',           tr[13]);
-        add('Manager Name',     tr[14]);
-        add('Manager Email',    tr[15]);
-        add('Requester Name',   tr[3]);
-        add('Requester Email',  tr[4]);
-        add('Timestamp',        tr[2]);
-        add('HR Pre-Approved',  tr[16]);
-        add('Has Reports',      tr[17]);
-        if (fd(tr[17]) === 'Yes') add('Reports Reassigned To', tr[18]);
-        add('Systems to Deactivate', tr[19]);
-        add('Equipment to Return',   tr[25]);
+        add('Employee Name',    tr[TRN.EMPLOYEE_NAME]);
+        add('Employee Type',    tr[TRN.EMPLOYEE_TYPE]);
+        add('Site',             tr[TRN.SITE]);
+        add('Term Date',        tr[TRN.TERM_DATE]);
+        add('Reason',           tr[TRN.REASON]);
+        add('Manager Name',     tr[TRN.MANAGER_NAME]);
+        add('Manager Email',    tr[TRN.MANAGER_EMAIL]);
+        add('Requester Name',   tr[TRN.REQUESTER_NAME]);
+        add('Requester Email',  tr[TRN.REQUESTER_EMAIL]);
+        add('Timestamp',        tr[TRN.TIMESTAMP]);
+        add('HR Pre-Approved',  tr[TRN.HR_APPROVED_STATUS]);
+        add('Has Reports',      tr[TRN.HAS_REPORTS]);
+        if (fd(tr[TRN.HAS_REPORTS]) === 'Yes') add('Reports Reassigned To', tr[TRN.REASSIGN_REPORTS_TO]);
+        add('Systems to Deactivate', tr[TRN.SYSTEMS_TO_DEACTIVATE]);
+        add('Equipment to Return',   tr[TRN.EQUIPMENT_TO_RETURN]);
 
         // Only include Google Account fields when Google Account was selected
-        const systems = fd(tr[19]);
+        const systems = fd(tr[TRN.SYSTEMS_TO_DEACTIVATE]);
         if (systems.includes('Google Account')) {
-          add('Work Email',       tr[8]);
-          add('Email Forwarding', tr[20]);
-          add('Drive Files Transfer', tr[21]);
-          add('Inbox Delegate',   tr[22]);
-          add('Account Duration', tr[23]);
-          add('Vacation Message', tr[24]);
+          add('Work Email',           tr[TRN.WORK_EMAIL]);
+          add('Email Forwarding',     tr[TRN.EMAIL_FORWARDING]);
+          add('Drive Files Transfer', tr[TRN.DRIVE_FILES_TRANSFER]);
+          add('Inbox Delegate',       tr[TRN.INBOX_DELEGATE]);
+          add('Account Duration',     tr[TRN.ACCOUNT_DURATION]);
+          add('Vacation Message',     tr[TRN.VACATION_RESPONDER]);
         }
 
         // Phone only if provided
-        add('Phone',            tr[9]);
-        add('Computer Serial',  tr[10]);
-        add('Comments',         tr[26]);
-        if (tr[28]) add('Documentation', fd(tr[28]));
+        add('Phone',           tr[TRN.PHONE]);
+        add('Computer Serial', tr[TRN.COMPUTER_SERIAL]);
+        add('Comments',        tr[TRN.COMMENTS]);
+        if (tr[SCHEMA.TERMINATIONS.ATTACHMENT_URL]) add('Documentation', fd(tr[SCHEMA.TERMINATIONS.ATTACHMENT_URL]));
 
         return out;
       }
@@ -961,23 +952,25 @@ function getStepResultData(workflowId, stepTarget) {
           const tFound = tSh.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
           if (tFound) {
             const tr = tSh.getRange(tFound.getRow(), 1, 1, tSh.getLastColumn()).getValues()[0];
+            const TRCTX = SCHEMA.TERMINATIONS;
             context = {
-              'Employee Name': tr[5] || '-',
-              'Site': tr[11] || '-',
-              'Term Date': tr[12] instanceof Date ? tr[12].toLocaleDateString() : String(tr[12] || '-'),
-              'Reason': tr[13] || '-'
+              'Employee Name': tr[TRCTX.EMPLOYEE_NAME] || '-',
+              'Site':          tr[TRCTX.SITE]          || '-',
+              'Term Date':     tr[TRCTX.TERM_DATE] instanceof Date ? tr[TRCTX.TERM_DATE].toLocaleDateString() : String(tr[TRCTX.TERM_DATE] || '-'),
+              'Reason':        tr[TRCTX.REASON]        || '-'
             };
           }
         }
 
+        const TAR = SCHEMA.TERMINATION_APPROVAL_RESULTS;
         return {
-          'Decision': ar[3],
-          'Submitted By': ar[6] || 'HR',
-          'Timestamp': ar[2] instanceof Date ? ar[2].toLocaleString() : ar[2],
-          'Notes': ar[4],
-          'Follow-up Required': ar[5],
+          'Decision':          ar[TAR.DECISION],
+          'Submitted By':      ar[TAR.SUBMITTED_BY] || 'HR',
+          'Timestamp':         ar[TAR.TIMESTAMP] instanceof Date ? ar[TAR.TIMESTAMP].toLocaleString() : ar[TAR.TIMESTAMP],
+          'Notes':             ar[TAR.NOTES],
+          'Follow-up Required':ar[TAR.FOLLOWUP_REQUIRED],
           ...context,
-          'Workflow ID': ar[0]
+          'Workflow ID':       ar[TAR.WORKFLOW_ID]
         };
       }
       case 'asset_collection':
@@ -1035,27 +1028,28 @@ function getStepResultData(workflowId, stepTarget) {
       case 'equipment_request': {
         const eqSh = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
         if (!eqSh) return {};
-        // Workflow ID is stored in column B (index 1)
-        const eqFound = eqSh.getRange('B:B').createTextFinder(workflowId).matchEntireCell(true).findNext();
+        // Workflow ID is now in column A (index 0)
+        const eqFound = eqSh.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext();
         if (!eqFound) return {};
         const eqRow = eqSh.getRange(eqFound.getRow(), 1, 1, eqSh.getLastColumn()).getValues()[0];
         const eqTz = Session.getScriptTimeZone();
         const fd3 = (v) => v instanceof Date ? Utilities.formatDate(v, eqTz, 'M/d/yyyy') : String(v || '');
         const eqOut = {};
         const eqAdd = (label, val) => { const s = fd3(val); if (s && s !== 'N/A') eqOut[label] = s; };
-        eqAdd('Requester Name',  eqRow[3]);
-        eqAdd('Requester Email', eqRow[4]);
-        eqAdd('First Name',      eqRow[5]);
-        eqAdd('Last Name',       eqRow[6]);
-        eqAdd('Site',            eqRow[7]);
-        eqAdd('Position',        eqRow[8]);
-        eqAdd('Manager Name',    eqRow[9]);
-        eqAdd('Manager Email',   eqRow[10]);
-        eqAdd('Equipment',       eqRow[11]);
-        eqAdd('Systems',         eqRow[12]);
-        eqAdd('Comments',        eqRow[13]);
-        eqAdd('Department',      eqRow[14]);
-        eqAdd('Date Requested',  eqRow[0]);
+        const EQS = SCHEMA.EQUIPMENT_REQUESTS;
+        eqAdd('Requester Name',  eqRow[EQS.REQUESTER_NAME]);
+        eqAdd('Requester Email', eqRow[EQS.REQUESTER_EMAIL]);
+        eqAdd('First Name',      eqRow[EQS.EMPLOYEE_FIRST_NAME]);
+        eqAdd('Last Name',       eqRow[EQS.EMPLOYEE_LAST_NAME]);
+        eqAdd('Site',            eqRow[EQS.SITE_NAME]);
+        eqAdd('Position',        eqRow[EQS.JOB_TITLE]);
+        eqAdd('Manager Name',    eqRow[EQS.MANAGER_NAME]);
+        eqAdd('Manager Email',   eqRow[EQS.MANAGER_EMAIL]);
+        eqAdd('Equipment',       eqRow[EQS.EQUIPMENT_REQUESTED]);
+        eqAdd('Systems',         eqRow[EQS.SYSTEMS_REQUESTED]);
+        eqAdd('Comments',        eqRow[EQS.COMMENTS]);
+        eqAdd('Department',      eqRow[EQS.DEPARTMENT]);
+        eqAdd('Date Requested',  eqRow[EQS.TIMESTAMP]);
         return eqOut;
       }
       case 'id_setup': sheetName = CONFIG.SHEETS.ID_SETUP_RESULTS; break;
@@ -1216,10 +1210,11 @@ function getTerminationDetails(workflowId) {
 
     // Index-based fallbacks for key fields that may be absent if sheet schema predates current headers
     const _sv = function(v) { return v instanceof Date ? v.toString() : String(v === null || v === undefined ? '' : v); };
-    if (!r['Employee Type']) r['Employee Type'] = _sv(reqRow[7]);   // empType always at col 7
-    if (!r['Term Date'])     r['Term Date']     = _sv(reqRow[12]);  // termDate always at col 12
-    if (!r['Site'])          r['Site']          = _sv(reqRow[11]);  // siteName always at col 11
-    if (!r['Reason'])        r['Reason']        = _sv(reqRow[13]);  // reason always at col 13
+    const TRFB = SCHEMA.TERMINATIONS;
+    if (!r['Employee Type']) r['Employee Type'] = _sv(reqRow[TRFB.EMPLOYEE_TYPE]);
+    if (!r['Term Date'])     r['Term Date']     = _sv(reqRow[TRFB.TERM_DATE]);
+    if (!r['Site'])          r['Site']          = _sv(reqRow[TRFB.SITE]);
+    if (!r['Reason'])        r['Reason']        = _sv(reqRow[TRFB.REASON]);
 
     context.requestData = r;
 
@@ -1242,8 +1237,8 @@ function getTerminationDetails(workflowId) {
           name: "Approval",
           status: "Complete",
           target: "termination_approval",
-          by: apprRow[apprRow.length - 1] || 'HR Approval',
-          time: apprRow[2] instanceof Date ? apprRow[2].toLocaleString() : String(apprRow[2] || '')
+          by: apprRow[SCHEMA.TERMINATION_APPROVAL_RESULTS.SUBMITTED_BY] || 'HR Approval',
+          time: apprRow[SCHEMA.TERMINATION_APPROVAL_RESULTS.TIMESTAMP] instanceof Date ? apprRow[SCHEMA.TERMINATION_APPROVAL_RESULTS.TIMESTAMP].toLocaleString() : String(apprRow[SCHEMA.TERMINATION_APPROVAL_RESULTS.TIMESTAMP] || '')
         });
       } else {
         checklist.push({ name: "Approval", status: "Pending", target: "termination_approval" });
@@ -1334,7 +1329,7 @@ function getTerminationDetails(workflowId) {
 
 /**
  * Get Details for Equipment Request Workflow Modal
- * Equipment_Requests sheet: Timestamp[0] | WorkflowID[1] | FormID[2] | ReqName[3] | ReqEmail[4]
+ * Equipment_Requests sheet: WorkflowID[0] | FormID[1] | Timestamp[2] | ReqName[3] | ReqEmail[4]
  *   | FirstName[5] | LastName[6] | Site[7] | Position[8] | ManagerName[9] | ManagerEmail[10]
  *   | Equipment[11] | Systems[12] | Comments[13] | Department[14]
  */
@@ -1348,9 +1343,9 @@ function getEquipmentRequestDetails(workflowId) {
     if (!foundWf) return { success: false, message: 'Workflow not found' };
     const wfRow = wfSheet.getRange(foundWf.getRow(), 1, 1, 9).getValues()[0];
 
-    // Equipment_Requests row — workflow ID is in column B
+    // Equipment_Requests row — Workflow ID is now in column A (index 0)
     const eqSheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
-    const foundReq = eqSheet ? eqSheet.getRange('B:B').createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
+    const foundReq = eqSheet ? eqSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (!foundReq) return { success: false, message: 'Request ID not found in database' };
     const row = eqSheet.getRange(foundReq.getRow(), 1, 1, eqSheet.getLastColumn()).getValues()[0];
 
@@ -1358,22 +1353,24 @@ function getEquipmentRequestDetails(workflowId) {
     const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'M/d/yyyy') : String(v || '');
 
     // Build requestData with header-style keys so RequestDetails.html can render it uniformly
-    const firstName = String(row[5] || '');
-    const lastName  = String(row[6] || '');
+    const EQD = SCHEMA.EQUIPMENT_REQUESTS;
+    const WFS = SCHEMA.WORKFLOWS;
+    const firstName = String(row[EQD.EMPLOYEE_FIRST_NAME] || '');
+    const lastName  = String(row[EQD.EMPLOYEE_LAST_NAME]  || '');
     const requestData = {
       'First Name':      firstName,
       'Last Name':       lastName,
-      'Position Title':  String(row[8] || ''),
-      'Site Name':       String(row[7] || ''),
-      'Manager Name':    String(row[9] || ''),
-      'Manager Email':   String(row[10] || ''),
-      'Equipment':       String(row[11] || ''),
-      'Systems':         String(row[12] || ''),
-      'Comments':        String(row[13] || ''),
-      'Department':      String(row[14] || ''),
-      'Requester Name':  String(row[3] || ''),
-      'Requester Email': String(row[4] || ''),
-      'Date Requested':  fmtDate(row[0])
+      'Position Title':  String(row[EQD.JOB_TITLE]            || ''),
+      'Site Name':       String(row[EQD.SITE_NAME]             || ''),
+      'Manager Name':    String(row[EQD.MANAGER_NAME]          || ''),
+      'Manager Email':   String(row[EQD.MANAGER_EMAIL]         || ''),
+      'Equipment':       String(row[EQD.EQUIPMENT_REQUESTED]   || ''),
+      'Systems':         String(row[EQD.SYSTEMS_REQUESTED]     || ''),
+      'Comments':        String(row[EQD.COMMENTS]              || ''),
+      'Department':      String(row[EQD.DEPARTMENT]            || ''),
+      'Requester Name':  String(row[EQD.REQUESTER_NAME]        || ''),
+      'Requester Email': String(row[EQD.REQUESTER_EMAIL]       || ''),
+      'Date Requested':  fmtDate(row[EQD.TIMESTAMP])
     };
 
     const context = {
@@ -1381,8 +1378,8 @@ function getEquipmentRequestDetails(workflowId) {
       id:          workflowId,
       type:        'Equipment',
       requestData: requestData,
-      status:      String(wfRow[4] || ''),
-      currentStep: String(wfRow[7] || ''),
+      status:      String(wfRow[WFS.STATUS]       || ''),
+      currentStep: String(wfRow[WFS.CURRENT_STEP] || ''),
       checklist:   []
     };
 
@@ -1466,17 +1463,18 @@ function getChangeDetails(workflowId) {
     });
     // Normalized aliases by index for reliable client-side snapshot access
     const _fmt = function(v) { return v instanceof Date ? Utilities.formatDate(v, _tz, 'M/d/yyyy') : String(v || ''); };
-    r['Employee Name']        = r['Employee Name']        || _fmt(reqRow[5]);
-    r['Requester Name']       = r['Requester Name']       || _fmt(reqRow[3]);
-    r['Requester Email']      = r['Requester Email']      || _fmt(reqRow[4]);
-    r['Effective Date']       = r['Effective Date']       || _fmt(reqRow[7]);
-    r['Site Name']            = r['Site Name']            || _fmt(reqRow[8]);
-    r['Change Type']          = r['Change Type']          || _fmt(reqRow[9]);
-    r['Department']           = r['Department']           || _fmt(reqRow[21]);
-    r['Current Title']        = r['Current Title']        || _fmt(reqRow[24]);
-    r['Current Manager Email']= r['Current Manager Email']|| _fmt(reqRow[25]);
-    r['Current Manager Name'] = r['Current Manager Name'] || _fmt(reqRow[26]);
-    r['Current Classification']= r['Current Classification']|| _fmt(reqRow[27]);
+    const PCN = SCHEMA.POSITION_CHANGES;
+    r['Employee Name']         = r['Employee Name']         || _fmt(reqRow[PCN.EMPLOYEE_NAME]);
+    r['Requester Name']        = r['Requester Name']        || _fmt(reqRow[PCN.REQUESTER_NAME]);
+    r['Requester Email']       = r['Requester Email']       || _fmt(reqRow[PCN.REQUESTER_EMAIL]);
+    r['Effective Date']        = r['Effective Date']        || _fmt(reqRow[PCN.EFFECTIVE_DATE]);
+    r['Site Name']             = r['Site Name']             || _fmt(reqRow[PCN.CURRENT_SITE]);
+    r['Change Type']           = r['Change Type']           || _fmt(reqRow[PCN.CHANGE_TYPES]);
+    r['Department']            = r['Department']            || _fmt(reqRow[PCN.DEPARTMENT]);
+    r['Current Title']         = r['Current Title']         || _fmt(reqRow[24]);   // extended field
+    r['Current Manager Email'] = r['Current Manager Email'] || _fmt(reqRow[25]);   // extended field
+    r['Current Manager Name']  = r['Current Manager Name']  || _fmt(reqRow[26]);   // extended field
+    r['Current Classification']= r['Current Classification']|| _fmt(reqRow[27]);   // extended field
     context.requestData = r;
 
     const wf = getWorkflow(workflowId);
@@ -1498,12 +1496,13 @@ function getChangeDetails(workflowId) {
       const foundAppr = approvalSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext();
       if (foundAppr) {
         const apprRow = approvalSheet.getRange(foundAppr.getRow(), 1, 1, approvalSheet.getLastColumn()).getValues()[0];
+        const PCAP = SCHEMA.POSITION_CHANGE_APPROVAL;
         checklist.push({
-          name: 'HR Approval',
+          name:   'HR Approval',
           status: 'Complete',
           target: 'position_change_approval',
-          by: apprRow[6] || 'HR',
-          time: apprRow[2] instanceof Date ? apprRow[2].toLocaleString() : String(apprRow[2] || '')
+          by:     apprRow[PCAP.SUBMITTED_BY] || 'HR',
+          time:   apprRow[PCAP.TIMESTAMP] instanceof Date ? apprRow[PCAP.TIMESTAMP].toLocaleString() : String(apprRow[PCAP.TIMESTAMP] || '')
         });
       } else {
         checklist.push({ name: 'HR Approval', status: 'Pending', target: 'position_change_approval' });

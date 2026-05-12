@@ -57,8 +57,8 @@ function getIDSetupRequestData(workflowId) {
       return col[name] !== -1 ? row[col[name]] : '';
     }
 
-    for (var i = 1; i < data.length; i++) {
-      if (data[i][0] === workflowId) {
+    for (var i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+      if (data[i][SCHEMA.INITIAL_REQUESTS.WORKFLOW_ID] === workflowId) {
         var row = data[i];
         var firstName = get(row, 'First Name');
         var lastName  = get(row, 'Last Name');
@@ -115,8 +115,8 @@ function generateEmployeeId() {
       return '30000';
     }
     
-    // Get all employee IDs from column D (Internal Employee ID)
-    const data = sheet.getRange(2, 4, sheet.getLastRow() - 1, 1).getValues();
+    // Get all employee IDs from Internal Employee ID column (SCHEMA.ID_SETUP_RESULTS.INTERNAL_EMP_ID + 1)
+    const data = sheet.getRange(2, SCHEMA.ID_SETUP_RESULTS.INTERNAL_EMP_ID + 1, sheet.getLastRow() - 1, 1).getValues();
     let maxId = 29999; // Start below 30000
     
     data.forEach(row => {
@@ -164,7 +164,7 @@ function submitEmployeeIDSetup(formData) {
         'Workflow ID', 'Form ID', 'Submission Timestamp', 'Internal Employee ID',
         'SiteDocs Worker ID', 'SiteDocs Job Code', 'SiteDocs Username',
         'SiteDocs Password', 'DSS Username', 'DSS Password',
-        'Setup Notes', 'BOSS WIS Created', 'SiteDocs Badge Created', 'Submitted By'
+        'Setup Notes', 'Submitted By', 'BOSS WIS Created'
       ]);
       resultsSheet.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
@@ -174,8 +174,8 @@ function submitEmployeeIDSetup(formData) {
       formData.siteDocsWorkerId, formData.siteDocsJobCode,
       formData.siteDocsUsername || 'N/A', formData.siteDocsPassword || 'N/A',
       formData.dssUsername, formData.dssPassword,
-      formData.setupNotes || '', formData.bossWisCreated || 'No',
-      formData.siteDocsBadgeCreated || 'No', Session.getActiveUser().getEmail()
+      formData.setupNotes || '', Session.getActiveUser().getEmail(),
+      formData.bossWisCreated || 'No'
     ]);
     
     const actingUser = Session.getActiveUser().getEmail();
@@ -205,8 +205,8 @@ function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
         var sh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
         if (!sh) return '';
         var rows = sh.getDataRange().getValues();
-        var row = rows.find(function(r) { return r[0] === workflowId; });
-        return row ? String(row[5] || '') : '';
+        var row = rows.find(function(r) { return r[SCHEMA.ID_SETUP_RESULTS.WORKFLOW_ID] === workflowId; });
+        return row ? String(row[SCHEMA.ID_SETUP_RESULTS.SITEDOCS_JOB_CODE] || '') : '';
       } catch(e) { return ''; }
     })();
 

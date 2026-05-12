@@ -713,6 +713,155 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .gated-form { display: none; opacity: 0; transition: opacity 0.5s; }
 .gated-form.show { display: block; opacity: 1; }
 
+/* ── Light mode overrides ────────────────────────────────────── */
+/* Applied via body.light-mode — cascades all var() references   */
+body.light-mode {
+  --bg-color:        #f4f4f4;
+  --bg-darker:       #eaeaea;
+  --card-bg:         #ffffff;
+  --text-main:       #1a1a1a;
+  --text-muted:      #555555;
+  --text-dim:        #999999;
+  --text-secondary:  #333333;
+  --input-bg:        #efefef;
+  --input-border:    #cccccc;
+  --border-color:    #dddddd;
+  --border-subtle:   #eeeeee;
+  --success:         #00913c;
+  --warning:         #c47000;
+  --danger:          #c62828;
+  --accent-blue:     #1565c0;
+  --accent-amber:    #996600;
+  --accent-green:    #2e7d32;
+  --accent-green-lt: #1b5e20;
+  --accent-red-lt:   #b71c1c;
+  --badge-wf-bg:     #e8eaf6;
+  --badge-wf-text:   #3949ab;
+  --badge-wf-border: #9fa8da;
+  --badge-typ-bg:    #e8f5e9;
+  --badge-typ-text:  #2e7d32;
+  --badge-typ-border:#a5d6a7;
+  --badge-emp-bg:    #fce4ec;
+  --badge-emp-text:  #b71c1c;
+  --badge-emp-border:#f48fb1;
+}
+
+/* ── AODA / high-contrast mode ───────────────────────────────── */
+/* Overrides both light and dark — forces WCAG AA contrast       */
+body.aoda-mode {
+  --bg-color:        #ffffff;
+  --bg-darker:       #f0f0f0;
+  --card-bg:         #ffffff;
+  --text-main:       #000000;
+  --text-muted:      #333333;
+  --text-dim:        #555555;
+  --text-secondary:  #111111;
+  --brand-red:       #a50000;   /* darker red — 5.9:1 on white */
+  --brand-red-hover: #7a0000;
+  --input-bg:        #ffffff;
+  --input-border:    #000000;
+  --border-color:    #000000;
+  --border-subtle:   #555555;
+  --success:         #005a1e;   /* 7.5:1 on white */
+  --warning:         #7a4800;   /* 6.1:1 on white */
+  --danger:          #a50000;
+  --accent-blue:     #0000cc;   /* 8.6:1 on white */
+  --accent-amber:    #7a4800;
+  --accent-green:    #005a1e;
+  --accent-green-lt: #003a14;
+  --accent-red-lt:   #a50000;
+  --badge-wf-bg:     #e8eaf6;
+  --badge-wf-text:   #00008b;
+  --badge-wf-border: #00008b;
+  --badge-typ-bg:    #e8f5e9;
+  --badge-typ-text:  #005a1e;
+  --badge-typ-border:#005a1e;
+  --badge-emp-bg:    #fff0f0;
+  --badge-emp-text:  #a50000;
+  --badge-emp-border:#a50000;
+  font-size: 17px;
+  line-height: 1.8;
+}
+/* Enhanced focus ring — visible on any background */
+body.aoda-mode *:focus-visible {
+  outline: 3px solid #0000cc !important;
+  outline-offset: 3px !important;
+}
+/* Thicker borders on inputs and cards */
+body.aoda-mode input,
+body.aoda-mode select,
+body.aoda-mode textarea {
+  border-width: 2px !important;
+}
+body.aoda-mode .card,
+body.aoda-mode .card-form {
+  border-width: 2px !important;
+}
+/* Underline all links for non-color distinction */
+body.aoda-mode a { text-decoration: underline; }
+
+/* ── Theme toggle button ─────────────────────────────────────── */
+/* AODA toggle sits immediately left of the theme toggle */
+.aoda-toggle-btn {
+  position: fixed;
+  top: 14px;
+  right: 60px;
+  z-index: 9999;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  letter-spacing: 0;
+}
+.aoda-toggle-btn:hover {
+  border-color: var(--brand-red);
+  color: var(--brand-red);
+  box-shadow: 0 2px 12px rgba(235,28,45,0.2);
+}
+body.aoda-mode .aoda-toggle-btn {
+  border-color: #0000cc;
+  color: #0000cc;
+  box-shadow: 0 2px 12px rgba(0,0,204,0.2);
+}
+
+.theme-toggle-btn {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 9999;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.theme-toggle-btn:hover {
+  border-color: var(--brand-red);
+  color: var(--brand-red);
+  box-shadow: 0 2px 12px rgba(235,28,45,0.2);
+}
+.theme-toggle-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .container { padding: 0 12px; }

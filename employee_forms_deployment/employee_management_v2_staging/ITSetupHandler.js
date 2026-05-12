@@ -25,66 +25,66 @@ function getITContextData(workflowId) {
     const idSetupSheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
 
     const mainData = mainSheet.getDataRange().getValues();
-    const headers = mainData[0];
     let context = { success: false, message: 'Workflow ID not found' };
 
-    for (let i = 1; i < mainData.length; i++) {
-      if (mainData[i][0] === workflowId) {
-        const googleEmailRaw = String(mainData[i][22] || '').replace(/^"|"$/g, '').trim();
-        const googleDomain   = String(mainData[i][23] || '').replace('@', '').trim();
-        const equipmentRaw   = mainData[i][21] || '';
-        const systemsRaw     = mainData[i][20] || '';
+    for (let i = SCHEMA.ROW.FIRST_DATA; i < mainData.length; i++) {
+      const IR = SCHEMA.INITIAL_REQUESTS;
+      if (mainData[i][IR.WORKFLOW_ID] === workflowId) {
+        const googleEmailRaw = String(mainData[i][IR.GOOGLE_EMAIL] || '').replace(/^"|"$/g, '').trim();
+        const googleDomain   = String(mainData[i][IR.GOOGLE_DOMAIN] || '').replace('@', '').trim();
+        const equipmentRaw   = mainData[i][IR.EQUIPMENT] || '';
+        const systemsRaw     = mainData[i][IR.SYSTEMS] || '';
         context = {
           success: true,
           workflowType: 'New Hire',
-          employeeName: mainData[i][10] + ' ' + mainData[i][12],
-          firstName: mainData[i][10],
-          lastName: mainData[i][12],
-          hireDate: (function(d){ return d instanceof Date ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd') : (d ? String(d).substring(0, 10) : ''); })(mainData[i][6]),
-          newHireOrRehire: (headers.indexOf('New Hire/Rehire') !== -1 ? mainData[i][headers.indexOf('New Hire/Rehire')] : mainData[i][7]) || '',
-          employeeType:   (headers.indexOf('Employee Type')    !== -1 ? mainData[i][headers.indexOf('Employee Type')]    : mainData[i][8])  || '',
-          employmentType:  mainData[i][9]  || '',  // Col 9 = Employment Type
-          jobTitle: mainData[i][14], // Col 14 = Position Title
-          jrTitle: mainData[i][46],  // Col 46 = JR Assign (verified)
-          jrRequested: mainData[i][45], // Col 45 = JR Req
-          siteName: mainData[i][15],
-          jobSiteNumber: mainData[i][16],
-          managerName: mainData[i][18],
-          managerEmail: mainData[i][17],
-          requesterEmail: mainData[i][5],
-          systemAccess: mainData[i][19] || '',     // Col 19 = System Access
+          employeeName: mainData[i][IR.FIRST_NAME] + ' ' + mainData[i][IR.LAST_NAME],
+          firstName: mainData[i][IR.FIRST_NAME],
+          lastName: mainData[i][IR.LAST_NAME],
+          hireDate: (function(d){ return d instanceof Date ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd') : (d ? String(d).substring(0, 10) : ''); })(mainData[i][IR.HIRE_DATE]),
+          newHireOrRehire: mainData[i][IR.NEW_HIRE_OR_REHIRE] || '',
+          employeeType:    mainData[i][IR.EMPLOYEE_TYPE]      || '',
+          employmentType:  mainData[i][IR.EMPLOYMENT_TYPE]    || '',
+          jobTitle: mainData[i][IR.POSITION_TITLE],
+          jrTitle: mainData[i][IR.JR_ASSIGNMENT],
+          jrRequested: mainData[i][IR.JR_REQUIRED],
+          siteName: mainData[i][IR.SITE_NAME],
+          jobSiteNumber: mainData[i][IR.JOB_SITE_NUMBER],
+          managerName: mainData[i][IR.MANAGER_NAME],
+          managerEmail: mainData[i][IR.MANAGER_EMAIL],
+          requesterEmail: mainData[i][IR.REQUESTER_EMAIL],
+          systemAccess: mainData[i][IR.SYSTEM_ACCESS] || '',
           systems: systemsRaw ? systemsRaw.split(',').map(function(s){return s.trim();}).filter(Boolean) : [],
           equipmentRaw: equipmentRaw,
-          googleEmail: googleEmailRaw,             // Col 22, quotes stripped
+          googleEmail: googleEmailRaw,             // quotes stripped
           googleDomain: googleDomain ? '@' + googleDomain : '',
           emailRequested: googleEmailRaw + (googleDomain ? '@' + googleDomain : ''),
-          requestedDomains: mainData[i][23],       // Col 23 = Google Domain (original)
+          requestedDomains: mainData[i][IR.GOOGLE_DOMAIN],
           // Computer / Phone
-          computerReq: mainData[i][24],
-          computerType: mainData[i][25],
-          computerPrevUser: mainData[i][26],
-          computerPrevType: mainData[i][27],
-          computerSerial: mainData[i][28],
-          phoneReq: mainData[i][36],
-          phonePrevUser: mainData[i][37],
-          phonePrevNumber: mainData[i][38],
+          computerReq: mainData[i][IR.COMPUTER_REQ],
+          computerType: mainData[i][IR.COMPUTER_TYPE],
+          computerPrevUser: mainData[i][IR.COMPUTER_PREV_USER],
+          computerPrevType: mainData[i][IR.COMPUTER_PREV_TYPE],
+          computerSerial: mainData[i][IR.COMPUTER_SERIAL],
+          phoneReq: mainData[i][IR.PHONE_REQ],
+          phonePrevUser: mainData[i][IR.PHONE_PREV_USER],
+          phonePrevNumber: mainData[i][IR.PHONE_PREV_NUMBER],
           // BOSS
-          bossJobSites: mainData[i][39],
-          bossCostSheet: mainData[i][40],
-          bossCostSheetJobs: mainData[i][41],
-          bossTripReports: mainData[i][42],
-          bossGrievances: mainData[i][43],
-          jonasJobNumbers: mainData[i][44],
+          bossJobSites: mainData[i][IR.BOSS_SITES],
+          bossCostSheet: mainData[i][IR.BOSS_COST_SHEET],
+          bossCostSheetJobs: mainData[i][IR.BOSS_JOBS],
+          bossTripReports: mainData[i][IR.BOSS_TRIP],
+          bossGrievances: mainData[i][IR.BOSS_GRIEVANCES],
+          jonasJobNumbers: mainData[i][IR.JONAS_JOB_NUMBERS],
           // Misc
-          creditCardUSA: mainData[i][30],
-          creditCardLimitUSA: mainData[i][31],
-          creditCardLimitCanada: mainData[i][32],
-          creditCardLimitHomeDepot: mainData[i][35],
+          creditCardUSA: mainData[i][IR.CC_USA],
+          creditCardLimitUSA: mainData[i][IR.CC_LIMIT_USA],
+          creditCardLimitCanada: mainData[i][IR.CC_CAN],
+          creditCardLimitHomeDepot: mainData[i][IR.CC_LIMIT_HD],
           businessCards: equipmentRaw.includes('Business Cards') ? 'Yes' : 'No',
           vehicleRequested: equipmentRaw.includes('Vehicle') ? 'Yes' : 'No',
           fleetioAccess: systemsRaw.includes('Fleetio') ? 'Yes' : 'No',
-          department: headers.indexOf('Department') !== -1 ? mainData[i][headers.indexOf('Department')] : '',
-          purchasingSites: mainData[i][51] || ''
+          department: mainData[i][IR.DEPARTMENT] || '',
+          purchasingSites: mainData[i][IR.PURCHASING_SITES] || ''
         };
         break;
       }
@@ -106,18 +106,19 @@ function getITContextData(workflowId) {
     }
 
     if (idSetupSheet) {
+      const ID = SCHEMA.ID_SETUP_RESULTS;
       const idData = idSetupSheet.getDataRange().getValues();
-      for (let j = 1; j < idData.length; j++) {
-        if (idData[j][0] === workflowId) {
-          context.internalEmployeeId = idData[j][3];
-          context.siteDocsWorkerId = idData[j][4];
-          context.siteDocsJobCode = idData[j][5];
-          context.siteDocsUsername = idData[j][6];
-          context.siteDocsPassword = idData[j][7];
-          context.dssUsername = idData[j][8];
-          context.dssPassword = idData[j][9];
-          if (idData[j][2]) context.idTimestamp  = idData[j][2] instanceof Date ? Utilities.formatDate(idData[j][2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(idData[j][2]);
-          if (idData[j][12]) context.idSubmittedBy = String(idData[j][12]);
+      for (let j = SCHEMA.ROW.FIRST_DATA; j < idData.length; j++) {
+        if (idData[j][ID.WORKFLOW_ID] === workflowId) {
+          context.internalEmployeeId = idData[j][ID.INTERNAL_EMP_ID];
+          context.siteDocsWorkerId = idData[j][ID.SITEDOCS_WORKER_ID];
+          context.siteDocsJobCode = idData[j][ID.SITEDOCS_JOB_CODE];
+          context.siteDocsUsername = idData[j][ID.SITEDOCS_USERNAME];
+          context.siteDocsPassword = idData[j][ID.SITEDOCS_PASSWORD];
+          context.dssUsername = idData[j][ID.DSS_USERNAME];
+          context.dssPassword = idData[j][ID.DSS_PASSWORD];
+          if (idData[j][ID.SUBMISSION_TS]) context.idTimestamp  = idData[j][ID.SUBMISSION_TS] instanceof Date ? Utilities.formatDate(idData[j][ID.SUBMISSION_TS], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(idData[j][ID.SUBMISSION_TS]);
+          if (idData[j][ID.BOSS_WIS_CREATED]) context.idSubmittedBy = String(idData[j][ID.BOSS_WIS_CREATED]);
           break;
         }
       }
@@ -126,16 +127,17 @@ function getITContextData(workflowId) {
     // HR Verification Results — ADP ID, verified names, timestamps
     const hrSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
     if (hrSheet) {
+      const HR = SCHEMA.HR_VERIFICATION_RESULTS;
       const hrData = hrSheet.getDataRange().getValues();
-      for (let k = hrData.length - 1; k >= 1; k--) {
-        if (hrData[k][0] === workflowId && String(hrData[k][1]) !== 'DATE_CHANGE') {
-          if (hrData[k][3]) context.adpAssociateId   = String(hrData[k][3]);
-          if (hrData[k][5]) context.managerName       = String(hrData[k][5]);  // HR-verified manager
-          if (hrData[k][6]) context.managerEmail      = String(hrData[k][6]);
-          if (hrData[k][2]) context.hrTimestamp       = hrData[k][2] instanceof Date ? Utilities.formatDate(hrData[k][2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(hrData[k][2]);
-          if (hrData[k][9]) context.hrSubmittedBy     = String(hrData[k][9]);
+      for (let k = hrData.length - 1; k >= SCHEMA.ROW.FIRST_DATA; k--) {
+        if (hrData[k][HR.WORKFLOW_ID] === workflowId && String(hrData[k][HR.FORM_ID]) !== 'DATE_CHANGE') {
+          if (hrData[k][HR.ADP_ASSOCIATE_ID]) context.adpAssociateId   = String(hrData[k][HR.ADP_ASSOCIATE_ID]);
+          if (hrData[k][HR.VERIFIED_MANAGER]) context.managerName       = String(hrData[k][HR.VERIFIED_MANAGER]);  // HR-verified manager
+          if (hrData[k][HR.VERIFIED_MANAGER_EMAIL]) context.managerEmail      = String(hrData[k][HR.VERIFIED_MANAGER_EMAIL]);
+          if (hrData[k][HR.SUBMISSION_TS]) context.hrTimestamp       = hrData[k][HR.SUBMISSION_TS] instanceof Date ? Utilities.formatDate(hrData[k][HR.SUBMISSION_TS], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(hrData[k][HR.SUBMISSION_TS]);
+          if (hrData[k][HR.SUBMITTED_BY]) context.hrSubmittedBy     = String(hrData[k][HR.SUBMITTED_BY]);
           // Use HR-verified job title if present
-          const verifiedTitles = hrData[k][7] ? String(hrData[k][7]) : '';
+          const verifiedTitles = hrData[k][HR.VERIFIED_JR_TITLE] ? String(hrData[k][HR.VERIFIED_JR_TITLE]) : '';
           if (verifiedTitles.includes(' / ')) {
             const parts = verifiedTitles.split(' / ');
             context.jobTitle = parts[0].trim();
@@ -167,8 +169,8 @@ function submitITSetup(formData) {
     const itSheetCheck = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
     if (itSheetCheck) {
       const itCheckData = itSheetCheck.getDataRange().getValues();
-      for (let ei = 1; ei < itCheckData.length; ei++) {
-        if (String(itCheckData[ei][0]) === workflowId) {
+      for (let ei = SCHEMA.ROW.FIRST_DATA; ei < itCheckData.length; ei++) {
+        if (String(itCheckData[ei][SCHEMA.IT_RESULTS.WORKFLOW_ID]) === workflowId) {
           existingITRowIndex = ei + 1;
           existingITRowData = itCheckData[ei];
           break;
@@ -190,7 +192,12 @@ function submitITSetup(formData) {
       itSheet.getRange(1, 1, 1, 22).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
     
-    const assignedEmail = formData.Email_Username ? (String(formData.Email_Username).replace(/^"|"$/g, '') + formData.Email_Domain) : 'N/A';
+    // Only build an email address when IT confirmed the account was actually created.
+    // Empty string (falsy) means "not created" — prevents 'N/A' or partial addresses
+    // from appearing in emails or being added as notification recipients.
+    const assignedEmail = (formData.Email_Created === 'Yes' && formData.Email_Username)
+      ? (String(formData.Email_Username).replace(/^"|"$/g, '') + (formData.Email_Domain || ''))
+      : '';
     
     const rowData = [
       workflowId, 
@@ -276,7 +283,11 @@ function submitITSetup(formData) {
 }
 
 function triggerSpecialists(workflowId, itData) {
-  const assignedEmail = itData.Email_Username ? (String(itData.Email_Username).replace(/^"|"$/g, '') + itData.Email_Domain) : '[Pending]';
+  // Same guard as submitITSetup: only set when actually created, empty otherwise.
+  // '[Pending]' was truthy and got pushed into specialist recipient lists as a literal address.
+  const assignedEmail = (itData.Email_Created === 'Yes' && itData.Email_Username)
+    ? (String(itData.Email_Username).replace(/^"|"$/g, '') + (itData.Email_Domain || ''))
+    : '';
 
   const context = getITContextData(workflowId);
   context.assignedEmail = assignedEmail;

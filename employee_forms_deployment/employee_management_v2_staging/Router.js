@@ -35,12 +35,6 @@ function doGet(e) {
         if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return serveRequestDetails(workflowId);
 
-      case 'data_manager':
-        // Admin access check (reusing dashboard access for now)
-        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
-        return serveDataManager();
-
-        
       case 'id_setup':
         // Allow domain users - typically accessed via email link
         // Access check removed as requested
@@ -62,12 +56,6 @@ function doGet(e) {
         const dept = e.parameter.dept || '';
         return serveSpecialist(workflowId, dept);
         
-      case 'termination_builder':
-        return serveTerminationBuilder();
-        
-      case 'position_change_builder':
-        return servePositionChangeBuilder();
-
       case 'termination_request':
         return serveTerminationRequest();
 
@@ -80,9 +68,6 @@ function doGet(e) {
       case 'position_change_approval':
         return servePositionChangeApproval(workflowId);
         
-      case 'asset_retrieval':
-        return serveAssetRetrieval(workflowId);
-
       case 'it_confirmation':
         return serveITConfirmation(workflowId);
 

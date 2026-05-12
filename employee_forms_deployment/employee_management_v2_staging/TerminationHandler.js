@@ -93,6 +93,11 @@ function submitTerminationRequest(formData) {
       attachmentUrl
     ];
 
+    // Validate manager was selected from directory (name auto-fills only on directory select)
+    if (formData.managerEmail && !formData.managerName) {
+      return { success: false, message: 'Manager must be selected from the directory lookup — please search and select a name.' };
+    }
+
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATIONS, rowData);
     if (!sheetSuccess) throw new Error('Failed to record termination in sheet');
     
@@ -101,62 +106,64 @@ function submitTerminationRequest(formData) {
     updateWorkflow(workflowId, 'In Progress', 'HR Approval Needed', formData.empName);
     syncWorkflowState(workflowId);
 
-    // Notification ONLY to HR initially
-    const approvalUrl = buildFormUrl('termination_approval', { wf: workflowId });
-    
-    // Enrich with workflow context if available (department, etc.)
-    const wfContext = getWorkflowContext(workflowId) || {};
-    const finalContext = {
-      ...wfContext,
-      workflowType: 'Termination',
-      employeeName: formData.empName,
-      siteName: formData.siteName,
-      managerName: formData.managerName,
-      managerEmail: formData.managerEmail,
-      requestDate: new Date().toLocaleDateString(),
-      requesterEmail: formData.reqEmail,
-      hireDate: fmtDate_(formData.termDate),
-      employmentType: formData.empType,
-      lastDayWorked: fmtDate_(formData.lastDayWorked),
-      reason: formData.reason,
-      equipmentRaw: equipment,
-      systems: systems,
-      hasReports: formData.has_reports || '',
-      reportsToNew: formData.reports_to_new || '',
-      googleOffboarding: {
-        forward:  formData.google_forward  || '',
-        files:    formData.google_files    || '',
-        delegate: formData.google_delegate || '',
-        duration: formData.google_duration || '',
-        vacation: formData.google_vacation || ''
-      }
-    };
-
-    const hrEmailBody = `A new end of employment request has been submitted for ${formData.empName} and requires your approval to proceed.` +
-      (attachmentUrl ? `<br><br><b>Supporting Documentation:</b> <a href="${attachmentUrl}">View attached file</a>` : '');
-
-    sendFormEmail({
-      to: CONFIG.EMAILS.HR,
-      subject: 'HR Approval Required',
-      body: hrEmailBody,
-      formUrl: approvalUrl,
-      contextData: finalContext
-    });
-
-    // Notify payroll — advance notice only, no form link until HR approves
-    sendFormEmail({
-      to: CONFIG.EMAILS.PAYROLL,
-      subject: 'Termination Submitted — Pending HR Approval',
-      body: `A new end of employment request has been submitted for ${formData.empName}. <strong>Note: This is an advance notification only — HR approval is still pending.</strong> You will receive a separate email once HR has approved or rejected this request.`,
-      formUrl: '',
-      contextData: finalContext
-    });
+    // Notify HR and Payroll — extracted helper so ReplayService can refire missed emails
+    _sendTerminationSubmitEmails(workflowId);
 
     return { success: true, workflowId: workflowId, message: 'Termination request submitted and sent to HR for approval.' };
   } catch (error) {
     Logger.log('[ERROR] Termination submission error: ' + error.toString());
     return { success: false, message: 'Error: ' + error.message };
   }
+}
+
+/**
+ * Send submission-time notification emails for a Termination workflow.
+ * Reads from the Terminations sheet — safe to call after the row is written.
+ * Also called by ReplayService to refire missed emails without writing new records.
+ */
+function _sendTerminationSubmitEmails(workflowId) {
+  const termData = getTerminationData(workflowId);
+  if (!termData) {
+    Logger.log('[TerminationHandler] _sendTerminationSubmitEmails: no data for ' + workflowId);
+    return;
+  }
+  const approvalUrl  = buildFormUrl('termination_approval', { wf: workflowId });
+  const wfContext    = getWorkflowContext(workflowId) || {};
+  const finalContext = {
+    ...wfContext,
+    workflowType:      'Termination',
+    employeeName:      termData.employeeName,
+    siteName:          termData.siteName,
+    managerName:       termData.managerName,
+    managerEmail:      termData.managerEmail,
+    requestDate:       new Date().toLocaleDateString(),
+    requesterEmail:    termData.requesterEmail,
+    hireDate:          fmtDate_(termData.termDate),
+    employmentType:    termData.empType,
+    lastDayWorked:     fmtDate_(termData.lastDayWorked),
+    reason:            termData.reason,
+    equipmentRaw:      termData.eqToReturn,
+    systems:           termData.systems,
+    hasReports:        termData.hasReports   || '',
+    reportsToNew:      termData.reportsToNew || '',
+    googleOffboarding: termData.googleOffboarding
+  };
+  const hrEmailBody = 'A new end of employment request has been submitted for ' + termData.employeeName + ' and requires your approval to proceed.' +
+    (termData.attachmentUrl ? '<br><br><b>Supporting Documentation:</b> <a href="' + termData.attachmentUrl + '">View attached file</a>' : '');
+  sendFormEmail({
+    to: CONFIG.EMAILS.HR,
+    subject: 'HR Approval Required',
+    body: hrEmailBody,
+    formUrl: approvalUrl,
+    contextData: finalContext
+  });
+  sendFormEmail({
+    to: CONFIG.EMAILS.PAYROLL,
+    subject: 'Termination Submitted — Pending HR Approval',
+    body: 'A new end of employment request has been submitted for ' + termData.employeeName + '. <strong>Note: This is an advance notification only — HR approval is still pending.</strong> You will receive a separate email once HR has approved or rejected this request.',
+    formUrl: '',
+    contextData: finalContext
+  });
 }
 
 /**
@@ -172,32 +179,33 @@ function serveTerminationApproval(workflowId) {
 function getTerminationData(workflowId) {
   const data = getRowByRequestId(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATIONS, workflowId);
   if (!data) return null;
+  const TR = SCHEMA.TERMINATIONS;
   return {
-    workflowId: data[0],
-    employeeName: data[5],
-    empID: data[6],
-    empType: data[7],
-    siteName: data[11],
-    termDate: data[12] ? Utilities.formatDate(new Date(data[12]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
-    reason: data[13],
-    requesterEmail: data[4],
-    managerName: data[14], // Added index
-    managerEmail: data[15], // Added index
-    hasReports: data[17],
-    reportsToNew: data[18],
-    empPhone: data[9], // Captured from EOE request
-    systems: data[19], // Shifted due to new columns
-    eqToReturn: data[25], // Shifted due to new columns
+    workflowId:     data[TR.WORKFLOW_ID],
+    employeeName:   data[TR.EMPLOYEE_NAME],
+    empID:          data[TR.EMPLOYEE_ID],
+    empType:        data[TR.EMPLOYEE_TYPE],
+    siteName:       data[TR.SITE],
+    termDate:       data[TR.TERM_DATE] ? Utilities.formatDate(new Date(data[TR.TERM_DATE]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+    reason:         data[TR.REASON],
+    requesterEmail: data[TR.REQUESTER_EMAIL],
+    managerName:    data[TR.MANAGER_NAME],
+    managerEmail:   data[TR.MANAGER_EMAIL],
+    hasReports:     data[TR.HAS_REPORTS],
+    reportsToNew:   data[TR.REASSIGN_REPORTS_TO],
+    empPhone:       data[TR.PHONE],
+    systems:        data[TR.SYSTEMS_TO_DEACTIVATE],
+    eqToReturn:     data[TR.EQUIPMENT_TO_RETURN],
     googleOffboarding: {
-      forward: data[20],
-      files: data[21],
-      delegate: data[22],
-      duration: data[23],
-      vacation: data[24]
+      forward:   data[TR.EMAIL_FORWARDING],
+      files:     data[TR.DRIVE_FILES_TRANSFER],
+      delegate:  data[TR.INBOX_DELEGATE],
+      duration:  data[TR.ACCOUNT_DURATION],
+      vacation:  data[TR.VACATION_RESPONDER]
     },
-    originalComments: data[26],
-    lastDayWorked: data[27] ? (data[27] instanceof Date ? Utilities.formatDate(new Date(data[27]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[27]) : '',
-    attachmentUrl: data[28] || ''
+    originalComments: data[TR.COMMENTS],
+    lastDayWorked:  data[TR.LAST_DAY_WORKED] ? (data[TR.LAST_DAY_WORKED] instanceof Date ? Utilities.formatDate(new Date(data[TR.LAST_DAY_WORKED]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[TR.LAST_DAY_WORKED]) : '',
+    attachmentUrl:  data[SCHEMA.TERMINATIONS.ATTACHMENT_URL] || ''
   };
 }
 
@@ -507,11 +515,4 @@ function sendActionItemEmail(to, subject, tid, termData, items) {
       checklistItems: items || null
     }
   });
-}
-
-/**
- * Serve Asset Retrieval Form
- */
-function serveAssetRetrieval(workflowId) {
-  return HtmlService.createHtmlOutput('<h1>This form is deprecated</h1><p>Please use individual Action Item links from your email.</p>');
 }

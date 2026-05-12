@@ -26,7 +26,7 @@ function submitInitialRequest(formData) {
     formData.timestamp = new Date();
     
     // Validate required fields
-    const requiredFields = ['firstName', 'lastName', 'hireDate', 'requesterEmail'];
+    const requiredFields = ['firstName', 'lastName', 'hireDate', 'requesterEmail', 'reportingManagerName', 'reportingManagerEmail'];
     const validation = validateRequiredFields(formData, requiredFields);
     
     if (!validation.valid) {
@@ -98,6 +98,47 @@ function submitInitialRequest(formData) {
   }
 }
 
+/**
+ * Read-back variant used by ReplayService to refire submission-time emails.
+ * Reads the Initial Requests sheet row and calls sendInitialRequestEmails —
+ * no new records are written, and no workflow state is changed.
+ */
+function _sendInitialRequestSubmitEmails(workflowId) {
+  const data = getRowByRequestId(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.INITIAL_REQUESTS, workflowId);
+  if (!data) {
+    Logger.log('[InitialRequestHandler] _sendInitialRequestSubmitEmails: no data for ' + workflowId);
+    return;
+  }
+  const IR           = SCHEMA.INITIAL_REQUESTS;
+  const employeeName = (String(data[IR.FIRST_NAME] || '') + ' ' + String(data[IR.LAST_NAME] || '')).trim();
+  const hireDateRaw  = data[IR.HIRE_DATE];
+  const hireDate     = hireDateRaw instanceof Date
+    ? Utilities.formatDate(hireDateRaw, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+    : String(hireDateRaw || '');
+  const systemsStr   = String(data[IR.SYSTEMS]   || '');
+  const equipmentStr = String(data[IR.EQUIPMENT]  || '');
+  sendInitialRequestEmails({
+    requestId:          workflowId,
+    employeeName:       employeeName,
+    jobTitle:           String(data[IR.POSITION_TITLE]     || ''),
+    siteName:           String(data[IR.SITE_NAME]          || ''),
+    hireDate:           hireDate,
+    managerName:        String(data[IR.MANAGER_NAME]       || ''),
+    managerEmail:       String(data[IR.MANAGER_EMAIL]      || ''),
+    requesterEmail:     String(data[IR.REQUESTER_EMAIL]    || ''),
+    requestDate:        new Date().toLocaleDateString(),
+    employmentType:     String(data[IR.EMPLOYMENT_TYPE]    || ''),
+    employeeType:       String(data[IR.EMPLOYEE_TYPE]      || ''),
+    newHireOrRehire:    String(data[IR.NEW_HIRE_OR_REHIRE] || ''),
+    systemAccess:       String(data[IR.SYSTEM_ACCESS]      || ''),
+    systems:            systemsStr   ? systemsStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean)   : [],
+    equipment:          equipmentStr ? equipmentStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [],
+    department:         String(data[IR.DEPARTMENT]         || ''),
+    employeeIdSetupUrl: buildFormUrl('id_setup', { wf: workflowId }),
+    siteDocsEmail:      CONFIG.EMAILS.IDSETUP
+  });
+}
+
 function formatInitialRequestData(data) {
   return [
     data.workflowId,
@@ -152,7 +193,8 @@ function formatInitialRequestData(data) {
     Array.isArray(data.adpSites) ? data.adpSites.join(', ') : (data.adpSites || ''),
     data.department || '',
     Array.isArray(data.purchasingSites) ? data.purchasingSites.join(', ') : (data.purchasingSites || ''),
-    data.adpSalaryAccess || 'No'
+    '',                        // col 52 — Status (written later by BOSSReviewHandler)
+    data.adpSalaryAccess || 'No'  // col 53 — ADP Salary Access
   ];
 }
 

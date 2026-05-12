@@ -100,15 +100,15 @@ function getRowByRequestId(spreadsheetId, sheetName, requestId, requestIdColumn)
     
     const data = sheet.getDataRange().getValues();
     
-    for (let i = 1; i < data.length; i++) { // Skip header row
+    for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
       if (data[i][idCol - 1] === requestId) {
         return data[i];
       }
     }
-    
+
     Logger.log('Request ID not found: ' + requestId);
     return null;
-    
+
   } catch (error) {
     Logger.log('❌ Error getting row: ' + error.toString());
     return null;
@@ -130,8 +130,8 @@ function updateWorkflowStatus(spreadsheetId, sheetName, requestId, status, statu
     const sheet = ss.getSheetByName(sheetName);
     const data = sheet.getDataRange().getValues();
     
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === requestId) { // Request ID in column 1
+    for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+      if (data[i][0] === requestId) { // Workflow ID always in col 0 across all sheets
         const col = statusColumn || sheet.getLastColumn();
         sheet.getRange(i + 1, col).setValue(status);
         Logger.log('✓ Status updated: ' + requestId + ' → ' + status);

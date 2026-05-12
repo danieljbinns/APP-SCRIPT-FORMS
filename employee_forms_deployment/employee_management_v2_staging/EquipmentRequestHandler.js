@@ -38,7 +38,7 @@ function submitEquipmentRequest(formData) {
     formData.timestamp  = new Date();
 
     // 2. Validate core fields
-    const requiredFields = ['firstName', 'lastName', 'siteName', 'managerEmail', 'position'];
+    const requiredFields = ['firstName', 'lastName', 'siteName', 'managerEmail', 'managerName', 'position'];
     const validation = validateRequiredFields(formData, requiredFields);
     if (!validation.valid) return { success: false, message: validation.message };
 
@@ -52,51 +52,8 @@ function submitEquipmentRequest(formData) {
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.EQUIPMENT_REQUESTS, rowData);
     if (!sheetSuccess) throw new Error('Failed to write request to Equipment Requests database');
 
-    // Build context directly from formData — avoids a spreadsheet re-read right after writing
-    const systems   = Array.isArray(formData.systems)   ? formData.systems   : (formData.systems   ? [formData.systems]   : []);
-    const equipment = Array.isArray(formData.equipment)  ? formData.equipment  : (formData.equipment  ? [formData.equipment]  : []);
-    const context = {
-      workflowType:   'Equipment Request',
-      workflowId:     workflowId,
-      employeeName:   employeeName,
-      firstName:      formData.firstName   || '',
-      lastName:       formData.lastName    || '',
-      siteName:       formData.siteName    || '',
-      jobTitle:       formData.positionTitle || formData.position || '',
-      managerName:    formData.managerName  || formData.reportingManagerName  || '',
-      managerEmail:   formData.managerEmail || formData.reportingManagerEmail || '',
-      requesterName:  formData.reqName     || '',
-      requesterEmail: formData.reqEmail    || formData.requesterEmail || '',
-      systems:        systems,
-      equipment:      equipment,
-      equipmentRaw:   equipment.join(', '),
-      comments:       formData.comments    || '',
-      department:     formData.department  || '',
-      requestDate:    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd')
-    };
-
-    // 5. Confirmation email to requester
-    const requesterEmail = formData.reqEmail || formData.requesterEmail || '';
-    if (requesterEmail) {
-      sendFormEmail({
-        to: requesterEmail,
-        subject: 'Request Submitted',
-        body: 'Your System & Equipment Access request for <b>' + employeeName + '</b> has been received and is being reviewed by Dave Langohr.\n\nYou will receive updates as the request progresses.',
-        displayName: 'TEAM Group — Employee Onboarding',
-        contextData: context
-      });
-    }
-
-    // 6. Send IT Confirmation form to Dave Langohr
-    const itConfirmationUrl = buildFormUrl('it_confirmation', { wf: workflowId });
-    sendFormEmail({
-      to: 'davelangohr@team-group.com',
-      subject: 'IT Confirmation Required',
-      body: 'A System & Equipment Access request has been submitted for <b>' + employeeName + '</b> and requires your review and confirmation.\n\nPlease review the request details and confirm using the button below.',
-      formUrl: itConfirmationUrl,
-      displayName: 'TEAM Group — Employee Onboarding',
-      contextData: context
-    });
+    // 5 & 6. Send confirmation and IT notification — extracted helper so ReplayService can refire missed emails
+    _sendEquipmentRequestSubmitEmails(workflowId);
 
     syncWorkflowState(workflowId);
     Logger.log('[EquipReq] Submitted ' + workflowId + ' for ' + employeeName + '. IT Confirmation sent to Dave.');
@@ -106,6 +63,86 @@ function submitEquipmentRequest(formData) {
     Logger.log('[ERROR] submitEquipmentRequest: ' + error.toString());
     return { success: false, message: 'Server Error: ' + error.toString() };
   }
+}
+
+/**
+ * Read an Equipment Request row from the sheet by workflow ID.
+ * Returns a structured object mirroring the form fields, or null if not found.
+ */
+function getEquipmentRequestData(workflowId) {
+  const data = getRowByRequestId(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.EQUIPMENT_REQUESTS, workflowId);
+  if (!data) return null;
+  const ER = SCHEMA.EQUIPMENT_REQUESTS;
+  const firstName    = String(data[ER.EMPLOYEE_FIRST_NAME] || '');
+  const lastName     = String(data[ER.EMPLOYEE_LAST_NAME]  || '');
+  const systemsStr   = String(data[ER.SYSTEMS_REQUESTED]   || '');
+  const equipmentStr = String(data[ER.EQUIPMENT_REQUESTED] || '');
+  return {
+    workflowId:     String(data[ER.WORKFLOW_ID]    || ''),
+    requesterName:  String(data[ER.REQUESTER_NAME]  || ''),
+    requesterEmail: String(data[ER.REQUESTER_EMAIL] || ''),
+    employeeName:   (firstName + ' ' + lastName).trim(),
+    firstName:      firstName,
+    lastName:       lastName,
+    siteName:       String(data[ER.SITE_NAME]     || ''),
+    jobTitle:       String(data[ER.JOB_TITLE]     || ''),
+    managerName:    String(data[ER.MANAGER_NAME]  || ''),
+    managerEmail:   String(data[ER.MANAGER_EMAIL] || ''),
+    systems:        systemsStr   ? systemsStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean)   : [],
+    equipment:      equipmentStr ? equipmentStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [],
+    comments:       String(data[ER.COMMENTS]   || ''),
+    department:     String(data[ER.DEPARTMENT] || '')
+  };
+}
+
+/**
+ * Send submission-time notification emails for an Equipment Request workflow.
+ * Reads from the Equipment_Requests sheet — safe to call after the row is written.
+ * Also called by ReplayService to refire missed emails without writing new records.
+ */
+function _sendEquipmentRequestSubmitEmails(workflowId) {
+  const erData = getEquipmentRequestData(workflowId);
+  if (!erData) {
+    Logger.log('[EquipReq] _sendEquipmentRequestSubmitEmails: no data for ' + workflowId);
+    return;
+  }
+  const context = {
+    workflowType:   'Equipment Request',
+    workflowId:     workflowId,
+    employeeName:   erData.employeeName,
+    firstName:      erData.firstName,
+    lastName:       erData.lastName,
+    siteName:       erData.siteName,
+    jobTitle:       erData.jobTitle,
+    managerName:    erData.managerName,
+    managerEmail:   erData.managerEmail,
+    requesterName:  erData.requesterName,
+    requesterEmail: erData.requesterEmail,
+    systems:        erData.systems,
+    equipment:      erData.equipment,
+    equipmentRaw:   erData.equipment.join(', '),
+    comments:       erData.comments,
+    department:     erData.department,
+    requestDate:    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd')
+  };
+  if (erData.requesterEmail) {
+    sendFormEmail({
+      to: erData.requesterEmail,
+      subject: 'Request Submitted',
+      body: 'Your System & Equipment Access request for <b>' + erData.employeeName + '</b> has been received and is being reviewed by Dave Langohr.\n\nYou will receive updates as the request progresses.',
+      displayName: 'TEAM Group — Employee Onboarding',
+      contextData: context
+    });
+  }
+  const itConfirmationUrl = buildFormUrl('it_confirmation', { wf: workflowId });
+  sendFormEmail({
+    to: 'davelangohr@team-group.com',
+    subject: 'IT Confirmation Required',
+    body: 'A System & Equipment Access request has been submitted for <b>' + erData.employeeName + '</b> and requires your review and confirmation.\n\nPlease review the request details and confirm using the button below.',
+    formUrl: itConfirmationUrl,
+    displayName: 'TEAM Group — Employee Onboarding',
+    contextData: context
+  });
 }
 
 /**

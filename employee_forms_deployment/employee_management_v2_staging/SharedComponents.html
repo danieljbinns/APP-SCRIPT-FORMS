@@ -1,5 +1,97 @@
 <!--
   ══════════════════════════════════════════════════════════════════
+  Theme switcher — 3-state button group (Dark | Light | AODA)
+  Self-contained CSS + JS. Works on any page regardless of whether
+  Styles.html is included. Single localStorage key 'tg_theme'
+  with values 'dark' | 'light' | 'aoda'. Mutually exclusive.
+  ══════════════════════════════════════════════════════════════════
+-->
+<style>
+  /* ── Theme switcher button group ─────────────────────────────── */
+  .theme-switcher {
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    z-index: 9999;
+    display: flex;
+    background: var(--card-bg, #1e1e1e);
+    border: 1px solid var(--border-color, #444);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .ts-btn {
+    width: 38px;
+    height: 30px;
+    border: none;
+    border-right: 1px solid var(--border-color, #444);
+    background: transparent;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 10px;
+    font-weight: 800;
+    font-family: inherit;
+    letter-spacing: 0.04em;
+    transition: background 0.15s, color 0.15s;
+  }
+  .ts-btn:last-child { border-right: none; }
+  .ts-btn svg {
+    width: 13px; height: 13px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .ts-btn:hover {
+    background: rgba(235,28,45,0.12);
+    color: var(--brand-red, #eb1c2d);
+  }
+  .ts-btn.ts-active {
+    background: var(--brand-red, #eb1c2d);
+    color: #ffffff;
+  }
+  .ts-btn.ts-active:hover {
+    background: var(--brand-red, #eb1c2d);
+    color: #ffffff;
+  }
+
+  /* Light mode */
+  body.light-mode .theme-switcher {
+    background: #ffffff;
+    border-color: #cccccc;
+  }
+  body.light-mode .ts-btn {
+    color: #666;
+    border-right-color: #cccccc;
+  }
+
+  /* AODA mode — high-contrast group */
+  body.aoda-mode .theme-switcher {
+    background: #ffffff;
+    border: 2px solid #000000;
+    border-radius: 6px;
+  }
+  body.aoda-mode .ts-btn {
+    color: #000000;
+    border-right: 1px solid #000000;
+    height: 32px;
+    font-size: 11px;
+  }
+  body.aoda-mode .ts-btn:last-child { border-right: none; }
+  body.aoda-mode .ts-btn:hover {
+    background: #f0f0f0;
+    color: #a50000;
+  }
+  body.aoda-mode .ts-btn.ts-active {
+    background: #000000;
+    color: #ffffff;
+  }
+</style>
+
+<!--
+  ══════════════════════════════════════════════════════════════════
   IT Confirmation Pattern — reusable gatekeeper between HR and IT Setup
   ══════════════════════════════════════════════════════════════════
   Purpose:
@@ -163,4 +255,82 @@
     }
     render();
   }
+</script>
+
+<script>
+  /* ══════════════════════════════════════════════════════════════
+     Theme Switcher — 3-state button group (Dark | Light | AODA)
+     Single key 'tg_theme': 'dark' | 'light' | 'aoda'
+     Mutually exclusive. Injects .theme-switcher group on every page.
+  ══════════════════════════════════════════════════════════════ */
+  (function() {
+    var KEY = 'tg_theme';
+
+    var MOON_SVG = '<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    var SUN_SVG  = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/>'
+                 + '<line x1="12" y1="1" x2="12" y2="3"/>'
+                 + '<line x1="12" y1="21" x2="12" y2="23"/>'
+                 + '<line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>'
+                 + '<line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>'
+                 + '<line x1="1" y1="12" x2="3" y2="12"/>'
+                 + '<line x1="21" y1="12" x2="23" y2="12"/>'
+                 + '<line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>'
+                 + '<line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+
+    function applyTheme(theme) {
+      document.body.classList.remove('light-mode', 'aoda-mode');
+      if (theme === 'light') document.body.classList.add('light-mode');
+      if (theme === 'aoda')  document.body.classList.add('aoda-mode');
+    }
+
+    function setActive(group, theme) {
+      group.querySelectorAll('.ts-btn').forEach(function(b) {
+        b.classList.toggle('ts-active', b.dataset.theme === theme);
+      });
+    }
+
+    function init() {
+      var saved = localStorage.getItem(KEY) || 'dark';
+
+      // Apply immediately to prevent flash
+      applyTheme(saved);
+
+      // Build the switcher group
+      var group = document.createElement('div');
+      group.className = 'theme-switcher';
+      group.setAttribute('role', 'group');
+      group.setAttribute('aria-label', 'Display theme');
+
+      var BUTTONS = [
+        { theme: 'dark',  html: MOON_SVG, tip: 'Dark mode'                          },
+        { theme: 'light', html: SUN_SVG,  tip: 'Light mode'                         },
+        { theme: 'aoda',  html: 'AODA',   tip: 'High-contrast mode (AODA / WCAG AA)' }
+      ];
+
+      BUTTONS.forEach(function(def) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ts-btn';
+        btn.dataset.theme = def.theme;
+        btn.innerHTML = def.html;
+        btn.title = def.tip;
+        btn.setAttribute('aria-label', def.tip);
+        btn.addEventListener('click', function() {
+          localStorage.setItem(KEY, def.theme);
+          applyTheme(def.theme);
+          setActive(group, def.theme);
+        });
+        group.appendChild(btn);
+      });
+
+      document.body.appendChild(group);
+      setActive(group, saved);
+    }
+
+    if (document.body) {
+      init();
+    } else {
+      document.addEventListener('DOMContentLoaded', init);
+    }
+  })();
 </script>

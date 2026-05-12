@@ -29,12 +29,12 @@ function getHRVerificationData(workflowId) {
     const context = getWorkflowContext(workflowId);
     if (context) {
       // Look up jrRequired from the Initial Requests sheet
+      const IR = SCHEMA.INITIAL_REQUESTS;
       var jrRequired = 'No';
       try {
-        var jrReqCol = mainData[0].indexOf('JR Req');
-        for (var ri = 1; ri < mainData.length; ri++) {
-          if (mainData[ri][0] === workflowId) {
-            jrRequired = jrReqCol !== -1 ? (mainData[ri][jrReqCol] || 'No') : 'No';
+        for (var ri = SCHEMA.ROW.FIRST_DATA; ri < mainData.length; ri++) {
+          if (mainData[ri][IR.WORKFLOW_ID] === workflowId) {
+            jrRequired = mainData[ri][IR.JR_REQUIRED] || 'No';
             break;
           }
         }
@@ -55,22 +55,23 @@ function getHRVerificationData(workflowId) {
     const hrResultsSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
     if (hrResultsSheet) {
       const hrData = hrResultsSheet.getDataRange().getValues();
-      for (let i = 1; i < hrData.length; i++) {
-        if (String(hrData[i][0]) === workflowId && String(hrData[i][1]) !== 'DATE_CHANGE') {
-          const submittedAt = hrData[i][2] instanceof Date
-            ? Utilities.formatDate(hrData[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss')
-            : String(hrData[i][2] || '');
-          const combined = String(hrData[i][7] || ''); // "Job Title / JR Title"
+      const HR = SCHEMA.HR_VERIFICATION_RESULTS;
+      for (let i = SCHEMA.ROW.FIRST_DATA; i < hrData.length; i++) {
+        if (String(hrData[i][HR.WORKFLOW_ID]) === workflowId && String(hrData[i][HR.FORM_ID]) !== 'DATE_CHANGE') {
+          const submittedAt = hrData[i][HR.SUBMISSION_TS] instanceof Date
+            ? Utilities.formatDate(hrData[i][HR.SUBMISSION_TS], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss')
+            : String(hrData[i][HR.SUBMISSION_TS] || '');
+          const combined = String(hrData[i][HR.VERIFIED_JR_TITLE] || ''); // "Job Title / JR Title"
           result.isEdit = true;
           result.previousData = {
-            adpAssociateId: String(hrData[i][3] || ''),
-            verifiedName:   String(hrData[i][4] || ''),
-            managerName:    String(hrData[i][5] || ''),
-            managerEmail:   String(hrData[i][6] || ''),
+            adpAssociateId: String(hrData[i][HR.ADP_ASSOCIATE_ID] || ''),
+            verifiedName:   String(hrData[i][HR.VERIFIED_NAME] || ''),
+            managerName:    String(hrData[i][HR.VERIFIED_MANAGER] || ''),
+            managerEmail:   String(hrData[i][HR.VERIFIED_MANAGER_EMAIL] || ''),
             jobTitle:  combined.includes(' / ') ? combined.split(' / ')[0].trim() : combined,
             jrTitle:   combined.includes(' / ') ? combined.split(' / ').slice(1).join(' / ').trim() : '',
-            notes:      String(hrData[i][8] || ''),
-            submittedBy: String(hrData[i][9] || ''),
+            notes:      String(hrData[i][HR.NOTES] || ''),
+            submittedBy: String(hrData[i][HR.SUBMITTED_BY] || ''),
             submittedAt: submittedAt
           };
           // Pre-populate ADP ID so the form field picks it up
@@ -96,26 +97,17 @@ function submitHRVerification(formData) {
     
     const mainSheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
     const mainData = mainSheet.getDataRange().getValues();
-    const headers = mainData[0];
-    
-    const firstNameCol = headers.indexOf('First Name');
-    const lastNameCol = headers.indexOf('Last Name');
-    const managerNameCol = headers.indexOf('Manager Name');
-    const managerEmailCol = headers.indexOf('Manager Email');
-    const hireDateCol = headers.indexOf('Hire Date');
-    const siteNameCol = headers.indexOf('Site/Office Location');
-    const jrTitleCol = headers.indexOf('Position Title'); // Col 14 - Fixed header name match
-    const jrAssignCol = headers.indexOf('JR Assign'); // Col 46 (Now map to jrTitle)
-    const departmentCol = headers.indexOf('Department');
-    
+    const IR = SCHEMA.INITIAL_REQUESTS;
+    const HR = SCHEMA.HR_VERIFICATION_RESULTS;
+
     // Detect existing submission for update-vs-insert logic
     let existingHRRowIndex = -1;
     let existingHRRowData = null;
     const existingResultsSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
     if (existingResultsSheet) {
       const existingData = existingResultsSheet.getDataRange().getValues();
-      for (let ei = 1; ei < existingData.length; ei++) {
-        if (String(existingData[ei][0]) === workflowId && String(existingData[ei][1]) !== 'DATE_CHANGE') {
+      for (let ei = SCHEMA.ROW.FIRST_DATA; ei < existingData.length; ei++) {
+        if (String(existingData[ei][HR.WORKFLOW_ID]) === workflowId && String(existingData[ei][HR.FORM_ID]) !== 'DATE_CHANGE') {
           existingHRRowIndex = ei + 1; // 1-based sheet row
           existingHRRowData = existingData[ei];
           break;
@@ -129,45 +121,42 @@ function submitHRVerification(formData) {
     let adpSalaryAccess = false;
     let originalHireDate = '';
     let hrOriginal = null;
-    const adpSalaryAccessCol = headers.indexOf('ADP Salary Access');
 
-    for (let i = 1; i < mainData.length; i++) {
-      if (mainData[i][0] === workflowId) {
+    for (let i = SCHEMA.ROW.FIRST_DATA; i < mainData.length; i++) {
+      if (mainData[i][IR.WORKFLOW_ID] === workflowId) {
         // Capture original hire date before overwriting (for audit trail)
-        if (hireDateCol !== -1) {
-          const rawOrig = mainData[i][hireDateCol];
-          originalHireDate = rawOrig instanceof Date
-            ? Utilities.formatDate(rawOrig, Session.getScriptTimeZone(), 'yyyy-MM-dd')
-            : String(rawOrig || '').substring(0, 10);
-        }
+        const rawOrig = mainData[i][IR.HIRE_DATE];
+        originalHireDate = rawOrig instanceof Date
+          ? Utilities.formatDate(rawOrig, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+          : String(rawOrig || '').substring(0, 10);
 
         // Capture all original values for change detection BEFORE any writes
         hrOriginal = {
-          firstName:    firstNameCol !== -1    ? String(mainData[i][firstNameCol]    || '') : '',
-          lastName:     lastNameCol !== -1     ? String(mainData[i][lastNameCol]     || '') : '',
+          firstName:    String(mainData[i][IR.FIRST_NAME]    || ''),
+          lastName:     String(mainData[i][IR.LAST_NAME]     || ''),
           hireDate:     originalHireDate,
-          siteName:     siteNameCol !== -1     ? String(mainData[i][siteNameCol]     || '') : '',
-          department:   departmentCol !== -1   ? String(mainData[i][departmentCol]   || '') : '',
-          managerName:  managerNameCol !== -1  ? String(mainData[i][managerNameCol]  || '') : '',
-          managerEmail: managerEmailCol !== -1 ? String(mainData[i][managerEmailCol] || '') : '',
-          jobTitle:     jrTitleCol !== -1      ? String(mainData[i][jrTitleCol]      || '') : '',
-          jrTitle:      jrAssignCol !== -1     ? String(mainData[i][jrAssignCol]     || '') : ''
+          siteName:     String(mainData[i][IR.SITE_NAME]     || ''),
+          department:   String(mainData[i][IR.DEPARTMENT]    || ''),
+          managerName:  String(mainData[i][IR.MANAGER_NAME]  || ''),
+          managerEmail: String(mainData[i][IR.MANAGER_EMAIL] || ''),
+          jobTitle:     String(mainData[i][IR.POSITION_TITLE]|| ''),
+          jrTitle:      String(mainData[i][IR.JR_ASSIGNMENT] || '')
         };
 
-        if (firstNameCol !== -1) mainSheet.getRange(i + 1, firstNameCol + 1).setValue(formData.firstName);
-        if (lastNameCol !== -1) mainSheet.getRange(i + 1, lastNameCol + 1).setValue(formData.lastName);
-        if (managerNameCol !== -1) mainSheet.getRange(i + 1, managerNameCol + 1).setValue(formData.managerName);
-        if (managerEmailCol !== -1) mainSheet.getRange(i + 1, managerEmailCol + 1).setValue(formData.managerEmail);
-        if (hireDateCol !== -1 && formData.hireDate) mainSheet.getRange(i + 1, hireDateCol + 1).setValue(new Date(formData.hireDate + 'T12:00:00'));
-        if (siteNameCol !== -1) mainSheet.getRange(i + 1, siteNameCol + 1).setValue(formData.siteName);
-        if (jrTitleCol !== -1) mainSheet.getRange(i + 1, jrTitleCol + 1).setValue(formData.jobTitle);
-        if (jrAssignCol !== -1) mainSheet.getRange(i + 1, jrAssignCol + 1).setValue(formData.jrTitle);
-        if (departmentCol !== -1 && formData.department !== undefined) mainSheet.getRange(i + 1, departmentCol + 1).setValue(formData.department);
+        mainSheet.getRange(i + 1, IR.FIRST_NAME     + 1).setValue(formData.firstName);
+        mainSheet.getRange(i + 1, IR.LAST_NAME      + 1).setValue(formData.lastName);
+        mainSheet.getRange(i + 1, IR.MANAGER_NAME   + 1).setValue(formData.managerName);
+        mainSheet.getRange(i + 1, IR.MANAGER_EMAIL  + 1).setValue(formData.managerEmail);
+        if (formData.hireDate) mainSheet.getRange(i + 1, IR.HIRE_DATE + 1).setValue(new Date(formData.hireDate + 'T12:00:00'));
+        mainSheet.getRange(i + 1, IR.SITE_NAME      + 1).setValue(formData.siteName);
+        mainSheet.getRange(i + 1, IR.POSITION_TITLE + 1).setValue(formData.jobTitle);
+        mainSheet.getRange(i + 1, IR.JR_ASSIGNMENT  + 1).setValue(formData.jrTitle);
+        if (formData.department !== undefined) mainSheet.getRange(i + 1, IR.DEPARTMENT + 1).setValue(formData.department);
 
-        employmentType = mainData[i][9] || '';
-        systemAccess = mainData[i][19] || '';
-        requesterEmail = mainData[i][5] || '';
-        adpSalaryAccess = adpSalaryAccessCol !== -1 && mainData[i][adpSalaryAccessCol] === 'Yes';
+        employmentType = mainData[i][IR.EMPLOYMENT_TYPE]  || '';
+        systemAccess   = mainData[i][IR.SYSTEM_ACCESS]    || '';
+        requesterEmail = mainData[i][IR.REQUESTER_EMAIL]  || '';
+        adpSalaryAccess = mainData[i][IR.ADP_SALARY_ACCESS] === 'Yes';
         break;
       }
     }

@@ -59,6 +59,20 @@
     margin-top: 4px;
     display: block;
   }
+
+  /* Clear/reset link shown after directory selection */
+  .autocomplete-clear {
+    display: none;
+    font-size: 0.78rem;
+    color: #0d6efd;
+    cursor: pointer;
+    margin-top: 3px;
+    text-decoration: underline;
+    user-select: none;
+  }
+  .autocomplete-clear:hover {
+    color: #c0392b;
+  }
 </style>
 
 <script>
@@ -81,8 +95,13 @@
         console.warn('⚠️ Autocomplete source input not found:', config.inputSelector);
         return;
       }
-      
+
       console.log('✅ Autocomplete initialized for:', config.inputSelector);
+
+      // Name field is always readonly — only filled by directory selection
+      if (nameInput) {
+        nameInput.setAttribute('readonly', true);
+      }
 
       // Ensure container styling
       const parent = input.parentNode;
@@ -92,13 +111,31 @@
         parent.insertBefore(container, input);
         container.appendChild(input);
       }
-      
+
       const container = input.parentNode;
-      
+
       // Create results container
       const resultsDiv = document.createElement('div');
       resultsDiv.className = 'autocomplete-results';
       container.appendChild(resultsDiv);
+
+      // Create clear link — shown after a selection is made
+      const clearLink = document.createElement('span');
+      clearLink.className = 'autocomplete-clear';
+      clearLink.textContent = '✕ Clear selection';
+      clearLink.addEventListener('click', function() {
+        input.value = '';
+        input.removeAttribute('readonly');
+        if (nameInput) {
+          nameInput.value = '';
+          // keep nameInput readonly — it can only be filled by directory
+        }
+        clearLink.style.display = 'none';
+        input.focus();
+        if (config.onClear) config.onClear();
+      });
+      // Insert after the container (outside autocomplete-container so it isn't clipped)
+      container.parentNode.insertBefore(clearLink, container.nextSibling);
       
       let timeout = null;
       
@@ -134,12 +171,16 @@
                     input.value = user.email;
                     if (nameInput) nameInput.value = user.name;
                     resultsDiv.style.display = 'none';
-                    
+
+                    // Lock the email field — must use directory to change
+                    input.setAttribute('readonly', true);
+                    clearLink.style.display = 'inline';
+
                     // Trigger change events
                     input.dispatchEvent(new Event('input', { bubbles: true }));
                     input.dispatchEvent(new Event('change', { bubbles: true }));
                     if (nameInput) nameInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    
+
                     if (config.onSelect) config.onSelect(user);
                   };
                   resultsDiv.appendChild(div);

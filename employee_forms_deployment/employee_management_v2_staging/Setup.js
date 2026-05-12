@@ -51,7 +51,7 @@ function initializeSystem() {
       'Workflow ID', 'Form ID', 'Submission Timestamp', 'Internal Employee ID',
       'SiteDocs Worker ID', 'SiteDocs Job Code', 'SiteDocs Username',
       'SiteDocs Password', 'DSS Username', 'DSS Password',
-      'Setup Notes', 'BOSS WIS Created', 'Submitted By'
+      'Setup Notes', 'Submitted By', 'BOSS WIS Created'
     ]);
     
     // 4. Initialize HR Verification Results
@@ -223,4 +223,47 @@ function createDataLookupSheet() {
   } catch (error) {
     Logger.log('❌ Error creating Data_Lookup sheet: ' + error.toString());
   }
+}
+
+/**
+ * ============================================================
+ *  PROD ONLY — Run once from the GAS editor after first push.
+ *  Sets all Script Properties for the production environment.
+ *  Safe to re-run — existing values will be overwritten.
+ * ============================================================
+ */
+function setupProdScriptProperties() {
+  const props = PropertiesService.getScriptProperties();
+
+  // Only set values that DIFFER from the ConfigurationService defaults.
+  // Email addresses and group settings already have correct defaults in
+  // ConfigurationService.js — no need to duplicate them here.
+  props.setProperties({
+    // ── The only things that are wrong in the hardcoded defaults ───
+    'SPREADSHEET_ID':   '1kGjw8e-uIehaBemlsRZ4Yq1QrYOWkJvWzhKbgfl4Pxo',
+
+    // ── Directory search domain ─────────────────────────────────────
+    'DIRECTORY_DOMAIN': 'team-group.com',
+
+    // ── Paste the prod /exec URL after creating a new deployment ───
+    // Deploy → Manage Deployments → New version → copy /exec URL
+    'DEPLOYMENT_URL':   ''   // ← fill in after first deployment
+  });
+
+  const id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  Logger.log('[setupProdScriptProperties] Done.');
+  Logger.log('  SPREADSHEET_ID = ' + id);
+  Logger.log('  Spreadsheet name: ' + SpreadsheetApp.openById(id).getName());
+}
+
+/**
+ * Print all current Script Properties to the Logger.
+ * Useful for verifying setupProdScriptProperties ran correctly.
+ */
+function listScriptProperties() {
+  const props = PropertiesService.getScriptProperties().getProperties();
+  Logger.log('=== Script Properties ===');
+  Object.keys(props).sort().forEach(function(k) {
+    Logger.log('  ' + k + ' = ' + props[k]);
+  });
 }

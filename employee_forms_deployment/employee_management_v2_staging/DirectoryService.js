@@ -3,43 +3,42 @@
  */
 
 /**
- * Search the Google Workspace directory for users matching a query
+ * Search the Google Workspace directory for users matching a query.
+ * Uses customer:'my_customer' to search across ALL domains in the org
+ * (team-group.com, robinsonsolutions.com, industrialappliedtech.com, etc.)
+ *
  * @param {string} query - The search query (name or email prefix)
  * @returns {Array} List of {name, email} objects
  */
 function searchDirectoryUsers(query) {
   if (!query || query.length < 2) return [];
-  
-  try {
-    // Search the domain directory using People API
-    // This relies on Contact Sharing being enabled for the domain
-    const response = People.People.searchDirectoryPeople({
-      query: query,
-      readMask: 'names,emailAddresses',
-      sources: ['DIRECTORY_SOURCE_TYPE_DOMAIN_PROFILE']
-    });
-    
-    if (!response || !response.people) return [];
-    
-    // Map the people array to our standard format
-    return response.people.map(person => {
-      let name = '';
-      if (person.names && person.names.length > 0) {
-        name = person.names[0].displayName || '';
-      }
-      
-      let email = '';
-      if (person.emailAddresses && person.emailAddresses.length > 0) {
-        email = person.emailAddresses[0].value || '';
-      }
-      
-      return { name: name, email: email };
-    }).filter(p => p.email); // Ensure we only return users that have an email
-    
-  } catch (e) {
-    console.error('Directory search error (People API): ' + e.toString());
-    return [];
+
+  function fetchUsers(q) {
+    try {
+      const r = AdminDirectory.Users.list({ customer: 'my_customer', query: q, maxResults: 15, orderBy: 'givenName', projection: 'basic' });
+      return (r && r.users) ? r.users : [];
+    } catch (e) {
+      console.error('Directory search error (' + q + '): ' + e.toString());
+      return [];
+    }
   }
+
+  // Run name and email queries, merge and deduplicate by primary email
+  const byName  = fetchUsers('name:'  + query);
+  const byEmail = fetchUsers('email:' + query);
+  const seen = {};
+  const merged = [];
+  byName.concat(byEmail).forEach(function(u) {
+    const email = u.primaryEmail || '';
+    if (email && !seen[email]) {
+      seen[email] = true;
+      merged.push({
+        name:  (u.name && u.name.fullName) ? u.name.fullName : email,
+        email: email
+      });
+    }
+  });
+  return merged;
 }
 
 /**

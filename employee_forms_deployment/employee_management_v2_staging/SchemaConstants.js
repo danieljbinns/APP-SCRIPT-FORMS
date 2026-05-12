@@ -23,6 +23,18 @@
 const SCHEMA = {
 
   // ─────────────────────────────────────────────
+  // ROW INDEX CONSTANTS
+  // Used for getDataRange().getValues() array access patterns.
+  //   data[SCHEMA.ROW.HEADER]         — the header row
+  //   for (let i = SCHEMA.ROW.FIRST_DATA; ...)  — data row loops
+  //   i > SCHEMA.ROW.HEADER           — filter to skip header
+  // ─────────────────────────────────────────────
+  ROW: {
+    HEADER:     0,  // Header row index in a getValues() 2D array
+    FIRST_DATA: 1   // First data row index; use in for-loop starts and i > checks
+  },
+
+  // ─────────────────────────────────────────────
   // WORKFLOWS  (9 columns)
   // ─────────────────────────────────────────────
   WORKFLOWS: {
@@ -234,7 +246,8 @@ const SCHEMA = {
     VACATION_RESPONDER:     24,  // string   — Vacation Responder Auto Reply
     EQUIPMENT_TO_RETURN:    25,  // csv      — Equipment to Return
     COMMENTS:               26,  // string   — Comments
-    LAST_DAY_WORKED:        27   // date     — Last Day Worked
+    LAST_DAY_WORKED:        27,  // date     — Last Day Worked
+    ATTACHMENT_URL:         28   // string   — Attachment URL (Drive link)
   },
 
   // ─────────────────────────────────────────────
@@ -259,31 +272,37 @@ const SCHEMA = {
   },
 
   // ─────────────────────────────────────────────
-  // POSITION CHANGES  (22 columns)
+  // POSITION CHANGES  (28 columns)
   // ─────────────────────────────────────────────
   POSITION_CHANGES: {
-    WORKFLOW_ID:           0,   // string   — Workflow ID
-    FORM_ID:               1,   // string   — Form ID
-    TIMESTAMP:             2,   // datetime — Timestamp
-    REQUESTER_NAME:        3,   // string   — Requester Name
-    REQUESTER_EMAIL:       4,   // string   — Requester Email
-    EMPLOYEE_NAME:         5,   // string   — Employee Name
-    EMPLOYEE_ID:           6,   // string   — Employee ID
-    EFFECTIVE_DATE:        7,   // date     — Effective Date
-    CURRENT_SITE:          8,   // string   — Current Site
-    CHANGE_TYPES:          9,   // csv      — Change Types
-    SITE_TRANSFER:         10,  // string   — Site Transfer (Old -> New)
-    TITLE_CHANGE:          11,  // string   — Title Change (Old -> New)
-    CLASSIFICATION:        12,  // string   — Classification (Old -> New)
-    MANAGER_CHANGE:        13,  // string   — Manager Change (Old -> New Email)
-    REASSIGN_OLD_REPORTS:  14,  // boolean  — Reassign Old Reports
-    GAIN_NEW_REPORTS:      15,  // boolean  — Gain New Reports
-    GOOGLE_ACCOUNT:        16,  // string   — Google Account
-    SYSTEMS_ADDED:         17,  // csv      — Systems Added
-    EQUIPMENT:             18,  // csv      — Equipment
-    REMOVED_ACCESS:        19,  // csv      — Removed Access
-    COMMENTS:              20,  // string   — Comments
-    DEPARTMENT:            21   // string   — Department
+    WORKFLOW_ID:              0,   // string   — Workflow ID
+    FORM_ID:                  1,   // string   — Form ID
+    TIMESTAMP:                2,   // datetime — Timestamp
+    REQUESTER_NAME:           3,   // string   — Requester Name
+    REQUESTER_EMAIL:          4,   // string   — Requester Email
+    EMPLOYEE_NAME:            5,   // string   — Employee Name
+    EMPLOYEE_ID:              6,   // string   — Employee ID
+    EFFECTIVE_DATE:           7,   // date     — Effective Date
+    CURRENT_SITE:             8,   // string   — Current Site
+    CHANGE_TYPES:             9,   // csv      — Change Types
+    SITE_TRANSFER:            10,  // string   — Site Transfer (Old -> New)
+    TITLE_CHANGE:             11,  // string   — Title Change (Old -> New)
+    CLASSIFICATION:           12,  // string   — Classification (Old -> New)
+    MANAGER_CHANGE:           13,  // string   — Manager Change (Old -> New Email)
+    REASSIGN_OLD_REPORTS:     14,  // boolean  — Reassign Old Reports
+    GAIN_NEW_REPORTS:         15,  // boolean  — Gain New Reports
+    GOOGLE_ACCOUNT:           16,  // string   — Google Account
+    SYSTEMS_ADDED:            17,  // csv      — Systems Added
+    EQUIPMENT:                18,  // csv      — Equipment
+    REMOVED_ACCESS:           19,  // csv      — Removed Access
+    COMMENTS:                 20,  // string   — Comments
+    DEPARTMENT:               21,  // string   — Department
+    PURCHASING_SITES:         22,  // csv      — Purchasing Sites
+    RECEIVING_MANAGER_EMAIL:  23,  // string   — Receiving Manager Email
+    CURRENT_TITLE:            24,  // string   — Current Title
+    CURRENT_MANAGER_EMAIL:    25,  // string   — Current Manager Email
+    CURRENT_MANAGER_NAME:     26,  // string   — Current Manager Name
+    CURRENT_CLASS:            27   // string   — Current Class (Hourly/Salary)
   },
 
   // ─────────────────────────────────────────────
@@ -331,6 +350,32 @@ const SCHEMA = {
     NOTES:             4,  // string   — Notes
     FOLLOWUP_REQUIRED: 5,  // boolean  — Follow-up Required
     SUBMITTED_BY:      6   // string   — Submitted By
+  },
+
+  // ─────────────────────────────────────────────
+  // DATA_LOOKUP — numeric column indexes (0-based)
+  // Sheet: Data_Lookup
+  // Columns are positional (accessed by index, not header name).
+  // When adding a new column here, also add its header string to DATA_LOOKUP_HEADERS below.
+  // ─────────────────────────────────────────────
+  DATA_LOOKUP: {
+    SITES:            0,  // string — Column A — Site names
+    JOB_NUMBERS:      3,  // string — Column D — Job site numbers (Initial Request field)
+    BOSS_COST_SHEETS: 4,  // string — Column E — Boss cost sheet job numbers
+    COMMITTEES:       5   // string — Column F — Boss job sites / committees
+  },
+
+  // ─────────────────────────────────────────────
+  // DATA_LOOKUP_HEADERS — column header name strings
+  // Sheet: Data_Lookup
+  // Used wherever columns are located by header name (indexOf lookups and write-back).
+  // When a new Data_Lookup column is needed, add its header string here first.
+  // ─────────────────────────────────────────────
+  DATA_LOOKUP_HEADERS: {
+    SITES:        'Sites',
+    JOB_CODES:    'Job Codes',
+    JRS:          'JRs',
+    JOB_NUMBERS:  'Job Numbers'
   }
 
 };

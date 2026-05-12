@@ -60,68 +60,75 @@ function submitPositionChangeRequest(formData) {
       formData.currentClass || ''             // index 27
     ];
     
+    // Validate manager fields were selected from directory (name auto-fills only on directory select)
+    if (formData.currentManagerEmail && !formData.currentManagerName) {
+      return { success: false, message: 'Current manager must be selected from the directory lookup — please search and select a name.' };
+    }
+    if (formData.mgrNewEmail && !formData.mgrNewName) {
+      return { success: false, message: 'New manager must be selected from the directory lookup — please search and select a name.' };
+    }
+    if (formData.mgrOldEmail && !formData.mgrOldName) {
+      return { success: false, message: 'Previous manager must be selected from the directory lookup — please search and select a name.' };
+    }
+
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGES, rowData);
     if (!sheetSuccess) throw new Error('Failed to record position change in sheet');
     
     updateWorkflow(workflowId, 'In Progress', 'HR Approval Needed', formData.firstName + ' ' + formData.lastName);
     syncWorkflowState(workflowId);
 
-    // Notification ONLY to HR
-    const approvalUrl = buildFormUrl('position_change_approval', { wf: workflowId });
-    
-    // Enrich context for email
-    const wfContext = getWorkflowContext(workflowId) || {};
-    const finalContext = {
-      ...wfContext,
-      workflowType: 'Status Change',
-      department: formData.department || '',
-      employeeName: formData.firstName + ' ' + formData.lastName,
-      siteName: formData.siteNew || formData.siteName,
-      jobTitle: (formData.titleOld || 'N/A') + ' -> ' + (formData.titleNew || 'N/A'),
-      hireDate: formData.effDate,
-      requestDate: new Date().toLocaleDateString(),
-      requesterEmail: formData.reqEmail,
-      changeTypes: changes,
-      siteTransfer: (formData.siteOld && formData.siteNew) ? formData.siteOld + ' -> ' + formData.siteNew : '',
-      titleChange: (formData.titleOld || formData.titleNew) ? (formData.titleOld || 'N/A') + ' -> ' + (formData.titleNew || 'N/A') : '',
-      classChange: (formData.classOld || formData.classNew) ? (formData.classOld || 'N/A') + ' -> ' + (formData.classNew || 'N/A') : '',
-      managerChange: (formData.mgrOldName || 'N/A') + ' (' + (formData.mgrOldEmail || 'N/A') + ') -> ' + (formData.mgrNewName || 'N/A') + ' (' + (formData.mgrNewEmail || 'N/A') + ')',
-      managerEmail: formData.mgrNewEmail || '',
-      managerOldEmail: formData.mgrOldEmail || '',
-      managerNewEmail: formData.mgrNewEmail || ''
-    };
-
-    sendFormEmail({
-      to: CONFIG.EMAILS.HR,
-      subject: 'HR Approval Required',
-      body: 'A new status change request has been submitted for ' + formData.firstName + ' ' + formData.lastName + '. Please review and approve or reject using the button below.',
-      formUrl: approvalUrl,
-      contextData: finalContext
-    });
-
-    // Notify payroll at same time as HR
-    sendFormEmail({
-      to: CONFIG.EMAILS.PAYROLL,
-      subject: 'HR Approval Required',
-      body: 'A new status change request has been submitted for ' + formData.firstName + ' ' + formData.lastName + '. Please review and approve or reject using the button below.',
-      formUrl: approvalUrl,
-      contextData: finalContext
-    });
-
-    // Notify current manager (if provided and different from requester)
-    if (formData.currentManagerEmail && formData.currentManagerEmail !== formData.reqEmail) {
-      sendFormEmail({
-        to: formData.currentManagerEmail,
-        subject: 'Status Change Initiated',
-        body: 'A status change request has been submitted for ' + formData.firstName + ' ' + formData.lastName + ', who currently reports to you. The change is pending HR review. You will be notified of the outcome.',
-        contextData: finalContext
-      });
-    }
+    // Notify HR, Payroll, and current manager — extracted helper so ReplayService can refire missed emails
+    _sendPositionChangeSubmitEmails(workflowId);
 
     return { success: true, workflowId: workflowId, message: 'Change request submitted and sent to HR for approval.' };
   } catch (error) {
     Logger.log('[ERROR] Position change submission error: ' + error.toString());
     return { success: false, message: 'Error: ' + error.message };
+  }
+}
+
+/**
+ * Send submission-time notification emails for a Position Change workflow.
+ * Reads from the Position Changes sheet — safe to call after the row is written.
+ * Also called by ReplayService to refire missed emails without writing new records.
+ */
+function _sendPositionChangeSubmitEmails(workflowId) {
+  const pcData = getPositionChangeData(workflowId);
+  if (!pcData) {
+    Logger.log('[PositionChangeHandler] _sendPositionChangeSubmitEmails: no data for ' + workflowId);
+    return;
+  }
+  const approvalUrl  = buildFormUrl('position_change_approval', { wf: workflowId });
+  const wfContext    = getWorkflowContext(workflowId) || {};
+  const finalContext = {
+    ...wfContext,
+    workflowType:    'Status Change',
+    department:      pcData.department || '',
+    employeeName:    pcData.employeeName,
+    siteName:        pcData.siteName,
+    jobTitle:        pcData.titleChange || '',
+    hireDate:        pcData.effDate,
+    requestDate:     new Date().toLocaleDateString(),
+    requesterEmail:  pcData.requesterEmail,
+    changeTypes:     pcData.changes,
+    siteTransfer:    pcData.siteTransfer,
+    titleChange:     pcData.titleChange,
+    classChange:     pcData.classChange,
+    managerChange:   pcData.managerChange,
+    managerEmail:    pcData.mgrNewEmail || '',
+    managerOldEmail: pcData.currentManagerEmail || '',
+    managerNewEmail: pcData.mgrNewEmail || ''
+  };
+  const emailBody = 'A new status change request has been submitted for ' + pcData.employeeName + '. Please review and approve or reject using the button below.';
+  sendFormEmail({ to: CONFIG.EMAILS.HR,      subject: 'HR Approval Required', body: emailBody, formUrl: approvalUrl, contextData: finalContext });
+  sendFormEmail({ to: CONFIG.EMAILS.PAYROLL, subject: 'HR Approval Required', body: emailBody, formUrl: approvalUrl, contextData: finalContext });
+  if (pcData.currentManagerEmail && pcData.currentManagerEmail !== pcData.requesterEmail) {
+    sendFormEmail({
+      to: pcData.currentManagerEmail,
+      subject: 'Status Change Initiated',
+      body: 'A status change request has been submitted for ' + pcData.employeeName + ', who currently reports to you. The change is pending HR review. You will be notified of the outcome.',
+      contextData: finalContext
+    });
   }
 }
 
@@ -138,35 +145,36 @@ function servePositionChangeApproval(workflowId) {
 function getPositionChangeData(workflowId) {
   const data = getRowByRequestId(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGES, workflowId);
   if (!data) return null;
+  const PC = SCHEMA.POSITION_CHANGES;
   return {
-    workflowId: data[0],
-    employeeName: data[5],
-    empID: data[6],
-    effDate: data[7] ? (data[7] instanceof Date ? Utilities.formatDate(new Date(data[7]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[7]) : '',
-    siteName: data[8],
-    changes: data[9],
-    jobTitle: (function() { var t = data[11] || ''; var idx = t.indexOf(' -> '); var v = idx !== -1 ? t.substring(idx + 4).trim() : t.trim(); return (v && v !== 'N/A') ? v : ''; })(),
-    siteTransfer: data[10],
-    titleChange: data[11],
-    classChange: data[12],
-    managerChange: data[13],
-    systems: data[17],
-    equipment: data[18],
-    requesterEmail: data[4],
-    comments: data[20],
-    department: data[21] || '',
-    purchasingSites: data[22] || '',
-    receivingManagerEmail: data[23] || '',
-    currentTitle: data[24] || '',
-    currentManagerEmail: data[25] || '',
-    currentManagerName: data[26] || '',
-    currentClass: data[27] || '',
+    workflowId:            data[PC.WORKFLOW_ID],
+    employeeName:          data[PC.EMPLOYEE_NAME],
+    empID:                 data[PC.EMPLOYEE_ID],
+    effDate:               data[PC.EFFECTIVE_DATE] ? (data[PC.EFFECTIVE_DATE] instanceof Date ? Utilities.formatDate(new Date(data[PC.EFFECTIVE_DATE]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[PC.EFFECTIVE_DATE]) : '',
+    siteName:              data[PC.CURRENT_SITE],
+    changes:               data[PC.CHANGE_TYPES],
+    jobTitle:              (function() { var t = data[PC.TITLE_CHANGE] || ''; var idx = t.indexOf(' -> '); var v = idx !== -1 ? t.substring(idx + 4).trim() : t.trim(); return (v && v !== 'N/A') ? v : ''; })(),
+    siteTransfer:          data[PC.SITE_TRANSFER],
+    titleChange:           data[PC.TITLE_CHANGE],
+    classChange:           data[PC.CLASSIFICATION],
+    managerChange:         data[PC.MANAGER_CHANGE],
+    systems:               data[PC.SYSTEMS_ADDED],
+    equipment:             data[PC.EQUIPMENT],
+    requesterEmail:        data[PC.REQUESTER_EMAIL],
+    comments:              data[PC.COMMENTS],
+    department:            data[PC.DEPARTMENT]             || '',
+    purchasingSites:       data[PC.PURCHASING_SITES]        || '',
+    receivingManagerEmail: data[PC.RECEIVING_MANAGER_EMAIL] || '',
+    currentTitle:          data[PC.CURRENT_TITLE]           || '',
+    currentManagerEmail:   data[PC.CURRENT_MANAGER_EMAIL]   || '',
+    currentManagerName:    data[PC.CURRENT_MANAGER_NAME]    || '',
+    currentClass:          data[PC.CURRENT_CLASS]           || '',
     mgrNewEmail: (function() {
-      var m = (String(data[13] || '')).match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
+      var m = (String(data[PC.MANAGER_CHANGE] || '')).match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
       return m.length > 1 ? m[1].replace(/[()]/g, '') : (m.length === 1 ? m[0].replace(/[()]/g, '') : '');
     })(),
-    oldReportsTo: data[14] || '',
-    newReportsFrom: data[15] || ''
+    oldReportsTo:          data[PC.REASSIGN_OLD_REPORTS]   || '',
+    newReportsFrom:        data[PC.GAIN_NEW_REPORTS]        || ''
   };
 }
 

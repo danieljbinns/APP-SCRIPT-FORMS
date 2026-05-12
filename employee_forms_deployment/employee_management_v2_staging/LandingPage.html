@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 
 <head>
@@ -297,6 +297,85 @@
         .ref-card .card-description {
             font-size: 0.82rem;
         }
+
+        /* ── Light mode ─────────────────────────────────────────── */
+        body.light-mode {
+            background: #f4f4f4 !important;
+            color: #111 !important;
+        }
+        body.light-mode .header {
+            background: rgba(255,255,255,0.97) !important;
+            border-bottom-color: #EB1C2D;
+        }
+        body.light-mode h1 {
+            background: linear-gradient(135deg, #111 0%, #444 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+        body.light-mode .subtitle { color: #444 !important; }
+        body.light-mode .user-info { color: #555 !important; }
+        body.light-mode .card {
+            background: #ffffff !important;
+            border-color: #cccccc !important;
+            color: #111 !important;
+        }
+        body.light-mode .card:hover { border-color: #EB1C2D !important; }
+        body.light-mode .card-description { color: #555 !important; }
+        body.light-mode .section-title { color: #444 !important; border-bottom-color: #ccc !important; }
+        body.light-mode .help-section { border-color: #cccccc !important; }
+        body.light-mode .help-toggle {
+            background: #f9f9f9 !important;
+            color: #333 !important;
+        }
+        body.light-mode .help-toggle:hover { background: #f0f0f0 !important; color: #111 !important; }
+        body.light-mode .help-body { background: #fafafa !important; }
+        body.light-mode .help-intro { color: #111 !important; }
+        body.light-mode .faq-item { background: #fff !important; border-color: #ddd !important; }
+        body.light-mode .faq-q { color: #111 !important; }
+        body.light-mode .faq-a { color: #444 !important; }
+        body.light-mode .faq-a strong { color: #222 !important; }
+        body.light-mode .ref-guides-label { color: #666 !important; }
+        body.light-mode .expand-hint { color: #888 !important; }
+
+        /* ── AODA high-contrast mode ─────────────────────────────── */
+        body.aoda-mode {
+            background: #ffffff !important;
+            color: #000000 !important;
+            font-size: 17px !important;
+            line-height: 1.8 !important;
+        }
+        body.aoda-mode .header {
+            background: #ffffff !important;
+            border-bottom: 3px solid #a50000 !important;
+        }
+        body.aoda-mode h1 {
+            background: none !important;
+            -webkit-text-fill-color: #000000 !important;
+            color: #000000 !important;
+        }
+        body.aoda-mode .subtitle,
+        body.aoda-mode .user-info,
+        body.aoda-mode .card-description,
+        body.aoda-mode .section-title,
+        body.aoda-mode .faq-a,
+        body.aoda-mode .faq-q { color: #000000 !important; }
+        body.aoda-mode .card {
+            background: #ffffff !important;
+            border: 2px solid #000000 !important;
+            color: #000000 !important;
+        }
+        body.aoda-mode .card:hover { border-color: #a50000 !important; }
+        body.aoda-mode .section-title { border-bottom: 2px solid #000 !important; }
+        body.aoda-mode .help-section { border: 2px solid #000 !important; }
+        body.aoda-mode .help-toggle {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border-bottom: 1px solid #000 !important;
+        }
+        body.aoda-mode .help-body { background: #ffffff !important; }
+        body.aoda-mode .help-intro { color: #000000 !important; }
+        body.aoda-mode .faq-item { background: #fff !important; border: 2px solid #000 !important; }
+        body.aoda-mode a { color: #0000cc !important; text-decoration: underline !important; }
     </style>
 </head>
 
@@ -462,6 +541,8 @@
         }).getCurrentUserEmail();
     </script>
   <?!= include('SharedComponents') ?>
+  <?!= include('GeoCities') ?>
+  <?!= include('StarTrekTOS') ?>
 </body>
 
 </html>

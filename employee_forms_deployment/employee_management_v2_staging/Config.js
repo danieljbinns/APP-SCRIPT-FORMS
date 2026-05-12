@@ -3,7 +3,7 @@
  * Single source of truth for ALL form URLs and settings
  */
 
-const ENVIRONMENT = 'STAGING';
+const ENVIRONMENT = 'DEV';
 
 const CONFIG = {
 
