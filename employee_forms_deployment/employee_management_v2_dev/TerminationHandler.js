@@ -324,6 +324,12 @@ function submitTerminationApproval(formData) {
       sendActionItemEmail(CONFIG.EMAILS.IDSETUP, 'Employee Deactivation Required', tidDeact, termData, deactItems);
       tasksCreated++;
 
+      // HR EOE Process — Always Mandatory. HR must confirm all EOE steps are complete.
+      const eoeItems = ['Complete EOE process'];
+      const tidEoe = ActionItemService.createActionItem(workflowId, 'EOE', 'Complete EOE Process - ' + termData.employeeName, JSON.stringify(eoeItems), CONFIG.EMAILS.HR);
+      sendActionItemEmail(CONFIG.EMAILS.HR, 'EOE Process Required', tidEoe, termData, eoeItems);
+      tasksCreated++;
+
       // Safety Offboarding — FYI notification only. No action item needed;
       // deactivation (SiteDocs, DSS, BOSS WIS) is handled by the ID Setup team above.
       const safetyTermCtx = {

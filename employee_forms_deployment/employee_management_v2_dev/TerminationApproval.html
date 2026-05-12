@@ -20,28 +20,7 @@
             <h1>Termination Approval</h1>
             <p class="subtitle">Review request and trigger follow-up steps</p>
 
-            <div class="ticket-info">
-                <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName ?></span></div>
-                <div class="info-row"><span class="label">Type</span><span class="value"><?= requestData.empType ?></span></div>
-                <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName ?></span></div>
-                <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName ?></span></div>
-                <div class="info-row"><span class="label">Term Date</span><span class="value"><?= requestData.termDate ?></span></div>
-                <div class="info-row"><span class="label">Reason</span><span class="value"><?= requestData.reason ?></span></div>
-                <? if (requestData.empPhone && requestData.empPhone !== 'N/A') { ?>
-                <div class="info-row"><span class="label">Assigned Phone</span><span class="value"><?= requestData.empPhone ?></span></div>
-                <? } ?>
-                <? if (requestData.systems && requestData.systems !== 'N/A') { ?>
-                <div class="info-row"><span class="label">System Access</span><span class="value"><?= requestData.systems ?></span></div>
-                <? } ?>
-                <? if (requestData.eqToReturn && requestData.eqToReturn !== 'N/A') { ?>
-                <div class="info-row"><span class="label">Equipment to Return</span><span class="value"><?= requestData.eqToReturn ?></span></div>
-                <? } ?>
-                <div class="info-row"><span class="label">Direct Reports</span><span class="value"><?= requestData.hasReports === 'Yes' ? 'Yes, routing to ' + requestData.reportsToNew : 'No' ?></span></div>
-                <div class="info-row"><span class="label">Submitted By</span><span class="value"><?= requestData.requesterEmail ?></span></div>
-                <? if (requestData.attachmentUrl) { ?>
-                <div class="info-row span-2"><span class="label">Documentation</span><span class="value"><a href="<?= requestData.attachmentUrl ?>" target="_blank" style="color:var(--brand-red);">View Attached File</a></span></div>
-                <? } ?>
-            </div>
+            <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
 
             <form id="approvalForm">
                 <input type="hidden" name="workflowId" value="<?= workflowId ?>">
