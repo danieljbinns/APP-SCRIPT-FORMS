@@ -73,6 +73,51 @@
   .autocomplete-clear:hover {
     color: #c0392b;
   }
+
+  /* Manual override toggle */
+  .autocomplete-override-row {
+    margin-top: 5px;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: #6c757d;
+  }
+  .autocomplete-override-row input[type="checkbox"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: #e67e22;
+    /* override the global readonly rule that applies input[readonly] */
+    background-color: unset !important;
+    cursor: pointer !important;
+    border: unset !important;
+    color: unset !important;
+    opacity: unset !important;
+  }
+  .autocomplete-override-label {
+    cursor: pointer;
+    user-select: none;
+    line-height: 1.4;
+  }
+  .autocomplete-override-label .override-title {
+    color: #e67e22;
+    font-weight: 600;
+  }
+  .autocomplete-override-label .override-hint {
+    color: #888;
+    display: block;
+    font-size: 0.73rem;
+    margin-top: 1px;
+  }
+  /* Manual mode: unlock field styling */
+  .autocomplete-manual-active input:not([type="checkbox"]) {
+    background-color: #fff8f0 !important;
+    border-color: #e67e22 !important;
+    cursor: text !important;
+    opacity: 1 !important;
+    color: #333 !important;
+  }
 </style>
 
 <script>
@@ -113,13 +158,15 @@
       }
 
       const container = input.parentNode;
+      // Wrapper group — used to toggle manual-mode class for field styling
+      const fieldGroup = container.parentNode;
 
       // Create results container
       const resultsDiv = document.createElement('div');
       resultsDiv.className = 'autocomplete-results';
       container.appendChild(resultsDiv);
 
-      // Create clear link — shown after a selection is made
+      // ── Clear link — shown after a directory selection is made ──────────
       const clearLink = document.createElement('span');
       clearLink.className = 'autocomplete-clear';
       clearLink.textContent = '✕ Clear selection';
@@ -137,9 +184,57 @@
       // Insert after the container (outside autocomplete-container so it isn't clipped)
       container.parentNode.insertBefore(clearLink, container.nextSibling);
 
+      // ── Manual override toggle ───────────────────────────────────────────
+      let manualMode = false;
+
+      const overrideRow = document.createElement('div');
+      overrideRow.className = 'autocomplete-override-row';
+
+      const overrideCheckbox = document.createElement('input');
+      overrideCheckbox.type = 'checkbox';
+      overrideCheckbox.id = 'autocomplete-override-' + Math.random().toString(36).slice(2, 7);
+
+      const overrideLabel = document.createElement('label');
+      overrideLabel.htmlFor = overrideCheckbox.id;
+      overrideLabel.className = 'autocomplete-override-label';
+      overrideLabel.innerHTML =
+        '<span class="override-title">Enter manually</span>' +
+        '<span class="override-hint">Use only if directory search is unavailable or not finding the right person. ' +
+        'Name and email will not be validated against the directory.</span>';
+
+      overrideRow.appendChild(overrideCheckbox);
+      overrideRow.appendChild(overrideLabel);
+      // Insert after the clear link
+      clearLink.parentNode.insertBefore(overrideRow, clearLink.nextSibling);
+
+      overrideCheckbox.addEventListener('change', function() {
+        manualMode = this.checked;
+        resultsDiv.style.display = 'none';
+
+        if (manualMode) {
+          // Unlock both fields for free typing
+          input.removeAttribute('readonly');
+          if (nameInput) nameInput.removeAttribute('readonly');
+          clearLink.style.display = 'none';
+          fieldGroup.classList.add('autocomplete-manual-active');
+          input.focus();
+          console.log('⚠️ Directory autocomplete: manual override enabled');
+        } else {
+          // Returning to search mode — clear and re-lock
+          input.value = '';
+          if (nameInput) nameInput.value = '';
+          nameInput && nameInput.setAttribute('readonly', true);
+          fieldGroup.classList.remove('autocomplete-manual-active');
+          input.focus();
+          console.log('✅ Directory autocomplete: manual override disabled, fields reset');
+        }
+      });
+
+      // ── Debounced search input ───────────────────────────────────────────
       let timeout = null;
 
       input.addEventListener('input', function() {
+        if (manualMode) return; // skip search in manual mode
         console.log('⌨️ Input in:', config.inputSelector, 'value:', this.value);
         clearTimeout(timeout);
         const query = this.value.trim();
@@ -154,9 +249,18 @@
           google.script.run
             .withSuccessHandler(function(users) {
               console.log('✅ Directory Results for "' + query + '":', users ? users.length : 0);
+
+              // Client-side contains filter as safety net — catches any results
+              // the server returned that don't visually match the typed query
+              const q = query.toLowerCase();
+              const filtered = (users || []).filter(function(u) {
+                return (u.name  && u.name.toLowerCase().includes(q)) ||
+                       (u.email && u.email.toLowerCase().includes(q));
+              });
+
               resultsDiv.innerHTML = '';
-              if (users && users.length > 0) {
-                users.forEach(user => {
+              if (filtered.length > 0) {
+                filtered.forEach(function(user) {
                   const div = document.createElement('div');
                   div.className = 'autocomplete-item';
                   const nameSpan = document.createElement('span');
@@ -176,8 +280,8 @@
                     input.setAttribute('readonly', true);
                     clearLink.style.display = 'inline';
 
-                    // Trigger change events
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    // Trigger change events for parent form listeners
+                    input.dispatchEvent(new Event('input',  { bubbles: true }));
                     input.dispatchEvent(new Event('change', { bubbles: true }));
                     if (nameInput) nameInput.dispatchEvent(new Event('input', { bubbles: true }));
 

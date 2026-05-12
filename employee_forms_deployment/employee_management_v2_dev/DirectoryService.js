@@ -23,12 +23,18 @@ function searchDirectoryUsers(query) {
     }
   }
 
-  // Run name and email queries, merge and deduplicate by primary email
-  const byName  = fetchUsers('name:'  + query);
-  const byEmail = fetchUsers('email:' + query);
+  // Run explicit first-name, last-name, and email queries and merge.
+  // Using givenName:/familyName: instead of name: because the Admin SDK's
+  // name: query anchors to the start of fullName (often "First Last"), so
+  // typing a last name prefix like "roberts" hits name: by luck but a first
+  // name prefix like "russell" can miss if fullName ordering differs.
+  // Explicit field queries are reliable regardless of how fullName is stored.
+  const byFirst = fetchUsers('givenName:'  + query);
+  const byLast  = fetchUsers('familyName:' + query);
+  const byEmail = fetchUsers('email:'      + query);
   const seen = {};
   const merged = [];
-  byName.concat(byEmail).forEach(function(u) {
+  byFirst.concat(byLast).concat(byEmail).forEach(function(u) {
     const email = u.primaryEmail || '';
     if (email && !seen[email]) {
       seen[email] = true;
