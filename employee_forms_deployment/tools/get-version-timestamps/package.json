@@ -1,0 +1,9 @@
+{
+  "name": "get-version-timestamps",
+  "version": "1.0.0",
+  "description": "Fetch Apps Script version timestamps for merged git+clasp timeline",
+  "main": "index.js",
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}

@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>~~*~~ TEAM GROUP EMPLOYEE PORTAL ~~*~~ OFFICIAL SITE ~~*~~</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
+
+/* ===== TILED STAR BACKGROUND ===== */
+body {
+  background-color: #000011;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 80%, #aaf 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 40%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 10%, #ffa 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 60%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 55%, #aff 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 90%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 35%, #faf 0%, transparent 100%),
+    radial-gradient(2px 2px at 25% 15%, #fff 0%, transparent 100%),
+    radial-gradient(2px 2px at 65% 75%, #aaf 0%, transparent 100%);
+  background-size: 200px 200px;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+  color: #ffffff;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes rainbow {
+  0%   { color: #ff0000; }
+  14%  { color: #ff8800; }
+  28%  { color: #ffff00; }
+  42%  { color: #00ff00; }
+  57%  { color: #0088ff; }
+  71%  { color: #8800ff; }
+  85%  { color: #ff00ff; }
+  100% { color: #ff0000; }
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: #ff0000; box-shadow: 0 0 10px #ff0000; }
+  25%       { border-color: #ffff00; box-shadow: 0 0 10px #ffff00; }
+  50%       { border-color: #00ff00; box-shadow: 0 0 10px #00ff00; }
+  75%       { border-color: #0088ff; box-shadow: 0 0 10px #0088ff; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+
+@keyframes glitter {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(1.4); }
+}
+
+@keyframes marquee-bg {
+  0%   { background-position: 0 0; }
+  100% { background-position: 200px 0; }
+}
+
+@keyframes construction {
+  0%, 100% { transform: rotate(-5deg); }
+  50%       { transform: rotate(5deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%       { transform: translateX(-4px); }
+  30%       { transform: translateX(4px); }
+  50%       { transform: translateX(-4px); }
+  70%       { transform: translateX(4px); }
+  90%       { transform: translateX(-2px); }
+}
+
+@keyframes neon-pulse {
+  0%, 100% { text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff, 0 0 20px #ff00ff; }
+  50%       { text-shadow: 0 0 2px #ff00ff, 0 0 5px #ff00ff; }
+}
+
+@keyframes scrolling-stars {
+  from { background-position: 0 0; }
+  to   { background-position: 0 500px; }
+}
+
+@keyframes explode {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* ===== TOP MARQUEE BAR ===== */
+.top-bar {
+  background: linear-gradient(90deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff00ff, #ff0000);
+  background-size: 400% 100%;
+  animation: marquee-bg 3s linear infinite;
+  padding: 6px 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #000;
+  letter-spacing: 2px;
+}
+
+/* ===== SECOND MARQUEE ===== */
+.marquee-bar {
+  background: #000088;
+  border-top: 3px solid #ffff00;
+  border-bottom: 3px solid #ffff00;
+  padding: 8px 0;
+  overflow: hidden;
+}
+
+marquee { display: block; }
+
+/* ===== MAIN CONTAINER ===== */
+.main-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+/* ===== HEADER ===== */
+.site-header {
+  text-align: center;
+  padding: 20px 10px;
+  border: 4px solid #ff00ff;
+  background: rgba(0,0,0,0.7);
+  margin: 15px 0;
+  animation: pulse-border 2s infinite;
+  position: relative;
+}
+
+.site-header .stars-deco {
+  font-size: 22px;
+  animation: rainbow 1.5s infinite;
+  display: block;
+  letter-spacing: 6px;
+  margin-bottom: 8px;
+}
+
+.site-title {
+  font-size: 42px;
+  font-weight: 700;
+  animation: rainbow 1s infinite;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  line-height: 1.1;
+  text-shadow: 3px 3px 0px #000, -1px -1px 0px #000;
+  display: block;
+}
+
+.site-subtitle {
+  font-size: 16px;
+  color: #00ffff;
+  margin-top: 8px;
+  animation: neon-pulse 2s infinite;
+  letter-spacing: 2px;
+}
+
+.blink {
+  animation: blink 1s infinite;
+  color: #ff0000;
+  font-weight: 700;
+}
+
+.blink-slow {
+  animation: blink 2s infinite;
+}
+
+/* ===== VISITOR COUNTER ===== */
+.counter-box {
+  text-align: center;
+  background: #000;
+  border: 2px solid #00ff00;
+  padding: 8px 16px;
+  display: inline-block;
+  font-family: 'Courier New', monospace;
+  color: #00ff00;
+  font-size: 24px;
+  letter-spacing: 4px;
+  box-shadow: 0 0 10px #00ff00;
+  margin: 8px;
+}
+
+/* ===== UNDER CONSTRUCTION ===== */
+.construction {
+  background: repeating-linear-gradient(
+    45deg,
+    #ffff00,
+    #ffff00 10px,
+    #000000 10px,
+    #000000 20px
+  );
+  padding: 4px;
+  margin: 10px 0;
+}
+.construction-inner {
+  background: #000;
+  padding: 10px 20px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+.hard-hat {
+  display: inline-block;
+  font-size: 32px;
+  animation: construction 0.8s ease-in-out infinite;
+}
+
+/* ===== SECTION DIVIDERS ===== */
+.rainbow-hr {
+  height: 4px;
+  background: linear-gradient(90deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff00ff);
+  border: none;
+  margin: 12px 0;
+}
+
+/* ===== SECTION BOXES ===== */
+.section-box {
+  border: 3px solid #ffff00;
+  background: rgba(0, 0, 80, 0.85);
+  padding: 14px;
+  margin: 14px 0;
+}
+
+.section-box.red-box   { border-color: #ff4444; background: rgba(80,0,0,0.85); }
+.section-box.green-box { border-color: #00ff88; background: rgba(0,50,20,0.85); }
+.section-box.pink-box  { border-color: #ff88ff; background: rgba(60,0,60,0.85); }
+.section-box.cyan-box  { border-color: #00ffff; background: rgba(0,50,60,0.85); }
+
+.section-heading {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffff00;
+  text-shadow: 2px 2px #ff0000;
+  border-bottom: 2px dashed #ffff00;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+  letter-spacing: 2px;
+}
+
+/* ===== WORKFLOW BUTTONS ===== */
+.workflow-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.workflow-table td {
+  padding: 6px;
+  vertical-align: top;
+  width: 50%;
+}
+
+.workflow-btn {
+  display: block;
+  width: 100%;
+  padding: 12px 8px;
+  text-align: center;
+  text-decoration: none;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+  font-size: 14px;
+  font-weight: 700;
+  border: 3px outset #888;
+  cursor: pointer;
+  transition: none;
+  letter-spacing: 1px;
+  position: relative;
+}
+
+.workflow-btn:active {
+  border-style: inset;
+}
+
+.btn-new-hire  { background: linear-gradient(180deg, #44ff44, #006600); color: #000; border-color: #00ff00; }
+.btn-eoe       { background: linear-gradient(180deg, #ff6666, #660000); color: #fff; border-color: #ff0000; }
+.btn-position  { background: linear-gradient(180deg, #6666ff, #000066); color: #fff; border-color: #0000ff; }
+.btn-equipment { background: linear-gradient(180deg, #ffff44, #666600); color: #000; border-color: #ffff00; }
+.btn-dashboard { background: linear-gradient(180deg, #ff88ff, #660066); color: #fff; border-color: #ff00ff; animation: explode 1.5s infinite; display: block; }
+
+.new-badge {
+  background: #ff0000;
+  color: #ffff00;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 3px;
+  animation: blink 0.7s infinite;
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  letter-spacing: 1px;
+}
+
+/* ===== FLOATING STAR DECORATIONS ===== */
+.float-star {
+  display: inline-block;
+  animation: float 2s ease-in-out infinite;
+  font-size: 24px;
+}
+
+.float-star:nth-child(2) { animation-delay: 0.3s; }
+.float-star:nth-child(3) { animation-delay: 0.6s; }
+.float-star:nth-child(4) { animation-delay: 0.9s; }
+
+/* ===== FAQ / HELP ===== */
+.faq-item {
+  border-left: 4px solid #00ff00;
+  padding: 6px 10px;
+  margin: 8px 0;
+  background: rgba(0,60,0,0.4);
+}
+
+.faq-q { color: #00ff88; font-weight: 700; font-size: 14px; }
+.faq-a { color: #ccffcc; font-size: 13px; margin-top: 3px; }
+
+/* ===== GUESTBOOK / LINKS SIDEBAR ===== */
+.sidebar-box {
+  border: 2px dashed #ff88ff;
+  padding: 10px;
+  background: rgba(50,0,50,0.8);
+  font-size: 13px;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.sidebar-link {
+  color: #ffff00;
+  text-decoration: underline;
+  display: block;
+  margin: 4px 0;
+  animation: rainbow 3s infinite;
+}
+
+.sidebar-link:hover {
+  color: #ff00ff;
+}
+
+/* ===== WEBRING ===== */
+.webring {
+  text-align: center;
+  border: 2px solid #888;
+  padding: 10px;
+  background: #111133;
+  font-size: 12px;
+  margin: 10px 0;
+  color: #aaa;
+}
+
+/* ===== AWARDS ===== */
+.award {
+  display: inline-block;
+  border: 2px solid #ffaa00;
+  padding: 8px 12px;
+  margin: 5px;
+  background: #221100;
+  text-align: center;
+  font-size: 11px;
+  color: #ffaa00;
+}
+
+.award .trophy { font-size: 28px; display: block; animation: spin 3s linear infinite; }
+
+/* ===== MUSIC PLAYER ===== */
+.music-box {
+  background: #001100;
+  border: 2px solid #00ff00;
+  padding: 10px;
+  text-align: center;
+  font-size: 13px;
+  margin: 10px 0;
+}
+
+.music-btn {
+  background: #003300;
+  border: 2px outset #00ff00;
+  color: #00ff00;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  cursor: pointer;
+  animation: blink 2s infinite;
+}
+
+.music-btn:active { border-style: inset; }
+
+/* ===== NOTE BOX ===== */
+.note-box {
+  background: #ffff88;
+  border: 3px solid #ff8800;
+  color: #000;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin: 10px 0;
+  text-align: center;
+  animation: shake 4s infinite;
+}
+
+/* ===== FOOTER ===== */
+.site-footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  color: #888;
+  border-top: 4px solid #ff00ff;
+  margin-top: 20px;
+  background: rgba(0,0,0,0.6);
+}
+
+.site-footer a { color: #00ffff; }
+
+/* ===== SPINNING EARTH ===== */
+.spinning-earth {
+  display: inline-block;
+  font-size: 36px;
+  animation: spin 4s linear infinite;
+}
+
+/* ===== CURSOR SPARKLE ===== */
+.sparkle {
+  display: inline-block;
+  animation: glitter 0.5s infinite;
+  color: #ffff00;
+}
+
+/* ===== LAYOUT ===== */
+.two-col { display: flex; gap: 12px; }
+.two-col .col-main { flex: 2; }
+.two-col .col-side  { flex: 1; min-width: 180px; }
+
+@media (max-width: 600px) {
+  .two-col { flex-direction: column; }
+  .site-title { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== TOP RAINBOW BAR ===== -->
+<div class="top-bar">
+  ★ BEST VIEWED IN NETSCAPE NAVIGATOR 4.0 AT 800x600 ★ THIS SITE IS FRAMES-FREE ★ JAVASCRIPT ENABLED ★
+</div>
+
+<!-- ===== MARQUEE 1 ===== -->
+<div class="marquee-bar">
+  <marquee scrollamount="5" behavior="scroll">
+    &nbsp;&nbsp;&nbsp;
+    ✨ WELCOME TO THE OFFICIAL TEAM GROUP EMPLOYEE MANAGEMENT PORTAL ✨ &nbsp;&nbsp;&nbsp;
+    🌟 NOW WITH 100% MORE SEQUENTIAL GATING!!! 🌟 &nbsp;&nbsp;&nbsp;
+    💥 NEW!! EQUIPMENT AND SYSTEMS REQUEST NOW AVAILABLE!! 💥 &nbsp;&nbsp;&nbsp;
+    ⚡ SUBMIT YOUR REQUESTS ONLINE - NO FAX REQUIRED ⚡ &nbsp;&nbsp;&nbsp;
+    🎉 OVER 50 MANAGERS SERVED!!! 🎉 &nbsp;&nbsp;&nbsp;
+    📧 AOL INSTANT MESSENGER: TeamGroupHR &nbsp;&nbsp;&nbsp;
+  </marquee>
+</div>
+
+<div class="main-wrap">
+
+  <!-- ===== HEADER ===== -->
+  <div class="site-header">
+    <span class="stars-deco">✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦</span>
+    <span class="site-title">TEAM GROUP<br>EMPLOYEE PORTAL</span>
+    <div class="site-subtitle">
+      &lt;&lt; THE INTERNET'S #1 EMPLOYEE MANAGEMENT DESTINATION &gt;&gt;
+    </div>
+    <br>
+    <div>
+      <span class="float-star">⭐</span>
+      <span class="float-star">💫</span>
+      <span class="float-star">⭐</span>
+      <span class="float-star">💫</span>
+    </div>
+    <br>
+    <span class="blink">*** NEW WORKFLOWS FOR 2026 ***</span>
+    &nbsp;&nbsp;
+    <span class="blink-slow" style="color:#00ffff;">LAST UPDATED: JANUARY 1, 2026</span>
+  </div>
+
+  <!-- ===== VISITOR COUNTER + MUSIC ===== -->
+  <table width="100%" style="margin: 8px 0;">
+    <tr>
+      <td style="text-align:center; width:33%;">
+        <div style="font-size:12px; color:#ffff00; margin-bottom:4px;">YOU ARE VISITOR #</div>
+        <div class="counter-box">0 0 1 3 3 7</div>
+        <div style="font-size:10px; color:#888; margin-top:2px;">FREE WEB COUNTER PROVIDED BY GEOCOUNTER.COM</div>
+      </td>
+      <td style="text-align:center; width:34%;">
+        <div class="music-box">
+          <div style="color:#00ff00; font-size:13px; margin-bottom:6px;">
+            ♫ BACKGROUND MUSIC ♫<br>
+            <span style="color:#aaa; font-size:11px;">Now Playing: corporatefuntime.mid</span>
+          </div>
+          <button class="music-btn" onclick="playMidi()">▶ CLICK TO PLAY MIDI</button>
+          <div id="midi-status" style="color:#ffff00; font-size:11px; margin-top:4px; height:14px;"></div>
+        </div>
+      </td>
+      <td style="text-align:center; width:33%;">
+        <div style="font-size:13px; color:#ff88ff; margin-bottom:6px;">THIS SITE IS:</div>
+        <div class="award"><span class="trophy">🏆</span>NETSCAPE<br>GOLD SITE<br>1997</div>
+        <div class="award"><span class="trophy">⭐</span>YAHOO!<br>COOL SITE<br>OF THE DAY</div>
+      </td>
+    </tr>
+  </table>
+
+  <hr class="rainbow-hr">
+
+  <!-- ===== CONSTRUCTION BANNER ===== -->
+  <div class="construction">
+    <div class="construction-inner">
+      <span class="hard-hat">🚧</span>
+      &nbsp;
+      <span style="color:#ffff00; animation: blink 0.5s infinite; display:inline-block;">UNDER CONSTRUCTION</span>
+      &nbsp; — &nbsp;
+      <span style="color:#fff; font-size:14px;">SOME FEATURES MAY NOT WORK IN ALL BROWSERS</span>
+      &nbsp;
+      <span class="hard-hat">🚧</span>
+    </div>
+  </div>
+
+  <!-- ===== NOTE BOX ===== -->
+  <div class="note-box">
+    <strong>⚠️ IMPORTANT NOTICE ⚠️</strong><br>
+    The forms on this page are FULLY GUIDED and VALIDATED!!!<br>
+    You do NOT need to read the training docs to submit a request!!!<br>
+    <em>(But they're there if you want them!!)</em>
+  </div>
+
+  <hr class="rainbow-hr">
+
+  <!-- ===== MARQUEE 2 ===== -->
+  <marquee scrollamount="3" behavior="alternate" style="color:#ff88ff; font-size:15px; font-weight:700; margin: 8px 0; display:block;">
+    ★彡 SUBMIT YOUR EMPLOYEE REQUESTS BELOW — NO PRINTER REQUIRED — PAPERLESS SINCE 2024 彡★
+  </marquee>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <div class="two-col">
+
+    <!-- MAIN COLUMN -->
+    <div class="col-main">
+
+      <!-- FORMS SECTION -->
+      <div class="section-box">
+        <div class="section-heading">
+          <span class="sparkle">✦</span> EMPLOYEE FORMS <span class="sparkle">✦</span>
+          <span style="font-size:12px; color:#ff8888; display:block; font-weight:400; letter-spacing:0;">(click a button to open the form!!!)</span>
+        </div>
+
+        <table class="workflow-table">
+          <tr>
+            <td>
+              <a href="#new-hire" class="workflow-btn btn-new-hire" style="position:relative;">
+                <span class="new-badge">NEW!!</span>
+                👤 NEW EMPLOYEE REQUEST<br>
+                <span style="font-size:10px; font-weight:400;">hire somebody here!!</span>
+              </a>
+            </td>
+            <td>
+              <a href="#eoe" class="workflow-btn btn-eoe" style="position:relative;">
+                <span class="new-badge">HOT!!</span>
+                ❌ END OF EMPLOYMENT<br>
+                <span style="font-size:10px; font-weight:400;">the other kind of request lol</span>
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <a href="#position" class="workflow-btn btn-position" style="position:relative; margin-top:6px;">
+                🔄 POSITION / SITE CHANGE<br>
+                <span style="font-size:10px; font-weight:400;">movin on up!!</span>
+              </a>
+            </td>
+            <td>
+              <a href="#equipment" class="workflow-btn btn-equipment" style="position:relative; margin-top:6px;">
+                <span class="new-badge">HOT!!</span>
+                💻 EQUIPMENT & SYSTEMS<br>
+                <span style="font-size:10px; font-weight:400;">computers n stuff</span>
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <br>
+        <div style="text-align:center;">
+          <a href="#dashboard" class="workflow-btn btn-dashboard" style="font-size:17px; padding:14px; position:relative;">
+            <span class="new-badge">CLICK!!</span>
+            📊 &gt;&gt; WORKFLOW DASHBOARD &lt;&lt;<br>
+            <span style="font-size:11px; font-weight:400;">SEE ALL YOUR REQUESTS IN ONE PLACE!!!</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- HOW IT WORKS -->
+      <div class="section-box cyan-box">
+        <div class="section-heading" style="color:#00ffff; border-color:#00ffff;">
+          <span class="spinning-earth">🌍</span> HOW IT WORKS!!!
+        </div>
+
+        <marquee scrollamount="2" behavior="scroll" style="color:#ffff00; font-size:13px; margin-bottom:10px; display:block;">
+          → MANAGER SUBMITS → SYSTEM EMAILS NEXT PERSON → THEY DO THEIR THING → NEXT PERSON GETS NOTIFIED → REPEAT UNTIL DONE!! →
+        </marquee>
+
+        <table width="100%" style="border-collapse:collapse; font-size:13px;">
+          <tr style="background:#002244;">
+            <td style="padding:6px; border:1px solid #00ffff; color:#00ffff; font-weight:700; text-align:center;">STEP</td>
+            <td style="padding:6px; border:1px solid #00ffff; color:#00ffff; font-weight:700;">WHAT HAPPENS</td>
+            <td style="padding:6px; border:1px solid #00ffff; color:#00ffff; font-weight:700;">WHO</td>
+          </tr>
+          <tr style="background:#001133;">
+            <td style="padding:6px; border:1px solid #336688; text-align:center; color:#ffff00;">1</td>
+            <td style="padding:6px; border:1px solid #336688;">Submit a form on this site!!</td>
+            <td style="padding:6px; border:1px solid #336688; color:#00ff88;">YOU (manager)</td>
+          </tr>
+          <tr style="background:#002244;">
+            <td style="padding:6px; border:1px solid #336688; text-align:center; color:#ffff00;">2</td>
+            <td style="padding:6px; border:1px solid #336688;">System emails the next person automatically!!</td>
+            <td style="padding:6px; border:1px solid #336688; color:#00ff88;">🤖 THE SYSTEM</td>
+          </tr>
+          <tr style="background:#001133;">
+            <td style="padding:6px; border:1px solid #336688; text-align:center; color:#ffff00;">3</td>
+            <td style="padding:6px; border:1px solid #336688;">They click their link and do their step</td>
+            <td style="padding:6px; border:1px solid #336688; color:#00ff88;">HR / IT / etc</td>
+          </tr>
+          <tr style="background:#002244;">
+            <td style="padding:6px; border:1px solid #336688; text-align:center; color:#ffff00;">4</td>
+            <td style="padding:6px; border:1px solid #336688;">Next person gets notified... and so on!!</td>
+            <td style="padding:6px; border:1px solid #336688; color:#00ff88;">🤖 THE SYSTEM</td>
+          </tr>
+          <tr style="background:#001133;">
+            <td style="padding:6px; border:1px solid #336688; text-align:center; color:#ffff00;">5</td>
+            <td style="padding:6px; border:1px solid #336688; color:#00ff00; font-weight:700;">TICKET CLOSES!! YOU WIN!!! 🎉</td>
+            <td style="padding:6px; border:1px solid #336688; color:#00ff88;">EVERYONE</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- FAQ -->
+      <div class="section-box green-box">
+        <div class="section-heading" style="color:#00ff88; border-color:#00ff88;">
+          ❓ FREQUENTLY ASKED QUESTIONS (FAQ) ❓
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Q: which form do i use??</div>
+          <div class="faq-a">
+            new person → New Employee Request!!<br>
+            person leaving → End of Employment!!<br>
+            person needs computer stuff → Equipment and Systems!!<br>
+            person changing roles/sites → Position/Site Change!!<br>
+            <span style="color:#ff8888;">if you pick wrong one we will notice lol</span>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Q: do i need to email HR/IT after submitting??</div>
+          <div class="faq-a">NO!!! the system does it automatically!! this is the whole point of the website!!</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Q: something is stuck what do i do??</div>
+          <div class="faq-a">go to the dashboard and click the REMIND button!! it will re-send the email to whoever dropped the ball 😬</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Q: i submitted the wrong thing can i undo it??</div>
+          <div class="faq-a">
+            <span style="color:#ff4444; font-weight:700;">NO!! YOU CANNOT UNDO IT!!</span><br>
+            contact HR or IT and tell them what you did. do NOT re-submit or you will create a duplicate. oops!!
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col-main -->
+
+    <!-- SIDEBAR -->
+    <div class="col-side">
+
+      <!-- ABOUT BOX -->
+      <div class="sidebar-box">
+        <div style="font-size:15px; font-weight:700; color:#ffff00; animation:rainbow 2s infinite;">
+          ABOUT THIS SITE
+        </div>
+        <hr style="border-color:#ff88ff; margin:6px 0;">
+        <div style="font-size:12px; color:#ddd; line-height:1.7;">
+          Welcome to the<br>
+          <strong style="color:#00ffff;">TEAM GROUP</strong><br>
+          Employee Management Portal!!<br><br>
+          This site lets managers submit<br>
+          employee requests ONLINE<br>
+          without any PAPER!!<br><br>
+          <span style="color:#ffff00;">Est. 2024</span><br>
+          <span style="color:#ff88ff;">Running on GOOGLE APPS SCRIPT</span><br><br>
+          <span style="animation:blink 1s infinite; display:inline-block; color:#ff4444;">
+            ● ONLINE NOW
+          </span>
+        </div>
+      </div>
+
+      <!-- REFERENCE GUIDES -->
+      <div class="sidebar-box" style="border-color:#ffff00;">
+        <div style="font-size:14px; font-weight:700; color:#ffff00; margin-bottom:8px;">
+          📚 REFERENCE GUIDES
+        </div>
+        <div style="font-size:11px; color:#aaa; margin-bottom:8px;">
+          (you probably don't need these<br>but they're here just in case!!)
+        </div>
+        <a href="#ref-deck"          class="sidebar-link">🎯 Portal Overview Deck</a>
+        <a href="#ref-new-hire"      class="sidebar-link">📋 New Employee Guide</a>
+        <a href="#ref-equipment"     class="sidebar-link">💻 Equipment Guide</a>
+        <a href="#ref-termination"   class="sidebar-link">📋 EOE Guide</a>
+        <a href="#ref-status-change" class="sidebar-link">📋 Status Change Guide</a>
+      </div>
+
+      <!-- GUESTBOOK -->
+      <div class="sidebar-box" style="border-color:#00ffff; border-style:dashed;">
+        <div style="font-size:14px; font-weight:700; color:#00ffff; margin-bottom:6px;">
+          📖 SIGN MY GUESTBOOK!!
+        </div>
+        <div style="font-size:11px; color:#aaa; margin-bottom:8px;">
+          Let me know you were here!!
+        </div>
+        <a href="#guestbook" class="sidebar-link" style="font-size:13px; color:#00ffff;">
+          &gt;&gt; SIGN GUESTBOOK &lt;&lt;
+        </a>
+        <a href="#guestbook" class="sidebar-link" style="font-size:13px; color:#00ffff;">
+          &gt;&gt; VIEW GUESTBOOK &lt;&lt;
+        </a>
+        <div style="font-size:10px; color:#666; margin-top:6px;">
+          45 entries since 2024!!
+        </div>
+      </div>
+
+      <!-- WEB RING -->
+      <div class="webring">
+        <div style="color:#ffff00; font-weight:700; margin-bottom:4px;">💍 HR WEBRING 💍</div>
+        <div style="margin:4px 0;">
+          <a href="#" style="color:#00ffff;">&lt;&lt; PREV</a>
+          &nbsp;
+          <a href="#" style="color:#ff88ff;">RANDOM</a>
+          &nbsp;
+          <a href="#" style="color:#00ffff;">NEXT &gt;&gt;</a>
+        </div>
+        <div style="font-size:10px; color:#666; margin-top:4px;">
+          You are site #7 of 12 in the<br>Corporate Intranet Webring
+        </div>
+      </div>
+
+      <!-- CONTACT -->
+      <div class="sidebar-box red-box" style="font-size:12px; text-align:center;">
+        <div style="color:#ff8888; font-weight:700; margin-bottom:6px;">📧 CONTACT US</div>
+        <div style="color:#ddd; line-height:1.8;">
+          Email: hr@team-group.com<br>
+          AIM: TeamGroupHR<br>
+          ICQ: 867-5309<br>
+          <span style="color:#ffff00;">Response time: 2-3 business days</span>
+        </div>
+      </div>
+
+      <!-- BEST VIEWED -->
+      <div style="text-align:center; font-size:11px; color:#888; border:1px solid #444; padding:8px; background:#0a0a0a;">
+        🖥️ BEST VIEWED IN<br>
+        <strong style="color:#aaa;">Netscape Navigator 4.0</strong><br>
+        or Internet Explorer 5<br>
+        at <strong style="color:#aaa;">800 × 600</strong> resolution<br>
+        <span style="color:#666;">with 256 colors enabled</span>
+      </div>
+
+    </div><!-- /col-side -->
+
+  </div><!-- /two-col -->
+
+  <hr class="rainbow-hr">
+
+  <!-- ===== MARQUEE 3 ===== -->
+  <marquee scrollamount="6" style="color:#ff0000; font-size:18px; font-weight:700; display:block; margin:8px 0;">
+    ⚠️ WARNING: THIS SITE USES COOKIES AND JAVA APPLETS AND PROBABLY A VIRUS OR TWO ⚠️ JUST KIDDING!! ⚠️ PROBABLY!! ⚠️
+  </marquee>
+
+  <hr class="rainbow-hr">
+
+  <!-- ===== AWARDS ROW ===== -->
+  <div style="text-align:center; padding:10px 0;">
+    <div style="font-size:14px; color:#ffaa00; font-weight:700; margin-bottom:8px; letter-spacing:2px;">
+      🏅 SITE AWARDS 🏅
+    </div>
+    <div class="award"><span class="trophy">🥇</span>BEST<br>INTRANET<br>2024</div>
+    <div class="award" style="border-color:#00ffff;"><span class="trophy" style="animation-duration:2s;">🌐</span>WEB<br>EXCELLENCE<br>AWARD</div>
+    <div class="award" style="border-color:#ff88ff;"><span class="trophy" style="animation-duration:5s;">⭐</span>5 STAR<br>HR SITE<br>RATING</div>
+    <div class="award" style="border-color:#00ff88;"><span class="trophy" style="animation-duration:1s;">🎖️</span>MOST<br>SEQUENTIAL<br>GATING</div>
+  </div>
+
+  <hr class="rainbow-hr">
+
+  <!-- ===== FOOTER ===== -->
+  <div class="site-footer">
+    <div style="font-size:18px; margin-bottom:8px; animation:rainbow 2s infinite;">
+      ✦ ✦ ✦ TEAM GROUP ✦ ✦ ✦
+    </div>
+    <div>
+      Copyright &copy; 2026 Team Group Companies &bull; All Rights Reserved &bull; Probably
+    </div>
+    <div style="margin-top:6px;">
+      <a href="#privacy">Privacy Policy</a> &bull;
+      <a href="#terms">Terms of Service</a> &bull;
+      <a href="#sitemap">Sitemap</a> &bull;
+      <a href="#top">Back to Top ↑</a>
+    </div>
+    <div style="margin-top:10px; color:#444; font-size:11px;">
+      This page has been visited <span style="color:#00ff00;">1,337</span> times since January 1, 2026<br>
+      Optimized for Netscape Navigator 4.0 &bull; This site is hosted on GeoCities Pro &bull; 5MB storage<br>
+      <span style="animation:blink 3s infinite; display:inline-block; margin-top:4px;">
+        &lt;/&gt; HTML coded by hand in Notepad.exe &lt;/&gt;
+      </span>
+    </div>
+  </div>
+
+</div><!-- /main-wrap -->
+
+<!-- ===== SECOND TOP MARQUEE THAT SCROLLS THE OTHER WAY ===== -->
+<marquee scrollamount="4" direction="right" style="background:#000044; border-top:2px solid #0000ff; padding:5px 0; color:#8888ff; font-size:12px; display:block; position:fixed; bottom:0; left:0; right:0; z-index:999;">
+  &nbsp; 📧 Questions? Email hr@team-group.com &nbsp;|&nbsp; 🕐 Office hours: 9am-5pm EST &nbsp;|&nbsp; 💾 This site is Y2K compliant &nbsp;|&nbsp; 🔒 SSL secured &nbsp;|&nbsp; 🌐 Works in all browsers (probably) &nbsp;|&nbsp; ✅ No frames!! &nbsp;
+</marquee>
+
+<!-- ===== MIDI PLAYER (WEB AUDIO API) ===== -->
+<script>
+var midiPlaying = false;
+var audioCtx = null;
+var gainNode = null;
+var notes = [];
+
+// Simple melody: Jingle-ish corporate tune
+var melody = [
+  [523, 0.3], [523, 0.3], [523, 0.6],
+  [523, 0.3], [523, 0.3], [523, 0.6],
+  [523, 0.3], [659, 0.3], [392, 0.3], [440, 0.3], [523, 0.9],
+  [587, 0.3], [587, 0.3], [587, 0.3], [587, 0.6],
+  [587, 0.3], [523, 0.3], [523, 0.3], [523, 0.3],
+  [523, 0.3], [440, 0.3], [440, 0.3], [523, 0.3], [440, 0.6],
+  [659, 0.9]
+];
+
+function playMidi() {
+  var btn = document.querySelector('.music-btn');
+  var status = document.getElementById('midi-status');
+
+  if (midiPlaying) {
+    if (audioCtx) { gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1); }
+    midiPlaying = false;
+    btn.textContent = '▶ CLICK TO PLAY MIDI';
+    status.textContent = '⏹ stopped';
+    return;
+  }
+
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0.15;
+    gainNode.connect(audioCtx.destination);
+
+    var t = audioCtx.currentTime + 0.05;
+    for (var i = 0; i < melody.length; i++) {
+      var freq = melody[i][0];
+      var dur  = melody[i][1];
+      (function(freq, start, dur) {
+        var osc = audioCtx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.value = freq;
+        var env = audioCtx.createGain();
+        env.gain.setValueAtTime(0, start);
+        env.gain.linearRampToValueAtTime(1, start + 0.02);
+        env.gain.setValueAtTime(1, start + dur - 0.05);
+        env.gain.linearRampToValueAtTime(0, start + dur);
+        osc.connect(env);
+        env.connect(gainNode);
+        osc.start(start);
+        osc.stop(start + dur);
+      })(freq, t, dur);
+      t += dur;
+    }
+
+    midiPlaying = true;
+    btn.textContent = '⏸ CLICK TO STOP';
+    status.textContent = '♫ playing corporatefuntime.mid...';
+    setTimeout(function() {
+      midiPlaying = false;
+      btn.textContent = '▶ CLICK TO PLAY MIDI';
+      status.textContent = '⏹ playback complete';
+    }, t * 1000 - audioCtx.currentTime * 1000 + 200);
+
+  } catch(e) {
+    status.textContent = 'ERROR: MIDI NOT SUPPORTED IN THIS BROWSER';
+  }
+}
+
+// Blink the page title
+var titles = [
+  '~~*~~ TEAM GROUP EMPLOYEE PORTAL ~~*~~',
+  '*** CLICK THE FORMS TO SUBMIT ***',
+  '~~*~~ TEAM GROUP EMPLOYEE PORTAL ~~*~~',
+  '!!! NEW REQUESTS AVAILABLE !!!',
+];
+var titleIdx = 0;
+setInterval(function() {
+  titleIdx = (titleIdx + 1) % titles.length;
+  document.title = titles[titleIdx];
+}, 2000);
+</script>
+
+</body>
+</html>
