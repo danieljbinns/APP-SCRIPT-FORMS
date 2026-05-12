@@ -26,45 +26,62 @@ function getHRVerificationData(workflowId) {
     const mainData = mainSheet.getDataRange().getValues();
     let result = { success: false, message: 'Workflow ID not found' };
     
-    for (let i = 1; i < mainData.length; i++) {
-      if (mainData[i][0] === workflowId) {
-        result = {
-          success: true,
-          workflowId: workflowId,
-          firstName: mainData[i][10] || '',
-          lastName: mainData[i][12] || '',
-          position: mainData[i][14] || '',
-          jrTitle: mainData[i][46] || '', // Col 46 is JR Assign
-          siteName: mainData[i][15] || '',
-          hireDate: mainData[i][6] ? Utilities.formatDate(new Date(mainData[i][6]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
-          managerName: mainData[i][18] || '',
-          managerEmail: mainData[i][17] || '',
-          requesterEmail: mainData[i][5] || '',
-          employmentType: mainData[i][9] || '',
-          internalEmployeeId: ''
-        };
-        break;
-      }
+    const context = getWorkflowContext(workflowId);
+    if (context) {
+      // Look up jrRequired from the Initial Requests sheet
+      var jrRequired = 'No';
+      try {
+        var jrReqCol = mainData[0].indexOf('JR Req');
+        for (var ri = 1; ri < mainData.length; ri++) {
+          if (mainData[ri][0] === workflowId) {
+            jrRequired = jrReqCol !== -1 ? (mainData[ri][jrReqCol] || 'No') : 'No';
+            break;
+          }
+        }
+      } catch(e) { /* leave as No */ }
+
+      result = {
+        ...result,
+        ...context,
+        success: true,
+        position: context.jobTitle,
+        jrRequired: jrRequired
+      };
     }
     
     if (!result.success) return result;
-    
-    if (idSheet) {
-      const idData = idSheet.getDataRange().getValues();
-      for (let j = 1; j < idData.length; j++) {
-        if (idData[j][0] === workflowId) {
-          result.internalEmployeeId = idData[j][3] || 'PENDING';
-          result.siteDocsUsername = idData[j][6];
-          result.siteDocsPassword = idData[j][7];
-          result.dssUsername = idData[j][8];
-          result.dssPassword = idData[j][9];
+
+    // Check for existing submission — populate edit-mode data if found
+    const hrResultsSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
+    if (hrResultsSheet) {
+      const hrData = hrResultsSheet.getDataRange().getValues();
+      for (let i = 1; i < hrData.length; i++) {
+        if (String(hrData[i][0]) === workflowId && String(hrData[i][1]) !== 'DATE_CHANGE') {
+          const submittedAt = hrData[i][2] instanceof Date
+            ? Utilities.formatDate(hrData[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss')
+            : String(hrData[i][2] || '');
+          const combined = String(hrData[i][7] || ''); // "Job Title / JR Title"
+          result.isEdit = true;
+          result.previousData = {
+            adpAssociateId: String(hrData[i][3] || ''),
+            verifiedName:   String(hrData[i][4] || ''),
+            managerName:    String(hrData[i][5] || ''),
+            managerEmail:   String(hrData[i][6] || ''),
+            jobTitle:  combined.includes(' / ') ? combined.split(' / ')[0].trim() : combined,
+            jrTitle:   combined.includes(' / ') ? combined.split(' / ').slice(1).join(' / ').trim() : '',
+            notes:      String(hrData[i][8] || ''),
+            submittedBy: String(hrData[i][9] || ''),
+            submittedAt: submittedAt
+          };
+          // Pre-populate ADP ID so the form field picks it up
+          result.adpAssociateId = result.previousData.adpAssociateId;
           break;
         }
       }
     }
-    
-    return JSON.parse(JSON.stringify(result));
-    
+
+    return result;
+
   } catch (error) {
     Logger.log('Error fetching verification data: ' + error.toString());
     return { success: false, message: error.message };
@@ -83,29 +100,74 @@ function submitHRVerification(formData) {
     
     const firstNameCol = headers.indexOf('First Name');
     const lastNameCol = headers.indexOf('Last Name');
-    const managerNameCol = headers.indexOf('Reporting Manager Name');
-    const managerEmailCol = headers.indexOf('Reporting Manager Email');
+    const managerNameCol = headers.indexOf('Manager Name');
+    const managerEmailCol = headers.indexOf('Manager Email');
+    const hireDateCol = headers.indexOf('Hire Date');
     const siteNameCol = headers.indexOf('Site/Office Location');
     const jrTitleCol = headers.indexOf('Position Title'); // Col 14 - Fixed header name match
     const jrAssignCol = headers.indexOf('JR Assign'); // Col 46 (Now map to jrTitle)
+    const departmentCol = headers.indexOf('Department');
     
+    // Detect existing submission for update-vs-insert logic
+    let existingHRRowIndex = -1;
+    let existingHRRowData = null;
+    const existingResultsSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
+    if (existingResultsSheet) {
+      const existingData = existingResultsSheet.getDataRange().getValues();
+      for (let ei = 1; ei < existingData.length; ei++) {
+        if (String(existingData[ei][0]) === workflowId && String(existingData[ei][1]) !== 'DATE_CHANGE') {
+          existingHRRowIndex = ei + 1; // 1-based sheet row
+          existingHRRowData = existingData[ei];
+          break;
+        }
+      }
+    }
+
     let employmentType = '';
     let systemAccess = '';
     let requesterEmail = '';
-    
+    let adpSalaryAccess = false;
+    let originalHireDate = '';
+    let hrOriginal = null;
+    const adpSalaryAccessCol = headers.indexOf('ADP Salary Access');
+
     for (let i = 1; i < mainData.length; i++) {
       if (mainData[i][0] === workflowId) {
+        // Capture original hire date before overwriting (for audit trail)
+        if (hireDateCol !== -1) {
+          const rawOrig = mainData[i][hireDateCol];
+          originalHireDate = rawOrig instanceof Date
+            ? Utilities.formatDate(rawOrig, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+            : String(rawOrig || '').substring(0, 10);
+        }
+
+        // Capture all original values for change detection BEFORE any writes
+        hrOriginal = {
+          firstName:    firstNameCol !== -1    ? String(mainData[i][firstNameCol]    || '') : '',
+          lastName:     lastNameCol !== -1     ? String(mainData[i][lastNameCol]     || '') : '',
+          hireDate:     originalHireDate,
+          siteName:     siteNameCol !== -1     ? String(mainData[i][siteNameCol]     || '') : '',
+          department:   departmentCol !== -1   ? String(mainData[i][departmentCol]   || '') : '',
+          managerName:  managerNameCol !== -1  ? String(mainData[i][managerNameCol]  || '') : '',
+          managerEmail: managerEmailCol !== -1 ? String(mainData[i][managerEmailCol] || '') : '',
+          jobTitle:     jrTitleCol !== -1      ? String(mainData[i][jrTitleCol]      || '') : '',
+          jrTitle:      jrAssignCol !== -1     ? String(mainData[i][jrAssignCol]     || '') : ''
+        };
+
         if (firstNameCol !== -1) mainSheet.getRange(i + 1, firstNameCol + 1).setValue(formData.firstName);
         if (lastNameCol !== -1) mainSheet.getRange(i + 1, lastNameCol + 1).setValue(formData.lastName);
         if (managerNameCol !== -1) mainSheet.getRange(i + 1, managerNameCol + 1).setValue(formData.managerName);
         if (managerEmailCol !== -1) mainSheet.getRange(i + 1, managerEmailCol + 1).setValue(formData.managerEmail);
+        if (hireDateCol !== -1 && formData.hireDate) mainSheet.getRange(i + 1, hireDateCol + 1).setValue(new Date(formData.hireDate + 'T12:00:00'));
         if (siteNameCol !== -1) mainSheet.getRange(i + 1, siteNameCol + 1).setValue(formData.siteName);
         if (jrTitleCol !== -1) mainSheet.getRange(i + 1, jrTitleCol + 1).setValue(formData.jobTitle);
         if (jrAssignCol !== -1) mainSheet.getRange(i + 1, jrAssignCol + 1).setValue(formData.jrTitle);
-        
+        if (departmentCol !== -1 && formData.department !== undefined) mainSheet.getRange(i + 1, departmentCol + 1).setValue(formData.department);
+
         employmentType = mainData[i][9] || '';
         systemAccess = mainData[i][19] || '';
         requesterEmail = mainData[i][5] || '';
+        adpSalaryAccess = adpSalaryAccessCol !== -1 && mainData[i][adpSalaryAccessCol] === 'Yes';
         break;
       }
     }
@@ -121,62 +183,154 @@ function submitHRVerification(formData) {
       resultsSheet.getRange(1, 1, 1, 10).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
     
-    resultsSheet.appendRow([
+    // Build notes — flag if hire date was changed during verification
+    const actingUser = Session.getActiveUser().getEmail();
+
+    let verificationNotes = formData.notes || '';
+    if (formData.hireDate && originalHireDate && formData.hireDate !== originalHireDate) {
+      const dateChangeFlag = '[START DATE CHANGED: ' + originalHireDate + ' → ' + formData.hireDate + ']';
+      verificationNotes = dateChangeFlag + (verificationNotes ? ' | ' + verificationNotes : '');
+      Logger.log('[HR Verification] ' + dateChangeFlag + ' for workflow ' + workflowId);
+    }
+
+    const hrResultRow = [
       workflowId, formId, new Date(), formData.adpAssociateId,
       formData.firstName + ' ' + formData.lastName,
-      formData.managerName, formData.managerEmail, 
-      formData.jobTitle + ' / ' + formData.jrTitle, // Store combined in verification results logs
-      formData.notes || '', Session.getActiveUser().getEmail()
-    ]);
-    
-    const actingUser = Session.getActiveUser().getEmail();
+      formData.managerName, formData.managerEmail,
+      formData.jobTitle + ' / ' + formData.jrTitle,
+      verificationNotes, actingUser
+    ];
+
+    if (existingHRRowIndex !== -1 && existingResultsSheet) {
+      // UPDATE existing row in-place — do NOT re-fire workflow transitions or emails
+      existingResultsSheet.getRange(existingHRRowIndex, 1, 1, hrResultRow.length).setValues([hrResultRow]);
+      logFormEdit(workflowId, 'HR Verification', actingUser, existingHRRowData, hrResultRow);
+      Logger.log('[HR Verification] Updated existing row for ' + workflowId + ' by ' + actingUser);
+      SpreadsheetApp.flush();
+      return {
+        success: true,
+        message: 'HR Verification updated successfully. No downstream emails re-sent.'
+      };
+    } else {
+      resultsSheet.appendRow(hrResultRow);
+    }
     
     // CRITICAL: Ensure sheet updates are committed before reading context/sending email
     SpreadsheetApp.flush();
     
-    // Get context and OVERRIDE job title with the verified one from this form submission
+    // Get context and OVERRIDE verified fields from this form submission
     // This ensures downstream emails have the fresh, verified data even if sheet read is stale
     const context = getWorkflowContext(workflowId);
     if (context) {
-      context.jobTitle = formData.jobTitle; // Override Job Title
-      context.jrTitle = formData.jrTitle;   // Override JR Title
+      context.jobTitle = formData.jobTitle;           // Override Job Title
+      context.jrTitle = formData.jrTitle;             // Override JR Title
+      context.adpAssociateId = formData.adpAssociateId; // Inject ADP ID for context block
     }
-    
+
+    // Change detection — notify downstream teams if any fields were modified vs. original request
+    if (hrOriginal) {
+      const hrSubmitted = {
+        firstName:    formData.firstName    || '',
+        lastName:     formData.lastName     || '',
+        hireDate:     formData.hireDate     || '',
+        siteName:     formData.siteName     || '',
+        department:   formData.department   || '',
+        managerName:  formData.managerName  || '',
+        managerEmail: formData.managerEmail || '',
+        jobTitle:     formData.jobTitle     || '',
+        jrTitle:      formData.jrTitle      || ''
+      };
+      const hrChanges = diffFormFields(hrOriginal, hrSubmitted, CHANGE_FIELDS_HR_VERIFICATION);
+      if (hrChanges.length > 0) {
+        const safetyTriggers  = ['hireDate', 'jobTitle', 'siteName', 'jrTitle'];
+        const idSetupTriggers = ['firstName', 'lastName', 'hireDate', 'jobTitle'];
+        sendChangeNotifications(workflowId, 'HR Verification', hrChanges, context, {
+          requesterEmail: requesterEmail,
+          managerEmail:   formData.managerEmail || '',
+          notifySafety:   hrChanges.some(function(c) { return safetyTriggers.indexOf(c.field)  !== -1; }),
+          notifyIdSetup:  hrChanges.some(function(c) { return idSetupTriggers.indexOf(c.field) !== -1; })
+        });
+      }
+    }
+
+    const verifiedName = formData.firstName + ' ' + formData.lastName;
+
     if (employmentType === 'Hourly' && systemAccess === 'No') {
-      updateWorkflow(workflowId, 'Complete', 'HR Verification Complete', '', actingUser);
+      updateWorkflow(workflowId, 'Complete', 'HR Verification Complete', verifiedName, actingUser);
+      syncWorkflowState(workflowId);
       const recipients = [requesterEmail];
       if (formData.managerEmail && formData.managerEmail !== requesterEmail) {
         recipients.push(formData.managerEmail);
       }
-      
+
       sendFormEmail({
         to: recipients.join(','),
-        subject: 'Onboarding Complete - ' + (formData.firstName + ' ' + formData.lastName) + ' (ADP: ' + formData.adpAssociateId + ')',
-        // Include credentials in the completion email
-        body: 'The onboarding process has been completed successfully. All required setup steps have been finished for this hourly employee.\n\n' +
-              'Verified ADP ID: ' + formData.adpAssociateId + '\n\n' +
-              '<strong>CREDENTIALS:</strong>\n' +
-              '• DSS: ' + (context.dssUsername || 'N/A') + ' (Pwd: ' + (context.dssPassword || 'N/A') + ')\n' +
-              '• SiteDocs: ' + (context.siteDocsUsername || 'N/A') + ' (Pwd: ' + (context.siteDocsPassword || 'N/A') + ')\n\n' +
-              'You can view the full request details using the button below.',
+        subject: 'Onboarding Complete',
+        body: 'The onboarding process has been completed successfully. All required setup steps have been finished for this hourly employee.',
         displayName: 'TEAM Group - Employee Onboarding',
-        // Update URL to request details - REMOVED BUTTON as per user request
-        formUrl: '', 
-        contextData: context
+        formUrl: '',
+        contextData: context,
+        emailOpts: { showPasswords: true, calendarDate: context.hireDate }
       });
       Logger.log('[SUCCESS] Completion email sent to requester & manager (Hourly/No System Access)');
     } else {
-      updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed', '', actingUser);
-      const itUrl = buildFormUrl('it_setup', { wf: workflowId });
+      const systems = context.systems;
+      const hasBOSSAccess = Array.isArray(systems) ? systems.includes('BOSS') : String(systems || '').includes('BOSS');
+
+      if (hasBOSSAccess) {
+        updateWorkflow(workflowId, 'In Progress', 'IT Confirmation Needed', verifiedName, actingUser);
+        syncWorkflowState(workflowId);
+        const itConfirmationUrl = buildFormUrl('it_confirmation', { wf: workflowId });
+        sendFormEmail({
+          to: 'davelangohr@team-group.com',
+          subject: 'IT Confirmation Required — ' + verifiedName,
+          body: 'HR has verified ' + verifiedName + '. Please review and confirm the access configuration before IT proceeds with provisioning.',
+          formUrl: itConfirmationUrl,
+          displayName: 'TEAM Group - Employee Onboarding',
+          contextData: context
+        });
+        Logger.log('[SUCCESS] IT Confirmation email sent to Dave Langohr for: ' + verifiedName);
+      } else {
+        updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed', verifiedName, actingUser);
+        syncWorkflowState(workflowId);
+        const itUrl = buildFormUrl('it_setup', { wf: workflowId });
+
+        const itRecipients = CONFIG.EMAILS.IT;
+
+        sendFormEmail({
+          to: itRecipients,
+          subject: 'IT Setup Required',
+          body: 'HR has verified the employee details and assigned an ADP ID.\n\nPlease complete the IT setup form using the button below.',
+          formUrl: itUrl,
+          displayName: 'TEAM Group - Employee Onboarding',
+          contextData: context
+        });
+        Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)');
+      }
+
+      // Notify payroll for salary/expedite new hires after HR verification
+      const salaryAccessCallout = adpSalaryAccess
+        ? '\n\n⚠️ <strong style="color:#EB1C2D;">ADP SALARY ACCESS REQUIRED</strong> — This employee has been flagged as requiring access to salary data in ADP. Please ensure the appropriate salary data permissions are granted before or on their start date.'
+        : '';
       sendFormEmail({
-        to: CONFIG.EMAILS.IT,
-        subject: 'HR Verified: IT Setup Required',
-        body: 'HR has verified the employee details and assigned an ADP ID.\n\nPlease complete the IT setup form using the button below.',
-        formUrl: itUrl,
-        displayName: 'TEAM Group - Employee Onboarding',
+        to: CONFIG.EMAILS.PAYROLL,
+        subject: 'HR Verified' + (adpSalaryAccess ? ' — Salary Access Required' : ''),
+        body: 'HR has completed verification for ' + formData.firstName + ' ' + formData.lastName + '. ADP ID assigned: ' + formData.adpAssociateId + '. IT setup is now in progress.' + salaryAccessCallout,
+        formUrl: '',
         contextData: context
       });
-      Logger.log('[SUCCESS] IT Setup email sent (Salary/System Access path)');
+      Logger.log('[SUCCESS] Payroll notification sent for salary new hire.' + (adpSalaryAccess ? ' (Salary access flag included)' : ''));
+
+      // Send Safety Onboarding Action Item (salary path fires here; hourly fires after ID Setup)
+      sendSafetyOnboardingEmail(workflowId, {
+        employeeName: verifiedName,
+        position: formData.jobTitle,
+        jrTitle: formData.jrTitle,
+        siteName: formData.siteName || (context && context.siteName) || '',
+        hireDate: formData.hireDate || (context && context.hireDate) || '',
+        employmentType: employmentType,
+        managerName: formData.managerName
+      }, null);
     }
     
     return {

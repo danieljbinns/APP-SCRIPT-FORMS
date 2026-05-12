@@ -15,13 +15,17 @@ function servePositionChangeBuilder() {
 }
 
 function serveTerminationRequest() {
-  return HtmlService.createHtmlOutputFromFile('TerminationRequest')
+  const template = HtmlService.createTemplateFromFile('TerminationRequest');
+  template.referenceData = JSON.stringify(getInitialFormData());
+  return template.evaluate()
     .setTitle('Termination / End of Employment')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function servePositionSiteChange() {
-  return HtmlService.createHtmlOutputFromFile('PositionSiteChangeRequest')
+  const template = HtmlService.createTemplateFromFile('PositionSiteChangeRequest');
+  template.referenceData = JSON.stringify(getInitialFormData());
+  return template.evaluate()
     .setTitle('Position / Site Change Request')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }

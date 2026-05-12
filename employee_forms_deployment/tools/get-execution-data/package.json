@@ -1,0 +1,12 @@
+{
+  "name": "get-execution-data",
+  "version": "1.0.0",
+  "description": "Fetch Apps Script execution/process logs for staging and dev",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}

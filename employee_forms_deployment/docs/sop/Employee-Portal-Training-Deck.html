@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEAM Group Employee Portal — Manager Reference Guide 2026</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #16161e;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #c8c8d2;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+#deck {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+/* ── Slides ── */
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px 88px 80px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Title slide ── */
+.slide.title { align-items: center; text-align: center; }
+.slide.title h1 {
+  font-size: 54px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.slide.title .rule {
+  width: 72px; height: 4px;
+  background: #be1e2d;
+  border-radius: 2px;
+  margin: 22px auto;
+}
+.slide.title .subtitle {
+  font-size: 20px;
+  color: #80808e;
+  letter-spacing: 0.04em;
+}
+
+/* ── Content: title ── */
+.slide-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #f05050;
+  margin-bottom: 22px;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+/* ── Who/when line ── */
+.who-when {
+  font-size: 14px;
+  color: #686878;
+  margin-bottom: 18px;
+  font-style: italic;
+  flex-shrink: 0;
+}
+
+/* ── Intro paragraph ── */
+.intro {
+  font-size: 16px;
+  color: #b0b0be;
+  margin-bottom: 20px;
+  line-height: 1.55;
+  flex-shrink: 0;
+}
+
+/* ── Section blocks ── */
+.section { margin-bottom: 14px; flex-shrink: 0; }
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #be1e2d;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* ── Bullet lists ── */
+.items { list-style: none; padding-left: 0; }
+.items li {
+  font-size: 15px;
+  color: #c8c8d2;
+  padding: 3px 0 3px 20px;
+  position: relative;
+  line-height: 1.45;
+}
+.items li::before {
+  content: "–";
+  position: absolute;
+  left: 4px;
+  color: #be1e2d;
+  opacity: 0.6;
+}
+
+/* ── Numbered steps ── */
+.steps { list-style: none; padding-left: 0; }
+.steps li {
+  font-size: 15px;
+  color: #c8c8d2;
+  padding: 3px 0 3px 32px;
+  position: relative;
+  line-height: 1.45;
+}
+.steps li .n {
+  position: absolute;
+  left: 0;
+  width: 22px;
+  color: #be1e2d;
+  font-weight: 700;
+  font-size: 13px;
+  text-align: right;
+}
+
+/* ── Workflow cards (slide 4) ── */
+.note {
+  font-size: 14px;
+  color: #686878;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+.workflow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.workflow-card {
+  background: #1c1c28;
+  border: 1px solid #2a2a3a;
+  border-radius: 8px;
+  padding: 18px 22px;
+  text-decoration: none;
+  display: block;
+  transition: border-color 0.18s, background 0.18s;
+}
+.workflow-card:hover {
+  border-color: #be1e2d;
+  background: #20202c;
+}
+.wf-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #64b4ff;
+  margin-bottom: 6px;
+}
+.workflow-card:hover .wf-name { color: #90ccff; }
+.wf-desc {
+  font-size: 13px;
+  color: #7878a0;
+  line-height: 1.5;
+}
+
+/* ── Footer note ── */
+.footnote {
+  font-size: 13px;
+  color: #505060;
+  margin-top: 16px;
+  flex-shrink: 0;
+}
+
+/* ── Progress bar ── */
+#progress {
+  position: fixed;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: #be1e2d;
+  transition: width 0.25s ease;
+  z-index: 100;
+}
+
+/* ── Nav controls ── */
+#controls {
+  position: fixed;
+  bottom: 22px; right: 40px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 100;
+}
+#counter {
+  font-size: 12px;
+  color: #484858;
+  min-width: 40px;
+  text-align: center;
+}
+#controls button {
+  background: #1c1c28;
+  border: 1px solid #2a2a3a;
+  color: #c8c8d2;
+  width: 34px; height: 34px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.18s, background 0.18s;
+  line-height: 1;
+}
+#controls button:hover:not(:disabled) {
+  border-color: #be1e2d;
+  background: #20202c;
+}
+#controls button:disabled { opacity: 0.25; cursor: default; }
+
+/* ── Slide badge ── */
+#badge {
+  position: fixed;
+  top: 22px; right: 40px;
+  font-size: 12px;
+  color: #383848;
+  z-index: 100;
+}
+
+/* ── Keyboard hint ── */
+#hint {
+  position: fixed;
+  bottom: 28px; left: 40px;
+  font-size: 11px;
+  color: #383848;
+  z-index: 100;
+}
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ─── Slide 1: Title ─── -->
+  <div class="slide title active" id="s1">
+    <h1>TEAM Group<br>Employee Portal</h1>
+    <div class="rule"></div>
+    <div class="subtitle">Manager Reference Guide &nbsp;&middot;&nbsp; 2026</div>
+  </div>
+
+  <!-- ─── Slide 2: You Don't Need to Read This ─── -->
+  <div class="slide" id="s2">
+    <div class="slide-title">The forms guide you through everything.</div>
+    <p class="intro">The Employee Portal forms are fully guided, validated, and context-aware. Most managers complete requests without consulting a reference guide at all.</p>
+    <div class="section">
+      <div class="section-label">Built into every form</div>
+      <ul class="items">
+        <li>Required fields are clearly marked &mdash; the form won&rsquo;t submit until they&rsquo;re complete</li>
+        <li>Conditional sections appear automatically based on your selections</li>
+        <li>Inline notes explain anything that isn&rsquo;t obvious</li>
+        <li>Each form covers exactly one workflow &mdash; open the right one and follow the prompts</li>
+      </ul>
+    </div>
+    <div class="section">
+      <div class="section-label">What these reference guides are for</div>
+      <ul class="items">
+        <li>Understanding how your submission fits into the full workflow</li>
+        <li>Knowing which form to use when something doesn&rsquo;t fit the obvious case</li>
+        <li>Answering &ldquo;what happens after I submit?&rdquo; questions</li>
+        <li>Onboarding new managers who want the full picture before they start</li>
+      </ul>
+    </div>
+    <p class="footnote">These are reference guides &mdash; not required reading. Jump to the workflow you need using the links on the next slide.</p>
+  </div>
+
+  <!-- ─── Slide 3: What Is the Portal ─── -->
+  <div class="slide" id="s3a">
+    <div class="slide-title">What Is the Employee Portal?</div>
+    <p class="intro">A Google Apps Script system that automates paperwork across every employee lifecycle event.</p>
+    <div class="section">
+      <div class="section-label">Replaces</div>
+      <ul class="items">
+        <li>Manual emails and text chains between managers and HR/IT</li>
+        <li>Untracked spreadsheet entries and verbal handoffs</li>
+      </ul>
+    </div>
+    <div class="section">
+      <div class="section-label">How It Works</div>
+      <ul class="items">
+        <li>~50 managers submit requests through guided web forms</li>
+        <li>Each step auto-notifies the right person once the previous step is done</li>
+        <li>The system tracks every open item &mdash; nothing falls through</li>
+      </ul>
+    </div>
+    <div class="section">
+      <div class="section-label">Four Supported Events</div>
+      <ul class="items">
+        <li>New employee joining the company</li>
+        <li>Existing employee needs additional access or equipment</li>
+        <li>Employee leaving (End of Employment)</li>
+        <li>Employee changing role, site, manager, or classification</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─── Slide 4: Sequential Gating ─── -->
+  <div class="slide" id="s3b">
+    <div class="slide-title">How It Works: Sequential Gating</div>
+    <p class="intro">Each step is locked until the previous actor completes their task.</p>
+    <div class="section">
+      <div class="section-label">The Chain</div>
+      <ol class="steps">
+        <li><span class="n">1.</span>Manager submits a request &mdash; ticket created in the system</li>
+        <li><span class="n">2.</span>First actor gets an email with a direct link to their action form</li>
+        <li><span class="n">3.</span>They complete their step &mdash; system records the result</li>
+        <li><span class="n">4.</span>Next actor is notified automatically &mdash; chain continues</li>
+        <li><span class="n">5.</span>Ticket closes when all steps are done</li>
+      </ol>
+    </div>
+    <div class="section">
+      <div class="section-label">For Managers</div>
+      <ul class="items">
+        <li>No follow-up emails needed &mdash; the system handles all notifications</li>
+        <li>Dashboard shows exactly which step is waiting if something stalls</li>
+        <li>Routing is automatic (hourly vs salary, access vs no access)</li>
+        <li>Every step is timestamped and auditable</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─── Slide 5: The Four Workflows ─── -->
+  <div class="slide" id="s4">
+    <div class="slide-title">The Four Workflows</div>
+    <p class="note">Click a card to open its reference guide &nbsp;&rarr;</p>
+    <div class="workflow-grid">
+      <a class="workflow-card" href="new-hire-submitter.html" target="_blank">
+        <div class="wf-name">New Employee Request</div>
+        <div class="wf-desc">Hiring a new employee (hourly or salary). Covers ID setup, HR verification, IT access, specialist tasks, and 30/60/90 review.</div>
+      </a>
+      <a class="workflow-card" href="equipment-request-submitter.html" target="_blank">
+        <div class="wf-name">System and Equipment Request</div>
+        <div class="wf-desc">Existing employee needs additional access or equipment. No HR gate &mdash; goes straight to IT Confirmation then IT Setup.</div>
+      </a>
+      <a class="workflow-card" href="termination-submitter.html" target="_blank">
+        <div class="wf-name">End of Employment (EOE)</div>
+        <div class="wf-desc">Employee leaving the company. HR approval gate for terminations. System access removal, Google offboarding, equipment return.</div>
+      </a>
+      <a class="workflow-card" href="status-change-submitter.html" target="_blank">
+        <div class="wf-name">Status and Position Change</div>
+        <div class="wf-desc">Role, site, manager, or classification change. HR approval required. New access provisioned and old access removed in one request.</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ─── Slide 5: New Employee ─── -->
+  <div class="slide" id="s5">
+    <div class="slide-title">New Employee Request &mdash; Overview</div>
+    <p class="who-when">Submitted by: Manager or supervisor &nbsp;&middot;&nbsp; Before or on the employee&rsquo;s first day</p>
+    <div class="section">
+      <div class="section-label">Routing at Submission</div>
+      <ul class="items">
+        <li>Salary? Triggers JR title assignment and 30/60/90 review</li>
+        <li>System / equipment access needed? Triggers IT Confirmation gate</li>
+        <li>No access needed? Skips IT steps entirely</li>
+      </ul>
+    </div>
+    <div class="section">
+      <div class="section-label">Steps</div>
+      <ol class="steps">
+        <li><span class="n">1.</span>ID Setup &mdash; Employee ID, SiteDocs Worker, DSS Training account</li>
+        <li><span class="n">2.</span>Safety Onboarding &mdash; SiteDocs locations and DSS learning paths</li>
+        <li><span class="n">3.</span>HR Verification &mdash; Cross-check name, title, manager, ADP ID</li>
+        <li><span class="n">4.</span>IT Confirmation &mdash; Reviews system access scope (if access requested)</li>
+        <li><span class="n">5.</span>IT Setup &mdash; Google account, computer, phone, BOSS provisioned</li>
+        <li><span class="n">6.</span>Specialists &mdash; Credit card, business cards, Fleetio, Jonas (parallel)</li>
+        <li><span class="n">7.</span>30/60/90 Review &mdash; Salary employees only (parallel)</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ─── Slide 6: Equipment Request ─── -->
+  <div class="slide" id="s6">
+    <div class="slide-title">System and Equipment Request &mdash; Overview</div>
+    <p class="who-when">Submitted by: Manager of an existing employee &nbsp;&middot;&nbsp; Any time access or equipment is needed</p>
+    <div class="section">
+      <div class="section-label">Use This Form When</div>
+      <ul class="items">
+        <li>Employee moves to a new role and needs BOSS access for new committees</li>
+        <li>Existing employee needs a Google account for the first time</li>
+        <li>Equipment is being issued to a current employee</li>
+      </ul>
+    </div>
+    <div class="section">
+      <div class="section-label">Steps</div>
+      <ol class="steps">
+        <li><span class="n">1.</span>IT Confirmation &mdash; Reviews and approves the access scope</li>
+        <li><span class="n">2.</span>IT Setup &mdash; Google account, computer, BOSS, systems provisioned</li>
+        <li><span class="n">3.</span>Specialists &mdash; Credit card, Jonas, Fleetio, business cards (parallel)</li>
+      </ol>
+    </div>
+    <p class="footnote">No HR gate &nbsp;&middot;&nbsp; No ID Setup or Safety step &nbsp;&middot;&nbsp; Fastest path for access changes</p>
+  </div>
+
+  <!-- ─── Slide 7: EOE ─── -->
+  <div class="slide" id="s7">
+    <div class="slide-title">End of Employment (EOE) &mdash; Overview</div>
+    <p class="who-when">Submitted by: Manager of the departing employee &nbsp;&middot;&nbsp; As soon as the departure is known</p>
+    <div class="section">
+      <div class="section-label">Departure Types</div>
+      <ul class="items">
+        <li>Resignation / Retirement &mdash; No HR approval, proceeds to offboarding directly</li>
+        <li>Termination &mdash; HR must approve before any offboarding steps begin</li>
+      </ul>
+    </div>
+    <div class="section">
+      <div class="section-label">Captured at Submission</div>
+      <ul class="items">
+        <li>Last day worked and final pay date</li>
+        <li>Systems to remove access from (ADP, BOSS, Google, Jonas, SiteDocs&hellip;)</li>
+        <li>Google offboarding options (Drive transfer, email forwarding)</li>
+        <li>Equipment to be returned &mdash; computer, phone, tablet, vehicle, card</li>
+        <li>Direct reports and whether reassignment is needed</li>
+      </ul>
+    </div>
+    <div class="section">
+      <div class="section-label">Steps</div>
+      <ol class="steps">
+        <li><span class="n">1.</span>HR Approval (terminations only) &mdash; approves or rejects with notes</li>
+        <li><span class="n">2.</span>IT Offboarding &mdash; access removal, Google suspension or transfer</li>
+        <li><span class="n">3.</span>Equipment Collection &mdash; items tracked and confirmed returned</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ─── Slide 8: Status Change ─── -->
+  <div class="slide" id="s8">
+    <div class="slide-title">Status and Position Change &mdash; Overview</div>
+    <p class="who-when">Submitted by: Manager of the changing employee &nbsp;&middot;&nbsp; Before the change takes effect</p>
+    <div class="section">
+      <div class="section-label">Change Types (check all that apply)</div>
+      <ul class="items">
+        <li>Site Transfer &mdash; new site and department sub-section appears</li>
+        <li>Position Change &mdash; new job title and JR title fields appear</li>
+        <li>Classification Change &mdash; hourly-to-salary toggle with supporting details</li>
+        <li>Manager Change &mdash; new manager email field appears</li>
+      </ul>
+    </div>
+    <div class="section">
+      <div class="section-label">Also Captured in One Request</div>
+      <ul class="items">
+        <li>New system / equipment access to provision</li>
+        <li>Equipment to return &mdash; computer, phone, tablet, vehicle, card</li>
+        <li>Access to remove (ADP, BOSS, CAA, Google, Jonas, SiteDocs&hellip;)</li>
+        <li>Handling of any direct reports</li>
+      </ul>
+    </div>
+    <div class="section">
+      <div class="section-label">Steps</div>
+      <ol class="steps">
+        <li><span class="n">1.</span>HR Approval &mdash; reviews all changes, confirms new title and JR title</li>
+        <li><span class="n">2.</span>IT + Specialists &mdash; new access provisioned, old access revoked (parallel)</li>
+      </ol>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<div id="progress"></div>
+<div id="badge">1 / 9</div>
+<div id="controls">
+  <button id="prev" disabled>&#8592;</button>
+  <span id="counter">1 / 9</span>
+  <button id="next">&#8594;</button>
+</div>
+<div id="hint">&#8592; &#8594; arrow keys &nbsp;or&nbsp; spacebar</div>
+
+<script>
+const slides  = document.querySelectorAll('.slide');
+const total   = slides.length;
+let cur = 0;
+
+const prevBtn   = document.getElementById('prev');
+const nextBtn   = document.getElementById('next');
+const counter   = document.getElementById('counter');
+const badge     = document.getElementById('badge');
+const progress  = document.getElementById('progress');
+
+function go(n) {
+  slides[cur].classList.remove('active');
+  cur = Math.max(0, Math.min(n, total - 1));
+  slides[cur].classList.add('active');
+  const label = (cur + 1) + ' / ' + total;
+  counter.textContent = label;
+  badge.textContent   = label;
+  prevBtn.disabled = cur === 0;
+  nextBtn.disabled = cur === total - 1;
+  progress.style.width = ((cur + 1) / total * 100) + '%';
+}
+
+prevBtn.addEventListener('click', () => go(cur - 1));
+nextBtn.addEventListener('click', () => go(cur + 1));
+
+document.addEventListener('keydown', e => {
+  if (['ArrowRight','ArrowDown',' '].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+  if (['ArrowLeft', 'ArrowUp'       ].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+});
+
+go(0);
+</script>
+</body>
+</html>

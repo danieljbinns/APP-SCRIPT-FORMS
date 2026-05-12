@@ -17,7 +17,7 @@ function manuallySyncAllWorkflows() {
   
   for (let i = 1; i < data.length; i++) {
     const wfId = data[i][0];
-    if (wfId) {
+    if (wfId && String(wfId).trim() !== '') {
       syncWorkflowState(wfId);
     }
   }
@@ -51,23 +51,89 @@ function syncWorkflowState(workflowId) {
       dateRequested: '', items: {} 
     };
     
-    const foundReq = reqSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
+    const isTerm   = workflowId.startsWith('TERM_');
+    const isChange = workflowId.startsWith('CHANGE_');
+    const isEquip  = workflowId.startsWith('EQUIP_REQ_');
+    const lookupSheetName = isTerm   ? CONFIG.SHEETS.TERMINATIONS
+                          : isChange ? CONFIG.SHEETS.POSITION_CHANGES
+                          : isEquip  ? CONFIG.SHEETS.EQUIPMENT_REQUESTS
+                          :            CONFIG.SHEETS.INITIAL_REQUESTS;
+    const lookupSheet = ss.getSheetByName(lookupSheetName);
+
+    const tz = Session.getScriptTimeZone();
+    const fmtDate = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy-MM-dd') : String(v || '').replace(/\//g, '-').substring(0, 10);
+    const fmtDateTime = (v) => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy-MM-dd HH:mm:ss') : (function(s){ if(!s) return ''; s = s.replace(/\//g,'-'); try{ var d=new Date(s); if(!isNaN(d.getTime())) return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss'); }catch(e){} return s; })(String(v||''));
+
+    // Equipment_Requests has Workflow ID in column B (index 1); all others use column A.
+    const searchCol = isEquip ? 'B:B' : 'A:A';
+    const foundReq = lookupSheet ? lookupSheet.getRange(searchCol).createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (foundReq) {
-      const row = reqSheet.getRange(foundReq.getRow(), 1, 1, reqSheet.getLastColumn()).getValues()[0];
-      reqInfo = {
-        requesterName: row[4] || 'Unknown',
-        requesterEmail: row[5] || '',
-        managerEmail: row[17] || '',
-        dateRequested: row[3] instanceof Date ? row[3].toLocaleDateString() : String(row[3] || ''),
-        items: {
-          jonas: (row[44] && row[44].toString().length > 0),
-          creditCard: (row[30] === 'Yes' || row[32] === 'Yes' || row[34] === 'Yes'),
-          fleetio: (row[20] && row[20].includes('Fleetio')),
-          businessCards: (row[20] && row[20].includes('Business Cards')),
-          siteDocs: ((row[20] && row[20].includes('SiteDocs')) || (row[21] && row[21].includes('SiteDocs Tablet'))),
-          review: (row[47] === 'Yes')
-        }
-      };
+      const lastCol = lookupSheet.getLastColumn();
+      const reqHeaders = lookupSheet.getRange(1, 1, 1, lastCol).getValues()[0];
+      const empTypeIdx = reqHeaders.indexOf('Employment Type');
+      const row = lookupSheet.getRange(foundReq.getRow(), 1, 1, lastCol).getValues()[0];
+      if (isTerm) {
+        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | ... | Site[11] | Term Date[12] | Manager Name[14] | Manager Email[15]
+        reqInfo = {
+          requesterName: row[3] || 'Unknown',
+          requesterEmail: row[4] || '',
+          managerEmail: row[15] || '',
+          dateRequested: fmtDate(row[2]),
+          hireDate: fmtDate(row[12]), // Term Date → shown in Effective Date column
+          site: String(row[11] || ''),
+          empType: String(row[7] || ''), // Employee Type
+          items: { isTerm: true }
+        };
+      } else if (isChange) {
+        // Headers: Workflow ID | Form ID | Timestamp | Req Name | Req Email | Emp Name | Emp ID | Effective Date[7] | Current Site[8] | Changes[9] | ... | Class Change[12] | ... | Current Class[27]
+        const classChange = String(row[12] || '');
+        const classOld = classChange.includes(' -> ') ? classChange.split(' -> ')[0].trim() : '';
+        const currentClass = String(row[27] || '');
+        const empTypeFromClass = (classOld && classOld !== 'N/A') ? classOld : (currentClass || '');
+        reqInfo = {
+          requesterName: row[3] || 'Unknown',
+          requesterEmail: row[4] || '',
+          managerEmail: String(row[25] || ''), // currentManagerEmail
+          dateRequested: fmtDate(row[2]),
+          hireDate: fmtDate(row[7]), // Effective Date → shown in Effective Date column
+          site: String(row[8] || ''),
+          empType: empTypeFromClass,
+          items: {}
+        };
+      } else if (isEquip) {
+        // Equipment_Requests: Timestamp[0] | WorkflowID[1] | FormID[2] | ReqName[3] | ReqEmail[4]
+        //   | FirstName[5] | LastName[6] | Site[7] | Position[8] | ManagerName[9] | ManagerEmail[10]
+        //   | Equipment[11] | Systems[12] | Comments[13] | Department[14]
+        reqInfo = {
+          requesterName:  row[3] || 'Unknown',
+          requesterEmail: row[4] || '',
+          managerEmail:   row[10] || '',
+          dateRequested:  fmtDate(row[0]),  // Timestamp as request date
+          hireDate:       '',               // No start date for equipment requests
+          site:           String(row[7] || ''),
+          empType:        '',
+          items:          { isEquip: true }
+        };
+      } else {
+        reqInfo = {
+          requesterName: row[4] || 'Unknown',
+          requesterEmail: row[5] || '',
+          managerEmail: row[17] || '',
+          dateRequested: fmtDate(row[3]),
+          hireDate: fmtDate(row[6]), // Hire Date → shown in Start Date column
+          site: String(row[15] || ''), // Site Name
+          empType: empTypeIdx >= 0 ? String(row[empTypeIdx] || '') : '',
+          items: {
+            jonas: (row[44] && row[44].toString().length > 0),
+            creditCard: (row[30] === 'Yes' || row[32] === 'Yes' || row[34] === 'Yes'),
+            fleetio: (row[20] && row[20].includes('Fleetio')),
+            businessCards: (row[21] && row[21].includes('Business Cards')),
+            siteDocs: ((row[20] && row[20].includes('SiteDocs')) || (row[21] && row[21].includes('SiteDocs Tablet'))),
+            review: (row[47] === 'Yes'),
+            safety: true
+          }
+        };
+      }
     }
     
     // 2. Determine Pre-Calculated Status String
@@ -77,22 +143,23 @@ function syncWorkflowState(workflowId) {
     
     if (baseStatus !== 'Cancelled' && baseStatus !== 'Completed') {
       if (currentStep === 'Specialist Forms Needed') {
-        let pending = [];
-        
-        // Helper to check if ID exists in a specific result sheet
-        const checkDone = (sheetName) => {
-          const sheet = ss.getSheetByName(sheetName);
-          if (!sheet) return false;
-          return sheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() !== null;
-        };
-        
-        if (reqInfo.items.jonas && !checkDone(CONFIG.SHEETS.JONAS_RESULTS)) pending.push('Jonas');
-        if (reqInfo.items.creditCard && !checkDone(CONFIG.SHEETS.CREDIT_CARD_RESULTS)) pending.push('Credit Card');
-        if (reqInfo.items.fleetio && !checkDone(CONFIG.SHEETS.FLEETIO_RESULTS)) pending.push('Fleetio');
-        if (reqInfo.items.businessCards && !checkDone(CONFIG.SHEETS.BUSINESS_CARDS_RESULTS)) pending.push('Business Cards');
-        if (reqInfo.items.siteDocs && !checkDone(CONFIG.SHEETS.SITEDOCS_RESULTS)) pending.push('SiteDocs');
-        if (reqInfo.items.review && !checkDone(CONFIG.SHEETS.REVIEW_306090_RESULTS)) pending.push('30/60/90');
-        
+        // Check Action Items sheet for open specialist tasks
+        const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+        const pending = [];
+        if (aiSheet) {
+          const aiData = aiSheet.getDataRange().getValues();
+          const aiHdrs = aiData[0];
+          const wfCol = aiHdrs.indexOf('Workflow ID');
+          const catCol = aiHdrs.indexOf('Category');
+          const stCol  = aiHdrs.indexOf('Status');
+          const SPECIALIST_CATS = new Set(['Credit Card','Business Cards','Fleetio','Jonas','SiteDocs','30/60/90 Review','Safety']);
+          for (let i = 1; i < aiData.length; i++) {
+            if (String(aiData[i][wfCol]) !== workflowId) continue;
+            const cat = String(aiData[i][catCol] || '');
+            if (!SPECIALIST_CATS.has(cat)) continue;
+            if (String(aiData[i][stCol]) !== 'Closed') pending.push(cat);
+          }
+        }
         if (pending.length > 0) {
           granularStatus = 'Pending: ' + pending.join(', ');
         } else {
@@ -108,29 +175,32 @@ function syncWorkflowState(workflowId) {
     }
     
     // 3. Prepare the flat row for the View sheet
-    // Headers: Workflow ID | Employee Name | Global Status | Granular Step Details | Requester Name | Requester Email | Initiator Email | Date Requested | Last Updated | Manager Email | Requested Items JSON
-    const lastUpdated = wfRow[6] instanceof Date ? wfRow[6].toLocaleString() : String(wfRow[6]);
+    // Headers: Workflow ID | Employee Name | Global Status | Granular Step Details | Requester Name | Requester Email | Initiator Email | Date Requested | Last Updated | Manager Email | Requested Items JSON | Start/Term Date | Site
+    const lastUpdated = fmtDateTime(wfRow[6]);
     const initEmail = wfRow[3];
     const empName = wfRow[8];
-    
+
     const outputRow = [
-      workflowId, 
-      empName, 
-      baseStatus, 
-      granularStatus, 
-      reqInfo.requesterName, 
-      reqInfo.requesterEmail, 
-      initEmail, 
-      reqInfo.dateRequested, 
-      lastUpdated, 
-      reqInfo.managerEmail, 
-      JSON.stringify(reqInfo.items)
+      workflowId,
+      empName,
+      baseStatus,
+      granularStatus,
+      reqInfo.requesterName,
+      reqInfo.requesterEmail,
+      initEmail,
+      reqInfo.dateRequested,
+      lastUpdated,
+      reqInfo.managerEmail,
+      JSON.stringify(reqInfo.items),
+      reqInfo.hireDate || '',  // col 11: Start/Effective Date
+      reqInfo.site || '',      // col 12: Site
+      reqInfo.empType || ''    // col 13: Employment Type
     ];
-    
+
     // 4. Overwrite or Append to Dashboard_View
     const foundView = viewSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
     if (foundView) {
-      viewSheet.getRange(foundView.getRow(), 1, 1, 11).setValues([outputRow]);
+      viewSheet.getRange(foundView.getRow(), 1, 1, 14).setValues([outputRow]);
     } else {
       viewSheet.appendRow(outputRow);
     }

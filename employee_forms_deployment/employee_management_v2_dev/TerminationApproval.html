@@ -1,0 +1,122 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Termination Approval</title>
+    <?!= include('Styles') ?>
+</head>
+
+<body class="card-layout">
+    <div class="container-narrow">
+        <a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" class="back-link">&#8592; Back to Portal</a>
+        <div class="card">
+            <div class="logo-container">
+                <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+                    alt="Team Group" class="logo">
+            </div>
+            <h1>Termination Approval</h1>
+            <p class="subtitle">Review request and trigger follow-up steps</p>
+
+            <div class="ticket-info">
+                <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName ?></span></div>
+                <div class="info-row"><span class="label">Type</span><span class="value"><?= requestData.empType ?></span></div>
+                <div class="info-row"><span class="label">Site</span><span class="value"><?= requestData.siteName ?></span></div>
+                <div class="info-row"><span class="label">Manager</span><span class="value"><?= requestData.managerName ?></span></div>
+                <div class="info-row"><span class="label">Term Date</span><span class="value"><?= requestData.termDate ?></span></div>
+                <div class="info-row"><span class="label">Reason</span><span class="value"><?= requestData.reason ?></span></div>
+                <? if (requestData.empPhone && requestData.empPhone !== 'N/A') { ?>
+                <div class="info-row"><span class="label">Assigned Phone</span><span class="value"><?= requestData.empPhone ?></span></div>
+                <? } ?>
+                <? if (requestData.systems && requestData.systems !== 'N/A') { ?>
+                <div class="info-row"><span class="label">System Access</span><span class="value"><?= requestData.systems ?></span></div>
+                <? } ?>
+                <? if (requestData.eqToReturn && requestData.eqToReturn !== 'N/A') { ?>
+                <div class="info-row"><span class="label">Equipment to Return</span><span class="value"><?= requestData.eqToReturn ?></span></div>
+                <? } ?>
+                <div class="info-row"><span class="label">Direct Reports</span><span class="value"><?= requestData.hasReports === 'Yes' ? 'Yes, routing to ' + requestData.reportsToNew : 'No' ?></span></div>
+                <div class="info-row"><span class="label">Submitted By</span><span class="value"><?= requestData.requesterEmail ?></span></div>
+                <? if (requestData.attachmentUrl) { ?>
+                <div class="info-row span-2"><span class="label">Documentation</span><span class="value"><a href="<?= requestData.attachmentUrl ?>" target="_blank" style="color:var(--brand-red);">View Attached File</a></span></div>
+                <? } ?>
+            </div>
+
+            <form id="approvalForm">
+                <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+
+                <div class="form-group">
+                    <label>HR Decision</label>
+                    <input type="hidden" name="decision" id="decisionInput" value="Approved" required>
+                    <div class="status-btn-group">
+                        <button type="button" class="status-btn active" id="btnApproved" onclick="setDecision('Approved')">Approve Termination</button>
+                        <button type="button" class="status-btn" id="btnRejected" onclick="setDecision('Rejected')">Reject / Need Info</button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Approval/Rejection notes..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full" id="submitBtn">Process Approval</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function setDecision(value) {
+            document.getElementById('decisionInput').value = value;
+            document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
+            if (value === 'Approved') {
+                document.getElementById('btnApproved').classList.add('active');
+            } else {
+                document.getElementById('btnRejected').classList.add('active');
+            }
+        }
+
+        document.getElementById('approvalForm').onsubmit = function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            const formData = {
+                workflowId: this.workflowId.value,
+                decision: this.decision.value,
+                notes: this.notes.value
+            };
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res.success) {
+                        google.script.run.withSuccessHandler(function(url) {
+                            document.querySelector('.card').innerHTML =
+                                '<div style="text-align:center; padding:40px;">' +
+                                '<h2 style="color:var(--success)">✓ Action Completed</h2>' +
+                                '<p>' + res.message + '</p>' +
+                                '<a href="' + url + '?form=dashboard" target="_top" class="btn btn-primary" style="display:inline-block; margin-top:20px; padding:10px 28px; text-decoration:none;">Return to Dashboard</a>' +
+                                '</div>';
+                        }).withFailureHandler(function() {
+                            document.querySelector('.card').innerHTML =
+                                '<div style="text-align:center; padding:40px;">' +
+                                '<h2 style="color:var(--success)">✓ Action Completed</h2>' +
+                                '<p>' + res.message + '</p>' +
+                                '</div>';
+                        }).getBaseUrl();
+                    } else {
+                        alert('Error: ' + res.message);
+                        btn.disabled = false;
+                        btn.textContent = 'Process Approval';
+                    }
+                })
+                .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Process Approval'; alert('Error: ' + err.message); })
+                .submitTerminationApproval(formData);
+        }
+    </script>
+  <?!= include('SharedComponents') ?>
+  <?!= include('GeoCities') ?>
+</body>
+
+</html>

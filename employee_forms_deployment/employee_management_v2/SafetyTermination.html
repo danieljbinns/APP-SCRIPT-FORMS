@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Safety Offboarding Confirmation</title>
+    <?!= include('Styles') ?>
+</head>
+<body class="card-layout">
+<div class="container-narrow">
+<a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" class="back-link">&#8592; Back to Portal</a>
+<div class="card" id="mainCard">
+    <div class="logo-container">
+        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" class="logo" alt="TEAM Group">
+    </div>
+    <h1>Safety Offboarding Confirmation</h1>
+    <p class="subtitle">Confirm that SiteDocs removal and BOSS WIS deactivation have been completed for this employee.</p>
+
+    <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
+
+    <div id="formSection">
+        <div class="section-title">Confirm Completion</div>
+
+        <form id="safetyTermForm">
+            <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+            <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+            <input type="hidden" name="department" value="safetyterm">
+
+            <div class="confirm-item">
+                <input type="checkbox" id="siteDocsRemoved" name="siteDocsRemoved" value="true" required>
+                <label for="siteDocsRemoved">
+                    <strong>SiteDocs Account Removed</strong>
+                    <span>Employee has been removed from all SiteDocs job sites and their account deactivated.</span>
+                </label>
+            </div>
+
+            <div class="confirm-item">
+                <input type="checkbox" id="bossDeactivated" name="bossDeactivated" value="true" required>
+                <label for="bossDeactivated">
+                    <strong>BOSS WIS Module Deactivated</strong>
+                    <span>Employee's BOSS WIS module access has been deactivated and records updated accordingly.</span>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label>Notes (Optional)</label>
+                <textarea name="notes" rows="3" placeholder="Any additional notes or follow-up details..."></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary btn-full">Confirm &amp; Complete</button>
+        </form>
+    </div>
+
+    <div id="success-screen">
+        <div style="font-size: 56px; margin-bottom: 16px;">✅</div>
+        <h2 style="color: var(--success);">Safety Offboarding Confirmed</h2>
+        <p style="color: var(--text-muted); margin-top: 8px;">Returning to dashboard...</p>
+    </div>
+</div>
+</div>
+
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div style="color: white;">Saving confirmation...</div>
+</div>
+
+<script>
+    function navigateToDashboard() {
+        google.script.run
+            .withSuccessHandler(function(url) { window.top.location.href = url + '?form=dashboard'; })
+            .withFailureHandler(function() { window.top.location.href = '?form=dashboard'; })
+            .getBaseUrl();
+    }
+
+    document.getElementById('safetyTermForm').onsubmit = function(e) {
+        e.preventDefault();
+        var siteDocsRemoved = document.getElementById('siteDocsRemoved').checked;
+        var bossDeactivated = document.getElementById('bossDeactivated').checked;
+        if (!siteDocsRemoved || !bossDeactivated) {
+            alert('Please confirm both items before submitting.');
+            return;
+        }
+        document.getElementById('loading-overlay').style.display = 'flex';
+        document.getElementById('submitBtn').disabled = true;
+        var data = {
+            workflowId: this.workflowId.value,
+            department: this.department.value,
+            details: JSON.stringify({ siteDocsRemoved: true, bossDeactivated: true }),
+            notes: this.notes.value
+        };
+        google.script.run
+            .withSuccessHandler(function(result) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                if (result && result.success === false) {
+                    document.getElementById('submitBtn').disabled = false;
+                    alert('Error: ' + (result.message || 'Server error.'));
+                } else {
+                    document.getElementById('formSection').style.display = 'none';
+                    document.getElementById('success-screen').style.display = 'block';
+                    setTimeout(navigateToDashboard, 2000);
+                }
+            })
+            .withFailureHandler(function(err) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+                alert('Error: ' + err.message);
+            })
+            .submitSpecialistForm(data);
+    };
+</script>
+  <?!= include('SharedComponents') ?>
+  <?!= include('GeoCities') ?>
+</body>
+</html>

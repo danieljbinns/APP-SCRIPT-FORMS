@@ -16,6 +16,7 @@ const CONFIG = {
   get MAIN_FOLDER_ID() { return ConfigurationService.getSetting('MAIN_FOLDER_ID'); },
   get DEPLOYMENT_URL() { return ConfigurationService.getSetting('DEPLOYMENT_URL'); },
   ALLOWED_DOMAINS: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com'],
+  ADMIN_EMAILS: ['dbinns@team-group.com', 'dbinns@robinsonsolutions.com', 'no-reply@team-group.com', 'davelangohr@team-group.com'],
   
   // ==========================================================================
   // SHEET NAMES
@@ -25,17 +26,13 @@ const CONFIG = {
     WORKFLOWS: 'Workflows',
     DASHBOARD_VIEW: 'Dashboard_View', // Flat, pre-calculated table for instant UI rendering
     INITIAL_REQUESTS: 'Initial Requests',
+    EQUIPMENT_REQUESTS: 'Equipment_Requests',
     ID_SETUP_RESULTS: 'ID Setup Results',
     HR_VERIFICATION_RESULTS: 'HR Verification Results',
     IT_RESULTS: 'IT Results',
-    CREDIT_CARD_RESULTS: 'Credit Card Results',
-    BUSINESS_CARDS_RESULTS: 'Business Cards Results',
-    FLEETIO_RESULTS: 'Fleetio Results',
-    JONAS_RESULTS: 'JONAS Results',
-    SITEDOCS_RESULTS: 'SiteDocs Results',
-    REVIEW_306090_RESULTS: '30-60-90 Review Results',
+    // Specialist result sheets removed — specialist steps now use Action Items.
+    // Asset collection removed — asset collection now uses Action Items.
     TERMINATION_APPROVALS: 'Termination Approval Results',
-    ASSET_COLLECTION_RESULTS: 'Asset Collection Results',
     POSITION_CHANGE_APPROVALS: 'Position Change Approval Results',
     TERMINATIONS: 'Terminations',
     POSITION_CHANGES: 'Position Changes',
@@ -46,7 +43,9 @@ const CONFIG = {
     REFERENCE_REQUESTERS: 'Reference_Requesters',
     REFERENCE_JRS: 'Reference_JRs',
     REFERENCE_JOBS_JONAS: 'Reference_JobsJonas',
-    ACTION_ITEMS: 'Action Items'
+    ACTION_ITEMS: 'Action Items',
+    // Safety Onboarding and Safety Termination removed — now Action Items with formType.
+    FORM_EDIT_LOG: 'Form Edit Log'
   },
   
   // ==========================================================================
@@ -70,7 +69,9 @@ const CONFIG = {
       BUSINESS_CARDS: ConfigurationService.getSetting('EMAIL_BUSINESS_CARDS') || 'davelangohr@team-group.com',
       REVIEW_306090_JR: ConfigurationService.getSetting('EMAIL_REVIEW306090') || 'grp.forms.review306090@team-group.com',
       JONAS: ConfigurationService.getSetting('EMAIL_JONAS') || 'grp.forms.jonas@team-group.com',
-      SAFETY: ConfigurationService.getSetting('EMAIL_SAFETY') || 'grp.forms.safety@team-group.com'
+      SAFETY: ConfigurationService.getSetting('EMAIL_SAFETY') || 'grp.forms.safety@team-group.com',
+      PAYROLL: ConfigurationService.getSetting('EMAIL_PAYROLL') || 'payroll@team-group.com',
+      PURCHASING: ConfigurationService.getSetting('EMAIL_PURCHASING') || 'purchasing@team-group.com'
     };
   }
   

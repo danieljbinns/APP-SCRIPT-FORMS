@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safety Onboarding</title>
+  <?!= include('Styles') ?>
+</head>
+
+<body>
+  <div class="container">
+    <a href="<?= getBaseUrl() ?>" target="_top" class="back-link">&#8592; Back to Portal</a>
+
+    <div class="logo-container">
+      <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+        alt="Team Group Companies" class="logo">
+    </div>
+
+    <div id="form-container" class="card-form">
+      <h1>Safety Onboarding Confirmation</h1>
+      <p class="subtitle">Confirm that SiteDocs locations and DSS learning paths have been assigned for this employee.</p>
+
+      <hr>
+
+      <div id="requestHeaderWrap">
+        <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
+      </div>
+
+      <form id="safetyForm" autocomplete="off">
+        <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+        <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+        <input type="hidden" name="department" value="safety">
+
+        <div class="form-section">
+          <h2>Confirm Completion</h2>
+
+          <div class="confirm-item">
+            <input type="checkbox" id="siteDocsConfirm" name="siteDocsConfirmed" value="true" required>
+            <label for="siteDocsConfirm">
+              SiteDocs Locations Assigned
+              <span>Employee has been added to all required SiteDocs job sites and locations for their role.</span>
+            </label>
+          </div>
+
+          <div class="confirm-item">
+            <input type="checkbox" id="dssConfirm" name="dssConfirmed" value="true" required>
+            <label for="dssConfirm">
+              DSS Learning Paths Assigned
+              <span>Employee has been enrolled in the required DSS learning paths and safety courses for their position.</span>
+            </label>
+          </div>
+
+          <div class="form-field" style="margin-top: 20px;">
+            <label>Notes (Optional)</label>
+            <textarea name="notes" rows="3" placeholder="Any additional notes, course names, or location details..."></textarea>
+          </div>
+        </div>
+
+        <div id="statusMessage"></div>
+
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-full">Confirm &amp; Complete</button>
+      </form>
+
+      <?!= includeWithData('SuccessScreen', {baseUrl: getBaseUrl()}) ?>
+
+    </div>
+  </div>
+
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Saving confirmation...</p>
+  </div>
+
+  <script>
+    document.getElementById('safetyForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (!document.getElementById('siteDocsConfirm').checked || !document.getElementById('dssConfirm').checked) {
+        document.getElementById('statusMessage').innerHTML = '<div class="callout callout-warning">&#10060; Please confirm both items before submitting.</div>';
+        return;
+      }
+      var form = e.target;
+      var data = {
+        workflowId: form.workflowId.value,
+        department: form.department.value,
+        details: JSON.stringify({ siteDocsConfirmed: true, dssConfirmed: true }),
+        notes: form.notes.value
+      };
+      submitSpecialistTask(e.target, data, 'Safety Onboarding Confirmed', 'SiteDocs and DSS assignments have been recorded.');
+    });
+  </script>
+  <?!= include('SharedComponents') ?>
+  <?!= include('GeoCities') ?>
+</body>
+
+</html>

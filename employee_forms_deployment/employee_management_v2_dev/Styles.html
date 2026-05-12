@@ -1,0 +1,874 @@
+<style>
+/* ============================================================
+   TEAM Group — Shared Design System v2
+   Single source of truth for all employee form styles.
+   Include in any .html file:  <?!= include('Styles') ?>
+
+   Standard layout: full-width, no flex centering on body.
+   All forms use .container as the page wrapper.
+   RequestHeader component included at top of every form.
+   ============================================================ */
+
+/* ── Variables ─────────────────────────────────────────────── */
+:root {
+  --bg-color:        #0c0c0c;
+  --bg-darker:       #111111;   /* top bands, popover backgrounds */
+  --card-bg:         #1a1a1a;
+  --text-main:       #ffffff;
+  --text-muted:      #a0a0a0;
+  --text-dim:        #444444;   /* empty / placeholder field values */
+  --text-secondary:  #cccccc;   /* secondary content in hover stamps */
+  --brand-red:       #EB1C2D;
+  --brand-red-hover: #c41522;
+  --input-bg:        #2a2a2a;
+  --input-border:    #444;
+  --border-color:    #333;
+  --border-subtle:   #2a2a2a;   /* tight interior dividers */
+  --success:         #00c853;
+  --warning:         #ffab00;
+  --danger:          #f44336;
+  /* ── Semantic accent colours (step badges, credentials) ── */
+  --accent-blue:     #93c5fd;   /* links, IT step, required-later */
+  --accent-amber:    #fcd34d;   /* mono credentials, assigned step */
+  --accent-green:    #86efac;   /* credential values (cred style) */
+  --accent-green-lt: #6ee7b7;   /* done step badge text */
+  --accent-red-lt:   #ff9999;   /* init step badge text */
+  /* ── Workflow ID badge ── */
+  --badge-wf-bg:     #1a1a2e;
+  --badge-wf-text:   #a0a0ff;
+  --badge-wf-border: #3333aa;
+  /* ── Workflow type badge ── */
+  --badge-typ-bg:    #1a2e1a;
+  --badge-typ-text:  #80ff80;
+  --badge-typ-border:#336633;
+  /* ── Employment type badge ── */
+  --badge-emp-bg:    #2e1a1a;
+  --badge-emp-text:  #ffaaaa;
+  --badge-emp-border:#663333;
+}
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Base ──────────────────────────────────────────────────── */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* ── Containers ─────────────────────────────────────────────── */
+/* Standard — all forms. Full-width with comfortable padding.   */
+.container {
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* @deprecated — use .container */
+body.card-layout  { display: flex; justify-content: center; }
+.container-wide   { max-width: 1600px; width: 95%; margin: 0 auto; padding: 0 20px; }
+.container-narrow { max-width: 960px; width: 100%; }
+
+/* ── Card ───────────────────────────────────────────────────── */
+/* card       — card-layout pages (rounded, heavy shadow)       */
+/* card-form  — full-page form body (slight shadow, 8px radius) */
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 32px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  margin-bottom: 24px;
+}
+.card-form {
+  background: var(--card-bg);
+  padding: 2.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(255,255,255,0.05);
+  border: 1px solid var(--border-color);
+}
+
+/* ── Logo ───────────────────────────────────────────────────── */
+.logo-container { text-align: center; margin-bottom: 24px; }
+.logo { height: 120px; }
+
+/* ── Page header ─────────────────────────────────────────────── */
+/* Use .page-header wrapper or bare h1/.subtitle directly        */
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+  color: var(--text-main);
+}
+.subtitle {
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+.page-header { text-align: center; margin-bottom: 24px; }
+.page-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.page-header .subtitle { color: var(--text-muted); font-size: 14px; }
+
+/* ── Section headers ─────────────────────────────────────────── */
+/* section-title — compact red uppercase label (card forms)      */
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand-red);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 16px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+/* h2 — full-page form section divider. Always var(--text-main).
+   Do NOT override with brand-red or text-transform: uppercase — use
+   .section-title for that treatment instead.                    */
+h2 {
+  color: var(--text-main);
+  font-size: 1.2rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+  margin: 30px 0 20px;
+}
+
+h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 12px;
+}
+
+/* ── Ticket-info grid ────────────────────────────────────────── */
+.ticket-info {
+  background: rgba(255,255,255,0.02);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border-color);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.info-row {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+.info-row .label {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.info-row .value {
+  color: var(--text-main);
+  font-weight: 600;
+}
+.info-row.span-2 { grid-column: span 2; }
+.info-row.comments {
+  grid-column: span 2;
+  border-top: 1px dashed #444;
+  margin-top: 8px;
+  padding-top: 10px;
+}
+.info-row.comments .value {
+  font-style: italic;
+  color: #ddd;
+  font-weight: 400;
+}
+
+/* ── Divider ─────────────────────────────────────────────────── */
+hr { border: 0; border-top: 1px solid var(--border-color); margin: 20px 0; }
+
+/* ── Form group ─────────────────────────────────────────────── */
+.form-group { margin-bottom: 20px; }
+
+/* ── Form layout helpers ─────────────────────────────────────── */
+.form-section     { margin-bottom: 30px; }
+.question-wrapper { margin-bottom: 25px; }
+.form-field       { display: flex; flex-direction: column; }
+.form-row   { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 20px; margin-bottom: 25px; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr;         gap: 20px; margin-bottom: 25px; }
+.form-row-3 { display: grid; grid-template-columns: 2fr 1fr 2fr;     gap: 20px; margin-bottom: 25px; }
+.form-row-4 { display: grid; grid-template-columns: repeat(4,1fr);   gap: 20px; margin-bottom: 25px; }
+
+/* ── Labels ──────────────────────────────────────────────────── */
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+.required { color: var(--brand-red); }
+small     { display: block; margin-top: 5px; font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
+
+/* ── Inputs / Select / Textarea ──────────────────────────────── */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  background-color: var(--input-bg);
+  color: var(--text-main);
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--brand-red);
+  border-color: var(--brand-red);
+}
+select option    { background: var(--input-bg); color: var(--text-main); }
+textarea         { resize: vertical; min-height: 80px; }
+input[readonly]  { color: var(--text-muted); cursor: default; }
+
+/* ── Date picker — fully-clickable, no visible icon ── */
+input[type="date"] { position: relative; }
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute; top:0; left:0; right:0; bottom:0;
+  width:auto; height:auto;
+  color: transparent; background: transparent; cursor: pointer;
+}
+
+/* ── Radio group ─────────────────────────────────────────────── */
+.radio-group {
+  display: flex;
+  gap: 0;
+  margin-top: 10px;
+  border: 2px solid var(--input-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--input-bg);
+}
+.radio-group label {
+  flex: 1;
+  position: relative;
+  margin: 0;
+  font-weight: 500;
+}
+.radio-group label:not(:last-child) { border-right: 1px solid var(--input-border); }
+.radio-group input[type="radio"]    { position: absolute; opacity: 0; width:0; height:0; }
+.radio-button {
+  display: block;
+  padding: 12px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: var(--text-main);
+}
+.radio-button:hover { background: rgba(255,255,255,0.06); }
+.radio-group input[type="radio"]:checked + .radio-button {
+  background: var(--brand-red);
+  color: white;
+}
+
+/* ── Checkbox group (large tiled checkboxes) ─────────────────── */
+.checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  line-height: 1.4;
+}
+.checkbox-label:hover { border-color: var(--brand-red); }
+.checkbox-label input[type="checkbox"] {
+  accent-color: var(--brand-red);
+  width: 20px; height: 20px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.checkbox-label:has(input:checked) {
+  background: rgba(235,28,45,0.1);
+  border-color: var(--brand-red);
+}
+.checkbox-label:has(input:checked) span {
+  color: var(--brand-red);
+  font-weight: 600;
+}
+/* Toggle variant — centered tile, hides native input, ✓ prefix when checked */
+.checkbox-label.toggle { justify-content: center; }
+.checkbox-label.toggle input { display: none; }
+.checkbox-label.toggle:has(input:checked)::before { content: "✓ "; font-weight: bold; }
+
+/* ── Checkbox grid (compact dynamic, inside sub-sections) ────── */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
+  gap: 6px;
+}
+/* Individual checkbox row inside .checkbox-grid (built by JS) */
+.checkbox-grid label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 400;
+  color: var(--text-main);
+}
+.checkbox-grid input[type="checkbox"] {
+  accent-color: var(--brand-red);
+  flex-shrink: 0;
+}
+
+/* ── Dual-list picker ─────────────────────────────────────────── */
+.dual-list-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+}
+.dual-list-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 6px;
+  overflow: hidden;
+  min-height: 260px;
+  max-height: 320px;
+}
+.dual-list-panel-header {
+  padding: 6px 10px;
+  background: #2a2a2a;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #444;
+  flex-shrink: 0;
+}
+.dual-list-search {
+  padding: 5px 8px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #333;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+.dual-list-search::placeholder { color: var(--text-muted); }
+.dual-list-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.dual-list-item {
+  padding: 5px 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--text-main);
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dual-list-item:hover { background: #2e2e2e; }
+.dual-list-item.selected { background: rgba(235,28,45,0.18); color: #fff; }
+.dual-list-footer {
+  padding: 5px 8px;
+  border-top: 1px solid #333;
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.dual-list-btn {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #2a2a2a;
+  color: var(--text-main);
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+}
+.dual-list-btn:hover { background: #3a3a3a; border-color: var(--text-muted); }
+.dual-list-arrows {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+.dual-list-arrow {
+  width: 40px;
+  height: 40px;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+/* Add arrow — green */
+.dual-list-arrow.add-arrow  { color: var(--success); border-color: rgba(0,200,83,0.4); }
+.dual-list-arrow.add-arrow:hover  { background: var(--success); color: #000; border-color: var(--success); }
+/* Remove arrow — red */
+.dual-list-arrow.remove-arrow { color: var(--brand-red); border-color: rgba(235,28,45,0.4); }
+.dual-list-arrow.remove-arrow:hover { background: var(--brand-red); color: #fff; border-color: var(--brand-red); }
+
+/* ── Sub-section (expands below a parent checkbox) ───────────── */
+.sub-section {
+  display: none;
+  grid-column: 1 / -1;
+  margin: 4px 0 8px 24px;
+  padding: 12px;
+  background: #252525;
+  border-radius: 6px;
+  border: 1px solid #444;
+}
+.sub-section-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* ── Confirm-item (SafetyOnboarding style — green accent) ─────── */
+.confirm-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.confirm-item:has(input:checked) {
+  border-color: var(--success);
+  background: rgba(0,200,83,0.05);
+}
+.confirm-item input[type="checkbox"] {
+  width: 20px; height: 20px;
+  accent-color: var(--success);
+  flex-shrink: 0;
+  margin-top: 2px;
+  cursor: pointer;
+}
+.confirm-item label  { cursor: pointer; margin: 0; }
+.confirm-item strong { display: block; font-size: 14px; margin-bottom: 4px; }
+.confirm-item span   { font-size: 12px; color: var(--text-muted); }
+
+/* ── Logic section (red left-border conditional panel) ───────── */
+.logic-section {
+  display: none;
+  margin-top: 15px;
+  padding: 15px;
+  border-left: 3px solid var(--brand-red);
+  background: rgba(235,28,45,0.05);
+  border-radius: 0 6px 6px 0;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-block;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  text-align: center;
+  text-decoration: none;
+  line-height: 1;
+}
+.btn-primary   { background: var(--brand-red); color: white; }
+.btn-secondary { background: #333;              color: white; }
+.btn-success   { background: var(--success);    color: white; }
+.btn-full      { width: 100%; display: block; }
+.btn:hover     { opacity: 0.88; }
+.btn:active    { transform: scale(0.98); }
+.btn:disabled,
+.btn[disabled] { background: #555; cursor: not-allowed; opacity: 0.7; transform: none; }
+
+/* Two-button action row */
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── Status button group (checklist Pending/Complete/N/A) ─────── */
+.status-btn-group {
+  display: flex;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+}
+.status-btn {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  border-right: 1px solid var(--input-border);
+}
+.status-btn:last-child           { border-right: none; }
+.status-btn:hover:not(.active)   { background: rgba(255,255,255,0.05); color: var(--text-main); }
+.status-btn.active               { background: var(--brand-red); color: white; }
+.status-btn.active.pending       { background: var(--warning); color: #000; }
+.status-btn.active.complete      { background: var(--success); color: white; }
+.status-btn.active.not-returned  { background: var(--danger);  color: white; }
+.status-btn:disabled             { cursor: not-allowed; opacity: 0.5; }
+
+/* ── Status badge (Open / Closed pill) ───────────────────────── */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.status-open   { background: rgba(235,28,45,0.1); color: var(--brand-red); border: 1px solid var(--brand-red); }
+.status-closed { background: rgba(0,200,83,0.1);  color: var(--success);   border: 1px solid var(--success); }
+
+/* ── Checklist table ─────────────────────────────────────────── */
+.checklist-section { margin-bottom: 24px; }
+.checklist-table   { width: 100%; border-collapse: collapse; font-size: 14px; }
+.checklist-table th {
+  text-align: left;
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+.checklist-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: top;
+}
+.item-name  { font-weight: 600; display: block; margin-bottom: 4px; }
+.audit-info { font-size: 10px; color: var(--text-muted); display: block; }
+
+/* ── Loading overlay ─────────────────────────────────────────── */
+#loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  z-index: 1000;
+}
+#loading-overlay.active { display: flex; }
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  border-top-color: var(--brand-red);
+  animation: spin 1s linear infinite;
+  margin-bottom: 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading-overlay p { color: white; font-size: 14px; }
+
+/* ── Success screen ─────────────────────────────────────────── */
+#success-screen {
+  display: none;
+  text-align: center;
+  padding: 48px 20px;
+}
+.success-icon { font-size: 56px; margin-bottom: 16px; }
+#success-screen h2 { color: var(--success); border: none; margin: 0 0 12px; font-size: 22px; }
+#success-screen p  { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+#success-screen .actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ── Callout banners ─────────────────────────────────────────── */
+.callout {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.callout-warning { background: rgba(255,171,0,0.08); border: 1px solid rgba(255,171,0,0.3); color: #ffcc02; }
+.callout-info    { background: rgba(66,133,244,0.1);  border: 1px solid rgba(66,133,244,0.3); color: #64b5f6; }
+.callout-success { background: rgba(0,200,83,0.08);   border: 1px solid rgba(0,200,83,0.3);  color: var(--success); }
+
+/* ── Help / hint text ────────────────────────────────────────── */
+.help-text  { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-style: italic; display: block; }
+.warn-text  { font-size: 0.82rem; color: var(--warning); margin-top: 6px; display: block; }
+
+/* ── Read-only display box ───────────────────────────────────── */
+/* For showing verified/locked data (HR-confirmed fields etc.)   */
+.read-only-box {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.read-only-box strong { color: var(--text-main); font-weight: 600; }
+
+/* ── Info grid / info label ──────────────────────────────────── */
+/* Horizontal key-value display (asset retrieval, approvals)     */
+.info-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.info-grid-item { display: flex; flex-direction: column; min-width: 160px; }
+.info-label {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+.info-value { color: var(--text-main); font-weight: 600; font-size: 13px; }
+
+/* ── Back link ───────────────────────────────────────────────── */
+.back-link {
+  display: inline-block;
+  padding: 6px 0 14px;
+  color: var(--brand-red);
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+}
+.back-link:hover { color: var(--brand-red-hover); text-decoration: underline; }
+
+/* ── Gatekeeper screen ───────────────────────────────────────── */
+/* Intro screen shown before the main form. Any form using a     */
+/* gatekeeper pattern wraps it in #gatekeeperSection and uses    */
+/* .confirm-button for the CTA and .requirements-toggle for the  */
+/* optional prereq accordion.                                     */
+#gatekeeperSection { text-align: center; padding: 3rem 1rem; }
+#gatekeeperSection h1 { font-size: 2rem; margin-bottom: 2rem; }
+.requirements-toggle { margin: 2rem 0; }
+.requirements-toggle summary { cursor: pointer; color: var(--brand-red); font-weight: bold; padding: 1rem; background: var(--input-bg); border-radius: 6px; list-style: none; user-select: none; }
+.requirements-toggle summary:hover { background: var(--input-border); }
+.requirements-toggle summary::-webkit-details-marker { display: none; }
+.requirements-toggle summary::before { content: "▶ "; display: inline-block; transition: transform 0.2s; }
+.requirements-toggle[open] summary::before { transform: rotate(90deg); }
+.requirements-content { padding: 1.5rem; background: var(--input-bg); border-radius: 0 0 6px 6px; text-align: left; color: var(--text-muted); }
+.requirements-content ul { margin-left: 1.5rem; line-height: 1.8; }
+.confirm-button { padding: 1.5rem 3rem; font-size: 1.2rem; background-color: var(--brand-red); color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: bold; margin-top: 2rem; min-width: 300px; }
+.confirm-button:hover { background-color: var(--brand-red-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(235,28,45,0.3); }
+
+/* ── Gated form (hidden until gatekeeper confirmed) ──────────── */
+.gated-form { display: none; opacity: 0; transition: opacity 0.5s; }
+.gated-form.show { display: block; opacity: 1; }
+
+/* ── Light mode overrides ────────────────────────────────────── */
+/* Applied via body.light-mode — cascades all var() references   */
+body.light-mode {
+  --bg-color:        #f4f4f4;
+  --bg-darker:       #eaeaea;
+  --card-bg:         #ffffff;
+  --text-main:       #1a1a1a;
+  --text-muted:      #555555;
+  --text-dim:        #999999;
+  --text-secondary:  #333333;
+  --input-bg:        #efefef;
+  --input-border:    #cccccc;
+  --border-color:    #dddddd;
+  --border-subtle:   #eeeeee;
+  --success:         #00913c;
+  --warning:         #c47000;
+  --danger:          #c62828;
+  --accent-blue:     #1565c0;
+  --accent-amber:    #996600;
+  --accent-green:    #2e7d32;
+  --accent-green-lt: #1b5e20;
+  --accent-red-lt:   #b71c1c;
+  --badge-wf-bg:     #e8eaf6;
+  --badge-wf-text:   #3949ab;
+  --badge-wf-border: #9fa8da;
+  --badge-typ-bg:    #e8f5e9;
+  --badge-typ-text:  #2e7d32;
+  --badge-typ-border:#a5d6a7;
+  --badge-emp-bg:    #fce4ec;
+  --badge-emp-text:  #b71c1c;
+  --badge-emp-border:#f48fb1;
+}
+
+/* ── AODA / high-contrast mode ───────────────────────────────── */
+/* Overrides both light and dark — forces WCAG AA contrast       */
+body.aoda-mode {
+  --bg-color:        #ffffff;
+  --bg-darker:       #f0f0f0;
+  --card-bg:         #ffffff;
+  --text-main:       #000000;
+  --text-muted:      #333333;
+  --text-dim:        #555555;
+  --text-secondary:  #111111;
+  --brand-red:       #a50000;   /* darker red — 5.9:1 on white */
+  --brand-red-hover: #7a0000;
+  --input-bg:        #ffffff;
+  --input-border:    #000000;
+  --border-color:    #000000;
+  --border-subtle:   #555555;
+  --success:         #005a1e;   /* 7.5:1 on white */
+  --warning:         #7a4800;   /* 6.1:1 on white */
+  --danger:          #a50000;
+  --accent-blue:     #0000cc;   /* 8.6:1 on white */
+  --accent-amber:    #7a4800;
+  --accent-green:    #005a1e;
+  --accent-green-lt: #003a14;
+  --accent-red-lt:   #a50000;
+  --badge-wf-bg:     #e8eaf6;
+  --badge-wf-text:   #00008b;
+  --badge-wf-border: #00008b;
+  --badge-typ-bg:    #e8f5e9;
+  --badge-typ-text:  #005a1e;
+  --badge-typ-border:#005a1e;
+  --badge-emp-bg:    #fff0f0;
+  --badge-emp-text:  #a50000;
+  --badge-emp-border:#a50000;
+  font-size: 17px;
+  line-height: 1.8;
+}
+/* Enhanced focus ring — visible on any background */
+body.aoda-mode *:focus-visible {
+  outline: 3px solid #0000cc !important;
+  outline-offset: 3px !important;
+}
+/* Thicker borders on inputs and cards */
+body.aoda-mode input,
+body.aoda-mode select,
+body.aoda-mode textarea {
+  border-width: 2px !important;
+}
+body.aoda-mode .card,
+body.aoda-mode .card-form {
+  border-width: 2px !important;
+}
+/* Underline all links for non-color distinction */
+body.aoda-mode a { text-decoration: underline; }
+
+/* ── Theme toggle button ─────────────────────────────────────── */
+/* AODA toggle sits immediately left of the theme toggle */
+.aoda-toggle-btn {
+  position: fixed;
+  top: 14px;
+  right: 60px;
+  z-index: 9999;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  letter-spacing: 0;
+}
+.aoda-toggle-btn:hover {
+  border-color: var(--brand-red);
+  color: var(--brand-red);
+  box-shadow: 0 2px 12px rgba(235,28,45,0.2);
+}
+body.aoda-mode .aoda-toggle-btn {
+  border-color: #0000cc;
+  color: #0000cc;
+  box-shadow: 0 2px 12px rgba(0,0,204,0.2);
+}
+
+.theme-toggle-btn {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 9999;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.theme-toggle-btn:hover {
+  border-color: var(--brand-red);
+  color: var(--brand-red);
+  box-shadow: 0 2px 12px rgba(235,28,45,0.2);
+}
+.theme-toggle-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .container { padding: 0 12px; }
+  .form-row, .form-row-2, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
+  .ticket-info { grid-template-columns: 1fr; }
+  .actions     { grid-template-columns: 1fr; }
+  .card, .card-form { padding: 20px; }
+  .info-grid { flex-direction: column; }
+}
+</style>

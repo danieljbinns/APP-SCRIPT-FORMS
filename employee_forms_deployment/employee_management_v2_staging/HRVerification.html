@@ -2,434 +2,250 @@
 <html>
 
 <head>
-    <base target="_top">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Verification & ADP</title>
-    <style>
-        :root {
-            --bg-color: #0c0c0c;
-            --card-bg: #1a1a1a;
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-            --brand-red: #EB1C2D;
-            --input-bg: #2a2a2a;
-            --input-border: #444;
-            --border-color: #333;
-            --success: #00c853;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 800px;
-            padding: 40px 20px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 32px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-        }
-
-        .logo-container {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .logo {
-            height: 48px;
-        }
-
-        h1 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            text-align: center;
-        }
-
-        .subtitle {
-            color: var(--text-muted);
-            text-align: center;
-            margin-bottom: 32px;
-            font-size: 14px;
-        }
-
-        .section-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--brand-red);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 24px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .form-group {
-            margin-bottom: 24px;
-        }
-
-        label {
-            display: block;
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        .read-only-box {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-            padding: 12px 16px;
-            font-weight: 500;
-            color: #ddd;
-        }
-
-        input[type='text'],
-        input[type='email'],
-        textarea {
-            width: 100%;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 6px;
-            padding: 12px 16px;
-            color: white;
-            font-size: 15px;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
-        }
-
-        input:focus,
-        textarea:focus {
-            outline: none;
-            border-color: var(--brand-red);
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .button-container {
-            margin-top: 40px;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 8px;
-            border: none;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
-            background-color: var(--brand-red);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #d11928;
-            transform: translateY(-1px);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        #loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: var(--brand-red);
-            animation: spin 1s linear infinite;
-            margin-bottom: 16px;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .success-icon {
-            font-size: 48px;
-            color: var(--success);
-            margin-bottom: 16px;
-        }
-
-        .required {
-            color: var(--brand-red);
-        }
-
-        @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Verification &amp; ADP</title>
+  <?!= include('Styles') ?>
 </head>
 
 <body>
-    <div class="container">
-        <div class="card">
-            <div class="logo-container">
-                <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
-                    alt="Team Group" class="logo">
-            </div>
+  <div class="container">
+    <a href="<?= getBaseUrl() ?>" target="_top" class="back-link">&#8592; Back to Portal</a>
 
-            <div id="form-content">
-                <h1>HR Verification & ADP Setup</h1>
-                <p class="subtitle">Complete the verification and internal ID assignment to proceed</p>
+    <div class="logo-container">
+      <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+        alt="Team Group Companies" class="logo">
+    </div>
 
-                <div class="info-grid"
-                    style="background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 16px; margin-bottom: 32px; border: 1px solid var(--border-color); text-align: left;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
-                        <span style="color: var(--text-muted);">Employee (Pending):</span>
-                        <span>
-                            <?= requestData.firstName ?>
-                            <?= requestData.lastName ?>
-                        </span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
-                        <span style="color: var(--text-muted);">Proposed Hire:</span>
-                        <span>
-                            <?= requestData.hireDate ?>
-                        </span>
-                    </div>
-                    <? if (requestData.managerName) { ?>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
-                        <span style="color: var(--text-muted);">Manager:</span>
-                        <span>
-                            <?= requestData.managerName ?>
-                        </span>
-                    </div>
-                    <? } ?>
-                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                        <span style="color: var(--text-muted);">Site:</span>
-                        <span>
-                            <?= requestData.siteName ?>
-                        </span>
-                    </div>
-                </div>
+    <div id="form-container" class="card-form">
+      <h1>HR Verification &amp; ADP Setup</h1>
+      <p class="subtitle">Complete the verification and internal ID assignment to proceed</p>
 
-                <form id="hrVerificationForm">
-                    <div class="section-title">Request Context</div>
-                    <!-- Hidden Request Context -->
-                    <input type="hidden" name="workflowId" value="<?= workflowId ?>">
-                    <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
-                    <input type="hidden" name="internalEmployeeId"
-                        value="<?= requestData.internalEmployeeId || 'PENDING' ?>">
+      <hr>
 
-                    <div class="grid">
-                        <div class="form-group">
-                            <div class="form-group">
-                                <label>Site</label>
-                                <input type="text" name="siteName" value="<?= requestData.siteName || '' ?>">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Hire Date</label>
-                            <div class="read-only-box">
-                                <?= requestData.hireDate ? requestData.hireDate.toString().replace('00:00:00 GMT-0500 (Eastern Standard Time)', '').replace('00:00:00 GMT-0400 (Eastern Daylight Time)', '').trim() : 'N/A' ?>
-                            </div>
-                        </div>
-                    </div>
+      <div id="requestHeaderWrap">
+        <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
+      </div>
 
-                    <div class="section-title">Verified Information</div>
-                    <div class="grid">
-                        <div class="form-group">
-                            <label>First Name <span class="required">*</span></label>
-                            <input type="text" name="firstName" value="<?= requestData.firstName ?>" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Last Name <span class="required">*</span></label>
-                            <input type="text" name="lastName" value="<?= requestData.lastName ?>" required>
-                        </div>
-                    </div>
+      <form id="hrVerificationForm" autocomplete="off">
+        <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+        <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+        <input type="hidden" name="internalEmployeeId" value="<?= requestData.internalEmployeeId || 'PENDING' ?>">
 
-                    <div class="grid">
-                        <div class="form-group">
-                            <label>Reporting Manager Name <span class="required">*</span></label>
-                            <input type="text" name="managerName" value="<?= requestData.managerName ?>" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Reporting Manager Email <span class="required">*</span></label>
-                            <input type="email" name="managerEmail" value="<?= requestData.managerEmail ?>" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Job Title (HR Title) <span class="required">*</span></label>
-                        <input type="text" name="jobTitle" value="<?= requestData.position ?>" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>JR Title (Verified Position) <span class="required">*</span></label>
-                        <select name="jrTitle" id="jrTitle"
-                            data-original-value="<?= requestData.jrTitle || requestData.position ?>" required
-                            style="width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; color: white; font-size: 15px;">
-                            <option value="">Loading titles...</option>
-                        </select>
-                    </div>
-
-                    <div class="section-title">ADP Assignment</div>
-                    <div class="form-group">
-                        <label>ADP Associate ID <span class="required">*</span></label>
-                        <input type="text" name="adpAssociateId" placeholder="e.g. 123456" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Internal HR Notes (Optional)</label>
-                        <textarea name="notes" rows="3"></textarea>
-                    </div>
-
-                    <div class="button-container">
-                        <button type="submit" class="btn btn-primary" id="submitBtn">Submit Verification</button>
-                    </div>
-                </form>
-            </div>
-
-            <div id="success-content" style="display: none; text-align: center; padding: 40px 0;">
-                <div class="success-icon">✓</div>
-                <h2>Verification Complete</h2>
-                <p class="subtitle">The records have been updated and IT has been notified to proceed.</p>
-                <div style="margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
-                    <button class="btn btn-primary" style="max-width: 200px;"
-                        onclick="window.open('<?= getBaseUrl() ?>?form=dashboard', '_top')">Return to Dashboard</button>
-                    <p style="color: #888; font-size: 13px;">You may now close this window.</p>
-                </div>
-            </div>
+        <? if (requestData.isEdit) { ?>
+        <div class="callout callout-info">
+          <strong>✏️ Previously Submitted — Edit Mode</strong><br>
+          Originally submitted by <strong><?= requestData.previousData.submittedBy ?></strong> on <?= requestData.previousData.submittedAt ?>.
+          Changes will update the existing record and be logged for auditing.
         </div>
+        <? } ?>
+
+        <div class="callout callout-warning">
+          <strong>⚠️ Verification Required</strong><br>
+          Please confirm the employee details below match what is on file in ADP before assigning the Associate ID.
+          Update any fields that differ from the official record.
+        </div>
+
+        <!-- Request Context -->
+        <div class="form-section">
+          <h2>Request Context</h2>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Site</label>
+              <select name="siteName" id="siteName">
+                <option value="">Loading sites...</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Hire Date</label>
+              <input type="date" name="hireDate" value="<?= requestData.hireDate ? String(requestData.hireDate).substring(0, 10) : '' ?>">
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Department</label>
+            <input type="text" name="department" value="<?= requestData.department || '' ?>" placeholder="e.g. Operations, Finance">
+          </div>
+        </div>
+
+        <!-- Verified Information -->
+        <div class="form-section">
+          <h2>Verified Information</h2>
+          <div class="form-row">
+            <div class="form-field">
+              <label>First Name <span class="required">*</span></label>
+              <input type="text" name="firstName" value="<?= requestData.firstName || '' ?>" required>
+            </div>
+            <div class="form-field">
+              <label>Last Name <span class="required">*</span></label>
+              <input type="text" name="lastName" value="<?= requestData.lastName || '' ?>" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Reporting Manager Name <span class="required">*</span></label>
+              <input type="text" name="managerName" value="<?= requestData.managerName || '' ?>" required>
+            </div>
+            <div class="form-field">
+              <label>Reporting Manager Email <span class="required">*</span></label>
+              <input type="email" name="managerEmail" value="<?= requestData.managerEmail || '' ?>" required>
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Job Title (HR Title) <span class="required">*</span></label>
+            <input type="text" name="jobTitle" value="<?= requestData.position || requestData.jobTitle || '' ?>" required>
+          </div>
+          <? if (requestData.jrRequired === 'Yes') { ?>
+          <div class="form-field">
+            <label>JR Title (Verified Position) <span class="required">*</span></label>
+            <select name="jrTitle" id="jrTitle" data-original-value="<?= requestData.jrTitle || '' ?>" required>
+              <option value="">Loading titles...</option>
+            </select>
+          </div>
+          <? } else { ?>
+          <input type="hidden" name="jrTitle" value="">
+          <? } ?>
+        </div>
+
+        <!-- ADP Assignment -->
+        <div class="form-section">
+          <h2>ADP Assignment</h2>
+          <div class="form-field">
+            <label>ADP Associate ID <span class="required">*</span></label>
+            <input type="text" name="adpAssociateId" value="<?= requestData.adpAssociateId || '' ?>" placeholder="e.g. 123456" required>
+          </div>
+          <div class="form-field">
+            <label>Internal HR Notes (Optional)</label>
+            <textarea name="notes"><?= requestData.isEdit && requestData.previousData ? requestData.previousData.notes : '' ?></textarea>
+          </div>
+        </div>
+
+        <div id="statusMessage"></div>
+
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-full">
+          <?= requestData.isEdit ? 'Update Verification' : 'Submit Verification' ?>
+        </button>
+      </form>
+
+      <?!= includeWithData('SuccessScreen', {baseUrl: getBaseUrl()}) ?>
+
     </div>
+  </div>
 
-    <div id="loading-overlay">
-        <div class="spinner"></div>
-        <div id="loading-text">Submitting verification...</div>
-    </div>
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Submitting verification...</p>
+  </div>
 
-    <script>
-        // Load JRs on startup
-        window.addEventListener('DOMContentLoaded', function () {
-            google.script.run
-                .withSuccessHandler(function (jrs) {
-                    const select = document.getElementById('jrTitle');
-                    const originalValue = select.getAttribute('data-original-value');
+  <script>
+    window.addEventListener('DOMContentLoaded', function() {
+      var currentSite = '<?= requestData.siteName || '' ?>';
+      google.script.run
+        .withSuccessHandler(function(sites) {
+          var select = document.getElementById('siteName');
+          select.innerHTML = '<option value="">-- Select Site --</option>';
+          (sites || []).forEach(function(s) {
+            var opt = document.createElement('option');
+            opt.value = s; opt.textContent = s;
+            if (s === currentSite) opt.selected = true;
+            select.appendChild(opt);
+          });
+          if (currentSite && !sites.includes(currentSite)) {
+            var opt = document.createElement('option');
+            opt.value = currentSite; opt.textContent = currentSite + ' (Original)';
+            opt.selected = true;
+            select.appendChild(opt);
+          }
+        })
+        .withFailureHandler(function() {
+          document.getElementById('siteName').innerHTML = '<option value="">Error loading sites</option>';
+        })
+        .getSitesList();
+    });
 
-                    select.innerHTML = '<option value="">-- Select Verified Title --</option>';
+    <? if (requestData.jrRequired === 'Yes') { ?>
+    window.addEventListener('DOMContentLoaded', function() {
+      google.script.run
+        .withSuccessHandler(function(jrs) {
+          var select = document.getElementById('jrTitle');
+          var originalValue = select.getAttribute('data-original-value');
+          select.innerHTML = '<option value="">-- Select Verified Title --</option>';
+          if (jrs && jrs.length) {
+            jrs.forEach(function(jr) {
+              var option = document.createElement('option');
+              option.value = jr;
+              option.textContent = jr;
+              if (jr === originalValue) option.selected = true;
+              select.appendChild(option);
+            });
+          }
+          if (originalValue && (!jrs || !jrs.includes(originalValue))) {
+            var option = document.createElement('option');
+            option.value = originalValue;
+            option.textContent = originalValue + ' (Original)';
+            option.selected = true;
+            select.appendChild(option);
+          }
+        })
+        .withFailureHandler(function(err) {
+          var select = document.getElementById('jrTitle');
+          select.innerHTML = '<option value="">Error loading titles</option>';
+        })
+        .getJRsList();
+    });
+    <? } ?>
 
-                    if (jrs && jrs.length) {
-                        jrs.forEach(function (jr) {
-                            const option = document.createElement('option');
-                            option.value = jr;
-                            option.textContent = jr;
-                            if (jr === originalValue) {
-                                option.selected = true;
-                            }
-                            select.appendChild(option);
-                        });
-                    }
+    document.getElementById('hrVerificationForm').addEventListener('submit', function(e) {
+      e.preventDefault();
 
-                    // If original value isn't in the list, add it as a selected option to preserve it
-                    if (originalValue && (!jrs || !jrs.includes(originalValue))) {
-                        const option = document.createElement('option');
-                        option.value = originalValue;
-                        option.textContent = originalValue + ' (Original)';
-                        option.selected = true;
-                        select.appendChild(option);
-                    }
-                })
-                .withFailureHandler(function (err) {
-                    console.error('Failed to load JRs', err);
-                    const select = document.getElementById('jrTitle');
-                    select.innerHTML = '<option value="">Error loading titles</option>';
-                })
-                .getJRsList();
-        });
+      var submitBtn = document.getElementById('submitBtn');
+      var statusMsg = document.getElementById('statusMessage');
+      var overlay = document.getElementById('loading-overlay');
 
-        document.getElementById('hrVerificationForm').onsubmit = function (e) {
-            e.preventDefault();
+      submitBtn.disabled = true;
+      overlay.style.display = 'flex';
+      statusMsg.innerHTML = '';
 
-            var submitBtn = document.getElementById('submitBtn');
-            var overlay = document.getElementById('loading-overlay');
+      var formData = {
+        workflowId: this.workflowId.value,
+        formId: this.formId.value,
+        hireDate: this.hireDate.value,
+        firstName: this.firstName.value,
+        lastName: this.lastName.value,
+        managerName: this.managerName.value,
+        managerEmail: this.managerEmail.value,
+        jobTitle: this.jobTitle.value,
+        jrTitle: this.jrTitle.value,
+        siteName: this.siteName.value,
+        department: this.department.value,
+        adpAssociateId: this.adpAssociateId.value,
+        notes: this.notes.value
+      };
 
-            submitBtn.disabled = true;
-            overlay.style.display = 'flex';
-
-            var formData = {
-                workflowId: this.workflowId.value,
-                firstName: this.firstName.value,
-                lastName: this.lastName.value,
-                managerName: this.managerName.value,
-                managerEmail: this.managerEmail.value,
-                jobTitle: this.jobTitle.value,
-                jrTitle: this.jrTitle.value,
-                siteName: this.siteName.value,
-                adpAssociateId: this.adpAssociateId.value,
-                notes: this.notes.value
-            };
-
-            google.script.run
-                .withSuccessHandler(function (response) {
-                    overlay.style.display = 'none';
-                    if (response.success) {
-                        document.getElementById('form-content').style.display = 'none';
-                        document.getElementById('success-content').style.display = 'block';
-                    } else {
-                        alert('Error: ' + response.message);
-                        submitBtn.disabled = false;
-                    }
-                })
-                .withFailureHandler(function (err) {
-                    overlay.style.display = 'none';
-                    alert('System error: ' + err);
-                    submitBtn.disabled = false;
-                })
-                .submitHRVerification(formData);
-        };
-    </script>
+      google.script.run
+        .withSuccessHandler(function(response) {
+          overlay.style.display = 'none';
+          if (response.success) {
+            document.getElementById('hrVerificationForm').style.display = 'none';
+            document.getElementById('requestHeaderWrap').style.display = 'none';
+            document.getElementById('successTitle').textContent = 'Verification Complete';
+            document.getElementById('successMessage').textContent = 'Records updated. The next step has been notified.';
+            document.getElementById('successRequestId').textContent = 'Request ID: ' + formData.workflowId;
+            document.getElementById('successAnotherLink').style.display = 'none';
+            document.getElementById('success-screen').style.display = 'block';
+          } else {
+            statusMsg.innerHTML = '<div class="callout callout-warning">&#10060; ' + response.message + '</div>';
+            submitBtn.disabled = false;
+          }
+        })
+        .withFailureHandler(function(err) {
+          overlay.style.display = 'none';
+          statusMsg.innerHTML = '<div class="callout callout-warning">&#10060; Submission failed: ' + err.message + '</div>';
+          submitBtn.disabled = false;
+        })
+        .submitHRVerification(formData);
+    });
+  </script>
+  <?!= include('SharedComponents') ?>
 </body>
 
 </html>

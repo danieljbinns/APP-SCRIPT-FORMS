@@ -1,0 +1,446 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>End of Employment Request</title>
+    <?!= include('Styles') ?>
+</head>
+
+<body>
+    <div class="container">
+        <a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" class="back-link">&#8592; Back to Portal</a>
+        <div class="logo-container">
+            <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+                class="logo">
+        </div>
+
+        <div id="form-container" class="card-form">
+            <h1>End of Employment Request</h1>
+            <form id="terminationForm">
+
+                <h2>Requester Information</h2>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Requester Email <span class="required">*</span></label>
+                        <input type="email" name="reqEmail" id="reqEmail" required readonly placeholder="Auto-filling details...">
+                    </div>
+                    <div class="form-field">
+                        <label>Requester Name <span class="required">*</span></label>
+                        <input type="text" name="reqName" id="reqName" required readonly placeholder="Auto-filling details...">
+                    </div>
+                </div>
+
+                <h2>Employee Information</h2>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Employee Name <span class="required">*</span></label>
+                        <input type="text" name="empName" required>
+                    </div>
+
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Does employee have a work email?</label>
+                        <label class="checkbox-label toggle"><input type="checkbox"
+                                onchange="toggleSec('email_sec', this)"><span>Has Work Email</span></label>
+                    </div>
+                </div>
+
+                <div id="email_sec" class="logic-section" style="margin-top:0;">
+                    <div class="form-field">
+                        <label>Current Work Email <span class="required">*</span></label>
+                        <input type="email" name="empWorkEmail" id="empWorkEmail" placeholder="Start typing name or email..."
+                            pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                        <span class="domain-hint" style="font-size:0.8rem; color:var(--text-muted);">Must be a company domain (e.g., @team-group.com)</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Manager Email <span class="required">*</span></label>
+                        <input type="email" name="managerEmail" id="managerEmail" placeholder="manager@team-group.com" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Manager Name <span class="required">*</span></label>
+                        <input type="text" name="managerName" id="managerName" placeholder="Auto-fills on selection" required readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Site Name <span class="required">*</span></label>
+                        <select name="siteName" id="siteName" required>
+                            <option value="">Select Site...</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Hourly or Salary <span class="required">*</span></label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="empType" value="Hourly" required><span
+                                    class="radio-button">Hourly</span></label>
+                            <label><input type="radio" name="empType" value="Salary"><span
+                                    class="radio-button">Salary</span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Termination Details</h2>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Effective Date of Termination <span class="required">*</span></label>
+                        <input type="date" name="termDate" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Last Day Worked <span class="required">*</span></label>
+                        <input type="date" name="lastDayWorked" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Reason for Leaving <span class="required">*</span></label>
+                        <select name="reason" id="reason" required onchange="handleReasonChange()">
+                            <option value="">-- Select Reason --</option>
+                            <option value="Deceased">Deceased</option>
+                            <option value="End of contract">End of contract</option>
+                            <option value="Resigned">Resigned</option>
+                            <option value="Retired">Retired</option>
+                            <option value="Terminated">Terminated</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="hr_approval_sec" class="logic-section">
+                    <label>Has HR Approved this Termination? <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="hr_approved" value="Yes"><span
+                                class="radio-button">Yes</span></label>
+                        <label><input type="radio" name="hr_approved" value="No"><span
+                                class="radio-button">No</span></label>
+                    </div>
+                </div>
+
+                <div class="form-field" style="margin-top:20px;">
+                    <label>Does employee have direct reports? <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="has_reports" value="Yes" required
+                                onchange="toggleSec('reports_logic', this)"><span
+                                class="radio-button">Yes</span></label>
+                        <label><input type="radio" name="has_reports" value="No"
+                                onchange="toggleSec('reports_logic', this)"><span class="radio-button">No</span></label>
+                    </div>
+                    <div id="reports_logic" class="logic-section">
+                        <label>Who will these reports report to? <span class="required">*</span></label>
+                        <input type="text" name="reports_to_new" id="reports_to_new" placeholder="Start typing name or email..." 
+                            pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                        <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
+                    </div>
+                </div>
+
+                <h2>System Access Removal</h2>
+                <div class="form-field">
+                    <label>HR Systems</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="ADP Supervisor Access"><span>ADP Supervisor Access</span></label>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>IT Systems</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="BOSS"><span>BOSS</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="CAA"><span>CAA</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="Delivery"><span>Delivery</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="systems" value="Google Account"
+                                onchange="toggleSec('google_logic', this)"><span>Google Account</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="Incidents"><span>Incidents</span></label>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>Fleet Systems</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="Fleetio"><span>Fleetio</span></label>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>Finance/Purchasing Systems</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="systems"
+                                value="Central Purchasing/Jonas"><span>Central Purchasing/Jonas</span></label>
+                    </div>
+                </div>
+
+                <div id="google_logic" class="logic-section">
+                    <h3>Google Account Offboarding</h3>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Email Forwarding To</label>
+                            <input type="email" id="google_forward" name="google_forward"
+                                placeholder="Start typing name or email..." onchange="updateVacationResponder(this.value)" oninput="updateVacationResponder(this.value)"
+                                pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                            <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
+                            <div class="help-text">Who should emails be forwarded to?</div>
+                        </div>
+                        <div class="form-field">
+                            <label>Transfer Drive Files To</label>
+                            <input type="email" id="google_files" name="google_files" placeholder="Start typing name or email..."
+                                pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                            <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
+                            <div class="help-text">Who gets access to their Google Drive files?</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Delegated Inbox Access To</label>
+                            <input type="email" id="google_delegate" name="google_delegate" placeholder="Start typing name or email..."
+                                pattern=".*@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com|stgroup\.ca)">
+                            <span class="domain-hint">Must be a company domain (e.g., @team-group.com)</span>
+                        </div>
+                        <div class="form-field">
+                            <label>Keep Account Active For</label>
+                            <select name="google_duration">
+                                <option value="Default 1 Month then delete">Default 1 Month then delete</option>
+                                <option value="Longer (Specify in notes)">Longer (Specify in notes)</option>
+                                <option value="Delete Immediately (No forwarding/access)">Delete Immediately (No
+                                    forwarding/access)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label>Vacation Responder Message</label>
+                        <textarea id="google_vacation" name="google_vacation"
+                            placeholder="e.g. xxx is no longer with TEAM group. Please contact...">Please be advised I am no longer with the company. Please contact [RECIPIENT] for assistance.</textarea>
+                    </div>
+                </div>
+
+                <h2>Equipment &amp; Assets</h2>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Check all equipment and assets this employee currently has. Checked items will automatically generate an asset collection checklist for the manager after HR approval. Serial numbers and condition details are recorded at collection time.</p>
+                <div class="form-field">
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Computer/Laptop">
+                            <span>Computer / Laptop</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" id="equip_phone_chk" value="Mobile Phone" onchange="toggleEquipPhone(this)">
+                            <span>Mobile Phone</span>
+                        </label>
+                        <div id="equip_phone_sec" style="display:none; padding:10px 0 4px 28px;">
+                            <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:4px;">Phone Number</label>
+                            <input type="text" name="empPhone" id="empPhone" placeholder="e.g. 555-123-4567" style="max-width:280px;">
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Tablet">
+                            <span>Tablet</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Credit Card">
+                            <span>Credit Card</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Vehicle and Keys">
+                            <span>Vehicle and Keys</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="equip" value="Building Access Card/Keys">
+                            <span>Building Access Card / Keys</span>
+                        </label>
+                    </div>
+                </div>
+
+                <h2>Documentation & Logistics</h2>
+                <div class="form-field">
+                    <label>Upload Documentation</label>
+                    <input type="file" name="attachment" id="attachmentFile">
+                    <small style="color:#888; display:block; margin-top:4px;">Attach supporting documents (e.g. resignation letter, signed forms). File will be saved to Drive and included in the HR email.</small>
+                    <div class="help-text">HR requires documentation for all end of employment actions please include
+                        the proper documentation</div>
+                </div>
+
+                <div class="form-field">
+                    <label>Additional Comments / Notes</label>
+                    <textarea name="comments"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">Submit End of Employment Request</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleSec(id, element) {
+            const section = document.getElementById(id);
+            let isChecked = false;
+
+            if (element.type === 'radio') {
+                isChecked = (element.value === 'Yes');
+            } else {
+                isChecked = element.checked;
+            }
+
+            section.style.display = isChecked ? 'block' : 'none';
+
+            // Handle required attribute for all inputs within the section
+            const inputs = section.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.required = isChecked;
+            });
+        }
+
+        function handleReasonChange() {
+            const reason = document.getElementById('reason').value;
+            const hrSec = document.getElementById('hr_approval_sec');
+            const inputs = hrSec.querySelectorAll('input');
+
+            if (reason === 'Terminated') {
+                hrSec.style.display = 'block';
+                inputs.forEach(i => i.required = true);
+            } else {
+                hrSec.style.display = 'none';
+                inputs.forEach(i => i.required = false);
+            }
+        }
+
+        function toggleEquipPhone(checkbox) {
+            const sec = document.getElementById('equip_phone_sec');
+            const input = document.getElementById('empPhone');
+            if (checkbox.checked) {
+                sec.style.display = 'block';
+            } else {
+                sec.style.display = 'none';
+                if (input) input.value = '';
+            }
+        }
+
+function updateVacationResponder(email) {
+            const textarea = document.getElementById('google_vacation');
+            if (email && email.trim() !== '') {
+                textarea.value = `Please be advised I am no longer with the company. Please contact ${email} for assistance.`;
+            } else {
+                textarea.value = `Please be advised I am no longer with the company. Please contact [RECIPIENT] for assistance.`;
+            }
+        }
+    </script>
+    <?!= include('DirectoryAutocomplete') ?>
+        <script>
+
+        // Form Submission Logic
+        document.getElementById('terminationForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalLabel = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            const rawForm = new FormData(e.target);
+            const formData = {};
+            let fileToUpload = null;
+            rawForm.forEach(function(value, key) {
+                if (value instanceof File) {
+                    if (value.size > 0) fileToUpload = value;
+                    return;
+                }
+                formData[key] = formData[key] ? formData[key] + ',' + value : value;
+            });
+
+            function doSubmit() {
+                google.script.run
+                    .withSuccessHandler(function (response) {
+                        if (response.success) {
+                            document.getElementById('form-container').innerHTML = `
+                                <div style="text-align:center; padding:40px;">
+                                    <h1 style="color:var(--success-green);">&#10003; Submission Successful</h1>
+                                    <p>Workflow ID: <strong>${response.workflowId}</strong></p>
+                                    <button onclick="resetForm()" class="btn btn-primary" style="margin-top:20px; width:auto; padding:10px 20px;">Submit Another</button>
+                                </div>
+                            `;
+                        } else {
+                            alert('Error: ' + response.message);
+                            btn.disabled = false;
+                            btn.textContent = originalLabel;
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        alert('Critical Error: ' + err.message);
+                        btn.disabled = false;
+                        btn.textContent = originalLabel;
+                    })
+                    .submitTerminationRequest(formData);
+            }
+
+            if (fileToUpload) {
+                btn.textContent = 'Uploading file...';
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    formData.attachmentBase64 = ev.target.result.split(',')[1];
+                    formData.attachmentName = fileToUpload.name;
+                    formData.attachmentMimeType = fileToUpload.type || 'application/octet-stream';
+                    doSubmit();
+                };
+                reader.onerror = function() {
+                    // Upload failed silently — still submit without attachment
+                    doSubmit();
+                };
+                reader.readAsDataURL(fileToUpload);
+            } else {
+                doSubmit();
+            }
+        });
+
+        // Setup Autocomplete for multiple fields
+        DirectoryAutocomplete.setup({ inputSelector: '#managerEmail', nameInputSelector: '#managerName' });
+        DirectoryAutocomplete.setup({ inputSelector: '#empWorkEmail' });
+        DirectoryAutocomplete.setup({ inputSelector: '#reports_to_new' });
+        DirectoryAutocomplete.setup({ inputSelector: '#google_forward' });
+        DirectoryAutocomplete.setup({ inputSelector: '#google_files' });
+        DirectoryAutocomplete.setup({ inputSelector: '#google_delegate' });
+
+        // Dynamic Populators
+        const populateFormDropdowns = function (data) {
+            const sites = document.querySelectorAll('#siteName');
+            sites.forEach(s => data.sites.forEach(site => {
+                const opt = document.createElement('option'); opt.value = site; opt.textContent = site; s.appendChild(opt);
+            }));
+            const departments = document.querySelectorAll('#deptOld, #deptNew');
+            if (data.departments) {
+                departments.forEach(d => data.departments.forEach(dept => {
+                    const opt = document.createElement('option'); opt.value = dept; opt.textContent = dept; d.appendChild(opt);
+                }));
+            }
+        };
+
+        const INJECTED_REF_DATA = <?!= typeof referenceData !== 'undefined' ? referenceData : 'null' ?>;
+        if (INJECTED_REF_DATA) {
+            populateFormDropdowns(INJECTED_REF_DATA);
+        } else {
+            google.script.run.withSuccessHandler(populateFormDropdowns).withFailureHandler(console.error).getInitialFormData();
+        }
+
+        // 1. Current User Details
+        google.script.run.withSuccessHandler(function (user) {
+            if (user && user.email) {
+                document.getElementById('reqEmail').value = user.email;
+                document.getElementById('reqName').value = user.name || 'Unknown User';
+            }
+        }).withFailureHandler(console.error).getCurrentUserDetails();
+
+
+        function resetForm() {
+            google.script.run
+                .withSuccessHandler(function (url) {
+                    window.open(url + '?form=termination_request', '_top');
+                })
+                .withFailureHandler(function(err) { alert('Error: ' + err.message); })
+                .getBaseUrl();
+        }
+    </script>
+  <?!= include('SharedComponents') ?>
+  <?!= include('GeoCities') ?>
+</body>
+
+</html>

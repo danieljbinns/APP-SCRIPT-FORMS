@@ -4,6 +4,48 @@
  */
 
 /**
+ * Log a form edit to the Form Edit Log sheet.
+ * Called whenever an already-submitted form is updated rather than inserted.
+ * @param {string} workflowId
+ * @param {string} formType  - Human-readable form name, e.g. 'HR Verification'
+ * @param {string} changedBy - Email of editing user
+ * @param {Array}  oldRow    - Previous sheet row values
+ * @param {Array}  newRow    - New sheet row values (same length)
+ */
+function logFormEdit(workflowId, formType, changedBy, oldRow, newRow) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    let logSheet = ss.getSheetByName(CONFIG.SHEETS.FORM_EDIT_LOG);
+    if (!logSheet) {
+      logSheet = ss.insertSheet(CONFIG.SHEETS.FORM_EDIT_LOG);
+      logSheet.appendRow(['Timestamp', 'Workflow ID', 'Form Type', 'Changed By', 'Changes']);
+      logSheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
+    }
+
+    // Build a readable change summary: only list columns whose value actually changed
+    const changes = [];
+    const len = Math.max(oldRow.length, newRow.length);
+    for (let i = 0; i < len; i++) {
+      const oldVal = String(oldRow[i] instanceof Date ? Utilities.formatDate(oldRow[i], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss') : (oldRow[i] || ''));
+      const newVal = String(newRow[i] instanceof Date ? Utilities.formatDate(newRow[i], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss') : (newRow[i] || ''));
+      if (oldVal !== newVal && i > 1) { // skip WF ID (0) and Form ID (1)
+        changes.push('col' + (i + 1) + ': [' + oldVal + '] → [' + newVal + ']');
+      }
+    }
+
+    logSheet.appendRow([
+      new Date(),
+      workflowId,
+      formType,
+      changedBy,
+      changes.length > 0 ? changes.join(' | ') : '(no field changes detected)'
+    ]);
+  } catch (e) {
+    Logger.log('[logFormEdit] Error: ' + e.message);
+  }
+}
+
+/**
  * Generate unique workflow ID
  */
 function generateWorkflowId(workflowType) {
@@ -110,37 +152,35 @@ function updateWorkflow(workflowId, status, currentStep, employeeName) {
 }
 
 /**
- * Helper to sync status back to Initial Requests sheet
+ * Helper to sync status back to origin request sheets (Initial, Terminations, Position Changes)
  */
 function syncStatusToRequestSheet(ss, workflowId, status) {
   try {
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
-    if (!sheet) return;
-    
-    // Check headers for 'Status' column
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    let statusColIndex = headers.indexOf('Status');
-    
-    // If not found, try 'Current Status'
-    if (statusColIndex === -1) statusColIndex = headers.indexOf('Current Status');
-    
-    // If still not found, we generally shouldn't just append randomly, 
-    // but the user expects it. Let's assume if it's missing we can't update it safely without risking overwriting data.
-    // However, if we want to be helpful, we could log it.
-    if (statusColIndex === -1) {
-       Logger.log('No Status column found in Initial Requests sheet');
-       return;
-    }
-    
-    // Find row
-    const data = sheet.getDataRange().getValues();
-    // Assuming ID is Col A (0)
-    for (let i = 1; i < data.length; i++) {
+    const originSheets = [
+      CONFIG.SHEETS.INITIAL_REQUESTS,
+      CONFIG.SHEETS.TERMINATIONS,
+      CONFIG.SHEETS.POSITION_CHANGES
+    ];
+
+    for (const sheetName of originSheets) {
+      if (!sheetName) continue;
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet) continue;
+
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      let statusColIndex = headers.indexOf('Status');
+      if (statusColIndex === -1) statusColIndex = headers.indexOf('Current Status');
+      if (statusColIndex === -1) continue;
+
+      const data = sheet.getDataRange().getValues();
+      // Assume Workflow ID is in Col A (index 0)
+      for (let i = 1; i < data.length; i++) {
         if (data[i][0] === workflowId) {
-            sheet.getRange(i + 1, statusColIndex + 1).setValue(status);
-            Logger.log('Synced status to Initial Requests sheet');
-            break;
+          sheet.getRange(i + 1, statusColIndex + 1).setValue(status);
+          Logger.log(`Synced status to ${sheetName} sheet`);
+          return; // Found and updated, done
         }
+      }
     }
   } catch (e) {
     Logger.log('Error syncing status to requests: ' + e.toString());
