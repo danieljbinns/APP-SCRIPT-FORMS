@@ -16,65 +16,7 @@
             <h1>Status Change Approval</h1>
             <p class="subtitle">HR Review required for position/site changes</p>
 
-            <div class="ticket-info">
-                <div class="info-row"><span class="label">Employee</span><span class="value"><?= requestData.employeeName ?></span></div>
-                <div class="info-row"><span class="label">Effective Date</span><span class="value"><?= requestData.effDate ?></span></div>
-                <div class="info-row span-2"><span class="label">Changes Requested</span><span class="value"><?= requestData.changes ?></span></div>
-                <? if (requestData.currentManagerName || requestData.currentManagerEmail) { ?>
-                <div class="info-row span-2"><span class="label">Current Manager</span><span class="value"><?= (requestData.currentManagerName || '') + (requestData.currentManagerName && requestData.currentManagerEmail ? ' — ' : '') + (requestData.currentManagerEmail || '') ?></span></div>
-                <? } ?>
-                <? if (requestData.currentClass) { ?>
-                <div class="info-row"><span class="label">Current Classification</span><span class="value"><?= requestData.currentClass ?></span></div>
-                <? } ?>
-                <? if (requestData.currentTitle) { ?>
-                <div class="info-row"><span class="label">Current Title</span><span class="value"><?= requestData.currentTitle ?></span></div>
-                <? } ?>
-                <?
-                  var stVal = String(requestData.siteTransfer || '');
-                  var stParts = stVal.split(' -> ');
-                  var showSt = stVal && stVal.indexOf('N/A') === -1 && (stParts.length < 2 || stParts[0].trim() !== stParts[1].trim());
-                  if (showSt) {
-                ?>
-                <div class="info-row span-2"><span class="label">Site Transfer</span><span class="value"><?= requestData.siteTransfer ?></span></div>
-                <? } ?>
-                <?
-                  var tcVal = String(requestData.titleChange || '');
-                  var tcParts = tcVal.split(' -> ');
-                  var showTc = tcVal && tcVal.indexOf('N/A') === -1 && (tcParts.length < 2 || tcParts[0].trim() !== tcParts[1].trim());
-                  if (showTc) {
-                ?>
-                <div class="info-row span-2"><span class="label">Title Change</span><span class="value"><?= requestData.titleChange ?></span></div>
-                <? } ?>
-                <?
-                  var ccVal = String(requestData.classChange || '');
-                  var ccParts = ccVal.split(' -> ');
-                  var showCc = ccVal && ccVal.indexOf('N/A') === -1 && (ccParts.length < 2 || ccParts[0].trim() !== ccParts[1].trim());
-                  if (showCc) {
-                ?>
-                <div class="info-row span-2"><span class="label">Classification Change</span><span class="value"><?= requestData.classChange ?></span></div>
-                <? } ?>
-                <?
-                  var mcVal = String(requestData.managerChange || '');
-                  var mcNoNA = mcVal && mcVal.indexOf('N/A (N/A)') === -1 && mcVal.indexOf('N/A -> N/A') === -1;
-                  var mcParts2 = mcVal.split(' -> ');
-                  var showMc = mcNoNA && (mcParts2.length < 2 || mcParts2[0].trim() !== mcParts2[1].trim());
-                  if (showMc) {
-                ?>
-                <div class="info-row span-2"><span class="label">Manager Change</span><span class="value"><?= requestData.managerChange ?></span></div>
-                <? } ?>
-                <? if (requestData.systems && requestData.systems !== 'N/A') { ?>
-                <div class="info-row span-2"><span class="label">Access Requests</span><span class="value"><?= requestData.systems ?></span></div>
-                <? } ?>
-                <? if (requestData.equipment && requestData.equipment !== 'N/A') { ?>
-                <div class="info-row span-2"><span class="label">Equipment</span><span class="value"><?= requestData.equipment ?></span></div>
-                <? } ?>
-                <? if (requestData.department) { ?>
-                <div class="info-row"><span class="label">Department</span><span class="value"><?= requestData.department ?></span></div>
-                <? } ?>
-                <? if (requestData.comments) { ?>
-                <div class="info-row comments"><span class="label">Comments</span><span class="value"><?= requestData.comments ?></span></div>
-                <? } ?>
-            </div>
+            <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
 
             <form id="approvalForm">
                 <input type="hidden" name="workflowId" value="<?= workflowId ?>">
@@ -103,10 +45,7 @@
                 <div class="form-group">
                     <label>Confirmed JR Title <span class="help-text" style="display:inline;">(select from JR list — leave blank if not applicable)</span></label>
                     <select name="confirmedJrTitle" id="confirmedJrTitle">
-                        <option value="">— No JR / Not applicable —</option>
-                        <? for (var i = 0; i < jrList.length; i++) { ?>
-                        <option value="<?= jrList[i] ?>"><?= jrList[i] ?></option>
-                        <? } ?>
+                        <option value="">Loading...</option>
                     </select>
                     <p class="help-text">JR titles drive safety, learning, and system access assignments. Select the correct JR for the new role.</p>
                 </div>
@@ -131,6 +70,26 @@
     </div>
 
     <script>
+        // Load JR titles client-side
+        window.addEventListener('DOMContentLoaded', function() {
+            google.script.run
+                .withSuccessHandler(function(jrs) {
+                    var select = document.getElementById('confirmedJrTitle');
+                    select.innerHTML = '<option value="">— No JR / Not applicable —</option>';
+                    if (jrs && jrs.length) {
+                        jrs.forEach(function(jr) {
+                            var opt = document.createElement('option');
+                            opt.value = jr; opt.textContent = jr;
+                            select.appendChild(opt);
+                        });
+                    }
+                })
+                .withFailureHandler(function() {
+                    document.getElementById('confirmedJrTitle').innerHTML = '<option value="">Error loading titles</option>';
+                })
+                .getJRsList();
+        });
+
         function setDecision(value) {
             document.getElementById('decisionInput').value = value;
             document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
