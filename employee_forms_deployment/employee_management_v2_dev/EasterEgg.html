@@ -3,7 +3,7 @@
      Direct codes: ASIF → 90s Web  |  BEAM → TOS  |  ENGAGE → TNG
                    PROPHETS → DS9  |  COFFEE → VOY  |  FRACK → BSG
                    REDPILL → Matrix  |  TARDIS → Doctor Who
-                   TWSS → The Office  |  RIZZ → Gen Alpha
+                   TWSS → The Office  |  RIZZ → Gen Alpha  |  PIKACHU → Pokemon
      localStorage: tg_eg_v1
      Stats fn:     google.script.run.getStarTrekStats()
      DEV ONLY — do not migrate to staging or prod -->
@@ -23,10 +23,11 @@ body.eg.t-bsg   {--st-bg:#0C0C08;--st-panel:#141410;--st-panel2:#1C1C16;--st-hi:
 body.eg.t-matrix{--st-bg:#000;--st-panel:#030903;--st-panel2:#061206;--st-hi:#AAFFAA;--st-mid:#00FF41;--st-lo:#00CC33;--st-dim:#007722;--st-faint:#002A11;--st-red:#FF3300;--st-green:#00FF41;--st-blue:#33AAFF;--st-cyan:#00FFEE;--st-fd:'Share Tech Mono','Courier New',monospace;--st-fb:'Share Tech Mono','Courier New',monospace;--st-btn-r:0px}
 body.eg.t-who   {--st-bg:#000D1A;--st-panel:#001533;--st-panel2:#001F44;--st-hi:#D6EFFF;--st-mid:#0076D6;--st-lo:#0057B3;--st-dim:#003366;--st-faint:#001433;--st-red:#CC2200;--st-green:#00BB77;--st-blue:#003B8E;--st-cyan:#87CEEB;--st-fd:'Segoe UI','Arial',sans-serif;--st-fb:'Segoe UI','Arial',sans-serif;--st-btn-r:4px}
 body.eg.t-office{--st-bg:#F5F0E6;--st-panel:#FFF;--st-panel2:#F0E8D5;--st-hi:#1A1A1A;--st-mid:#1C4E8A;--st-lo:#2460A7;--st-dim:#6B6B6B;--st-faint:#D0C8B8;--st-red:#C0392B;--st-green:#27AE60;--st-blue:#1C4E8A;--st-cyan:#2980B9;--st-fd:Arial,Helvetica,sans-serif;--st-fb:Arial,Helvetica,sans-serif;--st-btn-r:3px}
-body.eg.t-galpha{--st-bg:#0a0015;--st-panel:#130024;--st-panel2:#1e0038;--st-hi:#ffffff;--st-mid:#ff2d9e;--st-lo:#cc1a7a;--st-dim:#882299;--st-faint:#3d0066;--st-red:#ff4444;--st-green:#39ff14;--st-blue:#00d4ff;--st-cyan:#c8ff00;--st-fd:'Nunito','Segoe UI',Helvetica,sans-serif;--st-fb:'Nunito','Segoe UI',Helvetica,sans-serif;--st-btn-r:22px}
+body.eg.t-galpha {--st-bg:#0a0015;--st-panel:#130024;--st-panel2:#1e0038;--st-hi:#ffffff;--st-mid:#ff2d9e;--st-lo:#cc1a7a;--st-dim:#882299;--st-faint:#3d0066;--st-red:#ff4444;--st-green:#39ff14;--st-blue:#00d4ff;--st-cyan:#c8ff00;--st-fd:'Nunito','Segoe UI',Helvetica,sans-serif;--st-fb:'Nunito','Segoe UI',Helvetica,sans-serif;--st-btn-r:22px}
+body.eg.t-pokemon{--st-bg:#0f380f;--st-panel:#1a4a1a;--st-panel2:#306230;--st-hi:#9bbc0f;--st-mid:#8bac0f;--st-lo:#306230;--st-dim:#306230;--st-faint:#1a4a1a;--st-red:#9bbc0f;--st-green:#9bbc0f;--st-blue:#8bac0f;--st-cyan:#9bbc0f;--st-fd:'Press Start 2P','Courier New',monospace;--st-fb:'Press Start 2P','Courier New',monospace;--st-btn-r:0px}
 
 /* ── ANIMATIONS ──────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Press+Start+2P&display=swap');
 @keyframes eg-rainbow  {0%{color:#f00}14%{color:#f80}28%{color:#ff0}42%{color:#0f0}57%{color:#08f}71%{color:#80f}85%{color:#f0f}100%{color:#f00}}
 @keyframes eg-blink    {0%,49%{opacity:1}50%,100%{opacity:0}}
 @keyframes eg-spin     {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
@@ -54,6 +55,9 @@ body.eg.t-galpha{--st-bg:#0a0015;--st-panel:#130024;--st-panel2:#1e0038;--st-hi:
 @keyframes ga-glow{0%,100%{text-shadow:0 0 10px #ff2d9e,0 0 30px rgba(255,45,158,.5)}50%{text-shadow:0 0 10px #00d4ff,0 0 30px rgba(0,212,255,.5)}}
 @keyframes who-vortex  {from{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.02)}to{transform:rotate(360deg) scale(1)}}
 @keyframes office-blink{0%,49%{opacity:1}50%,100%{opacity:.3}}
+@keyframes pk-flash    {0%,88%,100%{opacity:1}92%{opacity:.5;filter:brightness(2)}}
+@keyframes pk-bounce   {0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes pk-scanline {0%{background-position:0 0}100%{background-position:0 4px}}
 
 /* ── GEO GLOBAL ──────────────────────────────────────────────── */
 body.eg.t-geo {
@@ -136,6 +140,7 @@ body.eg.t-bsg{background-image:linear-gradient(rgba(130,160,40,.07) 1px,transpar
 body.eg.t-who{background-image:radial-gradient(ellipse at 50% 50%,rgba(0,100,200,.12) 0%,transparent 70%)!important}
 body.eg.t-office{background-image:none!important}
 body.eg.t-galpha{background-image:radial-gradient(circle at 20% 50%,rgba(255,45,158,.2) 0%,transparent 40%),radial-gradient(circle at 80% 20%,rgba(0,212,255,.15) 0%,transparent 40%),radial-gradient(circle at 50% 90%,rgba(200,0,255,.15) 0%,transparent 40%)!important}
+body.eg.t-pokemon{background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.15) 0px,rgba(0,0,0,.15) 1px,transparent 1px,transparent 4px)!important;background-size:100% 4px!important;animation:pk-flash 6s infinite!important}
 body.eg.t-tos::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:9980}
 
 /* ── SCIFI COMPONENT OVERRIDES ───────────────────────────────── */
@@ -291,6 +296,27 @@ body.eg.t-galpha .st-lp{background:rgba(19,0,36,.9)!important;border-radius:10px
 body.eg.t-galpha .st-ab{border-radius:22px!important}
 body.eg.t-galpha .st-ab.on{background:linear-gradient(135deg,#ff2d9e,#cc1a7a)!important;border-color:#ff2d9e!important}
 
+/* ── POKEMON COMPONENT OVERRIDES ─────────────────────────────── */
+body.eg.t-pokemon header,body.eg.t-pokemon .header{background:#1a4a1a!important;border-bottom:4px solid #9bbc0f!important;image-rendering:pixelated!important;animation:none!important}
+body.eg.t-pokemon h1{color:#9bbc0f!important;text-shadow:2px 2px 0 #0f380f!important;animation:pk-bounce 1.5s ease-in-out infinite!important;letter-spacing:2px!important}
+body.eg.t-pokemon h2,body.eg.t-pokemon h3{color:#8bac0f!important;text-shadow:1px 1px 0 #0f380f!important;animation:none!important;letter-spacing:2px!important}
+body.eg.t-pokemon .card,body.eg.t-pokemon .form-section,body.eg.t-pokemon .details-section,body.eg.t-pokemon .filter-group,body.eg.t-pokemon .modal-content,body.eg.t-pokemon .dash-card{border:2px solid #8bac0f!important;border-top:2px solid #9bbc0f!important;box-shadow:2px 2px 0 #0f380f!important}
+body.eg.t-pokemon button,body.eg.t-pokemon .action-btn,body.eg.t-pokemon .filter-btn,body.eg.t-pokemon .btn{box-shadow:2px 2px 0 #0f380f!important}
+body.eg.t-pokemon button[type="submit"],body.eg.t-pokemon .submit-btn{border-color:#9bbc0f!important;color:#9bbc0f!important;box-shadow:2px 2px 0 #0f380f!important;animation:pk-bounce 1s infinite!important}
+body.eg.t-pokemon .status-badge{box-shadow:1px 1px 0 #0f380f!important}
+/* pokemon injected UI */
+body.eg.t-pokemon #st-ticker{background:#1a4a1a!important;border-bottom:2px solid #9bbc0f!important}
+body.eg.t-pokemon #st-t-text{color:#9bbc0f!important;animation:st-scroll-l 25s linear infinite!important}
+body.eg.t-pokemon .st-t-side{color:#8bac0f!important}
+body.eg.t-pokemon #st-alert{border-color:#9bbc0f!important;color:#9bbc0f!important;background:#1a4a1a!important;animation:pk-flash 1.2s infinite!important}
+body.eg.t-pokemon #st-ctrl{background:#1a4a1a!important;border-bottom:2px solid #306230!important}
+body.eg.t-pokemon #st-foot{background:#1a4a1a!important;border-top:2px solid #9bbc0f!important}
+body.eg.t-pokemon .st-fs{color:#8bac0f!important}
+body.eg.t-pokemon .st-vb{border-color:#9bbc0f!important;color:#9bbc0f!important;box-shadow:4px 4px 0 #0f380f,0 0 12px rgba(155,188,15,.3)!important}
+body.eg.t-pokemon .st-sx{box-shadow:1px 1px 0 #0f380f!important}
+body.eg.t-pokemon #st-stats{border-color:#9bbc0f!important}
+body.eg.t-pokemon #st-stog{animation:pk-bounce 2s infinite!important}
+
 /* hide app-level AODA / accessibility / theme toggles while easter egg is active */
 body.eg .aoda-toggle,body.eg .accessibility-toggle,body.eg [id*="aoda"],body.eg [class*="aoda"],body.eg [id*="a11y"],body.eg [class*="a11y"],body.eg [id*="theme-toggle"],body.eg [class*="theme-toggle"],body.eg [id*="dark-mode"],body.eg [class*="dark-mode"],body.eg .color-scheme-toggle{display:none!important}
 /* admin panel */
@@ -387,6 +413,7 @@ var T={
   matrix:{ship:'THE MATRIX',sector:'THE CONSTRUCT',alertIcon:'!! ANOMALY DETECTED !!',alertMsg:'THE MATRIX HAS YOU — FOLLOW THE WHITE RABBIT — THERE IS NO SPOON',ticker:'WAKE UP, NEO... THE MATRIX HAS YOU... FOLLOW THE WHITE RABBIT... THERE IS NO SPOON... FREE YOUR MIND...',stitle:'// SIMULATION DIAGNOSTICS — ANOMALY SCAN //',vlabel:'PROGRAMS PROCESSED — MATRIX RECORDS',vsub:'THE CONSTRUCT — AUTHORIZED OPERATORS ONLY',s1:'New Programs',s2:'Decompiled',s3:'Transfers',s4:'Executed',s5:'Running',s6:'Awaiting',s7:'Killed',s8:'This Cycle',l1:'// TOP OPERATORS //',l2:'// TOP CONSTRUCTS //',l3:'// TOP AGENTS //',footer:'TEAM GROUP SIMULATION // THE MATRIX // AUTHORIZED OPERATORS ONLY // SEQUENTIAL GATING v2 ACTIVE // THERE IS NO SPOON //',greeting:'Wake up, Neo. The Matrix has you. Follow the white rabbit.',lcars:false,bsg:false,matrix:true,who:false,office:false},
   who:{ship:'THE TARDIS',sector:'ALL OF TIME & SPACE',alertIcon:'!! DALEKS DETECTED !!',alertMsg:'ALL PERSONNEL TAKE COVER — DO NOT BLINK — DO NOT EVEN BLINK — EXTERMINATE',ticker:'WIBBLY WOBBLY TIMEY WIMEY &#9830; ALL OF TIME AND SPACE &#9830; DON\'T BLINK &#9830; THE ANGELS HAVE THE PHONE BOX &#9830; FANTASTIC! &#9830; ALLONS-Y! &#9830; GERONIMO! &#9830; RUN! &#9830;',stitle:'&#9670; TARDIS TEMPORAL ANALYSIS &#9670;',vlabel:'TEMPORAL ASSIGNMENTS PROCESSED',vsub:'TIME LORD AUTHORITY — GALLIFREY FALLS NO MORE',s1:'New Companions',s2:'Regenerations',s3:'Timeline Shifts',s4:'Fixed Point',s5:'Timey Wimey',s6:'In the Vortex',s7:'Paradox',s8:'This Cycle',l1:'Top Submitters',l2:'Top Locations',l3:'Top Managers',footer:'TEAM GROUP &#9830; THE TARDIS &#9830; TIME LORD AUTHORIZED &#9830; ALL OF TIME AND SPACE &#9830; SEQUENTIAL GATING V2 &#9830; ALLONS-Y &#9830;',greeting:'Welcome aboard the TARDIS. It is bigger on the inside. Allons-y!',lcars:false,bsg:false,matrix:false,who:true,office:false},
   office:{ship:'DUNDER MIFFLIN',sector:'SCRANTON, PA',alertIcon:'!! ATTENTION: HR NOTICE !!',alertMsg:'PLEASE SEE TOBY IN HR — COMPLIANCE TRAINING IS DUE — THAT\'S WHAT SHE SAID',ticker:'DUNDER MIFFLIN PAPER COMPANY &#9830; SCRANTON BRANCH &#9830; WORLD\'S BEST BOSS &#9830; THAT\'S WHAT SHE SAID &#9830; BEARS. BEETS. BATTLESTAR GALACTICA. &#9830; IDENTITY THEFT IS NOT A JOKE, JIM &#9830; ASSISTANT TO THE REGIONAL MANAGER &#9830;',stitle:'&#9670; DUNDER MIFFLIN — BRANCH ANALYTICS &#9670;',vlabel:'EMPLOYEE REQUESTS PROCESSED',vsub:'DUNDER MIFFLIN SCRANTON BRANCH — MICHAEL SCOTT, REGIONAL MANAGER',s1:'New Hires',s2:'Terminations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Pending',s7:'Cancelled',s8:'This Month',l1:'Top Submitters',l2:'Top Locations',l3:'Top Managers',footer:'DUNDER MIFFLIN PAPER COMPANY &#9830; SCRANTON BRANCH &#9830; LIMITLESS PAPER IN A PAPERLESS WORLD &#9830; SEQUENTIAL GATING V2 ACTIVE &#9830; THAT\'S WHAT SHE SAID &#9830;',greeting:'Dunder Mifflin, this is Michael. World\'s best boss speaking.',lcars:false,bsg:false,matrix:false,who:false,office:false},
+  pokemon:{ship:'PALLET TOWN',sector:'KANTO REGION',alertIcon:'!! WILD POKEMON APPEARED !!',alertMsg:'A WILD POKEMON HAS APPEARED -- SEQUENTIAL GATING IS SUPER EFFECTIVE -- GO POKEBALL GO',ticker:'GOTTA CATCH \'EM ALL ★ PALLET TOWN ★ PROF. OAK: ARE YOU A BOY OR A GIRL? ★ IT\'S SUPER EFFECTIVE ★ PIKACHU, I CHOOSE YOU ★ TEAM ROCKET IS BLASTING OFF AGAIN ★ THERE\'S A TIME AND TIDE FOR EVERYTHING ★',stitle:'★ POKEDEX ANALYSIS -- EMPLOYEE RECORDS ★',vlabel:'POKEMON CAUGHT (TOTAL REQUESTS)',vsub:'PALLET TOWN -- PROF. OAK\'S LABORATORY -- KANTO REGION',s1:'New Trainers',s2:'Badges Earned',s3:'Evolutions',s4:'Caught!!',s5:'In Battle',s6:'In the Grass',s7:'Fled...',s8:'This Cycle',l1:'★ TOP TRAINERS ★',l2:'★ TOP GYMS ★',l3:'★ GYM LEADERS ★',footer:'TEAM GROUP ★ PALLET TOWN ★ GOTTA CATCH \'EM ALL ★ SEQUENTIAL GATING V2 ★ PIKACHU, I CHOOSE YOU ★',greeting:'Professor Oak here. The world is inhabited by creatures called Pokemon. Are you a boy or a girl? I need you to fill out this form.',lcars:false,bsg:false,matrix:false,who:false,office:false},
   galpha:{ship:'THE VIBE',sector:'NO CAP FR FR',alertIcon:'&#128293; NGL ITS LOWKEY URGENT &#128293;',alertMsg:'PERIODT &#x2022; SLAY DETECTED &#x2022; BESTIE THIS IS YOUR SIGN TO ACT &#x2022; NO CAP FR FR &#x2022; ITS GIVING ACTION REQUIRED',ticker:'NO CAP &#9830; SLAY &#9830; FR FR &#9830; IT\'S GIVING SEQUENTIAL GATING &#9830; THAT\'S LOWKEY BUSSIN &#9830; NOT THE EMPLOYEES &#9830; UNDERSTOOD THE ASSIGNMENT &#9830; PERIODT &#9830; MAIN CHARACTER ENERGY &#9830;',stitle:'&#128293; VIBE CHECK — TELEMETRY &#128293;',vlabel:'REQUESTS PROCESSED (no cap)',vsub:'TEAM GROUP — UNDERSTOOD THE ASSIGNMENT',s1:'New Hires (slay!)',s2:'Separations (rip bestie)',s3:'Transfers (the glow up)',s4:'Completed (periodt)',s5:'In Progress (lowkey)',s6:'Pending (no cap)',s7:'Cancelled (L + ratio)',s8:'This Month (bestie)',l1:'Top Girlies (submitters)',l2:'Top Locations (the vibes)',l3:'Top Managers (main characters)',footer:'TEAM GROUP &#9830; IT\'S GIVING EMPLOYEE MANAGEMENT &#9830; SEQUENTIAL GATING V2 &#9830; NO CAP &#9830; SLAY &#9830; PERIODT &#9830; UNDERSTOOD THE ASSIGNMENT &#9830;',greeting:'Bestie, the vibes are immaculate. You understood the assignment. No cap, this portal slaps.',lcars:false,bsg:false,matrix:false,who:false,office:false}
 };
 
@@ -401,6 +428,7 @@ var STATUS_MAPS={
   matrix:{'In Progress':'PROCESS RUNNING',     'Pending':'AWAITING INPUT',              'Completed':'EXECUTED',                 'Cancelled':'PROCESS KILLED',            'Action Required':'!! BUFFER OVERFLOW',          'All Specialists Complete':'EXECUTED'},
   who:   {'In Progress':'WIBBLY WOBBLY',       'Pending':'IN THE VORTEX',               'Completed':'FIXED POINT IN TIME',      'Cancelled':'EXTERMINATED',              'Action Required':'!! DALEKS DETECTED !!',       'All Specialists Complete':'FIXED POINT IN TIME'},
   office:{'In Progress':'MICHAEL IS HANDLING IT','Pending':'SEE TOBY IN HR',            'Completed':'FILED WITH TOBY',          'Cancelled':'CORPORATE SAID NO',         'Action Required':'!! TOBY WANTS A WORD',        'All Specialists Complete':'FILED WITH TOBY'},
+  pokemon:{'In Progress':'BATTLE IN PROGRESS!!', 'Pending':'IN THE TALL GRASS...',        'Completed':'GOTCHA!! POKEMON CAUGHT!!',  'Cancelled':'IT FLED...',               'Action Required':'!! WILD POKEMON !!',          'All Specialists Complete':'GOTCHA!! CAUGHT!!'},
   galpha:{'In Progress':'LOWKEY IN PROGRESS FR', 'Pending':'ON THE LOWKEY TBH',          'Completed':'SLAY!! PERIODT!!',          'Cancelled':'L + RATIO NGL',             'Action Required':'&#128293; NGL ITS URGENT FR', 'All Specialists Complete':'SLAY!! PERIODT!!'}
 };
 var SUBMIT_MAPS={
@@ -413,6 +441,7 @@ var SUBMIT_MAPS={
   matrix:['UPLOAD TO MATRIX','INSERT PROGRAM','EXECUTE'],
   who:   ['ALLONS-Y!','GERONIMO!','BIGGER ON THE INSIDE'],
   office:["THAT'S WHAT SHE SAID",'I DECLARE BANKRUPTCY','DUNDER MIFFLIN!!!'],
+  pokemon:['THROW POKEBALL!!','PIKACHU, I CHOOSE YOU!','GOTTA CATCH \'EM ALL!!'],
   galpha:['NO CAP SUBMIT FR FR',"IT'S GIVING SUBMIT SLAY",'PERIODT BESTIE!!!']
 };
 
@@ -430,7 +459,7 @@ function clearPref(){try{localStorage.removeItem(LS_KEY);}catch(e){}}
 function loadPref(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'null');}catch(e){return null;}}
 
 /* ── ACTIVATION SEQUENCES ────────────────────────────────────── */
-var SEQUENCES={'asif':'geo','beam':'tos','engage':'tng','prophets':'ds9','coffee':'voy','frack':'bsg','redpill':'matrix','tardis':'who','twss':'office','rizz':'galpha'};
+var SEQUENCES={'asif':'geo','beam':'tos','engage':'tng','prophets':'ds9','coffee':'voy','frack':'bsg','redpill':'matrix','tardis':'who','twss':'office','rizz':'galpha','pikachu':'pokemon'};
 var KONAMI=[38,38,40,40,37,39,37,39,66,65], kIdx=0;
 var typeBuf='', typeTimer=null;
 document.addEventListener('keydown',function(e){
@@ -535,6 +564,7 @@ function buildTrekUI(d){
         '<button class="st-sb" data-theme="who">WHO</button>'+
         '<button class="st-sb" data-theme="office">OFFICE</button>'+
         '<button class="st-sb" data-theme="galpha">RIZZ</button>'+
+        '<button class="st-sb" data-theme="pokemon">PKMN</button>'+
       '</div>'+
       '<div class="st-cg"><span class="st-cl">SIZE</span>'+
         '<button class="st-kb" data-scale="sc-sm">S</button>'+
@@ -596,7 +626,7 @@ function deactivate(silent){
   restoreSwaps();
   var wrap=document.getElementById('eg-root');
   if(wrap&&wrap.parentNode)wrap.parentNode.removeChild(wrap);
-  var all=['eg','t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','is-lcars','is-bsg','is-matrix','sc-sm','sc-md','sc-lg','sc-xl'];
+  var all=['eg','t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','t-pokemon','is-lcars','is-bsg','is-matrix','sc-sm','sc-md','sc-lg','sc-xl'];
   for(var i=0;i<all.length;i++)document.body.classList.remove(all[i]);
   statsLoaded=false;statsVisible=false;statsData=null;audioEnabled=false;geoMusicOn=false;
   clearPref();
@@ -607,7 +637,7 @@ function deactivate(silent){
 function stSwitchTheme(name){
   if(!T[name])return;
   var d=T[name],body=document.body;
-  var tc=['t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','is-lcars','is-bsg','is-matrix'];
+  var tc=['t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','t-pokemon','is-lcars','is-bsg','is-matrix'];
   for(var i=0;i<tc.length;i++)body.classList.remove(tc[i]);
   body.classList.add('t-'+name);
   if(d.lcars)body.classList.add('is-lcars');
@@ -639,16 +669,17 @@ function stSetScale(sc){
 
 /* ── ADMIN PANEL ─────────────────────────────────────────────── */
 var THEME_META=[
-  {id:'geo',    label:'90S WEB',              code:'ASIF'},
-  {id:'tos',    label:'STAR TREK TOS',        code:'BEAM'},
-  {id:'tng',    label:'STAR TREK TNG',        code:'ENGAGE'},
-  {id:'ds9',    label:'STAR TREK DS9',        code:'PROPHETS'},
-  {id:'voy',    label:'STAR TREK VOY',        code:'COFFEE'},
-  {id:'bsg',    label:'BATTLESTAR GALACTICA', code:'FRACK'},
-  {id:'matrix', label:'THE MATRIX',           code:'REDPILL'},
-  {id:'who',    label:'DOCTOR WHO',           code:'TARDIS'},
-  {id:'office', label:'THE OFFICE',           code:'TWSS'},
-  {id:'galpha', label:'GEN ALPHA',            code:'RIZZ'}
+  {id:'geo',     label:'90S WEB',              code:'ASIF'},
+  {id:'tos',     label:'STAR TREK TOS',        code:'BEAM'},
+  {id:'tng',     label:'STAR TREK TNG',        code:'ENGAGE'},
+  {id:'ds9',     label:'STAR TREK DS9',        code:'PROPHETS'},
+  {id:'voy',     label:'STAR TREK VOY',        code:'COFFEE'},
+  {id:'bsg',     label:'BATTLESTAR GALACTICA', code:'FRACK'},
+  {id:'matrix',  label:'THE MATRIX',           code:'REDPILL'},
+  {id:'who',     label:'DOCTOR WHO',           code:'TARDIS'},
+  {id:'office',  label:'THE OFFICE',           code:'TWSS'},
+  {id:'galpha',  label:'GEN ALPHA',            code:'RIZZ'},
+  {id:'pokemon', label:'POKEMON',              code:'PIKACHU'}
 ];
 function openAdmin(){
   if(document.getElementById('eg-admin'))return;
@@ -758,6 +789,21 @@ function stopGeoMusic(){
   var btn=document.getElementById('geo-music-btn');if(btn)btn.textContent='&#9835; MIDI: OFF';
 }
 
+function playPokemon(){
+  if(!audioCtx)return;
+  /* Wild battle intro sting — square wave arpeggio */
+  var now=audioCtx.currentTime,t=now;
+  var seq=[[523,0.07],[659,0.07],[784,0.07],[1047,0.14],[784,0.06],[1047,0.06],[1319,0.22]];
+  for(var i=0;i<seq.length;i++){
+    var osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    osc.type='square';osc.frequency.setValueAtTime(seq[i][0],t);
+    var dur=seq[i][1];
+    gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(0.07,t+0.01);gain.gain.linearRampToValueAtTime(0.06,t+dur-0.02);gain.gain.linearRampToValueAtTime(0,t+dur);
+    osc.start(t);osc.stop(t+dur+0.01);t+=dur+0.01;
+  }
+}
+
 function playGalpha(){
   if(!audioCtx)return;
   var notes=[880,1047,1319,1568,1319,1047,1568,2093];
@@ -774,11 +820,11 @@ function playGalpha(){
   }
 }
 
-var SND={tos:playTOS,tng:playLCARS,ds9:playLCARS,voy:playLCARS,bsg:playBSG,matrix:playMatrix,who:playWho,office:playOffice,galpha:playGalpha};
-var INT={tos:[2000,5000],tng:[4000,7000],ds9:[4000,7000],voy:[4000,7000],bsg:[2500,4500],matrix:[800,2000],who:[5000,9000],office:[6000,10000],galpha:[1500,3500]};
+var SND={tos:playTOS,tng:playLCARS,ds9:playLCARS,voy:playLCARS,bsg:playBSG,matrix:playMatrix,who:playWho,office:playOffice,galpha:playGalpha,pokemon:playPokemon};
+var INT={tos:[2000,5000],tng:[4000,7000],ds9:[4000,7000],voy:[4000,7000],bsg:[2500,4500],matrix:[800,2000],who:[5000,9000],office:[6000,10000],galpha:[1500,3500],pokemon:[3000,6000]};
 function startAmbient(){stopAmbient();if(!audioEnabled||!audioCtx)return;var fn=SND[curTheme],range=INT[curTheme]||[3000,6000];if(!fn)return;function tick(){fn();ambientTimer=setTimeout(tick,range[0]+Math.random()*(range[1]-range[0]));}ambientTimer=setTimeout(tick,range[0]*0.3);}
 function stopAmbient(){if(ambientTimer){clearTimeout(ambientTimer);ambientTimer=null;}}
-function speakGreeting(theme){if(!audioEnabled||!window.speechSynthesis)return;var d=T[theme];if(!d||!d.greeting)return;var rates={tos:0.85,tng:0.95,ds9:0.95,voy:0.95,bsg:1.1,matrix:0.7,who:0.95,office:1.05,galpha:1.3},pitches={tos:0.7,tng:1.0,ds9:0.95,voy:1.0,bsg:1.05,matrix:0.5,who:1.1,office:1.0,galpha:1.4};window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(d.greeting);u.rate=rates[theme]||0.9;u.pitch=pitches[theme]||1.0;u.volume=0.85;window.speechSynthesis.speak(u);}
+function speakGreeting(theme){if(!audioEnabled||!window.speechSynthesis)return;var d=T[theme];if(!d||!d.greeting)return;var rates={tos:0.85,tng:0.95,ds9:0.95,voy:0.95,bsg:1.1,matrix:0.7,who:0.95,office:1.05,galpha:1.3,pokemon:0.9},pitches={tos:0.7,tng:1.0,ds9:0.95,voy:1.0,bsg:1.05,matrix:0.5,who:1.1,office:1.0,galpha:1.4,pokemon:1.1};window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(d.greeting);u.rate=rates[theme]||0.9;u.pitch=pitches[theme]||1.0;u.volume=0.85;window.speechSynthesis.speak(u);}
 function stToggleAudio(){if(!audioEnabled){if(!initAudio())return;audioEnabled=true;startAmbient();speakGreeting(curTheme);}else{audioEnabled=false;stopAmbient();if(window.speechSynthesis)window.speechSynthesis.cancel();}var btn=document.getElementById('st-ab');if(btn){btn.textContent=audioEnabled?'🔊 ON':'🔇 OFF';btn.className='st-ab'+(audioEnabled?' on':'');}savePref();}
 
 /* ── MATRIX RAIN ─────────────────────────────────────────────── */
