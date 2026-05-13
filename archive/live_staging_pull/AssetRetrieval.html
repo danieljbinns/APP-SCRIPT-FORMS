@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Collection Confirmation</title>
+    <style>
+        :root {
+            --bg-color: #0c0c0c;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand-red: #EB1C2D;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+            --border-color: #333;
+            --success: #00c853;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .logo {
+            height: 40px;
+        }
+
+        h1 {
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .info-grid {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--brand-red);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 24px 0 16px 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .checkbox-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 16px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        input[type="checkbox"] {
+            accent-color: var(--brand-red);
+            width: 20px;
+            height: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            padding: 12px;
+            color: white;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--brand-red);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="logo-container">
+                <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+                    alt="Team Group" class="logo">
+            </div>
+            <h1>Asset Collection</h1>
+            <p class="subtitle">Please confirm that company assets have been recovered</p>
+
+            <div class="info-grid">
+                <div class="info-row"><span class="info-label">Terminated Employee:</span><span>
+                        <?= requestData.empName ?>
+                    </span></div>
+                <div class="info-row"><span class="info-label">Site:</span><span>
+                        <?= requestData.siteName ?>
+                    </span></div>
+            </div>
+
+            <form id="retrievalForm">
+                <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+
+                <div class="section-title">Verified Checklist</div>
+                <div class="checkbox-group">
+                    <? if(requestData.hasPhone) { ?>
+                    <div class="checkbox-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="phone" value="Collected" required>
+                            <span>Mobile Phone Collected</span>
+                        </label>
+                    </div>
+                    <? } ?>
+
+                    <? if(requestData.hasLaptop) { ?>
+                    <div class="checkbox-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="laptop" value="Collected" required>
+                            <span>Computer / Laptop Collected</span>
+                        </label>
+                    </div>
+                    <div class="checkbox-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="serial" value="Verified" required>
+                            <span>Serial Number Verified Match</span>
+                        </label>
+                    </div>
+                    <? } ?>
+
+                    <div class="checkbox-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="keys" value="Collected" required>
+                            <span>Keys / Badge Collected</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Additional Notes</label>
+                    <textarea name="notes" rows="3"
+                        placeholder="Condition of equipment, missing items, etc."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="submitBtn">Confirm Collection Receipt</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('retrievalForm').onsubmit = function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Confirming...';
+
+            const formData = {
+                workflowId: this.workflowId.value,
+                phone: this.phone ? this.phone.checked : 'N/A',
+                laptop: this.laptop ? this.laptop.checked : 'N/A',
+                serial: this.serial ? this.serial.checked : 'N/A',
+                keys: this.keys.checked,
+                notes: this.notes.value
+            };
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res.success) {
+                        document.querySelector('.card').innerHTML = `<div style="text-align:center; padding:40px;"><div style="color:var(--success); font-size:40px; margin-bottom:16px;">✓</div><h2>Collection Confirmed</h2><p>${res.message}</p></div>`;
+                    } else {
+                        alert('Error: ' + res.message);
+                        btn.disabled = false;
+                        btn.textContent = 'Confirm Collection Receipt';
+                    }
+                })
+                .submitAssetRetrieval(formData);
+        }
+    </script>
+</body>
+
+</html>

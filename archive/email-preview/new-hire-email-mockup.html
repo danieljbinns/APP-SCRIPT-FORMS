@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>New Hire Email — Unified Layout Mockup v2</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f0f; margin: 0; padding: 0; color: #fff; }
+
+    /* ── Preview Shell ── */
+    .shell { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+    .shell-header { border-bottom: 3px solid #EB1C2D; padding-bottom: 20px; margin-bottom: 16px; }
+    .shell-header h1 { font-size: 26px; margin: 0 0 6px; }
+    .shell-header p  { color: #777; margin: 0; font-size: 13px; }
+    .shell-note { background: #1a1a1a; border: 1px solid #333; border-radius: 6px;
+      padding: 12px 16px; margin-bottom: 48px; font-size: 12px; color: #888; line-height: 1.7; }
+    .shell-note strong { color: #bbb; }
+
+    .stage-label { margin: 56px 0 16px; }
+    .stage-label .tag { display: inline-block; background: #EB1C2D; color: #fff;
+      font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 3px;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .stage-label h2 { font-size: 16px; margin: 0 0 4px; color: #ddd; }
+    .stage-label p  { font-size: 12px; color: #555; margin: 0; }
+
+    /* ── Width picker ── */
+    .width-picker { position: sticky; top: 0; z-index: 100; background: #111;
+      border-bottom: 1px solid #222; padding: 10px 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .width-picker span { color: #555; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.8px; margin-right: 4px; }
+    .wp-btn { background: #1e1e1e; border: 1px solid #333; color: #888;
+      font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 4px;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .wp-btn:hover { border-color: #555; color: #ccc; }
+    .wp-btn.active { background: #EB1C2D; border-color: #EB1C2D; color: #fff; }
+    .wp-sep { width: 1px; height: 28px; background: #2a2a2a; margin: 0 4px; }
+    .wp-btn-phone { background: #1a1a2e; border-color: #4285f4; color: #4285f4; }
+    .wp-btn-phone.active { background: #4285f4; border-color: #4285f4; color: #fff; }
+    .wp-note { margin-left: auto; color: #444; font-size: 11px; }
+
+    /* ── Phone mode ── */
+    body.phone-mode .shell { padding-top: 24px; }
+    body.phone-mode .email-outer {
+      background: transparent; padding: 0; border-radius: 0;
+      display: flex; justify-content: center; padding: 40px 0 20px;
+    }
+    /* Phone frame wraps each email-card */
+    body.phone-mode .phone-frame-wrap {
+      width: 393px; flex-shrink: 0;
+      background: #1a1a1a; border-radius: 44px;
+      padding: 14px 6px;
+      box-shadow: 0 0 0 2px #333, 0 0 0 5px #111, 0 20px 60px rgba(0,0,0,0.6);
+      position: relative;
+    }
+    body.phone-mode .phone-notch {
+      width: 120px; height: 34px; background: #1a1a1a;
+      border-radius: 0 0 20px 20px; margin: 0 auto 8px;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    body.phone-mode .phone-notch-cam {
+      width: 10px; height: 10px; border-radius: 50%; background: #111;
+      border: 1px solid #333;
+    }
+    body.phone-mode .phone-screen {
+      background: #fff; border-radius: 32px; overflow: hidden;
+      height: 720px; overflow-y: auto;
+      /* Scrollbar styling */
+      scrollbar-width: thin; scrollbar-color: #ddd transparent;
+    }
+    body.phone-mode .phone-screen::-webkit-scrollbar { width: 4px; }
+    body.phone-mode .phone-screen::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+    body.phone-mode .phone-home {
+      text-align: center; padding: 10px 0 4px; color: #555;
+    }
+    body.phone-mode .phone-home-bar {
+      width: 100px; height: 4px; background: #333; border-radius: 2px;
+      margin: 0 auto;
+    }
+
+    /* Gmail mobile chrome inside phone */
+    body.phone-mode .gmail-chrome {
+      background: #fff; padding: 10px 14px 8px;
+      border-bottom: 1px solid #e8e8e8;
+      font-family: 'Google Sans', Roboto, sans-serif;
+    }
+    body.phone-mode .gmail-subject {
+      font-size: 14px; font-weight: 600; color: #202124;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    body.phone-mode .gmail-from {
+      font-size: 11px; color: #5f6368;
+    }
+
+    /* Email reflow at phone width */
+    body.phone-mode .email-card {
+      max-width: 100%; border-radius: 0;
+      box-shadow: none; font-size: 13px;
+    }
+    body.phone-mode .e-head { padding: 18px 16px; }
+    body.phone-mode .e-head h1 { font-size: 14px; }
+    body.phone-mode .e-body { padding: 14px 16px 12px; }
+    body.phone-mode .e-body .action-text { font-size: 13px; }
+    body.phone-mode .btn-row { flex-direction: column; gap: 8px; }
+    body.phone-mode .btn { display: block; text-align: center; padding: 11px 16px; font-size: 13px; }
+    body.phone-mode .e-sections { padding: 10px 10px 14px; }
+    body.phone-mode .s-head { padding: 8px 10px; }
+    body.phone-mode .s-body { padding: 8px 10px 10px; }
+    body.phone-mode .s-row { flex-direction: column; gap: 1px; padding: 4px 0; }
+    body.phone-mode .s-lbl { width: auto; font-size: 10px; padding-right: 0; }
+    body.phone-mode .s-val { font-size: 12px; }
+    body.phone-mode .s-val.tag-list { gap: 3px; }
+    body.phone-mode .s-tag { font-size: 10px; }
+    body.phone-mode .spec-row { font-size: 12px; }
+    body.phone-mode .e-bottom { padding: 0 16px 16px; }
+    body.phone-mode .e-foot { padding: 12px; }
+    body.phone-mode .e-foot p { font-size: 10px; }
+    body.phone-mode .e-foot p.sub { font-size: 9px; }
+
+    /* ── Email outer ── */
+    .email-outer { background: #f0f0f0; padding: 24px 20px; border-radius: 10px; }
+    .phone-frame-wrap { display: contents; } /* no-op outside phone mode */
+    .phone-notch, .phone-home, .phone-home-bar, .gmail-chrome { display: none; }
+    .phone-screen { display: contents; }
+    body.phone-mode .phone-notch, body.phone-mode .phone-home,
+    body.phone-mode .gmail-chrome { display: block; }
+    body.phone-mode .phone-frame-wrap { display: block; }
+    body.phone-mode .phone-screen { display: block; }
+    .email-card  { max-width: var(--email-w, 640px); margin: 0 auto; background: #fff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px; color: #222; }
+
+    /* Header */
+    .e-head { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      padding: 28px 30px; text-align: center; border-bottom: 3px solid #EB1C2D; }
+    .e-head .subj-tag { display: inline-block; background: rgba(235,28,45,0.25);
+      color: #ff8a8a; font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 3px; letter-spacing: 0.5px; margin-bottom: 10px; text-transform: uppercase; }
+    .e-head h1 { margin: 0; color: #fff; font-size: 17px; font-weight: 600; line-height: 1.4; }
+
+    /* Body action area */
+    .e-body { padding: 22px 30px 16px; border-bottom: 1px solid #f0f0f0; }
+    .e-body .action-text { color: #444; font-size: 14px; line-height: 1.6; margin: 0 0 18px; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .btn { display: inline-block; padding: 11px 26px; text-decoration: none;
+      border-radius: 6px; font-weight: 600; font-size: 14px; }
+    .btn-red  { background: linear-gradient(135deg,#EB1C2D,#c41828); color: #fff;
+      box-shadow: 0 3px 10px rgba(235,28,45,0.3); }
+    .btn-cal  { background: linear-gradient(135deg,#4285f4,#2b6fd9); color: #fff;
+      box-shadow: 0 3px 10px rgba(66,133,244,0.3); font-size: 13px; padding: 11px 20px; }
+
+    /* Sections */
+    .e-sections { padding: 16px 30px 20px; }
+    .section { border-radius: 6px; margin-bottom: 8px; overflow: hidden; border: 1px solid #e8e8e8; }
+
+    .s-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 9px 14px; gap: 8px; }
+    .s-head-left .s-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+    .s-head-left .s-actor { font-size: 10px; color: #999; margin-top: 2px; }
+    .s-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px;
+      text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; flex-shrink: 0; margin-top: 1px; }
+
+    /* Complete */
+    .s-complete { border-color: #bbf7d0; }
+    .s-complete .s-head { background: #f0fdf4; border-bottom: 1px solid #bbf7d0; }
+    .s-complete .s-title { color: #15803d; }
+    .s-complete .s-badge { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    /* Active */
+    .s-active { border-color: #fde68a; }
+    .s-active .s-head { background: #fffbeb; border-bottom: 1px solid #fde68a; }
+    .s-active .s-title { color: #92400e; }
+    .s-active .s-badge { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    /* Queued */
+    .s-queued { border-color: #e5e7eb; }
+    .s-queued .s-head { background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+    .s-queued .s-title { color: #9ca3af; }
+    .s-queued .s-badge { background: #f3f4f6; color: #9ca3af; border: 1px solid #e5e7eb; }
+    /* N/A */
+    .s-na { border-color: #e5e7eb; border-style: dashed; }
+    .s-na .s-head { background: #f9fafb; border-bottom: 1px dashed #e5e7eb; }
+    .s-na .s-title { color: #d1d5db; }
+    .s-na .s-badge { background: #f3f4f6; color: #d1d5db; border: 1px dashed #e5e7eb; }
+
+    /* Section body */
+    .s-body { padding: 10px 14px 12px; }
+    .s-row { display: flex; padding: 3px 0; font-size: 13px; line-height: 1.4; }
+    .s-lbl { width: 170px; flex-shrink: 0; color: #888; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.3px; padding-top: 1px; padding-right: 10px; }
+    .s-val          { color: #111; font-weight: 500; flex: 1; }
+    .s-val.pending  { color: #bbb; font-style: italic; font-weight: 400; }
+    .s-val.queued   { color: #ddd; font-style: italic; font-weight: 400; }
+    .s-val.masked   { color: #888; letter-spacing: 2px; font-size: 12px; font-weight: 400; }
+    .s-val.mono     { font-family: 'SF Mono','Fira Code',monospace; font-size: 12px; }
+    .s-val.na       { color: #ccc; font-style: italic; font-weight: 400; }
+    .s-val.tag-list { display: flex; flex-wrap: wrap; gap: 4px; }
+    .s-tag { background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 3px;
+      padding: 1px 7px; font-size: 11px; color: #555; font-weight: 500; }
+    .s-divider { border: none; border-top: 1px solid #f0f0f0; margin: 7px 0; }
+    .pw-note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 4px;
+      padding: 5px 10px; margin-top: 8px; font-size: 11px; color: #92400e; }
+
+    /* Specialist item rows */
+    .spec-row { display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 0; font-size: 13px; border-bottom: 1px solid #f5f5f5; }
+    .spec-row:last-child { border-bottom: none; }
+    .spec-name { color: #333; font-weight: 500; }
+    .spec-status { font-size: 11px; font-weight: 600; }
+    .spec-status.done    { color: #15803d; }
+    .spec-status.pending { color: #92400e; }
+    .spec-status.queued  { color: #9ca3af; }
+
+    /* Bottom action */
+    .e-bottom { padding: 0 30px 20px; }
+    .e-bottom .divider { border: none; border-top: 1px solid #f0f0f0; margin: 0 0 16px; }
+
+    /* Footer */
+    .e-foot { background: #f9fafb; padding: 16px; text-align: center; border-top: 1px solid #eee; }
+    .e-foot p { margin: 0; color: #999; font-size: 11px; }
+    .e-foot p.sub { margin-top: 4px; color: #bbb; font-size: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="width-picker">
+  <span>Email Width</span>
+  <button class="wp-btn" onclick="setWidth(560)">A — 560px<br><small style="font-weight:400;font-size:10px;color:inherit;opacity:.7">Narrow / legacy safe</small></button>
+  <button class="wp-btn" onclick="setWidth(640)">B — 640px<br><small style="font-weight:400;font-size:10px;color:inherit;opacity:.7">Current (default)</small></button>
+  <button class="wp-btn" onclick="setWidth(720)">C — 720px<br><small style="font-weight:400;font-size:10px;color:inherit;opacity:.7">Comfortable wide</small></button>
+  <button class="wp-btn active" onclick="setWidth(800)">D — 800px<br><small style="font-weight:400;font-size:10px;color:inherit;opacity:.7">Max / dashboard feel</small></button>
+  <div class="wp-sep"></div>
+  <button class="wp-btn wp-btn-phone" id="phoneBtn" onclick="togglePhone()">📱 Phone View<br><small style="font-weight:400;font-size:10px;color:inherit;opacity:.7">Gmail mobile simulation</small></button>
+  <span class="wp-note">Gmail (all clients) auto-scales and reflows for mobile ✓</span>
+</div>
+
+<div class="shell">
+
+  <div class="shell-header">
+    <h1>New Hire Email — Unified Layout Mockup v2</h1>
+    <p>One template, all steps. Sections fill in progressively. Three snapshots — Initial Request, After ID Setup (HR copy), Final (Manager copy).</p>
+  </div>
+
+  <div class="shell-note">
+    <strong>Rules:</strong>
+    Specialists section lists only what was requested for this employee.
+    IT section lists all requested systems + equipment with individual status fields.
+    Passwords shown as ●●●●●●●● to everyone except Manager + Requester.
+    Form button appears at top AND bottom. Calendar button appears alongside form button on emails to HR, Manager, Requester.
+    Subjects unchanged from current format. Actor + timestamp shown on completed sections.
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       SNAPSHOT A — Initial Request → ID Setup Team
+  ══════════════════════════════════════════════════════════ -->
+  <div class="stage-label">
+    <div class="tag">Snapshot A</div>
+    <h2>[New Hire | Hourly] ID Setup Required: Michael Torres | Calgary North | Start Date: 2026-05-12 | Manager: dave.williams@team-group.com</h2>
+    <p>To: grp.forms.idsetup@team-group.com — Request just submitted, all downstream steps queued</p>
+  </div>
+
+  <div class="email-outer"><div class="email-card">
+    <div class="e-head">
+      <div class="subj-tag">New Hire · Hourly</div>
+      <h1>[New Hire | Hourly] ID Setup Required: Michael Torres | Calgary North | Start Date: 2026-05-12 | Manager: dave.williams@team-group.com</h1>
+    </div>
+
+    <div class="e-body">
+      <p class="action-text">A new hire request has been submitted and requires Employee ID Setup. Please complete the setup form — HR and IT will be notified automatically once you are done.</p>
+      <div class="btn-row">
+        <a href="#" class="btn btn-red">Open ID Setup Form →</a>
+        <a href="#" class="btn btn-cal">📅 Add Start Date to Calendar</a>
+      </div>
+    </div>
+
+    <div class="e-sections">
+
+      <!-- Request Details -->
+      <div class="section s-complete">
+        <div class="s-head">
+          <div class="s-head-left">
+            <div class="s-title">Request Details</div>
+            <div class="s-actor">Submitted by sarah.chen@team-group.com · 2026-04-28 09:14</div>
+          </div>
+          <div class="s-badge">✓ Complete</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">Employee</span><span class="s-val">Michael Torres</span></div>
+          <div class="s-row"><span class="s-lbl">Job Title</span><span class="s-val">Site Supervisor</span></div>
+          <div class="s-row"><span class="s-lbl">JR Title</span><span class="s-val">Field Operations Supervisor</span></div>
+          <div class="s-row"><span class="s-lbl">Department</span><span class="s-val">Operations</span></div>
+          <div class="s-row"><span class="s-lbl">Site</span><span class="s-val">Calgary North</span></div>
+          <div class="s-row"><span class="s-lbl">Start Date</span><span class="s-val">2026-05-12</span></div>
+          <div class="s-row"><span class="s-lbl">Type</span><span class="s-val">Hourly · Full-Time · New Hire</span></div>
+          <div class="s-row"><span class="s-lbl">Manager</span><span class="s-val">Dave Williams · dave.williams@team-group.com</span></div>
+          <div class="s-row"><span class="s-lbl">Requested By</span><span class="s-val">sarah.chen@team-group.com</span></div>
+          <div class="s-row"><span class="s-lbl">Systems Requested</span>
+            <span class="s-val tag-list">
+              <span class="s-tag">SiteDocs</span>
+              <span class="s-tag">BOSS WIS</span>
+              <span class="s-tag">Jonas</span>
+              <span class="s-tag">Google Workspace</span>
+            </span>
+          </div>
+          <div class="s-row"><span class="s-lbl">Equipment</span>
+            <span class="s-val tag-list">
+              <span class="s-tag">Laptop</span>
+              <span class="s-tag">Mobile Phone</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ID Setup -->
+      <div class="section s-active">
+        <div class="s-head">
+          <div class="s-head-left">
+            <div class="s-title">ID Setup</div>
+            <div class="s-actor">Assigned to: grp.forms.idsetup@team-group.com</div>
+          </div>
+          <div class="s-badge">⏳ Awaiting</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">Employee ID</span><span class="s-val pending">Pending ID Setup</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Worker ID</span><span class="s-val pending">Pending ID Setup</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Job Code</span><span class="s-val pending">Pending ID Setup</span></div>
+          <div class="s-row"><span class="s-lbl">DSS Username</span><span class="s-val pending">Pending ID Setup</span></div>
+          <div class="s-row"><span class="s-lbl">DSS Password</span><span class="s-val pending">Pending ID Setup</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Login</span><span class="s-val pending">Pending ID Setup</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Password</span><span class="s-val pending">Pending ID Setup</span></div>
+          <div class="s-row"><span class="s-lbl">BOSS WIS Account</span><span class="s-val pending">Pending ID Setup</span></div>
+        </div>
+      </div>
+
+      <!-- HR Verification -->
+      <div class="section s-queued">
+        <div class="s-head">
+          <div class="s-head-left"><div class="s-title">HR Verification</div></div>
+          <div class="s-badge">— Queued</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">ADP Associate ID</span><span class="s-val queued">Awaiting HR</span></div>
+          <div class="s-row"><span class="s-lbl">Verified Name</span><span class="s-val queued">Awaiting HR</span></div>
+          <div class="s-row"><span class="s-lbl">Verified Start Date</span><span class="s-val queued">Awaiting HR</span></div>
+          <div class="s-row"><span class="s-lbl">HR Notes</span><span class="s-val queued">Awaiting HR</span></div>
+        </div>
+      </div>
+
+      <!-- IT Setup -->
+      <div class="section s-queued">
+        <div class="s-head">
+          <div class="s-head-left"><div class="s-title">IT Setup</div></div>
+          <div class="s-badge">— Queued</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">Google Account</span><span class="s-val queued">Awaiting IT</span></div>
+          <div class="s-row"><span class="s-lbl">Google Password</span><span class="s-val queued">Awaiting IT</span></div>
+          <div class="s-row"><span class="s-lbl">BOSS WIS Access</span><span class="s-val queued">Awaiting IT</span></div>
+          <div class="s-row"><span class="s-lbl">Jonas Access</span><span class="s-val queued">Awaiting IT</span></div>
+          <div class="s-row"><span class="s-lbl">Laptop</span><span class="s-val queued">Awaiting IT</span></div>
+          <div class="s-row"><span class="s-lbl">Mobile Phone</span><span class="s-val queued">Awaiting IT</span></div>
+        </div>
+      </div>
+
+      <!-- Specialists -->
+      <div class="section s-queued">
+        <div class="s-head">
+          <div class="s-head-left"><div class="s-title">Specialists</div></div>
+          <div class="s-badge">— Queued</div>
+        </div>
+        <div class="s-body">
+          <div class="spec-row"><span class="spec-name">Safety Onboarding</span><span class="spec-status queued">— Queued</span></div>
+          <div class="spec-row"><span class="spec-name">Credit Card Setup</span><span class="spec-status queued">— Queued</span></div>
+          <div class="spec-row"><span class="spec-name">Jonas Purchasing Setup</span><span class="spec-status queued">— Queued</span></div>
+          <div class="spec-row"><span class="spec-name">30 / 60 / 90 Review</span><span class="spec-status queued">— Queued</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="e-bottom">
+      <div class="divider"></div>
+      <div class="btn-row">
+        <a href="#" class="btn btn-red">Open ID Setup Form →</a>
+        <a href="#" class="btn btn-cal">📅 Add Start Date to Calendar</a>
+      </div>
+    </div>
+
+    <div class="e-foot"><p>TEAM Group — Employee Management System</p><p class="sub">Automated notification · Do not reply to this email</p></div>
+  </div></div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       SNAPSHOT B — HR Verification Required → HR + Payroll
+       (non-manager copy — passwords masked)
+  ══════════════════════════════════════════════════════════ -->
+  <div class="stage-label">
+    <div class="tag">Snapshot B</div>
+    <h2>[New Hire | Hourly] HR Verification Required: Michael Torres | Calgary North | Start Date: 2026-05-12 | Manager: dave.williams@team-group.com</h2>
+    <p>To: grp.forms.hr@team-group.com, grp.forms.payroll@team-group.com — ID Setup complete, passwords masked</p>
+  </div>
+
+  <div class="email-outer"><div class="email-card">
+    <div class="e-head">
+      <div class="subj-tag">New Hire · Hourly</div>
+      <h1>[New Hire | Hourly] HR Verification Required: Michael Torres | Calgary North | Start Date: 2026-05-12 | Manager: dave.williams@team-group.com</h1>
+    </div>
+
+    <div class="e-body">
+      <p class="action-text">Employee ID Setup has been completed for Michael Torres. Please verify the employee details against ADP and assign an Associate ID using the form below.</p>
+      <div class="btn-row">
+        <a href="#" class="btn btn-red">Open HR Verification Form →</a>
+        <a href="#" class="btn btn-cal">📅 Add Start Date to Calendar</a>
+      </div>
+    </div>
+
+    <div class="e-sections">
+
+      <!-- Request Details -->
+      <div class="section s-complete">
+        <div class="s-head">
+          <div class="s-head-left">
+            <div class="s-title">Request Details</div>
+            <div class="s-actor">Submitted by sarah.chen@team-group.com · 2026-04-28 09:14</div>
+          </div>
+          <div class="s-badge">✓ Complete</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">Employee</span><span class="s-val">Michael Torres</span></div>
+          <div class="s-row"><span class="s-lbl">Job Title</span><span class="s-val">Site Supervisor</span></div>
+          <div class="s-row"><span class="s-lbl">JR Title</span><span class="s-val">Field Operations Supervisor</span></div>
+          <div class="s-row"><span class="s-lbl">Department</span><span class="s-val">Operations</span></div>
+          <div class="s-row"><span class="s-lbl">Site</span><span class="s-val">Calgary North</span></div>
+          <div class="s-row"><span class="s-lbl">Start Date</span><span class="s-val">2026-05-12</span></div>
+          <div class="s-row"><span class="s-lbl">Type</span><span class="s-val">Hourly · Full-Time · New Hire</span></div>
+          <div class="s-row"><span class="s-lbl">Manager</span><span class="s-val">Dave Williams · dave.williams@team-group.com</span></div>
+          <div class="s-row"><span class="s-lbl">Requested By</span><span class="s-val">sarah.chen@team-group.com</span></div>
+          <div class="s-row"><span class="s-lbl">Systems Requested</span>
+            <span class="s-val tag-list">
+              <span class="s-tag">SiteDocs</span><span class="s-tag">BOSS WIS</span>
+              <span class="s-tag">Jonas</span><span class="s-tag">Google Workspace</span>
+            </span>
+          </div>
+          <div class="s-row"><span class="s-lbl">Equipment</span>
+            <span class="s-val tag-list"><span class="s-tag">Laptop</span><span class="s-tag">Mobile Phone</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ID Setup — COMPLETE -->
+      <div class="section s-complete">
+        <div class="s-head">
+          <div class="s-head-left">
+            <div class="s-title">ID Setup</div>
+            <div class="s-actor">Completed by j.baker@team-group.com · 2026-04-28 11:03</div>
+          </div>
+          <div class="s-badge">✓ Complete</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">Employee ID</span><span class="s-val mono">30041</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Worker ID</span><span class="s-val mono">WRK-4419</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Job Code</span><span class="s-val">Supervisor</span></div>
+          <hr class="s-divider">
+          <div class="s-row"><span class="s-lbl">DSS Username</span><span class="s-val mono">michael.torres</span></div>
+          <div class="s-row"><span class="s-lbl">DSS Password</span><span class="s-val masked">●●●●●●●●</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Login</span><span class="s-val mono">michael.torres@team-group.com</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Password</span><span class="s-val masked">●●●●●●●●</span></div>
+          <div class="s-row"><span class="s-lbl">BOSS WIS Account</span><span class="s-val">Created ✓</span></div>
+          <div class="pw-note">🔒 Passwords visible only to Manager and Requester</div>
+        </div>
+      </div>
+
+      <!-- HR Verification — ACTIVE -->
+      <div class="section s-active">
+        <div class="s-head">
+          <div class="s-head-left">
+            <div class="s-title">HR Verification</div>
+            <div class="s-actor">Assigned to: grp.forms.hr@team-group.com</div>
+          </div>
+          <div class="s-badge">⏳ Awaiting</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">ADP Associate ID</span><span class="s-val pending">Pending HR Verification</span></div>
+          <div class="s-row"><span class="s-lbl">Verified Name</span><span class="s-val pending">Pending HR Verification</span></div>
+          <div class="s-row"><span class="s-lbl">Verified Start Date</span><span class="s-val pending">Pending HR Verification</span></div>
+          <div class="s-row"><span class="s-lbl">HR Notes</span><span class="s-val pending">Pending HR Verification</span></div>
+        </div>
+      </div>
+
+      <!-- IT Setup — QUEUED -->
+      <div class="section s-queued">
+        <div class="s-head">
+          <div class="s-head-left"><div class="s-title">IT Setup</div></div>
+          <div class="s-badge">— Queued</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">Google Account</span><span class="s-val queued">Awaiting HR → IT</span></div>
+          <div class="s-row"><span class="s-lbl">Google Password</span><span class="s-val queued">Awaiting HR → IT</span></div>
+          <div class="s-row"><span class="s-lbl">BOSS WIS Access</span><span class="s-val queued">Awaiting HR → IT</span></div>
+          <div class="s-row"><span class="s-lbl">Jonas Access</span><span class="s-val queued">Awaiting HR → IT</span></div>
+          <div class="s-row"><span class="s-lbl">Laptop</span><span class="s-val queued">Awaiting HR → IT</span></div>
+          <div class="s-row"><span class="s-lbl">Mobile Phone</span><span class="s-val queued">Awaiting HR → IT</span></div>
+        </div>
+      </div>
+
+      <!-- Specialists — QUEUED -->
+      <div class="section s-queued">
+        <div class="s-head">
+          <div class="s-head-left"><div class="s-title">Specialists</div></div>
+          <div class="s-badge">— Queued</div>
+        </div>
+        <div class="s-body">
+          <div class="spec-row"><span class="spec-name">Safety Onboarding</span><span class="spec-status queued">— Queued</span></div>
+          <div class="spec-row"><span class="spec-name">Credit Card Setup</span><span class="spec-status queued">— Queued</span></div>
+          <div class="spec-row"><span class="spec-name">Jonas Purchasing Setup</span><span class="spec-status queued">— Queued</span></div>
+          <div class="spec-row"><span class="spec-name">30 / 60 / 90 Review</span><span class="spec-status queued">— Queued</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="e-bottom">
+      <div class="divider"></div>
+      <div class="btn-row">
+        <a href="#" class="btn btn-red">Open HR Verification Form →</a>
+        <a href="#" class="btn btn-cal">📅 Add Start Date to Calendar</a>
+      </div>
+    </div>
+
+    <div class="e-foot"><p>TEAM Group — Employee Management System</p><p class="sub">Automated notification · Do not reply to this email</p></div>
+  </div></div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       SNAPSHOT C — IT Setup Complete → Manager + Requester
+       (manager copy — passwords visible)
+  ══════════════════════════════════════════════════════════ -->
+  <div class="stage-label">
+    <div class="tag">Snapshot C</div>
+    <h2>[New Hire | Salary] IT Setup Complete: Michael Torres | Calgary North | Start Date: 2026-05-12 | Manager: dave.williams@team-group.com</h2>
+    <p>To: dave.williams@team-group.com, sarah.chen@team-group.com — Manager + Requester copy, all steps complete, passwords visible, specialists in progress</p>
+  </div>
+
+  <div class="email-outer"><div class="email-card">
+    <div class="e-head">
+      <div class="subj-tag">New Hire · Salary</div>
+      <h1>[New Hire | Salary] IT Setup Complete: Michael Torres | Calgary North | Start Date: 2026-05-12 | Manager: dave.williams@team-group.com</h1>
+    </div>
+
+    <div class="e-body">
+      <p class="action-text">All setup steps have been completed for Michael Torres. A full summary of credentials and assignments is below. Specialist tasks are in progress.</p>
+      <div class="btn-row">
+        <a href="#" class="btn btn-cal">📅 Add Start Date to Calendar</a>
+      </div>
+    </div>
+
+    <div class="e-sections">
+
+      <!-- Request Details -->
+      <div class="section s-complete">
+        <div class="s-head">
+          <div class="s-head-left">
+            <div class="s-title">Request Details</div>
+            <div class="s-actor">Submitted by sarah.chen@team-group.com · 2026-04-28 09:14</div>
+          </div>
+          <div class="s-badge">✓ Complete</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">Employee</span><span class="s-val">Michael Torres</span></div>
+          <div class="s-row"><span class="s-lbl">Job Title</span><span class="s-val">Site Supervisor</span></div>
+          <div class="s-row"><span class="s-lbl">JR Title</span><span class="s-val">Field Operations Supervisor</span></div>
+          <div class="s-row"><span class="s-lbl">Department</span><span class="s-val">Operations</span></div>
+          <div class="s-row"><span class="s-lbl">Site</span><span class="s-val">Calgary North</span></div>
+          <div class="s-row"><span class="s-lbl">Start Date</span><span class="s-val">2026-05-12</span></div>
+          <div class="s-row"><span class="s-lbl">Type</span><span class="s-val">Salary · Full-Time · New Hire</span></div>
+          <div class="s-row"><span class="s-lbl">Manager</span><span class="s-val">Dave Williams · dave.williams@team-group.com</span></div>
+          <div class="s-row"><span class="s-lbl">Requested By</span><span class="s-val">sarah.chen@team-group.com</span></div>
+          <div class="s-row"><span class="s-lbl">Systems Requested</span>
+            <span class="s-val tag-list">
+              <span class="s-tag">SiteDocs</span><span class="s-tag">BOSS WIS</span>
+              <span class="s-tag">Jonas</span><span class="s-tag">Google Workspace</span>
+            </span>
+          </div>
+          <div class="s-row"><span class="s-lbl">Equipment</span>
+            <span class="s-val tag-list"><span class="s-tag">Laptop</span><span class="s-tag">Mobile Phone</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ID Setup — COMPLETE -->
+      <div class="section s-complete">
+        <div class="s-head">
+          <div class="s-head-left">
+            <div class="s-title">ID Setup</div>
+            <div class="s-actor">Completed by j.baker@team-group.com · 2026-04-28 11:03</div>
+          </div>
+          <div class="s-badge">✓ Complete</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">Employee ID</span><span class="s-val mono">30041</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Worker ID</span><span class="s-val mono">WRK-4419</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Job Code</span><span class="s-val">Supervisor</span></div>
+          <hr class="s-divider">
+          <div class="s-row"><span class="s-lbl">DSS Username</span><span class="s-val mono">michael.torres</span></div>
+          <div class="s-row"><span class="s-lbl">DSS Password</span><span class="s-val mono">Temp@2026!</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Login</span><span class="s-val mono">michael.torres@team-group.com</span></div>
+          <div class="s-row"><span class="s-lbl">SiteDocs Password</span><span class="s-val mono">Temp@2026!</span></div>
+          <div class="s-row"><span class="s-lbl">BOSS WIS Account</span><span class="s-val">Created ✓</span></div>
+        </div>
+      </div>
+
+      <!-- HR Verification — COMPLETE -->
+      <div class="section s-complete">
+        <div class="s-head">
+          <div class="s-head-left">
+            <div class="s-title">HR Verification</div>
+            <div class="s-actor">Completed by hr.admin@team-group.com · 2026-04-29 08:47</div>
+          </div>
+          <div class="s-badge">✓ Complete</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">ADP Associate ID</span><span class="s-val mono">847293</span></div>
+          <div class="s-row"><span class="s-lbl">Verified Name</span><span class="s-val">Michael Torres</span></div>
+          <div class="s-row"><span class="s-lbl">Verified Start Date</span><span class="s-val">2026-05-12</span></div>
+          <div class="s-row"><span class="s-lbl">HR Notes</span><span class="s-val na">None</span></div>
+        </div>
+      </div>
+
+      <!-- IT Setup — COMPLETE -->
+      <div class="section s-complete">
+        <div class="s-head">
+          <div class="s-head-left">
+            <div class="s-title">IT Setup</div>
+            <div class="s-actor">Completed by it.setup@team-group.com · 2026-04-29 14:22</div>
+          </div>
+          <div class="s-badge">✓ Complete</div>
+        </div>
+        <div class="s-body">
+          <div class="s-row"><span class="s-lbl">Google Account</span><span class="s-val mono">michael.torres@team-group.com</span></div>
+          <div class="s-row"><span class="s-lbl">Google Password</span><span class="s-val mono">Welcome#0512</span></div>
+          <div class="s-row"><span class="s-lbl">BOSS WIS Access</span><span class="s-val">Configured ✓</span></div>
+          <div class="s-row"><span class="s-lbl">Jonas Access</span><span class="s-val">Configured ✓</span></div>
+          <hr class="s-divider">
+          <div class="s-row"><span class="s-lbl">Laptop</span><span class="s-val">Dell Latitude 5540 — S/N: SN-20492-A</span></div>
+          <div class="s-row"><span class="s-lbl">Mobile Phone</span><span class="s-val">Company iPhone — 403-555-0192</span></div>
+          <div class="pw-note">🔒 Google Password visible only to Manager and Requester</div>
+        </div>
+      </div>
+
+      <!-- Specialists — IN PROGRESS -->
+      <div class="section s-active">
+        <div class="s-head">
+          <div class="s-head-left">
+            <div class="s-title">Specialists</div>
+            <div class="s-actor">Triggered 2026-04-29 14:22 — tasks assigned to respective teams</div>
+          </div>
+          <div class="s-badge">⏳ In Progress</div>
+        </div>
+        <div class="s-body">
+          <div class="spec-row"><span class="spec-name">Safety Onboarding</span><span class="spec-status pending">⏳ In Progress</span></div>
+          <div class="spec-row"><span class="spec-name">Credit Card Setup</span><span class="spec-status pending">⏳ In Progress</span></div>
+          <div class="spec-row"><span class="spec-name">Jonas Purchasing Setup</span><span class="spec-status pending">⏳ In Progress</span></div>
+          <div class="spec-row"><span class="spec-name">30 / 60 / 90 Review</span><span class="spec-status pending">⏳ In Progress</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="e-bottom">
+      <div class="divider"></div>
+      <div class="btn-row">
+        <a href="#" class="btn btn-cal">📅 Add Start Date to Calendar</a>
+      </div>
+    </div>
+
+    <div class="e-foot"><p>TEAM Group — Employee Management System</p><p class="sub">Automated notification · Do not reply to this email</p></div>
+  </div></div>
+
+</div>
+
+<script>
+  // Init at 800px (Option D shown as active by default)
+  document.documentElement.style.setProperty('--email-w', '800px');
+
+  function setWidth(px) {
+    // Exit phone mode if active
+    if (document.body.classList.contains('phone-mode')) togglePhone();
+    document.documentElement.style.setProperty('--email-w', px + 'px');
+    document.querySelectorAll('.wp-btn:not(.wp-btn-phone)').forEach(function(b) {
+      b.classList.toggle('active', b.textContent.trim().startsWith(
+        px === 560 ? 'A' : px === 640 ? 'B' : px === 720 ? 'C' : 'D'
+      ));
+    });
+  }
+
+  function togglePhone() {
+    var body = document.body;
+    var isPhone = body.classList.toggle('phone-mode');
+    document.getElementById('phoneBtn').classList.toggle('active', isPhone);
+
+    if (isPhone) {
+      // Dim width buttons while in phone mode
+      document.querySelectorAll('.wp-btn:not(.wp-btn-phone)').forEach(function(b) { b.style.opacity = '0.35'; b.style.pointerEvents = 'none'; });
+
+      document.querySelectorAll('.email-outer').forEach(function(outer) {
+        var card = outer.querySelector('.email-card');
+        if (!card || outer.querySelector('.phone-frame-wrap')) return;
+
+        // Pull subject from the email header
+        var h1 = card.querySelector('.e-head h1');
+        var rawSubj = h1 ? h1.textContent.trim() : 'Employee Onboarding';
+        var shortSubj = rawSubj.length > 55 ? rawSubj.substring(0, 52) + '…' : rawSubj;
+
+        // Build frame
+        var frame = document.createElement('div');
+        frame.className = 'phone-frame-wrap';
+
+        var notch = '<div class="phone-notch"><div class="phone-notch-cam"></div><div class="phone-notch-cam"></div></div>';
+        var chrome = '<div class="gmail-chrome">' +
+          '<div class="gmail-subject">' + shortSubj + '</div>' +
+          '<div class="gmail-from">TEAM Group Onboarding · noreply@team-group.com · just now</div>' +
+          '</div>';
+        var screenOpen  = '<div class="phone-screen">';
+        var screenClose = '</div>';
+        var homeBar = '<div class="phone-home"><div class="phone-home-bar"></div></div>';
+
+        frame.innerHTML = notch + chrome + screenOpen + screenClose + homeBar;
+        outer.insertBefore(frame, card);
+        frame.querySelector('.phone-screen').appendChild(card);
+      });
+
+    } else {
+      // Unwrap phone frames
+      document.querySelectorAll('.email-outer').forEach(function(outer) {
+        var frame = outer.querySelector('.phone-frame-wrap');
+        if (!frame) return;
+        var card = frame.querySelector('.email-card');
+        if (card) outer.insertBefore(card, frame);
+        frame.remove();
+      });
+      document.querySelectorAll('.wp-btn:not(.wp-btn-phone)').forEach(function(b) { b.style.opacity = ''; b.style.pointerEvents = ''; });
+    }
+  }
+</script>
+</body>
+</html>

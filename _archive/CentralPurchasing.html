@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central Purchasing Setup</title>
+  <?!= include('Styles') ?>
+</head>
+<body>
+  <div class="container">
+    <a href="<?= getBaseUrl() ?>" target="_top" class="back-link">&#8592; Back to Portal</a>
+    <div class="logo-container">
+      <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="Team Group Companies" class="logo">
+    </div>
+    <div id="form-container" class="card-form">
+      <h1>Central Purchasing Setup</h1>
+      <p class="subtitle">Confirm JONAS cost sheet access has been configured for this employee.</p>
+      <hr>
+      <div id="requestHeaderWrap">
+        <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
+      </div>
+      <form id="taskForm" autocomplete="off">
+        <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+        <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+        <input type="hidden" name="department" value="centralpurchasing">
+
+        <div class="form-field">
+          <label>Cost Sheet Jobs Configured <span class="optional">(Confirm or adjust)</span></label>
+          <input type="text" name="sitesConfigured" value="<?= requestData.bossCostSheetJobs || requestData.purchasingSites || '' ?>" placeholder="List cost sheet jobs where access was granted">
+        </div>
+
+        <div class="form-field">
+          <label>Confirmation Notes <span class="optional">(Optional)</span></label>
+          <textarea name="notes" rows="4" placeholder="Enter any specific details, confirmation codes, or notes..."></textarea>
+        </div>
+        <div id="statusMessage"></div>
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-full">Confirm Complete</button>
+      </form>
+      <?!= includeWithData('SuccessScreen', {baseUrl: getBaseUrl()}) ?>
+    </div>
+  </div>
+
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Saving...</p>
+  </div>
+
+  <script>
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var form = e.target;
+      var data = {
+        workflowId: form.workflowId.value,
+        department: form.department.value,
+        notes: form.notes.value,
+        details: JSON.stringify({ sitesConfigured: form.sitesConfigured.value })
+      };
+      submitSpecialistTask(e.target, data, 'Central Purchasing Setup Complete', 'Submission recorded.');
+    });
+  </script>
+  <?!= include('SharedComponents') ?>
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Request Header — Preview</title>
+  <style>
+    :root {
+      --bg: #0c0c0c; --card: #1a1a1a; --card2: #1e1e1e;
+      --text: #fff; --muted: #777; --muted2: #444;
+      --red: #EB1C2D; --border: #2a2a2a;
+      --green: #00c853; --amber: #F59E0B; --blue: #3B82F6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 16px; }
+
+    /* ── Controls ── */
+    .controls { display: flex; gap: 5px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+    .controls button { padding: 4px 10px; border-radius: 4px; border: 1px solid #333; background: #222; color: var(--text); font-size: 11px; cursor: pointer; }
+    .controls button.active { background: var(--red); border-color: var(--red); }
+    .controls label { font-size: 11px; color: var(--muted); }
+
+    /* ── Shell ── */
+    .rh { background: var(--card); border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 1100px; }
+
+    /* Top band */
+    .rh-top { background: #111; padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); gap: 8px; flex-wrap: wrap; border-radius: 8px 8px 0 0; }
+    .rh-name { font-size: 14px; font-weight: 700; }
+    .rh-badges { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+    .badge { font-size: 9px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; }
+    .badge-wf  { background: #1a1a2e; color: #a0a0ff; border: 1px solid #3333aa; }
+    .badge-typ { background: #1a2e1a; color: #80ff80; border: 1px solid #336633; }
+    .badge-emp { background: #2e1a1a; color: #ffaaaa; border: 1px solid #663333; }
+
+    /* Section */
+    .rh-sec { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+    .rh-sec:last-child { border-bottom: none; border-radius: 0 0 8px 8px; }
+
+    /* Section header */
+    .rh-hdr { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+    .rh-title { font-size: 10px; font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0; }
+
+    /* Step badges — green=done, amber=assigned/active, blue=required-later, grey=n/a */
+    .steps { display: flex; gap: 3px; flex-wrap: wrap; }
+    .step { font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; cursor: default; }
+    .s-done { background: rgba(0,200,83,0.12);    color: #6ee7b7; border: 1px solid rgba(0,200,83,0.25); }
+    .s-asgn { background: rgba(245,158,11,0.12);  color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); }
+    .s-init { background: rgba(235,28,45,0.12);   color: #ff9999; border: 1px solid rgba(235,28,45,0.25); }
+    .s-req  { background: rgba(59,130,246,0.10);  color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
+    .s-na   { background: rgba(255,255,255,0.03); color: #444;    border: 1px solid #2a2a2a; }
+
+    /* Grid — full width, auto columns */
+    .g  { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 10px; }
+    .gw { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px 10px; }
+
+    /* Field */
+    .f { display: flex; flex-direction: column; gap: 1px; position: relative; }
+    .l { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; line-height: 1.3; }
+    .v { font-size: 12px; font-weight: 600; line-height: 1.4; }
+    .v.dim   { color: var(--muted2); font-weight: 400; }
+    .v.blank { color: #333; font-weight: 400; font-style: italic; font-size: 11px; }
+    .v.mono  { font-family: 'SF Mono','Fira Code',monospace; font-size: 11px; color: #fcd34d; }
+    .v.cred  { font-family: 'SF Mono','Fira Code',monospace; font-size: 11px; color: #86efac; }
+    .v.link  { color: #93c5fd; }
+    /* All "done" annotations same green regardless of which step confirmed it */
+    .annot { font-size: 9px; font-weight: 600; margin-left: 4px; vertical-align: middle; color: rgba(0,200,83,0.75); }
+    .annot-hr, .annot-it, .annot-id, .annot-sp { color: rgba(0,200,83,0.75); }
+
+    /* Tags */
+    .tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+    .tag  { font-size: 10px; padding: 1px 6px; border-radius: 3px; background: #252525; border: 1px solid #333; }
+
+    /* Section divider with label */
+    .sec-div { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+    .sec-div span { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); white-space: nowrap; }
+    .sec-div::before, .sec-div::after { content: ''; flex: 1; border-top: 1px solid var(--border); }
+    .sec-div::before { max-width: 0; }
+
+    /* Hover stamp (reused for fields + specialists) */
+    .hs { display: none; position: absolute; bottom: calc(100% + 5px); left: 0;
+      background: #111; border: 1px solid #3a3a3a; border-radius: 6px;
+      padding: 8px 10px; min-width: 180px; max-width: 240px;
+      z-index: 300; box-shadow: 0 6px 24px rgba(0,0,0,0.9); pointer-events: none; }
+    .f:hover > .hs { display: block; }
+    .hs-hdr { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; color: var(--muted); }
+    .hs-hdr.green { color: var(--green); }
+    .hr-row { display: flex; flex-direction: column; gap: 0; margin-bottom: 4px; }
+    .hr-row:last-child { margin-bottom: 0; }
+    .hl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+    .hv { font-size: 11px; font-weight: 500; }
+    .hv.mono { font-family: monospace; font-size: 10px; color: #fcd34d; }
+    hr.hd { border: none; border-top: 1px solid #2a2a2a; margin: 4px 0; }
+
+    /* Specialist tiles */
+    .spec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 5px; }
+    .st { padding: 6px 8px; border-radius: 5px; border: 1px solid var(--border); background: var(--card2); display: flex; flex-direction: column; gap: 2px; position: relative; }
+    .sn { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+    .ss { font-size: 11px; font-weight: 700; }
+    .st.done         { border-color: rgba(0,200,83,0.28);   background: rgba(0,200,83,0.03); }
+    .st.done .ss     { color: var(--green); }
+    .st.assigned     { border-color: rgba(245,158,11,0.28); background: rgba(245,158,11,0.03); }
+    .st.assigned .ss { color: var(--amber); }
+    .st.required     { border-color: rgba(59,130,246,0.28); background: rgba(59,130,246,0.03); }
+    .st.required .ss { color: #93c5fd; }
+    .st.na           { opacity: 0.25; }
+    .st.na .ss       { color: var(--muted); }
+    .st-stamp { display: none; position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%);
+      background: #111; border: 1px solid rgba(0,200,83,0.35); border-radius: 6px;
+      padding: 8px 10px; min-width: 180px; max-width: 230px;
+      z-index: 300; box-shadow: 0 6px 24px rgba(0,0,0,0.9); pointer-events: none; white-space: normal; }
+    .st.done:hover .st-stamp { display: block; }
+    .st-stamp::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:rgba(0,200,83,0.35); }
+
+    /* Phase toggle */
+    .ph.hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="controls">
+  <label>Phase:</label>
+  <button disabled style="cursor:default;opacity:0.7" class="active">Initial ✓</button>
+  <button onclick="phase('hr',this)">+ HR Verified</button>
+  <button onclick="phase('id',this)">+ ID Setup</button>
+  <button onclick="phase('it',this)">+ IT Setup</button>
+  <button onclick="phase('spec',this)">+ Specialists</button>
+</div>
+
+<!-- ═══════════════════════════════════ REQUEST HEADER ══ -->
+<div class="rh">
+
+  <!-- Top band -->
+  <div class="rh-top">
+    <span class="rh-name">Sarah Mitchell</span>
+    <!-- requestData.firstName + ' ' + requestData.lastName -->
+    <div class="rh-badges">
+      <span class="badge badge-wf">NEW_EMP_20250505_0042</span><!-- workflowId -->
+      <span class="badge badge-typ">New Hire</span><!-- requestData.hireType -->
+      <span class="badge badge-emp">Salary</span><!-- requestData.employmentType -->
+    </div>
+  </div>
+
+  <!-- ══ SECTION 1: Employee ══════════════════════════════ -->
+  <div class="rh-sec">
+    <div class="rh-hdr">
+      <span class="rh-title">Employee</span>
+      <div class="steps">
+        <span class="step s-init">Init ✓</span>
+        <!-- HR: swap pending ↔ done when adpAssociateId present -->
+        <span class="step s-asgn ph" id="sb-hr-p">HR ⏳</span>
+        <span class="step s-done ph hidden" id="sb-hr-d">HR ✓</span>
+        <!-- ID Setup -->
+        <span class="step s-asgn ph" id="sb-id-p">ID ⏳</span>
+        <span class="step s-done ph hidden" id="sb-id-d">ID ✓</span>
+        <!-- IT Setup -->
+        <span class="step s-asgn ph" id="sb-it-p">IT ⏳</span>
+        <span class="step s-done ph hidden" id="sb-it-d">IT ✓</span>
+        <!-- Specialists -->
+        <span class="step s-req ph" id="sb-sp-p">Specs —</span>
+        <span class="step s-asgn ph hidden" id="sb-sp-d">Specs 3/5</span>
+      </div>
+    </div>
+
+    <div class="g">
+      <!-- Initial Request -->
+      <div class="f"><span class="l">First Name</span><span class="v">Sarah</span></div><!-- requestData.firstName -->
+      <div class="f"><span class="l">Last Name</span><span class="v">Mitchell</span></div><!-- requestData.lastName -->
+      <div class="f"><span class="l">Preferred Name</span><span class="v dim">—</span></div><!-- requestData.preferredName -->
+      <div class="f"><span class="l">Middle Name</span><span class="v">Ann</span></div><!-- requestData.middleName -->
+      <div class="f"><span class="l">Start Date</span><span class="v">May 5, 2025</span></div><!-- requestData.hireDate -->
+      <div class="f"><span class="l">New Hire / Rehire</span><span class="v">New Hire</span></div><!-- requestData.newHireOrRehire -->
+      <div class="f"><span class="l">Employee Type</span><span class="v">Field Employee</span></div><!-- requestData.employeeType -->
+      <div class="f"><span class="l">Employment Type</span><span class="v">Salary</span></div><!-- requestData.employmentType -->
+      <div class="f"><span class="l">Job Title</span><span class="v">Field Supervisor</span></div><!-- requestData.positionTitle -->
+      <div class="f"><span class="l">JR Title</span><span class="v">JR-2847 — Site Supervisor</span></div><!-- requestData.jrTitle -->
+      <div class="f"><span class="l">Site</span><span class="v">Edmonton - Main</span></div><!-- requestData.siteName -->
+      <div class="f"><span class="l">Job Site #</span><span class="v">1042</span></div><!-- requestData.jobSiteNumber -->
+      <div class="f"><span class="l">Department</span><span class="v">Operations</span></div><!-- requestData.department -->
+      <div class="f"><span class="l">Manager</span><span class="v">Dave Langohr</span></div><!-- requestData.managerName -->
+      <div class="f"><span class="l">Manager Email</span><span class="v link">dlangohr@team-group.com</span></div><!-- requestData.managerEmail -->
+      <div class="f"><span class="l">Requested By</span><span class="v link">jsmith@team-group.com</span></div><!-- requestData.requesterEmail -->
+
+      <!-- HR fields — always present, blank until verified -->
+      <div class="f">
+        <span class="l">ADP Associate ID <span class="annot annot-hr ph hidden" id="ann-hr">HR ✓</span></span>
+        <span class="v mono ph" id="val-adp-done" style="display:none">123456</span><!-- requestData.adpAssociateId -->
+        <span class="v blank ph" id="val-adp-blank">pending</span>
+        <div class="hs"><div class="hs-hdr green">HR ✓ Verified</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">hr@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 5, 2025 · 10:30 AM</span></div>
+          <hr class="hd">
+          <div class="hr-row"><span class="hl">HR Notes</span><span class="hv" style="color:#666;font-size:10px">—</span></div>
+        </div>
+      </div>
+      <div class="f">
+        <span class="l">HR Notes</span>
+        <span class="v dim ph" id="val-hr-notes-done" style="display:none">—</span><!-- requestData.hrNotes -->
+        <span class="v blank ph" id="val-hr-notes-blank">pending</span>
+      </div>
+
+      <!-- ID Setup credentials — always present, blank until done -->
+      <div class="f">
+        <span class="l">Internal Employee ID <span class="annot annot-id ph hidden" id="ann-id">ID ✓</span></span>
+        <span class="v mono" id="val-empid-done" style="display:none">30042</span><!-- requestData.internalEmployeeId -->
+        <span class="v blank" id="val-empid-blank">pending</span>
+        <div class="hs"><div class="hs-hdr green">ID Setup ✓</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">idsetup@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 5, 2025 · 4:29 PM</span></div>
+        </div>
+      </div>
+      <div class="f">
+        <span class="l">SiteDocs Worker ID</span>
+        <span class="v mono" id="val-sdwid-done" style="display:none">WK-8821</span><!-- requestData.siteDocsWorkerId -->
+        <span class="v blank" id="val-sdwid-blank">pending</span>
+        <div class="hs"><div class="hs-hdr green">ID Setup ✓</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">idsetup@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 5, 2025 · 4:30 PM</span></div>
+          <hr class="hd">
+          <div class="hr-row"><span class="hl">Job Code</span><span class="hv">Hourly 1</span></div>
+        </div>
+      </div>
+      <div class="f">
+        <span class="l">SiteDocs Job Code</span>
+        <span class="v" id="val-sdjc-done" style="display:none">Hourly 1</span><!-- requestData.siteDocsJobCode -->
+        <span class="v blank" id="val-sdjc-blank">pending</span>
+      </div>
+      <div class="f">
+        <span class="l">SiteDocs Username <span class="annot annot-sp ph hidden" id="ann-sp-sd">Spec ✓</span></span>
+        <span class="v cred" id="val-sduser-done" style="display:none">smitchell</span><!-- requestData.siteDocsUsername -->
+        <span class="v blank" id="val-sduser-blank">pending</span>
+        <div class="hs"><div class="hs-hdr green">Spec ✓ SiteDocs/DSS ID</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">idsetup@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 5, 2025 · 4:30 PM</span></div>
+          <hr class="hd">
+          <div class="hr-row"><span class="hl">Worker ID</span><span class="hv mono">WK-8821</span></div>
+          <div class="hr-row"><span class="hl">Job Code</span><span class="hv">Hourly 1</span></div>
+        </div>
+      </div>
+      <div class="f">
+        <span class="l">SiteDocs Password</span>
+        <span class="v cred" id="val-sdpass-done" style="display:none">SD_Temp#2025</span><!-- requestData.siteDocsPassword -->
+        <span class="v blank" id="val-sdpass-blank">pending</span>
+      </div>
+      <div class="f">
+        <span class="l">DSS Username</span>
+        <span class="v cred" id="val-dssuser-done" style="display:none">s.mitchell</span><!-- requestData.dssUsername -->
+        <span class="v blank" id="val-dssuser-blank">pending</span>
+        <div class="hs"><div class="hs-hdr green">ID Setup ✓</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">idsetup@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 5, 2025 · 4:30 PM</span></div>
+        </div>
+      </div>
+      <div class="f">
+        <span class="l">DSS Password</span>
+        <span class="v cred" id="val-dsspass-done" style="display:none">DSS_Temp#2025</span><!-- requestData.dssPassword -->
+        <span class="v blank" id="val-dsspass-blank">pending</span>
+      </div>
+
+      <!-- IT Setup — email password only; email itself shown once in Access section -->
+      <div class="f">
+        <span class="l">Email Password</span>
+        <span class="v cred" id="val-emailpass-done" style="display:none">TmpPass#May25</span><!-- requestData.emailPassword -->
+        <span class="v blank" id="val-emailpass-blank">pending</span>
+        <div class="hs"><div class="hs-hdr green">IT Setup ✓</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">it@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 6, 2025 · 8:45 AM</span></div>
+        </div>
+      </div>
+      <div class="f">
+        <span class="l">BOSS WIS Created <span class="annot annot-sp ph hidden" id="ann-sp-wis">Spec ✓</span></span>
+        <span class="v" id="val-wis-done" style="display:none">Yes</span><!-- requestData.bossWisCreated -->
+        <span class="v blank" id="val-wis-blank">pending</span>
+        <div class="hs"><div class="hs-hdr green">Spec ✓ WIS</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">idsetup@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 5, 2025 · 4:31 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 2: Access & Equipment ══════════════════════ -->
+  <div class="rh-sec">
+    <div class="rh-hdr">
+      <span class="rh-title">Access &amp; Equipment</span>
+      <span class="step s-init" style="font-size:8px;">Init</span>
+    </div>
+
+    <div class="gw">
+      <div class="f"><span class="l">System Access</span><span class="v">Yes</span></div><!-- requestData.systemAccess -->
+      <div class="f">
+        <span class="l">Systems</span>
+        <div class="tags">
+          <span class="tag">BOSS</span>
+          <span class="tag">ADP Supervisor Access</span>
+          <span class="tag">Google Account</span>
+          <span class="tag">Jonas Purchasing</span>
+        </div><!-- requestData.systems CSV → tags -->
+      </div>
+      <div class="f">
+        <span class="l">Equipment</span>
+        <div class="tags">
+          <span class="tag">Computer</span>
+          <span class="tag">Mobile Phone</span>
+        </div><!-- requestData.equipment CSV → tags -->
+      </div>
+      <div class="f"><span class="l">Google Account <span class="annot annot-it ph hidden" id="ann-it-google">IT ✓</span></span><span class="v">sarah.mitchell@team-group.com</span>
+        <div class="hs"><div class="hs-hdr green">IT Setup ✓</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">it@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 6, 2025 · 8:45 AM</span></div>
+          <hr class="hd">
+          <div class="hr-row"><span class="hl">Assigned Email</span><span class="hv">sarah.mitchell@team-group.com</span></div>
+        </div>
+      </div><!-- requestData.googleEmail + '@' + requestData.googleDomain -->
+      <div class="f">
+        <span class="l">ADP Sites</span>
+        <div class="tags"><span class="tag">1042</span><span class="tag">1055</span></div><!-- requestData.adpSites CSV → tags -->
+      </div>
+      <div class="f"><span class="l">ADP Salary Access</span><span class="v">Yes</span></div><!-- requestData.adpSalaryAccess -->
+      <div class="f">
+        <span class="l">Jonas Job Numbers <span class="annot annot-sp ph hidden" id="ann-sp-jonas">Spec ✓</span></span>
+        <div class="tags"><span class="tag">J-1042</span><span class="tag">J-2201</span></div><!-- requestData.purchasingSites CSV → tags -->
+        <div class="hs"><div class="hs-hdr green">Spec ✓ Jonas Purchasing</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">purchasing@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 6, 2025 · 11:02 AM</span></div>
+          <hr class="hd">
+          <div class="hr-row"><span class="hl">Job Numbers</span><span class="hv">J-1042, J-2201</span></div>
+        </div>
+      </div>
+
+      <!-- Computer — single field, hover for details -->
+      <div class="f" style="cursor:default">
+        <span class="l">Computer <span class="annot annot-it ph hidden" id="ann-it-computer">IT ✓</span></span>
+        <span class="v">Chromebook — New <span style="color:#555;font-size:10px">ⓘ</span></span>
+        <!-- requestData.computerType + ' — ' + requestData.computerRequestType -->
+        <div class="hs"><div class="hs-hdr green">IT Setup ✓</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">it@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 6, 2025 · 8:45 AM</span></div>
+          <hr class="hd">
+          <div class="hr-row"><span class="hl">Request Type</span><span class="hv">New</span></div>
+          <div class="hr-row"><span class="hl">Computer Type</span><span class="hv">Chromebook</span></div>
+          <div class="hr-row"><span class="hl">Reassign From</span><span class="hv" style="color:#555">—</span></div>
+        </div>
+      </div>
+
+      <!-- Phone — single field, hover for details -->
+      <div class="f" style="cursor:default">
+        <span class="l">Mobile Phone <span class="annot annot-it ph hidden" id="ann-it-phone">IT ✓</span></span>
+        <span class="v">New Request <span style="color:#555;font-size:10px">ⓘ</span></span>
+        <!-- requestData.phoneRequestType -->
+        <div class="hs"><div class="hs-hdr green">IT Setup ✓</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">it@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 6, 2025 · 8:45 AM</span></div>
+          <hr class="hd">
+          <div class="hr-row"><span class="hl">Request Type</span><span class="hv">New Request</span></div>
+          <div class="hr-row"><span class="hl">Reassign From</span><span class="hv" style="color:#555">—</span></div>
+        </div>
+      </div>
+
+      <!-- Credit Card (conditional: Credit Card in systems) -->
+      <div class="f" style="cursor:default">
+        <span class="l">Credit Card <span class="annot annot-sp ph hidden" id="ann-sp-cc">Spec ✓</span></span>
+        <span class="v">$5,000 limit <span style="color:#555;font-size:10px">ⓘ</span></span>
+        <div class="hs">
+          <div class="hs-hdr">Credit Card Details</div>
+          <div class="hr-row"><span class="hl">Credit Limit</span><span class="hv">$5,000</span></div><!-- requestData.creditCardLimit -->
+          <div class="hr-row"><span class="hl">Personal Card</span><span class="hv">No</span></div><!-- requestData.creditCardPersonal -->
+        </div>
+      </div>
+    </div>
+
+    <!-- BOSS — flat, no colored box -->
+    <div class="sec-div"><span>BOSS Details</span></div>
+    <div class="gw">
+      <div class="f">
+        <span class="l">Committees / Job Sites</span>
+        <div class="tags"><span class="tag">Committee A</span><span class="tag">Committee B</span></div><!-- requestData.bossJobSites CSV → tags -->
+      </div>
+      <div class="f"><span class="l">Cost Sheet</span><span class="v">Yes</span></div><!-- requestData.bossCostSheet -->
+      <div class="f">
+        <span class="l">Cost Sheet Jobs</span>
+        <div class="tags"><span class="tag">1234</span><span class="tag">5678</span></div><!-- requestData.bossCostSheetJobs CSV → tags -->
+      </div>
+      <div class="f"><span class="l">Trip Reports</span><span class="v">Yes</span></div><!-- requestData.bossTripReports -->
+      <div class="f"><span class="l">Grievances</span><span class="v">No</span></div><!-- requestData.bossGrievances -->
+    </div>
+
+    <div class="sec-div"><span>Notes</span></div>
+    <div class="f">
+      <span class="v" style="font-size:11px;font-weight:400;color:#888">Please note she will be working split between Edmonton Main and the Leduc satellite site initially.</span><!-- requestData.comments -->
+    </div>
+  </div>
+
+  <!-- ══ SECTION 3: Specialists ═══════════════════════════════ -->
+  <!-- conditional: any action items for this workflowId -->
+  <div class="rh-sec" id="ph-spec">
+    <div class="rh-hdr">
+      <span class="rh-title">Specialists</span>
+      <span class="step s-part" style="font-size:8px;">3 / 5 done</span><!-- count from Action Items -->
+    </div>
+    <div class="spec-grid">
+
+      <div class="st done">
+        <span class="sn">Safety</span><span class="ss">✓ Complete</span>
+        <div class="st-stamp">
+          <div class="hs-hdr green">✓ Completed</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">safety@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 6, 2025 · 9:14 AM</span></div>
+          <hr class="hd">
+          <div class="hr-row"><span class="hl">SiteDocs Locations</span><span class="hv">✓ Assigned</span></div>
+          <div class="hr-row"><span class="hl">DSS Learning Paths</span><span class="hv">✓ Assigned</span></div>
+          <div class="hr-row"><span class="hl">Notes</span><span class="hv" style="color:#666;font-size:10px">Added to Edmonton Main + Leduc</span></div>
+        </div>
+      </div>
+
+      <div class="st done">
+        <span class="sn">SiteDocs / DSS ID</span><span class="ss">✓ Complete</span>
+        <div class="st-stamp">
+          <div class="hs-hdr green">✓ Completed</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">idsetup@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 5, 2025 · 4:30 PM</span></div>
+          <hr class="hd">
+          <div class="hr-row"><span class="hl">Worker ID</span><span class="hv mono">WK-8821</span></div>
+          <div class="hr-row"><span class="hl">Job Code</span><span class="hv">Hourly 1</span></div>
+        </div>
+      </div>
+
+      <div class="st assigned"><span class="sn">Credit Card</span><span class="ss">⏳ In Progress</span></div>
+      <div class="st assigned"><span class="sn">Business Cards</span><span class="ss">⏳ Pending</span></div>
+
+      <div class="st done">
+        <span class="sn">Jonas Purchasing</span><span class="ss">✓ Complete</span>
+        <div class="st-stamp">
+          <div class="hs-hdr green">✓ Completed</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">purchasing@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 6, 2025 · 11:02 AM</span></div>
+          <hr class="hd">
+          <div class="hr-row"><span class="hl">Job Numbers</span><span class="hv">J-1042, J-2201</span></div>
+        </div>
+      </div>
+
+      <div class="st na"><span class="sn">Fleetio</span><span class="ss">— N/A</span></div>
+      <div class="st na"><span class="sn">Central Purchasing</span><span class="ss">— N/A</span></div>
+      <div class="st required"><span class="sn">30-60-90 Review</span><span class="ss">◷ Scheduled</span></div>
+
+      <div class="st done">
+        <span class="sn">WIS</span><span class="ss">✓ Complete</span>
+        <div class="st-stamp">
+          <div class="hs-hdr green">✓ Completed</div>
+          <div class="hr-row"><span class="hl">By</span><span class="hv">idsetup@team-group.com</span></div>
+          <div class="hr-row"><span class="hl">Date</span><span class="hv">May 5, 2025 · 4:31 PM</span></div>
+          <hr class="hd">
+          <div class="hr-row"><span class="hl">BOSS WIS Created</span><span class="hv">Yes</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- END .rh -->
+
+<script>
+  var state = { hr: false, id: false, it: false, spec: false };
+
+  var idSwap = {
+    hr:   { done:'sb-hr-d',  pend:'sb-hr-p'  },
+    id:   { done:'sb-id-d',  pend:'sb-id-p'  },
+    it:   { done:'sb-it-d',  pend:'sb-it-p'  },
+    spec: { done:'sb-sp-d',  pend:'sb-sp-p'  }
+  };
+
+  // field pairs: [show-when-active, hide-when-active]
+  var fieldSwap = {
+    hr: [
+      ['val-adp-done',       'val-adp-blank'],
+      ['val-hr-notes-done',  'val-hr-notes-blank'],
+      ['ann-hr', null]
+    ],
+    id: [
+      ['val-empid-done',   'val-empid-blank'],
+      ['val-sdwid-done',   'val-sdwid-blank'],
+      ['val-sdjc-done',    'val-sdjc-blank'],
+      ['val-sduser-done',  'val-sduser-blank'],
+      ['val-sdpass-done',  'val-sdpass-blank'],
+      ['val-dssuser-done', 'val-dssuser-blank'],
+      ['val-dsspass-done', 'val-dsspass-blank'],
+      ['val-wis-done',     'val-wis-blank'],
+      ['ann-id', null]
+    ],
+    it: [
+      ['val-emailpass-done','val-emailpass-blank'],
+      ['ann-it-google',  null],
+      ['ann-it-computer',null],
+      ['ann-it-phone',   null]
+    ],
+    spec: [
+      ['ann-sp-sd',    null],
+      ['ann-sp-jonas', null],
+      ['ann-sp-wis',   null],
+      ['ann-sp-cc',    null]
+    ]
+  };
+
+  function show(id)  { var e=document.getElementById(id); if(e){ e.style.display=''; e.classList.remove('hidden'); } }
+  function hide(id)  { var e=document.getElementById(id); if(e) e.style.display='none'; }
+  function cls(id,c) { var e=document.getElementById(id); if(e) e.classList.add(c); }
+  function uncls(id,c){ var e=document.getElementById(id); if(e) e.classList.remove(c); }
+
+  function phase(p, btn) {
+    state[p] = !state[p];
+    btn.classList.toggle('active', state[p]);
+
+    // step badge swap
+    var sw = idSwap[p];
+    if (state[p]) { show(sw.done); hide(sw.pend); } else { hide(sw.done); show(sw.pend); }
+
+    // field value swaps
+    (fieldSwap[p] || []).forEach(function(pair) {
+      if (state[p]) { show(pair[0]); if(pair[1]) hide(pair[1]); }
+      else          { hide(pair[0]); if(pair[1]) show(pair[1]); }
+    });
+
+  }
+</script>
+</body>
+</html>

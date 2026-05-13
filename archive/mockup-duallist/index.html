@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dual-List Mockup — Large Lookup Grids</title>
+  <style>
+    :root {
+      --bg: #0c0c0c; --card: #1a1a1a; --text: #fff; --muted: #a0a0a0;
+      --red: #EB1C2D; --border: #333; --input: #2a2a2a; --iborder: #444;
+      --success: #00c853;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           background: var(--bg); color: var(--text); padding: 32px 24px; max-width: 1100px; margin: 0 auto; }
+
+    h2 { font-size: 12px; font-weight: 700; color: var(--red); text-transform: uppercase;
+         letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 16px; }
+    .page-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .page-sub   { font-size: 13px; color: var(--muted); margin-bottom: 36px; }
+    .card { background: var(--card); border-radius: 12px; padding: 24px;
+            border: 1px solid var(--border); margin-bottom: 32px; }
+    .field-label { font-size: 13px; color: var(--muted); margin-bottom: 12px; display: block; }
+
+    /* ── Dual-list ── */
+    .dual-list { display: grid; grid-template-columns: 1fr 40px 1fr; gap: 0; align-items: start; }
+
+    .dl-panel { background: var(--input); border: 1px solid var(--iborder); border-radius: 8px;
+                overflow: hidden; display: flex; flex-direction: column; }
+
+    .dl-panel-header { padding: 8px 12px; background: #222; border-bottom: 1px solid var(--iborder);
+                       font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+                       letter-spacing: 0.8px; display: flex; justify-content: space-between; align-items: center; }
+    .dl-count { background: var(--border); border-radius: 10px; padding: 1px 8px;
+                font-size: 11px; color: var(--muted); min-width: 24px; text-align: center; }
+    .dl-count.active { background: rgba(235,28,45,0.2); color: var(--red); }
+
+    .dl-search { padding: 6px 10px; background: #1e1e1e; border-bottom: 1px solid var(--iborder); }
+    .dl-search input { width: 100%; background: #111; border: 1px solid var(--iborder); border-radius: 5px;
+                       padding: 5px 9px; color: var(--text); font-size: 12px; outline: none; }
+    .dl-search input:focus { border-color: var(--red); }
+    .dl-search input::placeholder { color: #555; }
+
+    .dl-list { overflow-y: auto; height: 280px; padding: 4px; }
+
+    .dl-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px; border-radius: 5px;
+               font-size: 13px; cursor: pointer; transition: background 0.1s; user-select: none;
+               border: 1px solid transparent; }
+    .dl-item:hover { background: #333; }
+    .dl-item.hi { background: rgba(235,28,45,0.12); border-color: rgba(235,28,45,0.3); color: var(--red); }
+    .dl-item .dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; }
+    .dl-item.hi .dot { background: var(--red); }
+    .dl-item.hidden { display: none; }
+
+    .dl-empty { color: #555; font-size: 12px; font-style: italic; padding: 20px; text-align: center; }
+
+    .dl-footer { padding: 6px 10px; background: #1c1c1c; border-top: 1px solid var(--iborder);
+                 display: flex; gap: 6px; }
+    .dl-foot-btn { font-size: 11px; color: var(--muted); background: none; border: 1px solid var(--iborder);
+                   border-radius: 4px; padding: 3px 8px; cursor: pointer; transition: all 0.1s; }
+    .dl-foot-btn:hover { border-color: var(--red); color: var(--red); }
+
+    /* arrows col */
+    .dl-arrows { display: flex; flex-direction: column; align-items: center; justify-content: center;
+                 gap: 8px; padding: 0 4px; padding-top: 88px; }
+    .dl-btn { background: var(--input); border: 1px solid var(--iborder); border-radius: 6px;
+              width: 32px; height: 28px; cursor: pointer; color: var(--muted); font-size: 14px;
+              font-weight: 700; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+    .dl-btn:hover { border-color: var(--success); color: var(--success); background: rgba(0,200,83,0.08); }
+    .dl-btn.rem:hover { border-color: var(--red); color: var(--red); background: rgba(235,28,45,0.08); }
+
+    .note { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+    .note b { color: #ccc; }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 8px 0 32px; }
+  </style>
+</head>
+<body>
+
+<p class="page-title">Dual-List — Large Lookup Grids</p>
+<p class="page-sub">Applies only to data-lookup grids: BOSS Committees, Cost Sheet Jobs, Jonas Job Numbers, Central Purchasing Sites, ADP Job Sites. Small inline checkbox groups stay as-is.</p>
+
+<!-- ─── COST SHEETS ────────────────────────────────────────── -->
+<div class="card">
+  <h2>BOSS Access — Cost Sheet Job Numbers</h2>
+  <label class="field-label">Select the job numbers this employee needs cost sheet access to</label>
+  <div class="dual-list" id="dl-cost">
+    <div class="dl-panel">
+      <div class="dl-panel-header">Available <span class="dl-count" id="avail-n-cost">118</span></div>
+      <div class="dl-search"><input type="text" placeholder="Search jobs…" oninput="filterList('avail-list-cost', this.value)"></div>
+      <div class="dl-list" id="avail-list-cost"></div>
+      <div class="dl-footer">
+        <button class="dl-foot-btn" onclick="moveAll('avail-list-cost','sel-list-cost','avail-n-cost','sel-n-cost')">Add all visible ›</button>
+      </div>
+    </div>
+    <div class="dl-arrows">
+      <button class="dl-btn" title="Add selected" onclick="moveSelected('avail-list-cost','sel-list-cost','avail-n-cost','sel-n-cost')">›</button>
+      <button class="dl-btn rem" title="Remove selected" onclick="moveSelected('sel-list-cost','avail-list-cost','sel-n-cost','avail-n-cost')">‹</button>
+    </div>
+    <div class="dl-panel">
+      <div class="dl-panel-header">Assigned <span class="dl-count" id="sel-n-cost">0</span></div>
+      <div class="dl-search"><input type="text" placeholder="Filter assigned…" oninput="filterList('sel-list-cost', this.value)"></div>
+      <div class="dl-list" id="sel-list-cost"><p class="dl-empty">No jobs assigned yet</p></div>
+      <div class="dl-footer">
+        <button class="dl-foot-btn" onclick="moveAll('sel-list-cost','avail-list-cost','sel-n-cost','avail-n-cost')">‹ Remove all</button>
+      </div>
+    </div>
+  </div>
+  <p class="note">Click to highlight, <b>›</b> to assign. Double-click to move instantly. Use search to filter long lists.</p>
+</div>
+
+<!-- ─── BOSS COMMITTEES ─────────────────────────────────────── -->
+<div class="card">
+  <h2>BOSS Access — Committees / Job Sites</h2>
+  <label class="field-label">Select the committees or job sites this employee is assigned to</label>
+  <div class="dual-list" id="dl-comm">
+    <div class="dl-panel">
+      <div class="dl-panel-header">Available <span class="dl-count" id="avail-n-comm">12</span></div>
+      <div class="dl-search"><input type="text" placeholder="Search committees…" oninput="filterList('avail-list-comm', this.value)"></div>
+      <div class="dl-list" id="avail-list-comm"></div>
+      <div class="dl-footer">
+        <button class="dl-foot-btn" onclick="moveAll('avail-list-comm','sel-list-comm','avail-n-comm','sel-n-comm')">Add all visible ›</button>
+      </div>
+    </div>
+    <div class="dl-arrows">
+      <button class="dl-btn" onclick="moveSelected('avail-list-comm','sel-list-comm','avail-n-comm','sel-n-comm')">›</button>
+      <button class="dl-btn rem" onclick="moveSelected('sel-list-comm','avail-list-comm','sel-n-comm','avail-n-comm')">‹</button>
+    </div>
+    <div class="dl-panel">
+      <div class="dl-panel-header">Assigned <span class="dl-count" id="sel-n-comm">0</span></div>
+      <div class="dl-search"><input type="text" placeholder="Filter assigned…" oninput="filterList('sel-list-comm', this.value)"></div>
+      <div class="dl-list" id="sel-list-comm"><p class="dl-empty">No committees assigned yet</p></div>
+      <div class="dl-footer">
+        <button class="dl-foot-btn" onclick="moveAll('sel-list-comm','avail-list-comm','sel-n-comm','avail-n-comm')">‹ Remove all</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COST_SHEETS = [
+  'TJ008 - Invista Kingston Janitorial','TJ009 - Invista Maitland Janitorial','TJ132 - Casco Janitorial',
+  'TJ147 - Cardinal Power of Canada','TJ156 - Kemira Chemicals','TJ168 - UC of LG','TJ171 - Ultramar Maitland',
+  'TJ184 - EI DuPont','TP091 - Chrysler Brampton Projects','TP101 - BBI Enterprises','TP114 - Munro Concrete',
+  'TP172 - Dainty Foods','TP177 - Atlantic Packaging','TP190 - Markham Project Management',
+  'TP192 - Eastern Project Management','TP207 - Waste Management of Canada','TP208 - Honda Canada',
+  'TP209 - Veolia North America','TR200 - GM Oshawa','TR210 - GM Oshawa Annex-A','TR220 - GM Oshawa HKB',
+  'TR225 - Annex Services','TR230 - GM Oshawa PPS','TR235 - S&T','TR240 - GM Oshawa C-MT',
+  'TR250 - GM Oshawa (Sub Cont)','TR300 - GM Ingersoll','TR350 - GM Ingersoll (Sub Cont)',
+  'TR400 - Toyota Cambridge','TR450 - Toyota Cambridge (Sub Cont)','TR480 - Toyota Cambridge Janitorial',
+  'TR500 - Toyota Woodstock','TR550 - Toyota Woodstock (Sub Cont)','TR600 - GM Edmonton',
+  'TR610 - GM Edmonton PDC','TR650 - GM Woodstock','TR660 - GM Woodstock PDC','TR700 - GM Vancouver',
+  'TR710 - GM Vancouver PDC','TR750 - GM Montréal','TR760 - GM Montréal PDC','TW006 - Invista Kingston Plant',
+  'TW009 - Lafarge Waterblasting','TW010 - Ontario Power Generation','TW019 - Inoac Toronto',
+  'TW050 - Invista Canada Maintenance','TW059 - Casco','TW060 - Invista Maitland','TW061 - Nitrochem',
+  'TW062 - Casco Bagging','TW080 - Casco Bagging','TW088 - E.I. DuPont Canada Research',
+  'TW096 - 3M Canada Company','TW136 - Inoac Toronto Waterblasting','TW142 - Rollstamp','TW144 - Tiercon',
+  'TW146 - Yorktowne Supplies Filter Changes at Tiercon','TW152 - Owens Corning','TW154 - Ventra Group',
+  'TW180 - Lafarge','TW187 - City Of Kingston','TW195 - Kingston Overheads','TW196 - Prescott Overheads',
+  'TW210 - Inoac','TW211 - CRH','TW212 - Robinson Solutions','TW213 - Roll Stamp',
+  'TW215 - Greenfield Global Inc','TW216 - OPG Saunders Dam','TW217 - HMW Giffin',
+  'TW500 - Team Hetworth Miscellaneous Projects','TW900 - Ready Jet',
+  'TW988 - Sandblasting and Painting Services Prescott','TW989 - Kingston Asbestos Removal',
+  'TW993 - Team Prescott Miscellaneous Waterblasting','TW995 - Team Kingston Miscellaneous Waterblasting',
+  'TW999 - Markham Project Miscellaneous Jobs','UC123 - GM Lansing Delta Township',
+  'UC166 - Plastic Omnium Anderson','UC167 - Lockheed Martin Aeronautics','UC171 - GM Lansing Grand River',
+  'UC208 - Lockheed Martin Aeronautics','UC209 - BMW Spartanburg','UC211 - Polaris Industries',
+  'UC213 - Decostar Industries','UC217 - HMMA Paint, Engine, PDI','UC220 - Blue Bird Corporation',
+  'UC222 - International San Antonio','UC223 - Mann+Hummel Gastonia','UC224 - Mann+Hummel Fayetteville',
+  'UC226 - HMMA - Maintenance Area Cleaning','UC230 - HMMA Filters','UC232 - International San Antonio Filters',
+  'UC234 - Blue Bird Filters','UC240 - International Springfield','UC241 - Kia Georgia',
+  'UC242 - SECO Ecoplastic','UC243 - Decostar Janitorial','UC500 - Tri-Dim Overheads','UT100 - BrightMark',
+  'UT105 - CCC','UT110 - DTE Electric Company:Monroe Power Plant','UT115 - Great Lakes Water Authority',
+  'UT120 - Guardian Industries LLC','UT125 - HPC Flatrock','UT130 - HPC Ford Dearborn',
+  'UT135 - HPC Industrial JNAP','UT140 - HPC Industrial SHAP','UT145 - HPC Industrial Toledo',
+  'UT150 - HPC Industrial Warren','UT155 - Kokosing','UT160 - Lakeshore Global','UT165 - Leadec',
+  'UT175 - Magna Mirrors North America, LLC','UT180 - OP Mobility Adrian','UT185 - OP Mobility New Boston',
+  'UT190 - Powder-Bulk Products, Inc.','UT195 - Scepter','UT200 - Smith\'s Waterproofing LLC',
+  'UT205 - Weiss-Construction','UT210 - Worthington Steel','UT215 - W.S.I',
+  'UT220 - Applied Technologies LLC','UT225 - General Acid Proofing','UT230 - Pullman SST',
+  'UT235 - Scotty\'s Contracting and Stone','UT240 - City Wide Facility Solutions NW Ohio',
+  'UT245 - Midwest Terminals','UT260 - Michigan Sugar','UT265 - DriForce Property Restoration',
+  'UT270 - Barton Malow','UT275 - TEAM Industrial Services Co. 7','UT280 - Heritage Asphalt - Edison',
+  'UT280 - St. Mary\'s Cement','UT290 - Ventra Evart LLC','UT400 - IAT Miscellaneous Customers',
+  'UT450 - IAT Shop Time','UT500 - IAT Overheads'
+];
+
+const COMMITTEES = [
+  'Kingston','Prescott','Oshawa','Ingersoll','Cambridge','Woodstock',
+  'Edmonton','Vancouver','Montréal','Michigan','Alabama','Texas'
+];
+
+function buildList(listId, items) {
+  const el = document.getElementById(listId);
+  el.innerHTML = '';
+  items.forEach(val => {
+    const d = document.createElement('div');
+    d.className = 'dl-item';
+    d.dataset.val = val;
+    d.innerHTML = `<span class="dot"></span>${val}`;
+    d.addEventListener('click', () => d.classList.toggle('hi'));
+    d.addEventListener('dblclick', () => {
+      d.classList.remove('hi');
+      const isAvail = listId.startsWith('avail');
+      const otherId = isAvail ? listId.replace('avail','sel') : listId.replace('sel','avail');
+      const nAvailId = isAvail ? listId.replace('avail-list','avail-n') : listId.replace('sel-list','avail-n');
+      const nSelId   = isAvail ? listId.replace('avail-list','sel-n')   : listId.replace('sel-list','sel-n');
+      const other = document.getElementById(otherId);
+      clearEmpty(other);
+      other.appendChild(d);
+      maybeEmpty(document.getElementById(listId));
+      recount(isAvail ? listId : otherId, isAvail ? nAvailId : nSelId);
+      recount(isAvail ? otherId : listId, isAvail ? nSelId : nAvailId);
+    });
+    el.appendChild(d);
+  });
+}
+
+function filterList(listId, query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll(`#${listId} .dl-item`).forEach(item => {
+    item.classList.toggle('hidden', q && !item.dataset.val.toLowerCase().includes(q));
+  });
+}
+
+function moveSelected(fromId, toId, fromNId, toNId) {
+  const from = document.getElementById(fromId);
+  const to   = document.getElementById(toId);
+  from.querySelectorAll('.dl-item.hi:not(.hidden)').forEach(item => {
+    item.classList.remove('hi');
+    clearEmpty(to);
+    to.appendChild(item);
+  });
+  maybeEmpty(from);
+  recount(fromId, fromNId);
+  recount(toId, toNId);
+}
+
+function moveAll(fromId, toId, fromNId, toNId) {
+  const from = document.getElementById(fromId);
+  const to   = document.getElementById(toId);
+  from.querySelectorAll('.dl-item:not(.hidden)').forEach(item => {
+    item.classList.remove('hi');
+    clearEmpty(to);
+    to.appendChild(item);
+  });
+  maybeEmpty(from);
+  recount(fromId, fromNId);
+  recount(toId, toNId);
+}
+
+function recount(listId, nId) {
+  const n = document.querySelectorAll(`#${listId} .dl-item`).length;
+  const el = document.getElementById(nId);
+  if (!el) return;
+  el.textContent = n;
+  el.className = 'dl-count' + (nId.startsWith('sel') && n > 0 ? ' active' : '');
+}
+
+function clearEmpty(el) {
+  const e = el.querySelector('.dl-empty');
+  if (e) e.remove();
+}
+
+function maybeEmpty(el) {
+  if (!el.querySelector('.dl-item')) {
+    const p = document.createElement('p');
+    p.className = 'dl-empty';
+    p.textContent = 'None';
+    el.appendChild(p);
+  }
+}
+
+buildList('avail-list-cost', COST_SHEETS);
+buildList('avail-list-comm', COMMITTEES);
+document.getElementById('avail-n-cost').textContent = COST_SHEETS.length;
+document.getElementById('avail-n-comm').textContent = COMMITTEES.length;
+</script>
+</body>
+</html>

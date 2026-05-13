@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<!--
+  POC: Handler Split Architecture
+  ================================
+  Purpose : Demonstrate the proposed file split before touching any live code.
+  This is a STANDALONE static mock — no GAS server needed.
+  All "server calls" are simulated with setTimeout so the loading/render flow
+  is visible exactly as it will work in production.
+
+  Architecture being demonstrated
+  ─────────────────────────────────
+  SERVER-SIDE (.js files):
+    DashboardDataHandler.js     ← ONLY: getDashboardData(), getMyPendingTasks(), getWorkflowMapStats()
+    DashboardUIHandler.js       ← ONLY: serveDashboard(), serveWorkflowMap()
+    RequestDetailsHandler.js    ← ONLY: getRequestDetails(), getTerminationDetails(),
+                                        getEquipmentRequestDetails(), getChangeDetails(),
+                                        getStepResultData()
+    RequestDetailsUIHandler.js  ← ONLY: serveRequestDetails()
+    RequestActionsHandler.js    ← ONLY: bumpRequest(), updateHireDate(), cancelRequest()
+
+  CLIENT-SIDE (HTML pages):
+    Dashboard.html              ← uses DashboardDataHandler + RequestActionsHandler
+    RequestDetails.html         ← uses RequestDetailsHandler + RequestActionsHandler
+    WorkflowMap.html            ← uses DashboardDataHandler (getWorkflowMapStats only)
+
+  SHARED (included on every page):
+    Styles.html                 ← ALL CSS, variables, theme classes
+    SharedComponents.html       ← ALL reusable JS: FlowRenderer, StepModal,
+                                   submitSpecialistTask, buildDualList, ThemeToggle
+    SchemaConstants.js          ← ALL column indexes, CONFIG, SCHEMA
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POC — Handler Split Architecture</title>
+<style>
+  /* ── Reset / Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+
+  /* ── Layout ── */
+  .shell { display: grid; grid-template-columns: 260px 1fr; grid-template-rows: 48px 1fr; height: 100vh; }
+  .topbar { grid-column: 1/-1; background: #1a1d2e; border-bottom: 1px solid #2d3155; display: flex; align-items: center; gap: 12px; padding: 0 20px; }
+  .topbar h1 { font-size: 14px; font-weight: 600; color: #a5b4fc; }
+  .topbar .badge { font-size: 11px; background: #312e81; color: #c7d2fe; padding: 2px 8px; border-radius: 10px; }
+  .sidebar { background: #13162a; border-right: 1px solid #1e2240; padding: 16px 0; overflow-y: auto; }
+  .main { overflow-y: auto; padding: 24px; }
+
+  /* ── Sidebar nav ── */
+  .nav-section { padding: 6px 16px 2px; font-size: 10px; font-weight: 700; color: #4a5080; text-transform: uppercase; letter-spacing: .08em; margin-top: 8px; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; cursor: pointer; font-size: 13px; color: #94a3b8; border-left: 3px solid transparent; transition: all .15s; }
+  .nav-item:hover { background: #1a1d2e; color: #e2e8f0; }
+  .nav-item.active { background: #1e2240; color: #a5b4fc; border-left-color: #6366f1; }
+  .nav-item .icon { width: 16px; text-align: center; font-size: 14px; }
+
+  /* ── Cards ── */
+  .card { background: #1a1d2e; border: 1px solid #2d3155; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  .card-title { font-size: 13px; font-weight: 700; color: #a5b4fc; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+  /* ── Architecture diagram ── */
+  .arch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .arch-col { background: #12152a; border: 1px solid #252850; border-radius: 8px; padding: 14px; }
+  .arch-col-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #252850; }
+  .arch-col-title.server { color: #f59e0b; }
+  .arch-col-title.page { color: #34d399; }
+  .arch-col-title.shared { color: #60a5fa; }
+
+  .file-box { border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 12px; }
+  .file-box.handler { background: #1c1a0e; border: 1px solid #4a3800; }
+  .file-box.handler.data { border-color: #b45309; }
+  .file-box.handler.actions { border-color: #7c3aed; }
+  .file-box.handler.ui { border-color: #1d4ed8; }
+  .file-box.page { background: #0d1a12; border: 1px solid #14532d; }
+  .file-box.shared-file { background: #0c1729; border: 1px solid #1e3a5f; }
+  .file-name { font-weight: 700; color: #e2e8f0; font-family: monospace; font-size: 12px; }
+  .file-name .ext { color: #64748b; }
+  .file-fns { margin-top: 6px; }
+  .fn-tag { display: inline-block; font-size: 10px; font-family: monospace; background: #0f1117; border: 1px solid #2d3155; border-radius: 4px; padding: 1px 5px; margin: 2px 2px 0 0; color: #94a3b8; }
+  .fn-tag.data { color: #f59e0b; border-color: #4a3800; }
+  .fn-tag.action { color: #c084fc; border-color: #4c1d95; }
+  .fn-tag.serve { color: #60a5fa; border-color: #1e3a5f; }
+  .fn-tag.comp { color: #34d399; border-color: #064e3b; }
+
+  /* ── Arrow indicators ── */
+  .uses-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; font-size: 11px; color: #64748b; }
+  .uses-tag { background: #1a1d2e; border: 1px solid #2d3155; border-radius: 4px; padding: 1px 6px; color: #94a3b8; font-size: 10px; font-family: monospace; }
+
+  /* ── Bullet plan ── */
+  .plan-list { list-style: none; counter-reset: plan; }
+  .plan-list > li { counter-increment: plan; padding: 10px 0 10px 40px; position: relative; border-bottom: 1px solid #1e2240; font-size: 13px; line-height: 1.6; }
+  .plan-list > li:last-child { border-bottom: none; }
+  .plan-list > li::before { content: counter(plan); position: absolute; left: 0; width: 26px; height: 26px; border-radius: 50%; background: #312e81; color: #a5b4fc; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; top: 10px; }
+  .plan-list li strong { color: #a5b4fc; }
+  .plan-list li code { font-family: monospace; font-size: 11px; background: #0f1117; border: 1px solid #2d3155; padding: 1px 5px; border-radius: 3px; color: #f472b6; }
+  .plan-sub { margin-top: 6px; padding-left: 0; list-style: none; }
+  .plan-sub li { padding: 2px 0 2px 14px; font-size: 12px; color: #94a3b8; position: relative; }
+  .plan-sub li::before { content: '→'; position: absolute; left: 0; color: #4a5080; }
+
+  /* ── Mock pages ── */
+  .page-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+  .page-tab { padding: 7px 16px; border-radius: 6px 6px 0 0; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #2d3155; border-bottom: none; color: #64748b; background: #13162a; }
+  .page-tab.active { background: #1a1d2e; color: #a5b4fc; border-color: #4f46e5; }
+  .page-panel { display: none; }
+  .page-panel.active { display: block; }
+
+  /* ── Mock Dashboard ── */
+  .mock-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .mock-search { flex: 1; min-width: 180px; background: #0f1117; border: 1px solid #2d3155; border-radius: 6px; padding: 6px 10px; color: #e2e8f0; font-size: 12px; }
+  .mock-select { background: #0f1117; border: 1px solid #2d3155; border-radius: 6px; padding: 6px 10px; color: #e2e8f0; font-size: 12px; }
+  .mock-btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid transparent; }
+  .mock-btn.primary { background: #4f46e5; color: white; border-color: #4338ca; }
+  .mock-btn.danger { background: #7f1d1d; color: #fca5a5; border-color: #991b1b; }
+  .mock-btn.ghost { background: transparent; color: #94a3b8; border-color: #2d3155; }
+  .mock-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .mock-table th { text-align: left; padding: 8px 10px; background: #12152a; color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid #2d3155; }
+  .mock-table td { padding: 8px 10px; border-bottom: 1px solid #1e2240; vertical-align: top; }
+  .mock-table tr:hover td { background: #1a1d2e; cursor: pointer; }
+  .status-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+  .status-pill.pending { background: #422006; color: #fed7aa; }
+  .status-pill.approved { background: #052e16; color: #86efac; }
+  .status-pill.complete { background: #1e1b4b; color: #c7d2fe; }
+  .status-pill.inprogress { background: #082f49; color: #7dd3fc; }
+  .type-pill { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+  .type-pill.onb { background: #0c2a4a; color: #60a5fa; }
+  .type-pill.term { background: #2d0a0a; color: #fca5a5; }
+  .type-pill.change { background: #1a0a2e; color: #c084fc; }
+
+  /* ── Mock RequestDetails ── */
+  .rd-header { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+  .rd-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg,#4f46e5,#7c3aed); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: white; flex-shrink: 0; }
+  .rd-meta { flex: 1; }
+  .rd-name { font-size: 18px; font-weight: 700; color: #e2e8f0; }
+  .rd-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .rd-actions { display: flex; gap: 8px; }
+  .flow-row { display: flex; align-items: center; gap: 0; overflow-x: auto; padding: 12px 0; margin-bottom: 16px; }
+  .flow-step { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 80px; }
+  .flow-step-circle { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; border: 2px solid; }
+  .flow-step-circle.done { background: #052e16; border-color: #16a34a; color: #86efac; }
+  .flow-step-circle.active { background: #1e1b4b; border-color: #6366f1; color: #a5b4fc; box-shadow: 0 0 0 4px #312e8130; }
+  .flow-step-circle.future { background: #0f1117; border-color: #2d3155; color: #4a5080; }
+  .flow-step-label { font-size: 9px; color: #64748b; text-align: center; max-width: 72px; line-height: 1.3; }
+  .flow-connector { flex: 1; height: 2px; background: #2d3155; min-width: 12px; margin-bottom: 16px; }
+  .flow-connector.done { background: #16a34a; }
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .detail-field { background: #12152a; border: 1px solid #252850; border-radius: 6px; padding: 10px; }
+  .detail-label { font-size: 10px; color: #4a5080; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .detail-value { font-size: 13px; color: #e2e8f0; font-weight: 600; }
+
+  /* ── Modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: #00000090; display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: #1a1d2e; border: 1px solid #2d3155; border-radius: 12px; padding: 24px; max-width: 560px; width: 90vw; max-height: 80vh; overflow-y: auto; transform: translateY(20px); transition: transform .2s; }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title { font-size: 15px; font-weight: 700; color: #a5b4fc; margin-bottom: 16px; }
+  .modal-close { float: right; cursor: pointer; color: #64748b; font-size: 18px; background: none; border: none; line-height: 1; }
+
+  /* ── Loader ── */
+  .loader { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 12px; padding: 24px; }
+  .spinner { width: 16px; height: 16px; border: 2px solid #2d3155; border-top-color: #6366f1; border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Handler call trace ── */
+  .trace { background: #080b16; border: 1px solid #1e2240; border-radius: 6px; font-family: monospace; font-size: 11px; padding: 10px 14px; margin-top: 12px; line-height: 1.8; max-height: 180px; overflow-y: auto; }
+  .trace-line { color: #64748b; }
+  .trace-line.call { color: #f59e0b; }
+  .trace-line.recv { color: #34d399; }
+  .trace-line.render { color: #60a5fa; }
+  .trace-line.action { color: #c084fc; }
+
+  /* ── Notes box ── */
+  .note { background: #0c1a14; border: 1px solid #14532d; border-radius: 8px; padding: 14px; font-size: 12px; color: #86efac; line-height: 1.7; margin-bottom: 16px; }
+  .note strong { color: #4ade80; }
+
+  /* ── Responsive ── */
+  @media (max-width: 700px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .arch { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Top bar -->
+  <div class="topbar">
+    <h1>🏗️ Handler Split — Architecture POC</h1>
+    <span class="badge">v2 Dev</span>
+    <span class="badge" style="background:#14532d;color:#86efac;">Standalone Mock — No GAS Required</span>
+  </div>
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="nav-section">Views</div>
+    <div class="nav-item active" onclick="showSection('arch')" id="nav-arch">
+      <span class="icon">📐</span> Architecture
+    </div>
+    <div class="nav-item" onclick="showSection('plan')" id="nav-plan">
+      <span class="icon">📋</span> ELI5 Plan
+    </div>
+    <div class="nav-item" onclick="showSection('pages')" id="nav-pages">
+      <span class="icon">🖥️</span> Page Mocks
+    </div>
+    <div class="nav-section">Handler Files</div>
+    <div class="nav-item" onclick="showSection('h-dashdata')" id="nav-h-dashdata">
+      <span class="icon">📊</span> DashboardDataHandler
+    </div>
+    <div class="nav-item" onclick="showSection('h-dashui')" id="nav-h-dashui">
+      <span class="icon">🎨</span> DashboardUIHandler
+    </div>
+    <div class="nav-item" onclick="showSection('h-reqdetails')" id="nav-h-reqdetails">
+      <span class="icon">🔍</span> RequestDetailsHandler
+    </div>
+    <div class="nav-item" onclick="showSection('h-actions')" id="nav-h-actions">
+      <span class="icon">⚡</span> RequestActionsHandler
+    </div>
+    <div class="nav-section">Shared Files</div>
+    <div class="nav-item" onclick="showSection('shared')" id="nav-shared">
+      <span class="icon">🔧</span> Shared Files
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main" id="main-content">
+
+    <!-- ══════════════════════════════════════════════ ARCHITECTURE ══ -->
+    <section id="sec-arch">
+      <div class="note">
+        <strong>What this POC shows:</strong> The proposed file split for the v2 server-side handlers.
+        Every function from the current monolithic <code>DashboardHandler.js</code> (15 fns) is redistributed
+        into 4 focused handler files. The 3 HTML pages each import only the handlers they need.
+        Shared JS (FlowRenderer, StepModal, etc.) moves into <code>SharedComponents.html</code>.
+        All CSS stays in <code>Styles.html</code>.
+      </div>
+
+      <div class="arch">
+        <!-- Server column -->
+        <div class="arch-col">
+          <div class="arch-col-title server">⚙️ Server-Side (.js)</div>
+
+          <div class="file-box handler data">
+            <div class="file-name">DashboardDataHandler<span class="ext">.js</span></div>
+            <div class="file-fns">
+              <span class="fn-tag data">getDashboardData()</span>
+              <span class="fn-tag data">getMyPendingTasks()</span>
+              <span class="fn-tag data">getWorkflowMapStats()</span>
+            </div>
+          </div>
+
+          <div class="file-box handler ui">
+            <div class="file-name">DashboardUIHandler<span class="ext">.js</span></div>
+            <div class="file-fns">
+              <span class="fn-tag serve">serveDashboard()</span>
+              <span class="fn-tag serve">serveWorkflowMap()</span>
+            </div>
+          </div>
+
+          <div class="file-box handler" style="border-color:#0e7490;">
+            <div class="file-name">RequestDetailsHandler<span class="ext">.js</span></div>
+            <div class="file-fns">
+              <span class="fn-tag" style="color:#22d3ee;border-color:#0e4a5a;">serveRequestDetails()</span>
+              <span class="fn-tag" style="color:#22d3ee;border-color:#0e4a5a;">getRequestDetails()</span>
+              <span class="fn-tag" style="color:#22d3ee;border-color:#0e4a5a;">getTerminationDetails()</span>
+              <span class="fn-tag" style="color:#22d3ee;border-color:#0e4a5a;">getEquipmentRequestDetails()</span>
+              <span class="fn-tag" style="color:#22d3ee;border-color:#0e4a5a;">getChangeDetails()</span>
+              <span class="fn-tag" style="color:#22d3ee;border-color:#0e4a5a;">getStepResultData()</span>
+            </div>
+          </div>
+
+          <div class="file-box handler actions">
+            <div class="file-name">RequestActionsHandler<span class="ext">.js</span></div>
+            <div class="file-fns">
+              <span class="fn-tag action">bumpRequest()</span>
+              <span class="fn-tag action">updateHireDate()</span>
+              <span class="fn-tag action">cancelRequest()</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pages column -->
+        <div class="arch-col">
+          <div class="arch-col-title page">🖥️ HTML Pages</div>
+
+          <div class="file-box page">
+            <div class="file-name">Dashboard<span class="ext">.html</span></div>
+            <div class="uses-row">
+              <span style="font-size:10px;">calls:</span>
+              <span class="uses-tag">getDashboardData</span>
+              <span class="uses-tag">getMyPendingTasks</span>
+              <span class="uses-tag">bumpRequest</span>
+              <span class="uses-tag">cancelRequest</span>
+            </div>
+          </div>
+
+          <div class="file-box page">
+            <div class="file-name">RequestDetails<span class="ext">.html</span></div>
+            <div class="uses-row">
+              <span style="font-size:10px;">calls:</span>
+              <span class="uses-tag">getRequestDetails</span>
+              <span class="uses-tag">getTerminationDetails</span>
+              <span class="uses-tag">getStepResultData</span>
+              <span class="uses-tag">bumpRequest</span>
+              <span class="uses-tag">updateHireDate</span>
+            </div>
+          </div>
+
+          <div class="file-box page">
+            <div class="file-name">WorkflowMap<span class="ext">.html</span></div>
+            <div class="uses-row">
+              <span style="font-size:10px;">calls:</span>
+              <span class="uses-tag">getWorkflowMapStats</span>
+            </div>
+          </div>
+
+          <div class="file-box page" style="border-color:#1f2937;opacity:.6;">
+            <div class="file-name" style="color:#64748b;">StepDetails<span class="ext">.html</span></div>
+            <div class="uses-row" style="color:#374151;font-size:10px;">Future page — drill-down for a single step</div>
+          </div>
+        </div>
+
+        <!-- Shared column -->
+        <div class="arch-col">
+          <div class="arch-col-title shared">📦 Shared (included on every page)</div>
+
+          <div class="file-box shared-file">
+            <div class="file-name">Styles<span class="ext">.html</span></div>
+            <div class="file-fns">
+              <span class="fn-tag comp">ALL CSS</span>
+              <span class="fn-tag comp">CSS variables</span>
+              <span class="fn-tag comp">theme classes</span>
+              <span class="fn-tag comp">responsive</span>
+            </div>
+          </div>
+
+          <div class="file-box shared-file">
+            <div class="file-name">SharedComponents<span class="ext">.html</span></div>
+            <div class="file-fns">
+              <span class="fn-tag comp">FlowRenderer</span>
+              <span class="fn-tag comp">StepModal</span>
+              <span class="fn-tag comp">submitSpecialistTask()</span>
+              <span class="fn-tag comp">buildDualList()</span>
+              <span class="fn-tag comp">ThemeToggle</span>
+              <span class="fn-tag comp">escapeHtml()</span>
+              <span class="fn-tag comp">formatDate()</span>
+            </div>
+          </div>
+
+          <div class="file-box shared-file">
+            <div class="file-name">SchemaConstants<span class="ext">.js</span></div>
+            <div class="file-fns">
+              <span class="fn-tag comp">CONFIG</span>
+              <span class="fn-tag comp">SCHEMA</span>
+              <span class="fn-tag comp">column indexes</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current vs proposed comparison -->
+      <div class="card">
+        <div class="card-title">📊 Before / After</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#f87171;margin-bottom:8px;">BEFORE — 1 monolith</div>
+            <div class="trace">
+              <div class="trace-line">DashboardHandler.js (1,402 lines, 15 fns)</div>
+              <div class="trace-line call">  serveDashboard()</div>
+              <div class="trace-line call">  serveWorkflowMap()</div>
+              <div class="trace-line call">  serveRequestDetails()</div>
+              <div class="trace-line call">  getDashboardData()</div>
+              <div class="trace-line call">  bumpRequest()</div>
+              <div class="trace-line call">  updateHireDate()</div>
+              <div class="trace-line call">  cancelRequest()</div>
+              <div class="trace-line call">  getRequestDetails()</div>
+              <div class="trace-line call">  getStepResultData()</div>
+              <div class="trace-line call">  getTerminationDetails()</div>
+              <div class="trace-line call">  getEquipmentRequestDetails()</div>
+              <div class="trace-line call">  getChangeDetails()</div>
+              <div class="trace-line call">  getMyPendingTasks()</div>
+              <div class="trace-line call">  getWorkflowMapStats()</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#34d399;margin-bottom:8px;">AFTER — 4 focused files</div>
+            <div class="trace">
+              <div class="trace-line recv">DashboardDataHandler.js (~280 lines, 3 fns)</div>
+              <div class="trace-line recv">  getDashboardData()</div>
+              <div class="trace-line recv">  getMyPendingTasks()</div>
+              <div class="trace-line recv">  getWorkflowMapStats()</div>
+              <div class="trace-line" style="margin-top:4px;"></div>
+              <div class="trace-line render">DashboardUIHandler.js (~30 lines, 2 fns)</div>
+              <div class="trace-line render">  serveDashboard()</div>
+              <div class="trace-line render">  serveWorkflowMap()</div>
+              <div class="trace-line" style="margin-top:4px;"></div>
+              <div class="trace-line call">RequestDetailsHandler.js (~900 lines, 6 fns)</div>
+              <div class="trace-line call">  serveRequestDetails()</div>
+              <div class="trace-line call">  getRequestDetails()</div>
+              <div class="trace-line call">  getTerminationDetails()</div>
+              <div class="trace-line call">  getEquipmentRequestDetails()</div>
+              <div class="trace-line call">  getChangeDetails()</div>
+              <div class="trace-line call">  getStepResultData()</div>
+              <div class="trace-line" style="margin-top:4px;"></div>
+              <div class="trace-line action">RequestActionsHandler.js (~300 lines, 3 fns)</div>
+              <div class="trace-line action">  bumpRequest()</div>
+              <div class="trace-line action">  updateHireDate()</div>
+              <div class="trace-line action">  cancelRequest()</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════ ELI5 PLAN ══ -->
+    <section id="sec-plan" style="display:none;">
+      <div class="card">
+        <div class="card-title">📋 ELI5 Implementation Plan</div>
+        <ol class="plan-list">
+
+          <li>
+            <strong>Move FlowRenderer + StepModal JS into SharedComponents.html</strong>
+            <ul class="plan-sub">
+              <li>Right now both Dashboard and RequestDetails each have their own copy of the workflow step renderer and modal open/close logic</li>
+              <li>Cut those two components out of <code>Dashboard.html</code> and move them into <code>SharedComponents.html</code> so any page can use them by just doing <code>&lt;?!= include('SharedComponents') ?&gt;</code></li>
+              <li>Also move <code>escapeHtml()</code> and <code>formatDate()</code> — currently duplicated in both pages</li>
+            </ul>
+          </li>
+
+          <li>
+            <strong>Move ALL modal/flow CSS into Styles.html</strong>
+            <ul class="plan-sub">
+              <li>The step-flow row styles, modal overlay, step circle colours, connector lines — these are inline in <code>Dashboard.html</code></li>
+              <li>Cut them to <code>Styles.html</code>. Nothing changes visually — Styles.html is already included on both pages</li>
+            </ul>
+          </li>
+
+          <li>
+            <strong>Split DashboardHandler.js into DashboardDataHandler.js + DashboardUIHandler.js</strong>
+            <ul class="plan-sub">
+              <li><code>DashboardDataHandler.js</code> gets: <code>getDashboardData()</code>, <code>getMyPendingTasks()</code>, <code>getWorkflowMapStats()</code> — the 3 read-only data fetches</li>
+              <li><code>DashboardUIHandler.js</code> gets: <code>serveDashboard()</code>, <code>serveWorkflowMap()</code> — the 2 page-serve functions</li>
+              <li>Nothing in the HTML pages changes yet — same function names, just different source files</li>
+            </ul>
+          </li>
+
+          <li>
+            <strong>Extract RequestActionsHandler.js from RequestDetailsHandler.js</strong>
+            <ul class="plan-sub">
+              <li><code>RequestActionsHandler.js</code> gets: <code>bumpRequest()</code>, <code>updateHireDate()</code>, <code>cancelRequest()</code> — the 3 write/mutate operations</li>
+              <li><code>RequestDetailsHandler.js</code> keeps: all the read-only detail fetchers + <code>serveRequestDetails()</code></li>
+              <li>Both Dashboard and RequestDetails call these action functions — having them in their own file makes that shared responsibility explicit</li>
+            </ul>
+          </li>
+
+          <li>
+            <strong>Rewrite RequestDetails.html to use shared FlowRenderer + StepModal</strong>
+            <ul class="plan-sub">
+              <li>Remove the duplicate step-flow rendering code from <code>RequestDetails.html</code></li>
+              <li>Call the shared <code>FlowRenderer.render(steps, containerId)</code> and <code>StepModal.open(data)</code> instead</li>
+              <li>This is the biggest client-side change — needs careful testing</li>
+            </ul>
+          </li>
+
+          <li>
+            <strong>Add StepDetails.html as a dedicated drill-down page (future)</strong>
+            <ul class="plan-sub">
+              <li>Currently <code>getStepResultData()</code> renders into a modal inside RequestDetails</li>
+              <li>New dedicated page: <code>serveStepDetails(workflowId, stepType)</code> → <code>StepDetails.html</code></li>
+              <li>StepDetails calls <code>getStepResultData()</code> directly on load; uses shared components</li>
+              <li>Not doing this until Steps 1–5 are stable</li>
+            </ul>
+          </li>
+
+          <li>
+            <strong>Promote to staging → prod after each step passes review</strong>
+            <ul class="plan-sub">
+              <li>Each step above is one PR/commit, reviewed in dev before copying to staging then prod</li>
+              <li>Handler splits (steps 3+4) are zero-risk — server-side only, no HTML changes</li>
+              <li>Client-side changes (steps 1+2+5) need a visual diff check in staging first</li>
+            </ul>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════ PAGE MOCKS ══ -->
+    <section id="sec-pages" style="display:none;">
+      <div class="page-tabs">
+        <div class="page-tab active" onclick="switchPage('dashboard')">📊 Dashboard</div>
+        <div class="page-tab" onclick="switchPage('reqdetails')">🔍 Request Details</div>
+      </div>
+
+      <!-- Dashboard mock -->
+      <div id="page-dashboard" class="page-panel active">
+        <div class="card">
+          <div class="card-title">📊 Dashboard.html
+            <span style="font-size:10px;font-weight:400;color:#64748b;margin-left:auto;">calls: DashboardDataHandler + RequestActionsHandler</span>
+          </div>
+          <div class="mock-toolbar">
+            <input class="mock-search" placeholder="Search employee..." id="dash-search" oninput="filterTable()">
+            <select class="mock-select" id="dash-type" onchange="filterTable()">
+              <option value="">All Types</option>
+              <option value="Onboarding">Onboarding</option>
+              <option value="End of Employment">End of Employment</option>
+              <option value="Status Change">Status Change</option>
+            </select>
+            <select class="mock-select" id="dash-status" onchange="filterTable()">
+              <option value="">All Statuses</option>
+              <option value="Pending Approval">Pending Approval</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Complete">Complete</option>
+            </select>
+            <button class="mock-btn primary" onclick="mockLoadData()">↻ Refresh</button>
+          </div>
+          <div id="dash-loader" class="loader"><div class="spinner"></div> Loading workflows via getDashboardData()…</div>
+          <div id="dash-table-wrap" style="display:none;">
+            <table class="mock-table" id="dash-table">
+              <thead><tr>
+                <th><input type="checkbox" id="chk-all" onchange="toggleAll(this)"></th>
+                <th>Employee</th><th>Type</th><th>Status</th><th>Step</th><th>Requested</th><th>Initiator</th>
+              </tr></thead>
+              <tbody id="dash-tbody"></tbody>
+            </table>
+          </div>
+          <div id="dash-trace" class="trace" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- RequestDetails mock -->
+      <div id="page-reqdetails" class="page-panel">
+        <div class="card">
+          <div class="card-title">🔍 RequestDetails.html
+            <span style="font-size:10px;font-weight:400;color:#64748b;margin-left:auto;">calls: RequestDetailsHandler + RequestActionsHandler</span>
+          </div>
+          <div id="rd-loader" class="loader"><div class="spinner"></div> Loading via getRequestDetails()…</div>
+          <div id="rd-content" style="display:none;">
+            <div class="rd-header">
+              <div class="rd-avatar" id="rd-avatar">JD</div>
+              <div class="rd-meta">
+                <div class="rd-name" id="rd-name">Jane Doe</div>
+                <div class="rd-sub" id="rd-sub">ONB_2026_0042 · Onboarding · Started 5/1/2026</div>
+              </div>
+              <div class="rd-actions">
+                <button class="mock-btn ghost" onclick="mockBump()">⬆ Bump Step</button>
+                <button class="mock-btn danger" onclick="mockCancel()">✕ Cancel</button>
+              </div>
+            </div>
+
+            <!-- Flow renderer (shared component) -->
+            <div class="card" style="padding:12px;">
+              <div style="font-size:10px;color:#4a5080;margin-bottom:4px;">FlowRenderer (SharedComponents.html)</div>
+              <div class="flow-row" id="rd-flow"></div>
+            </div>
+
+            <!-- Detail fields -->
+            <div class="detail-grid" id="rd-fields"></div>
+          </div>
+          <div id="rd-trace" class="trace" style="display:none;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ HANDLER EXPLAINERS ══ -->
+    <section id="sec-h-dashdata" style="display:none;">
+      <div class="card">
+        <div class="card-title" style="color:#f59e0b;">📊 DashboardDataHandler.js — 3 functions</div>
+        <div class="note" style="background:#1c1205;border-color:#b45309;color:#fed7aa;">
+          <strong>Purpose:</strong> Read-only data fetching for the Dashboard page and WorkflowMap.
+          Never writes to sheets. Never serves HTML. No action logic. Safe to call without side effects.
+        </div>
+
+        <div class="file-box handler data" style="margin-bottom:12px;">
+          <div class="file-name" style="font-size:14px;">getDashboardData()</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.7;">
+            <strong style="color:#fed7aa;">What it does:</strong> Bulk-reads the pre-calculated <code>Dashboard_View</code> sheet (single API call),
+            resolves the current user's access flags once, supplements any TERM_ rows with empType data, filters out Cancelled/Inactive,
+            appends a termination fallback pass for pre-existing rows not yet in Dashboard_View, reverses the list (newest first), and returns JSON.<br>
+            <strong style="color:#fed7aa;">Returns:</strong> <code>{ success, workflows[], currentUser, canEditDates, isAdmin }</code><br>
+            <strong style="color:#fed7aa;">Called by:</strong> Dashboard.html on page load + refresh button
+          </div>
+        </div>
+
+        <div class="file-box handler data" style="margin-bottom:12px;">
+          <div class="file-name" style="font-size:14px;">getMyPendingTasks()</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.7;">
+            <strong style="color:#fed7aa;">What it does:</strong> Reads the Action Items sheet, filters to rows where the current user's email
+            appears in the Assigned To column (comma-separated support), skips Closed items,
+            looks up employee name from the Workflows sheet for each task, and returns the list.<br>
+            <strong style="color:#fed7aa;">Returns:</strong> <code>{ tasks: [{ tid, workflowId, category, taskName, employeeName, status, created }] }</code><br>
+            <strong style="color:#fed7aa;">Called by:</strong> Dashboard.html "My Tasks" panel on load
+          </div>
+        </div>
+
+        <div class="file-box handler data">
+          <div class="file-name" style="font-size:14px;">getWorkflowMapStats()</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.7;">
+            <strong style="color:#fed7aa;">What it does:</strong> Reads the Workflows master sheet, skips Cancelled/Complete rows,
+            groups active workflows by Current Step, splits into onboarding vs EOE buckets by Workflow ID prefix (TERM_ = EOE, CHANGE_ and EQUIP_ excluded).<br>
+            <strong style="color:#fed7aa;">Returns:</strong> <code>{ onboarding: { stepName: count }, eoe: { stepName: count } }</code><br>
+            <strong style="color:#fed7aa;">Called by:</strong> WorkflowMap.html live-status badges
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-h-dashui" style="display:none;">
+      <div class="card">
+        <div class="card-title" style="color:#60a5fa;">🎨 DashboardUIHandler.js — 2 functions</div>
+        <div class="note" style="background:#0c1729;border-color:#1e3a5f;color:#93c5fd;">
+          <strong>Purpose:</strong> Serve HTML pages. These are the entry points called by the GAS Router.
+          Tiny file — just template plumbing. No sheet reads, no business logic.
+        </div>
+
+        <div class="file-box handler ui" style="margin-bottom:12px;">
+          <div class="file-name" style="font-size:14px;">serveDashboard()</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.7;">
+            <strong style="color:#93c5fd;">What it does:</strong> Creates template from 'Dashboard' file, injects <code>baseUrl</code>,
+            <code>spreadsheetId</code>, and <code>environment</code> as template variables, evaluates and returns the HtmlOutput with title + viewport meta.<br>
+            <strong style="color:#93c5fd;">Called by:</strong> Router.js when URL param <code>page=dashboard</code>
+          </div>
+        </div>
+
+        <div class="file-box handler ui">
+          <div class="file-name" style="font-size:14px;">serveWorkflowMap()</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.7;">
+            <strong style="color:#93c5fd;">What it does:</strong> Same pattern — template from 'WorkflowMap', injects <code>baseUrl</code>, returns evaluated HtmlOutput.<br>
+            <strong style="color:#93c5fd;">Called by:</strong> Router.js when URL param <code>page=workflowmap</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-h-reqdetails" style="display:none;">
+      <div class="card">
+        <div class="card-title" style="color:#22d3ee;">🔍 RequestDetailsHandler.js — 6 functions</div>
+        <div class="note" style="background:#071a1f;border-color:#0e4a5a;color:#67e8f9;">
+          <strong>Purpose:</strong> All server-side logic for the RequestDetails page.
+          Read-only data fetchers — never writes. Handles all 4 workflow types (Onboarding, EOE, Equipment, Status Change).
+        </div>
+
+        <div class="file-box handler" style="border-color:#0e7490;margin-bottom:10px;">
+          <div class="file-name" style="font-size:13px;">serveRequestDetails(workflowId)</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:4px;line-height:1.6;">
+            Creates template from 'RequestDetails', injects <code>baseUrl</code> + <code>workflowId</code>, returns HtmlOutput.
+            Called by Router.js when <code>page=requestdetails&id=…</code>
+          </div>
+        </div>
+
+        <div class="file-box handler" style="border-color:#0e7490;margin-bottom:10px;">
+          <div class="file-name" style="font-size:13px;">getRequestDetails(workflowId)</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:4px;line-height:1.6;">
+            Main detail loader for Onboarding workflows. Reads Workflows sheet for header/status, then cross-references
+            every specialist sheet (IT, HR, Safety, etc.) to build a complete checklist of completed/pending items.
+            Returns structured object with employee info, step timeline, checklist, dates.
+          </div>
+        </div>
+
+        <div class="file-box handler" style="border-color:#0e7490;margin-bottom:10px;">
+          <div class="file-name" style="font-size:13px;">getTerminationDetails(workflowId)</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:4px;line-height:1.6;">
+            EOE-specific detail loader. Reads the Terminations sheet + Workflows sheet to return term date,
+            last day, manager, requested items, HR approval status, action item checklist.
+          </div>
+        </div>
+
+        <div class="file-box handler" style="border-color:#0e7490;margin-bottom:10px;">
+          <div class="file-name" style="font-size:13px;">getEquipmentRequestDetails(workflowId)</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:4px;line-height:1.6;">
+            Equipment-request detail loader. Reads Equipment Requests sheet, returns requested items array,
+            requester, assignee, approval status, delivery info.
+          </div>
+        </div>
+
+        <div class="file-box handler" style="border-color:#0e7490;margin-bottom:10px;">
+          <div class="file-name" style="font-size:13px;">getChangeDetails(workflowId)</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:4px;line-height:1.6;">
+            Status Change detail loader. Reads Status Change Requests sheet, returns old/new position,
+            site, effective date, approval chain status.
+          </div>
+        </div>
+
+        <div class="file-box handler" style="border-color:#0e7490;">
+          <div class="file-name" style="font-size:13px;">getStepResultData(workflowId, stepTarget)</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:4px;line-height:1.6;">
+            Drill-down data for a specific completed step (IT Setup, HR Verification, Safety, etc.).
+            Reads the step's specialist sheet to return the full submitted form data for display in the step modal.
+            <code>stepTarget</code> is a string like <code>'it'</code>, <code>'hr'</code>, <code>'safety'</code>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-h-actions" style="display:none;">
+      <div class="card">
+        <div class="card-title" style="color:#c084fc;">⚡ RequestActionsHandler.js — 3 functions</div>
+        <div class="note" style="background:#12042a;border-color:#4c1d95;color:#d8b4fe;">
+          <strong>Purpose:</strong> All write/mutate operations. These are the only handlers that modify sheet data.
+          Used by BOTH Dashboard (quick actions from the modal) and RequestDetails (full detail view).
+          Kept separate so write logic is never mixed into read-only data handlers.
+        </div>
+
+        <div class="file-box handler actions" style="margin-bottom:12px;">
+          <div class="file-name" style="font-size:14px;">bumpRequest(workflowId, targetStep)</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.7;">
+            <strong style="color:#d8b4fe;">What it does:</strong> Admin/HR-only. Moves a workflow forward (or backward) to a specific step.
+            Validates access, updates the Workflows sheet status + current step, triggers the appropriate
+            notification email, and re-syncs Dashboard_View.<br>
+            <strong style="color:#d8b4fe;">Called by:</strong> Dashboard.html modal + RequestDetails.html bump button
+          </div>
+        </div>
+
+        <div class="file-box handler actions" style="margin-bottom:12px;">
+          <div class="file-name" style="font-size:14px;">updateHireDate(workflowId, newDateStr)</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.7;">
+            <strong style="color:#d8b4fe;">What it does:</strong> HR/IT/Admin only (canEditDates flag). Parses and validates the new date,
+            writes it to the workflow row, re-syncs Dashboard_View so the card updates immediately.<br>
+            <strong style="color:#d8b4fe;">Called by:</strong> RequestDetails.html hire date edit field only
+          </div>
+        </div>
+
+        <div class="file-box handler actions">
+          <div class="file-name" style="font-size:14px;">cancelRequest(workflowId)</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.7;">
+            <strong style="color:#d8b4fe;">What it does:</strong> Admin only. Sets workflow status to Cancelled in the Workflows sheet
+            and Dashboard_View, sends cancellation notification email to requester + manager.<br>
+            <strong style="color:#d8b4fe;">Called by:</strong> Dashboard.html cancel button + RequestDetails.html cancel button
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-shared" style="display:none;">
+      <div class="card">
+        <div class="card-title" style="color:#34d399;">📦 Shared Files — what lives where</div>
+        <div class="note">
+          <strong>Rule:</strong> If a piece of code is used by more than one page — it lives in a shared file, not the page.
+          Pages only contain logic that is specific to that page's view.
+        </div>
+
+        <div class="file-box shared-file" style="margin-bottom:12px;">
+          <div class="file-name" style="font-size:14px;">Styles.html</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.7;">
+            Contains ALL CSS. One <code>&lt;style&gt;</code> block. Included on every page via <code>&lt;?!= include('Styles') ?&gt;</code>.
+            No CSS should live inline in any page HTML. This includes: base reset, layout, table styles,
+            status pill colours, modal overlay/content, flow-step circles, connector lines, form field styles,
+            theme class overrides (GeoCities, StarTrekTOS, etc.).
+          </div>
+        </div>
+
+        <div class="file-box shared-file" style="margin-bottom:12px;">
+          <div class="file-name" style="font-size:14px;">SharedComponents.html</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.7;">
+            Contains reusable JS components wrapped in <code>&lt;script&gt;</code> tags. Current: <code>submitSpecialistTask()</code>,
+            <code>buildDualList()</code>, <code>ThemeToggle</code>. <strong style="color:#86efac;">Moving in:</strong>
+            <code>FlowRenderer</code> (renders the step-flow row from an array of step objects),
+            <code>StepModal</code> (open/close/render the drill-down modal), <code>escapeHtml()</code>, <code>formatDate()</code>.
+          </div>
+        </div>
+
+        <div class="file-box shared-file">
+          <div class="file-name" style="font-size:14px;">SchemaConstants.js</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;line-height:1.7;">
+            Server-side only. Defines <code>CONFIG</code> (sheet IDs, names), <code>SCHEMA</code> (column index maps for every sheet),
+            and <code>ENVIRONMENT</code>. Every other .js file reads from this — nothing hardcodes column numbers.
+            Not included in HTML pages (server-side constant, not client-side).
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Detail modal -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title" id="modal-title">Workflow Details</div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+  // ─── Navigation ───────────────────────────────────────────────
+  const sections = ['arch','plan','pages','h-dashdata','h-dashui','h-reqdetails','h-actions','shared'];
+  function showSection(id) {
+    sections.forEach(s => {
+      document.getElementById('sec-' + s).style.display = s === id ? '' : 'none';
+      const nav = document.getElementById('nav-' + s);
+      if (nav) nav.classList.toggle('active', s === id);
+    });
+  }
+
+  // ─── Page tabs ────────────────────────────────────────────────
+  function switchPage(id) {
+    ['dashboard','reqdetails'].forEach(p => {
+      document.getElementById('page-' + p).classList.toggle('active', p === id);
+    });
+    document.querySelectorAll('.page-tab').forEach((t, i) => {
+      t.classList.toggle('active', ['dashboard','reqdetails'][i] === id);
+    });
+    if (id === 'reqdetails') mockLoadDetails();
+  }
+
+  // ─── Mock data ────────────────────────────────────────────────
+  const MOCK_WORKFLOWS = [
+    { id:'ONB_2026_0042', employee:'Jane Doe', type:'Onboarding', status:'In Progress', step:'IT Setup', requested:'5/1/2026', initiator:'manager@team-group.com' },
+    { id:'ONB_2026_0041', employee:'Carlos Rivera', type:'Onboarding', status:'Pending Approval', step:'HR Review', requested:'4/28/2026', initiator:'hr@team-group.com' },
+    { id:'TERM_2026_0018', employee:'Sam Lee', type:'End of Employment', status:'Approved', step:'Action Items Pending', requested:'5/3/2026', initiator:'admin@robinsonsolutions.com' },
+    { id:'CHANGE_2026_0007', employee:'Priya Nair', type:'Status Change', status:'Complete', step:'All Actions Completed', requested:'4/15/2026', initiator:'supervisor@team-group.com' },
+    { id:'ONB_2026_0039', employee:'Mike Torres', type:'Onboarding', status:'In Progress', step:'Safety Onboarding', requested:'4/10/2026', initiator:'hr@robinsonsolutions.com' },
+  ];
+  let allWorkflows = [];
+  let loaded = false;
+
+  function mockLoadData() {
+    if (document.getElementById('sec-pages').style.display === 'none') showSection('pages');
+    const loader = document.getElementById('dash-loader');
+    const wrap = document.getElementById('dash-table-wrap');
+    const trace = document.getElementById('dash-trace');
+    loader.style.display = 'flex'; wrap.style.display = 'none';
+    trace.style.display = 'block';
+    trace.innerHTML = '<div class="trace-line call">→ [DashboardDataHandler] getDashboardData() called</div>';
+    setTimeout(() => {
+      trace.innerHTML += '<div class="trace-line">  reading Dashboard_View sheet… (single bulk read)</div>';
+    }, 300);
+    setTimeout(() => {
+      trace.innerHTML += '<div class="trace-line">  resolving user access flags via AccessControlService…</div>';
+    }, 600);
+    setTimeout(() => {
+      trace.innerHTML += '<div class="trace-line recv">← returning { success: true, workflows: [5], canEditDates: true, isAdmin: true }</div>';
+      trace.innerHTML += '<div class="trace-line render">→ [Dashboard.html] displayData() rendering table…</div>';
+      allWorkflows = MOCK_WORKFLOWS;
+      loader.style.display = 'none'; wrap.style.display = '';
+      loaded = true;
+      filterTable();
+    }, 1000);
+  }
+
+  function filterTable() {
+    if (!loaded) return;
+    const q = document.getElementById('dash-search').value.toLowerCase();
+    const type = document.getElementById('dash-type').value;
+    const status = document.getElementById('dash-status').value;
+    const filtered = allWorkflows.filter(w =>
+      (!q || w.employee.toLowerCase().includes(q) || w.id.toLowerCase().includes(q)) &&
+      (!type || w.type === type) &&
+      (!status || w.status === status)
+    );
+    const tbody = document.getElementById('dash-tbody');
+    const statusClasses = { 'Pending Approval':'pending', 'In Progress':'inprogress', 'Approved':'approved', 'Complete':'complete' };
+    const typeClasses = { 'Onboarding':'onb', 'End of Employment':'term', 'Status Change':'change' };
+    tbody.innerHTML = filtered.map(w => `
+      <tr onclick="openDetailModal('${w.id}')">
+        <td onclick="event.stopPropagation()"><input type="checkbox" class="row-chk" value="${w.id}" onchange="updateDeleteBtn()"></td>
+        <td><strong>${w.employee}</strong><br><span style="font-size:10px;color:#64748b;">${w.id}</span></td>
+        <td><span class="type-pill ${typeClasses[w.type]||'onb'}">${w.type}</span></td>
+        <td><span class="status-pill ${statusClasses[w.status]||'pending'}">${w.status}</span></td>
+        <td>${w.step}</td>
+        <td>${w.requested}</td>
+        <td style="font-size:11px;color:#64748b;">${w.initiator}</td>
+      </tr>
+    `).join('');
+  }
+
+  function toggleAll(chk) { document.querySelectorAll('.row-chk').forEach(c => c.checked = chk.checked); }
+  function updateDeleteBtn() {}
+
+  function openDetailModal(id) {
+    const w = MOCK_WORKFLOWS.find(x => x.id === id);
+    if (!w) return;
+    document.getElementById('modal-title').textContent = w.employee + ' — ' + w.type;
+    document.getElementById('modal-body').innerHTML = `
+      <div class="detail-grid" style="margin-bottom:12px;">
+        <div class="detail-field"><div class="detail-label">Workflow ID</div><div class="detail-value" style="font-family:monospace;font-size:11px;">${w.id}</div></div>
+        <div class="detail-field"><div class="detail-label">Status</div><div class="detail-value">${w.status}</div></div>
+        <div class="detail-field"><div class="detail-label">Current Step</div><div class="detail-value">${w.step}</div></div>
+        <div class="detail-field"><div class="detail-label">Requested</div><div class="detail-value">${w.requested}</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="mock-btn primary" onclick="alert('bumpRequest called via RequestActionsHandler')">⬆ Bump Step</button>
+        <button class="mock-btn ghost" onclick="window.open('?page=requestdetails&id=${w.id}','_blank')">🔍 Full Details</button>
+        <button class="mock-btn danger" onclick="alert('cancelRequest called via RequestActionsHandler')">✕ Cancel</button>
+      </div>
+      <div class="trace" style="margin-top:12px;">
+        <div class="trace-line call">Data loaded by: getRequestDetails / getTerminationDetails</div>
+        <div class="trace-line action">Actions use: RequestActionsHandler.bumpRequest / cancelRequest</div>
+      </div>
+    `;
+    document.getElementById('detail-modal').classList.add('open');
+  }
+  function closeModal() { document.getElementById('detail-modal').classList.remove('open'); }
+  document.getElementById('detail-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+  // ─── RequestDetails mock ───────────────────────────────────────
+  const MOCK_DETAILS = {
+    id: 'ONB_2026_0042', name: 'Jane Doe', title: 'Site Coordinator', site: 'Toronto',
+    manager: 'manager@team-group.com', hireDate: '5/12/2026', status: 'In Progress', step: 'IT Setup',
+    steps: [
+      { label: 'Submitted', done: true, active: false },
+      { label: 'HR Review', done: true, active: false },
+      { label: 'IT Setup', done: false, active: true },
+      { label: 'Safety', done: false, active: false },
+      { label: 'Complete', done: false, active: false },
+    ]
+  };
+
+  function mockLoadDetails() {
+    const loader = document.getElementById('rd-loader');
+    const content = document.getElementById('rd-content');
+    const trace = document.getElementById('rd-trace');
+    loader.style.display = 'flex'; content.style.display = 'none';
+    trace.style.display = 'block';
+    trace.innerHTML = '<div class="trace-line call">→ [RequestDetailsHandler] getRequestDetails("ONB_2026_0042") called</div>';
+    setTimeout(() => { trace.innerHTML += '<div class="trace-line">  reading Workflows sheet…</div>'; }, 300);
+    setTimeout(() => { trace.innerHTML += '<div class="trace-line">  cross-referencing specialist sheets…</div>'; }, 700);
+    setTimeout(() => {
+      trace.innerHTML += '<div class="trace-line recv">← returning { employee, steps[], checklist[], fields[] }</div>';
+      trace.innerHTML += '<div class="trace-line render">→ [RequestDetails.html] renderDetails() + FlowRenderer.render() (SharedComponents)</div>';
+      loader.style.display = 'none'; content.style.display = '';
+      const d = MOCK_DETAILS;
+      document.getElementById('rd-avatar').textContent = d.name.split(' ').map(x=>x[0]).join('');
+      document.getElementById('rd-name').textContent = d.name;
+      document.getElementById('rd-sub').textContent = d.id + ' · ' + d.title + ' · Hire Date ' + d.hireDate;
+      // Render flow
+      const flow = document.getElementById('rd-flow');
+      flow.innerHTML = d.steps.map((s, i) => `
+        ${i > 0 ? `<div class="flow-connector ${d.steps[i-1].done?'done':''}"></div>` : ''}
+        <div class="flow-step">
+          <div class="flow-step-circle ${s.done?'done':s.active?'active':'future'}">${s.done?'✓':s.active?'◉':'○'}</div>
+          <div class="flow-step-label">${s.label}</div>
+        </div>
+      `).join('');
+      // Fields
+      document.getElementById('rd-fields').innerHTML = [
+        ['Manager', d.manager], ['Site', d.site], ['Position', d.title],
+        ['Hire Date', d.hireDate], ['Status', d.status], ['Current Step', d.step]
+      ].map(([l,v]) => `<div class="detail-field"><div class="detail-label">${l}</div><div class="detail-value">${v}</div></div>`).join('');
+    }, 1100);
+  }
+
+  function mockBump() {
+    const trace = document.getElementById('rd-trace');
+    trace.innerHTML += '<div class="trace-line action">→ [RequestActionsHandler] bumpRequest("ONB_2026_0042", "safety") called</div>';
+    setTimeout(() => { trace.innerHTML += '<div class="trace-line recv">← { success: true, newStep: "Safety Onboarding" }</div>'; }, 500);
+  }
+  function mockCancel() {
+    const trace = document.getElementById('rd-trace');
+    trace.innerHTML += '<div class="trace-line action">→ [RequestActionsHandler] cancelRequest("ONB_2026_0042") called</div>';
+  }
+
+  // ─── Auto-load dashboard data on start ────────────────────────
+  setTimeout(mockLoadData, 300);
+</script>
+</body>
+</html>

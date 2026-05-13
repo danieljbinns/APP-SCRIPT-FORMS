@@ -397,7 +397,8 @@ body.eg.is-lcars .st-fs{color:var(--st-lo);font-weight:700}
 body.eg.t-matrix .st-fs{color:var(--st-mid);animation:st-scroll-l 18s linear infinite}
 body.eg.t-office .st-fs{color:rgba(255,255,255,.8);animation:st-scroll-l 30s linear infinite}
 </style>
-
+<?!= include('FieldIndex') ?>
+<?!= include('EasterEggMaps') ?>
 <script>
 (function(){
 'use strict';
@@ -417,33 +418,7 @@ var T={
   galpha:{ship:'THE VIBE',sector:'NO CAP FR FR',alertIcon:'&#128293; NGL ITS LOWKEY URGENT &#128293;',alertMsg:'PERIODT &#x2022; SLAY DETECTED &#x2022; BESTIE THIS IS YOUR SIGN TO ACT &#x2022; NO CAP FR FR &#x2022; ITS GIVING ACTION REQUIRED',ticker:'NO CAP &#9830; SLAY &#9830; FR FR &#9830; IT\'S GIVING SEQUENTIAL GATING &#9830; THAT\'S LOWKEY BUSSIN &#9830; NOT THE EMPLOYEES &#9830; UNDERSTOOD THE ASSIGNMENT &#9830; PERIODT &#9830; MAIN CHARACTER ENERGY &#9830;',stitle:'&#128293; VIBE CHECK — TELEMETRY &#128293;',vlabel:'REQUESTS PROCESSED (no cap)',vsub:'TEAM GROUP — UNDERSTOOD THE ASSIGNMENT',s1:'New Hires (slay!)',s2:'Separations (rip bestie)',s3:'Transfers (the glow up)',s4:'Completed (periodt)',s5:'In Progress (lowkey)',s6:'Pending (no cap)',s7:'Cancelled (L + ratio)',s8:'This Month (bestie)',l1:'Top Girlies (submitters)',l2:'Top Locations (the vibes)',l3:'Top Managers (main characters)',footer:'TEAM GROUP &#9830; IT\'S GIVING EMPLOYEE MANAGEMENT &#9830; SEQUENTIAL GATING V2 &#9830; NO CAP &#9830; SLAY &#9830; PERIODT &#9830; UNDERSTOOD THE ASSIGNMENT &#9830;',greeting:'Bestie, the vibes are immaculate. You understood the assignment. No cap, this portal slaps.',lcars:false,bsg:false,matrix:false,who:false,office:false}
 };
 
-/* ── STATUS / SUBMIT MAPS ────────────────────────────────────── */
-var STATUS_MAPS={
-  geo:   {'In Progress':'WORKIN ON IT!! :-)',  'Pending':'WAITING... (dont touch!!)',   'Completed':'DONE!! YOU WIN!!! 8-)',    'Cancelled':'RIP... (cancelled) :-(',    'Action Required':'!! ACTION REQUIRED !!',      'All Specialists Complete':'ALL DONE!! PARTY TIME!! :-D'},
-  tos:   {'In Progress':'AWAY TEAM DEPLOYED',  'Pending':'AWAITING ORDERS',             'Completed':'MISSION SUCCESS',          'Cancelled':'MISSION ABORTED',           'Action Required':'!! CAPTAIN TO BRIDGE',        'All Specialists Complete':'MISSION COMPLETE'},
-  tng:   {'In Progress':'IN PROGRESS',         'Pending':'STANDBY',                     'Completed':'TASK COMPLETE',            'Cancelled':'CANCELLED',                 'Action Required':'&#9685; ACTION REQUIRED',     'All Specialists Complete':'TASK COMPLETE'},
-  ds9:   {'In Progress':'IN PROGRESS',         'Pending':'STANDBY',                     'Completed':'COMPLETED',                'Cancelled':'CANCELLED',                 'Action Required':'&#9672; IMMEDIATE ACTION',    'All Specialists Complete':'COMPLETED'},
-  voy:   {'In Progress':'IN PROGRESS',         'Pending':'STANDBY',                     'Completed':'COMPLETED',                'Cancelled':'CANCELLED',                 'Action Required':'&#9685; ACTION REQUIRED',     'All Specialists Complete':'COMPLETED'},
-  bsg:   {'In Progress':'MISSION UNDERWAY',    'Pending':'AWAITING CLEARANCE',          'Completed':'STRIKE SUCCESSFUL',        'Cancelled':'ABORTED',                   'Action Required':'// ACTION REQUIRED //',       'All Specialists Complete':'STRIKE SUCCESSFUL'},
-  matrix:{'In Progress':'PROCESS RUNNING',     'Pending':'AWAITING INPUT',              'Completed':'EXECUTED',                 'Cancelled':'PROCESS KILLED',            'Action Required':'!! BUFFER OVERFLOW',          'All Specialists Complete':'EXECUTED'},
-  who:   {'In Progress':'WIBBLY WOBBLY',       'Pending':'IN THE VORTEX',               'Completed':'FIXED POINT IN TIME',      'Cancelled':'EXTERMINATED',              'Action Required':'!! DALEKS DETECTED !!',       'All Specialists Complete':'FIXED POINT IN TIME'},
-  office:{'In Progress':'MICHAEL IS HANDLING IT','Pending':'SEE TOBY IN HR',            'Completed':'FILED WITH TOBY',          'Cancelled':'CORPORATE SAID NO',         'Action Required':'!! TOBY WANTS A WORD',        'All Specialists Complete':'FILED WITH TOBY'},
-  pokemon:{'In Progress':'BATTLE IN PROGRESS!!', 'Pending':'IN THE TALL GRASS...',        'Completed':'GOTCHA!! POKEMON CAUGHT!!',  'Cancelled':'IT FLED...',               'Action Required':'!! WILD POKEMON !!',          'All Specialists Complete':'GOTCHA!! CAUGHT!!'},
-  galpha:{'In Progress':'LOWKEY IN PROGRESS FR', 'Pending':'ON THE LOWKEY TBH',          'Completed':'SLAY!! PERIODT!!',          'Cancelled':'L + RATIO NGL',             'Action Required':'&#128293; NGL ITS URGENT FR', 'All Specialists Complete':'SLAY!! PERIODT!!'}
-};
-var SUBMIT_MAPS={
-  geo:   ['CLICK HERE TO SUBMIT!!! [>]','GO GO GO!! SUBMIT NOW!!','YES!! SEND IT!! [>>]'],
-  tos:   ['TRANSMIT TO STARFLEET','BEAM UP REQUEST','ENGAGE!!'],
-  tng:   ['TRANSMIT TO COMMAND','MAKE IT SO','ENGAGE'],
-  ds9:   ['SUBMIT TO COMMAND','TRANSMIT REQUEST','CONFIRM'],
-  voy:   ['TRANSMIT TO STARFLEET','ENGAGE','CONFIRM REQUEST'],
-  bsg:   ['SUBMIT TO COMMAND','SO SAY WE ALL','LAUNCH!!'],
-  matrix:['UPLOAD TO MATRIX','INSERT PROGRAM','EXECUTE'],
-  who:   ['ALLONS-Y!','GERONIMO!','BIGGER ON THE INSIDE'],
-  office:["THAT'S WHAT SHE SAID",'I DECLARE BANKRUPTCY','DUNDER MIFFLIN!!!'],
-  pokemon:['THROW POKEBALL!!','PIKACHU, I CHOOSE YOU!','GOTTA CATCH \'EM ALL!!'],
-  galpha:['NO CAP SUBMIT FR FR',"IT'S GIVING SUBMIT SLAY",'PERIODT BESTIE!!!']
-};
+/* ── STATUS / SUBMIT / FIELD MAPS — see EasterEggMaps.html ──────── */
 
 /* ── STATE ───────────────────────────────────────────────────── */
 var curTheme='tos', curScale='sc-md';
@@ -502,16 +477,31 @@ function attachLogoHooks(){
 }
 
 /* ── TEXT SWAPS ──────────────────────────────────────────────── */
-function swapStatus(theme){
-  var map=STATUS_MAPS[theme]||{};
-  var els=document.querySelectorAll('.status-badge,[class*="status-badge"]');
-  for(var i=0;i<els.length;i++){
-    var el=els[i];
+function swapFields(theme){
+  // Status badges (STATUS_MAPS)
+  var smap=STATUS_MAPS[theme]||{};
+  var badges=document.querySelectorAll('.status-badge,[class*="status-badge"]');
+  for(var i=0;i<badges.length;i++){
+    var el=badges[i];
     if(!el.getAttribute('data-eg-orig'))el.setAttribute('data-eg-orig',el.textContent.trim());
-    var orig=el.getAttribute('data-eg-orig'),mapped=map[orig];
+    var mapped=smap[el.getAttribute('data-eg-orig')];
     if(mapped)el.textContent=mapped;
   }
+  // Headings + labels (FIELD_MAPS)
+  var fmap=FIELD_MAPS[theme]||{};
+  var nodes=document.querySelectorAll('h1,h2,h3,label');
+  for(var j=0;j<nodes.length;j++){
+    var node=nodes[j],orig=node.textContent.trim();
+    if(fmap[orig]){
+      if(!node.getAttribute('data-eg-orig'))node.setAttribute('data-eg-orig',orig);
+      node.textContent=fmap[orig];
+    }
+  }
 }
+function setThemeTitle(theme){
+  if(TITLE_THEMES[theme])document.title=TITLE_THEMES[theme];
+}
+function restoreTitle(){document.title=origTitle;}
 function swapSubmit(theme){
   var texts=SUBMIT_MAPS[theme]||SUBMIT_MAPS.tos;
   var btns=document.querySelectorAll('button[type="submit"],.submit-btn');
@@ -596,7 +586,7 @@ function activate(theme,scale,audio){
       var h=this.querySelector('.geo-stats-toggle-hint');if(h)h.textContent=statsOpen?'[click to collapse]':'[click to expand]';
     });
     document.getElementById('geo-music-btn').addEventListener('click',toggleGeoMusic);
-    swapStatus('geo');swapSubmit('geo');
+    swapFields('geo');swapSubmit('geo');
     startGeoTitleBlink();
     document.body.classList.add('t-geo');
     curTheme='geo';
@@ -623,7 +613,7 @@ function activate(theme,scale,audio){
 function deactivate(silent){
   stopAmbient();stopRain();stopGeoMusic();stopGeoTitleBlink();
   if(window.speechSynthesis)window.speechSynthesis.cancel();
-  restoreSwaps();
+  restoreSwaps();restoreTitle();
   var wrap=document.getElementById('eg-root');
   if(wrap&&wrap.parentNode)wrap.parentNode.removeChild(wrap);
   var all=['eg','t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','t-pokemon','is-lcars','is-bsg','is-matrix','sc-sm','sc-md','sc-lg','sc-xl'];
@@ -653,7 +643,7 @@ function stSwitchTheme(name){
   if(statsLoaded&&statsData&&statsVisible){var sb2=document.getElementById('st-sb2');if(sb2)sb2.innerHTML=renderTrekStats(statsData,d);}
   var sBtns=document.querySelectorAll('.st-sb');
   for(var j=0;j<sBtns.length;j++)sBtns[j].className='st-sb'+(sBtns[j].getAttribute('data-theme')===name?' on':'');
-  swapStatus(name);swapSubmit(name);
+  swapFields(name);swapSubmit(name);setThemeTitle(name);
   if(name==='matrix')startRain();else stopRain();
   if(audioEnabled){stopAmbient();startAmbient();speakGreeting(name);}
   curTheme=name;savePref();

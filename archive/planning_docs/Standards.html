@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TEAM Group — UI Standards Reference</title>
+<style>
+:root{
+  --bg:#0c0c0c;--card:#1a1a1a;--text:#fff;--muted:#a0a0a0;
+  --red:#EB1C2D;--ibdr:#444;--ibg:#2a2a2a;--bdr:#333;
+  --ok:#00c853;--warn:#ffab00;--danger:#f44336;--info:#64b5f6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+#sidebar{width:230px;flex-shrink:0;background:#0e0e0e;border-right:1px solid #1a1a1a;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sb-head{padding:14px 16px;border-bottom:1px solid #1a1a1a;}
+.sb-logo{color:var(--red);font-weight:700;font-size:13px;display:block;margin-bottom:3px;}
+.sb-sub{color:#3a3a3a;font-size:9px;letter-spacing:.5px;text-transform:uppercase;}
+.sb-group{padding:14px 12px 4px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#2a2a2a;}
+.sb-link{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:12px;color:#555;text-decoration:none;border-left:2px solid transparent;transition:all .15s;cursor:pointer;}
+.sb-link:hover{color:#aaa;background:rgba(255,255,255,.03);}
+.sb-link.active{color:#fff;border-left-color:var(--red);background:rgba(235,28,45,.06);}
+.sb-num{font-size:9px;color:#2a2a2a;margin-left:auto;font-variant-numeric:tabular-nums;}
+
+/* ── MAIN ── */
+#main{flex:1;overflow-y:auto;padding:0 0 80px;}
+.top-bar{position:sticky;top:0;z-index:100;background:#111;border-bottom:2px solid var(--red);padding:0 32px;display:flex;align-items:center;gap:14px;min-height:44px;}
+.tb-title{font-size:12px;color:var(--muted);}
+.tb-hint{font-size:11px;color:#2a2a2a;margin-left:auto;}
+
+/* ── PAGE SECTIONS ── */
+.std-section{padding:40px 32px 32px;border-bottom:2px solid #111;}
+.std-section:last-child{border-bottom:none;}
+.std-hdr{display:flex;align-items:baseline;gap:14px;margin-bottom:6px;}
+.std-num{font-size:11px;font-weight:700;color:var(--red);font-variant-numeric:tabular-nums;letter-spacing:.5px;}
+.std-title{font-size:20px;font-weight:700;}
+.std-rule{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6;border-left:3px solid var(--red);padding-left:12px;margin-left:0;}
+.std-rule strong{color:var(--text);}
+
+/* ── EXAMPLE BLOCK ── */
+.ex-wrap{background:#111;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;margin-bottom:16px;}
+.ex-label{background:#090909;border-bottom:1px solid #1a1a1a;padding:7px 16px;font-size:10px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:10px;}
+.ex-label .tag{padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.5px;}
+.tag-do{background:rgba(0,200,83,.12);color:var(--ok);}
+.tag-dont{background:rgba(244,67,54,.12);color:var(--danger);}
+.tag-rule{background:rgba(100,181,246,.12);color:var(--info);}
+.ex-body{padding:20px 24px;}
+
+/* ── RULE TABLE ── */
+.rule-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;}
+.rule-table th{text-align:left;padding:9px 12px;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--bdr);}
+.rule-table td{padding:10px 12px;border-bottom:1px solid #1a1a1a;vertical-align:top;}
+.rule-table tr:last-child td{border-bottom:none;}
+.rule-table .prop{font-family:monospace;font-size:12px;color:var(--info);}
+.rule-table .val{font-family:monospace;font-size:12px;color:#ccc;}
+.rule-table .note{font-size:12px;color:var(--muted);}
+
+/* ── SWATCH GRID ── */
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+.sw{display:flex;flex-direction:column;gap:6px;min-width:100px;}
+.sw-color{height:40px;border-radius:6px;border:1px solid rgba(255,255,255,.06);}
+.sw-name{font-size:10px;font-weight:700;color:var(--text);}
+.sw-val{font-size:10px;color:var(--muted);font-family:monospace;}
+.sw-use{font-size:10px;color:#555;}
+
+/* ─── RE-USED DESIGN SYSTEM COMPONENTS (mirror AllScreens.html) ─── */
+.cw{width:95%;max-width:1400px;}
+.cf{background:var(--card);padding:36px;border-radius:8px;border:1px solid var(--bdr);box-shadow:0 4px 16px rgba(255,255,255,.04);width:100%;}
+.pctx{padding:10px 16px;background:rgba(100,181,246,.06);border:1px solid rgba(100,181,246,.18);border-radius:6px;font-size:12px;color:#9ac8f5;display:flex;align-items:center;gap:10px;}
+.pctx-w{background:rgba(255,171,0,.07);border-color:rgba(255,171,0,.25);color:#ffcc02;}
+h2.s{color:var(--text);font-size:1.05rem;font-weight:600;border-bottom:1px solid var(--bdr);padding-bottom:9px;margin:28px 0 16px;}
+h2.s:first-child{margin-top:0;}
+.ti{background:rgba(255,255,255,.02);border-radius:8px;padding:14px;margin-bottom:16px;border:1px solid var(--bdr);display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.ir{display:flex;flex-direction:column;font-size:13px;}
+.ir .l{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.ir .v{color:var(--text);font-weight:600;}
+.ir.s2{grid-column:span 2;}
+.ir.chg .v{color:var(--info);}
+.ff{margin-bottom:14px;}
+.fl{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+.req{color:var(--red);}
+.fi{width:100%;padding:10px 13px;font-size:13px;font-family:inherit;border:1px solid var(--ibdr);border-radius:6px;background:var(--ibg);color:var(--text);}
+.fr{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:14px;}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.rg{display:flex;border:1px solid var(--ibdr);border-radius:6px;overflow:hidden;background:var(--ibg);}
+.rg label{flex:1;position:relative;margin:0;}
+.rg label:not(:last-child){border-right:1px solid var(--ibdr);}
+.rg input[type=radio]{position:absolute;opacity:0;width:0;height:0;}
+.rb{display:block;padding:9px 14px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);}
+.rg input[type=radio]:checked+.rb{background:var(--red);color:#fff;}
+.cbt{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:7px;margin-top:4px;}
+.ct{display:flex;align-items:center;padding:9px 12px;background:var(--ibg);border:1px solid var(--ibdr);border-radius:6px;cursor:pointer;font-size:13px;gap:8px;}
+.ct input{accent-color:var(--red);width:15px;height:15px;flex-shrink:0;}
+.ct.on{border-color:var(--red);color:var(--red);font-weight:600;background:rgba(235,28,45,.08);}
+.sub-sec{margin-top:8px;padding:14px 16px;background:#1e1e1e;border-radius:6px;border:1px solid #2e2e2e;display:none;}
+.sub-sec.open{display:block;}
+.sub-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:block;}
+.cbg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;}
+.cbg label{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:var(--text);padding:6px 8px;border-radius:4px;}
+.cbg label:hover{background:rgba(255,255,255,.04);}
+.cbg input{accent-color:var(--red);width:14px;height:14px;flex-shrink:0;}
+.cht{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:4px;}
+.cht th{text-align:left;padding:9px 12px;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--bdr);}
+.cht td{padding:10px 12px;border-bottom:1px solid var(--bdr);vertical-align:middle;}
+.cht tr:last-child td{border-bottom:none;}
+.cht .cn{font-weight:600;display:block;margin-bottom:2px;}
+.cht .cs{font-size:11px;color:var(--muted);}
+.sbg{display:flex;background:var(--ibg);border:1px solid var(--ibdr);border-radius:5px;overflow:hidden;width:fit-content;}
+.sb{padding:6px 11px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:10px;font-weight:700;text-transform:uppercase;border-right:1px solid var(--ibdr);font-family:inherit;white-space:nowrap;}
+.sb:last-child{border-right:none;}
+.sb.p{background:var(--warn);color:#000;}
+.sb.c{background:var(--ok);color:#fff;}
+.sb.n{background:var(--danger);color:#fff;}
+.decision-wrap{margin-bottom:16px;}
+.decision-wrap .fl{margin-bottom:10px;}
+.dtog{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--ibdr);border-radius:8px;overflow:hidden;width:100%;}
+.dt{padding:16px 24px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;font-weight:700;font-family:inherit;transition:all .15s;text-align:center;}
+.dt:first-child{border-right:2px solid var(--ibdr);}
+.dt:hover{background:rgba(255,255,255,.05);color:#fff;}
+.dt.on-approve{background:var(--ok);color:#fff;}
+.dt.on-reject{background:#444;color:#fff;}
+.bdg{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.b-open{background:rgba(235,28,45,.1);color:var(--red);border:1px solid var(--red);}
+.b-pend{background:rgba(255,171,0,.1);color:var(--warn);border:1px solid var(--warn);}
+.b-ok{background:rgba(0,200,83,.1);color:var(--ok);border:1px solid var(--ok);}
+.co{padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:12px;}
+.co-i{background:rgba(100,181,246,.07);border:1px solid rgba(100,181,246,.2);color:#9ac8f5;}
+.co-w{background:rgba(255,171,0,.07);border:1px solid rgba(255,171,0,.2);color:#ffcc02;}
+.fhdr{margin-bottom:24px;}
+.fhdr .bdg{margin-bottom:10px;}
+.fhdr h1{font-size:22px;font-weight:700;margin-bottom:4px;}
+.fhdr p{color:var(--muted);font-size:13px;}
+.btn{display:inline-block;padding:12px 22px;border:none;border-radius:8px;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer;text-align:center;}
+.btn-p{background:var(--red);color:#fff;}
+.btn-s{background:#2a2a2a;color:#fff;border:1px solid var(--bdr);}
+.btn-full{width:100%;display:block;}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--bdr);}
+.act1{margin-top:24px;padding-top:20px;border-top:1px solid var(--bdr);}
+.conf-screen{text-align:center;padding:52px 24px;}
+.conf-screen .ci{font-size:56px;margin-bottom:16px;}
+.conf-screen h2{color:var(--ok);font-size:22px;font-weight:700;margin:0 0 10px;}
+.conf-screen p{color:var(--muted);font-size:14px;margin-bottom:26px;max-width:440px;margin-left:auto;margin-right:auto;}
+.conf-screen .cb{max-width:220px;display:block;margin:0 auto;}
+.conf-screen .cx{color:#444;font-size:12px;margin-top:12px;}
+.email-frame{background:#f4f4f4;border-radius:8px;overflow:hidden;max-width:580px;}
+.email-hdr{background:#0c0c0c;padding:20px;text-align:center;}
+.email-body{background:#fff;padding:28px;color:#1a1a1a;}
+.email-body h2{font-size:18px;font-weight:700;margin-bottom:12px;}
+.email-body p{font-size:13px;color:#444;line-height:1.7;margin-bottom:12px;}
+.eib{background:#f8f8f8;border:1px solid #e0e0e0;border-radius:6px;padding:14px 18px;margin:14px 0;}
+.eib .ei{display:flex;flex-direction:column;margin-bottom:8px;}
+.eib .ei:last-child{margin-bottom:0;}
+.eib .el{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:2px;}
+.eib .ev{font-weight:600;color:#1a1a1a;font-size:13px;}
+.ecta{display:block;background:#EB1C2D;color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:13px 22px;border-radius:8px;text-align:center;margin:18px 0;}
+.eftr{background:#f0f0f0;padding:12px 20px;font-size:11px;color:#888;text-align:center;border-top:1px solid #ddd;}
+
+/* ── STANDARDS PAGE SPECIFIC ── */
+.index-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:8px;}
+.idx-card{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:16px 18px;cursor:pointer;transition:border-color .15s;}
+.idx-card:hover{border-color:#555;}
+.idx-card .ic-num{font-size:10px;font-weight:700;color:var(--red);margin-bottom:4px;}
+.idx-card .ic-name{font-size:14px;font-weight:700;margin-bottom:4px;}
+.idx-card .ic-desc{font-size:12px;color:var(--muted);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.two-col-wide{display:grid;grid-template-columns:2fr 1fr;gap:16px;}
+</style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <div class="sb-head">
+    <span class="sb-logo">📐 UI Standards</span>
+    <span class="sb-sub">TEAM Group Employee Forms</span>
+  </div>
+  <div id="sb-links">
+    <div class="sb-group">Foundation</div>
+    <div class="sb-link" onclick="jump('s01')"><span>01</span> Design Tokens<span class="sb-num">Colors · Spacing</span></div>
+    <div class="sb-link" onclick="jump('s02')"><span>02</span> Typography</div>
+    <div class="sb-link" onclick="jump('s03')"><span>03</span> Page Layout</div>
+    <div class="sb-group">Form Components</div>
+    <div class="sb-link" onclick="jump('s04')"><span>04</span> Context Banner</div>
+    <div class="sb-link" onclick="jump('s05')"><span>05</span> Form Header</div>
+    <div class="sb-link" onclick="jump('s06')"><span>06</span> Section Heading</div>
+    <div class="sb-link" onclick="jump('s07')"><span>07</span> Info Grid</div>
+    <div class="sb-link" onclick="jump('s08')"><span>08</span> Input Fields</div>
+    <div class="sb-link" onclick="jump('s09')"><span>09</span> Radio Group</div>
+    <div class="sb-link" onclick="jump('s10')"><span>10</span> Checkbox Tiles</div>
+    <div class="sb-link" onclick="jump('s11')"><span>11</span> Expanding Sub-Section</div>
+    <div class="sb-group">Action Components</div>
+    <div class="sb-link" onclick="jump('s12')"><span>12</span> Checklist Table</div>
+    <div class="sb-link" onclick="jump('s13')"><span>13</span> Status Buttons</div>
+    <div class="sb-link" onclick="jump('s14')"><span>14</span> HR Decision Buttons</div>
+    <div class="sb-link" onclick="jump('s15')"><span>15</span> Action Buttons</div>
+    <div class="sb-group">Feedback &amp; Status</div>
+    <div class="sb-link" onclick="jump('s16')"><span>16</span> Status Badges</div>
+    <div class="sb-link" onclick="jump('s17')"><span>17</span> Callout Boxes</div>
+    <div class="sb-link" onclick="jump('s18')"><span>18</span> Confirmation Screen</div>
+    <div class="sb-group">Communication</div>
+    <div class="sb-link" onclick="jump('s19')"><span>19</span> Email Template</div>
+    <div class="sb-group">Full Form Standards</div>
+    <div class="sb-link" onclick="jump('s20')"><span>20</span> Request Forms</div>
+    <div class="sb-link" onclick="jump('s21')"><span>21</span> Approval Forms</div>
+    <div class="sb-link" onclick="jump('s22')"><span>22</span> Specialist Forms</div>
+  </div>
+</nav>
+
+<div id="main">
+  <div class="top-bar">
+    <span class="tb-title">TEAM Group — UI Standards Reference · All HTML Views</span>
+    <span class="tb-hint">Live examples for every component · Open AllScreens.html to see all 20 views</span>
+  </div>
+
+  <!-- ════════════════ 01 DESIGN TOKENS ════════════════ -->
+  <div class="std-section" id="s01">
+    <div class="std-hdr"><span class="std-num">01</span><span class="std-title">Design Tokens</span></div>
+    <p class="std-rule">All colors, backgrounds, and borders come from CSS custom properties defined on <strong>:root</strong>. Never use hardcoded hex values in component CSS — always reference a token. Tokens are defined identically in every HTML file.</p>
+
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">Color Tokens</span></div>
+      <div class="ex-body">
+        <div class="swatches">
+          <div class="sw"><div class="sw-color" style="background:#0c0c0c;"></div><div class="sw-name">--bg</div><div class="sw-val">#0c0c0c</div><div class="sw-use">Page background</div></div>
+          <div class="sw"><div class="sw-color" style="background:#1a1a1a;"></div><div class="sw-name">--card</div><div class="sw-val">#1a1a1a</div><div class="sw-use">Card / form surface</div></div>
+          <div class="sw"><div class="sw-color" style="background:#2a2a2a;"></div><div class="sw-name">--ibg</div><div class="sw-val">#2a2a2a</div><div class="sw-use">Input background</div></div>
+          <div class="sw"><div class="sw-color" style="background:#333;"></div><div class="sw-name">--bdr</div><div class="sw-val">#333</div><div class="sw-use">Card border</div></div>
+          <div class="sw"><div class="sw-color" style="background:#444;"></div><div class="sw-name">--ibdr</div><div class="sw-val">#444</div><div class="sw-use">Input / button border</div></div>
+          <div class="sw"><div class="sw-color" style="background:#EB1C2D;"></div><div class="sw-name">--red</div><div class="sw-val">#EB1C2D</div><div class="sw-use">Brand / primary action</div></div>
+          <div class="sw"><div class="sw-color" style="background:#00c853;"></div><div class="sw-name">--ok</div><div class="sw-val">#00c853</div><div class="sw-use">Success / complete</div></div>
+          <div class="sw"><div class="sw-color" style="background:#ffab00;"></div><div class="sw-name">--warn</div><div class="sw-val">#ffab00</div><div class="sw-use">Pending / warning</div></div>
+          <div class="sw"><div class="sw-color" style="background:#f44336;"></div><div class="sw-name">--danger</div><div class="sw-val">#f44336</div><div class="sw-use">Error / not returned</div></div>
+          <div class="sw"><div class="sw-color" style="background:#64b5f6;"></div><div class="sw-name">--info</div><div class="sw-val">#64b5f6</div><div class="sw-use">Changed values / info</div></div>
+          <div class="sw"><div class="sw-color" style="background:#a0a0a0;"></div><div class="sw-name">--muted</div><div class="sw-val">#a0a0a0</div><div class="sw-use">Labels / secondary text</div></div>
+        </div>
+        <table class="rule-table">
+          <thead><tr><th>Token</th><th>Value</th><th>Usage Rule</th></tr></thead>
+          <tbody>
+            <tr><td class="prop">--red</td><td class="val">#EB1C2D</td><td class="note">Primary buttons, active borders, brand logo text, checkbox accent, required asterisk</td></tr>
+            <tr><td class="prop">--ok</td><td class="val">#00c853</td><td class="note">Complete status button, HR Approve button, confirmation screen title, badge</td></tr>
+            <tr><td class="prop">--warn</td><td class="val">#ffab00</td><td class="note">Pending status button (default state for all new checklist rows)</td></tr>
+            <tr><td class="prop">--danger</td><td class="val">#f44336</td><td class="note">Not Returned status button (Asset Retrieval only), error states</td></tr>
+            <tr><td class="prop">--info</td><td class="val">#64b5f6</td><td class="note">Changed fields in info grid (.ir.chg), info callout text</td></tr>
+            <tr><td class="prop">--muted</td><td class="val">#a0a0a0</td><td class="note">Field labels (.fl), secondary info text, inactive button text</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 02 TYPOGRAPHY ════════════════ -->
+  <div class="std-section" id="s02">
+    <div class="std-hdr"><span class="std-num">02</span><span class="std-title">Typography</span></div>
+    <p class="std-rule">System font stack everywhere — no web fonts. One heading size per role. No inline font-size except for documented exceptions.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">Type Scale</span></div>
+      <div class="ex-body">
+        <table class="rule-table">
+          <thead><tr><th>Element</th><th>Size</th><th>Weight</th><th>Color</th><th>Usage</th></tr></thead>
+          <tbody>
+            <tr><td class="prop">fhdr h1</td><td class="val">22px</td><td class="val">700</td><td class="val">--text</td><td class="note">Form title (Specialist &amp; Approval header)</td></tr>
+            <tr><td class="prop">h2.s</td><td class="val">1.05rem</td><td class="val">600</td><td class="val">--text</td><td class="note">Section heading — always with bottom border</td></tr>
+            <tr><td class="prop">body / inputs</td><td class="val">13px</td><td class="val">400</td><td class="val">--text</td><td class="note">All form fields, table cells, general text</td></tr>
+            <tr><td class="prop">.fl (field label)</td><td class="val">12px</td><td class="val">600</td><td class="val">--muted</td><td class="note">Label above every input / group</td></tr>
+            <tr><td class="prop">.ir .l (info label)</td><td class="val">10px</td><td class="val">400</td><td class="val">--muted</td><td class="note">Info grid key (uppercase + letter-spacing)</td></tr>
+            <tr><td class="prop">.ir .v (info value)</td><td class="val">13px</td><td class="val">600</td><td class="val">--text</td><td class="note">Info grid value</td></tr>
+            <tr><td class="prop">.cht .cn</td><td class="val">13px</td><td class="val">600</td><td class="val">--text</td><td class="note">Checklist step name</td></tr>
+            <tr><td class="prop">.cht .cs</td><td class="val">11px</td><td class="val">400</td><td class="val">--muted</td><td class="note">Checklist step sub-text / hint</td></tr>
+            <tr><td class="prop">.sb (status btn)</td><td class="val">10px</td><td class="val">700</td><td class="val">--muted</td><td class="note">Status button label (uppercase)</td></tr>
+            <tr><td class="prop">.dt (decision btn)</td><td class="val">15px</td><td class="val">700</td><td class="val">--muted</td><td class="note">HR decision button — intentionally larger</td></tr>
+            <tr><td class="prop">.btn (action btn)</td><td class="val">14px</td><td class="val">700</td><td class="val">depends</td><td class="note">Form submit / save / complete buttons</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 03 PAGE LAYOUT ════════════════ -->
+  <div class="std-section" id="s03">
+    <div class="std-hdr"><span class="std-num">03</span><span class="std-title">Page Layout</span></div>
+    <p class="std-rule"><strong>One width. One card. Every form.</strong> All forms use <code style="color:var(--info)">.sim</code> as the page wrapper, <code style="color:var(--info)">.cw</code> for the content width, and <code style="color:var(--info)">.cf</code> as the card surface. No narrow layouts, no centered small cards, no mixed widths.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">Layout Classes</span></div>
+      <div class="ex-body">
+        <table class="rule-table">
+          <thead><tr><th>Class</th><th>CSS</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td class="prop">.sim</td><td class="val">background: --bg; padding: 40px 20px 60px; display:flex; flex-direction:column; align-items:center</td><td class="note">Simulated page background — wraps everything below logo</td></tr>
+            <tr><td class="prop">.cw</td><td class="val">width: 95%; max-width: 1400px</td><td class="note">Content width constraint — ONE width for all forms, no exceptions</td></tr>
+            <tr><td class="prop">.cf</td><td class="val">background: --card; padding: 36px; border-radius: 8px; border: 1px solid --bdr; box-shadow: ...; width: 100%</td><td class="note">The card/form surface that all content lives inside</td></tr>
+            <tr><td class="prop">.logo-wrap</td><td class="val">text-align: center; margin-bottom: 22px; width: 100%</td><td class="note">Logo above every form — img height: 60px</td></tr>
+            <tr><td class="prop">.pctx</td><td class="val">comes before .cf, full .cw width</td><td class="note">Context callout banner — sits between logo and card</td></tr>
+          </tbody>
+        </table>
+        <div class="ex-wrap" style="background:#0a0a0a;border-color:#111;margin-bottom:0;">
+          <div class="ex-label"><span class="tag tag-do">DOM ORDER — every form</span></div>
+          <div class="ex-body" style="font-family:monospace;font-size:12px;color:#888;line-height:2;">
+            <span style="color:#555;">&lt;div class="sim"&gt;</span><br>
+            &nbsp;&nbsp;<span style="color:#555;">&lt;div class="cw"&gt;</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--info);">&lt;div class="logo-wrap"&gt;</span> <span style="color:#555;">logo img</span> <span style="color:var(--info);">&lt;/div&gt;</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--warn);">&lt;div class="pctx"&gt;</span> <span style="color:#555;">context banner (optional)</span> <span style="color:var(--warn);">&lt;/div&gt;</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--ok);">&lt;div class="cf"&gt;</span> <span style="color:#555;">all form content</span> <span style="color:var(--ok);">&lt;/div&gt;</span><br>
+            &nbsp;&nbsp;<span style="color:#555;">&lt;/div&gt;</span><br>
+            <span style="color:#555;">&lt;/div&gt;</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 04 CONTEXT BANNER ════════════════ -->
+  <div class="std-section" id="s04">
+    <div class="std-hdr"><span class="std-num">04</span><span class="std-title">Context Banner</span></div>
+    <p class="std-rule">Every form has a context banner (<code style="color:var(--info)">.pctx</code>) between the logo and the card. It tells the user <strong>which workflow this belongs to</strong> and any critical context they need before filling out the form. Use the blue variant for informational context, yellow (<code style="color:var(--info)">.pctx-w</code>) for warning context (terminations etc).</p>
+    <div class="two-col">
+      <div class="ex-wrap">
+        <div class="ex-label"><span class="tag tag-do">Blue — Info</span> <span style="font-size:10px;color:#555;">Request &amp; specialist forms</span></div>
+        <div class="ex-body">
+          <div class="pctx">ℹ️ &nbsp;Workflow: NEW_EMP_20260422_001 · IT Setup is gated behind this step — complete before start date.</div>
+        </div>
+      </div>
+      <div class="ex-wrap">
+        <div class="ex-label"><span class="tag tag-dont">Yellow — Warning</span> <span style="font-size:10px;color:#555;">Termination forms</span></div>
+        <div class="ex-body">
+          <div class="pctx pctx-w">⚠️ &nbsp;Termination requests require HR approval before offboarding action items are created.</div>
+        </div>
+      </div>
+    </div>
+    <div class="ex-wrap" style="margin-top:16px;">
+      <div class="ex-label"><span class="tag tag-rule">Content Rules</span></div>
+      <div class="ex-body">
+        <table class="rule-table">
+          <thead><tr><th>Form Type</th><th>Banner Content</th></tr></thead>
+          <tbody>
+            <tr><td class="note">New Employee Request</td><td class="note">Describes what submitting will trigger (which departments get action items)</td></tr>
+            <tr><td class="note">Position / Site Change</td><td class="note">Shows current employee snapshot: name · site · title · email</td></tr>
+            <tr><td class="note">Termination Request</td><td class="note">Warning: approval required, assets and access tracked — use yellow variant</td></tr>
+            <tr><td class="note">All Approval Forms</td><td class="note">Submitted by [name] on [date] · Workflow: [ID]</td></tr>
+            <tr><td class="note">All Specialist Forms</td><td class="note">Workflow: [ID] · any gating note (e.g. "IT Setup gated behind this step")</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 05 FORM HEADER ════════════════ -->
+  <div class="std-section" id="s05">
+    <div class="std-hdr"><span class="std-num">05</span><span class="std-title">Form Header</span></div>
+    <p class="std-rule">Approval and specialist forms use a <strong>form header block</strong> (<code style="color:var(--info)">.fhdr</code>) inside the card as the first element — status badge, then h1 with employee name appended, then assignee / subtitle line. Request forms do not use this block (they start directly with a section heading).</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">Example — Pending Approval</span></div>
+      <div class="ex-body">
+        <div class="fhdr">
+          <span class="bdg b-pend">Pending Approval</span>
+          <h1>IT Setup — Jane Doe</h1>
+          <p>Assigned to: it@team-group.com</p>
+        </div>
+      </div>
+    </div>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">Badge States</span></div>
+      <div class="ex-body" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+        <span class="bdg b-open">Open</span><span style="font-size:12px;color:var(--muted);">.b-open — Active specialist action items</span>
+        <span class="bdg b-pend">Pending Approval</span><span style="font-size:12px;color:var(--muted);">.b-pend — Approval forms awaiting decision</span>
+        <span class="bdg b-ok">Closed</span><span style="font-size:12px;color:var(--muted);">.b-ok — Completed workflows</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 06 SECTION HEADING ════════════════ -->
+  <div class="std-section" id="s06">
+    <div class="std-hdr"><span class="std-num">06</span><span class="std-title">Section Heading</span></div>
+    <p class="std-rule"><code style="color:var(--info)">h2.s</code> divides every form into named sections. Always has a bottom border. Margin-top 28px except when it's the very first element in a card. Never skip it — every logical group of fields gets its own section heading.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">Example</span></div>
+      <div class="ex-body">
+        <h2 class="s" style="margin-top:0;">Employee Information</h2>
+        <h2 class="s">System Access</h2>
+        <h2 class="s">Checklist</h2>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 07 INFO GRID ════════════════ -->
+  <div class="std-section" id="s07">
+    <div class="std-hdr"><span class="std-num">07</span><span class="std-title">Info Grid (Ticket Details)</span></div>
+    <p class="std-rule">Read-only employee/ticket summary at the top of approval and specialist forms. Class <code style="color:var(--info)">.ti</code> with <code style="color:var(--info)">.ir</code> items inside. Add <code style="color:var(--info)">.ir.s2</code> for items that should span two columns (e.g. long lists). Add <code style="color:var(--info)">.ir.chg</code> to highlight changed values in blue (position/site change forms only).</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">Standard Info Grid</span></div>
+      <div class="ex-body">
+        <div class="ti">
+          <div class="ir"><span class="l">Employee</span><span class="v">Jane Doe</span></div>
+          <div class="ir"><span class="l">Start Date</span><span class="v">May 12, 2026</span></div>
+          <div class="ir"><span class="l">Job Title</span><span class="v">Site Manager</span></div>
+          <div class="ir"><span class="l">Site</span><span class="v">Edmonton Main</span></div>
+          <div class="ir s2"><span class="l">Equipment</span><span class="v">Laptop (Windows), Mobile Phone, Employee ID Card</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">With Changed Values — Position Change</span></div>
+      <div class="ex-body">
+        <div class="ti">
+          <div class="ir"><span class="l">Employee</span><span class="v">Jane Doe</span></div>
+          <div class="ir"><span class="l">Current Site</span><span class="v">Edmonton Main</span></div>
+          <div class="ir chg"><span class="l">New Site</span><span class="v">Calgary North</span></div>
+          <div class="ir"><span class="l">Current Title</span><span class="v">Field Technician</span></div>
+          <div class="ir chg"><span class="l">New Title</span><span class="v">Senior Technician</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 08 INPUT FIELDS ════════════════ -->
+  <div class="std-section" id="s08">
+    <div class="std-hdr"><span class="std-num">08</span><span class="std-title">Input Fields</span></div>
+    <p class="std-rule">All inputs use class <code style="color:var(--info)">.fi</code> with a label using <code style="color:var(--info)">.fl</code> inside a <code style="color:var(--info)">.ff</code> wrapper. Use <code style="color:var(--info)">.fr</code> (auto-fit responsive grid) or <code style="color:var(--info)">.fr2</code> (fixed 2-col) to group related fields. Required fields get <code style="color:var(--info)">&lt;span class="req"&gt;*&lt;/span&gt;</code> after the label.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">Field Group</span></div>
+      <div class="ex-body">
+        <div class="fr">
+          <div class="ff"><label class="fl">First Name <span class="req">*</span></label><input type="text" class="fi" value="Jane"></div>
+          <div class="ff"><label class="fl">Last Name <span class="req">*</span></label><input type="text" class="fi" value="Doe"></div>
+          <div class="ff"><label class="fl">Start Date <span class="req">*</span></label><input type="date" class="fi" value="2026-05-12"></div>
+          <div class="ff"><label class="fl">Job Title</label><input type="text" class="fi" value="Site Manager"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 09 RADIO GROUP ════════════════ -->
+  <div class="std-section" id="s09">
+    <div class="std-hdr"><span class="std-num">09</span><span class="std-title">Radio Group</span></div>
+    <p class="std-rule">Use <code style="color:var(--info)">.rg</code> (segmented control style) for mutually exclusive choices with 2–4 options. For Yes/No, always use .rg — never dropdowns. Selected state highlights in brand red.</p>
+    <div class="two-col">
+      <div class="ex-wrap">
+        <div class="ex-label"><span class="tag tag-do">Yes / No</span></div>
+        <div class="ex-body">
+          <div class="ff"><label class="fl">Safety Onboarding Required?</label>
+            <div class="rg"><label><input type="radio" name="r1" checked><span class="rb">Yes</span></label><label><input type="radio" name="r1"><span class="rb">No</span></label></div>
+          </div>
+        </div>
+      </div>
+      <div class="ex-wrap">
+        <div class="ex-label"><span class="tag tag-do">Multiple Options</span></div>
+        <div class="ex-body">
+          <div class="ff"><label class="fl">Employment Type <span class="req">*</span></label>
+            <div class="rg"><label><input type="radio" name="r2" checked><span class="rb">Salaried</span></label><label><input type="radio" name="r2"><span class="rb">Hourly</span></label><label><input type="radio" name="r2"><span class="rb">Contract</span></label></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 10 CHECKBOX TILES ════════════════ -->
+  <div class="std-section" id="s10">
+    <div class="std-hdr"><span class="std-num">10</span><span class="std-title">Checkbox Tiles</span></div>
+    <p class="std-rule">Multi-select options use a responsive tile grid (<code style="color:var(--info)">.cbt</code> + <code style="color:var(--info)">.ct</code>). Checked tiles highlight with red border and tint. Tiles with large sub-selections (Jonas, BOSS, Central Purchasing, Credit Card) trigger an <strong>expanding sub-section</strong> — see Standard 11.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">Equipment Selection</span></div>
+      <div class="ex-body">
+        <div class="ff"><label class="fl">Select all that apply</label>
+          <div class="cbt">
+            <label class="ct on"><input type="checkbox" checked><span>Laptop (Windows)</span></label>
+            <label class="ct on"><input type="checkbox" checked><span>Mobile Phone</span></label>
+            <label class="ct"><input type="checkbox"><span>Business Cards</span></label>
+            <label class="ct"><input type="checkbox"><span>Credit Card</span></label>
+            <label class="ct"><input type="checkbox"><span>Company Vehicle</span></label>
+            <label class="ct"><input type="checkbox"><span>Employee ID Card</span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 11 EXPANDING SUB-SECTION ════════════════ -->
+  <div class="std-section" id="s11">
+    <div class="std-hdr"><span class="std-num">11</span><span class="std-title">Expanding Sub-Section</span></div>
+    <p class="std-rule">When a checkbox tile represents a system or item that requires <strong>further sub-selection</strong> (too many options for tiles), a <code style="color:var(--info)">.sub-sec</code> div expands inline beneath the tile grid when the parent checkbox is checked. Sub-selections use a compact <code style="color:var(--info)">.cbg</code> grid. Used for: BOSS committees, Jonas job numbers, Central Purchasing sites, Credit Card types.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">Expanding Sub-Section — BOSS &amp; Jonas</span></div>
+      <div class="ex-body">
+        <div class="ff">
+          <div class="cbt">
+            <label class="ct on"><input type="checkbox" id="demo-boss" onchange="document.getElementById('demo-boss-sub').classList.toggle('open',this.checked)" checked><span>BOSS</span></label>
+            <label class="ct"><input type="checkbox" id="demo-jonas" onchange="document.getElementById('demo-jonas-sub').classList.toggle('open',this.checked)"><span>Jonas</span></label>
+            <label class="ct"><input type="checkbox"><span>Fleetio</span></label>
+          </div>
+          <div id="demo-boss-sub" class="sub-sec open" style="margin-top:10px;">
+            <span class="sub-lbl">BOSS — Select Committees</span>
+            <div class="cbg">
+              <label><input type="checkbox" checked> Incidents</label>
+              <label><input type="checkbox"> Cost Sheet</label>
+              <label><input type="checkbox" checked> Trip Reports</label>
+              <label><input type="checkbox"> Grievances</label>
+              <label><input type="checkbox"> Health &amp; Safety</label>
+              <label><input type="checkbox"> Environmental</label>
+            </div>
+          </div>
+          <div id="demo-jonas-sub" class="sub-sec" style="margin-top:10px;">
+            <span class="sub-lbl">Jonas — Select Cost Sheet Job Numbers</span>
+            <div class="cbg">
+              <label><input type="checkbox"> 10001 — Edmonton Main</label>
+              <label><input type="checkbox"> 10002 — Edmonton North</label>
+              <label><input type="checkbox"> 10003 — Leduc</label>
+              <label><input type="checkbox"> 10004 — Nisku</label>
+              <label><input type="checkbox"> 10005 — Calgary North</label>
+              <label><input type="checkbox"> 10006 — Calgary South</label>
+              <label><input type="checkbox"> 10007 — Red Deer</label>
+              <label><input type="checkbox"> 10008 — Lethbridge</label>
+              <label><input type="checkbox"> 10009 — Vancouver Island</label>
+              <label><input type="checkbox"> 10010 — Kelowna</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">Sub-section Triggers</span></div>
+      <div class="ex-body">
+        <table class="rule-table">
+          <thead><tr><th>Tile</th><th>Sub-selections</th><th>Used In</th></tr></thead>
+          <tbody>
+            <tr><td class="note">BOSS</td><td class="note">Committees (Incidents, Cost Sheet, Trip Reports, Grievances, Health &amp; Safety, Environmental)</td><td class="note">New Employee Request, Position Change</td></tr>
+            <tr><td class="note">Jonas</td><td class="note">Cost Sheet Job Numbers (10001–10010)</td><td class="note">New Employee Request, Position Change</td></tr>
+            <tr><td class="note">Central Purchasing</td><td class="note">Purchasing Sites (by job number)</td><td class="note">New Employee Request, Position Change</td></tr>
+            <tr><td class="note">Credit Card</td><td class="note">Card types (USA Corporate Card, Canada Corporate Card, Home Depot Card)</td><td class="note">New Employee Request, Position Change, Credit Card specialist form</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 12 CHECKLIST TABLE ════════════════ -->
+  <div class="std-section" id="s12">
+    <div class="std-hdr"><span class="std-num">12</span><span class="std-title">Checklist Table</span></div>
+    <p class="std-rule"><strong>All step lists in all forms use the checklist table — no exceptions.</strong> Three columns always: Step · Status · Notes / Comments. No checkboxes, no bullet lists, no plain text lists. Every row starts with Pending (amber). Notes column is always present so specialists can log context on any step without needing another form.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">Standard — Pending / Complete</span> <span style="font-size:10px;color:#555;">Used on all forms except Asset Retrieval</span></div>
+      <div class="ex-body">
+        <table class="cht">
+          <thead><tr><th>Step</th><th style="width:160px;">Status</th><th>Notes / Comments</th></tr></thead>
+          <tbody>
+            <tr><td><span class="cn">Create Google Workspace account</span><span class="cs">Login: jane.doe@team-group.com</span></td><td><div class="sbg"><button class="sb p">Pending</button><button class="sb">Complete</button></div></td><td><textarea class="fi" rows="2" placeholder="Notes..."></textarea></td></tr>
+            <tr><td><span class="cn">Configure email signature</span><span class="cs">Standard TEAM Group format</span></td><td><div class="sbg"><button class="sb c">Complete</button><button class="sb">Pending</button></div></td><td><textarea class="fi" rows="2" placeholder="Notes..."></textarea></td></tr>
+            <tr><td><span class="cn">Set up laptop</span><span class="cs"></span></td><td><div class="sbg"><button class="sb p">Pending</button><button class="sb">Complete</button></div></td><td><textarea class="fi" rows="2" placeholder="Notes..."></textarea></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">3-State — Pending / Collected / Not Returned</span> <span style="font-size:10px;color:#555;">Asset Retrieval form only</span></div>
+      <div class="ex-body">
+        <table class="cht">
+          <thead><tr><th>Step</th><th style="width:260px;">Status</th><th>Notes / Comments</th></tr></thead>
+          <tbody>
+            <tr><td><span class="cn">Laptop (Windows)</span><span class="cs">Serial: LT-00421</span></td><td><div class="sbg"><button class="sb p">Pending</button><button class="sb">Collected</button><button class="sb">Not Returned</button></div></td><td><textarea class="fi" rows="2" placeholder="Notes..."></textarea></td></tr>
+            <tr><td><span class="cn">Mobile Phone</span><span class="cs">iPhone 14 Pro</span></td><td><div class="sbg"><button class="sb">Pending</button><button class="sb c">Collected</button><button class="sb">Not Returned</button></div></td><td><textarea class="fi" rows="2" placeholder="Notes..."></textarea></td></tr>
+            <tr><td><span class="cn">Employee ID / Access Card</span><span class="cs">Badge #4821</span></td><td><div class="sbg"><button class="sb">Pending</button><button class="sb">Collected</button><button class="sb n">Not Returned</button></div></td><td><textarea class="fi" rows="2" placeholder="Notes..."></textarea></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">Row Data Format (JS)</span></div>
+      <div class="ex-body" style="font-family:monospace;font-size:12px;color:#888;line-height:1.9;">
+        <span style="color:#555;">// Standard row: [stepName, hintText]</span><br>
+        <span style="color:var(--info);">['Create Google Workspace account', 'Login: jane.doe@team-group.com']</span><br>
+        <span style="color:#555;">// Row with no hint:</span><br>
+        <span style="color:var(--info);">['Set up laptop', '']</span><br>
+        <span style="color:#555;">// Asset Retrieval row (3-state buttons): add '3' as third element</span><br>
+        <span style="color:var(--info);">['Laptop (Windows)', 'Serial: LT-00421', '3']</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 13 STATUS BUTTONS ════════════════ -->
+  <div class="std-section" id="s13">
+    <div class="std-hdr"><span class="std-num">13</span><span class="std-title">Status Buttons</span></div>
+    <p class="std-rule">Inline segmented button groups (<code style="color:var(--info)">.sbg</code> + <code style="color:var(--info)">.sb</code>) for per-row status tracking inside the checklist table. Active state classes: <code style="color:var(--info)">.p</code> = Pending (amber), <code style="color:var(--info)">.c</code> = Complete/Collected (green), <code style="color:var(--info)">.n</code> = Not Returned (red). Default (no class) = inactive/dimmed.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">All States</span></div>
+      <div class="ex-body" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+        <div>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:6px;">Default (new row)</p>
+          <div class="sbg"><button class="sb p">Pending</button><button class="sb">Complete</button></div>
+        </div>
+        <div>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:6px;">Complete</p>
+          <div class="sbg"><button class="sb">Pending</button><button class="sb c">Complete</button></div>
+        </div>
+        <div>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:6px;">3-State Default</p>
+          <div class="sbg"><button class="sb p">Pending</button><button class="sb">Collected</button><button class="sb">Not Returned</button></div>
+        </div>
+        <div>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:6px;">Collected</p>
+          <div class="sbg"><button class="sb">Pending</button><button class="sb c">Collected</button><button class="sb">Not Returned</button></div>
+        </div>
+        <div>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:6px;">Not Returned</p>
+          <div class="sbg"><button class="sb">Pending</button><button class="sb">Collected</button><button class="sb n">Not Returned</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 14 HR DECISION BUTTONS ════════════════ -->
+  <div class="std-section" id="s14">
+    <div class="std-hdr"><span class="std-num">14</span><span class="std-title">HR Decision Buttons</span></div>
+    <p class="std-rule">The approve/reject control on approval forms. Full-width 2-column grid — intentionally large and prominent because this is the most consequential action on the page. <strong>Never use small buttons or a dropdown for this decision.</strong></p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">Approve Selected</span></div>
+      <div class="ex-body" style="max-width:500px;">
+        <div class="decision-wrap">
+          <label class="fl">Select your decision</label>
+          <div class="dtog">
+            <button class="dt on-approve">✓ &nbsp;Approve Change</button>
+            <button class="dt">✕ &nbsp;Reject</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-dont">Reject Selected</span></div>
+      <div class="ex-body" style="max-width:500px;">
+        <div class="decision-wrap">
+          <label class="fl">Select your decision</label>
+          <div class="dtog">
+            <button class="dt">✓ &nbsp;Approve Change</button>
+            <button class="dt on-reject">✕ &nbsp;Reject</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 15 ACTION BUTTONS ════════════════ -->
+  <div class="std-section" id="s15">
+    <div class="std-hdr"><span class="std-num">15</span><span class="std-title">Action Buttons</span></div>
+    <p class="std-rule">Forms end with one of two button layouts. <strong>Two-button forms</strong> (Save Draft + Submit) use <code style="color:var(--info)">.acts</code> (2-col grid). <strong>Single-action forms</strong> (specialist forms, approval submit) use <code style="color:var(--info)">.act1</code> with <code style="color:var(--info)">.btn-full</code>. Always separated from form content by a top border.</p>
+    <div class="two-col">
+      <div class="ex-wrap">
+        <div class="ex-label"><span class="tag tag-do">.acts — Two buttons (Request Forms)</span></div>
+        <div class="ex-body">
+          <div class="acts"><button class="btn btn-s">Save Draft</button><button class="btn btn-p">Submit Request</button></div>
+        </div>
+      </div>
+      <div class="ex-wrap">
+        <div class="ex-label"><span class="tag tag-do">.act1 — Single full-width (Specialist)</span></div>
+        <div class="ex-body">
+          <div class="act1"><button class="btn btn-p btn-full">Mark Task Finalized</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="ex-wrap" style="margin-top:16px;">
+      <div class="ex-label"><span class="tag tag-rule">Button Label Standards</span></div>
+      <div class="ex-body">
+        <table class="rule-table">
+          <thead><tr><th>Form Type</th><th>Primary Button Label</th><th>Secondary</th></tr></thead>
+          <tbody>
+            <tr><td class="note">New Employee Request</td><td class="val">Submit Request</td><td class="val">Save Draft</td></tr>
+            <tr><td class="note">Position / Site Change</td><td class="val">Submit to HR</td><td class="val">Save Draft</td></tr>
+            <tr><td class="note">Termination Request</td><td class="val">Submit to HR</td><td class="val">Save Draft</td></tr>
+            <tr><td class="note">Status Change Approval</td><td class="val">Submit Decision</td><td class="note">—</td></tr>
+            <tr><td class="note">Termination Approval</td><td class="val">Submit Decision</td><td class="note">—</td></tr>
+            <tr><td class="note">HR Verification &amp; ADP</td><td class="val">Confirm &amp; Complete</td><td class="note">—</td></tr>
+            <tr><td class="note">All Specialist Forms</td><td class="val">Mark Task Finalized</td><td class="note">—</td></tr>
+            <tr><td class="note">30/60/90 Review Setup</td><td class="val">Confirm &amp; Complete</td><td class="note">—</td></tr>
+            <tr><td class="note">Asset Retrieval</td><td class="val">Submit Collection Report</td><td class="note">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 16 STATUS BADGES ════════════════ -->
+  <div class="std-section" id="s16">
+    <div class="std-hdr"><span class="std-num">16</span><span class="std-title">Status Badges</span></div>
+    <p class="std-rule">Pill badges (<code style="color:var(--info)">.bdg</code>) for workflow and action-item status. Only three states. Used in the form header and in the dashboard table. Never use colored text alone — always use the badge.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">Three States</span></div>
+      <div class="ex-body" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:10px;"><span class="bdg b-open">Open</span><span style="font-size:12px;color:var(--muted);">.b-open · Active / in progress</span></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span class="bdg b-pend">Pending Approval</span><span style="font-size:12px;color:var(--muted);">.b-pend · Waiting on decision</span></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span class="bdg b-ok">Closed</span><span style="font-size:12px;color:var(--muted);">.b-ok · All complete</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 17 CALLOUT BOXES ════════════════ -->
+  <div class="std-section" id="s17">
+    <div class="std-hdr"><span class="std-num">17</span><span class="std-title">Callout Boxes</span></div>
+    <p class="std-rule">Inline callout blocks (<code style="color:var(--info)">.co</code>) for warnings or guidance inside a form section. Use <code style="color:var(--info)">.co-i</code> for informational, <code style="color:var(--info)">.co-w</code> for warnings. Distinguish from the context banner (.pctx) which is outside the card — callout boxes are inside the card, near relevant fields.</p>
+    <div class="two-col">
+      <div class="ex-wrap">
+        <div class="ex-label"><span class="tag tag-do">.co-i — Info</span></div>
+        <div class="ex-body"><div class="co co-i">ℹ️ Pre-filled from the request — update only if the manager has changed.</div></div>
+      </div>
+      <div class="ex-wrap">
+        <div class="ex-label"><span class="tag tag-dont">.co-w — Warning</span></div>
+        <div class="ex-body"><div class="co co-w">⚠️ Manager written approval is required before submitting a credit card application.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 18 CONFIRMATION SCREEN ════════════════ -->
+  <div class="std-section" id="s18">
+    <div class="std-hdr"><span class="std-num">18</span><span class="std-title">Confirmation Screen</span></div>
+    <p class="std-rule"><strong>One confirmation layout for every single form.</strong> The form div is hidden and this div is shown in-place — same card, same width. Structure is always: ✅ icon · green title · short message · "Return to Dashboard" button · "You may close this window." Only the title and message text change per form.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">The Standard — used identically on all 18 forms</span></div>
+      <div class="ex-body">
+        <div class="cf" style="max-width:700px;margin:0 auto;">
+          <div class="conf-screen">
+            <div class="ci">✅</div>
+            <h2>IT Setup Confirmed</h2>
+            <p>All IT setup tasks for <strong>Jane Doe</strong> have been completed and recorded. The employee can now log in to all required systems.</p>
+            <button class="btn btn-p cb">Return to Dashboard</button>
+            <p class="cx">You may close this window.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">Per-form message guide</span></div>
+      <div class="ex-body">
+        <table class="rule-table">
+          <thead><tr><th>Form</th><th>Title</th><th>Message (template)</th></tr></thead>
+          <tbody>
+            <tr><td class="note">New Employee Request</td><td class="val">Request Submitted</td><td class="note">Request for [Employee] submitted to HR. You'll receive confirmation when reviewed.</td></tr>
+            <tr><td class="note">Position Change Request</td><td class="val">Change Request Submitted</td><td class="note">Status change for [Employee] sent to HR for approval. Action items created on approval.</td></tr>
+            <tr><td class="note">Termination Request</td><td class="val">Termination Request Submitted</td><td class="note">End of employment for [Employee] submitted. Offboarding items created on approval.</td></tr>
+            <tr><td class="note">Status Change Approval</td><td class="val">Decision Submitted</td><td class="note">Approval decision for [Employee]'s status change recorded. All parties notified.</td></tr>
+            <tr><td class="note">Termination Approval</td><td class="val">Decision Recorded</td><td class="note">Approval for [Employee]'s end of employment recorded. Offboarding items created.</td></tr>
+            <tr><td class="note">HR Verification</td><td class="val">Verification Complete</td><td class="note">ADP setup and email verification for [Employee] confirmed. IT Setup unlocked.</td></tr>
+            <tr><td class="note">All Specialist Forms</td><td class="val">[Form Name] Confirmed</td><td class="note">All tasks for [Employee] completed and recorded. [What's now unlocked/done].</td></tr>
+            <tr><td class="note">Asset Retrieval</td><td class="val">Collection Report Submitted</td><td class="note">Asset collection statuses for [Employee] recorded. All departments notified.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 19 EMAIL TEMPLATE ════════════════ -->
+  <div class="std-section" id="s19">
+    <div class="std-hdr"><span class="std-num">19</span><span class="std-title">Email Notification Template</span></div>
+    <p class="std-rule"><strong>One email structure for all workflow notifications.</strong> Logo header · Action subject · Context paragraph · Info box (Employee / Date / Site / Workflow ID / Assigned To) · CTA button → form link · Footer. Subject line, heading, and body copy change per notification type — structure never changes.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-do">Standard Email — Specialist Assignment</span></div>
+      <div class="ex-body">
+        <div class="email-frame">
+          <div class="email-hdr"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" style="height:44px;"></div>
+          <div class="email-body">
+            <h2>Action Required: IT Setup for Jane Doe</h2>
+            <p>You have been assigned an IT setup action item as part of the onboarding workflow for <strong>Jane Doe</strong>, starting <strong>May 12, 2026</strong>.</p>
+            <div class="eib">
+              <div class="ei"><span class="el">Employee</span><span class="ev">Jane Doe</span></div>
+              <div class="ei"><span class="el">Start Date</span><span class="ev">May 12, 2026</span></div>
+              <div class="ei"><span class="el">Site</span><span class="ev">Edmonton Main</span></div>
+              <div class="ei"><span class="el">Workflow ID</span><span class="ev">NEW_EMP_20260422_001</span></div>
+              <div class="ei"><span class="el">Assigned To</span><span class="ev">it@team-group.com</span></div>
+            </div>
+            <p>Please complete all checklist items before the employee's start date.</p>
+            <a class="ecta" href="#">Open IT Setup Form →</a>
+            <p style="font-size:12px;color:#888;">Not expecting this email? Contact HR at hr@team-group.com</p>
+          </div>
+          <div class="eftr">Automated message from the TEAM Group Employee Management System.<br>TEAM Group of Companies · Edmonton, AB · Do not reply.</div>
+        </div>
+      </div>
+    </div>
+    <div class="ex-wrap" style="margin-top:16px;">
+      <div class="ex-label"><span class="tag tag-rule">Subject Line Templates</span></div>
+      <div class="ex-body">
+        <table class="rule-table">
+          <thead><tr><th>Notification Type</th><th>Subject Line</th></tr></thead>
+          <tbody>
+            <tr><td class="note">New hire submitted</td><td class="val">New Hire Request: Jane Doe — Action Required</td></tr>
+            <tr><td class="note">HR approval needed</td><td class="val">Approval Required: Status Change — Jane Doe</td></tr>
+            <tr><td class="note">Specialist assignment</td><td class="val">Action Required: IT Setup for Jane Doe</td></tr>
+            <tr><td class="note">Approval decision sent</td><td class="val">Status Change Approved — Jane Doe (effective Jun 1)</td></tr>
+            <tr><td class="note">Termination offboarding</td><td class="val">Offboarding Assignment: Asset Retrieval — Jane Doe</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 20 REQUEST FORMS ════════════════ -->
+  <div class="std-section" id="s20">
+    <div class="std-hdr"><span class="std-num">20</span><span class="std-title">Request Forms — Structure Standard</span></div>
+    <p class="std-rule">The three request forms (New Employee, Position/Site Change, Termination) are the entry point for every workflow. They do <strong>not</strong> use the .fhdr form header block. They start directly with a section heading inside .cf.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">Section Order</span></div>
+      <div class="ex-body">
+        <table class="rule-table">
+          <thead><tr><th>Form</th><th>Sections (in order)</th><th>Ends with</th></tr></thead>
+          <tbody>
+            <tr><td class="note">New Employee Request</td><td class="note">Employee Information · System Access (+ sub-sections) · Equipment (+ sub-sections) · Additional Information</td><td class="val">.acts (Save Draft + Submit Request)</td></tr>
+            <tr><td class="note">Position / Site Change</td><td class="note">Change Details · Additional Access Required · New Equipment Required · Additional Information</td><td class="val">.acts (Save Draft + Submit to HR)</td></tr>
+            <tr><td class="note">Termination Request</td><td class="note">Employee Information · Assets to Retrieve · System Access to Revoke · Notes</td><td class="val">.acts (Save Draft + Submit to HR)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 21 APPROVAL FORMS ════════════════ -->
+  <div class="std-section" id="s21">
+    <div class="std-hdr"><span class="std-num">21</span><span class="std-title">Approval Forms — Structure Standard</span></div>
+    <p class="std-rule">Approval forms use the full form header (.fhdr with badge), show an info grid summary of the request, have a checklist for HR pre-submission tasks, then the HR Decision buttons, then a Notes field, then the submit button. <strong>HR Decision buttons always come after the checklist, before Notes.</strong></p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">Section Order</span></div>
+      <div class="ex-body">
+        <table class="rule-table">
+          <thead><tr><th>Form</th><th>Sections (in order)</th><th>Ends with</th></tr></thead>
+          <tbody>
+            <tr><td class="note">Status Change Approval</td><td class="note">.fhdr · Request Summary (info grid) · HR Confirmation (editable fields) · Checklist · HR Decision · Notes</td><td class="val">.act1 — Submit Decision</td></tr>
+            <tr><td class="note">Termination Approval</td><td class="note">.fhdr · Request Summary (info grid) · Checklist · HR Decision · Notes</td><td class="val">.act1 — Submit Decision</td></tr>
+            <tr><td class="note">HR Verification &amp; ADP</td><td class="note">.fhdr · Employee Details (info grid) · ADP Setup (input fields) · Checklist</td><td class="val">.act1 — Confirm &amp; Complete</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 22 SPECIALIST FORMS ════════════════ -->
+  <div class="std-section" id="s22">
+    <div class="std-hdr"><span class="std-num">22</span><span class="std-title">Specialist Forms — Structure Standard</span></div>
+    <p class="std-rule">All specialist forms (IT Setup, Safety, Jonas, Fleetio, Business Cards, Credit Card, Central Purchasing, Employee ID, SiteDocs, Safety Offboarding) are <strong>rendered by a single <code style="color:var(--info)">sf()</code> function</strong> that guarantees identical structure. The only variation is the employee info fields shown and the checklist steps. Forms that require additional inputs (30/60/90 Review, HR Verification) are built manually but follow the same component standards.</p>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">sf() Standard Structure (all specialist forms)</span></div>
+      <div class="ex-body">
+        <table class="rule-table">
+          <thead><tr><th>#</th><th>Element</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td class="val">1</td><td class="note">.logo-wrap (TEAM Group logo)</td><td class="note">Always centered, height 60px</td></tr>
+            <tr><td class="val">2</td><td class="note">.pctx (context banner)</td><td class="note">Workflow ID + any gating notes</td></tr>
+            <tr><td class="val">3</td><td class="note">.cf card opens</td><td class="note">—</td></tr>
+            <tr><td class="val">4</td><td class="note">.fhdr (Open badge + h1 "[Form] — [Employee]" + assignee)</td><td class="note">Badge always .b-open for active specialist items</td></tr>
+            <tr><td class="val">5</td><td class="note">h2.s "Employee Details" + .ti (info grid)</td><td class="note">Only relevant fields for this form type</td></tr>
+            <tr><td class="val">6</td><td class="note">h2.s "Checklist" + cht() table</td><td class="note">Always notes column, Pending/Complete buttons</td></tr>
+            <tr><td class="val">7</td><td class="note">.act1 — "Mark Task Finalized" full-width</td><td class="note">Single button, always .btn-p .btn-full</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ex-wrap">
+      <div class="ex-label"><span class="tag tag-rule">All Specialist Forms</span></div>
+      <div class="ex-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+          <!-- Onboarding -->
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Onboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">IT Setup</div><div style="font-size:11px;color:var(--muted);">ITSetup.html · it@team-group.com</div>
+          </div>
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Onboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Safety Onboarding</div><div style="font-size:11px;color:var(--muted);">SafetyOnboarding.html · safety@</div>
+          </div>
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Onboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Jonas Access Setup</div><div style="font-size:11px;color:var(--muted);">Jonas.html · jonas@</div>
+          </div>
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Onboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Fleetio Setup</div><div style="font-size:11px;color:var(--muted);">Fleetio.html · fleet@</div>
+          </div>
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Onboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Business Cards Order</div><div style="font-size:11px;color:var(--muted);">BusinessCards.html · hr@</div>
+          </div>
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Onboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Credit Card Application</div><div style="font-size:11px;color:var(--muted);">CreditCard.html · finance@</div>
+          </div>
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Onboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Central Purchasing</div><div style="font-size:11px;color:var(--muted);">CentralPurchasing.html · purchasing@</div>
+          </div>
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Onboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Employee ID &amp; Building</div><div style="font-size:11px;color:var(--muted);">EmployeeIDSetup.html · facilities@</div>
+          </div>
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Onboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">SiteDocs Setup</div><div style="font-size:11px;color:var(--muted);">SiteDocs.html · safety@</div>
+          </div>
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Onboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">30/60/90 Review Setup</div><div style="font-size:11px;color:var(--muted);">Review306090.html · hr@</div>
+          </div>
+          <!-- Offboarding -->
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Offboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Asset Retrieval</div><div style="font-size:11px;color:var(--muted);">AssetRetrieval.html · hr@ · 3-state buttons</div>
+          </div>
+          <div style="background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Offboarding</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Safety Offboarding</div><div style="font-size:11px;color:var(--muted);">SafetyTermination.html · safety@</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#main -->
+
+<script>
+function jump(id){document.getElementById(id).scrollIntoView({behavior:'smooth'});}
+
+// Scroll tracking
+var sections=document.querySelectorAll('.std-section');
+var links=document.querySelectorAll('.sb-link');
+document.getElementById('main').addEventListener('scroll',function(){
+  var scrollTop=this.scrollTop;
+  var active=null;
+  sections.forEach(function(sec){
+    var r=sec.getBoundingClientRect();
+    if(r.top<=80)active=sec.id;
+  });
+  links.forEach(function(l){l.classList.remove('active');});
+  if(active){
+    var idx=parseInt(active.replace('s',''))-1;
+    if(links[idx])links[idx].classList.add('active');
+  }
+});
+</script>
+</body>
+</html>

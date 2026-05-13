@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TEAM Group — Design System Review</title>
+  <style>
+    /* ── Shared Design System Tokens (inline copy of Styles.html) ── */
+    :root {
+      --bg-color:        #0c0c0c;
+      --card-bg:         #1a1a1a;
+      --text-main:       #ffffff;
+      --text-muted:      #a0a0a0;
+      --brand-red:       #EB1C2D;
+      --brand-red-hover: #c41522;
+      --input-bg:        #2a2a2a;
+      --input-border:    #444;
+      --border-color:    #333;
+      --success:         #00c853;
+      --warning:         #ffab00;
+      --danger:          #f44336;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 0 0 80px;
+    }
+
+    /* ── Review chrome ─────────────────────────────────────────────── */
+    .review-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #111;
+      border-bottom: 1px solid #333;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .review-nav strong { color: var(--brand-red); margin-right: 12px; font-size: 13px; white-space: nowrap; }
+    .nav-link {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .nav-link:hover { background: #222; color: white; }
+    .nav-sep { color: #444; font-size: 10px; margin: 0 4px; }
+    .nav-btn {
+      font-size: 12px;
+      color: white;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .nav-btn:hover { background: #3a3a3a; }
+    .nav-btn.save { border-color: var(--success); color: var(--success); }
+    .nav-btn.save:hover { background: rgba(0,200,83,0.12); }
+    #saveStatus { font-size: 11px; color: var(--success); display: none; font-weight: 600; }
+
+    .review-section {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 24px 20px;
+    }
+    .review-section-header {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--brand-red);
+      padding-bottom: 10px;
+      border-bottom: 1px solid #222;
+      margin-bottom: 28px;
+    }
+    .variant-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+    .variant-box {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 24px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .variant-box.selected {
+      border-color: var(--success);
+      box-shadow: 0 0 0 2px rgba(0,200,83,0.15);
+    }
+    .variant-box > *:not(.decision-ui) { flex: 0 0 auto; }
+    .variant-box > .decision-ui { margin-top: auto; }
+
+    .variant-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .variant-label .tag {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 9px;
+    }
+    .variant-label .tag.current  { border-color: var(--warning); color: var(--warning); }
+    .variant-label .tag.proposed { border-color: var(--success); color: var(--success); }
+    .variant-label .tag.pick-one { border-color: #64b5f6;        color: #64b5f6; }
+    .divider { border: none; border-top: 1px solid #1e1e1e; margin: 40px 0; }
+
+    /* ── Replicated design system styles (self-contained) ─────────── */
+    /* Card */
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 32px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .card-form {
+      background: var(--card-bg);
+      padding: 2.5rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(255,255,255,0.05);
+      border: 1px solid var(--border-color);
+    }
+    /* Logo */
+    .logo-container { text-align: center; margin-bottom: 24px; }
+    .logo { height: 60px; }
+    /* Page header */
+    .page-header { text-align: center; margin-bottom: 24px; }
+    .page-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { color: var(--text-muted); font-size: 14px; }
+    /* Section headers */
+    .section-title {
+      font-size: 12px; font-weight: 600; color: var(--brand-red);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin: 0 0 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;
+    }
+    h2 {
+      color: var(--text-main); font-size: 1.2rem; font-weight: 600;
+      border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin: 30px 0 20px;
+    }
+    /* Ticket-info */
+    .ticket-info {
+      background: rgba(255,255,255,0.02); border-radius: 8px; padding: 16px;
+      margin-bottom: 16px; border: 1px solid var(--border-color);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .info-row { display: flex; flex-direction: column; font-size: 13px; }
+    .info-row .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
+    .info-row .value { color: var(--text-main); font-weight: 600; }
+    .info-row.span-2 { grid-column: span 2; }
+    .info-row.comments { grid-column: span 2; border-top: 1px dashed #444; margin-top: 8px; padding-top: 10px; }
+    /* Labels / inputs */
+    label { display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); font-size: 0.9rem; }
+    .required { color: var(--brand-red); }
+    input[type="text"], input[type="email"], input[type="date"], select, textarea {
+      width: 100%; padding: 12px; font-size: 1rem; font-family: inherit;
+      border: 1px solid var(--input-border); border-radius: 6px;
+      background-color: var(--input-bg); color: var(--text-main); box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand-red); border-color: var(--brand-red); }
+    /* Radio group */
+    .radio-group {
+      display: flex; gap: 0; margin-top: 10px; border: 2px solid var(--input-border);
+      border-radius: 6px; overflow: hidden; background: var(--input-bg);
+    }
+    .radio-group label { flex: 1; position: relative; margin: 0; font-weight: 500; }
+    .radio-group label:not(:last-child) { border-right: 1px solid var(--input-border); }
+    .radio-group input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+    .radio-button { display: block; padding: 12px 20px; text-align: center; cursor: pointer; transition: background 0.2s; color: var(--text-main); }
+    .radio-button:hover { background: rgba(255,255,255,0.06); }
+    .radio-group input[type="radio"]:checked + .radio-button { background: var(--brand-red); color: white; }
+    /* Checkbox tiled */
+    .checkbox-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 10px; margin-top: 10px; }
+    .checkbox-label { display: flex; align-items: center; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; cursor: pointer; transition: border-color 0.2s, background 0.2s; line-height: 1.4; }
+    .checkbox-label:hover { border-color: var(--brand-red); }
+    .checkbox-label input[type="checkbox"] { accent-color: var(--brand-red); width: 18px; height: 18px; margin-right: 10px; flex-shrink: 0; }
+    .checkbox-label:has(input:checked) { background: rgba(235,28,45,0.1); border-color: var(--brand-red); }
+    .checkbox-label:has(input:checked) span { color: var(--brand-red); font-weight: 600; }
+    /* Checkbox grid */
+    .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 6px; }
+    .checkbox-grid label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 400; color: var(--text-main); }
+    .checkbox-grid input[type="checkbox"] { accent-color: var(--brand-red); flex-shrink: 0; }
+    /* Sub-section */
+    .sub-section { display: none; grid-column: 1/-1; margin: 4px 0 8px 24px; padding: 12px; background: #252525; border-radius: 6px; border: 1px solid #444; }
+    .sub-section-label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+    /* Confirm item */
+    .confirm-item { display: flex; align-items: flex-start; gap: 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+    .confirm-item:has(input:checked) { border-color: var(--success); background: rgba(0,200,83,0.05); }
+    .confirm-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--success); flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+    .confirm-item strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .confirm-item span   { font-size: 12px; color: var(--text-muted); }
+    /* Logic section */
+    .logic-section { display: none; margin-top: 15px; padding: 15px; border-left: 3px solid var(--brand-red); background: rgba(235,28,45,0.05); border-radius: 0 6px 6px 0; }
+    /* Buttons */
+    .btn { display: inline-block; padding: 14px 24px; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; font-family: inherit; cursor: pointer; transition: opacity 0.2s, transform 0.1s; text-align: center; text-decoration: none; line-height: 1; }
+    .btn-primary   { background: var(--brand-red); color: white; }
+    .btn-secondary { background: #333;              color: white; }
+    .btn-success   { background: var(--success);    color: white; }
+    .btn-full      { width: 100%; display: block; }
+    .btn:hover     { opacity: 0.88; }
+    .btn:active    { transform: scale(0.98); }
+    .btn:disabled, .btn[disabled] { background: #555; cursor: not-allowed; opacity: 0.7; transform: none; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    /* Status btn group */
+    .status-btn-group { display: flex; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 6px; overflow: hidden; width: fit-content; }
+    .status-btn { padding: 8px 12px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 600; text-transform: uppercase; transition: all 0.2s; border-right: 1px solid var(--input-border); }
+    .status-btn:last-child { border-right: none; }
+    .status-btn:hover:not(.active) { background: rgba(255,255,255,0.05); color: var(--text-main); }
+    .status-btn.active.pending     { background: var(--warning); color: #000; }
+    .status-btn.active.complete    { background: var(--success); color: white; }
+    .status-btn.active.not-returned { background: var(--danger); color: white; }
+    /* Status badge */
+    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; }
+    .status-open   { background: rgba(235,28,45,0.1); color: var(--brand-red); border: 1px solid var(--brand-red); }
+    .status-closed { background: rgba(0,200,83,0.1);  color: var(--success);   border: 1px solid var(--success); }
+    /* Checklist table */
+    .checklist-section { margin-bottom: 24px; }
+    .checklist-table   { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .checklist-table th { text-align: left; padding: 12px; color: var(--text-muted); font-size: 12px; border-bottom: 1px solid var(--border-color); }
+    .checklist-table td { padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+    .item-name  { font-weight: 600; display: block; margin-bottom: 4px; }
+    .audit-info { font-size: 10px; color: var(--text-muted); display: block; }
+    /* Loading overlay */
+    #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; flex-direction: column; z-index: 1000; }
+    #loading-overlay.active { display: flex; }
+    .spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.2); border-radius: 50%; border-top-color: var(--brand-red); animation: spin 1s linear infinite; margin-bottom: 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-overlay p { color: white; font-size: 14px; }
+    /* Success screen */
+    #success-screen { display: none; text-align: center; padding: 48px 20px; }
+    .success-icon { font-size: 56px; margin-bottom: 16px; }
+    /* Callouts */
+    .callout { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 14px; }
+    .callout-warning { background: rgba(255,171,0,0.08); border: 1px solid rgba(255,171,0,0.3); color: #ffcc02; }
+    .callout-info    { background: rgba(66,133,244,0.1);  border: 1px solid rgba(66,133,244,0.3); color: #64b5f6; }
+    .callout-success { background: rgba(0,200,83,0.08);   border: 1px solid rgba(0,200,83,0.3);  color: var(--success); }
+    /* Form helpers */
+    .form-section     { margin-bottom: 30px; }
+    .question-wrapper { margin-bottom: 25px; }
+    .form-field       { display: flex; flex-direction: column; }
+    .form-row   { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 20px; margin-bottom: 25px; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+    @media (max-width: 768px) {
+      .form-row, .form-row-2, .actions { grid-template-columns: 1fr; }
+      .ticket-info { grid-template-columns: 1fr; }
+    }
+
+    /* ── Decision callout (review-only) ─────────────────────────── */
+    .decision-note {
+      margin-top: 20px;
+      padding: 12px 16px;
+      border-left: 3px solid #64b5f6;
+      background: rgba(66,133,244,0.06);
+      border-radius: 0 6px 6px 0;
+      font-size: 13px;
+      color: #9ac8f5;
+    }
+    .decision-note strong { color: #64b5f6; display: block; margin-bottom: 4px; }
+
+    /* ── Decision UI (per-variant-box selectors + notes) ─────────── */
+    .decision-ui {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid #1e1e1e;
+    }
+    .decision-check-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 10px;
+      user-select: none;
+      transition: color 0.2s;
+    }
+    .decision-check-label:has(input:checked) { color: var(--success); }
+    .decision-check-label input[type="checkbox"] {
+      accent-color: var(--success);
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+    .decision-notes {
+      width: 100%;
+      background: #0d0d0d;
+      border: 1px solid #222;
+      border-radius: 5px;
+      padding: 8px 10px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-family: inherit;
+      resize: vertical;
+      box-sizing: border-box;
+      min-height: 46px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .decision-notes:focus { outline: none; border-color: #444; color: white; }
+    .decision-notes::placeholder { color: #333; }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav class="review-nav">
+  <strong>🎨 Design Review</strong>
+  <a class="nav-link" href="#containers">Containers</a>
+  <a class="nav-link" href="#logo-header">Logo &amp; Header</a>
+  <a class="nav-link" href="#ticket-info">Ticket Info</a>
+  <a class="nav-link" href="#section-titles">Section Titles</a>
+  <a class="nav-link" href="#inputs">Inputs</a>
+  <a class="nav-link" href="#radios">Radio Groups</a>
+  <a class="nav-link" href="#checkboxes">Checkboxes</a>
+  <a class="nav-link" href="#buttons">Buttons</a>
+  <a class="nav-link" href="#status-btns">Status Buttons</a>
+  <a class="nav-link" href="#badges">Badges</a>
+  <a class="nav-link" href="#callouts">Callouts</a>
+  <a class="nav-link" href="#checklist">Checklist Table</a>
+  <a class="nav-link" href="#loading">Loading</a>
+  <a class="nav-link" href="#success">Success Screens</a>
+  <span class="nav-sep">|</span>
+  <button class="nav-btn save" onclick="saveDecisions()">💾 Save</button>
+  <button class="nav-btn" onclick="copyDecisionSummary()">📋 Copy Summary</button>
+  <button class="nav-btn" onclick="clearDecisions()" style="color:#666;">✕ Clear</button>
+  <span id="saveStatus">Saved ✓</span>
+</nav>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     CONTAINERS
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="containers">
+  <div class="review-section-header">Container Widths</div>
+  <div class="variant-grid">
+
+    <div class="variant-box" data-key="ctr-wide">
+      <div class="variant-label">Wide — Full Page Forms
+        <span class="tag current">InitialRequest, TerminationRequest, PositionChange</span>
+      </div>
+      <div style="background:#0f0f0f; border:1px dashed #333; border-radius:6px; padding:16px; font-size:12px; color:var(--text-muted);">
+        <code>max-width: 1600px; width: 95%; margin: 0 auto;</code><br>
+        Class: <code>.container-wide</code>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="ctr-narrow">
+      <div class="variant-label">Narrow — Card Forms
+        <span class="tag current">ActionItemForm, SafetyOnboarding, HRVerification</span>
+      </div>
+      <div style="background:#0f0f0f; border:1px dashed #333; border-radius:6px; padding:16px; font-size:12px; color:var(--text-muted);">
+        <code>max-width: 960px; width: 100%;</code><br>
+        Class: <code>.container-narrow</code>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="ctr-card-wrapper">
+      <div class="variant-label">Card Wrapper (card-layout body)
+        <span class="tag proposed">Proposed standard for all card pages</span>
+      </div>
+      <div style="background:#0f0f0f; border:1px dashed #333; border-radius:6px; padding:16px; font-size:12px; color:var(--text-muted);">
+        <code>body.card-layout { display:flex; justify-content:center; }</code><br>
+        Use <code>&lt;body class="card-layout"&gt;</code> + <code>.container-narrow</code>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+  </div>
+  <div class="decision-note">
+    <strong>Decision needed:</strong>
+    ITSetup.html uses 1200px (between wide and narrow). Propose consolidating to either 960px (card) or 1600px (full page). No 1200px middle ground.
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     LOGO & PAGE HEADER
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="logo-header">
+  <div class="review-section-header">Logo &amp; Page Header</div>
+  <div class="variant-grid">
+
+    <div class="variant-box" data-key="logo-60">
+      <div class="variant-label">Logo — Standard (60px)
+        <span class="tag proposed">Proposed standard</span>
+      </div>
+      <div class="logo-container">
+        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+             class="logo" alt="TEAM Group">
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="logo-40">
+      <div class="variant-label">Logo — Compact (40px)
+        <span class="tag current">Currently used: SafetyOnboarding</span>
+      </div>
+      <div class="logo-container">
+        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+             style="height:40px;" alt="TEAM Group">
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="logo-70">
+      <div class="variant-label">Logo — Large (70px)
+        <span class="tag current">Currently used: InitialRequest</span>
+      </div>
+      <div class="logo-container">
+        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+             style="height:70px;" alt="TEAM Group">
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="header-card">
+      <div class="variant-label">Page Header — Card Form (centered)
+        <span class="tag proposed">SafetyOnboarding / ActionItemForm style</span>
+      </div>
+      <div class="page-header">
+        <h1>Safety Onboarding Confirmation</h1>
+        <p class="subtitle">Confirm SiteDocs and DSS assignments for this employee.</p>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="header-badge">
+      <div class="variant-label">Status Badge + Title
+        <span class="tag current">ActionItemForm, HRVerification</span>
+      </div>
+      <div style="text-align:center;">
+        <span class="status-badge status-open">Open</span>
+        <h1 style="font-size:22px;">IT Systems Setup — Jane Doe</h1>
+        <p style="color:var(--text-muted); font-size:14px; margin-top:6px;">Action Item #AI_00042</p>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+  </div>
+  <div class="decision-note">
+    <strong>Decision needed:</strong> Logo height varies 40–70px across files. Recommend 60px everywhere. SafetyOnboarding's 40px feels too small for a standalone card form.
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     TICKET INFO
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="ticket-info">
+  <div class="review-section-header">Ticket Info Grid</div>
+  <div class="variant-grid">
+
+    <div class="variant-box" data-key="ticket-2col">
+      <div class="variant-label">Standard 2-col grid
+        <span class="tag proposed">All forms — proposed standard</span>
+      </div>
+      <div class="ticket-info">
+        <div class="info-row"><span class="label">Employee</span><span class="value">Jane Doe</span></div>
+        <div class="info-row"><span class="label">Start Date</span><span class="value">5/12/2025</span></div>
+        <div class="info-row"><span class="label">Job Title</span><span class="value">Site Manager</span></div>
+        <div class="info-row"><span class="label">Site</span><span class="value">Edmonton Main</span></div>
+        <div class="info-row"><span class="label">Manager</span><span class="value">John Smith</span></div>
+        <div class="info-row"><span class="label">Employment Type</span><span class="value">Salaried</span></div>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="ticket-span2">
+      <div class="variant-label">With span-2 rows
+        <span class="tag proposed">For systems, equipment, or comments</span>
+      </div>
+      <div class="ticket-info">
+        <div class="info-row"><span class="label">Employee</span><span class="value">Jane Doe</span></div>
+        <div class="info-row"><span class="label">Site</span><span class="value">Edmonton Main</span></div>
+        <div class="info-row span-2"><span class="label">All Requested Systems</span><span class="value">Google Workspace, VPN, SiteDocs, Fleetio</span></div>
+        <div class="info-row comments"><span class="label">Request Comments</span><span class="value" style="font-style:italic; color:#ddd; font-weight:400;">Please prioritize laptop setup before start date.</span></div>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SECTION TITLES
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="section-titles">
+  <div class="review-section-header">Section Titles &amp; Dividers</div>
+  <div class="variant-grid">
+
+    <div class="variant-box" data-key="sec-card">
+      <div class="variant-label">.section-title — Card forms
+        <span class="tag proposed">SafetyOnboarding, ActionItemForm style</span>
+      </div>
+      <div class="section-title">Request Details</div>
+      <div class="section-title">Confirm Completion</div>
+      <div class="section-title">Verification Checklist</div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="sec-h2">
+      <div class="variant-label">h2 — Full-page form sections
+        <span class="tag current">InitialRequest, PositionChange</span>
+      </div>
+      <h2>Employee Information</h2>
+      <h2>System Access</h2>
+      <h2>Equipment Request</h2>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="sec-large">
+      <div class="variant-label">.section-title — Larger variant (16px)
+        <span class="tag current">Currently used: HRVerification only</span>
+      </div>
+      <div style="font-size:16px; font-weight:600; color:var(--brand-red); text-transform:uppercase; letter-spacing:1px; margin-bottom:16px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+        Request Details
+      </div>
+      <div class="decision-note" style="margin-top:0; font-size:12px;">
+        HRVerification uses 16px section-title. All others use 12px. Consolidate to 12px.
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     INPUTS
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="inputs">
+  <div class="review-section-header">Inputs, Selects &amp; Textareas</div>
+  <div class="variant-grid">
+
+    <div class="variant-box" data-key="inp-text">
+      <div class="variant-label">Text inputs
+        <span class="tag proposed">Proposed standard</span>
+      </div>
+      <div class="form-row-2">
+        <div class="form-field">
+          <label>First Name <span class="required">*</span></label>
+          <input type="text" placeholder="Jane">
+        </div>
+        <div class="form-field">
+          <label>Last Name <span class="required">*</span></label>
+          <input type="text" placeholder="Doe">
+        </div>
+      </div>
+      <div class="question-wrapper">
+        <label>Email Address</label>
+        <input type="email" placeholder="jane.doe@team-group.com">
+      </div>
+      <div class="question-wrapper">
+        <label>Start Date <span class="required">*</span></label>
+        <input type="date">
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="inp-select">
+      <div class="variant-label">Select dropdown
+        <span class="tag proposed">Proposed standard</span>
+      </div>
+      <div class="question-wrapper">
+        <label>Site <span class="required">*</span></label>
+        <select>
+          <option value="" disabled selected>Select a site...</option>
+          <option>Edmonton Main</option>
+          <option>Calgary North</option>
+          <option>Vancouver Island</option>
+        </select>
+      </div>
+      <div class="question-wrapper">
+        <label>Employment Type</label>
+        <select>
+          <option value="" disabled selected>Select type...</option>
+          <option>Salaried</option>
+          <option>Hourly</option>
+          <option>Contract</option>
+        </select>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="inp-textarea">
+      <div class="variant-label">Textarea
+        <span class="tag proposed">Proposed standard</span>
+      </div>
+      <label>Notes / Comments</label>
+      <textarea rows="4" placeholder="Enter any additional context or comments..."></textarea>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     RADIO GROUPS
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="radios">
+  <div class="review-section-header">Radio Button Groups</div>
+  <div class="variant-grid">
+
+    <div class="variant-box" data-key="radio-2opt">
+      <div class="variant-label">2-option group
+        <span class="tag proposed">Proposed standard</span>
+      </div>
+      <label>Credit Card Required?</label>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="ccDemo" value="Yes">
+          <span class="radio-button">Yes</span>
+        </label>
+        <label>
+          <input type="radio" name="ccDemo" value="No" checked>
+          <span class="radio-button">No</span>
+        </label>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="radio-3opt">
+      <div class="variant-label">3-option group
+        <span class="tag proposed">Used for classification, card type, etc.</span>
+      </div>
+      <label>Classification</label>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="classDemo" value="Hourly">
+          <span class="radio-button">Hourly</span>
+        </label>
+        <label>
+          <input type="radio" name="classDemo" value="Salary" checked>
+          <span class="radio-button">Salary</span>
+        </label>
+        <label>
+          <input type="radio" name="classDemo" value="Contract">
+          <span class="radio-button">Contract</span>
+        </label>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="radio-subsec">
+      <div class="variant-label">Radio with conditional sub-section
+        <span class="tag proposed">BOSS cost sheet toggle pattern</span>
+      </div>
+      <label>BOSS Access Required?</label>
+      <div class="radio-group" style="margin-bottom:10px;">
+        <label>
+          <input type="radio" name="bossDemo" value="Yes" onchange="document.getElementById('bossDemoSub').style.display='block'">
+          <span class="radio-button">Yes</span>
+        </label>
+        <label>
+          <input type="radio" name="bossDemo" value="No" checked onchange="document.getElementById('bossDemoSub').style.display='none'">
+          <span class="radio-button">No</span>
+        </label>
+      </div>
+      <div id="bossDemoSub" class="sub-section" style="display:none; margin:0;">
+        <span class="sub-section-label">Select BOSS Committees</span>
+        <div class="checkbox-grid">
+          <label><input type="checkbox"> Committee A</label>
+          <label><input type="checkbox"> Committee B</label>
+          <label><input type="checkbox"> Committee C</label>
+        </div>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     CHECKBOXES
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="checkboxes">
+  <div class="review-section-header">Checkbox Styles</div>
+  <div class="variant-grid">
+
+    <div class="variant-box" data-key="cb-tiled">
+      <div class="variant-label">Tiled checkboxes (large)
+        <span class="tag current">InitialRequest equipment / system selection</span>
+      </div>
+      <label>Systems Requested</label>
+      <div class="checkbox-group">
+        <label class="checkbox-label"><input type="checkbox" checked><span>Google Workspace</span></label>
+        <label class="checkbox-label"><input type="checkbox"><span>VPN Access</span></label>
+        <label class="checkbox-label"><input type="checkbox" checked><span>SiteDocs</span></label>
+        <label class="checkbox-label"><input type="checkbox"><span>Fleetio</span></label>
+        <label class="checkbox-label"><input type="checkbox"><span>Jonas</span></label>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="cb-grid">
+      <div class="variant-label">Compact grid (small)
+        <span class="tag current">BOSS committees, job numbers, sites sub-sections</span>
+      </div>
+      <label style="margin-bottom:8px;">Job Numbers</label>
+      <div class="checkbox-grid">
+        <label><input type="checkbox" checked> 10001 — Edmonton</label>
+        <label><input type="checkbox"> 10002 — Calgary N</label>
+        <label><input type="checkbox" checked> 10003 — Vancouver</label>
+        <label><input type="checkbox"> 10004 — Kelowna</label>
+        <label><input type="checkbox"> 10005 — Red Deer</label>
+        <label><input type="checkbox"> 10006 — Lethbridge</label>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="cb-confirm">
+      <div class="variant-label">Confirm items (green accent)
+        <span class="tag current">SafetyOnboarding, HRVerification</span>
+      </div>
+      <div class="confirm-item">
+        <input type="checkbox" id="demoCheck1">
+        <label for="demoCheck1">
+          <strong>SiteDocs Locations Assigned</strong>
+          <span>Employee has been added to all required SiteDocs job sites and locations for their role.</span>
+        </label>
+      </div>
+      <div class="confirm-item">
+        <input type="checkbox" id="demoCheck2">
+        <label for="demoCheck2">
+          <strong>DSS Learning Paths Assigned</strong>
+          <span>Employee has been enrolled in the required DSS learning paths for their position.</span>
+        </label>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="cb-inline">
+      <div class="variant-label">Tiled checkbox with sub-section expanding inline
+        <span class="tag proposed">BOSS / Jonas pattern — PositionChange</span>
+      </div>
+      <label>Additional Access</label>
+      <div class="checkbox-group" style="gap:0;">
+        <label class="checkbox-label" style="grid-column:auto;">
+          <input type="checkbox" id="bossToggle" onchange="document.getElementById('bossInlineSub').style.display=this.checked?'block':'none'">
+          <span>BOSS</span>
+        </label>
+        <label class="checkbox-label" style="grid-column:auto;">
+          <input type="checkbox">
+          <span>Jonas</span>
+        </label>
+        <div id="bossInlineSub" class="sub-section">
+          <span class="sub-section-label">BOSS Committees</span>
+          <div class="checkbox-grid">
+            <label><input type="checkbox"> Committee A</label>
+            <label><input type="checkbox"> Committee B</label>
+          </div>
+        </div>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     BUTTONS
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="buttons">
+  <div class="review-section-header">Button Variants</div>
+  <div class="variant-grid">
+
+    <div class="variant-box" data-key="btn-core">
+      <div class="variant-label">Core variants</div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <button class="btn btn-primary">Primary — Submit / Confirm</button>
+        <button class="btn btn-secondary">Secondary — Save Draft / Back</button>
+        <button class="btn btn-success">Success — Finalized / Confirmed</button>
+        <button class="btn btn-primary" disabled>Primary — Disabled</button>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="btn-actions">
+      <div class="variant-label">Two-button action row (.actions)
+        <span class="tag proposed">ActionItemForm pattern — proposed standard</span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-secondary">Save Progress</button>
+        <button class="btn btn-primary">Mark Task Finalized</button>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="actions">
+          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-primary">Submit Request</button>
+        </div>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="btn-full">
+      <div class="variant-label">Full-width single button
+        <span class="tag current">SafetyOnboarding, specialist forms</span>
+      </div>
+      <button class="btn btn-primary btn-full">Confirm &amp; Complete</button>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     STATUS BUTTONS
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="status-btns">
+  <div class="review-section-header">Status Button Groups (Checklist)</div>
+  <div class="variant-grid">
+
+    <div class="variant-box" data-key="sbtn-2">
+      <div class="variant-label">Standard — Pending / Complete
+        <span class="tag current">Non-asset checklist rows</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div class="status-btn-group">
+          <button class="status-btn pending active">Pending</button>
+          <button class="status-btn complete">Complete</button>
+        </div>
+        <div class="status-btn-group">
+          <button class="status-btn pending">Pending</button>
+          <button class="status-btn complete active">Complete</button>
+        </div>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <div class="variant-box" data-key="sbtn-3">
+      <div class="variant-label">Asset — Pending / Collected / Not Returned
+        <span class="tag current">Asset retrieval rows</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div class="status-btn-group">
+          <button class="status-btn pending active">Pending</button>
+          <button class="status-btn complete">Collected</button>
+          <button class="status-btn not-returned">Not Returned</button>
+        </div>
+        <div class="status-btn-group">
+          <button class="status-btn pending">Pending</button>
+          <button class="status-btn complete">Collected</button>
+          <button class="status-btn not-returned active">Not Returned</button>
+        </div>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     BADGES
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="badges">
+  <div class="review-section-header">Status Badges</div>
+  <div class="variant-grid">
+    <div class="variant-box" data-key="badge-pills">
+      <div class="variant-label">Open / Closed pill badges</div>
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <span class="status-badge status-open">Open</span>
+        <span class="status-badge status-closed">Closed</span>
+        <span class="status-badge" style="background:rgba(255,171,0,0.1); color:var(--warning); border:1px solid var(--warning);">In Progress</span>
+        <span class="status-badge" style="background:rgba(100,181,246,0.1); color:#64b5f6; border:1px solid #64b5f6;">Pending</span>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     CALLOUTS
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="callouts">
+  <div class="review-section-header">Callout Banners</div>
+  <div class="variant-grid">
+    <div class="variant-box" data-key="callout-all">
+      <div class="variant-label">Warning, Info, Success variants</div>
+      <div class="callout callout-warning">⚠️ This employee's start date is less than 3 business days away. Please prioritize IT setup immediately.</div>
+      <div class="callout callout-info">ℹ️ Credit card applications require manager approval before submission. Verify authorization before proceeding.</div>
+      <div class="callout callout-success">✅ All specialist forms have been completed for this workflow.</div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     CHECKLIST TABLE
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="checklist">
+  <div class="review-section-header">Verification Checklist Table</div>
+  <div class="variant-grid" style="grid-template-columns: 1fr;">
+    <div class="variant-box" data-key="checklist-tbl">
+      <div class="variant-label">Checklist with status buttons, comments, audit trail
+        <span class="tag current">ActionItemForm — proposed standard for all verification</span>
+      </div>
+      <div class="checklist-section">
+        <div class="section-title">Verification Checklist</div>
+        <table class="checklist-table">
+          <thead>
+            <tr>
+              <th>Item Details</th>
+              <th width="180">Status</th>
+              <th>Comments / Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <span class="item-name">Update Jonas Purchasing job number assignments</span>
+                <span class="audit-info">By: jsmith@team-group.com | 4/18/2025 2:14 PM</span>
+              </td>
+              <td>
+                <div class="status-btn-group">
+                  <button class="status-btn pending">Pending</button>
+                  <button class="status-btn complete active">Complete</button>
+                </div>
+              </td>
+              <td><textarea class="item-comment" rows="2" style="background:var(--input-bg); color:white; border:1px solid var(--input-border); padding:6px 10px; border-radius:4px; font-size:13px; width:100%; box-sizing:border-box;">Confirmed — 4 job numbers added.</textarea></td>
+            </tr>
+            <tr>
+              <td>
+                <span class="item-name">Remove access for old job sites no longer required</span>
+              </td>
+              <td>
+                <div class="status-btn-group">
+                  <button class="status-btn pending active">Pending</button>
+                  <button class="status-btn complete">Complete</button>
+                </div>
+              </td>
+              <td><textarea class="item-comment" rows="2" style="background:var(--input-bg); color:white; border:1px solid var(--input-border); padding:6px 10px; border-radius:4px; font-size:13px; width:100%; box-sizing:border-box;" placeholder="Add specific comments..."></textarea></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     LOADING OVERLAY
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="loading">
+  <div class="review-section-header">Loading Overlay</div>
+  <div class="variant-grid">
+    <div class="variant-box" data-key="loading-overlay">
+      <div class="variant-label">Loading overlay
+        <span class="tag proposed">Standard — trigger with showLoading() / hideLoading()</span>
+      </div>
+      <p style="color:var(--text-muted); font-size:13px; margin-bottom:12px;">The loading overlay covers the full viewport. Click the button to preview it.</p>
+      <button class="btn btn-secondary" onclick="previewLoading()">Preview Loading Overlay</button>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+    <div class="variant-box" data-key="loading-inline">
+      <div class="variant-label">Inline spinner (no overlay — alternative)</div>
+      <div style="display:flex; align-items:center; gap:12px; padding:16px; background:var(--card-bg); border-radius:8px; border:1px solid var(--border-color);">
+        <div class="spinner" style="margin:0;"></div>
+        <span style="color:var(--text-muted); font-size:14px;">Saving confirmation...</span>
+      </div>
+      <div class="decision-note" style="margin-top:12px; font-size:12px;">Alternative for forms where a full overlay feels heavy. Only use if the action is very fast (&lt;1s).</div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- The loading overlay element itself -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p>Processing...</p>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SUCCESS / AFTER-SUBMIT SCREENS
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="success">
+  <div class="review-section-header">After-Submit / Success Screens</div>
+  <div class="decision-note" style="margin-bottom:28px;">
+    <strong>Decision needed — pick ONE pattern:</strong>
+    Currently 3 different after-submit patterns are in use. Option A (full-screen card replacement) is the cleanest. Option B (in-place show/hide) is simplest to implement. Option C (inline text) is currently used by ActionItemForm for finalization.
+  </div>
+
+  <div class="variant-grid">
+
+    <!-- Option A -->
+    <div class="variant-box" data-key="success-a">
+      <div class="variant-label">Option A — Full success card (replaces page content)
+        <span class="tag pick-one">PICK ONE</span>
+      </div>
+      <div class="card" style="text-align:center; padding:40px 24px;">
+        <div class="success-icon">✅</div>
+        <h2 style="color:var(--success); border:none; margin:0 0 12px; font-size:22px;">Submitted Successfully</h2>
+        <p style="color:var(--text-muted); font-size:14px; margin-bottom:24px;">Your submission has been recorded. IT will be notified to begin setup within 1 business day.</p>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+          <a href="#" class="btn btn-primary" style="max-width:240px;" onclick="return false;">Return to Dashboard</a>
+          <p style="color:#888; font-size:13px; margin:0;">You may now close this window.</p>
+        </div>
+      </div>
+      <div class="decision-note" style="margin-top:12px; font-size:12px;">
+        Full card replaced via innerHTML. Dashboard URL injected at submit time via google.script.run.getBaseUrl(). Most visually complete.
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <!-- Option B -->
+    <div class="variant-box" data-key="success-b">
+      <div class="variant-label">Option B — In-place show/hide (display:none toggle)
+        <span class="tag pick-one">PICK ONE</span>
+      </div>
+      <!-- Simulated inline success inside card -->
+      <div class="card" style="padding:24px;">
+        <!-- Form section (hidden in success state) -->
+        <div id="demoFormSection" style="">
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:12px;">Form content here...</p>
+          <button class="btn btn-primary btn-full" onclick="demoShowSuccess()">Simulate Submit</button>
+        </div>
+        <!-- Success screen (shown after submit) -->
+        <div id="demoSuccessScreen" style="display:none; text-align:center; padding:32px 0;">
+          <div style="font-size:56px; margin-bottom:16px;">✅</div>
+          <h2 style="color:var(--success); border:none; margin:0 0 12px; font-size:22px;">Safety Onboarding Confirmed</h2>
+          <p style="color:var(--text-muted); font-size:14px; margin-bottom:24px;">SiteDocs and DSS assignments have been recorded.</p>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+            <a href="#" class="btn btn-primary" style="max-width:220px;" onclick="return false;">Return to Dashboard</a>
+            <p style="color:#888; font-size:13px; margin:0;">You may now close this window.</p>
+          </div>
+        </div>
+      </div>
+      <div class="decision-note" style="margin-top:12px; font-size:12px;">
+        Simplest implementation. Form section hidden, #success-screen shown. SafetyOnboarding pattern. Used by showSuccess() in SharedScripts.
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <!-- Option C -->
+    <div class="variant-box" data-key="success-c">
+      <div class="variant-label">Option C — Inline success (ActionItemForm finalize pattern)
+        <span class="tag current">Currently: ActionItemForm only</span>
+      </div>
+      <div class="card" style="text-align:center; padding:40px 24px;">
+        <h1 style="color:var(--success);">✓ Task Finalized</h1>
+        <p style="color:var(--text-muted); margin-top:8px;">All checklist data and audit logs have been recorded.</p>
+        <a href="#" class="btn btn-primary" style="display:inline-block; margin-top:20px;" onclick="return false;">Go to Dashboard</a>
+      </div>
+      <div class="decision-note" style="margin-top:12px; font-size:12px;">
+        Card innerHTML replaced entirely. Simpler but no closing-window message and no consistent icon. Consider merging with Option A.
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+    <!-- Option D — Already closed state -->
+    <div class="variant-box" data-key="success-d">
+      <div class="variant-label">Already-closed / read-only state (Task already finalized)
+        <span class="tag current">ActionItemForm when task.Status === 'Closed'</span>
+      </div>
+      <div style="text-align:center; color:var(--success); padding:16px;">
+        <strong>✓ Task Finalized on 4/18/2025</strong>
+        <br>
+        <div style="margin-top:16px;">
+          <a href="#" class="btn btn-primary" style="display:inline-block;" onclick="return false;">Go to Dashboard</a>
+        </div>
+      </div>
+      <div class="decision-note" style="margin-top:12px; font-size:12px;">
+        Shown when a closed task is re-opened. Keep as-is — it's a different state from the post-submit screen.
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="decision-note">
+    <strong>Recommendation:</strong>
+    Use <strong>Option B</strong> (in-place show/hide) as the standard — it works for all specialist forms (Safety, HR, Fleetio, Jonas, etc.) and is driven by <code>showSuccess()</code> in SharedScripts.
+    Use <strong>Option A</strong> only when the page has no persistent card (e.g., a full page replace after initial onboarding form submission).
+    Retire <strong>Option C</strong> — merge into Option A/B.
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     LOGIC / CONDITIONAL SECTIONS
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section" id="logic">
+  <div class="review-section-header">Conditional / Logic Sections</div>
+  <div class="variant-grid">
+    <div class="variant-box" data-key="logic-sec">
+      <div class="variant-label">Red left-border conditional panel (.logic-section)
+        <span class="tag current">InitialRequest — shows when Yes is selected</span>
+      </div>
+      <label>Does this employee need a company vehicle?</label>
+      <div class="radio-group" style="margin-bottom:10px;">
+        <label>
+          <input type="radio" name="vehicleDemo" value="Yes" onchange="document.getElementById('vehicleSec').style.display='block'">
+          <span class="radio-button">Yes</span>
+        </label>
+        <label>
+          <input type="radio" name="vehicleDemo" value="No" checked onchange="document.getElementById('vehicleSec').style.display='none'">
+          <span class="radio-button">No</span>
+        </label>
+      </div>
+      <div id="vehicleSec" class="logic-section">
+        <label>Vehicle Preference / Notes</label>
+        <input type="text" placeholder="e.g. Pickup truck preferred, half-ton">
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     CONTAINERS (visual)
+══════════════════════════════════════════════════════════════════ -->
+<div class="review-section">
+  <div class="review-section-header">Card Variants</div>
+  <div class="variant-grid">
+    <div class="variant-box" data-key="card-heavy">
+      <div class="variant-label">.card — Heavy shadow, 12px radius
+        <span class="tag proposed">Card layout pages</span>
+      </div>
+      <div class="card">
+        <div class="section-title">Card Example</div>
+        <p style="color:var(--text-muted); font-size:13px;">This is a .card with 12px border-radius and heavy box-shadow. Used for standalone action forms, approvals, safety confirmations.</p>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+    <div class="variant-box" data-key="card-form">
+      <div class="variant-label">.card-form — Light shadow, 8px radius
+        <span class="tag proposed">Full-page form body wrapper</span>
+      </div>
+      <div class="card-form">
+        <div class="section-title">Card Form Example</div>
+        <p style="color:var(--text-muted); font-size:13px;">This is a .card-form with 8px border-radius and lighter box-shadow. Used as the main form wrapper on InitialRequest, PositionChange.</p>
+      </div>
+      <div class="decision-ui">
+        <label class="decision-check-label"><input type="checkbox" class="decision-check"> ✓ Select this option</label>
+        <textarea class="decision-notes" rows="2" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  /* ── Interactive demo functions ─────────────────────────────── */
+  function previewLoading() {
+    var overlay = document.getElementById('loading-overlay');
+    overlay.style.display = 'flex';
+    setTimeout(function() { overlay.style.display = 'none'; }, 2000);
+  }
+
+  function demoShowSuccess() {
+    document.getElementById('demoFormSection').style.display = 'none';
+    document.getElementById('demoSuccessScreen').style.display = 'block';
+  }
+
+  document.getElementById('bossToggle').addEventListener('change', function() {
+    document.getElementById('bossInlineSub').style.display = this.checked ? 'block' : 'none';
+  });
+
+  /* ── Decision UI — localStorage persistence ──────────────────── */
+  var STORAGE_KEY = 'design-review-decisions-v1';
+
+  function saveDecisions() {
+    var state = {};
+    document.querySelectorAll('.variant-box[data-key]').forEach(function(box) {
+      var key = box.dataset.key;
+      var check = box.querySelector('.decision-check');
+      var notes = box.querySelector('.decision-notes');
+      state[key] = {
+        selected: check ? check.checked : false,
+        notes: notes ? notes.value : ''
+      };
+    });
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch(e) {}
+    var s = document.getElementById('saveStatus');
+    s.style.display = 'inline';
+    setTimeout(function() { s.style.display = 'none'; }, 2200);
+  }
+
+  function loadDecisions() {
+    var state;
+    try { state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch(e) { state = {}; }
+    document.querySelectorAll('.variant-box[data-key]').forEach(function(box) {
+      var key = box.dataset.key;
+      if (!state[key]) return;
+      var check = box.querySelector('.decision-check');
+      var notes = box.querySelector('.decision-notes');
+      if (check && state[key].selected) {
+        check.checked = true;
+        box.classList.add('selected');
+      }
+      if (notes && state[key].notes) {
+        notes.value = state[key].notes;
+      }
+    });
+  }
+
+  function clearDecisions() {
+    if (!confirm('Clear all saved decisions and notes?')) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+    document.querySelectorAll('.variant-box[data-key]').forEach(function(box) {
+      var check = box.querySelector('.decision-check');
+      var notes = box.querySelector('.decision-notes');
+      if (check) { check.checked = false; }
+      if (notes) { notes.value = ''; }
+      box.classList.remove('selected');
+    });
+  }
+
+  function copyDecisionSummary() {
+    var state;
+    try { state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch(e) { state = {}; }
+
+    var date = new Date().toLocaleDateString('en-CA');
+    var lines = ['TEAM Group — Design System Decisions (' + date + ')', ''];
+    var hasAny = false;
+
+    document.querySelectorAll('.variant-box[data-key]').forEach(function(box) {
+      var key = box.dataset.key;
+      var d = state[key];
+      if (!d) return;
+      var labelEl = box.querySelector('.variant-label');
+      var labelText = labelEl ? labelEl.childNodes[0].textContent.trim() : key;
+      var section = box.closest('.review-section');
+      var sectionLabel = section ? (section.querySelector('.review-section-header') || {}).textContent || '' : '';
+
+      if (d.selected || d.notes) {
+        hasAny = true;
+        lines.push((d.selected ? '[SELECTED] ' : '[       ] ') + labelText);
+        if (sectionLabel) lines.push('           Section: ' + sectionLabel.trim());
+        if (d.notes) lines.push('           Notes: ' + d.notes.replace(/\n/g, ' | '));
+        lines.push('');
+      }
+    });
+
+    if (!hasAny) {
+      lines.push('No selections or notes saved yet.');
+      lines.push('Check boxes and add notes in the review, then click Save before copying.');
+    }
+
+    var text = lines.join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        alert('Summary copied to clipboard!');
+      }).catch(function() { fallbackCopy(text); });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); alert('Summary copied!'); }
+    catch(e) { alert('Could not copy. Here is the summary:\n\n' + text); }
+    document.body.removeChild(ta);
+  }
+
+  /* ── Wire up decision checkboxes ──────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function() {
+    loadDecisions();
+    document.querySelectorAll('.decision-check').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var box = this.closest('.variant-box');
+        if (this.checked) {
+          box.classList.add('selected');
+        } else {
+          box.classList.remove('selected');
+        }
+      });
+    });
+    // Auto-save on notes blur
+    document.querySelectorAll('.decision-notes').forEach(function(ta) {
+      ta.addEventListener('blur', function() { saveDecisions(); });
+    });
+  });
+</script>
+
+</body>
+</html>

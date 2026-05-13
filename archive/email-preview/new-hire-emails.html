@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>New Hire Email Preview</title>
+  <style>
+    /* ── Preview Shell ── */
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111; margin: 0; padding: 0; color: #fff; }
+    .shell { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    .shell-header { border-bottom: 3px solid #EB1C2D; padding-bottom: 20px; margin-bottom: 48px; }
+    .shell-header h1 { font-size: 26px; margin: 0 0 6px; }
+    .shell-header p  { color: #888; margin: 0; font-size: 13px; }
+
+    .fake-data { background: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 16px 20px; margin-bottom: 48px; font-size: 13px; color: #aaa; }
+    .fake-data strong { color: #fff; }
+    .fake-data table { border-collapse: collapse; }
+    .fake-data td { padding: 2px 16px 2px 0; }
+    .fake-data td:first-child { color: #666; white-space: nowrap; }
+
+    .path-banner { background: rgba(235,28,45,0.1); border: 1px solid rgba(235,28,45,0.35); border-radius: 6px;
+      padding: 10px 16px; margin: 40px 0 28px; color: #EB1C2D; font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px; }
+
+    .email-item  { margin-bottom: 52px; }
+    .email-meta  { margin-bottom: 10px; }
+    .email-meta .num   { display: inline-block; background: #EB1C2D; color: #fff; font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .email-meta .to    { font-size: 13px; color: #aaa; }
+    .email-meta .to strong { color: #ddd; }
+    .email-meta .trigger { font-size: 11px; color: #555; margin-top: 3px; }
+
+    /* ── Email Card (matches createEmailTemplate output) ── */
+    .email-outer { background: #f5f5f5; padding: 20px; border-radius: 8px; }
+    .email-card  { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px;
+      overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.12); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+    /* Header */
+    .eh { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      padding: 30px; text-align: center; border-bottom: 3px solid #EB1C2D; }
+    .eh h1 { margin: 0; color: #fff; font-size: 18px; font-weight: 600; line-height: 1.3; word-break: break-word; }
+
+    /* Context block */
+    .ec { padding: 20px 30px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0; }
+    .ec h3 { margin: 0 0 14px; color: #EB1C2D; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .ec table { width: 100%; border-collapse: collapse; font-size: 14px; color: #333; }
+    .ec td { padding: 5px 0; vertical-align: top; }
+    .ec .lbl { font-weight: 600; width: 160px; color: #333; padding-right: 12px; }
+    .ec .sec-hdr td { padding-top: 12px; font-weight: 700; color: #EB1C2D; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .ec .cred-inner { width: 100%; border-collapse: collapse; font-size: 13px; color: #333; }
+    .ec .cred-inner td { padding: 3px 0; }
+    .ec .pending { color: #bbb; font-style: italic; }
+
+    /* Body */
+    .eb { padding: 30px; }
+    .eb .text { color: #333; font-size: 15px; line-height: 1.6; }
+    .eb .text strong { color: #333; }
+    .eb .btn-wrap { margin-top: 28px; text-align: center; }
+    .eb .btn-wrap a { background: linear-gradient(135deg, #EB1C2D 0%, #c41828 100%);
+      color: #fff; padding: 13px 30px; text-decoration: none; border-radius: 6px;
+      display: inline-block; font-weight: 600; font-size: 15px;
+      box-shadow: 0 4px 12px rgba(235,28,45,0.3); }
+    .eb .cal-btn a { background: linear-gradient(135deg, #4285f4 0%, #2b6fd9 100%);
+      box-shadow: 0 4px 12px rgba(66,133,244,0.3); }
+    .eb .action-btn a { margin-bottom: 10px; display: inline-block; }
+
+    /* Footer */
+    .ef { background: #f9f9f9; padding: 18px; text-align: center; border-top: 1px solid #e0e0e0; }
+    .ef p  { margin: 0; color: #666; font-size: 12px; }
+    .ef p.sub { margin-top: 6px; color: #999; font-size: 11px; }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="shell-header">
+    <h1>New Hire Email Preview</h1>
+    <p>All emails generated during a new hire workflow — current format, fake data. Use this to decide on context block standardization.</p>
+  </div>
+
+  <!-- Fake data legend -->
+  <div class="fake-data">
+    <table>
+      <tr><td>Employee</td><td><strong>Michael Torres</strong></td><td>Job Title</td><td><strong>Site Supervisor</strong></td></tr>
+      <tr><td>JR Title</td><td><strong>Field Operations Supervisor</strong></td><td>Site</td><td><strong>Calgary North</strong></td></tr>
+      <tr><td>Start Date</td><td><strong>2026-05-12</strong></td><td>Emp. Type</td><td><strong>Hourly / Full-Time</strong></td></tr>
+      <tr><td>New/Rehire</td><td><strong>New Hire</strong></td><td>Department</td><td><strong>Operations</strong></td></tr>
+      <tr><td>Manager</td><td><strong>Dave Williams (dave.williams@team-group.com)</strong></td><td>Requester</td><td><strong>sarah.chen@team-group.com</strong></td></tr>
+      <tr><td>Systems</td><td><strong>SiteDocs, BOSS WIS</strong></td><td>Workflow ID</td><td><strong>NEW_EMP_20260428_001</strong></td></tr>
+      <tr><td>Employee ID</td><td><strong>30041</strong></td><td>ADP ID</td><td><strong>847293</strong></td></tr>
+      <tr><td>DSS Login</td><td><strong>michael.torres / Temp@2026</strong></td><td>SiteDocs Login</td><td><strong>michael.torres@team-group.com / Temp@2026</strong></td></tr>
+      <tr><td>SiteDocs Worker ID</td><td><strong>WRK-4419</strong></td><td>SiteDocs Job Code</td><td><strong>Supervisor</strong></td></tr>
+      <tr><td>Assigned Email</td><td><strong>michael.torres@team-group.com</strong></td></tr>
+    </table>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       STEP 1 — INITIAL REQUEST SUBMITTED
+  ═══════════════════════════════════════════════════════ -->
+  <div class="path-banner">Step 1 — Initial Request Submitted (both paths)</div>
+
+  <!-- Email 1 -->
+  <div class="email-item">
+    <div class="email-meta">
+      <div class="num">Email 1 of 11</div>
+      <div class="to">To: <strong>grp.forms.idsetup@team-group.com</strong> (ID Setup Team)</div>
+      <div class="trigger">Trigger: Initial request form submitted</div>
+    </div>
+    <div class="email-outer"><div class="email-card">
+      <div class="eh"><h1>[New Hire | Hourly] ID Setup Required: Michael Torres | Calgary North | Start Date: 2026-05-12 | dave.williams@team-group.com</h1></div>
+      <div class="ec">
+        <h3>Request Details</h3>
+        <table>
+          <tr><td class="lbl">Employee:</td><td>Michael Torres</td></tr>
+          <tr><td class="lbl">Job Title:</td><td>Site Supervisor</td></tr>
+          <tr><td class="lbl">JR Title:</td><td>Field Operations Supervisor</td></tr>
+          <tr><td class="lbl">Department:</td><td>Operations</td></tr>
+          <tr><td class="lbl">Site:</td><td>Calgary North</td></tr>
+          <tr><td class="lbl">Start Date:</td><td>2026-05-12</td></tr>
+          <tr><td class="lbl">Employment Type:</td><td>Hourly</td></tr>
+          <tr><td class="lbl">Employee Type:</td><td>Full-Time</td></tr>
+          <tr><td class="lbl">Status:</td><td>New Hire</td></tr>
+          <tr><td class="lbl">Manager:</td><td>Dave Williams (dave.williams@team-group.com)</td></tr>
+          <tr><td class="lbl">System Access:</td><td>SiteDocs, BOSS WIS</td></tr>
+          <tr><td class="lbl">Requested By:</td><td>sarah.chen@team-group.com</td></tr>
+          <tr><td class="lbl">Request Date:</td><td>2026-04-28</td></tr>
+        </table>
+      </div>
+      <div class="eb">
+        <div class="text">A new employee onboarding request requires your attention.<br><br>Please complete the Employee ID Setup form using the button below. IT and other teams will be notified automatically after you complete the setup.</div>
+        <div class="btn-wrap"><a href="#">Open Form →</a></div>
+      </div>
+      <div class="ef"><p>TEAM Group - Employee Management System</p><p class="sub">This is an automated notification. Please do not reply to this email.</p></div>
+    </div></div>
+  </div>
+
+  <!-- Email 2 -->
+  <div class="email-item">
+    <div class="email-meta">
+      <div class="num">Email 2 of 11</div>
+      <div class="to">To: <strong>sarah.chen@team-group.com</strong> (Requester)</div>
+      <div class="trigger">Trigger: Initial request form submitted</div>
+    </div>
+    <div class="email-outer"><div class="email-card">
+      <div class="eh"><h1>[New Hire | Hourly] Request Submitted: Michael Torres | Calgary North | Start Date: 2026-05-12 | dave.williams@team-group.com</h1></div>
+      <div class="ec">
+        <h3>Request Details</h3>
+        <table>
+          <tr><td class="lbl">Employee:</td><td>Michael Torres</td></tr>
+          <tr><td class="lbl">Job Title:</td><td>Site Supervisor</td></tr>
+          <tr><td class="lbl">JR Title:</td><td>Field Operations Supervisor</td></tr>
+          <tr><td class="lbl">Department:</td><td>Operations</td></tr>
+          <tr><td class="lbl">Site:</td><td>Calgary North</td></tr>
+          <tr><td class="lbl">Start Date:</td><td>2026-05-12</td></tr>
+          <tr><td class="lbl">Employment Type:</td><td>Hourly</td></tr>
+          <tr><td class="lbl">Employee Type:</td><td>Full-Time</td></tr>
+          <tr><td class="lbl">Status:</td><td>New Hire</td></tr>
+          <tr><td class="lbl">Manager:</td><td>Dave Williams (dave.williams@team-group.com)</td></tr>
+          <tr><td class="lbl">System Access:</td><td>SiteDocs, BOSS WIS</td></tr>
+          <tr><td class="lbl">Requested By:</td><td>sarah.chen@team-group.com</td></tr>
+          <tr><td class="lbl">Request Date:</td><td>2026-04-28</td></tr>
+        </table>
+      </div>
+      <div class="eb">
+        <div class="text">Your employee onboarding request has been received and is being processed.<br><br>You will receive updates as the request progresses through each stage.</div>
+      </div>
+      <div class="ef"><p>TEAM Group - Employee Management System</p><p class="sub">This is an automated notification. Please do not reply to this email.</p></div>
+    </div></div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       STEP 2 — ID SETUP COMPLETE
+  ═══════════════════════════════════════════════════════ -->
+  <div class="path-banner">Step 2 — ID Setup Complete (both paths fire HR email; hourly/no-access also fires Credentials email)</div>
+
+  <!-- Email 3 — HR Verification Required (both paths) -->
+  <div class="email-item">
+    <div class="email-meta">
+      <div class="num">Email 3 of 11</div>
+      <div class="to">To: <strong>grp.forms.hr@team-group.com, grp.forms.payroll@team-group.com</strong> (HR + Payroll)</div>
+      <div class="trigger">Trigger: ID Setup form submitted — both paths</div>
+    </div>
+    <div class="email-outer"><div class="email-card">
+      <div class="eh"><h1>[New Hire | Hourly] HR Verification Required: Michael Torres | Calgary North | Start Date: 2026-05-12 | dave.williams@team-group.com</h1></div>
+      <div class="ec">
+        <h3>Request Details</h3>
+        <table>
+          <tr><td class="lbl">Employee:</td><td>Michael Torres</td></tr>
+          <tr><td class="lbl">Job Title:</td><td>Site Supervisor</td></tr>
+          <tr><td class="lbl">JR Title:</td><td>Field Operations Supervisor</td></tr>
+          <tr><td class="lbl">Department:</td><td>Operations</td></tr>
+          <tr><td class="lbl">Site:</td><td>Calgary North</td></tr>
+          <tr><td class="lbl">Start Date:</td><td>2026-05-12</td></tr>
+          <tr><td class="lbl">Employment Type:</td><td>Hourly</td></tr>
+          <tr><td class="lbl">Manager:</td><td>Dave Williams (dave.williams@team-group.com)</td></tr>
+          <tr><td class="lbl">System Access:</td><td>SiteDocs, BOSS WIS</td></tr>
+          <tr><td class="lbl">Requested By:</td><td>sarah.chen@team-group.com</td></tr>
+          <tr class="sec-hdr"><td colspan="2">Credentials</td></tr>
+          <tr><td colspan="2">
+            <table class="cred-inner">
+              <tr><td style="width:160px;font-weight:600;">Employee ID:</td><td>30041</td></tr>
+              <tr><td style="font-weight:600;">DSS:</td><td>michael.torres / Pwd: Temp@2026</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs:</td><td>michael.torres@team-group.com / Pwd: Temp@2026</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs Worker ID:</td><td>WRK-4419</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs Job Code:</td><td>Supervisor</td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </div>
+      <div class="eb">
+        <div class="text">Employee ID setup has been completed.<br><br>Please verify employee information and assign ADP Associate ID using the button below. IT setup will be triggered after HR verification.</div>
+        <div class="btn-wrap"><a href="#">Open Form →</a></div>
+      </div>
+      <div class="ef"><p>TEAM Group - Employee Management System</p><p class="sub">This is an automated notification. Please do not reply to this email.</p></div>
+    </div></div>
+  </div>
+
+  <!-- Email 4 — Credentials Ready (Hourly/No Access only) -->
+  <div class="email-item">
+    <div class="email-meta">
+      <div class="num">Email 4 of 11</div>
+      <div class="to">To: <strong>sarah.chen@team-group.com, dave.williams@team-group.com</strong> (Requester + Manager)</div>
+      <div class="trigger">Trigger: ID Setup complete — Hourly / No System Access path only</div>
+    </div>
+    <div class="email-outer"><div class="email-card">
+      <div class="eh"><h1>[New Hire | Hourly] Credentials Ready: Michael Torres | Calgary North | Start Date: 2026-05-12 | dave.williams@team-group.com</h1></div>
+      <div class="ec">
+        <h3>Request Details</h3>
+        <table>
+          <tr><td class="lbl">Employee:</td><td>Michael Torres</td></tr>
+          <tr><td class="lbl">Job Title:</td><td>Site Supervisor</td></tr>
+          <tr><td class="lbl">Site:</td><td>Calgary North</td></tr>
+          <tr><td class="lbl">Start Date:</td><td>2026-05-12</td></tr>
+          <tr><td class="lbl">Employment Type:</td><td>Hourly</td></tr>
+          <tr><td class="lbl">Manager:</td><td>Dave Williams (dave.williams@team-group.com)</td></tr>
+          <tr class="sec-hdr"><td colspan="2">Credentials</td></tr>
+          <tr><td colspan="2">
+            <table class="cred-inner">
+              <tr><td style="width:160px;font-weight:600;">Employee ID:</td><td>30041</td></tr>
+              <tr><td style="font-weight:600;">DSS:</td><td>michael.torres / Pwd: Temp@2026</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs:</td><td>michael.torres@team-group.com / Pwd: Temp@2026</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs Worker ID:</td><td>WRK-4419</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs Job Code:</td><td>Supervisor</td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </div>
+      <div class="eb">
+        <div class="text">The onboarding process has progressed. Credentials have been generated for this hourly employee.<br><br>
+          <strong>CREDENTIALS:</strong><br>
+          • DSS: michael.torres (Pwd: Temp@2026)<br>
+          • SiteDocs: michael.torres@team-group.com (Pwd: Temp@2026)<br>
+          • SiteDocs Worker ID: WRK-4419<br><br>
+          HR Verification is pending for ADP setup.</div>
+      </div>
+      <div class="ef"><p>TEAM Group - Employee Management System</p><p class="sub">This is an automated notification. Please do not reply to this email.</p></div>
+    </div></div>
+  </div>
+
+  <!-- Email 5 — Safety Onboarding (Hourly path fires here) -->
+  <div class="email-item">
+    <div class="email-meta">
+      <div class="num">Email 5 of 11</div>
+      <div class="to">To: <strong>grp.forms.safety@team-group.com</strong> (Safety)</div>
+      <div class="trigger">Trigger: ID Setup complete — Hourly path fires here. Salary path fires after HR Verification.</div>
+    </div>
+    <div class="email-outer"><div class="email-card">
+      <div class="eh"><h1>[New Hire | Hourly] Safety Onboarding — Michael Torres | Calgary North | Start Date: 2026-05-12 | dave.williams@team-group.com</h1></div>
+      <div class="ec">
+        <h3>Request Details</h3>
+        <table>
+          <tr><td class="lbl">Employee:</td><td>Michael Torres</td></tr>
+          <tr><td class="lbl">Job Title:</td><td>Site Supervisor</td></tr>
+          <tr><td class="lbl">Site:</td><td>Calgary North</td></tr>
+          <tr><td class="lbl">Start Date:</td><td>2026-05-12</td></tr>
+          <tr><td class="lbl">Employment Type:</td><td>Hourly</td></tr>
+          <tr><td class="lbl">Manager:</td><td>Dave Williams</td></tr>
+          <tr><td class="lbl">SiteDocs Job Code:</td><td>Supervisor</td></tr>
+        </table>
+      </div>
+      <div class="eb">
+        <div class="text">Please assign SiteDocs locations and DSS learning paths for this employee. Complete the action item using the button below.</div>
+        <div class="btn-wrap"><a href="#">Open Form →</a></div>
+      </div>
+      <div class="ef"><p>TEAM Group - Employee Management System</p><p class="sub">This is an automated notification. Please do not reply to this email.</p></div>
+    </div></div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       STEP 3 — HR VERIFICATION COMPLETE
+  ═══════════════════════════════════════════════════════ -->
+  <div class="path-banner">Step 3A — HR Verification Complete: Hourly / No System Access → Onboarding Complete</div>
+
+  <!-- Email 6 — Onboarding Complete (Hourly) -->
+  <div class="email-item">
+    <div class="email-meta">
+      <div class="num">Email 6 of 11</div>
+      <div class="to">To: <strong>sarah.chen@team-group.com, dave.williams@team-group.com</strong> (Requester + Manager)</div>
+      <div class="trigger">Trigger: HR Verification complete — Hourly / No System Access path only. This is the final email for this path.</div>
+    </div>
+    <div class="email-outer"><div class="email-card">
+      <div class="eh"><h1>[New Hire | Hourly] Onboarding Complete: Michael Torres | Calgary North | Start Date: 2026-05-12 | dave.williams@team-group.com</h1></div>
+      <div class="ec">
+        <h3>Request Details</h3>
+        <table>
+          <tr><td class="lbl">Employee:</td><td>Michael Torres</td></tr>
+          <tr><td class="lbl">Job Title:</td><td>Site Supervisor</td></tr>
+          <tr><td class="lbl">Site:</td><td>Calgary North</td></tr>
+          <tr><td class="lbl">Start Date:</td><td>2026-05-12</td></tr>
+          <tr><td class="lbl">Employment Type:</td><td>Hourly</td></tr>
+          <tr><td class="lbl">Manager:</td><td>Dave Williams (dave.williams@team-group.com)</td></tr>
+          <tr class="sec-hdr"><td colspan="2">Credentials</td></tr>
+          <tr><td colspan="2">
+            <table class="cred-inner">
+              <tr><td style="width:160px;font-weight:600;">Employee ID:</td><td>30041</td></tr>
+              <tr><td style="font-weight:600;">ADP Associate ID:</td><td>847293</td></tr>
+              <tr><td style="font-weight:600;">DSS:</td><td>michael.torres / Pwd: Temp@2026</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs:</td><td>michael.torres@team-group.com / Pwd: Temp@2026</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs Worker ID:</td><td>WRK-4419</td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </div>
+      <div class="eb">
+        <div class="text">The onboarding process has been completed successfully. All required setup steps have been finished for this hourly employee.<br><br>
+          Verified ADP ID: 847293<br><br>
+          <strong>CREDENTIALS:</strong><br>
+          • DSS: michael.torres (Pwd: Temp@2026)<br>
+          • SiteDocs: michael.torres@team-group.com (Pwd: Temp@2026)
+        </div>
+        <div class="btn-wrap cal-btn"><a href="#">📅 Add Start Date to Calendar</a></div>
+      </div>
+      <div class="ef"><p>TEAM Group - Employee Management System</p><p class="sub">This is an automated notification. Please do not reply to this email.</p></div>
+    </div></div>
+  </div>
+
+  <div class="path-banner">Step 3B — HR Verification Complete: Salary / System Access → IT Setup (or BOSS Review)</div>
+
+  <!-- Email 7 — IT Setup Required -->
+  <div class="email-item">
+    <div class="email-meta">
+      <div class="num">Email 7 of 11</div>
+      <div class="to">To: <strong>grp.forms.it@team-group.com</strong> (IT)</div>
+      <div class="trigger">Trigger: HR Verification complete — Salary/System Access path, no BOSS access. If BOSS access is required, Dave Langohr receives a BOSS Review email instead (see note below).</div>
+    </div>
+    <div class="email-outer"><div class="email-card">
+      <div class="eh"><h1>[New Hire | Salary] IT Setup Required: Michael Torres | Calgary North | Start Date: 2026-05-12 | dave.williams@team-group.com</h1></div>
+      <div class="ec">
+        <h3>Request Details</h3>
+        <table>
+          <tr><td class="lbl">Employee:</td><td>Michael Torres</td></tr>
+          <tr><td class="lbl">Job Title:</td><td>Site Supervisor</td></tr>
+          <tr><td class="lbl">JR Title:</td><td>Field Operations Supervisor</td></tr>
+          <tr><td class="lbl">Department:</td><td>Operations</td></tr>
+          <tr><td class="lbl">Site:</td><td>Calgary North</td></tr>
+          <tr><td class="lbl">Start Date:</td><td>2026-05-12</td></tr>
+          <tr><td class="lbl">Employment Type:</td><td>Salary</td></tr>
+          <tr><td class="lbl">Manager:</td><td>Dave Williams (dave.williams@team-group.com)</td></tr>
+          <tr><td class="lbl">System Access:</td><td>SiteDocs, BOSS WIS</td></tr>
+          <tr class="sec-hdr"><td colspan="2">Credentials</td></tr>
+          <tr><td colspan="2">
+            <table class="cred-inner">
+              <tr><td style="width:160px;font-weight:600;">Employee ID:</td><td>30041</td></tr>
+              <tr><td style="font-weight:600;">ADP Associate ID:</td><td>847293</td></tr>
+              <tr><td style="font-weight:600;">DSS:</td><td>michael.torres / Pwd: Temp@2026</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs:</td><td>michael.torres@team-group.com / Pwd: Temp@2026</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs Worker ID:</td><td>WRK-4419</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs Job Code:</td><td>Supervisor</td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </div>
+      <div class="eb">
+        <div class="text">HR has verified the employee details and assigned an ADP ID.<br><br>Please complete the IT setup form using the button below.</div>
+        <div class="btn-wrap"><a href="#">Open Form →</a></div>
+      </div>
+      <div class="ef"><p>TEAM Group - Employee Management System</p><p class="sub">This is an automated notification. Please do not reply to this email.</p></div>
+    </div></div>
+  </div>
+
+  <!-- Email 8 — HR Verified → Payroll -->
+  <div class="email-item">
+    <div class="email-meta">
+      <div class="num">Email 8 of 11</div>
+      <div class="to">To: <strong>grp.forms.payroll@team-group.com</strong> (Payroll)</div>
+      <div class="trigger">Trigger: HR Verification complete — Salary/System Access path only</div>
+    </div>
+    <div class="email-outer"><div class="email-card">
+      <div class="eh"><h1>[New Hire | Salary] HR Verified: Michael Torres | Calgary North | Start Date: 2026-05-12 | dave.williams@team-group.com</h1></div>
+      <div class="ec">
+        <h3>Request Details</h3>
+        <table>
+          <tr><td class="lbl">Employee:</td><td>Michael Torres</td></tr>
+          <tr><td class="lbl">Job Title:</td><td>Site Supervisor</td></tr>
+          <tr><td class="lbl">Site:</td><td>Calgary North</td></tr>
+          <tr><td class="lbl">Start Date:</td><td>2026-05-12</td></tr>
+          <tr><td class="lbl">Employment Type:</td><td>Salary</td></tr>
+          <tr><td class="lbl">Manager:</td><td>Dave Williams (dave.williams@team-group.com)</td></tr>
+          <tr class="sec-hdr"><td colspan="2">Credentials</td></tr>
+          <tr><td colspan="2">
+            <table class="cred-inner">
+              <tr><td style="width:160px;font-weight:600;">Employee ID:</td><td>30041</td></tr>
+              <tr><td style="font-weight:600;">ADP Associate ID:</td><td>847293</td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </div>
+      <div class="eb">
+        <div class="text">HR has completed verification for Michael Torres. ADP ID assigned: 847293. IT setup is now in progress.</div>
+      </div>
+      <div class="ef"><p>TEAM Group - Employee Management System</p><p class="sub">This is an automated notification. Please do not reply to this email.</p></div>
+    </div></div>
+  </div>
+
+  <!-- Email 9 — Safety Onboarding (Salary path fires here) -->
+  <div class="email-item">
+    <div class="email-meta">
+      <div class="num">Email 9 of 11</div>
+      <div class="to">To: <strong>grp.forms.safety@team-group.com</strong> (Safety)</div>
+      <div class="trigger">Trigger: HR Verification complete — Salary/System Access path only (Hourly path sends this after ID Setup instead)</div>
+    </div>
+    <div class="email-outer"><div class="email-card">
+      <div class="eh"><h1>[New Hire | Salary] Safety Onboarding — Michael Torres | Calgary North | Start Date: 2026-05-12 | dave.williams@team-group.com</h1></div>
+      <div class="ec">
+        <h3>Request Details</h3>
+        <table>
+          <tr><td class="lbl">Employee:</td><td>Michael Torres</td></tr>
+          <tr><td class="lbl">Job Title:</td><td>Site Supervisor</td></tr>
+          <tr><td class="lbl">Site:</td><td>Calgary North</td></tr>
+          <tr><td class="lbl">Start Date:</td><td>2026-05-12</td></tr>
+          <tr><td class="lbl">Employment Type:</td><td>Salary</td></tr>
+          <tr><td class="lbl">Manager:</td><td>Dave Williams</td></tr>
+          <tr><td class="lbl">SiteDocs Job Code:</td><td>Supervisor</td></tr>
+        </table>
+      </div>
+      <div class="eb">
+        <div class="text">Please assign SiteDocs locations and DSS learning paths for this employee. Complete the action item using the button below.</div>
+        <div class="btn-wrap"><a href="#">Open Form →</a></div>
+      </div>
+      <div class="ef"><p>TEAM Group - Employee Management System</p><p class="sub">This is an automated notification. Please do not reply to this email.</p></div>
+    </div></div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       STEP 4 — IT SETUP COMPLETE
+  ═══════════════════════════════════════════════════════ -->
+  <div class="path-banner">Step 4 — IT Setup Complete (Salary / System Access path)</div>
+
+  <!-- Email 10 — IT Setup Complete → Requester + Manager -->
+  <div class="email-item">
+    <div class="email-meta">
+      <div class="num">Email 10 of 11</div>
+      <div class="to">To: <strong>sarah.chen@team-group.com, dave.williams@team-group.com</strong> (Requester + Manager)</div>
+      <div class="trigger">Trigger: IT Setup form submitted</div>
+    </div>
+    <div class="email-outer"><div class="email-card">
+      <div class="eh"><h1>[New Hire | Salary] IT Setup Complete: Michael Torres | Calgary North | Start Date: 2026-05-12 | dave.williams@team-group.com</h1></div>
+      <div class="ec">
+        <h3>Request Details</h3>
+        <table>
+          <tr><td class="lbl">Employee:</td><td>Michael Torres</td></tr>
+          <tr><td class="lbl">Job Title:</td><td>Site Supervisor</td></tr>
+          <tr><td class="lbl">Site:</td><td>Calgary North</td></tr>
+          <tr><td class="lbl">Start Date:</td><td>2026-05-12</td></tr>
+          <tr><td class="lbl">Employment Type:</td><td>Salary</td></tr>
+          <tr><td class="lbl">Manager:</td><td>Dave Williams (dave.williams@team-group.com)</td></tr>
+          <tr><td class="lbl">System Access:</td><td>SiteDocs, BOSS WIS</td></tr>
+          <tr class="sec-hdr"><td colspan="2">Credentials</td></tr>
+          <tr><td colspan="2">
+            <table class="cred-inner">
+              <tr><td style="width:160px;font-weight:600;">Employee ID:</td><td>30041</td></tr>
+              <tr><td style="font-weight:600;">ADP Associate ID:</td><td>847293</td></tr>
+              <tr><td style="font-weight:600;">Assigned Email:</td><td>michael.torres@team-group.com</td></tr>
+              <tr><td style="font-weight:600;">DSS:</td><td>michael.torres / Pwd: Temp@2026</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs:</td><td>michael.torres@team-group.com / Pwd: Temp@2026</td></tr>
+              <tr><td style="font-weight:600;">SiteDocs Worker ID:</td><td>WRK-4419</td></tr>
+            </table>
+          </td></tr>
+        </table>
+      </div>
+      <div class="eb">
+        <div class="text">IT setup has been completed for Michael Torres.<br><br>
+          <strong>Assigned Email:</strong> michael.torres@team-group.com<br>
+          <strong>Computer:</strong> Laptop (S/N: SN-20492-A)<br><br>
+          Specialist requests (Credit Cards, Jonas, etc.) have been triggered in parallel.</div>
+      </div>
+      <div class="ef"><p>TEAM Group - Employee Management System</p><p class="sub">This is an automated notification. Please do not reply to this email.</p></div>
+    </div></div>
+  </div>
+
+  <!-- Email 11 — Specialist Action Items -->
+  <div class="email-item">
+    <div class="email-meta">
+      <div class="num">Email 11 of 11</div>
+      <div class="to">To: <strong>One email per specialist team</strong> (e.g. Credit Card, Jonas, Fleetio, Business Cards, SiteDocs Admin, 30/60/90)</div>
+      <div class="trigger">Trigger: IT Setup form submitted — one email per team, grouped by recipient address</div>
+    </div>
+    <div class="email-outer"><div class="email-card">
+      <div class="eh"><h1>[New Hire | Salary] Action Items Assigned — Michael Torres (2 tasks)</h1></div>
+      <div class="ec">
+        <h3>Request Details</h3>
+        <table>
+          <tr><td class="lbl">Employee:</td><td>Michael Torres</td></tr>
+          <tr><td class="lbl">Job Title:</td><td>Site Supervisor</td></tr>
+          <tr><td class="lbl">Site:</td><td>Calgary North</td></tr>
+          <tr><td class="lbl">Start Date:</td><td>2026-05-12</td></tr>
+          <tr><td class="lbl">Assigned Email:</td><td>michael.torres@team-group.com</td></tr>
+          <tr><td class="lbl">ADP Associate ID:</td><td>847293</td></tr>
+        </table>
+      </div>
+      <div class="eb">
+        <div class="text">You have been assigned the following onboarding action item(s) for <b>Michael Torres</b>. Please complete each task using the link(s) below.<br><br>
+          <div style="margin:0;">
+            <div style="margin-bottom:12px;"><a href="#" style="display:inline-block; background:#EB1C2D; color:#ffffff; padding:10px 20px; text-decoration:none; border-radius:6px; font-weight:600; font-size:14px;">Credit Card Setup &rarr;</a></div>
+            <div style="margin-bottom:12px;"><a href="#" style="display:inline-block; background:#EB1C2D; color:#ffffff; padding:10px 20px; text-decoration:none; border-radius:6px; font-weight:600; font-size:14px;">Jonas Purchasing Setup &rarr;</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="ef"><p>TEAM Group - Employee Management System</p><p class="sub">This is an automated notification. Please do not reply to this email.</p></div>
+    </div></div>
+  </div>
+
+</div>
+</body>
+</html>

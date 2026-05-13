@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEAM Group — Design Decisions</title>
+<style>
+:root {
+  --bg:#0c0c0c; --card-bg:#1a1a1a; --text:#fff; --muted:#a0a0a0;
+  --red:#EB1C2D; --input-bg:#2a2a2a; --input-bdr:#444;
+  --border:#333; --success:#00c853; --warning:#ffab00; --danger:#f44336;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding-bottom:100px;}
+
+/* ── NAV ── */
+.top-nav{position:sticky;top:0;z-index:200;background:#111;border-bottom:2px solid var(--red);display:flex;align-items:stretch;flex-wrap:wrap;min-height:48px;}
+.nav-brand{display:flex;align-items:center;padding:0 16px;color:var(--red);font-weight:700;font-size:13px;border-right:1px solid #222;white-space:nowrap;}
+.nav-links{display:flex;align-items:center;overflow-x:auto;flex:1;}
+.nav-link{font-size:11px;color:var(--muted);text-decoration:none;padding:0 11px;white-space:nowrap;line-height:48px;border-right:1px solid #1a1a1a;}
+.nav-link:hover{color:#fff;background:rgba(255,255,255,0.03);}
+.nav-actions{display:flex;align-items:center;gap:6px;padding:0 12px;border-left:1px solid #222;margin-left:auto;}
+.n-count{font-size:11px;color:var(--muted);white-space:nowrap;padding-right:6px;}
+.n-count strong{color:var(--success);}
+.nb{font-size:11px;font-weight:700;font-family:inherit;padding:5px 13px;border-radius:4px;cursor:pointer;border:none;white-space:nowrap;}
+.nb:hover{opacity:.85;}
+.nb-save{background:var(--success);color:#000;}
+.nb-copy{background:#2a2a2a;color:#fff;border:1px solid #444;}
+.nb-prev{background:#64b5f6;color:#000;}
+.nb-clear{background:transparent;color:#555;border:1px solid #333;}
+#savedMsg{font-size:11px;color:var(--success);font-weight:700;display:none;white-space:nowrap;}
+
+/* ── LAYOUT ── */
+.wrap{max-width:1500px;margin:0 auto;padding:32px 24px;}
+.dsec{margin-bottom:52px;scroll-margin-top:56px;}
+.shdr{display:flex;align-items:baseline;gap:12px;padding-bottom:10px;border-bottom:1px solid #1a1a1a;margin-bottom:22px;flex-wrap:wrap;}
+.sname{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--red);}
+.smode{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;}
+.mode-one {background:rgba(100,181,246,.1);color:#64b5f6;border:1px solid #64b5f6;}
+.mode-many{background:rgba(0,200,83,.08);color:var(--success);border:1px solid var(--success);}
+.mode-only{background:rgba(160,160,160,.08);color:var(--muted);border:1px solid #444;}
+.snote{margin-left:auto;font-size:11px;color:#555;max-width:380px;text-align:right;line-height:1.4;}
+.snote strong{color:#777;}
+
+/* ── GRIDS ── */
+.vg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;}
+.vg.two{grid-template-columns:repeat(auto-fill,minmax(420px,1fr));}
+.vg.one{grid-template-columns:1fr;}
+.vg.three{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));}
+
+/* ── VARIANT BOX ── */
+.vb{background:#111;border:1.5px solid #222;border-radius:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column;overflow:hidden;}
+.vb:hover{border-color:#3a3a3a;}
+.vb.sel-one{border-color:#64b5f6;box-shadow:0 0 0 2px rgba(100,181,246,.12);}
+.vb.sel-many{border-color:var(--success);box-shadow:0 0 0 2px rgba(0,200,83,.12);}
+.vb.sel-only{border-color:var(--success);box-shadow:0 0 0 2px rgba(0,200,83,.1);}
+
+.vb-top{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #1a1a1a;flex-wrap:wrap;}
+.vb-name{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);flex:1;}
+.tags{display:flex;gap:5px;flex-wrap:wrap;}
+.tag{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px;}
+.tc{border:1px solid var(--warning);color:var(--warning);background:rgba(255,171,0,.07);}
+.tp{border:1px solid var(--success);color:var(--success);background:rgba(0,200,83,.07);}
+.ts{border:1px solid #64b5f6;color:#64b5f6;background:rgba(100,181,246,.07);}
+
+.vb-dot{width:20px;height:20px;border-radius:50%;border:2px solid #333;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;transition:all .15s;color:transparent;}
+.vb.sel-one .vb-dot{background:#64b5f6;border-color:#64b5f6;color:#000;}
+.vb.sel-many .vb-dot,.vb.sel-only .vb-dot{background:var(--success);border-color:var(--success);color:#000;}
+
+.vb-body{padding:18px;flex:1;pointer-events:none;}
+.vb-notes-wrap{padding:0 14px 12px;display:none;}
+.vb.sel-one .vb-notes-wrap,.vb.sel-many .vb-notes-wrap,.vb.sel-only .vb-notes-wrap{display:block;}
+.notes-lbl{font-size:9px;color:#444;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;}
+.vb-notes{width:100%;background:#090909;border:1px solid #1e1e1e;border-radius:5px;padding:7px 10px;color:var(--muted);font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;min-height:42px;pointer-events:all;}
+.vb-notes:focus{outline:none;border-color:#333;color:#fff;}
+.vb-notes::placeholder{color:#2a2a2a;}
+
+/* ── ADVISORY NOTE ── */
+.advisory{margin-top:14px;padding:10px 14px;border-left:3px solid #64b5f6;background:rgba(66,133,244,.05);border-radius:0 6px 6px 0;font-size:12px;color:#9ac8f5;}
+.advisory strong{color:#64b5f6;display:block;margin-bottom:3px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;}
+
+/* ── DIVIDER ── */
+hr.div{border:none;border-top:1px solid #141414;margin:44px 0;}
+
+/* ══════════════════════════════════════════
+   DESIGN SYSTEM DEMO STYLES (prefixed ds-)
+   All inside .ds scope
+══════════════════════════════════════════ */
+/* inputs */
+.ds input[type=text],.ds input[type=email],.ds input[type=date],.ds select,.ds textarea{width:100%;padding:10px 13px;font-size:13px;font-family:inherit;border:1px solid var(--input-bdr);border-radius:6px;background:var(--input-bg);color:var(--text);box-sizing:border-box;}
+.ds label.fl{display:block;font-weight:600;margin-bottom:7px;color:var(--muted);font-size:12px;}
+.ds .req{color:var(--red);}
+.ds .ff{margin-bottom:14px;}
+.ds .ff:last-child{margin-bottom:0;}
+.ds .fr{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:14px;}
+/* radios */
+.ds .rg{display:flex;border:1px solid var(--input-bdr);border-radius:6px;overflow:hidden;background:var(--input-bg);margin-top:7px;}
+.ds .rg label{flex:1;position:relative;margin:0;}
+.ds .rg label:not(:last-child){border-right:1px solid var(--input-bdr);}
+.ds .rg input[type=radio]{position:absolute;opacity:0;width:0;height:0;}
+.ds .rb{display:block;padding:9px 14px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);}
+.ds .rg input[type=radio]:checked+.rb{background:var(--red);color:#fff;}
+/* checkbox tiles */
+.ds .cbt{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;margin-top:7px;}
+.ds .ct{display:flex;align-items:center;padding:9px 12px;background:var(--input-bg);border:1px solid var(--input-bdr);border-radius:6px;cursor:pointer;font-size:13px;gap:8px;transition:border-color .15s;}
+.ds .ct input{accent-color:var(--red);width:15px;height:15px;flex-shrink:0;}
+.ds .ct:has(input:checked){border-color:var(--red);color:var(--red);font-weight:600;background:rgba(235,28,45,.08);}
+/* compact cb grid */
+.ds .cbg{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:5px;}
+.ds .cbg label{display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;color:var(--text);}
+.ds .cbg input{accent-color:var(--red);}
+/* confirm items */
+.ds .ci{display:flex;align-items:flex-start;gap:12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:13px;margin-bottom:8px;}
+.ds .ci:has(input:checked){border-color:var(--success);background:rgba(0,200,83,.04);}
+.ds .ci input{width:17px;height:17px;accent-color:var(--success);flex-shrink:0;margin-top:2px;}
+.ds .ci-t{font-size:13px;font-weight:600;display:block;margin-bottom:3px;}
+.ds .ci-b{font-size:12px;color:var(--muted);}
+/* ticket info */
+.ds .ti{background:rgba(255,255,255,.02);border-radius:8px;padding:13px;margin-bottom:13px;border:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ds .ir{display:flex;flex-direction:column;font-size:13px;}
+.ds .ir .lbl{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.ds .ir .val{color:var(--text);font-weight:600;}
+.ds .ir.s2{grid-column:span 2;}
+.ds .ir.chg .val{color:#64b5f6;}
+/* section titles */
+.ds .st{font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid var(--border);padding-bottom:7px;margin:0 0 13px;}
+.ds h2.sec{color:var(--text);font-size:1.1rem;font-weight:600;border-bottom:1px solid var(--border);padding-bottom:9px;margin:0 0 13px;}
+.ds .st-lg{font-size:16px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);padding-bottom:7px;margin:0 0 13px;}
+/* cards */
+.ds .card{background:var(--card-bg);border-radius:12px;padding:28px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.5);}
+.ds .card-form{background:var(--card-bg);padding:28px;border-radius:8px;border:1px solid var(--border);box-shadow:0 4px 12px rgba(255,255,255,.04);}
+/* buttons */
+.ds .btn{display:inline-block;padding:11px 20px;border:none;border-radius:8px;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer;text-align:center;text-decoration:none;}
+.ds .btn-p{background:var(--red);color:#fff;}
+.ds .btn-s{background:#2a2a2a;color:#fff;border:1px solid var(--border);}
+.ds .btn-ok{background:var(--success);color:#fff;}
+.ds .btn-full{width:100%;display:block;}
+.ds .acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* status btn group */
+.ds .sbg{display:flex;background:var(--input-bg);border:1px solid var(--input-bdr);border-radius:6px;overflow:hidden;width:fit-content;}
+.ds .sb{padding:6px 11px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:10px;font-weight:700;text-transform:uppercase;border-right:1px solid var(--input-bdr);font-family:inherit;}
+.ds .sb:last-child{border-right:none;}
+.ds .sb.pen{background:var(--warning);color:#000;}
+.ds .sb.cmp{background:var(--success);color:#fff;}
+.ds .sb.nrt{background:var(--danger);color:#fff;}
+/* badges */
+.ds .bdg{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.ds .b-open{background:rgba(235,28,45,.1);color:var(--red);border:1px solid var(--red);}
+.ds .b-closed{background:rgba(0,200,83,.1);color:var(--success);border:1px solid var(--success);}
+.ds .b-prog{background:rgba(255,171,0,.1);color:var(--warning);border:1px solid var(--warning);}
+.ds .b-pend{background:rgba(100,181,246,.1);color:#64b5f6;border:1px solid #64b5f6;}
+/* callouts */
+.ds .co{padding:9px 13px;border-radius:6px;font-size:13px;margin-bottom:8px;}
+.ds .co-w{background:rgba(255,171,0,.08);border:1px solid rgba(255,171,0,.3);color:#ffcc02;}
+.ds .co-i{background:rgba(66,133,244,.1);border:1px solid rgba(66,133,244,.3);color:#64b5f6;}
+.ds .co-s{background:rgba(0,200,83,.08);border:1px solid rgba(0,200,83,.3);color:var(--success);}
+/* checklist table */
+.ds .cht{width:100%;border-collapse:collapse;font-size:13px;}
+.ds .cht th{text-align:left;padding:9px 11px;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.ds .cht td{padding:10px 11px;border-bottom:1px solid var(--border);vertical-align:top;}
+.ds .cht textarea{width:100%;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:6px 8px;font-size:12px;font-family:inherit;resize:vertical;}
+/* loading */
+@keyframes spin{to{transform:rotate(360deg);}}
+.ds .spinner{width:30px;height:30px;border:3px solid rgba(255,255,255,.15);border-radius:50%;border-top-color:var(--red);animation:spin 1s linear infinite;}
+/* sub-section */
+.ds .sub{margin-top:8px;padding:11px;background:#222;border-radius:6px;border:1px solid #3a3a3a;}
+.ds .sub-lbl{display:block;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;}
+/* logic section */
+.ds .logic{margin-top:10px;padding:13px 15px;border-left:3px solid var(--red);background:rgba(235,28,45,.04);border-radius:0 6px 6px 0;}
+/* success */
+.ds .succ{text-align:center;padding:36px 20px;}
+.ds .succ .si{font-size:50px;margin-bottom:12px;}
+.ds .succ h2{color:var(--success);font-size:20px;border:none;margin:0 0 8px;}
+.ds .succ p{color:var(--muted);font-size:14px;margin-bottom:18px;}
+
+/* ── LIVE PREVIEW ── */
+.prev-wrap{margin-top:60px;border-top:2px solid #1a1a1a;padding-top:40px;}
+.prev-hdr{display:flex;align-items:center;gap:14px;margin-bottom:22px;}
+.prev-hdr h2{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#64b5f6;border:none;padding:0;margin:0;}
+.prev-hdr p{font-size:12px;color:#555;}
+.prev-auto-note{font-size:11px;color:#3a3a3a;margin-left:auto;}
+.prev-frame{background:#080808;border:1px solid #1e1e1e;border-radius:10px;padding:40px;min-height:300px;overflow:auto;}
+.prev-placeholder{text-align:center;padding:80px 20px;color:#2a2a2a;font-size:14px;}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav class="top-nav">
+  <div class="nav-brand">🎨 Design Decisions</div>
+  <div class="nav-links">
+    <a class="nav-link" href="#s-container">Container</a>
+    <a class="nav-link" href="#s-logo">Logo</a>
+    <a class="nav-link" href="#s-header">Header</a>
+    <a class="nav-link" href="#s-card">Card</a>
+    <a class="nav-link" href="#s-sttl">Section Title</a>
+    <a class="nav-link" href="#s-ticket">Ticket Info</a>
+    <a class="nav-link" href="#s-inputs">Inputs</a>
+    <a class="nav-link" href="#s-radios">Radios</a>
+    <a class="nav-link" href="#s-cb">Checkboxes</a>
+    <a class="nav-link" href="#s-btns">Buttons</a>
+    <a class="nav-link" href="#s-sbtns">Status Btns</a>
+    <a class="nav-link" href="#s-badges">Badges</a>
+    <a class="nav-link" href="#s-callouts">Callouts</a>
+    <a class="nav-link" href="#s-checklist">Checklist</a>
+    <a class="nav-link" href="#s-loading">Loading</a>
+    <a class="nav-link" href="#s-success">Success</a>
+    <a class="nav-link" href="#s-logic">Logic</a>
+    <a class="nav-link" href="#preview" style="color:#64b5f6;font-weight:700;">↓ Preview</a>
+  </div>
+  <div class="nav-actions">
+    <span class="n-count"><strong id="cntNum">0</strong> decisions</span>
+    <button class="nb nb-prev" onclick="document.getElementById('preview').scrollIntoView({behavior:'smooth'})">Preview ↓</button>
+    <button class="nb nb-save" onclick="saveAll()">💾 Save</button>
+    <button class="nb nb-copy" onclick="copyExport()">📋 Export</button>
+    <button class="nb nb-clear" onclick="clearAll()">✕ Clear</button>
+    <span id="savedMsg">Saved ✓</span>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ══════════════════════════════════════════
+     1. CONTAINER WIDTH — SELECT ONE
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-container">
+  <div class="shdr">
+    <span class="sname">Container Width</span>
+    <span class="smode mode-one">Select One</span>
+    <span class="snote"><strong>Note:</strong> ITSetup.html currently uses 1200px — consolidate to 960px or 1400px, no middle ground.</span>
+  </div>
+  <div class="vg" data-group="container" data-type="one">
+
+    <div class="vb" data-key="ctr-wide">
+      <div class="vb-top">
+        <span class="vb-name">Wide — Full Page Forms</span>
+        <div class="tags"><span class="tag tc">InitialRequest · PositionChange · Termination</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body">
+        <div style="background:#0a0a0a;border:1px dashed #252525;border-radius:6px;padding:13px;font-size:12px;color:var(--muted);">
+          <code>max-width: 1400px; width: 95%; margin: 0 auto;</code><br>Class: <code>.container-wide</code>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="ctr-narrow">
+      <div class="vb-top">
+        <span class="vb-name">Narrow — Card Forms</span>
+        <div class="tags"><span class="tag tc">ActionItemForm · SafetyOnboarding · HRVerification</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body">
+        <div style="background:#0a0a0a;border:1px dashed #252525;border-radius:6px;padding:13px;font-size:12px;color:var(--muted);">
+          <code>max-width: 960px; width: 100%; margin: 0 auto;</code><br>Class: <code>.container-narrow</code>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="ctr-card-layout">
+      <div class="vb-top">
+        <span class="vb-name">Card Layout — Body Centered</span>
+        <div class="tags"><span class="tag tp">Proposed — all card-based pages</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body">
+        <div style="background:#0a0a0a;border:1px dashed #252525;border-radius:6px;padding:13px;font-size:12px;color:var(--muted);">
+          <code>body{display:flex;justify-content:center;}</code><br>Pair with <code>.container-narrow</code>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     2. LOGO SIZE — SELECT ONE
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-logo">
+  <div class="shdr">
+    <span class="sname">Logo Size</span>
+    <span class="smode mode-one">Select One</span>
+    <span class="snote"><strong>Recommended:</strong> 60px everywhere. 40px is undersized on a full card; 70px is slightly large.</span>
+  </div>
+  <div class="vg" data-group="logo" data-type="one">
+
+    <div class="vb" data-key="logo-60">
+      <div class="vb-top">
+        <span class="vb-name">Standard — 60px</span>
+        <div class="tags"><span class="tag tp">Proposed standard</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body" style="text-align:center;padding:24px 18px;">
+        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" style="height:60px;" alt="TEAM Group">
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="logo-40">
+      <div class="vb-top">
+        <span class="vb-name">Compact — 40px</span>
+        <div class="tags"><span class="tag tc">Currently: SafetyOnboarding</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body" style="text-align:center;padding:24px 18px;">
+        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" style="height:40px;" alt="TEAM Group">
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="logo-70">
+      <div class="vb-top">
+        <span class="vb-name">Large — 70px</span>
+        <div class="tags"><span class="tag tc">Currently: InitialRequest</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body" style="text-align:center;padding:24px 18px;">
+        <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" style="height:70px;" alt="TEAM Group">
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     3. PAGE HEADER STYLE — SELECT ONE
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-header">
+  <div class="shdr">
+    <span class="sname">Page Header Style</span>
+    <span class="smode mode-one">Select One</span>
+    <span class="snote">Centered title suits full-page forms; Status badge suits specialist/action forms where status matters.</span>
+  </div>
+  <div class="vg two" data-group="header" data-type="one">
+
+    <div class="vb" data-key="header-centered">
+      <div class="vb-top">
+        <span class="vb-name">Centered Title + Subtitle</span>
+        <div class="tags"><span class="tag tc">InitialRequest · PositionChange style</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body" style="text-align:center;padding:24px 18px;">
+        <div style="font-size:22px;font-weight:700;margin-bottom:6px;">New Employee Request</div>
+        <div style="color:var(--muted);font-size:13px;">Complete all fields and submit for HR review</div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="header-badge">
+      <div class="vb-top">
+        <span class="vb-name">Status Badge + Title</span>
+        <div class="tags"><span class="tag tc">ActionItemForm · HRVerification</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds" style="text-align:center;padding:24px 18px;">
+        <span class="bdg b-open" style="margin-bottom:10px;display:inline-block;">Open</span><br>
+        <div style="font-size:20px;font-weight:700;margin-bottom:4px;">IT Setup — Jane Doe</div>
+        <div style="color:var(--muted);font-size:12px;">Action Item · Assigned to: it@team-group.com</div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     4. CARD TYPE — SELECT ONE
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-card">
+  <div class="shdr">
+    <span class="sname">Card / Wrapper Style</span>
+    <span class="smode mode-one">Select One</span>
+    <span class="snote">.card (heavy shadow, 12px radius) suits standalone card pages. .card-form (lighter, 8px) suits wide form wrappers.</span>
+  </div>
+  <div class="vg two" data-group="card" data-type="one">
+
+    <div class="vb" data-key="card-heavy">
+      <div class="vb-top">
+        <span class="vb-name">.card — Heavy shadow, 12px radius</span>
+        <div class="tags"><span class="tag tp">Card layout pages</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="card">
+          <div class="st">Section Example</div>
+          <p style="color:var(--muted);font-size:13px;">.card — 12px border-radius, heavy drop shadow. Use for SafetyOnboarding, ActionItemForm, approvals.</p>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="card-form">
+      <div class="vb-top">
+        <span class="vb-name">.card-form — Light shadow, 8px radius</span>
+        <div class="tags"><span class="tag tc">InitialRequest · PositionChange</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="card-form">
+          <h2 class="sec">Section Example</h2>
+          <p style="color:var(--muted);font-size:13px;">.card-form — 8px border-radius, lighter shadow. Use as main wrapper on full-page forms.</p>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     5. SECTION TITLE STYLE — SELECT ONE
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-sttl">
+  <div class="shdr">
+    <span class="sname">Section Title Style</span>
+    <span class="smode mode-one">Select One</span>
+    <span class="snote">HRVerification uses 16px — recommend consolidating to 12px .section-title everywhere except h2 on full-page forms.</span>
+  </div>
+  <div class="vg" data-group="section-title" data-type="one">
+
+    <div class="vb" data-key="st-card">
+      <div class="vb-top">
+        <span class="vb-name">.section-title — 12px red caps</span>
+        <div class="tags"><span class="tag tp">Proposed standard — all card forms</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="st">Employee Details</div>
+        <div class="st">Task Checklist</div>
+        <div class="st">Finalize</div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="st-h2">
+      <div class="vb-top">
+        <span class="vb-name">h2 — Bold, border-bottom</span>
+        <div class="tags"><span class="tag tc">InitialRequest · PositionChange</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <h2 class="sec">Employee Information</h2>
+        <h2 class="sec">System Access</h2>
+        <h2 class="sec">Equipment</h2>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="st-large">
+      <div class="vb-top">
+        <span class="vb-name">.section-title 16px — Larger variant</span>
+        <div class="tags"><span class="tag tc">HRVerification only — consolidate away</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="st-lg">Request Details</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;">⚠️ Only used in HRVerification. Recommend retiring in favour of 12px standard.</div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     6. TICKET INFO — SELECT MANY
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-ticket">
+  <div class="shdr">
+    <span class="sname">Ticket Info Grid</span>
+    <span class="smode mode-many">Select Many</span>
+    <span class="snote">Both variants can coexist — standard 2-col for most rows, span-2 for long values like system lists or comments.</span>
+  </div>
+  <div class="vg two" data-group="ticket" data-type="many">
+
+    <div class="vb" data-key="ticket-2col">
+      <div class="vb-top">
+        <span class="vb-name">Standard 2-Column Grid</span>
+        <div class="tags"><span class="tag tp">All forms — proposed standard</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="ti">
+          <div class="ir"><span class="lbl">Employee</span><span class="val">Jane Doe</span></div>
+          <div class="ir"><span class="lbl">Start Date</span><span class="val">5/12/2025</span></div>
+          <div class="ir"><span class="lbl">Job Title</span><span class="val">Site Manager</span></div>
+          <div class="ir"><span class="lbl">Site</span><span class="val">Edmonton Main</span></div>
+          <div class="ir"><span class="lbl">Manager</span><span class="val">John Smith</span></div>
+          <div class="ir"><span class="lbl">Type</span><span class="val">Salaried</span></div>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="ticket-span2">
+      <div class="vb-top">
+        <span class="vb-name">With Span-2 Rows</span>
+        <div class="tags"><span class="tag tp">Use for systems, equipment lists, comments</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="ti">
+          <div class="ir"><span class="lbl">Employee</span><span class="val">Jane Doe</span></div>
+          <div class="ir"><span class="lbl">Site</span><span class="val">Edmonton Main</span></div>
+          <div class="ir s2"><span class="lbl">Systems Requested</span><span class="val">Google Workspace, VPN, SiteDocs, Fleetio</span></div>
+          <div class="ir s2" style="border-top:1px dashed #333;margin-top:6px;padding-top:8px;"><span class="lbl">Comments</span><span class="val" style="font-style:italic;color:#ccc;font-weight:400;">Please prioritize laptop before start date.</span></div>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="ticket-change-row">
+      <div class="vb-top">
+        <span class="vb-name">Changed Value Highlight (blue)</span>
+        <div class="tags"><span class="tag tc">HR Approval / Status Change forms</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="ti">
+          <div class="ir"><span class="lbl">Current Title</span><span class="val">Field Technician</span></div>
+          <div class="ir chg"><span class="lbl">New Title</span><span class="val">Senior Technician</span></div>
+          <div class="ir"><span class="lbl">Current Site</span><span class="val">Edmonton Main</span></div>
+          <div class="ir chg"><span class="lbl">New Site</span><span class="val">Calgary North</span></div>
+        </div>
+        <div style="font-size:11px;color:#555;margin-top:4px;">Blue values = changed fields</div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     7. INPUTS — SELECT MANY
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-inputs">
+  <div class="shdr">
+    <span class="sname">Input Types</span>
+    <span class="smode mode-many">Select Many</span>
+    <span class="snote">All three are used across forms. Select the ones to include in the design system file.</span>
+  </div>
+  <div class="vg" data-group="inputs" data-type="many">
+
+    <div class="vb" data-key="inp-text">
+      <div class="vb-top">
+        <span class="vb-name">Text / Email / Date Inputs</span>
+        <div class="tags"><span class="tag tp">Standard</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="fr">
+          <div class="ff"><label class="fl">First Name <span class="req">*</span></label><input type="text" placeholder="Jane"></div>
+          <div class="ff"><label class="fl">Last Name <span class="req">*</span></label><input type="text" placeholder="Doe"></div>
+        </div>
+        <div class="ff"><label class="fl">Start Date</label><input type="date"></div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="inp-select">
+      <div class="vb-top">
+        <span class="vb-name">Select Dropdown</span>
+        <div class="tags"><span class="tag tp">Standard</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="ff"><label class="fl">Site <span class="req">*</span></label>
+          <select><option value="" disabled selected>Select a site...</option><option>Edmonton Main</option><option>Calgary North</option><option>Vancouver Island</option></select>
+        </div>
+        <div class="ff"><label class="fl">Employment Type</label>
+          <select><option value="" disabled selected>Select type...</option><option>Salaried</option><option>Hourly</option><option>Contract</option></select>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="inp-textarea">
+      <div class="vb-top">
+        <span class="vb-name">Textarea</span>
+        <div class="tags"><span class="tag tp">Standard</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="ff"><label class="fl">Notes / Comments</label><textarea rows="4" placeholder="Enter additional context..."></textarea></div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     8. RADIO GROUPS — SELECT MANY
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-radios">
+  <div class="shdr">
+    <span class="sname">Radio Button Groups</span>
+    <span class="smode mode-many">Select Many</span>
+    <span class="snote">Radio groups = pick one answer. Select all variants you want standardized.</span>
+  </div>
+  <div class="vg" data-group="radios" data-type="many">
+
+    <div class="vb" data-key="radio-2opt">
+      <div class="vb-top">
+        <span class="vb-name">2-Option Group (Yes / No)</span>
+        <div class="tags"><span class="tag tp">Standard</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <label class="fl">Credit Card Required?</label>
+        <div class="rg">
+          <label><input type="radio" name="r2demo" value="Yes"><span class="rb">Yes</span></label>
+          <label><input type="radio" name="r2demo" value="No" checked><span class="rb">No</span></label>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="radio-3opt">
+      <div class="vb-top">
+        <span class="vb-name">3-Option Group</span>
+        <div class="tags"><span class="tag tp">Classification, card type, etc.</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <label class="fl">Classification</label>
+        <div class="rg">
+          <label><input type="radio" name="r3demo" value="Hourly"><span class="rb">Hourly</span></label>
+          <label><input type="radio" name="r3demo" value="Salary" checked><span class="rb">Salary</span></label>
+          <label><input type="radio" name="r3demo" value="Contract"><span class="rb">Contract</span></label>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="radio-subsec">
+      <div class="vb-top">
+        <span class="vb-name">Radio with Conditional Sub-Section</span>
+        <div class="tags"><span class="tag tp">BOSS · Jonas · Vehicle toggle pattern</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <label class="fl">BOSS Access Required?</label>
+        <div class="rg" style="margin-bottom:8px;">
+          <label><input type="radio" name="rboss" value="Yes" onchange="document.getElementById('bossSubDemo').style.display='block'"><span class="rb">Yes</span></label>
+          <label><input type="radio" name="rboss" value="No" checked onchange="document.getElementById('bossSubDemo').style.display='none'"><span class="rb">No</span></label>
+        </div>
+        <div id="bossSubDemo" style="display:none;">
+          <div class="sub">
+            <span class="sub-lbl">BOSS Committees</span>
+            <div class="cbg">
+              <label><input type="checkbox"> Incidents</label>
+              <label><input type="checkbox"> Cost Sheet</label>
+              <label><input type="checkbox"> Trip Reports</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     9. CHECKBOXES — SELECT MANY
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-cb">
+  <div class="shdr">
+    <span class="sname">Checkbox Styles</span>
+    <span class="smode mode-many">Select Many</span>
+    <span class="snote">Different contexts need different checkbox styles. Select all you want to standardize.</span>
+  </div>
+  <div class="vg" data-group="checkboxes" data-type="many">
+
+    <div class="vb" data-key="cb-tiled">
+      <div class="vb-top">
+        <span class="vb-name">Tiled Checkboxes (large)</span>
+        <div class="tags"><span class="tag tc">InitialRequest equipment / system selection</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <label class="fl">Systems Requested</label>
+        <div class="cbt">
+          <label class="ct"><input type="checkbox" checked><span>Google Workspace</span></label>
+          <label class="ct"><input type="checkbox"><span>VPN Access</span></label>
+          <label class="ct"><input type="checkbox" checked><span>SiteDocs</span></label>
+          <label class="ct"><input type="checkbox"><span>Fleetio</span></label>
+          <label class="ct"><input type="checkbox"><span>Jonas</span></label>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="cb-grid">
+      <div class="vb-top">
+        <span class="vb-name">Compact Grid (small)</span>
+        <div class="tags"><span class="tag tc">BOSS committees · job numbers · sub-sections</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <label class="fl" style="margin-bottom:8px;">Job Numbers</label>
+        <div class="cbg">
+          <label><input type="checkbox" checked> 10001 — Edmonton</label>
+          <label><input type="checkbox"> 10002 — Calgary N</label>
+          <label><input type="checkbox" checked> 10003 — Vancouver</label>
+          <label><input type="checkbox"> 10004 — Kelowna</label>
+          <label><input type="checkbox"> 10005 — Red Deer</label>
+          <label><input type="checkbox"> 10006 — Lethbridge</label>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="cb-confirm">
+      <div class="vb-top">
+        <span class="vb-name">Confirm Items (green accent)</span>
+        <div class="tags"><span class="tag tc">SafetyOnboarding · HRVerification</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="ci"><input type="checkbox" id="ci1"><label for="ci1"><span class="ci-t">SiteDocs Locations Assigned</span><span class="ci-b">Employee added to all required SiteDocs job sites for their role.</span></label></div>
+        <div class="ci"><input type="checkbox" id="ci2"><label for="ci2"><span class="ci-t">DSS Learning Path Assigned</span><span class="ci-b">Employee enrolled in required DSS paths for their JR title.</span></label></div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="cb-inline-sub">
+      <div class="vb-top">
+        <span class="vb-name">Tiled Checkbox with Inline Sub-Section</span>
+        <div class="tags"><span class="tag tp">BOSS / Jonas inline expand pattern</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <label class="fl">Additional Access</label>
+        <div class="cbt" style="gap:0;display:flex;flex-wrap:wrap;">
+          <label class="ct" style="flex:0 0 auto;"><input type="checkbox" id="bossInline" onchange="document.getElementById('bossInlineSub').style.display=this.checked?'block':'none'"><span>BOSS</span></label>
+          <label class="ct" style="flex:0 0 auto;"><input type="checkbox"><span>Jonas</span></label>
+        </div>
+        <div id="bossInlineSub" style="display:none;margin-top:6px;">
+          <div class="sub">
+            <span class="sub-lbl">BOSS Committees</span>
+            <div class="cbg"><label><input type="checkbox"> Incidents</label><label><input type="checkbox"> Cost Sheet</label></div>
+          </div>
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     10. BUTTONS — SELECT MANY
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-btns">
+  <div class="shdr">
+    <span class="sname">Button Variants</span>
+    <span class="smode mode-many">Select Many</span>
+    <span class="snote">Forms can use multiple button layouts. Core variants always included; select which action layouts to standardize.</span>
+  </div>
+  <div class="vg" data-group="buttons" data-type="many">
+
+    <div class="vb" data-key="btn-core">
+      <div class="vb-top">
+        <span class="vb-name">Core Variants</span>
+        <div class="tags"><span class="tag tp">Always included</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds" style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-p">Primary — Submit / Confirm</button>
+        <button class="btn btn-s">Secondary — Save Draft / Back</button>
+        <button class="btn btn-ok">Success — Finalized</button>
+        <button class="btn btn-p" disabled style="opacity:.5;cursor:not-allowed;">Primary — Disabled</button>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="btn-actions">
+      <div class="vb-top">
+        <span class="vb-name">Two-Button Action Row (.acts)</span>
+        <div class="tags"><span class="tag tp">Standard for all forms with Save + Submit</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="acts"><button class="btn btn-s">Save Progress</button><button class="btn btn-p">Mark Task Finalized</button></div>
+        <div class="acts" style="margin-top:10px;"><button class="btn btn-s">Cancel</button><button class="btn btn-p">Submit Request</button></div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="btn-full">
+      <div class="vb-top">
+        <span class="vb-name">Full-Width Single Button</span>
+        <div class="tags"><span class="tag tc">SafetyOnboarding · specialist forms</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <button class="btn btn-p btn-full">Confirm &amp; Complete</button>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     11. STATUS BUTTON GROUPS — SELECT MANY
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-sbtns">
+  <div class="shdr">
+    <span class="sname">Status Button Groups</span>
+    <span class="smode mode-many">Select Many</span>
+    <span class="snote">Used in checklist tables. 2-state for regular steps; 3-state for asset retrieval rows.</span>
+  </div>
+  <div class="vg two" data-group="status-btns" data-type="many">
+
+    <div class="vb" data-key="sbtn-2">
+      <div class="vb-top">
+        <span class="vb-name">2-State: Pending / Complete</span>
+        <div class="tags"><span class="tag tc">Non-asset checklist rows</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds" style="display:flex;flex-direction:column;gap:10px;">
+        <div class="sbg"><button class="sb pen">Pending</button><button class="sb">Complete</button></div>
+        <div class="sbg"><button class="sb">Pending</button><button class="sb cmp">Complete</button></div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="sbtn-3">
+      <div class="vb-top">
+        <span class="vb-name">3-State: Pending / Collected / Not Returned</span>
+        <div class="tags"><span class="tag tc">Asset retrieval rows (offboarding)</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds" style="display:flex;flex-direction:column;gap:10px;">
+        <div class="sbg"><button class="sb pen">Pending</button><button class="sb">Collected</button><button class="sb">Not Returned</button></div>
+        <div class="sbg"><button class="sb">Pending</button><button class="sb">Collected</button><button class="sb nrt">Not Returned</button></div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     12. BADGES — ONLY ONE OPTION
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-badges">
+  <div class="shdr">
+    <span class="sname">Status Badges</span>
+    <span class="smode mode-only">Only One Option</span>
+    <span class="snote">One design covers all states. Toggle to include in design system.</span>
+  </div>
+  <div class="vg one" data-group="badges" data-type="only">
+
+    <div class="vb" data-key="badges-all">
+      <div class="vb-top">
+        <span class="vb-name">Open / Closed / In Progress / Pending Pills</span>
+        <div class="tags"><span class="tag tc">ActionItemForm · HRVerification headers</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <span class="bdg b-open">Open</span>
+        <span class="bdg b-closed">Closed</span>
+        <span class="bdg b-prog">In Progress</span>
+        <span class="bdg b-pend">Pending</span>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     13. CALLOUTS — ONLY ONE OPTION
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-callouts">
+  <div class="shdr">
+    <span class="sname">Callout Banners</span>
+    <span class="smode mode-only">Only One Option</span>
+    <span class="snote">Three flavours (warning, info, success) all from the same component. Toggle to include.</span>
+  </div>
+  <div class="vg one" data-group="callouts" data-type="only">
+
+    <div class="vb" data-key="callouts-all">
+      <div class="vb-top">
+        <span class="vb-name">Warning / Info / Success Callouts</span>
+        <div class="tags"><span class="tag tc">All forms — contextual use</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="co co-w">⚠️ Start date is less than 3 business days away. Prioritize IT setup immediately.</div>
+        <div class="co co-i">ℹ️ Credit card applications require manager approval before submission.</div>
+        <div class="co co-s">✅ All specialist forms have been completed for this workflow.</div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     14. CHECKLIST TABLE — ONLY ONE OPTION
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-checklist">
+  <div class="shdr">
+    <span class="sname">Verification Checklist Table</span>
+    <span class="smode mode-only">Only One Option</span>
+    <span class="snote">Standard table for all specialist forms (IT, Jonas, Safety, Credit Card, etc.).</span>
+  </div>
+  <div class="vg one" data-group="checklist" data-type="only">
+
+    <div class="vb" data-key="checklist-tbl">
+      <div class="vb-top">
+        <span class="vb-name">Checklist with Status Buttons + Comment Field</span>
+        <div class="tags"><span class="tag tc">ActionItemForm — proposed standard for all verification</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <table class="cht">
+          <thead><tr><th>Step</th><th style="width:140px;">Status</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span style="font-weight:600;display:block;margin-bottom:3px;">Provision Jonas access</span><span style="font-size:11px;color:var(--muted);">jane.doe@team-group.com</span></td>
+              <td><div class="sbg"><button class="sb">Pending</button><button class="sb cmp">Complete</button></div></td>
+              <td><textarea rows="2">Account created, login confirmed.</textarea></td>
+            </tr>
+            <tr>
+              <td><span style="font-weight:600;display:block;">Grant cost sheet: 10001 — Edmonton</span></td>
+              <td><div class="sbg"><button class="sb pen">Pending</button><button class="sb">Complete</button></div></td>
+              <td><textarea rows="2" placeholder="Notes..."></textarea></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     15. LOADING — SELECT ONE
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-loading">
+  <div class="shdr">
+    <span class="sname">Loading State</span>
+    <span class="smode mode-one">Select One</span>
+    <span class="snote">Overlay blocks the whole page during async calls. Inline is lighter for fast operations (&lt;1s).</span>
+  </div>
+  <div class="vg two" data-group="loading" data-type="one">
+
+    <div class="vb" data-key="loading-overlay">
+      <div class="vb-top">
+        <span class="vb-name">Full Overlay (showLoading / hideLoading)</span>
+        <div class="tags"><span class="tag tp">Standard — SharedScripts.html</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body">
+        <div style="background:rgba(0,0,0,.75);border-radius:8px;padding:30px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+          <div style="width:32px;height:32px;border:3px solid rgba(255,255,255,.15);border-radius:50%;border-top-color:var(--red);animation:spin 1s linear infinite;"></div>
+          <span style="color:#fff;font-size:14px;">Saving...</span>
+        </div>
+        <p style="color:var(--muted);font-size:12px;margin-top:10px;text-align:center;">Covers full viewport. Click <em>Preview Loading Overlay</em> below to test.</p>
+        <button style="margin-top:8px;padding:8px 14px;background:#2a2a2a;border:1px solid #444;border-radius:5px;color:#fff;cursor:pointer;font-size:12px;font-family:inherit;" onclick="event.stopPropagation();previewOverlay()">Preview Overlay</button>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="loading-inline">
+      <div class="vb-top">
+        <span class="vb-name">Inline Spinner (no overlay)</span>
+        <div class="tags"><span class="tag tp">Alternative for fast operations</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--card-bg);border-radius:8px;border:1px solid var(--border);">
+          <div class="spinner"></div>
+          <span style="color:var(--muted);font-size:13px;">Saving confirmation...</span>
+        </div>
+        <p style="color:var(--muted);font-size:12px;margin-top:10px;">In-place replacement of a button or section. Only for very fast calls.</p>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     16. SUCCESS PATTERN — SELECT ONE
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-success">
+  <div class="shdr">
+    <span class="sname">After-Submit / Success Pattern</span>
+    <span class="smode mode-one">Select One</span>
+    <span class="snote"><strong>Recommended B:</strong> in-place show/hide works for all specialist forms and uses SharedScripts showSuccess(). Use A for full-page forms only.</span>
+  </div>
+  <div class="v-grid-success" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px;" data-group="success" data-type="one">
+
+    <div class="vb" data-key="success-a">
+      <div class="vb-top">
+        <span class="vb-name">A — Full Card Replace (innerHTML)</span>
+        <div class="tags"><span class="tag tc">InitialRequest · full-page forms</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="card" style="text-align:center;padding:28px 20px;">
+          <div style="font-size:46px;margin-bottom:12px;">✅</div>
+          <h2 style="color:var(--success);border:none;margin:0 0 8px;font-size:19px;">Request Submitted</h2>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:18px;">Jane Doe's request has been sent to HR for approval.</p>
+          <button class="btn btn-p" style="max-width:220px;display:block;margin:0 auto;">Return to Dashboard</button>
+          <p style="color:#555;font-size:12px;margin-top:10px;">You may close this window.</p>
+        </div>
+      </div>
+      <div class="advisory">Card innerHTML replaced via <code>card.innerHTML = renderSuccess()</code>. Best for full-page initial request forms.</div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="success-b">
+      <div class="vb-top">
+        <span class="vb-name">B ★ — In-Place Show/Hide (Recommended)</span>
+        <div class="tags"><span class="tag ts">Recommended standard</span><span class="tag tp">SharedScripts showSuccess()</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="card" style="padding:20px;">
+          <div id="sb-form">
+            <p style="color:var(--muted);font-size:13px;margin-bottom:10px;">Form content lives here...</p>
+            <button class="btn btn-p btn-full" onclick="event.stopPropagation();document.getElementById('sb-form').style.display='none';document.getElementById('sb-succ').style.display='block'">Confirm &amp; Complete ↓ (demo)</button>
+          </div>
+          <div id="sb-succ" style="display:none;" class="succ">
+            <div class="si">✅</div>
+            <h2>Safety Onboarding Confirmed</h2>
+            <p>SiteDocs and DSS records updated for Jane Doe.</p>
+            <button class="btn btn-p" style="max-width:200px;margin:0 auto 10px;display:block;">Return to Dashboard</button>
+            <button style="background:transparent;border:1px solid #333;color:#666;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:12px;font-family:inherit;" onclick="event.stopPropagation();document.getElementById('sb-form').style.display='block';document.getElementById('sb-succ').style.display='none'">↑ Reset demo</button>
+          </div>
+        </div>
+      </div>
+      <div class="advisory"><strong style="color:var(--success);">★ Recommended for all specialist forms.</strong> formSection hidden, successDiv shown. Driven by <code>showSuccess()</code> in SharedScripts. Works for Safety, IT, Jonas, Fleetio, Credit Card, HR approval.</div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="success-c">
+      <div class="vb-top">
+        <span class="vb-name">C — Current ActionItemForm Pattern</span>
+        <div class="tags"><span class="tag tc">ActionItemForm finalize — consider retiring</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <div class="card" style="text-align:center;padding:32px 20px;">
+          <h1 style="color:var(--success);font-size:24px;margin-bottom:8px;">✓ Task Finalized</h1>
+          <p style="color:var(--muted);font-size:14px;margin-bottom:18px;">All checklist data has been recorded for Jane Doe — Jonas Access.</p>
+          <button class="btn btn-p">Go to Dashboard</button>
+        </div>
+      </div>
+      <div class="advisory">Simpler than A — no close-window message, no emoji consistency. Recommendation: retire C and standardize on B (specialist) + A (full-page).</div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+    <div class="vb" data-key="success-d">
+      <div class="vb-top">
+        <span class="vb-name">D — Already Closed / Read-Only State</span>
+        <div class="tags"><span class="tag tc">ActionItemForm when Status = Closed</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds" style="text-align:center;padding:24px;">
+        <div style="color:var(--success);font-size:18px;font-weight:700;margin-bottom:14px;">✓ Task Finalized on 4/18/2025</div>
+        <button class="btn btn-p" style="max-width:180px;display:block;margin:0 auto;">Go to Dashboard</button>
+      </div>
+      <div class="advisory">Shown when a previously closed task is re-opened. Keep as-is — this is a distinct <em>state</em>, not a post-submit pattern.</div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+<hr class="div">
+
+<!-- ══════════════════════════════════════════
+     17. CONDITIONAL LOGIC — ONLY ONE OPTION
+══════════════════════════════════════════ -->
+<section class="dsec" id="s-logic">
+  <div class="shdr">
+    <span class="sname">Conditional / Logic Sections</span>
+    <span class="smode mode-only">Only One Option</span>
+    <span class="snote">Red left-border panel that appears when a radio triggers a conditional field group.</span>
+  </div>
+  <div class="vg one" data-group="logic" data-type="only">
+
+    <div class="vb" data-key="logic-sec">
+      <div class="vb-top">
+        <span class="vb-name">Red Left-Border Conditional Panel (.logic-section)</span>
+        <div class="tags"><span class="tag tc">InitialRequest — vehicle / credit card toggle</span></div>
+        <div class="vb-dot">✓</div>
+      </div>
+      <div class="vb-body ds">
+        <label class="fl">Does this employee need a company vehicle?</label>
+        <div class="rg" style="margin-bottom:8px;max-width:280px;">
+          <label><input type="radio" name="vehdemo" value="Yes" onchange="document.getElementById('vehLogic').style.display='block'"><span class="rb">Yes</span></label>
+          <label><input type="radio" name="vehdemo" value="No" checked onchange="document.getElementById('vehLogic').style.display='none'"><span class="rb">No</span></label>
+        </div>
+        <div id="vehLogic" style="display:none;" class="logic">
+          <label class="fl">Vehicle Preference / Notes</label>
+          <input type="text" placeholder="e.g. Pickup truck preferred, half-ton">
+        </div>
+      </div>
+      <div class="vb-notes-wrap"><div class="notes-lbl">Notes</div><textarea class="vb-notes" placeholder="Notes..."></textarea></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     LIVE PREVIEW
+══════════════════════════════════════════ -->
+<div class="prev-wrap" id="preview">
+  <div class="prev-hdr">
+    <h2>↓ Live Preview</h2>
+    <p>Assembles a mock form from your selections above. Updates automatically.</p>
+    <span class="prev-auto-note">Make selections above — preview updates instantly</span>
+  </div>
+  <div class="prev-frame" id="previewFrame">
+    <div class="prev-placeholder" id="prevPlaceholder">← Make selections above to see a live assembled preview</div>
+    <div id="prevContent" style="display:none;"></div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- Loading overlay for demo -->
+<div id="loadOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:14px;">
+  <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-radius:50%;border-top-color:var(--red);animation:spin 1s linear infinite;"></div>
+  <span style="color:#fff;font-size:14px;">Processing...</span>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+var STORE_KEY = 'team-design-decisions-v2';
+var state = {}; // key -> {sel:true/false, notes:''}
+
+/* ══════════════════════════════════════════
+   INIT — wire up all boxes
+══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function() {
+  loadAll();
+
+  document.querySelectorAll('[data-group]').forEach(function(grid) {
+    var type = grid.dataset.type; // 'one', 'many', 'only'
+    grid.querySelectorAll('.vb').forEach(function(box) {
+      box.addEventListener('click', function(e) {
+        // Don't intercept textarea/button clicks inside box
+        if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' ||
+            e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' ||
+            e.target.tagName === 'A' || e.target.tagName === 'LABEL') return;
+
+        var key = box.dataset.key;
+        if (type === 'one') {
+          // Deselect all siblings, select this
+          var already = box.classList.contains('sel-one');
+          grid.querySelectorAll('.vb').forEach(function(b) {
+            b.classList.remove('sel-one');
+            var k = b.dataset.key;
+            if (state[k]) state[k].sel = false;
+          });
+          if (!already) {
+            box.classList.add('sel-one');
+            if (!state[key]) state[key] = {sel:false,notes:''};
+            state[key].sel = true;
+          }
+        } else {
+          // Toggle (many or only)
+          var selClass = type === 'only' ? 'sel-only' : 'sel-many';
+          var isOn = box.classList.toggle(selClass);
+          if (!state[key]) state[key] = {sel:false,notes:''};
+          state[key].sel = isOn;
+        }
+        updateCount();
+        renderPreview();
+      });
+
+      // Auto-save notes on blur
+      var ta = box.querySelector('.vb-notes');
+      if (ta) {
+        ta.addEventListener('blur', function() {
+          var key = box.dataset.key;
+          if (!state[key]) state[key] = {sel:false,notes:''};
+          state[key].notes = ta.value;
+        });
+      }
+    });
+  });
+});
+
+/* ══════════════════════════════════════════
+   COUNT
+══════════════════════════════════════════ */
+function updateCount() {
+  var n = document.querySelectorAll('.vb.sel-one,.vb.sel-many,.vb.sel-only').length;
+  document.getElementById('cntNum').textContent = n;
+}
+
+/* ══════════════════════════════════════════
+   SAVE / LOAD / CLEAR / EXPORT
+══════════════════════════════════════════ */
+function saveAll() {
+  // Capture current notes before saving
+  document.querySelectorAll('.vb[data-key]').forEach(function(box) {
+    var k = box.dataset.key;
+    var ta = box.querySelector('.vb-notes');
+    if (!state[k]) state[k] = {sel:false,notes:''};
+    if (ta) state[k].notes = ta.value;
+    state[k].sel = box.classList.contains('sel-one') || box.classList.contains('sel-many') || box.classList.contains('sel-only');
+  });
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e){}
+  var m = document.getElementById('savedMsg');
+  m.style.display = 'inline';
+  setTimeout(function(){ m.style.display = 'none'; }, 2000);
+}
+
+function loadAll() {
+  try { state = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch(e){ state={}; }
+  document.querySelectorAll('.vb[data-key]').forEach(function(box) {
+    var k = box.dataset.key;
+    if (!state[k] || !state[k].sel) return;
+    var grid = box.closest('[data-group]');
+    var type = grid ? grid.dataset.type : 'many';
+    var selClass = type === 'one' ? 'sel-one' : type === 'only' ? 'sel-only' : 'sel-many';
+    box.classList.add(selClass);
+    var ta = box.querySelector('.vb-notes');
+    if (ta && state[k].notes) ta.value = state[k].notes;
+  });
+  updateCount();
+  renderPreview();
+}
+
+function clearAll() {
+  if (!confirm('Clear all selections and notes?')) return;
+  state = {};
+  try { localStorage.removeItem(STORE_KEY); } catch(e){}
+  document.querySelectorAll('.vb').forEach(function(b){
+    b.classList.remove('sel-one','sel-many','sel-only');
+    var ta = b.querySelector('.vb-notes');
+    if (ta) ta.value = '';
+  });
+  updateCount();
+  renderPreview();
+}
+
+function copyExport() {
+  var lines = ['TEAM Group Design Decisions\n' + new Date().toLocaleDateString() + '\n'];
+  document.querySelectorAll('.dsec').forEach(function(sec) {
+    var secName = (sec.querySelector('.sname')||{}).textContent || '';
+    var mode = (sec.querySelector('.smode')||{}).textContent || '';
+    var picked = [];
+    sec.querySelectorAll('.vb.sel-one,.vb.sel-many,.vb.sel-only').forEach(function(b) {
+      var name = (b.querySelector('.vb-name')||{}).textContent || b.dataset.key;
+      var ta = b.querySelector('.vb-notes');
+      var note = ta && ta.value ? ' — ' + ta.value.trim() : '';
+      picked.push('  ✓ ' + name.trim() + note);
+    });
+    if (picked.length) {
+      lines.push('[' + secName.trim() + '] ' + mode.trim());
+      lines = lines.concat(picked);
+      lines.push('');
+    }
+  });
+  if (lines.length <= 1) { alert('No decisions selected yet.'); return; }
+  var txt = lines.join('\n');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt).then(function(){ alert('Copied to clipboard!'); });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    alert('Copied to clipboard!');
+  }
+}
+
+/* ══════════════════════════════════════════
+   LOADING OVERLAY DEMO
+══════════════════════════════════════════ */
+function previewOverlay() {
+  var el = document.getElementById('loadOverlay');
+  el.style.display = 'flex';
+  setTimeout(function(){ el.style.display = 'none'; }, 2000);
+}
+
+/* ══════════════════════════════════════════
+   LIVE PREVIEW RENDERER
+══════════════════════════════════════════ */
+function getSel(group) {
+  // Returns selected key(s) for a group
+  var grid = document.querySelector('[data-group="'+group+'"]');
+  if (!grid) return null;
+  var type = grid.dataset.type;
+  if (type === 'one') {
+    var sel = grid.querySelector('.sel-one');
+    return sel ? sel.dataset.key : null;
+  } else {
+    var keys = [];
+    grid.querySelectorAll('.sel-many,.sel-only').forEach(function(b){ keys.push(b.dataset.key); });
+    return keys;
+  }
+}
+
+function renderPreview() {
+  var container = getSel('container');
+  var logo      = getSel('logo');
+  var header    = getSel('header');
+  var card      = getSel('card');
+  var sttl      = getSel('section-title');
+  var success   = getSel('success');
+  var loading   = getSel('loading');
+  var tickets   = getSel('ticket');
+  var inputs    = getSel('inputs');
+  var radios    = getSel('radios');
+  var cbs       = getSel('checkboxes');
+  var btns      = getSel('buttons');
+  var badges    = getSel('badges');
+
+  var anySelected = container || logo || header || card || sttl ||
+    (tickets && tickets.length) || (inputs && inputs.length) ||
+    (radios && radios.length) || (cbs && cbs.length) ||
+    (btns && btns.length) || success || loading;
+
+  var ph = document.getElementById('prevPlaceholder');
+  var pc = document.getElementById('prevContent');
+
+  if (!anySelected) {
+    ph.style.display = 'block';
+    pc.style.display = 'none';
+    return;
+  }
+  ph.style.display = 'none';
+  pc.style.display = 'block';
+
+  // Logo height
+  var logoH = logo === 'logo-40' ? '40px' : logo === 'logo-70' ? '70px' : '60px';
+  var logoHTML = logo
+    ? '<div style="text-align:center;margin-bottom:22px;"><img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" style="height:'+logoH+';" alt="TEAM Group"></div>'
+    : '';
+
+  // Header
+  var headerHTML = '';
+  if (header === 'header-badge') {
+    headerHTML = '<div style="text-align:center;margin-bottom:22px;"><span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;background:rgba(235,28,45,.1);color:#EB1C2D;border:1px solid #EB1C2D;margin-bottom:10px;">Open</span><div style="font-size:20px;font-weight:700;margin-bottom:4px;">IT Setup — Jane Doe</div><div style="color:#a0a0a0;font-size:13px;">Action Item · it@team-group.com</div></div>';
+  } else if (header === 'header-centered') {
+    headerHTML = '<div style="text-align:center;margin-bottom:22px;"><div style="font-size:22px;font-weight:700;margin-bottom:6px;">New Employee Request</div><div style="color:#a0a0a0;font-size:13px;">Complete all fields and submit for HR review</div></div>';
+  }
+
+  // Section title fn
+  function secTitle(txt) {
+    if (sttl === 'st-h2') return '<h2 style="color:#fff;font-size:1.1rem;font-weight:600;border-bottom:1px solid #333;padding-bottom:9px;margin:0 0 14px;">'+txt+'</h2>';
+    if (sttl === 'st-large') return '<div style="font-size:16px;font-weight:600;color:#EB1C2D;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #333;padding-bottom:7px;margin:0 0 14px;">'+txt+'</div>';
+    return '<div style="font-size:11px;font-weight:700;color:#EB1C2D;text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid #333;padding-bottom:7px;margin:0 0 14px;">'+txt+'</div>';
+  }
+
+  // Ticket info
+  var ticketHTML = '';
+  if (tickets && tickets.length) {
+    var hasChange = tickets.indexOf('ticket-change-row') > -1;
+    var hasSpan   = tickets.indexOf('ticket-span2') > -1;
+    ticketHTML += secTitle('Employee Details');
+    ticketHTML += '<div style="background:rgba(255,255,255,.02);border-radius:8px;padding:13px;margin-bottom:14px;border:1px solid #333;display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+    ticketHTML += '<div style="display:flex;flex-direction:column;font-size:13px;"><span style="color:#a0a0a0;font-size:10px;text-transform:uppercase;margin-bottom:2px;">Employee</span><span style="font-weight:600;">Jane Doe</span></div>';
+    ticketHTML += '<div style="display:flex;flex-direction:column;font-size:13px;"><span style="color:#a0a0a0;font-size:10px;text-transform:uppercase;margin-bottom:2px;">Start Date</span><span style="font-weight:600;">5/12/2025</span></div>';
+    if (hasChange) {
+      ticketHTML += '<div style="display:flex;flex-direction:column;font-size:13px;"><span style="color:#a0a0a0;font-size:10px;text-transform:uppercase;margin-bottom:2px;">Current Title</span><span style="font-weight:600;">Field Technician</span></div>';
+      ticketHTML += '<div style="display:flex;flex-direction:column;font-size:13px;"><span style="color:#a0a0a0;font-size:10px;text-transform:uppercase;margin-bottom:2px;">New Title</span><span style="font-weight:600;color:#64b5f6;">Senior Technician</span></div>';
+    } else {
+      ticketHTML += '<div style="display:flex;flex-direction:column;font-size:13px;"><span style="color:#a0a0a0;font-size:10px;text-transform:uppercase;margin-bottom:2px;">Site</span><span style="font-weight:600;">Edmonton Main</span></div>';
+      ticketHTML += '<div style="display:flex;flex-direction:column;font-size:13px;"><span style="color:#a0a0a0;font-size:10px;text-transform:uppercase;margin-bottom:2px;">Manager</span><span style="font-weight:600;">John Smith</span></div>';
+    }
+    if (hasSpan) {
+      ticketHTML += '<div style="grid-column:span 2;display:flex;flex-direction:column;font-size:13px;"><span style="color:#a0a0a0;font-size:10px;text-transform:uppercase;margin-bottom:2px;">Systems Requested</span><span style="font-weight:600;">Google Workspace, VPN, SiteDocs, Fleetio</span></div>';
+    }
+    ticketHTML += '</div>';
+  }
+
+  // Inputs
+  var inputsHTML = '';
+  if (inputs && inputs.length) {
+    inputsHTML += secTitle('Form Fields');
+    if (inputs.indexOf('inp-text') > -1) {
+      inputsHTML += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">';
+      inputsHTML += '<div><label style="display:block;font-size:12px;font-weight:600;color:#a0a0a0;margin-bottom:6px;">First Name <span style="color:#EB1C2D;">*</span></label><input type="text" value="Jane" style="width:100%;padding:10px 12px;font-size:13px;border:1px solid #444;border-radius:6px;background:#2a2a2a;color:#fff;box-sizing:border-box;"></div>';
+      inputsHTML += '<div><label style="display:block;font-size:12px;font-weight:600;color:#a0a0a0;margin-bottom:6px;">Last Name <span style="color:#EB1C2D;">*</span></label><input type="text" value="Doe" style="width:100%;padding:10px 12px;font-size:13px;border:1px solid #444;border-radius:6px;background:#2a2a2a;color:#fff;box-sizing:border-box;"></div>';
+      inputsHTML += '</div>';
+    }
+    if (inputs.indexOf('inp-select') > -1) {
+      inputsHTML += '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;font-weight:600;color:#a0a0a0;margin-bottom:6px;">Site</label><select style="width:100%;padding:10px 12px;font-size:13px;border:1px solid #444;border-radius:6px;background:#2a2a2a;color:#fff;box-sizing:border-box;"><option>Edmonton Main</option><option>Calgary North</option></select></div>';
+    }
+    if (inputs.indexOf('inp-textarea') > -1) {
+      inputsHTML += '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;font-weight:600;color:#a0a0a0;margin-bottom:6px;">Notes</label><textarea rows="3" placeholder="Enter notes..." style="width:100%;padding:10px 12px;font-size:13px;border:1px solid #444;border-radius:6px;background:#2a2a2a;color:#fff;box-sizing:border-box;font-family:inherit;"></textarea></div>';
+    }
+  }
+
+  // Radios
+  var radiosHTML = '';
+  if (radios && radios.length) {
+    radiosHTML += secTitle('Selections');
+    if (radios.indexOf('radio-2opt') > -1) {
+      radiosHTML += '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;font-weight:600;color:#a0a0a0;margin-bottom:6px;">Credit Card Required?</label><div style="display:flex;border:1px solid #444;border-radius:6px;overflow:hidden;background:#2a2a2a;max-width:220px;"><label style="flex:1;margin:0;border-right:1px solid #444;"><input type="radio" name="pr2" style="position:absolute;opacity:0;width:0;"><span style="display:block;padding:9px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;color:#a0a0a0;">Yes</span></label><label style="flex:1;margin:0;"><input type="radio" name="pr2" checked style="position:absolute;opacity:0;width:0;"><span style="display:block;padding:9px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;background:#EB1C2D;color:#fff;">No</span></label></div></div>';
+    }
+    if (radios.indexOf('radio-3opt') > -1) {
+      radiosHTML += '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;font-weight:600;color:#a0a0a0;margin-bottom:6px;">Classification</label><div style="display:flex;border:1px solid #444;border-radius:6px;overflow:hidden;background:#2a2a2a;"><label style="flex:1;margin:0;border-right:1px solid #444;"><input type="radio" name="pr3" style="position:absolute;opacity:0;width:0;"><span style="display:block;padding:9px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;color:#a0a0a0;">Hourly</span></label><label style="flex:1;margin:0;border-right:1px solid #444;"><input type="radio" name="pr3" checked style="position:absolute;opacity:0;width:0;"><span style="display:block;padding:9px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;background:#EB1C2D;color:#fff;">Salary</span></label><label style="flex:1;margin:0;"><input type="radio" name="pr3" style="position:absolute;opacity:0;width:0;"><span style="display:block;padding:9px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;color:#a0a0a0;">Contract</span></label></div></div>';
+    }
+  }
+
+  // Checkboxes
+  var cbHTML = '';
+  if (cbs && cbs.length) {
+    if (cbs.indexOf('cb-tiled') > -1) {
+      cbHTML += secTitle('System Access');
+      cbHTML += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;margin-bottom:14px;">';
+      ['Google Workspace','VPN Access','SiteDocs','Fleetio','Jonas'].forEach(function(s,i) {
+        var on = i<3;
+        cbHTML += '<label style="display:flex;align-items:center;padding:9px 12px;background:'+(on?'rgba(235,28,45,.08)':'#2a2a2a')+';border:1px solid '+(on?'#EB1C2D':'#444')+';border-radius:6px;cursor:pointer;font-size:13px;gap:8px;color:'+(on?'#EB1C2D':'#fff')+';font-weight:'+(on?'600':'400')+';"><input type="checkbox" '+(on?'checked':'')+' style="accent-color:#EB1C2D;"><span>'+s+'</span></label>';
+      });
+      cbHTML += '</div>';
+    }
+    if (cbs.indexOf('cb-confirm') > -1) {
+      cbHTML += secTitle('Confirm Completion');
+      ['SiteDocs Locations Assigned','DSS Learning Path Assigned'].forEach(function(t,i) {
+        cbHTML += '<div style="display:flex;align-items:flex-start;gap:12px;background:rgba(255,255,255,.03);border:1px solid #333;border-radius:8px;padding:13px;margin-bottom:8px;"><input type="checkbox" style="width:17px;height:17px;accent-color:#00c853;flex-shrink:0;margin-top:2px;"><div><span style="font-size:13px;font-weight:600;display:block;margin-bottom:3px;">'+t+'</span><span style="font-size:12px;color:#a0a0a0;">Required for their role and JR title.</span></div></div>';
+      });
+    }
+  }
+
+  // Buttons
+  var btnsHTML = '';
+  if (btns && btns.length) {
+    btnsHTML += '<div style="margin-top:20px;padding-top:18px;border-top:1px solid #222;">';
+    if (btns.indexOf('btn-full') > -1) {
+      btnsHTML += '<button style="width:100%;display:block;padding:12px;background:#EB1C2D;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:10px;">Confirm &amp; Complete</button>';
+    }
+    if (btns.indexOf('btn-actions') > -1) {
+      btnsHTML += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+      btnsHTML += '<button style="padding:11px;background:#2a2a2a;color:#fff;border:1px solid #333;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">Save Progress</button>';
+      btnsHTML += '<button style="padding:11px;background:#EB1C2D;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">Submit Request</button>';
+      btnsHTML += '</div>';
+    } else if (!btns.indexOf('btn-full') > -1) {
+      if (btns.indexOf('btn-core') > -1) {
+        btnsHTML += '<div style="display:flex;gap:10px;flex-wrap:wrap;">';
+        btnsHTML += '<button style="padding:11px 20px;background:#EB1C2D;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">Submit</button>';
+        btnsHTML += '<button style="padding:11px 20px;background:#2a2a2a;color:#fff;border:1px solid #333;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">Save Draft</button>';
+        btnsHTML += '</div>';
+      }
+    }
+    btnsHTML += '</div>';
+  }
+
+  // Success preview at bottom
+  var successHTML = '';
+  if (success) {
+    successHTML = '<div style="margin-top:28px;padding:20px;background:#090909;border:1px dashed #222;border-radius:8px;">';
+    successHTML += '<div style="font-size:10px;color:#444;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">After Submit — Pattern '+success.replace('success-','').toUpperCase()+'</div>';
+    if (success === 'success-a' || success === 'success-c') {
+      successHTML += '<div style="text-align:center;padding:24px;">'+(success==='success-a'?'<div style="font-size:44px;margin-bottom:10px;">✅</div>':'')+'<div style="color:#00c853;font-size:18px;font-weight:700;margin-bottom:8px;">'+(success==='success-a'?'Request Submitted':'✓ Task Finalized')+'</div><p style="color:#a0a0a0;font-size:13px;margin-bottom:14px;">Jane Doe\'s record has been updated successfully.</p><button style="padding:10px 20px;background:#EB1C2D;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;">Return to Dashboard</button>'+(success==='success-a'?'<p style="color:#555;font-size:12px;margin-top:10px;">You may close this window.</p>':'')+'</div>';
+    } else if (success === 'success-b') {
+      successHTML += '<div style="text-align:center;padding:20px;"><div style="font-size:44px;margin-bottom:10px;">✅</div><div style="color:#00c853;font-size:18px;font-weight:700;margin-bottom:8px;">Task Confirmed</div><p style="color:#a0a0a0;font-size:13px;margin-bottom:14px;">Form hidden, success shown in-place. Driven by showSuccess() in SharedScripts.</p><button style="padding:10px 20px;background:#EB1C2D;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;">Return to Dashboard</button></div>';
+    } else if (success === 'success-d') {
+      successHTML += '<div style="text-align:center;padding:16px;"><div style="color:#00c853;font-size:16px;font-weight:700;margin-bottom:12px;">✓ Task Finalized on 4/18/2025</div><button style="padding:10px 18px;background:#EB1C2D;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;">Go to Dashboard</button></div>';
+    }
+    successHTML += '</div>';
+  }
+
+  // Assemble content
+  var cardStyle = card === 'card-form'
+    ? 'background:#1a1a1a;padding:28px;border-radius:8px;border:1px solid #333;box-shadow:0 4px 12px rgba(255,255,255,.04);'
+    : 'background:#1a1a1a;padding:28px;border-radius:12px;border:1px solid #333;box-shadow:0 8px 32px rgba(0,0,0,.5);';
+
+  var containerStyle = container === 'ctr-wide'
+    ? 'max-width:1400px;width:95%;margin:0 auto;'
+    : container === 'ctr-narrow' || container === 'ctr-card-layout'
+    ? 'max-width:760px;margin:0 auto;'
+    : 'max-width:760px;margin:0 auto;';
+
+  var html = '<div style="'+containerStyle+'">';
+  html += logoHTML;
+  html += '<div style="'+cardStyle+'">';
+  html += headerHTML;
+  html += ticketHTML;
+  html += inputsHTML;
+  html += radiosHTML;
+  html += cbHTML;
+  html += btnsHTML;
+  html += '</div>';
+  html += successHTML;
+  html += '</div>';
+
+  pc.innerHTML = html;
+}
+</script>
+</body>
+</html>

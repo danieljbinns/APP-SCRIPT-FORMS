@@ -1,0 +1,72 @@
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   EASTER EGG MAPS — All theme override data.
+   STATUS_MAPS  : status badge text per theme
+   SUBMIT_MAPS  : submit button text per theme (cycles)
+   FIELD_MAPS   : h1/h2/h3/label overrides per theme (sparse — missing = no swap)
+   TITLE_THEMES : document.title per theme (geo uses GEO_TITLES blink in EasterEgg.html)
+   Keys in FIELD_MAPS reference FIELDS.* constants from FieldIndex.html.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── STATUS MAPS ─────────────────────────────────────────────────── */
+var STATUS_MAPS={
+  geo:   {'In Progress':'WORKIN ON IT!! :-)',  'Pending':'WAITING... (dont touch!!)',   'Completed':'DONE!! YOU WIN!!! 8-)',    'Cancelled':'RIP... (cancelled) :-(',    'Action Required':'!! ACTION REQUIRED !!',      'All Specialists Complete':'ALL DONE!! PARTY TIME!! :-D'},
+  tos:   {'In Progress':'AWAY TEAM DEPLOYED',  'Pending':'AWAITING ORDERS',             'Completed':'MISSION SUCCESS',          'Cancelled':'MISSION ABORTED',           'Action Required':'!! CAPTAIN TO BRIDGE',        'All Specialists Complete':'MISSION COMPLETE'},
+  tng:   {'In Progress':'IN PROGRESS',         'Pending':'STANDBY',                     'Completed':'TASK COMPLETE',            'Cancelled':'CANCELLED',                 'Action Required':'&#9685; ACTION REQUIRED',     'All Specialists Complete':'TASK COMPLETE'},
+  ds9:   {'In Progress':'IN PROGRESS',         'Pending':'STANDBY',                     'Completed':'COMPLETED',                'Cancelled':'CANCELLED',                 'Action Required':'&#9672; IMMEDIATE ACTION',    'All Specialists Complete':'COMPLETED'},
+  voy:   {'In Progress':'IN PROGRESS',         'Pending':'STANDBY',                     'Completed':'COMPLETED',                'Cancelled':'CANCELLED',                 'Action Required':'&#9685; ACTION REQUIRED',     'All Specialists Complete':'COMPLETED'},
+  bsg:   {'In Progress':'MISSION UNDERWAY',    'Pending':'AWAITING CLEARANCE',          'Completed':'STRIKE SUCCESSFUL',        'Cancelled':'ABORTED',                   'Action Required':'// ACTION REQUIRED //',       'All Specialists Complete':'STRIKE SUCCESSFUL'},
+  matrix:{'In Progress':'PROCESS RUNNING',     'Pending':'AWAITING INPUT',              'Completed':'EXECUTED',                 'Cancelled':'PROCESS KILLED',            'Action Required':'!! BUFFER OVERFLOW',          'All Specialists Complete':'EXECUTED'},
+  who:   {'In Progress':'WIBBLY WOBBLY',       'Pending':'IN THE VORTEX',               'Completed':'FIXED POINT IN TIME',      'Cancelled':'EXTERMINATED',              'Action Required':'!! DALEKS DETECTED !!',       'All Specialists Complete':'FIXED POINT IN TIME'},
+  office:{'In Progress':'MICHAEL IS HANDLING IT','Pending':'SEE TOBY IN HR',            'Completed':'FILED WITH TOBY',          'Cancelled':'CORPORATE SAID NO',         'Action Required':'!! TOBY WANTS A WORD',        'All Specialists Complete':'FILED WITH TOBY'},
+  pokemon:{'In Progress':'BATTLE IN PROGRESS!!','Pending':'IN THE TALL GRASS...',       'Completed':'GOTCHA!! POKEMON CAUGHT!!','Cancelled':'IT FLED...',                'Action Required':'!! WILD POKEMON !!',          'All Specialists Complete':'GOTCHA!! CAUGHT!!'},
+  galpha:{'In Progress':'LOWKEY IN PROGRESS FR','Pending':'ON THE LOWKEY TBH',          'Completed':'SLAY!! PERIODT!!',         'Cancelled':'L + RATIO NGL',             'Action Required':'&#128293; NGL ITS URGENT FR', 'All Specialists Complete':'SLAY!! PERIODT!!'}
+};
+
+/* ── SUBMIT MAPS ─────────────────────────────────────────────────── */
+var SUBMIT_MAPS={
+  geo:   ['CLICK HERE TO SUBMIT!!! [>]','GO GO GO!! SUBMIT NOW!!','YES!! SEND IT!! [>>]'],
+  tos:   ['TRANSMIT TO STARFLEET','BEAM UP REQUEST','ENGAGE!!'],
+  tng:   ['TRANSMIT TO COMMAND','MAKE IT SO','ENGAGE'],
+  ds9:   ['SUBMIT TO COMMAND','TRANSMIT REQUEST','CONFIRM'],
+  voy:   ['TRANSMIT TO STARFLEET','ENGAGE','CONFIRM REQUEST'],
+  bsg:   ['SUBMIT TO COMMAND','SO SAY WE ALL','LAUNCH!!'],
+  matrix:['UPLOAD TO MATRIX','INSERT PROGRAM','EXECUTE'],
+  who:   ['ALLONS-Y!','GERONIMO!','BIGGER ON THE INSIDE'],
+  office:["THAT'S WHAT SHE SAID",'I DECLARE BANKRUPTCY','DUNDER MIFFLIN!!!'],
+  pokemon:['THROW POKEBALL!!','PIKACHU, I CHOOSE YOU!','GOTTA CATCH \'EM ALL!!'],
+  galpha:['NO CAP SUBMIT FR FR',"IT'S GIVING SUBMIT SLAY",'PERIODT BESTIE!!!']
+};
+
+/* ── FIELD MAPS ──────────────────────────────────────────────────── */
+/* Sparse per theme — only override what's funny/fitting.
+   Missing key = no swap. References FIELDS.* from FieldIndex.html.   */
+var FIELD_MAPS = {
+  geo:{},
+  tos:{},
+  tng:{},
+  ds9:{},
+  voy:{},
+  bsg:{},
+  matrix:{},
+  who:{},
+  office:{},
+  galpha:{},
+  pokemon:{}
+};
+
+/* ── TITLE THEMES ────────────────────────────────────────────────── */
+/* Geo uses GEO_TITLES blink array defined in EasterEgg.html instead. */
+var TITLE_THEMES = {
+  tos:    '[ STARFLEET PERSONNEL — ' + document.title + ' ]',
+  tng:    '[ U.S.S. ENTERPRISE — ' + document.title + ' ]',
+  ds9:    '[ DEEP SPACE NINE — ' + document.title + ' ]',
+  voy:    '[ U.S.S. VOYAGER — ' + document.title + ' ]',
+  bsg:    '[ BSG FLEET OPS — ' + document.title + ' ]',
+  matrix: '[ SYS://' + document.title + ' ]',
+  who:    '[ T.A.R.D.I.S. — ' + document.title + ' ]',
+  office: '[ DUNDER MIFFLIN — ' + document.title + ' ]',
+  galpha: '[ no cap // ' + document.title + ' ]',
+  pokemon:'[ POKEMON CENTER — ' + document.title + ' ]'
+};
+</script>

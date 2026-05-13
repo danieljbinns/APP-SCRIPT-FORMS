@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEAM Group — Workflow Interactive Review (DRAFT)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+/* === RESET & BASE === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #0c0c0c;
+  --surface:  #161616;
+  --surface2: #1e1e1e;
+  --surface3: #252525;
+  --border:   #333;
+  --accent:   #EB1C2D;
+  --blue:     #2196f3;
+  --green:    #00c853;
+  --yellow:   #ffab00;
+  --text:     #f0f0f0;
+  --muted:    #888;
+  --input-bg: #2a2a2a;
+  --input-border: #444;
+}
+html, body { height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; display: flex; flex-direction: column; }
+
+/* === DRAFT BANNER === */
+.draft-banner {
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+/* === HEADER === */
+.app-header {
+  background: var(--surface);
+  border-bottom: 2px solid var(--accent);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 52px;
+  flex-shrink: 0;
+}
+.app-header h1 { font-size: 15px; font-weight: 800; white-space: nowrap; }
+.app-header h1 span { color: var(--accent); }
+.wf-tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+.wf-tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.wf-tab.active { background: var(--accent); color: #fff; }
+.wf-tab.locked { opacity: 0.35; cursor: not-allowed; }
+.wf-tab.locked::after { content: ' 🔒'; font-size: 10px; }
+
+/* === SHELL === */
+.shell { display: flex; flex: 1; overflow: hidden; }
+
+/* === LEFT PANEL: flowchart === */
+.flow-panel {
+  width: 33%;
+  min-width: 260px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+}
+.flow-panel-hdr {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 8px;
+}
+.legend { display: flex; gap: 10px; font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; }
+.ldot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+/* zoom toolbar */
+.zoom-bar { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.zbtn {
+  background: var(--surface3); border: 1px solid var(--border); color: var(--text);
+  width: 26px; height: 26px; border-radius: 5px; font-size: 14px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.12s;
+  text-transform: none; letter-spacing: 0;
+}
+.zbtn:hover { border-color: var(--accent); color: var(--accent); }
+.zoom-pct { font-size: 11px; color: var(--muted); min-width: 34px; text-align: center; font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+.flow-scroll {
+  flex: 1;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+  cursor: grab;
+  user-select: none;
+}
+.flow-scroll.dragging { cursor: grabbing; }
+.flow-viewport {
+  width: 100%; height: 100%;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 16px;
+}
+.flow-inner {
+  transform-origin: top center;
+  transition: transform 0.08s ease-out;
+}
+.flow-inner.no-transition { transition: none; }
+.flow-scroll svg { display: block; }
+
+/* === RIGHT PANEL === */
+.right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* === VALIDATION BAR === */
+.val-bar {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  min-height: 46px;
+}
+.step-lbl { font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.step-who {
+  font-size: 11px; color: var(--muted);
+  background: var(--surface3);
+  padding: 2px 8px; border-radius: 10px;
+  flex-shrink: 0;
+}
+.val-btns { display: flex; gap: 6px; margin-left: auto; }
+.vbtn {
+  padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border);
+  background: var(--surface3); color: var(--muted); transition: all 0.15s;
+}
+.vbtn:hover { color: var(--text); border-color: #555; }
+.vbtn.v-correct { background: rgba(0,200,83,.12); border-color: var(--green); color: var(--green); }
+.vbtn.v-issue   { background: rgba(235,28,45,.12); border-color: var(--accent); color: var(--accent); }
+.vbtn.v-unsure  { background: rgba(255,171,0,.12); border-color: var(--yellow); color: var(--yellow); }
+
+/* === NOTE BAR === */
+.note-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 7px 14px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.note-bar textarea {
+  flex: 1; background: var(--input-bg); border: 1px solid var(--input-border);
+  color: var(--text); border-radius: 6px; padding: 7px 10px; font-size: 13px;
+  font-family: inherit; resize: none; height: 36px; line-height: 1.4;
+}
+.note-bar textarea:focus { outline: none; border-color: var(--accent); }
+.note-bar textarea::placeholder { color: var(--muted); }
+.note-save {
+  padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 6px; font-size: 12px; font-weight: 600;
+  cursor: pointer; flex-shrink: 0; white-space: nowrap; transition: all 0.15s;
+}
+.note-save:hover { border-color: var(--accent); color: var(--accent); }
+.note-save.saved { border-color: var(--green); color: var(--green); }
+
+/* === FORM CONTENT AREA === */
+.form-area { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
+/* === PLACEHOLDER === */
+.placeholder {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; color: var(--muted); gap: 10px; text-align: center; padding: 40px;
+}
+.placeholder .ico { font-size: 44px; opacity: 0.35; }
+.placeholder h3 { font-size: 17px; color: var(--text); opacity: 0.5; }
+.placeholder p { font-size: 13px; max-width: 280px; line-height: 1.6; }
+
+/* === FORM MOCKUP STYLES === */
+.demo-form { max-width: 660px; margin: 0 auto; }
+.demo-tag {
+  background: rgba(235,28,45,.15); border: 1px solid var(--accent);
+  color: var(--accent); border-radius: 6px; padding: 6px 14px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 18px; text-align: center;
+}
+.demo-form h2 { font-size: 20px; font-weight: 800; margin-bottom: 3px; }
+.demo-form .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; line-height: 1.5; }
+.ctx-card {
+  background: var(--surface2); border-radius: 8px; padding: 12px 16px;
+  margin-bottom: 16px; border-left: 3px solid var(--accent);
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+}
+.ctx-item { display: flex; flex-direction: column; gap: 2px; }
+.ctx-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.ctx-val { font-size: 13px; font-weight: 600; }
+.fsec {
+  background: var(--surface); border-radius: 10px; padding: 14px 18px;
+  margin-bottom: 14px; border: 1px solid var(--border);
+}
+.fsec-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--accent);
+  border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px;
+}
+.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+.frow.full { grid-template-columns: 1fr; }
+.frow.triple { grid-template-columns: 1fr 1fr 1fr; }
+.fgrp { display: flex; flex-direction: column; gap: 4px; }
+.fgrp label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.fgrp input, .fgrp select, .fgrp textarea {
+  background: var(--input-bg); border: 1px solid var(--input-border);
+  border-radius: 6px; color: var(--text); padding: 8px 10px; font-size: 13px; font-family: inherit;
+}
+.fgrp textarea { resize: vertical; min-height: 58px; }
+.fgrp input[readonly] { opacity: 0.65; cursor: default; }
+.radio-row, .check-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 2px; }
+.roption, .coption {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 11px; cursor: pointer; font-size: 13px; user-select: none;
+}
+.roption input, .coption input { cursor: pointer; accent-color: var(--accent); }
+.submit-row { display: flex; justify-content: flex-end; padding-top: 6px; }
+.demo-btn {
+  background: var(--accent); color: #fff; border: none; border-radius: 8px;
+  padding: 11px 26px; font-size: 14px; font-weight: 700; cursor: not-allowed; opacity: 0.55;
+}
+.demo-btn::after { content: ' \2014 Demo Only'; font-size: 11px; font-weight: 400; opacity: 0.8; }
+
+/* complete screen */
+.complete-screen {
+  text-align: center; padding: 40px 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.complete-screen .big-ico { font-size: 54px; }
+
+/* === SUMMARY FLOAT BTN === */
+.sum-btn {
+  position: fixed; bottom: 20px; right: 20px; z-index: 100;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  padding: 9px 18px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5); transition: border-color 0.15s;
+}
+.sum-btn:hover { border-color: var(--accent); }
+.badge {
+  background: var(--accent); color: #fff; border-radius: 10px;
+  padding: 1px 7px; font-size: 11px; font-weight: 800; min-width: 20px; text-align: center;
+}
+
+/* === MODAL === */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 200;
+  display: none; align-items: center; justify-content: center;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  width: min(680px, 92vw); max-height: 82vh; display: flex; flex-direction: column; overflow: hidden;
+}
+.modal-hdr {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-hdr h3 { font-size: 16px; font-weight: 700; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+.modal-close:hover { color: var(--text); background: var(--surface2); }
+.modal-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.modal-ftr { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+.sum-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.sum-item:last-child { border-bottom: none; }
+.sum-ico {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800;
+}
+.ico-correct { background: rgba(0,200,83,.15); color: var(--green); border: 1px solid var(--green); }
+.ico-issue   { background: rgba(235,28,45,.15); color: var(--accent); border: 1px solid var(--accent); }
+.ico-unsure  { background: rgba(255,171,0,.15);  color: var(--yellow); border: 1px solid var(--yellow); }
+.ico-none    { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+.sum-detail { flex: 1; }
+.sum-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.sum-who { font-size: 11px; color: var(--muted); }
+.sum-note { font-size: 12px; color: #bbb; background: var(--surface2); border-radius: 4px; padding: 6px 8px; margin-top: 5px; white-space: pre-wrap; }
+.btn { padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; }
+.btn-ghost { background: transparent; border-color: var(--border); color: var(--text); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-red { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* === FLOWCHART FULLSCREEN OVERLAY === */
+.flow-fs-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,.92);
+  display: none; flex-direction: column;
+}
+.flow-fs-overlay.open { display: flex; }
+.flow-fs-hdr {
+  background: var(--surface); border-bottom: 2px solid var(--accent);
+  padding: 10px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.flow-fs-hdr h3 { font-size: 14px; font-weight: 700; flex: 1; }
+.flow-fs-hdr .hint { font-size: 12px; color: var(--muted); }
+.flow-fs-body {
+  flex: 1; overflow: hidden; position: relative; cursor: grab;
+  user-select: none; background: var(--surface);
+}
+.flow-fs-body.dragging { cursor: grabbing; }
+.flow-fs-inner {
+  position: absolute; top: 0; left: 0;
+  transform-origin: top left;
+}
+.flow-fs-toolbar {
+  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 24px;
+  padding: 8px 16px; display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.5);
+}
+.flow-fs-toolbar .zbtn { width: 30px; height: 30px; font-size: 16px; }
+.flow-fs-toolbar .zoom-pct { min-width: 42px; font-size: 12px; }
+.fs-close-btn {
+  background: var(--accent); border: none; color: #fff; border-radius: 8px;
+  padding: 7px 18px; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+
+/* === MERMAID NODE OVERRIDES === */
+#mermaid-out .node rect,
+#mermaid-out .node circle,
+#mermaid-out .node ellipse,
+#mermaid-out .node polygon,
+#mermaid-out .node path { cursor: pointer !important; transition: filter 0.12s; }
+#mermaid-out .node:hover rect,
+#mermaid-out .node:hover circle,
+#mermaid-out .node:hover ellipse { filter: brightness(1.35); }
+.nd-correct rect, .nd-correct circle, .nd-correct ellipse, .nd-correct polygon { fill: rgba(0,200,83,.15) !important; stroke: #00c853 !important; stroke-width: 2.5px !important; }
+.nd-issue   rect, .nd-issue   circle, .nd-issue   ellipse, .nd-issue   polygon { fill: rgba(235,28,45,.15) !important; stroke: #EB1C2D !important; stroke-width: 2.5px !important; }
+.nd-unsure  rect, .nd-unsure  circle, .nd-unsure  ellipse, .nd-unsure  polygon { fill: rgba(255,171,0,.15)  !important; stroke: #ffab00 !important; stroke-width: 2.5px !important; }
+.nd-active  rect, .nd-active  circle, .nd-active  ellipse, .nd-active  polygon { fill: rgba(235,28,45,.2)   !important; stroke: #EB1C2D !important; stroke-width: 3px    !important; }
+
+/* === SCROLLBAR === */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+/* === WORKFLOW STEP CARDS === */
+.wf-step { max-width: 720px; margin: 0 auto; }
+.wf-section {
+  background: var(--surface); border-radius: 10px; padding: 16px 18px;
+  margin-bottom: 14px; border: 1px solid var(--border);
+}
+.wf-section-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--accent);
+  border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.wf-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.wf-meta-item { display: flex; flex-direction: column; gap: 3px; }
+.wf-meta-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.wf-meta-val { font-size: 13px; font-weight: 600; }
+.wf-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.wf-list li { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; line-height: 1.5; padding-left: 2px; }
+.wf-list li::before { content: '·'; color: var(--muted); font-weight: 700; flex-shrink: 0; font-size: 18px; line-height: 1.1; }
+.wf-list li.cond::before { content: '◆'; color: var(--yellow); font-size: 10px; margin-top: 3px; }
+.wf-list li.email::before { content: '✉'; color: var(--blue); font-size: 12px; margin-top: 1px; }
+.wf-list li.action::before { content: '▶'; color: var(--green); font-size: 10px; margin-top: 3px; }
+.wf-list li.always::before { content: '●'; color: var(--green); font-size: 10px; margin-top: 3px; }
+.wf-branch {
+  background: var(--surface2); border-radius: 8px; padding: 10px 14px;
+  margin-bottom: 8px; border-left: 3px solid var(--yellow);
+}
+.wf-branch.branch-green { border-left-color: var(--green); }
+.wf-branch-cond { font-size: 10px; font-weight: 700; color: var(--yellow); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+.wf-branch.branch-green .wf-branch-cond { color: var(--green); }
+.wf-branch-outcome { font-size: 13px; color: var(--text); line-height: 1.5; }
+.wf-note {
+  background: rgba(33,150,243,.07); border: 1px solid rgba(33,150,243,.25);
+  border-radius: 7px; padding: 9px 13px; font-size: 12px; color: #ccc; line-height: 1.5;
+}
+.wf-note strong { color: var(--blue); }
+.wf-note-warn {
+  background: rgba(255,171,0,.07); border: 1px solid rgba(255,171,0,.25);
+  border-radius: 7px; padding: 9px 13px; font-size: 12px; color: #ccc; line-height: 1.5;
+}
+.wf-note-warn strong { color: var(--yellow); }
+.wf-pill {
+  display: inline-block; background: var(--surface3); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 600; color: var(--muted); margin-left: 4px;
+}
+.wf-pill.cond { border-color: rgba(255,171,0,.35); color: var(--yellow); background: rgba(255,171,0,.07); }
+.wf-pill.always { border-color: rgba(0,200,83,.35); color: var(--green); background: rgba(0,200,83,.07); }
+.wf-pill.acc { border-color: rgba(235,28,45,.35); color: var(--accent); background: rgba(235,28,45,.07); }
+.wf-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+.wf-tag-cond { background: rgba(255,171,0,.12); color: var(--yellow); border: 1px solid rgba(255,171,0,.3); }
+.wf-tag-always { background: rgba(0,200,83,.1); color: var(--green); border: 1px solid rgba(0,200,83,.25); }
+</style>
+</head>
+<body>
+
+<div class="draft-banner">
+  &#9888; WORKFLOW VALIDATION MODE &nbsp;&mdash;&nbsp; Click any step to see its trigger, fields, branches &amp; outputs &nbsp;&mdash;&nbsp; Mark each step ✓ / ✗ / ? and add notes
+</div>
+
+<header class="app-header">
+  <h1><span>TEAM Group</span> &mdash; Workflow Review</h1>
+  <div class="wf-tabs">
+    <button class="wf-tab active" onclick="switchWorkflow('newhire')">New Hire</button>
+    <button class="wf-tab locked" title="Coming after New Hire is validated">Termination / EOE</button>
+    <button class="wf-tab locked" title="Coming after New Hire is validated">Equipment Request</button>
+    <button class="wf-tab locked" title="Coming after New Hire is validated">Status / Position Change</button>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- ── LEFT: Flowchart ── -->
+  <div class="flow-panel">
+    <div class="flow-panel-hdr">
+      <span id="flow-title" style="flex-shrink:0">New Hire</span>
+      <div class="legend">
+        <span><span class="ldot" style="background:var(--green)"></span>Correct</span>
+        <span><span class="ldot" style="background:var(--accent)"></span>Issue</span>
+        <span><span class="ldot" style="background:var(--yellow)"></span>Unsure</span>
+      </div>
+      <div class="zoom-bar">
+        <button class="zbtn" onclick="zoomBy(-0.15)" title="Zoom out">&#8722;</button>
+        <span class="zoom-pct" id="zoom-pct">100%</span>
+        <button class="zbtn" onclick="zoomBy(0.15)"  title="Zoom in">&#43;</button>
+        <button class="zbtn" onclick="zoomReset()"   title="Reset zoom" style="font-size:11px">&#8635;</button>
+        <button class="zbtn" onclick="openFlowFS()"  title="Expand fullscreen" style="font-size:13px">&#x26F6;</button>
+      </div>
+    </div>
+    <div class="flow-scroll" id="flow-scroll">
+      <div class="flow-viewport" id="flow-viewport">
+        <div class="flow-inner" id="flow-inner">
+          <div id="mermaid-out"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Form + Validation ── -->
+  <div class="right-panel">
+
+    <!-- Validation bar -->
+    <div class="val-bar">
+      <span class="step-lbl" id="step-lbl">&#8592; Select a step from the flowchart</span>
+      <span class="step-who" id="step-who" style="display:none"></span>
+      <div class="val-btns">
+        <button class="vbtn" id="vbtn-correct" onclick="setStatus('correct')">&#10003; Correct</button>
+        <button class="vbtn" id="vbtn-issue"   onclick="setStatus('issue')">&#10007; Has Issues</button>
+        <button class="vbtn" id="vbtn-unsure"  onclick="setStatus('unsure')">? Not Sure</button>
+      </div>
+    </div>
+
+    <!-- Note bar -->
+    <div class="note-bar">
+      <textarea id="note-txt" placeholder="Add a note — what looks wrong, what needs clarifying, what to change. Ctrl+Enter to save. Auto-saves after typing."></textarea>
+      <button class="note-save" id="note-save-btn" onclick="saveNote()">Save Note</button>
+    </div>
+
+    <!-- Form display area -->
+    <div class="form-area" id="form-area">
+      <div class="placeholder">
+        <div class="ico">&#128072;</div>
+        <h3>Select a step to begin</h3>
+        <p>Click any step node to see its trigger, conditions, branching logic, and what it sends or creates on submit.</p>
+        <p style="margin-top:8px;font-size:11px;color:var(--muted)">Use ✓ / ✗ / ? to mark each step. Arrow keys navigate. Summary button exports all notes.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Flowchart fullscreen overlay -->
+<div class="flow-fs-overlay" id="flow-fs-overlay">
+  <div class="flow-fs-hdr">
+    <h3>New Hire &mdash; Workflow Map</h3>
+    <span class="hint">Click any step to load its form &nbsp;&mdash;&nbsp; scroll to zoom &nbsp;&mdash;&nbsp; drag to pan</span>
+    <button class="fs-close-btn" onclick="closeFlowFS()">&#10005; Close</button>
+  </div>
+  <div class="flow-fs-body" id="flow-fs-body">
+    <div class="flow-fs-inner" id="flow-fs-inner">
+      <!-- SVG cloned here on open -->
+    </div>
+    <div class="flow-fs-toolbar">
+      <button class="zbtn" onclick="fszoomBy(-0.15)" title="Zoom out">&#8722;</button>
+      <span class="zoom-pct" id="fs-zoom-pct">100%</span>
+      <button class="zbtn" onclick="fszoomBy(0.15)"  title="Zoom in">&#43;</button>
+      <button class="zbtn" onclick="fszoomReset()"   title="Fit" style="font-size:11px">&#8635;</button>
+    </div>
+  </div>
+</div>
+
+<!-- Summary float button -->
+<button class="sum-btn" onclick="openSummary()">
+  &#128203; Review Summary <span class="badge" id="badge">0</span>
+</button>
+
+<!-- Summary modal -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeSummary()">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>&#128203; Review Summary &mdash; New Hire</h3>
+      <button class="modal-close" onclick="closeSummary()">&#10005;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="clearAll()">&#128465; Clear All</button>
+      <button class="btn btn-ghost" onclick="exportNotes()">&#128229; Export Notes</button>
+      <button class="btn btn-red"   onclick="closeSummary()">Done</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================================
+     WORKFLOW STEP CARDS
+     ================================================================ -->
+
+<!-- ── 1. INITIAL REQUEST ── -->
+<template id="tpl-init">
+<div class="wf-step">
+  <div class="demo-tag">&#9889; Workflow Validation Mode &mdash; Confirm the logic below is accurate</div>
+  <h2>New Hire &mdash; Initial Request</h2>
+  <p class="sub">Step 1. A manager opens the portal, selects New Hire mode, and submits employee details. Creates the workflow record and sends the first notification to the ID Setup team.</p>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Step Overview</div>
+    <div class="wf-meta">
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Performed By</span><span class="wf-meta-val">Manager (Submitter)</span></div>
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Triggered By</span><span class="wf-meta-val">Manager opens portal</span></div>
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Workflow Code</span><span class="wf-meta-val">NEW_EMP</span></div>
+    </div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Fields Collected</div>
+    <ul class="wf-list">
+      <li>First Name, Last Name</li>
+      <li>Hire Date, Position Title, Department</li>
+      <li>Site (select from list), Employment Type (Salary / Hourly)</li>
+      <li>Manager Name, Manager Email</li>
+      <li>JR Title Required? (Yes / No)</li>
+      <li>System Access Required? (Yes / No &mdash; Hourly field workers may select No)</li>
+      <li>Systems: BOSS, Google/Email, Jonas, Central Purchasing, Fleetio, ADP Supervisor, Delivery, Incidents, Net Promoter, SiteDocs Supervisor</li>
+      <li class="cond">BOSS sub-fields <span class="wf-pill cond">If BOSS selected</span>: Job Sites, Cost Sheet, Cost Sheet Jobs, Trip Reports, Grievances</li>
+      <li class="cond">Jonas Job Numbers <span class="wf-pill cond">If Jonas selected</span></li>
+      <li>Equipment: Laptop, Desktop, Phone, Tablet, Vehicle, Business Cards, Credit Cards (USA / Canada / Home Depot)</li>
+      <li>Additional Notes</li>
+    </ul>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Key Inputs That Drive Downstream Branching</div>
+    <div class="wf-note-warn">
+      <strong>No routing decision at this step.</strong> All requests proceed to ID Setup. However the values below determine routing at later steps:
+      <ul class="wf-list" style="margin-top:9px">
+        <li class="cond"><strong>Employment Type = Hourly + System Access = No</strong> &rarr; workflow ends at HR Verification (no IT step)</li>
+        <li class="cond"><strong>BOSS in systems list</strong> &rarr; IT Confirmation (Dave) gates IT Setup</li>
+        <li class="cond"><strong>Equipment / systems selected</strong> &rarr; determines which specialist action items are created after IT Setup</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">On Submit &mdash; Outputs</div>
+    <ul class="wf-list">
+      <li class="action">Workflow record created (status: In Progress, step: ID Setup Needed)</li>
+      <li class="action">Request saved to Initial Requests sheet</li>
+      <li class="email always">Email &rarr; ID Setup Team: notification with employee context + link to ID Setup form</li>
+      <li class="always">Next step: <strong>ID Setup</strong> (always)</li>
+    </ul>
+  </div>
+</div>
+</template>
+
+<!-- ── 2. ID SETUP ── -->
+<template id="tpl-idsetup">
+<div class="wf-step">
+  <div class="demo-tag">&#9889; Workflow Validation Mode &mdash; Confirm the logic below is accurate</div>
+  <h2>Employee ID Setup</h2>
+  <p class="sub">Step 2. ID Setup team receives an email and opens the form. They assign the internal employee ID, provision SiteDocs and DSS accounts, and confirm BOSS WIS and badge setup.</p>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Step Overview</div>
+    <div class="wf-meta">
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Performed By</span><span class="wf-meta-val">ID Setup Team</span></div>
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Triggered By</span><span class="wf-meta-val">Initial Request submitted</span></div>
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Gate</span><span class="wf-meta-val">None &mdash; always reached</span></div>
+    </div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Fields Collected</div>
+    <ul class="wf-list">
+      <li>Internal Employee ID <span class="wf-pill always">Auto-generated</span> &mdash; editable (use existing for rehires)</li>
+      <li>SiteDocs Worker ID <span class="wf-pill always">All employees</span></li>
+      <li>SiteDocs Job Code (Hourly 1/2, Salary 1/2, Supervisor, Manager) <span class="wf-pill always">All employees</span></li>
+      <li class="cond">SiteDocs Training Username + Password <span class="wf-pill cond">Only if SiteDocs Supervisor access was requested</span></li>
+      <li>DSS Training Username <span class="wf-pill always">Auto-generated</span> from name, editable</li>
+      <li>DSS Training Password <span class="wf-pill always">All employees</span></li>
+      <li>BOSS WIS Account Created (checkbox confirmation)</li>
+      <li>SiteDocs Badge Link Created (checkbox confirmation)</li>
+      <li>Setup Notes (optional)</li>
+    </ul>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Routing After Submission</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Both paths advance to HR Verification. The branch only affects email content at this step.</p>
+    <div class="wf-branch">
+      <div class="wf-branch-cond">If Hourly + No System Access (set on initial request)</div>
+      <div class="wf-branch-outcome">HR email includes note that IT Setup will be skipped. Requester + Manager receive a credentials email at this point.</div>
+    </div>
+    <div class="wf-branch">
+      <div class="wf-branch-cond">If System Access Required or Salary</div>
+      <div class="wf-branch-outcome">Standard HR notification. No credentials email yet &mdash; credentials go to requester/manager after IT Setup completes.</div>
+    </div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">On Submit &mdash; Outputs</div>
+    <ul class="wf-list">
+      <li class="action">ID Setup Results record saved</li>
+      <li class="email always">Email &rarr; HR Team + Payroll: "HR Verification Required" with form link</li>
+      <li class="email cond">Email &rarr; Requester + Manager: credentials <span class="wf-pill cond">Only on Hourly/No-Access path</span></li>
+      <li class="action always">Action Item &rarr; Safety Team: "Safety Onboarding" task created <span class="wf-pill always">Always</span></li>
+      <li class="always">Next step: <strong>HR Verification</strong> (always)</li>
+    </ul>
+  </div>
+</div>
+</template>
+
+<!-- ── 3. HR VERIFICATION ── -->
+<template id="tpl-hrverify">
+<div class="wf-step">
+  <div class="demo-tag">&#9889; Workflow Validation Mode &mdash; Confirm the logic below is accurate</div>
+  <h2>HR Verification &amp; ADP Setup</h2>
+  <p class="sub">Step 3. HR verifies and corrects employee details against ADP, assigns the ADP Associate ID, and optionally sets JR Title. HR does not decide routing &mdash; the system auto-routes after submission based on what was set in the initial request.</p>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Step Overview</div>
+    <div class="wf-meta">
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Performed By</span><span class="wf-meta-val">HR Team</span></div>
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Triggered By</span><span class="wf-meta-val">ID Setup submitted</span></div>
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Gate</span><span class="wf-meta-val">None &mdash; always reached</span></div>
+    </div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Fields Collected</div>
+    <ul class="wf-list">
+      <li>Site (select from list), Hire Date (verify / correct), Department</li>
+      <li>First Name, Last Name (verify / correct)</li>
+      <li>Reporting Manager Name + Email (verify / correct)</li>
+      <li>Job Title / HR Title (verify / correct)</li>
+      <li class="cond">JR Title (select from list) <span class="wf-pill cond">Only if JR Required = Yes on initial request</span></li>
+      <li>ADP Associate ID <span class="wf-pill acc">Required</span></li>
+      <li>Internal HR Notes (optional)</li>
+    </ul>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Change Detection &mdash; Auto Notifications</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">If HR corrects any fields, change notifications are automatically sent:</p>
+    <ul class="wf-list">
+      <li class="cond">First Name, Last Name, Hire Date, or Job Title changed &rarr; notify Requester, Manager, ID Setup Team</li>
+      <li class="cond">Hire Date, Job Title, Site, or JR Title changed &rarr; also notify Safety Team</li>
+    </ul>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Auto-Routing After Submission</div>
+    <div class="wf-note-warn" style="margin-bottom:12px">
+      <strong>HR does not choose the next step.</strong> Routing is determined automatically by the Employment Type and System Access values from the original request.
+    </div>
+    <div class="wf-branch">
+      <div class="wf-branch-cond">Employment Type = Hourly AND System Access = No</div>
+      <div class="wf-branch-outcome">&rarr; <strong>Workflow Complete.</strong> Requester + Manager receive "Onboarding Complete" with all credentials. No IT step.</div>
+    </div>
+    <div class="wf-branch">
+      <div class="wf-branch-cond">System Access Required (or Salary) AND BOSS in systems list</div>
+      <div class="wf-branch-outcome">&rarr; <strong>IT Confirmation</strong> (Dave Langohr). Dave receives "IT Confirmation Required" email with BOSS config to review.</div>
+    </div>
+    <div class="wf-branch">
+      <div class="wf-branch-cond">System Access Required (or Salary) AND BOSS NOT in systems list</div>
+      <div class="wf-branch-outcome">&rarr; <strong>IT Setup directly.</strong> IT team receives "IT Setup Required" email.</div>
+    </div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">On Submit &mdash; Outputs (All Paths)</div>
+    <ul class="wf-list">
+      <li class="action">HR Verification Results record saved</li>
+      <li class="action">Initial Request record updated in-place with verified field values</li>
+      <li class="email always">Email &rarr; Payroll: "HR Verified" with ADP ID. If ADP Salary Access flagged &rarr; warning included.</li>
+      <li class="email cond">Email &rarr; Requester + Manager: "Onboarding Complete" with credentials <span class="wf-pill cond">Hourly/No-Access path only</span></li>
+      <li class="email cond">Email &rarr; Dave Langohr: "IT Confirmation Required" <span class="wf-pill cond">BOSS path only</span></li>
+      <li class="email cond">Email &rarr; IT Team: "IT Setup Required" <span class="wf-pill cond">No-BOSS path only</span></li>
+      <li class="email cond">Change notifications to Requester / Manager / Safety / ID Setup <span class="wf-pill cond">If any fields corrected</span></li>
+    </ul>
+  </div>
+</div>
+</template>
+
+<!-- ── 4. IT CONFIRMATION (BOSS gate) ── -->
+<template id="tpl-itconfirm">
+<div class="wf-step">
+  <div class="demo-tag">&#9889; Workflow Validation Mode &mdash; Confirm the logic below is accurate</div>
+  <h2>IT Confirmation &mdash; BOSS Review</h2>
+  <p class="sub">Conditional step. Dave Langohr receives an email only when BOSS system access was requested on the initial request. He reviews and can correct the BOSS configuration before IT Setup proceeds.</p>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Step Overview</div>
+    <div class="wf-meta">
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Performed By</span><span class="wf-meta-val">Dave Langohr (IT)</span></div>
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Triggered By</span><span class="wf-meta-val">HR Verification + BOSS in request</span></div>
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Gate</span><span class="wf-meta-val"><span class="wf-tag wf-tag-cond">Conditional &mdash; BOSS only</span></span></div>
+    </div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Fields Collected (Pre-filled from Request)</div>
+    <ul class="wf-list">
+      <li>BOSS Job Sites (pre-filled, editable)</li>
+      <li>BOSS Cost Sheet, Cost Sheet Jobs (pre-filled, editable)</li>
+      <li>BOSS Trip Reports &mdash; Yes / No</li>
+      <li>BOSS Grievances Access &mdash; Yes / No</li>
+      <li>Computer type corrections (if needed)</li>
+      <li>Phone assignment corrections (if needed)</li>
+      <li>Notes</li>
+    </ul>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Routing After Submission</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">No branching on outcome &mdash; always advances to IT Setup regardless of corrections made.</p>
+    <div class="wf-branch branch-green">
+      <div class="wf-branch-cond">Always</div>
+      <div class="wf-branch-outcome">&rarr; IT Setup. IT team receives "IT Setup Required" email.</div>
+    </div>
+    <div class="wf-branch">
+      <div class="wf-branch-cond">If any BOSS / computer / phone values changed</div>
+      <div class="wf-branch-outcome">Initial Request record updated with corrected values. Change notifications sent to Requester + Manager.</div>
+    </div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">On Submit &mdash; Outputs</div>
+    <ul class="wf-list">
+      <li class="action">IT Confirmation Results record saved</li>
+      <li class="action">Initial Request record updated with corrected BOSS / equipment values</li>
+      <li class="email always">Email &rarr; IT Team: "IT Setup Required" with form link</li>
+      <li class="email cond">Change notifications &rarr; Requester + Manager <span class="wf-pill cond">If corrections were made</span></li>
+      <li class="always">Next step: <strong>IT Setup</strong> (always)</li>
+    </ul>
+  </div>
+</div>
+</template>
+
+<!-- ── 5. IT SETUP ── -->
+<template id="tpl-itsetup">
+<div class="wf-step">
+  <div class="demo-tag">&#9889; Workflow Validation Mode &mdash; Confirm the logic below is accurate</div>
+  <h2>IT Setup</h2>
+  <p class="sub">IT team provisions the email account, computer, phone, and system access. Submitting this form triggers all specialist action item emails in parallel based on what was requested on the initial form.</p>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Step Overview</div>
+    <div class="wf-meta">
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Performed By</span><span class="wf-meta-val">IT Team</span></div>
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Triggered By</span><span class="wf-meta-val">HR Verification or IT Confirmation</span></div>
+      <div class="wf-meta-item"><span class="wf-meta-lbl">Gate</span><span class="wf-meta-val">Skipped for Hourly/No-Access</span></div>
+    </div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Fields Collected</div>
+    <ul class="wf-list">
+      <li>Email assigned (username + domain)</li>
+      <li>Email temporary password</li>
+      <li>Computer type (Laptop / Desktop / None), Make, Model, Serial Number</li>
+      <li>Phone assigned (Yes / No), Make, Model, Serial Number</li>
+      <li>System access flags: BOSS, Incidents, CAA, Net Promoter, Delivery, ADP Supervisor, SiteDocs Supervisor</li>
+      <li>IT Notes (optional)</li>
+    </ul>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Specialist Action Items Created on Submit</div>
+    <ul class="wf-list">
+      <li class="cond">Credit Card &rarr; Credit Card Team <span class="wf-pill cond">If USA, Canada, or Home Depot card requested</span></li>
+      <li class="cond">Business Cards &rarr; Business Cards Team <span class="wf-pill cond">If Business Cards in equipment</span></li>
+      <li class="cond">Fleetio &rarr; Fleet Team <span class="wf-pill cond">If Fleetio access or vehicle requested</span></li>
+      <li class="cond">30/60/90 Review &rarr; Review Team <span class="wf-pill cond">If NOT hourly employment type</span></li>
+      <li class="cond">Jonas / Central Purchasing &rarr; Jonas Team <span class="wf-pill cond">If purchasing sites or job numbers specified</span></li>
+      <li class="always">WIS Assignment &rarr; Reporting Manager <span class="wf-pill always">Always created</span></li>
+    </ul>
+    <div class="wf-note" style="margin-top:10px"><strong>Idempotency:</strong> If IT Setup is resubmitted as an edit, specialists are NOT re-triggered. Only the first submission triggers action items.</div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">On Submit &mdash; Outputs</div>
+    <ul class="wf-list">
+      <li class="action">IT Results record saved</li>
+      <li class="email always">Email &rarr; Requester + Manager: "IT Setup Complete" with full credentials and system access details</li>
+      <li class="email cond">Email &rarr; each specialist team with their action item(s) and direct form link</li>
+      <li class="always">Next step: <strong>Specialist Action Items</strong> (parallel, each conditional on request data)</li>
+    </ul>
+  </div>
+</div>
+</template>
+
+<!-- ── 6. SPECIALIST: BUSINESS CARDS ── -->
+<template id="tpl-bizcards">
+<div class="wf-step">
+  <div class="demo-tag">&#9889; Workflow Validation Mode &mdash; Confirm the logic below is accurate</div>
+  <h2>Specialist Action Items</h2>
+  <p class="sub">All specialist items run in parallel after IT Setup. Each team receives an email with a direct link to their action item form. Business Cards is shown as an example &mdash; all specialists follow the same pattern.</p>
+
+  <div class="wf-section">
+    <div class="wf-section-title">All Specialist Action Items</div>
+    <ul class="wf-list">
+      <li class="cond"><strong>Credit Card</strong> &rarr; Credit Card Team <span class="wf-pill cond">If USA / Canada / Home Depot card requested</span></li>
+      <li class="cond"><strong>Business Cards</strong> &rarr; Business Cards Team <span class="wf-pill cond">If Business Cards in equipment</span></li>
+      <li class="cond"><strong>Fleetio</strong> &rarr; Fleet Team <span class="wf-pill cond">If Fleetio access or vehicle requested</span></li>
+      <li class="cond"><strong>30/60/90 Review</strong> &rarr; Review Team <span class="wf-pill cond">All non-hourly employees</span></li>
+      <li class="cond"><strong>Jonas / Central Purchasing</strong> &rarr; Jonas Team <span class="wf-pill cond">If purchasing sites or job numbers specified</span></li>
+      <li class="always"><strong>WIS Assignment</strong> &rarr; Reporting Manager <span class="wf-pill always">Always created</span> &mdash; assigned directly to the employee's manager</li>
+    </ul>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Business Cards Example &mdash; Fields Collected</div>
+    <ul class="wf-list">
+      <li>Name on card, Title on card (verify / correct)</li>
+      <li>Email on card, Phone on card</li>
+      <li>Quantity, Order placed date</li>
+      <li>Order reference / delivery notes</li>
+    </ul>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Workflow Completion Logic</div>
+    <div class="wf-branch branch-green">
+      <div class="wf-branch-cond">When all non-WIS action items are closed</div>
+      <div class="wf-branch-outcome">&rarr; Workflow automatically marked <strong>Complete</strong>. Completion email sent to HR + Requester + Manager with full audit log of all tasks.</div>
+    </div>
+    <div class="wf-note" style="margin-top:10px"><strong>WIS excluded from completion check</strong> &mdash; it is managed independently by the manager and does not gate workflow closure.</div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">On Submit &mdash; Outputs</div>
+    <ul class="wf-list">
+      <li class="action">Action Item record updated to Closed</li>
+      <li class="email cond">If last required action item: Email &rarr; HR + Requester + Manager: "Onboarding Complete" with full audit log</li>
+      <li class="always">Next: <strong>Workflow Complete</strong> (when all non-WIS action items closed)</li>
+    </ul>
+  </div>
+</div>
+</template>
+
+<!-- ── 7. COMPLETE ── -->
+<template id="tpl-complete">
+<div class="wf-step">
+  <div style="text-align:center;padding:32px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:12px">
+    <div style="font-size:52px">&#9989;</div>
+    <h2 style="font-size:22px;font-weight:800">Workflow Complete</h2>
+    <p class="sub" style="max-width:420px">The system automatically marks the workflow Complete when all non-WIS action items are closed. No form submission required at this step.</p>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">Completion Trigger</div>
+    <div class="wf-branch branch-green">
+      <div class="wf-branch-cond">Automatic &mdash; no action needed</div>
+      <div class="wf-branch-outcome">The system polls open action items after each specialist closes theirs. When count of open non-WIS items = 0, workflow status is set to Complete.</div>
+    </div>
+    <div class="wf-note" style="margin-top:10px">The <strong>Hourly / No-Access path</strong> reaches Complete earlier &mdash; directly after HR Verification, no IT or specialist steps.</div>
+  </div>
+
+  <div class="wf-section">
+    <div class="wf-section-title">On Completion &mdash; Outputs</div>
+    <ul class="wf-list">
+      <li class="action">Workflow record status set to Complete</li>
+      <li class="email always">Email &rarr; HR + Requester + Manager: completion summary with full audit log of all steps and tasks</li>
+      <li class="action">Dashboard updated to show workflow as Complete</li>
+    </ul>
+  </div>
+</div>
+</template>
+
+
+<script>
+// ================================================================
+//  STEP DEFINITIONS
+// ================================================================
+const STEPS = {
+  init:      { label: 'Initial Request',           who: 'Manager (Submitter)',  tpl: 'tpl-init',      cond: false },
+  idsetup:   { label: 'ID Setup',                  who: 'ID Setup Team',         tpl: 'tpl-idsetup',   cond: false },
+  hrverify:  { label: 'HR Verification',           who: 'HR Team',               tpl: 'tpl-hrverify',  cond: false },
+  itconfirm: { label: 'IT Confirmation (BOSS)',    who: 'Dave Langohr',          tpl: 'tpl-itconfirm', cond: true  },
+  itsetup:   { label: 'IT Setup',                  who: 'IT Team',               tpl: 'tpl-itsetup',   cond: false },
+  bizcards:  { label: 'Business Cards Order',      who: 'Business Cards Team',   tpl: 'tpl-bizcards',  cond: true  },
+  complete:  { label: 'Workflow Complete',         who: 'System (auto)',         tpl: 'tpl-complete',  cond: false },
+};
+
+const STEP_ORDER = ['init','idsetup','hrverify','itconfirm','itsetup','bizcards','complete'];
+
+// Maps Mermaid node IDs (uppercase) to step keys
+const NODE_MAP = {
+  INIT:      'init',
+  IDSETUP:   'idsetup',
+  HRVERIFY:  'hrverify',
+  ITCONFIRM: 'itconfirm',
+  ITSETUP:   'itsetup',
+  BIZCARDS:  'bizcards',
+  DONE:      'complete',
+};
+
+let activeStep = null;
+
+// ================================================================
+//  MERMAID DIAGRAM
+// ================================================================
+const DIAGRAM = `flowchart TD
+    INIT["Initial Request
+    Manager submits"]
+    IDSETUP["ID Setup
+    ID Setup Team"]
+    HRVERIFY["HR Verification
+    HR Team"]
+    HOURLY{"Hourly +
+    No System Access?"}
+    DONE(["Workflow
+    Complete"])
+    BOSSCHK{"Includes
+    BOSS?"}
+    ITCONFIRM["IT Confirmation
+    Dave Langohr
+    BOSS gate"]
+    ITSETUP["IT Setup
+    IT Team"]
+    SPEC[/"Specialist Action
+    Items Created"/]
+    CREDITCARD(["Credit Card
+    if requested"])
+    BIZCARDS(["Business Cards
+    if requested"])
+    FLEETIO(["Fleetio
+    if vehicle / fleet"])
+    REVIEW(["30/60/90 Review
+    if not hourly"])
+    JONAS(["Jonas / Purchasing
+    if job numbers"])
+    WIS(["WIS Assignment
+    always created"])
+
+    INIT --> IDSETUP
+    IDSETUP --> HRVERIFY
+    HRVERIFY --> HOURLY
+    HOURLY -->|"YES — skip IT"| DONE
+    HOURLY -->|NO| BOSSCHK
+    BOSSCHK -->|YES| ITCONFIRM
+    BOSSCHK -->|NO| ITSETUP
+    ITCONFIRM --> ITSETUP
+    ITSETUP --> SPEC
+    SPEC --> CREDITCARD
+    SPEC --> BIZCARDS
+    SPEC --> FLEETIO
+    SPEC --> REVIEW
+    SPEC --> JONAS
+    SPEC --> WIS
+    CREDITCARD --> DONE
+    BIZCARDS --> DONE
+    FLEETIO --> DONE
+    REVIEW --> DONE
+    JONAS --> DONE
+    WIS --> DONE`;
+
+// ================================================================
+//  STATE  (localStorage)
+// ================================================================
+const SK = 'tg-wf-review-v1';
+function getState()              { try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch(e) { return {}; } }
+function saveState(s)            { localStorage.setItem(SK, JSON.stringify(s)); }
+function getStep(id)             { return getState()[id] || { status: null, note: '' }; }
+function setStep(id, patch)      { const s = getState(); s[id] = { ...getStep(id), ...patch }; saveState(s); }
+
+// ================================================================
+//  BADGE
+// ================================================================
+function refreshBadge() {
+  const s = getState();
+  const n = Object.values(s).filter(v => v.status || (v.note && v.note.trim())).length;
+  document.getElementById('badge').textContent = n;
+}
+
+// ================================================================
+//  LOAD STEP
+// ================================================================
+function selectStep(id) {
+  if (!STEPS[id]) return;
+  activeStep = id;
+  const step = STEPS[id];
+
+  // Load form template
+  const tpl = document.getElementById(step.tpl);
+  const area = document.getElementById('form-area');
+  if (tpl) {
+    area.innerHTML = '';
+    area.appendChild(tpl.content.cloneNode(true));
+    area.scrollTop = 0;
+  }
+
+  // Update val bar
+  document.getElementById('step-lbl').textContent = step.label;
+  const whoEl = document.getElementById('step-who');
+  whoEl.textContent = step.who + (step.cond ? ' — conditional step' : '');
+  whoEl.style.display = '';
+
+  // Restore validation state
+  const st = getStep(id);
+  document.getElementById('vbtn-correct').className = 'vbtn' + (st.status === 'correct' ? ' v-correct' : '');
+  document.getElementById('vbtn-issue').className   = 'vbtn' + (st.status === 'issue'   ? ' v-issue'   : '');
+  document.getElementById('vbtn-unsure').className  = 'vbtn' + (st.status === 'unsure'  ? ' v-unsure'  : '');
+  document.getElementById('note-txt').value = st.note || '';
+
+  // Reset save button
+  const sb = document.getElementById('note-save-btn');
+  sb.textContent = 'Save Note';
+  sb.className = 'note-save';
+
+  updateNodeHighlights();
+}
+
+// ================================================================
+//  VALIDATION
+// ================================================================
+function setStatus(status) {
+  if (!activeStep) return;
+  const cur = getStep(activeStep).status;
+  setStep(activeStep, { status: cur === status ? null : status });
+  selectStep(activeStep);
+  refreshBadge();
+}
+
+function saveNote() {
+  if (!activeStep) return;
+  const note = document.getElementById('note-txt').value;
+  setStep(activeStep, { note });
+  refreshBadge();
+  const btn = document.getElementById('note-save-btn');
+  btn.textContent = '✓ Saved';
+  btn.className = 'note-save saved';
+  setTimeout(() => { btn.textContent = 'Save Note'; btn.className = 'note-save'; }, 1400);
+}
+
+// Auto-save debounce
+let _nt;
+document.getElementById('note-txt').addEventListener('input', () => {
+  clearTimeout(_nt);
+  _nt = setTimeout(saveNote, 900);
+});
+document.getElementById('note-txt').addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); saveNote(); }
+});
+
+// ================================================================
+//  NODE HIGHLIGHT COLORS
+// ================================================================
+function updateNodeHighlights() {
+  const state = getState();
+  const svg = document.getElementById('mermaid-out');
+  if (!svg) return;
+
+  Object.entries(NODE_MAP).forEach(([nodeId, stepId]) => {
+    const el = findNode(svg, nodeId);
+    if (!el) return;
+    el.classList.remove('nd-correct', 'nd-issue', 'nd-unsure', 'nd-active');
+    const st = state[stepId];
+    if (st && st.status) el.classList.add('nd-' + st.status);
+    if (stepId === activeStep) el.classList.add('nd-active');
+  });
+}
+
+function findNode(svg, nodeId) {
+  // Mermaid generates IDs like "flowchart-NODEID-0" or "flowchart-NODEID-1"
+  for (let i = 0; i < 4; i++) {
+    const el = svg.querySelector('#flowchart-' + nodeId + '-' + i);
+    if (el) return el;
+  }
+  // Fallback: search by partial ID
+  const all = svg.querySelectorAll('[id]');
+  for (const el of all) {
+    if (el.id.includes(nodeId) && el.classList.contains('node')) return el;
+  }
+  return null;
+}
+
+// ================================================================
+//  MERMAID INIT + CLICK WIRING
+// ================================================================
+mermaid.initialize({
+  startOnLoad: false,
+  securityLevel: 'loose',
+  theme: 'dark',
+  flowchart: { curve: 'basis', padding: 16 },
+  themeVariables: {
+    darkMode: true,
+    primaryColor: '#1e1e1e',
+    primaryTextColor: '#e0e0e0',
+    primaryBorderColor: '#555',
+    lineColor: '#666',
+    secondaryColor: '#252525',
+    tertiaryColor: '#2a2a2a',
+    fontFamily: 'Segoe UI, system-ui, sans-serif',
+    fontSize: '13px',
+    edgeLabelBackground: '#1a1a1a',
+  }
+});
+
+mermaid.render('mermaid-svg', DIAGRAM).then(({ svg }) => {
+  document.getElementById('mermaid-out').innerHTML = svg;
+  wireClicks();
+  updateNodeHighlights();
+}).catch(err => {
+  document.getElementById('mermaid-out').innerHTML =
+    '<p style="color:var(--accent);padding:20px;font-size:13px">Diagram render error: ' + err.message + '<br><br>Check browser console for details.</p>';
+});
+
+function wireClicks() {
+  const svg = document.getElementById('mermaid-out');
+  Object.entries(NODE_MAP).forEach(([nodeId, stepId]) => {
+    const el = findNode(svg, nodeId);
+    if (el) {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', () => selectStep(stepId));
+    }
+  });
+
+  // Also wire BIZCARDS by text scan as fallback
+  svg.querySelectorAll('.node').forEach(node => {
+    const txt = node.textContent || '';
+    if (txt.includes('Business Cards') && !node._wired) {
+      node._wired = true;
+      node.style.cursor = 'pointer';
+      node.addEventListener('click', () => selectStep('bizcards'));
+    }
+  });
+}
+
+// ================================================================
+//  KEYBOARD NAVIGATION
+// ================================================================
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  const idx = STEP_ORDER.indexOf(activeStep);
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (idx < STEP_ORDER.length - 1) selectStep(STEP_ORDER[idx + 1]);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (idx > 0) selectStep(STEP_ORDER[idx - 1]);
+  }
+});
+
+// ================================================================
+//  SUMMARY MODAL
+// ================================================================
+const STATUS_LABEL = { correct: '✓', issue: '✗', unsure: '?' };
+const STATUS_CLASS = { correct: 'ico-correct', issue: 'ico-issue', unsure: 'ico-unsure' };
+
+function openSummary() {
+  const state = getState();
+  const body = document.getElementById('modal-body');
+
+  body.innerHTML = STEP_ORDER.map(id => {
+    const step = STEPS[id];
+    const st = state[id] || {};
+    const sym   = st.status ? STATUS_LABEL[st.status] : '○';
+    const cls   = st.status ? STATUS_CLASS[st.status] : 'ico-none';
+    const cond  = step.cond ? '<span style="font-size:10px;color:var(--yellow);margin-left:6px">(conditional)</span>' : '';
+    const note  = st.note && st.note.trim()
+      ? '<div class="sum-note">' + esc(st.note) + '</div>' : '';
+    return '<div class="sum-item">'
+      + '<div class="sum-ico ' + cls + '">' + sym + '</div>'
+      + '<div class="sum-detail">'
+      + '<div class="sum-name">' + step.label + cond + '</div>'
+      + '<div class="sum-who">' + step.who + '</div>'
+      + note
+      + '</div></div>';
+  }).join('');
+
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeSummary() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function clearAll() {
+  if (!confirm('Clear all validation statuses and notes?')) return;
+  localStorage.removeItem(SK);
+  refreshBadge();
+  updateNodeHighlights();
+  if (activeStep) {
+    document.getElementById('vbtn-correct').className = 'vbtn';
+    document.getElementById('vbtn-issue').className   = 'vbtn';
+    document.getElementById('vbtn-unsure').className  = 'vbtn';
+    document.getElementById('note-txt').value = '';
+  }
+  closeSummary();
+}
+
+function exportNotes() {
+  const state = getState();
+  const lines = [
+    'TEAM Group — New Hire Workflow Review Notes',
+    'Exported: ' + new Date().toLocaleString(),
+    '='.repeat(52), ''
+  ];
+  STEP_ORDER.forEach(id => {
+    const step = STEPS[id];
+    const st = state[id] || {};
+    const statusTxt = { correct: 'CORRECT', issue: 'HAS ISSUES', unsure: 'NOT SURE' };
+    lines.push('STEP: ' + step.label + (step.cond ? ' [conditional]' : ''));
+    lines.push('  Performed by: ' + step.who);
+    lines.push('  Status: ' + (st.status ? statusTxt[st.status] : 'Not reviewed'));
+    if (st.note && st.note.trim()) lines.push('  Note: ' + st.note.trim());
+    lines.push('');
+  });
+  navigator.clipboard.writeText(lines.join('\n'))
+    .then(() => alert('Notes copied to clipboard!'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = lines.join('\n');
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      alert('Notes copied to clipboard!');
+    });
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function switchWorkflow(wf) {
+  if (wf !== 'newhire') return;
+}
+
+// ================================================================
+//  FLOWCHART FULLSCREEN
+// ================================================================
+let _fsScale = 1, _fsTx = 0, _fsTy = 0;
+let _fsDragging = false, _fsDx, _fsDy, _fsTxStart, _fsTyStart;
+
+function openFlowFS() {
+  // Clone the rendered SVG into the fullscreen inner div
+  const src = document.getElementById('mermaid-out');
+  const inner = document.getElementById('flow-fs-inner');
+  inner.innerHTML = src.innerHTML;
+
+  // Wire clicks on the cloned SVG
+  Object.entries(NODE_MAP).forEach(([nodeId, stepId]) => {
+    const el = findNode(inner, nodeId);
+    if (el) {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', () => { closeFlowFS(); selectStep(stepId); });
+    }
+  });
+  // Wire specialist nodes by text
+  inner.querySelectorAll('.node').forEach(node => {
+    if ((node.textContent || '').includes('Business Cards') && !node._wired) {
+      node._wired = true;
+      node.style.cursor = 'pointer';
+      node.addEventListener('click', () => { closeFlowFS(); selectStep('bizcards'); });
+    }
+  });
+
+  // Reset to fit
+  _fsScale = 1; _fsTx = 0; _fsTy = 0;
+  fsApplyTransform(false);
+
+  document.getElementById('flow-fs-overlay').classList.add('open');
+
+  // Auto-fit: scale SVG to fill ~85% of the viewport height
+  requestAnimationFrame(() => {
+    const svg = inner.querySelector('svg');
+    if (!svg) return;
+    const svgH = svg.getBoundingClientRect().height;
+    const bodyH = document.getElementById('flow-fs-body').clientHeight;
+    const svgW = svg.getBoundingClientRect().width;
+    const bodyW = document.getElementById('flow-fs-body').clientWidth;
+    const fit = Math.min((bodyH * 0.88) / svgH, (bodyW * 0.88) / svgW, 2);
+    _fsScale = fit;
+    // Center it
+    _fsTx = (bodyW - svgW * fit) / 2;
+    _fsTy = (bodyH - svgH * fit) / 2;
+    fsApplyTransform(true);
+  });
+}
+
+function closeFlowFS() {
+  document.getElementById('flow-fs-overlay').classList.remove('open');
+}
+
+function fsApplyTransform(animate) {
+  const inner = document.getElementById('flow-fs-inner');
+  inner.style.transition = animate ? 'transform 0.2s ease-out' : 'none';
+  inner.style.transform = 'translate(' + _fsTx + 'px,' + _fsTy + 'px) scale(' + _fsScale + ')';
+  document.getElementById('fs-zoom-pct').textContent = Math.round(_fsScale * 100) + '%';
+}
+
+function fszoomBy(delta) {
+  _fsScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, _fsScale + delta));
+  fsApplyTransform(true);
+}
+
+function fszoomReset() {
+  openFlowFS(); // re-fit
+}
+
+// Wheel zoom on fullscreen
+document.getElementById('flow-fs-body').addEventListener('wheel', e => {
+  e.preventDefault();
+  const body = document.getElementById('flow-fs-body');
+  const rect = body.getBoundingClientRect();
+  const delta = e.deltaY < 0 ? 0.12 : -0.12;
+  const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, _fsScale + delta));
+  if (newScale === _fsScale) return;
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const ratio = newScale / _fsScale;
+  _fsTx = cx - ratio * (cx - _fsTx);
+  _fsTy = cy - ratio * (cy - _fsTy);
+  _fsScale = newScale;
+  fsApplyTransform(false);
+}, { passive: false });
+
+// Drag pan on fullscreen
+document.getElementById('flow-fs-body').addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  _fsDragging = true;
+  _fsDx = e.clientX; _fsDy = e.clientY;
+  _fsTxStart = _fsTx; _fsTyStart = _fsTy;
+  document.getElementById('flow-fs-body').classList.add('dragging');
+});
+document.addEventListener('mousemove', e => {
+  if (!_fsDragging) return;
+  _fsTx = _fsTxStart + (e.clientX - _fsDx);
+  _fsTy = _fsTyStart + (e.clientY - _fsDy);
+  fsApplyTransform(false);
+});
+document.addEventListener('mouseup', () => {
+  if (!_fsDragging) return;
+  _fsDragging = false;
+  document.getElementById('flow-fs-body').classList.remove('dragging');
+});
+
+// Esc to close
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeFlowFS();
+});
+
+// ================================================================
+//  ZOOM / PAN
+// ================================================================
+let _scale = 1;
+let _tx = 0, _ty = 0;
+const MIN_SCALE = 0.3, MAX_SCALE = 3;
+
+function applyTransform(animate) {
+  const inner = document.getElementById('flow-inner');
+  inner.classList.toggle('no-transition', !animate);
+  inner.style.transform = 'translate(' + _tx + 'px,' + _ty + 'px) scale(' + _scale + ')';
+  document.getElementById('zoom-pct').textContent = Math.round(_scale * 100) + '%';
+}
+
+function zoomBy(delta) {
+  _scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, _scale + delta));
+  applyTransform(true);
+}
+
+function zoomReset() {
+  _scale = 1; _tx = 0; _ty = 0;
+  applyTransform(true);
+}
+
+// Mouse wheel zoom (zoom toward cursor position)
+document.getElementById('flow-scroll').addEventListener('wheel', e => {
+  e.preventDefault();
+  const scroller = document.getElementById('flow-scroll');
+  const rect = scroller.getBoundingClientRect();
+  const inner = document.getElementById('flow-inner');
+  const iRect = inner.getBoundingClientRect();
+
+  const delta = e.deltaY < 0 ? 0.1 : -0.1;
+  const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, _scale + delta));
+  if (newScale === _scale) return;
+
+  // Cursor position relative to viewport center
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+
+  // Adjust translation so zoom centers on cursor
+  const ratio = newScale / _scale;
+  _tx = cx - ratio * (cx - _tx);
+  _ty = cy - ratio * (cy - _ty);
+  _scale = newScale;
+
+  applyTransform(false);
+}, { passive: false });
+
+// Drag to pan
+let _dragging = false, _dragStartX, _dragStartY, _txStart, _tyStart;
+
+document.getElementById('flow-scroll').addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  _dragging = true;
+  _dragStartX = e.clientX;
+  _dragStartY = e.clientY;
+  _txStart = _tx;
+  _tyStart = _ty;
+  document.getElementById('flow-scroll').classList.add('dragging');
+});
+
+document.addEventListener('mousemove', e => {
+  if (!_dragging) return;
+  _tx = _txStart + (e.clientX - _dragStartX);
+  _ty = _tyStart + (e.clientY - _dragStartY);
+  applyTransform(false);
+});
+
+document.addEventListener('mouseup', () => {
+  if (!_dragging) return;
+  _dragging = false;
+  document.getElementById('flow-scroll').classList.remove('dragging');
+});
+
+// Touch pinch-to-zoom + drag
+let _lastTouchDist = null;
+document.getElementById('flow-scroll').addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    _dragging = true;
+    _dragStartX = e.touches[0].clientX;
+    _dragStartY = e.touches[0].clientY;
+    _txStart = _tx; _tyStart = _ty;
+  } else if (e.touches.length === 2) {
+    _dragging = false;
+    _lastTouchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  }
+}, { passive: true });
+
+document.getElementById('flow-scroll').addEventListener('touchmove', e => {
+  if (e.touches.length === 1 && _dragging) {
+    _tx = _txStart + (e.touches[0].clientX - _dragStartX);
+    _ty = _tyStart + (e.touches[0].clientY - _dragStartY);
+    applyTransform(false);
+  } else if (e.touches.length === 2 && _lastTouchDist) {
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const ratio = dist / _lastTouchDist;
+    _scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, _scale * ratio));
+    _lastTouchDist = dist;
+    applyTransform(false);
+  }
+}, { passive: true });
+
+document.getElementById('flow-scroll').addEventListener('touchend', () => {
+  _dragging = false; _lastTouchDist = null;
+}, { passive: true });
+
+// Init
+refreshBadge();
+</script>
+</body>
+</html>

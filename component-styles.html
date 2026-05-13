@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEAM Group — Confirmed Component Styles</title>
+<style>
+  /* ── Base / Variables ─────────────────────────────────────── */
+  :root {
+    --bg: #0c0c0c;
+    --card: #1a1a1a;
+    --text-main: #ffffff;
+    --text-muted: #a0a0a0;
+    --brand-red: #EB1C2D;
+    --input-bg: #2a2a2a;
+    --input-border: #444;
+    --border-color: #333;
+    --success: #00c853;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    padding: 40px 32px 80px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* ── Page header ──────────────────────────────────────────── */
+  .page-header { margin-bottom: 48px; border-bottom: 2px solid var(--brand-red); padding-bottom: 16px; }
+  .page-header h1 { font-size: 22px; font-weight: 700; }
+  .page-header p { color: var(--text-muted); font-size: 13px; margin-top: 6px; }
+
+  /* ── Component section ────────────────────────────────────── */
+  .component { margin-bottom: 56px; }
+  .component-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .component-header h2 { font-size: 16px; font-weight: 700; }
+  .component-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; background: rgba(0,200,83,.12); color: var(--success); text-transform: uppercase; letter-spacing: .5px; }
+  .component-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; border-left: 3px solid var(--brand-red); padding-left: 12px; }
+  .component-rules { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+  .component-rules li { margin-bottom: 4px; padding-left: 12px; position: relative; }
+  .component-rules li::before { content: '•'; position: absolute; left: 0; color: var(--brand-red); }
+  .demo-box { background: var(--card); border: 1px solid var(--border-color); border-radius: 8px; padding: 28px; }
+  .demo-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+
+  /* ── Form primitives (shared across demos) ────────────────── */
+  .form-field { margin-bottom: 20px; }
+  .form-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+  .form-field input[type="text"],
+  .form-field input[type="date"],
+  .form-field select,
+  .form-field textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    padding: 10px 13px;
+    color: var(--text-main);
+    font-size: 13px;
+    font-family: inherit;
+    transition: border-color .2s;
+  }
+  .form-field input:focus,
+  .form-field select:focus,
+  .form-field textarea:focus { outline: none; border-color: var(--brand-red); }
+
+  /* ══════════════════════════════════════════════════════════
+     COMPONENT: Date Picker
+  ══════════════════════════════════════════════════════════ */
+  .form-field input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: brightness(0) saturate(100%) invert(18%) sepia(97%) saturate(2500%) hue-rotate(344deg);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     COMPONENT: Dual-List Picker
+  ══════════════════════════════════════════════════════════ */
+  .dual-list-wrapper { display: flex; gap: 10px; align-items: stretch; width: 100%; }
+  .dual-list-panel { flex: 1; display: flex; flex-direction: column; background: #1e1e1e; border: 1px solid #444; border-radius: 6px; overflow: hidden; min-height: 260px; max-height: 320px; }
+  .dual-list-panel-header { padding: 6px 10px; background: #2a2a2a; font-size: .75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid #444; flex-shrink: 0; }
+  .dual-list-search { padding: 5px 8px; background: transparent; border: none; border-bottom: 1px solid #333; color: var(--text-main); font-size: .82rem; outline: none; width: 100%; box-sizing: border-box; flex-shrink: 0; }
+  .dual-list-search::placeholder { color: var(--text-muted); }
+  .dual-list-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+  .dual-list-item { padding: 5px 10px; font-size: .82rem; cursor: pointer; color: var(--text-main); user-select: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dual-list-item:hover { background: #2e2e2e; }
+  .dual-list-item.selected { background: rgba(235,28,45,.18); color: #fff; }
+  .dual-list-footer { padding: 5px 8px; border-top: 1px solid #333; display: flex; gap: 6px; flex-shrink: 0; }
+  .dual-list-btn { flex: 1; padding: 4px 6px; font-size: .75rem; background: #2a2a2a; color: var(--text-muted); border: 1px solid #444; border-radius: 4px; cursor: pointer; }
+  .dual-list-btn:hover { background: #333; color: var(--text-main); }
+  .dual-list-arrows { display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .dual-list-arrow { width: 28px; height: 28px; background: #2a2a2a; border: 1px solid #555; border-radius: 4px; color: var(--text-muted); font-size: .9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .dual-list-arrow:hover { background: var(--brand-red); color: #fff; border-color: var(--brand-red); }
+
+  /* ── Divider ──────────────────────────────────────────────── */
+  hr { border: none; border-top: 1px solid #1e1e1e; margin: 48px 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>TEAM Group — Confirmed Component Styles</h1>
+  <p>Living reference doc. Each component is confirmed and deployed to <code>employee_management_v2_dev</code>. Test interactively below.</p>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     1. DATE PICKER
+══════════════════════════════════════════════════════════ -->
+<div class="component">
+  <div class="component-header">
+    <h2>Date Picker</h2>
+    <span class="component-tag">Confirmed</span>
+  </div>
+  <p class="component-desc">
+    Native <code>input[type="date"]</code> with a red calendar icon and full-field click target.
+    Clicking anywhere on the field opens the date picker — not just the icon.
+  </p>
+  <ul class="component-rules">
+    <li>Calendar icon is brand red (<code>#EB1C2D</code>) via CSS filter</li>
+    <li><code>::-webkit-calendar-picker-indicator</code> positioned absolute to cover entire field</li>
+    <li>Works on pre-filled (edit mode) fields — click anywhere to change</li>
+    <li>Read-only dates use a plain <code>.read-only-box</code> div instead, never a disabled input</li>
+  </ul>
+  <div class="demo-box">
+    <div class="demo-label">Live Demo</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div class="form-field">
+        <label>Empty date field</label>
+        <input type="date">
+      </div>
+      <div class="form-field">
+        <label>Pre-filled date field (edit mode)</label>
+        <input type="date" value="2026-04-24">
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- ══════════════════════════════════════════════════════════
+     2. DUAL-LIST PICKER
+══════════════════════════════════════════════════════════ -->
+<div class="component">
+  <div class="component-header">
+    <h2>Dual-List Picker</h2>
+    <span class="component-tag">Confirmed</span>
+  </div>
+  <p class="component-desc">
+    Replaces large lookup checkbox grids (100+ items). Available items on the left, selected on the right.
+    Used for: ADP supervisor sites, Central Purchasing sites, BOSS cost sheet jobs, BOSS committees, Jonas job numbers.
+  </p>
+  <ul class="component-rules">
+    <li>Single click to highlight, double-click to move instantly</li>
+    <li>› / ‹ arrow buttons move all highlighted items</li>
+    <li>"Add visible" respects the current filter — only adds filtered items</li>
+    <li>Submits as a single hidden <code>input[type="hidden"]</code> with comma-joined value</li>
+    <li>Compatible with existing <code>FormData.getAll(x).join(', ')</code> server handlers</li>
+    <li>Container inline style is reset on render (clears old <code>display:grid</code> from replaced checkboxes)</li>
+  </ul>
+  <div class="demo-box">
+    <div class="demo-label">Live Demo — Job Numbers</div>
+    <div id="dualListDemo" style="width:100%;display:block;"></div>
+  </div>
+</div>
+
+
+<script>
+  /* ── buildDualList ──────────────────────────────────────── */
+  function buildDualList(containerId, items, fieldName, selected) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    selected = selected || [];
+    items = items || [];
+    var available = items.filter(function(i) { return selected.indexOf(i) < 0; });
+    var chosen    = items.filter(function(i) { return selected.indexOf(i) >= 0; });
+    function render() {
+      container.style.cssText = 'width:100%;display:block;';
+      container.innerHTML = '';
+      var hidden = document.createElement('input');
+      hidden.type = 'hidden'; hidden.name = fieldName; hidden.value = chosen.join(', ');
+      container.appendChild(hidden);
+      var wrapper = document.createElement('div'); wrapper.className = 'dual-list-wrapper';
+      function makePanel(headerText, searchId, listId) {
+        var panel = document.createElement('div'); panel.className = 'dual-list-panel';
+        var hdr = document.createElement('div'); hdr.className = 'dual-list-panel-header'; hdr.textContent = headerText; panel.appendChild(hdr);
+        var srch = document.createElement('input'); srch.type = 'text'; srch.className = 'dual-list-search'; srch.placeholder = 'Filter...'; srch.id = searchId; panel.appendChild(srch);
+        var lst = document.createElement('div'); lst.className = 'dual-list-list'; lst.id = listId; panel.appendChild(lst);
+        var ftr = document.createElement('div'); ftr.className = 'dual-list-footer'; panel.appendChild(ftr);
+        return { panel: panel, search: srch, list: lst, footer: ftr, header: hdr };
+      }
+      var av = makePanel('Available', containerId+'_av_s', containerId+'_av_l');
+      var addAllBtn = document.createElement('button'); addAllBtn.type = 'button'; addAllBtn.className = 'dual-list-btn'; addAllBtn.textContent = 'Add visible'; av.footer.appendChild(addAllBtn);
+      var arrows = document.createElement('div'); arrows.className = 'dual-list-arrows';
+      var addBtn = document.createElement('button'); addBtn.type = 'button'; addBtn.className = 'dual-list-arrow'; addBtn.textContent = '›'; arrows.appendChild(addBtn);
+      var remBtn = document.createElement('button'); remBtn.type = 'button'; remBtn.className = 'dual-list-arrow'; remBtn.textContent = '‹'; arrows.appendChild(remBtn);
+      var sel = makePanel('Selected', containerId+'_sel_s', containerId+'_sel_l');
+      var remAllBtn = document.createElement('button'); remAllBtn.type = 'button'; remAllBtn.className = 'dual-list-btn'; remAllBtn.textContent = 'Remove all'; sel.footer.appendChild(remAllBtn);
+      wrapper.appendChild(av.panel); wrapper.appendChild(arrows); wrapper.appendChild(sel.panel);
+      container.appendChild(wrapper);
+      function buildItems(lst, arr, term) {
+        lst.innerHTML = '';
+        arr.forEach(function(val) {
+          if (term && val.toLowerCase().indexOf(term.toLowerCase()) < 0) return;
+          var item = document.createElement('div'); item.className = 'dual-list-item'; item.textContent = val; item.dataset.value = val;
+          item.addEventListener('click', function() { item.classList.toggle('selected'); });
+          item.addEventListener('dblclick', function() { move(val, lst === av.list ? 'add' : 'remove'); });
+          lst.appendChild(item);
+        });
+      }
+      function move(val, dir) {
+        if (dir === 'add') { var i = available.indexOf(val); if (i >= 0) { available.splice(i,1); chosen.push(val); } }
+        else { var i = chosen.indexOf(val); if (i >= 0) { chosen.splice(i,1); available.push(val); } }
+        available.sort(); chosen.sort(); refresh();
+      }
+      function refresh() {
+        av.header.textContent  = 'Available (' + available.length + ')';
+        sel.header.textContent = 'Selected ('  + chosen.length   + ')';
+        buildItems(av.list,  available, av.search.value);
+        buildItems(sel.list, chosen,    sel.search.value);
+        hidden.value = chosen.join(', ');
+      }
+      addBtn.addEventListener('click', function() { av.list.querySelectorAll('.dual-list-item.selected').forEach(function(el) { move(el.dataset.value, 'add'); }); });
+      remBtn.addEventListener('click', function() { sel.list.querySelectorAll('.dual-list-item.selected').forEach(function(el) { move(el.dataset.value, 'remove'); }); });
+      addAllBtn.addEventListener('click', function() { var t = av.search.value.toLowerCase(); available.filter(function(v) { return !t || v.toLowerCase().indexOf(t) >= 0; }).slice().forEach(function(v) { move(v, 'add'); }); });
+      remAllBtn.addEventListener('click', function() { chosen.slice().forEach(function(v) { move(v, 'remove'); }); });
+      av.search.addEventListener('input', function() { buildItems(av.list, available, av.search.value); });
+      sel.search.addEventListener('input', function() { buildItems(sel.list, chosen, sel.search.value); });
+      refresh();
+    }
+    render();
+  }
+
+  /* ── Demo data ──────────────────────────────────────────── */
+  var sampleJobs = [
+    'TJ001 - Downtown Office','TJ002 - Westside Site','TJ003 - North Campus',
+    'TJ004 - Harbor District','TJ005 - East End','TJ006 - Midtown Complex',
+    'TJ007 - South Bay','TJ008 - Uptown Center','TJ009 - Riverside',
+    'TJ010 - Valley View','TJ011 - Lakefront','TJ012 - Hillside',
+    'TJ013 - Parkway','TJ014 - Summit','TJ015 - Bayview'
+  ];
+
+  buildDualList('dualListDemo', sampleJobs, 'jobNumbers', ['TJ003 - North Campus', 'TJ007 - South Bay']);
+
+  /* ── Date picker: click anywhere in field to open picker ── */
+  document.querySelectorAll('input[type="date"]').forEach(function(el) {
+    el.addEventListener('click', function() { try { el.showPicker(); } catch(e) {} });
+  });
+</script>
+
+</body>
+</html>
