@@ -1,17 +1,16 @@
 /**
- * Request Details Handler
+ * RequestDetailsHandler.js
  *
- * Serves and supplies data for the RequestDetails view (workflow drill-down,
- * flight check, step data modals).  Extracted from DashboardHandler so changes
- * here carry zero risk of touching dashboard listing / stats logic.
+ * Serves the RequestDetails page and supplies read-only data for the
+ * workflow drill-down view (header snapshot, checklist, step data modals).
+ *
+ * ACTIONS (cancel / bump / updateHireDate) live in RequestActionsHandler.js.
  *
  * Depends on (global GAS scope):
- *   CONFIG, SCHEMA                          — SchemaConstants.js
+ *   CONFIG, SCHEMA                          — SchemaConstants.js / Config.js
  *   AccessControlService                    — Services/AccessControlService.js
- *   getBaseUrl(), buildFormUrl()            — Router.js / LandingPageHandler.js
+ *   getBaseUrl()                            — Router.js
  *   getWorkflow(), getWorkflowContext()     — WorkflowManager.js
- *   syncWorkflowState(), updateWorkflow()   — StateSync.js / WorkflowManager.js
- *   sendFormEmail()                         — EmailUtils.js
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -28,253 +27,7 @@ function serveRequestDetails(workflowId) {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ACTIONS (bump / update hire date / cancel)
-// ─────────────────────────────────────────────────────────────────────────────
-
-function bumpRequest(workflowId, targetStep) {
-  try {
-    const user = Session.getActiveUser().getEmail();
-    Logger.log('Bump requested for ' + workflowId + ' (Target: ' + targetStep + ') by ' + user);
-
-    let recipient = '';
-    let subject = 'Reminder: Action Required for Employee Onboarding';
-    let formType = '';
-
-    switch (targetStep) {
-      case 'id_setup':         recipient = CONFIG.EMAILS.IDSETUP; formType = 'ID Setup';        break;
-      case 'hr_verification':  recipient = CONFIG.EMAILS.HR || 'HR Team'; formType = 'HR Verification'; break;
-      case 'it_setup':         recipient = CONFIG.EMAILS.IT || 'IT Team'; formType = 'IT Setup';  break;
-
-      // Specialist steps — look up Action Item to find assignee + task URL
-      case 'creditcard': case 'businesscards': case 'fleetio': case 'jonas':
-      case 'centralpurchasing': case 'sitedocs': case 'review_306090':
-      case 'safety_onboarding': case 'safety_term': {
-        try {
-          const aiSh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
-          if (aiSh) {
-            const aiD = aiSh.getDataRange().getValues();
-            const aH  = aiD[0];
-            const wI  = aH.indexOf('Workflow ID'), ftI = aH.indexOf('Form Type'),
-                  tiI = aH.indexOf('Task ID'),     asI = aH.indexOf('Assigned To'),
-                  stI = aH.indexOf('Status'),      tnI = aH.indexOf('Task Name');
-            for (let i = 1; i < aiD.length; i++) {
-              if (String(aiD[i][wI]) !== workflowId) continue;
-              if (ftI >= 0 && String(aiD[i][ftI]) !== targetStep) continue;
-              if (String(aiD[i][stI]) === 'Closed') continue;
-              recipient = String(aiD[i][asI] || '');
-              formType  = String(aiD[i][tnI] || targetStep);
-              const tid = String(aiD[i][tiI] || '');
-              if (tid && recipient && recipient.includes('@')) {
-                const ctx = getWorkflowContext(workflowId) || {};
-                sendFormEmail({
-                  to: recipient,
-                  subject: 'Reminder: ' + formType,
-                  body: 'ACTION REQUIRED: A reminder that the following action item is still pending your completion.',
-                  formUrl: buildFormUrl('action_item_view', { tid: tid }),
-                  displayName: 'TEAM Group - Onboarding',
-                  contextData: ctx,
-                  subjectOpts: { isReminder: true, requestDate: new Date() }
-                });
-                return { success: true, message: 'Reminder sent to ' + recipient };
-              }
-              break;
-            }
-          }
-        } catch (e) { Logger.log('Bump Action Item lookup error: ' + e.toString()); }
-        return { success: false, message: 'Action Item not found or already closed for: ' + targetStep };
-      }
-
-      // Status Change action item targets — look up by category
-      case 'change_manager': case 'change_it': case 'change_purchasing':
-      case 'change_idsetup': case 'change_safety': case 'change_businesscards':
-      case 'change_creditcard': case 'change_fleetio': case 'change_jonas': {
-        const catMap = {
-          'change_manager': 'Manager', 'change_it': 'IT', 'change_purchasing': 'Purchasing',
-          'change_idsetup': 'ID Setup', 'change_safety': 'Safety',
-          'change_businesscards': 'Business Cards', 'change_creditcard': 'Credit Card',
-          'change_fleetio': 'Fleetio', 'change_jonas': 'Jonas'
-        };
-        const cat = catMap[targetStep];
-        try {
-          const aiSh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
-          if (aiSh) {
-            const aiD = aiSh.getDataRange().getValues();
-            const aH  = aiD[0];
-            const wI = aH.indexOf('Workflow ID'), catI = aH.indexOf('Category'),
-                  tiI = aH.indexOf('Task ID'), asI = aH.indexOf('Assigned To'),
-                  stI = aH.indexOf('Status'), tnI = aH.indexOf('Task Name');
-            for (let i = 1; i < aiD.length; i++) {
-              if (String(aiD[i][wI]) !== workflowId) continue;
-              if (String(aiD[i][catI]) !== cat) continue;
-              if (String(aiD[i][stI]) === 'Closed') continue;
-              recipient = String(aiD[i][asI] || '');
-              formType  = String(aiD[i][tnI] || cat);
-              const tid = String(aiD[i][tiI] || '');
-              if (tid && recipient && recipient.includes('@')) {
-                const ctx = getWorkflowContext(workflowId) || {};
-                sendFormEmail({
-                  to: recipient,
-                  subject: 'Reminder: ' + formType,
-                  body: 'ACTION REQUIRED: A reminder that the following action item is still pending your completion.',
-                  formUrl: buildFormUrl('action_item_view', { tid: tid }),
-                  displayName: 'TEAM Group - Employee Management',
-                  contextData: ctx,
-                  subjectOpts: { isReminder: true, requestDate: new Date() }
-                });
-                return { success: true, message: 'Reminder sent to ' + recipient };
-              }
-              break;
-            }
-          }
-        } catch (e) { Logger.log('Bump CHANGE Action Item error: ' + e.toString()); }
-        return { success: false, message: 'Action item not found or already closed for: ' + targetStep };
-      }
-
-      // EOE action item targets — look up by category
-      case 'asset_collection': case 'systems_deactivation': case 'systems_deactivation_hr':
-      case 'systems_deactivation_fleet': case 'systems_deactivation_finance':
-      case 'systems_deactivation_deact': {
-        const eoeMap = {
-          'asset_collection': 'Assets', 'systems_deactivation': 'IT',
-          'systems_deactivation_hr': 'HR', 'systems_deactivation_fleet': 'Fleet',
-          'systems_deactivation_finance': 'Finance', 'systems_deactivation_deact': 'Deactivation'
-        };
-        const cat = eoeMap[targetStep];
-        try {
-          const aiSh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
-          if (aiSh) {
-            const aiD = aiSh.getDataRange().getValues();
-            const aH  = aiD[0];
-            const wI = aH.indexOf('Workflow ID'), catI = aH.indexOf('Category'),
-                  tiI = aH.indexOf('Task ID'), asI = aH.indexOf('Assigned To'),
-                  stI = aH.indexOf('Status'), tnI = aH.indexOf('Task Name');
-            for (let i = 1; i < aiD.length; i++) {
-              if (String(aiD[i][wI]) !== workflowId) continue;
-              if (String(aiD[i][catI]) !== cat) continue;
-              if (String(aiD[i][stI]) === 'Closed') continue;
-              recipient = String(aiD[i][asI] || '');
-              formType  = String(aiD[i][tnI] || cat);
-              const tid = String(aiD[i][tiI] || '');
-              if (tid && recipient && recipient.includes('@')) {
-                const ctx = getWorkflowContext(workflowId) || {};
-                sendFormEmail({
-                  to: recipient,
-                  subject: 'Reminder: ' + formType,
-                  body: 'ACTION REQUIRED: A reminder that the following action item is still pending your completion.',
-                  formUrl: buildFormUrl('action_item_view', { tid: tid }),
-                  displayName: 'TEAM Group - Employee Management',
-                  contextData: ctx,
-                  subjectOpts: { isReminder: true, requestDate: new Date() }
-                });
-                return { success: true, message: 'Reminder sent to ' + recipient };
-              }
-              break;
-            }
-          }
-        } catch (e) { Logger.log('Bump EOE Action Item error: ' + e.toString()); }
-        return { success: false, message: 'Action item not found or already closed for: ' + targetStep };
-      }
-
-      default: recipient = 'Assignee'; formType = 'General';
-    }
-
-    if (recipient && recipient.includes('@')) {
-      try {
-        let specificUrl = getBaseUrl() + '?form=dashboard';
-        if (formType === 'ID Setup')          specificUrl = buildFormUrl('id_setup',        { id: workflowId });
-        else if (formType === 'HR Verification') specificUrl = buildFormUrl('hr_verification', { id: workflowId });
-        else if (formType === 'IT Setup')     specificUrl = buildFormUrl('it_setup',         { id: workflowId });
-
-        const ctx = getWorkflowContext(workflowId) || {};
-        sendFormEmail({
-          to: recipient,
-          subject: formType + ' Required',
-          body: 'ACTION REQUIRED: ' + formType + '\n\nA request for ' + formType + ' is pending your action. Please complete this task using the link below.',
-          formUrl: specificUrl,
-          displayName: 'TEAM Group - Onboarding',
-          contextData: ctx,
-          subjectOpts: { isReminder: true, requestDate: new Date() }
-        });
-        return { success: true, message: 'Reminder sent to ' + recipient };
-      } catch (e) {
-        Logger.log('Bump email send failed: ' + e.toString());
-        return { success: false, message: 'Failed to send email: ' + e.message };
-      }
-    }
-
-    return { success: true, message: 'Bump recorded for ' + formType + ' (no email configured)' };
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-}
-
-function updateHireDate(workflowId, newDateStr) {
-  try {
-    const userEmail = Session.getActiveUser().getEmail();
-    if (!AccessControlService.canAccessForm(userEmail, 'HR') &&
-        !AccessControlService.canAccessForm(userEmail, 'IT') &&
-        !AccessControlService.isAdmin(userEmail)) {
-      return { success: false, message: 'Permission denied. Only HR, IT, or Admin can edit hire dates.' };
-    }
-
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
-    if (!sheet) return { success: false, message: 'Initial Requests sheet not found.' };
-
-    const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const wfIdCol     = headers.indexOf('Workflow ID');
-    const hireDateCol = headers.indexOf('Hire Date');
-    if (wfIdCol === -1 || hireDateCol === -1) return { success: false, message: 'Required columns not found.' };
-
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][wfIdCol]) !== workflowId) continue;
-
-      const rawOld = data[i][hireDateCol];
-      const oldDateStr = rawOld instanceof Date
-        ? Utilities.formatDate(rawOld, Session.getScriptTimeZone(), 'yyyy-MM-dd')
-        : String(rawOld || '').substring(0, 10);
-
-      sheet.getRange(i + 1, hireDateCol + 1).setValue(new Date(newDateStr + 'T12:00:00'));
-      SpreadsheetApp.flush();
-      syncWorkflowState(workflowId);
-
-      try {
-        const auditSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
-        if (auditSheet) {
-          auditSheet.appendRow([
-            workflowId, 'DATE_CHANGE', new Date(), '', '', '', '', '',
-            '[START DATE CHANGED: ' + oldDateStr + ' → ' + newDateStr + '] by ' + userEmail,
-            userEmail
-          ]);
-        }
-      } catch (e) {
-        Logger.log('[updateHireDate] Could not write audit row: ' + e.message);
-      }
-
-      return { success: true, message: 'Start date updated from ' + oldDateStr + ' to ' + newDateStr + '.' };
-    }
-    return { success: false, message: 'Workflow not found in Initial Requests.' };
-  } catch (e) {
-    Logger.log('[updateHireDate] Error: ' + e.toString());
-    return { success: false, message: e.message };
-  }
-}
-
-function cancelRequest(workflowId) {
-  try {
-    const user = Session.getActiveUser().getEmail();
-    if (!AccessControlService.isAdmin(user)) {
-      return { success: false, message: 'Permission denied. Only admins can cancel requests.' };
-    }
-    updateWorkflow(workflowId, 'Cancelled', 'Request Cancelled', '');
-    syncWorkflowState(workflowId);
-    return { success: true, message: 'Request cancelled successfully' };
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-}
+// bumpRequest, updateHireDate, cancelRequest → RequestActionsHandler.js
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FLIGHT CHECK (checklist + snapshot for the RequestDetails page)
@@ -453,9 +206,12 @@ function getRequestDetails(workflowId) {
       }
     }
 
-    context.isAdmin  = AccessControlService.isAdmin(Session.getActiveUser().getEmail());
-    context.checklist = checklist;
-    context.type      = 'Onboarding';
+    const _currentUser = Session.getActiveUser().getEmail();
+    context.isAdmin      = AccessControlService.isAdmin(_currentUser);
+    context.rolePayload  = AccessControlService.getUserRolePayload(_currentUser);
+    context.currentUser  = _currentUser;
+    context.checklist    = checklist;
+    context.type         = 'Onboarding';
     return context;
 
   } catch (e) {
@@ -470,6 +226,16 @@ function getRequestDetails(workflowId) {
 
 function getStepResultData(workflowId, stepTarget) {
   try {
+    // initial_request is always open (step index 0).
+    // All other steps require the user to be in a named group or own the workflow.
+    if (stepTarget !== 'initial_request') {
+      const _user = Session.getActiveUser().getEmail();
+      const _wf   = getWorkflow(workflowId);
+      if (!AccessControlService.canViewStepData(_user, _wf, 1)) {
+        return { '_Access Denied': 'You do not have permission to view this step data.' };
+      }
+    }
+
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const _tz  = Session.getScriptTimeZone();
     const fmtV = function(v) { return v instanceof Date ? Utilities.formatDate(v, _tz, 'M/d/yyyy') : String(v === null || v === undefined ? '' : v); };
@@ -694,10 +460,13 @@ function getTerminationDetails(workflowId) {
     }
 
     const termWf = getWorkflow(workflowId);
-    context.isAdmin   = AccessControlService.isAdmin(Session.getActiveUser().getEmail());
-    context.status    = termWf ? String(termWf['Status'] || '') : '';
-    context.checklist = checklist;
-    context.type      = 'End of Employment';
+    const _cu2 = Session.getActiveUser().getEmail();
+    context.isAdmin     = AccessControlService.isAdmin(_cu2);
+    context.rolePayload = AccessControlService.getUserRolePayload(_cu2);
+    context.currentUser = _cu2;
+    context.status      = termWf ? String(termWf['Status'] || '') : '';
+    context.checklist   = checklist;
+    context.type        = 'End of Employment';
     return context;
   } catch (e) {
     Logger.log('getTerminationDetails Error: ' + e.toString());
@@ -740,11 +509,15 @@ function getEquipmentRequestDetails(workflowId) {
       'Date Requested':  fmtD(row[EQD.TIMESTAMP])
     };
 
+    const _cu3 = Session.getActiveUser().getEmail();
     const context = {
       success: true, id: workflowId, type: 'Equipment', requestData: requestData,
       status:      String(wfRow[WFS.STATUS]       || ''),
       currentStep: String(wfRow[WFS.CURRENT_STEP] || ''),
-      checklist:   []
+      checklist:   [],
+      isAdmin:     AccessControlService.isAdmin(_cu3),
+      rolePayload: AccessControlService.getUserRolePayload(_cu3),
+      currentUser: _cu3
     };
 
     context.checklist.push({
@@ -888,8 +661,11 @@ function getChangeDetails(workflowId) {
       }
     }
 
-    context.isAdmin   = AccessControlService.isAdmin(Session.getActiveUser().getEmail());
-    context.checklist = checklist;
+    const _cu4 = Session.getActiveUser().getEmail();
+    context.isAdmin     = AccessControlService.isAdmin(_cu4);
+    context.rolePayload = AccessControlService.getUserRolePayload(_cu4);
+    context.currentUser = _cu4;
+    context.checklist   = checklist;
     return context;
   } catch (e) {
     Logger.log('getChangeDetails Error: ' + e.toString());

@@ -536,42 +536,29 @@
             }
         };
 
-        function formatDate(dateStr) {
-            if (!dateStr) return '-';
-            const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr;
-            return d.toLocaleDateString();
-        }
+        // formatDate() provided by SharedComponents.html (included at bottom of page)
 
-        let viewDataTarget = null;
         function loadDetails() {
             document.getElementById('loading').style.display = 'block';
-            document.getElementById('content').style.display = 'none'; // Changed from workflowContent
+            document.getElementById('content').style.display = 'none';
             document.getElementById('flowSection').style.display = 'none';
-            
-            // Check for view data auto-open parameter first
-            google.script.url.getLocation(function(loc) {
-                if (loc && loc.parameter && loc.parameter.vd) {
-                    viewDataTarget = loc.parameter.vd;
-                }
-                
-                // Route appropriately based on ID
-                if (workflowId.startsWith('TERM_')) { 
-                    google.script.run
-                        .withSuccessHandler(renderDetails)
-                        .withFailureHandler(err => {
-                            document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
-                        })
-                        .getTerminationDetails(workflowId);
-                } else {
-                    google.script.run
-                        .withSuccessHandler(renderDetails)
-                        .withFailureHandler(err => {
-                            document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
-                        })
-                        .getRequestDetails(workflowId);
-                }
-            });
+
+            // Route appropriately based on ID
+            if (workflowId.startsWith('TERM_')) {
+                google.script.run
+                    .withSuccessHandler(renderDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
+                    })
+                    .getTerminationDetails(workflowId);
+            } else {
+                google.script.run
+                    .withSuccessHandler(renderDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
+                    })
+                    .getRequestDetails(workflowId);
+            }
         }
 
         function renderDetails(data) {
@@ -583,12 +570,41 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('content').style.display = 'block';
 
+            // Persist rolePayload + currentUser to sessionStorage for button gating
+            if (data.rolePayload) {
+                try { sessionStorage.setItem('rolePayload', JSON.stringify(data.rolePayload)); } catch(e) {}
+            }
+            if (data.currentUser) {
+                try { sessionStorage.setItem('currentUser', data.currentUser); } catch(e) {}
+            }
+
+            // Apply role body classes for CSS-based static button gating
+            var rp = data.rolePayload || {};
+            if (rp.isAdmin)     document.body.classList.add('is-admin');
+            if (rp.isHR)        document.body.classList.add('is-hr');
+            if (rp.isIT)        document.body.classList.add('is-it');
+            if (rp.isPayroll)   document.body.classList.add('is-payroll');
+            if (rp.isSpecialist) document.body.classList.add('is-specialist');
+
+            // Resolve per-workflow role context for this request
+            var cu          = data.currentUser || '';
+            var wfRequester = String(data.requesterEmail || '').toLowerCase();
+            var wfManager   = String(data.managerEmail   || '').toLowerCase();
+            var cuLower     = cu.toLowerCase();
+            var isOwner     = cuLower && (cuLower === wfRequester || cuLower === wfManager);
+            var canBumpWf   = rp.canBumpAll   || isOwner;
+            var canCancelWf = rp.canCancelAll || isOwner;
+            var canEditDate = rp.canEditDates;
+            var canViewData = rp.canViewAllStepData || isOwner;
+            // Store on window for use by dynamic checklist rendering
+            window._rdRoleCtx = { canBumpWf, canCancelWf, canEditDate, canViewData };
+
             // Status badge + Edit Start Date button
             var statusEl = document.getElementById('statusBadge');
             if (statusEl) {
                 var sColor = (data.status === 'Completed' || data.status === 'Complete') ? 'var(--success)' : data.status === 'Cancelled' ? '#aaa' : 'var(--warning)';
                 var sBadge = '<span style="background:' + sColor + '; color:#000; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700; display:inline-block;">' + escapeHtml(data.status || '') + '</span>';
-                if (!workflowId.startsWith('TERM_') && !workflowId.startsWith('CHANGE_') && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
+                if (canEditDate && !workflowId.startsWith('TERM_') && !workflowId.startsWith('CHANGE_') && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
                     sBadge += ' <button class="btn" style="margin-left:10px; background:#555; color:white; font-size:12px;" onclick="editStartDate()">Edit Start Date</button>';
                 }
                 statusEl.innerHTML = sBadge;
@@ -701,70 +717,14 @@
                 });
             }
 
-            // Snapshot - adapt fields for EOE / Status Change / Onboarding
-            if (workflowId.startsWith('CHANGE_')) {
-                document.getElementById('employeeName').innerText = r['Employee Name'] || data.id;
-                var _diC = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
-                document.getElementById('snapshotGrid').innerHTML =
-                    _diC('Workflow ID', data.id) +
-                    _diC('Employee', r['Employee Name']) +
-                    _diC('Classification', r['Current Classification']) +
-                    _diC('Current Title', r['Current Title']) +
-                    _diC('Effective Date', r['Effective Date']) +
-                    _diC('Site', r['Site Name']) +
-                    _diC('Changes', r['Change Type']) +
-                    _diC('Department', r['Department']) +
-                    _diC('Current Manager', (r['Current Manager Name'] || '') + (r['Current Manager Email'] ? ' \xb7 ' + r['Current Manager Email'] : '')) +
-                    _diC('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : ''));
-            } else if (workflowId.startsWith('TERM_')) {
-                document.getElementById('employeeName').innerText = r['Employee Name'] || data.id;
-                var termAttach = r['Attachment URL'] || r['Attachment Url'] || '';
-                document.getElementById('snapshotGrid').innerHTML =
-                    '<div class="detail-item"><label>Workflow ID</label><div>' + data.id + '</div></div>' +
-                    '<div class="detail-item"><label>Employee</label><div>' + (r['Employee Name'] || '-') + '</div></div>' +
-                    (r['Employee Type'] ? '<div class="detail-item"><label>Employee Type</label><div>' + escapeHtml(r['Employee Type']) + '</div></div>' : '') +
-                    '<div class="detail-item"><label>Site</label><div>' + (r['Site'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Term Date</label><div>' + (r['Term Date'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Reason</label><div>' + (r['Reason'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Requester</label><div>' + (r['Requester Email'] || '-') + '</div></div>' +
-                    (termAttach ? '<div class="detail-item"><label>Documentation</label><div><a href="' + termAttach + '" target="_blank" style="color:#EB1C2D;">View Attached File</a></div></div>' : '');
-            } else if (workflowId.startsWith('EQUIP_REQ_')) {
-                document.getElementById('employeeName').innerText = ((r['First Name'] || '') + ' ' + (r['Last Name'] || '')).trim() || data.id;
-                var _diEq = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
-                document.getElementById('snapshotGrid').innerHTML =
-                    _diEq('Workflow ID', data.id) +
-                    _diEq('Position', r['Position Title']) +
-                    _diEq('Site', r['Site Name']) +
-                    _diEq('Department', r['Department']) +
-                    _diEq('Equipment', r['Equipment']) +
-                    _diEq('Systems', r['Systems']) +
-                    _diEq('Date Requested', r['Date Requested']) +
-                    _diEq('Manager', (r['Manager Name'] || '') + (r['Manager Email'] ? ' \xb7 ' + r['Manager Email'] : '')) +
-                    _diEq('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : '')) +
-                    _diEq('Comments', r['Comments']);
-            } else {
-                document.getElementById('employeeName').innerText = (r['First Name'] || '') + ' ' + (r['Last Name'] || '');
-                var _di = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
-                document.getElementById('snapshotGrid').innerHTML =
-                    _di('Workflow ID', data.id) +
-                    _di('Employment Type', r['Employment Type']) +
-                    _di('Employee Type', r['Employee Type']) +
-                    _di('Position Title', r['Position Title'] || r['HR Verified Title'] || r['Position/JR Title']) +
-                    _di('Department', r['Department']) +
-                    _di('Site', r['Site/Office Location'] || r['Site Name']) +
-                    _di('Job Site #', r['Job Site #']) +
-                    _di('Start Date', r['Hire Date'] || r['Hire/Start Date']) +
-                    _di('Manager', (r['Manager Name'] || '') + (r['Manager Email'] ? ' · ' + r['Manager Email'] : '')) +
-                    _di('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' · ' + r['Requester Email'] : '')) +
-                    _di('System Access', r['System Access']) +
-                    _di('Date Requested', r['Date Requested']);
-            }
-
-            // Auto-launch specific viewing modal if vd parameter provided via Dashboard
-            if (viewDataTarget) {
-                const capturedVD = viewDataTarget;
-                viewDataTarget = null;
-                setTimeout(() => viewStepData(capturedVD), 600);
+            // Snapshot — shared renderer from SharedComponents.html
+            {
+                var _empName = workflowId.startsWith('CHANGE_') ? (r['Employee Name'] || data.id) :
+                               workflowId.startsWith('TERM_')   ? (r['Employee Name'] || data.id) :
+                               workflowId.startsWith('EQUIP_REQ_') ? (((r['First Name'] || '') + ' ' + (r['Last Name'] || '')).trim() || data.id) :
+                               (r['First Name'] || '') + ' ' + (r['Last Name'] || '');
+                document.getElementById('employeeName').innerText = _empName.trim() || data.id;
+                document.getElementById('snapshotGrid').innerHTML = renderWorkflowFields(r, workflowId);
             }
 
             // Checklist & Flow Update
@@ -806,15 +766,18 @@
                 }
 
                 var isNA = item.status === 'N/A' || item.status === 'Skipped';
+                var ctx  = window._rdRoleCtx || {};
+                var _rdDis = function(ok) { return ok ? '' : ' disabled title="Insufficient permissions" style="opacity:0.45;pointer-events:none;cursor:not-allowed;"'; };
                 var actions = '-';
                 if (!isComplete && !isNA && item.target) {
-                    actions = '<button class="btn" style="background:var(--warning); color:black;" onclick="bump(\'' + item.target + '\')">Remind</button>';
+                    actions = '<button class="btn" style="background:var(--warning); color:black;"' + _rdDis(ctx.canBumpWf) + ' onclick="bump(\'' + item.target + '\')">Remind</button>';
                     if (item.tid) {
                         actions += ' <button class="btn" style="background:var(--brand-red); color:white;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
                     }
                 } else if (isComplete && item.target) {
-                    actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
+                    actions = '<button class="btn view-data-btn"' + _rdDis(ctx.canViewData) + ' onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
                 } else if (isComplete && item.name === 'Initial Request') {
+                    // Initial request data open to all — no role gate
                     var targetData = workflowId.startsWith('TERM_')      ? 'termination_request'
                                    : workflowId.startsWith('CHANGE_')    ? 'change_request'
                                    : workflowId.startsWith('EQUIP_REQ_') ? 'equipment_request'
@@ -862,10 +825,7 @@
                 .getStepResultData(workflowId, stepType);
         }
 
-        function escapeHtml(s) {
-            if (s == null) return '';
-            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-        }
+        // escapeHtml() provided by SharedComponents.html (included at bottom of page)
 
         function renderStepData(data) {
             const tbody = document.getElementById('stepDataBody');

@@ -36,42 +36,48 @@ function doGet(e) {
         return serveRequestDetails(workflowId);
 
       case 'id_setup':
-        // Allow domain users - typically accessed via email link
-        // Access check removed as requested
+        // Domain users only — typically accessed via email link sent to assignee
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return serveIDSetup(workflowId);
-        
+
       case 'hr_verification':
-        // Allow domain users - typically accessed via email link
-        // Access check removed as requested
+        // Domain users only — typically accessed via email link sent to HR group
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return serveHRVerification(workflowId);
-        
+
       case 'it_setup':
-        // Allow domain users - typically accessed via email link
-        // Access check removed as requested
+        // Domain users only — typically accessed via email link sent to IT group
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return serveITSetup(workflowId);
-        
+
       case 'specialist':
-        // Specialist queue
-        // Access check removed as requested
+        // Domain users only — typically accessed via email link sent to specialist group
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         const dept = e.parameter.dept || '';
         return serveSpecialist(workflowId, dept);
-        
+
       case 'termination_request':
         return serveTerminationRequest();
 
       case 'position_site_change':
         return servePositionSiteChange();
-        
+
       case 'termination_approval':
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return serveTerminationApproval(workflowId);
-        
+
       case 'position_change_approval':
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return servePositionChangeApproval(workflowId);
-        
+
       case 'it_confirmation':
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return serveITConfirmation(workflowId);
 
       case 'action_item_view':
+        // canViewForm: assigned person/group + Admin
+        // tid-level auth is enforced inside ActionItemService.serveActionItem
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return ActionItemService.serveActionItem(e.parameter.tid);
 
       // ── Reference guides ──────────────────────────────────────────────────

@@ -1,205 +1,249 @@
 /**
- * AccessControlService.gs
- * 
- * Handles permission checks for accessing Dashboards and Forms.
- * 
- * REQUIRES: 
- * - Admin Directory SDK (for group membership checks)
- * - Session.getActiveUser().getEmail()
+ * AccessControlService.js
+ *
+ * Single source of truth for all role checks.
+ * Reads groups from CONFIG — never hardcoded here.
+ * Uses universal dual-check for every group:
+ *   AdminDirectory.Members.hasMember(groupEmail, userEmail) || userEmail === groupEmail
+ *
+ * ══════════════════════════════════════════════════════════════════════
+ * ROLE TIERS — checked top-down, first match wins
+ * ══════════════════════════════════════════════════════════════════════
+ * TIER 1  ADMIN        CONFIG.ADMIN_EMAILS list
+ *                      editDates:YES  cancelAll:YES  bumpAll:YES
+ *                      viewAllSteps:YES  viewAllForms:YES (any form)
+ *
+ * TIER 2  HR           CONFIG.EMAILS.HR
+ *                      editDates:YES  cancelAll:YES  bumpAll:YES
+ *                      viewAllSteps:YES  viewAssignedForms:YES
+ *
+ * TIER 3  IT           CONFIG.EMAILS.IT
+ *                      editDates:YES  cancelAll:YES  bumpAll:YES
+ *                      viewAllSteps:YES  viewAssignedForms:YES
+ *
+ * TIER 4  PAYROLL      CONFIG.EMAILS.PAYROLL
+ *                      editDates:NO  cancelAll:NO  bumpAll:NO
+ *                      viewAllSteps:YES  viewAssignedForms:YES
+ *
+ * TIER 5  SPECIALIST   member of ANY of:
+ *                        IDSETUP / SAFETY / FLEETIO / CREDIT_CARD /
+ *                        BUSINESS_CARDS / JONAS / REVIEW_306090_JR
+ *                      editDates:NO  cancelOwn:YES  bumpOwn:YES
+ *                      viewAllSteps:YES  viewAssignedForms:YES*
+ *
+ * TIER 6  REQUESTER    workflow.requesterEmail === userEmail
+ *                      editDates:NO  cancelOwn:YES  bumpOwn:YES
+ *                      viewOwnSteps:YES  viewForms:NO
+ *
+ * TIER 7  MANAGER      workflow.managerEmail === userEmail
+ *                      editDates:NO  cancelOwn:YES  bumpOwn:YES
+ *                      viewOwnSteps:YES  viewForms:NO
+ *
+ * TIER 8  DOMAIN USER  authenticated Google user on allowed domain
+ *                      viewDashboard:YES  viewRequestDetails:YES
+ *                      nothing else
+ *
+ * * viewAssignedForms: can open forms where Assigned To matches their
+ *   email or group. Admin can open ANY form regardless of assignment.
+ *
+ * View Data — initial step: open to ALL (Tier 8+)
+ * View Data — other steps:  Tier 1–5 (any named group) + Tier 6–7 (own wf)
+ * ══════════════════════════════════════════════════════════════════════
+ *
+ * GROUPS (sourced from Config.js)
+ *   CONFIG.ADMIN_EMAILS          — hardcoded array (Tier 1)
+ *   CONFIG.EMAILS.HR             — grp.forms.hr@team-group.com
+ *   CONFIG.EMAILS.IT             — grp.forms.it@team-group.com
+ *   CONFIG.EMAILS.PAYROLL        — payroll@team-group.com
+ *   CONFIG.EMAILS.IDSETUP        — grp.forms.idsetup@team-group.com
+ *   CONFIG.EMAILS.SAFETY         — grp.forms.safety@team-group.com
+ *   CONFIG.EMAILS.FLEETIO        — grp.forms.fleetio@team-group.com
+ *   CONFIG.EMAILS.CREDIT_CARD    — grp.forms.creditcard@team-group.com
+ *   CONFIG.EMAILS.BUSINESS_CARDS — davelangohr@team-group.com (personal)
+ *   CONFIG.EMAILS.JONAS          — grp.forms.jonas@team-group.com
+ *   CONFIG.EMAILS.REVIEW_306090_JR — grp.forms.review306090@team-group.com
+ * ══════════════════════════════════════════════════════════════════════
  */
 
 var AccessControlService = (function() {
 
-  // Configuration - TO BE MOVED TO SCRIPT PROPERTIES
-  // Dynamic Configuration via ConfigurationService
-  function getConfig() {
+  // ── Private: universal dual-check ──────────────────────────────────
+  // Covers group addresses, personal emails, and group-self match.
+  function _inGroup(userEmail, configEmail) {
+    if (!userEmail || !configEmail) return false;
+    if (userEmail.toLowerCase() === configEmail.toLowerCase()) return true;
+    try {
+      return AdminDirectory.Members.hasMember(configEmail, userEmail).isMember;
+    } catch (e) {
+      Logger.log('AccessControl: group check skipped for ' + userEmail + ' in ' + configEmail + '. ' + e.message);
+      return false;
+    }
+  }
+
+  // ── Private: specialist group map ──────────────────────────────────
+  function _specialistGroupMap() {
+    var emails = CONFIG.EMAILS;
     return {
-      MASTER_ADMIN_GROUP: ConfigurationService.getSetting('GROUP_MASTER_ADMIN'),
-      ALL_FORMS_GROUP: ConfigurationService.getSetting('GROUP_ALL_FORMS'),
-      HR_GROUP: ConfigurationService.getSetting('GROUP_HR'),
-      IT_GROUP: ConfigurationService.getSetting('GROUP_IT'),
-      PAYROLL_GROUP: ConfigurationService.getSetting('EMAIL_PAYROLL') || 'payroll@team-group.com',
-      ALLOWED_DOMAINS: CONFIG.ALLOWED_DOMAINS
+      IDSETUP:          emails.IDSETUP,
+      SAFETY:           emails.SAFETY,
+      FLEETIO:          emails.FLEETIO,
+      CREDIT_CARD:      emails.CREDIT_CARD,
+      BUSINESS_CARDS:   emails.BUSINESS_CARDS,
+      JONAS:            emails.JONAS,
+      REVIEW_306090_JR: emails.REVIEW_306090_JR
     };
   }
 
-  /**
-   * Checks if the current user is a member of the specified group.
-   * Uses AdminDirectory SDK member.hasMember which is efficient.
-   * @param {string} userEmail 
-   * @param {string} groupEmail 
-   * @returns {boolean}
-   */
-  function isGroupMember(userEmail, groupEmail) {
-    if (!userEmail || !groupEmail) return false;
-    
-    // Support for individual specialist emails (non-groups)
-    if (userEmail.toLowerCase() === groupEmail.toLowerCase()) return true;
-    
-    try {
-      var hasMember = AdminDirectory.Members.hasMember(groupEmail, userEmail);
-      return hasMember.isMember;
-    } catch (e) {
-      // Graceful degradation: if group doesn't exist or API fails, just log and return false
-      // This allows domain-based access to work even without configured groups
-      Logger.log("AccessControl: Group check skipped for " + userEmail + " in " + groupEmail + ". Reason: " + e.message);
-      return false;
-    }
-  }
-
-  /**
-   * Determines if the user can view the Unified Dashboard.
-   * Any authenticated user is allowed in — data is filtered by canAccessWorkflow.
-   * Group checks grant full unfiltered access; all others see only their own workflows.
-   * @param {string} userEmail
-   * @returns {boolean}
-   */
-  function canAccessDashboard(userEmail) {
-    if (!userEmail) return false;
-    var conf = getConfig();
-
-    // Admins and broad-access groups
-    if (isAdmin(userEmail)) return true;
-    if (isGroupMember(userEmail, conf.MASTER_ADMIN_GROUP)) return true;
-    if (isGroupMember(userEmail, conf.ALL_FORMS_GROUP)) return true;
-
-    // Department groups — full visibility, filtered by canAccessWorkflow
-    if (isGroupMember(userEmail, conf.HR_GROUP)) return true;
-    if (isGroupMember(userEmail, conf.IT_GROUP)) return true;
-    if (isGroupMember(userEmail, conf.PAYROLL_GROUP)) return true;
-
-    // Specialist groups
-    if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_IDSETUP'))) return true;
-    if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_SAFETY'))) return true;
-    if (isGroupMember(userEmail, CONFIG.EMAILS.FLEETIO)) return true;
-    if (isGroupMember(userEmail, CONFIG.EMAILS.CREDIT_CARD)) return true;
-    if (isGroupMember(userEmail, CONFIG.EMAILS.BUSINESS_CARDS)) return true;
-    if (isGroupMember(userEmail, CONFIG.EMAILS.REVIEW_306090_JR)) return true;
-    if (isGroupMember(userEmail, CONFIG.EMAILS.JONAS)) return true;
-
-    // Any authenticated user may enter — canAccessWorkflow filters their data.
-    // Managers and requestors from any domain will see only their own requests.
-    return true;
-  }
-
-  /**
-   * Determines if user can access a specific form type.
-   * @param {string} userEmail 
-   * @param {string} formType ('HR', 'IT', 'SPECIALIST')
-   * @returns {boolean}
-   */
-  function canAccessForm(userEmail, formType) { 
-    var conf = getConfig();
-    // Always allow Master Admin or All Forms Group
-    if (isGroupMember(userEmail, conf.MASTER_ADMIN_GROUP)) return true;
-    if (isGroupMember(userEmail, conf.ALL_FORMS_GROUP)) return true;
-
-    switch (formType) {
-      case 'HR':
-        return isGroupMember(userEmail, conf.HR_GROUP) || isGroupMember(userEmail, conf.PAYROLL_GROUP);
-      case 'IT':
-        return isGroupMember(userEmail, conf.IT_GROUP) || isGroupMember(userEmail, conf.PAYROLL_GROUP);
-      case 'SPECIALIST':
-        // Logic: Check if user was the recipient of the email?
-        // This is harder to validate purely by group. 
-        // Strategy: We might pass a secure token in the URL for one-time access,
-        // or check if they are in ANY specialist group.
-        return conf.ALLOWED_DOMAINS.some(domain => userEmail.endsWith('@' + domain));
-      default:
-        return true; // Public forms interact differently
-    }
-  }
-
-  /**
-   * Specific check for Workflow Detail Access (The "My Request" View)
-   */
-  function canAccessWorkflow(userEmail, workflow) {
-      if (!workflow) return false;
-      var conf = getConfig();
-      
-      // Admin Exception - can see all workflows
-      if (isAdmin(userEmail)) return true;
-      
-      // Admins & Super Users
-      if (isGroupMember(userEmail, conf.MASTER_ADMIN_GROUP)) return true;
-      if (isGroupMember(userEmail, conf.ALL_FORMS_GROUP)) return true;
-
-      // The Requester themselves
-      if (workflow.requesterEmail && workflow.requesterEmail.toLowerCase() === userEmail.toLowerCase()) return true;
-
-      // The Manager defined in the workflow
-      if (workflow.managerEmail && workflow.managerEmail.toLowerCase() === userEmail.toLowerCase()) return true;
-
-      // HR/IT/Payroll have full workflow visibility
-      if (isGroupMember(userEmail, conf.HR_GROUP)) return true;
-      if (isGroupMember(userEmail, conf.IT_GROUP)) return true;
-      if (isGroupMember(userEmail, conf.PAYROLL_GROUP)) return true;
-
-      // Make sure anyone in a group that receives forms can see the whole board
-      if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_IDSETUP'))) return true;
-      if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_SAFETY'))) return true;
-      
-      // Since some emails are just strings in Config.gs and not settings, we check those too
-      if (isGroupMember(userEmail, CONFIG.EMAILS.FLEETIO)) return true;
-      if (isGroupMember(userEmail, CONFIG.EMAILS.CREDIT_CARD)) return true;
-      if (isGroupMember(userEmail, CONFIG.EMAILS.BUSINESS_CARDS)) return true;
-      if (isGroupMember(userEmail, CONFIG.EMAILS.REVIEW_306090_JR)) return true;
-      if (isGroupMember(userEmail, CONFIG.EMAILS.JONAS)) return true;
-
-      return false;
-  }
-
-  /**
-   * General Admin check
-   */
+  // ───────────────────────────────────────────────────────────────────
+  // PUBLIC: isAdmin
+  // ───────────────────────────────────────────────────────────────────
   function isAdmin(userEmail) {
     if (!userEmail) return false;
-    var conf = getConfig();
-    if (CONFIG.ADMIN_EMAILS.indexOf(userEmail) !== -1) return true;
-    if (isGroupMember(userEmail, conf.MASTER_ADMIN_GROUP)) return true;
-    return false;
+    return CONFIG.ADMIN_EMAILS.some(function(e) { return e.toLowerCase() === userEmail.toLowerCase(); });
   }
 
-  /**
-   * Resolves all access flags for a user in a single pass.
-   * Call this ONCE per request instead of canAccessWorkflow per row.
-   * Returns { isFullAccess, canEditDates }
-   * @param {string} userEmail
-   * @returns {{isFullAccess: boolean, canEditDates: boolean}}
-   */
+  // ───────────────────────────────────────────────────────────────────
+  // PUBLIC: getUserRolePayload
+  // Returns a flat role object for embedding in server responses.
+  // Call ONCE per request — client stores in sessionStorage.
+  // ───────────────────────────────────────────────────────────────────
+  function getUserRolePayload(userEmail) {
+    if (!userEmail) return _emptyPayload();
+    var email  = userEmail.toLowerCase();
+    var emails = CONFIG.EMAILS;
+
+    var _isAdmin   = isAdmin(email);
+    var _isHR      = _inGroup(email, emails.HR);
+    var _isIT      = _inGroup(email, emails.IT);
+    var _isPayroll = _inGroup(email, emails.PAYROLL);
+
+    var sgMap = _specialistGroupMap();
+    var specialistGroups = Object.keys(sgMap).filter(function(k) { return _inGroup(email, sgMap[k]); });
+    var _isSpecialist = specialistGroups.length > 0;
+
+    return {
+      isAdmin:            _isAdmin,
+      isHR:               _isHR,
+      isIT:               _isIT,
+      isPayroll:          _isPayroll,
+      isSpecialist:       _isSpecialist,
+      specialistGroups:   specialistGroups,
+      canEditDates:       _isAdmin || _isHR || _isIT,
+      canCancelAll:       _isAdmin || _isHR || _isIT,
+      canBumpAll:         _isAdmin || _isHR || _isIT,
+      canViewAllStepData: _isAdmin || _isHR || _isIT || _isPayroll || _isSpecialist
+    };
+  }
+
+  function _emptyPayload() {
+    return {
+      isAdmin: false, isHR: false, isIT: false, isPayroll: false,
+      isSpecialist: false, specialistGroups: [],
+      canEditDates: false, canCancelAll: false, canBumpAll: false, canViewAllStepData: false
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────────
+  // PUBLIC: getUserAccessFlags  (legacy — used by DashboardDataHandler)
+  // Thin wrapper around getUserRolePayload for backward compatibility.
+  // ───────────────────────────────────────────────────────────────────
   function getUserAccessFlags(userEmail) {
-    if (!userEmail) return { isFullAccess: false, canEditDates: false };
-    var conf = getConfig();
-
-    // ADMIN_EMAILS check is pure JS — no API call
-    if (CONFIG.ADMIN_EMAILS.indexOf(userEmail) !== -1) return { isFullAccess: true, canEditDates: true };
-
-    // Group checks — short-circuit as early as possible
-    if (isGroupMember(userEmail, conf.MASTER_ADMIN_GROUP)) return { isFullAccess: true, canEditDates: true };
-    if (isGroupMember(userEmail, conf.ALL_FORMS_GROUP))    return { isFullAccess: true, canEditDates: true };
-    if (isGroupMember(userEmail, conf.HR_GROUP))           return { isFullAccess: true, canEditDates: true };
-    if (isGroupMember(userEmail, conf.IT_GROUP))           return { isFullAccess: true, canEditDates: true };
-    if (isGroupMember(userEmail, conf.PAYROLL_GROUP))      return { isFullAccess: true, canEditDates: false };
-
-    // Specialist groups — full visibility, no date editing
-    if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_IDSETUP')))  return { isFullAccess: true, canEditDates: false };
-    if (isGroupMember(userEmail, ConfigurationService.getSetting('EMAIL_SAFETY')))   return { isFullAccess: true, canEditDates: false };
-    if (isGroupMember(userEmail, CONFIG.EMAILS.FLEETIO))          return { isFullAccess: true, canEditDates: false };
-    if (isGroupMember(userEmail, CONFIG.EMAILS.CREDIT_CARD))      return { isFullAccess: true, canEditDates: false };
-    if (isGroupMember(userEmail, CONFIG.EMAILS.BUSINESS_CARDS))   return { isFullAccess: true, canEditDates: false };
-    if (isGroupMember(userEmail, CONFIG.EMAILS.REVIEW_306090_JR)) return { isFullAccess: true, canEditDates: false };
-    if (isGroupMember(userEmail, CONFIG.EMAILS.JONAS))            return { isFullAccess: true, canEditDates: false };
-
-    // Manager/requester — sees only their own workflows, no date editing
-    return { isFullAccess: false, canEditDates: false };
+    var p = getUserRolePayload(userEmail);
+    return {
+      isFullAccess: p.isAdmin || p.isHR || p.isIT || p.isPayroll || p.isSpecialist,
+      canEditDates: p.canEditDates
+    };
   }
 
+  // ───────────────────────────────────────────────────────────────────
+  // PUBLIC: canCancel
+  // HR / IT / Admin — any workflow.  Requester / Manager — own only.
+  // Specialist — own only (treat same as requester/manager for cancel).
+  // ───────────────────────────────────────────────────────────────────
+  function canCancel(userEmail, workflow) {
+    if (!userEmail) return false;
+    var p = getUserRolePayload(userEmail);
+    if (p.canCancelAll) return true;
+    if (!workflow) return false;
+    var e = userEmail.toLowerCase();
+    return e === (workflow.requesterEmail || '').toLowerCase() ||
+           e === (workflow.managerEmail   || '').toLowerCase();
+  }
+
+  // ───────────────────────────────────────────────────────────────────
+  // PUBLIC: canBump
+  // Same tier rules as cancel.
+  // ───────────────────────────────────────────────────────────────────
+  function canBump(userEmail, workflow) {
+    if (!userEmail) return false;
+    var p = getUserRolePayload(userEmail);
+    if (p.canBumpAll) return true;
+    if (!workflow) return false;
+    var e = userEmail.toLowerCase();
+    return e === (workflow.requesterEmail || '').toLowerCase() ||
+           e === (workflow.managerEmail   || '').toLowerCase();
+  }
+
+  // ───────────────────────────────────────────────────────────────────
+  // PUBLIC: canViewStepData
+  // stepIndex === 0 (initial_request) → open to all authenticated users.
+  // All other steps → Tier 1–5 (any named group) + Tier 6–7 (own wf).
+  // ───────────────────────────────────────────────────────────────────
+  function canViewStepData(userEmail, workflow, stepIndex) {
+    if (stepIndex === 0) return true;
+    if (!userEmail) return false;
+    var p = getUserRolePayload(userEmail);
+    if (p.canViewAllStepData) return true;
+    if (!workflow) return false;
+    var e = userEmail.toLowerCase();
+    return e === (workflow.requesterEmail || '').toLowerCase() ||
+           e === (workflow.managerEmail   || '').toLowerCase();
+  }
+
+  // ───────────────────────────────────────────────────────────────────
+  // PUBLIC: canViewForm
+  // Admin can open ANY form. Others: assignedTo email/group match only.
+  // ───────────────────────────────────────────────────────────────────
+  function canViewForm(userEmail, assignedTo) {
+    if (!userEmail) return false;
+    if (isAdmin(userEmail)) return true;
+    if (!assignedTo) return false;
+    var e = userEmail.toLowerCase();
+    return e === assignedTo.toLowerCase() || _inGroup(e, assignedTo);
+  }
+
+  // ───────────────────────────────────────────────────────────────────
+  // PUBLIC: canHide  (admin-only bulk action)
+  // ───────────────────────────────────────────────────────────────────
+  function canHide(userEmail) {
+    return isAdmin(userEmail);
+  }
+
+  // ───────────────────────────────────────────────────────────────────
+  // PUBLIC: canAccessDashboard  (kept for Router.js compatibility)
+  // Everyone on an allowed domain can access. Returns true for any
+  // authenticated user — data is unfiltered by design.
+  // ───────────────────────────────────────────────────────────────────
+  function canAccessDashboard(userEmail) {
+    if (!userEmail) return false;
+    return CONFIG.ALLOWED_DOMAINS.some(function(d) {
+      return userEmail.toLowerCase().endsWith('@' + d);
+    }) || isAdmin(userEmail);
+  }
+
+  // ───────────────────────────────────────────────────────────────────
+  // RETURN public API
+  // ───────────────────────────────────────────────────────────────────
   return {
-    canAccessDashboard: canAccessDashboard,
-    canAccessForm: canAccessForm,
-    canAccessWorkflow: canAccessWorkflow,
-    isAdmin: isAdmin,
-    getUserAccessFlags: getUserAccessFlags
+    isAdmin:            isAdmin,
+    getUserRolePayload: getUserRolePayload,
+    getUserAccessFlags: getUserAccessFlags,
+    canCancel:          canCancel,
+    canBump:            canBump,
+    canViewStepData:    canViewStepData,
+    canViewForm:        canViewForm,
+    canHide:            canHide,
+    canAccessDashboard: canAccessDashboard
   };
 
 })();

@@ -45,7 +45,8 @@ const CONFIG = {
     REFERENCE_JOBS_JONAS: 'Reference_JobsJonas',
     ACTION_ITEMS: 'Action Items',
     // Safety Onboarding and Safety Termination removed — now Action Items with formType.
-    FORM_EDIT_LOG: 'Form Edit Log'
+    FORM_EDIT_LOG: 'Form Edit Log',
+    AUDIT_LOG: 'Audit Log'
   },
   
   // ==========================================================================
@@ -70,8 +71,7 @@ const CONFIG = {
       REVIEW_306090_JR: ConfigurationService.getSetting('EMAIL_REVIEW306090') || 'grp.forms.review306090@team-group.com',
       JONAS: ConfigurationService.getSetting('EMAIL_JONAS') || 'grp.forms.jonas@team-group.com',
       SAFETY: ConfigurationService.getSetting('EMAIL_SAFETY') || 'grp.forms.safety@team-group.com',
-      PAYROLL: ConfigurationService.getSetting('EMAIL_PAYROLL') || 'payroll@team-group.com',
-      PURCHASING: ConfigurationService.getSetting('EMAIL_PURCHASING') || 'purchasing@team-group.com'
+      PAYROLL: ConfigurationService.getSetting('EMAIL_PAYROLL') || 'payroll@team-group.com'
     };
   }
   

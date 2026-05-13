@@ -1,34 +1,26 @@
 /**
- * Dashboard Handler for V2
- * Visualizes the Workflows master sheet with smart status tracking
+ * DashboardDataHandler.js
+ *
+ * Read-only data functions for the Dashboard.
+ * No auth gating — all authenticated domain users get unfiltered workflow data
+ * (speed > per-row security per design decision).
+ *
+ * Functions:
+ *   getDashboardData()       — flat workflow list + rolePayload for the caller
+ *   getMyTaskCounts()        — open task counts per category (dual-source)
+ *   getWorkflowMapStats()    — active workflow counts per step for WorkflowMap
+ *
+ * Depends on (global GAS scope):
+ *   CONFIG, SCHEMA                       — SchemaConstants.js / Config.js
+ *   AccessControlService                 — Services/AccessControlService.js
  */
 
-function serveDashboard() {
-  const template = HtmlService.createTemplateFromFile('Dashboard');
-  template.baseUrl = getBaseUrl(); // Pass server-side URL to client
-  template.spreadsheetId = CONFIG.SPREADSHEET_ID; // Pass active Sheet ID
-  template.environment = typeof ENVIRONMENT !== 'undefined' ? ENVIRONMENT : 'PROD';
+// ─────────────────────────────────────────────────────────────────────────────
+// getDashboardData
+// Returns ALL non-Cancelled/Inactive workflows + caller's rolePayload.
+// Single bulk read from Dashboard_View (materialized cache).
+// ─────────────────────────────────────────────────────────────────────────────
 
-  return template.evaluate()
-    .setTitle('Employee Onboarding Dashboard')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-}
-
-function serveWorkflowMap() {
-  const template = HtmlService.createTemplateFromFile('WorkflowMap');
-  template.baseUrl = getBaseUrl();
-  return template.evaluate()
-    .setTitle('Process Map')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-}
-
-
-/**
- * Get all workflows exactly as pre-calculated in the Dashboard_View sheet
- * Time to Interactive: < 0.2s
- */
 function getDashboardData() {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -40,11 +32,9 @@ function getDashboardData() {
 
     const userEmail = Session.getActiveUser().getEmail();
 
-    // Resolve role ONCE — replaces per-row AdminDirectory + PropertiesService API calls
-    const accessFlags = AccessControlService.getUserAccessFlags(userEmail);
-    const isFullAccess = accessFlags.isFullAccess;
-    const canEditDates = accessFlags.canEditDates;
-    const userEmailLower = userEmail.toLowerCase();
+    // Resolve role ONCE — client caches in sessionStorage
+    const rolePayload = AccessControlService.getUserRolePayload(userEmail);
+    const canEditDates = rolePayload.canEditDates;
 
     // Pre-load empType from Terminations sheet so existing TERM_ rows in Dashboard_View
     // (synced before the empType fix) can be supplemented without a full re-sync.
@@ -62,7 +52,7 @@ function getDashboardData() {
     // Read the flat materialized view — single bulk read
     const data = viewSheet.getDataRange().getValues();
     if (data.length <= 1) {
-      return JSON.stringify({ success: true, workflows: [], currentUser: userEmail, canEditDates: canEditDates });
+      return JSON.stringify({ success: true, workflows: [], currentUser: userEmail, canEditDates: canEditDates, rolePayload: rolePayload });
     }
 
     const tz = Session.getScriptTimeZone();
@@ -146,7 +136,7 @@ function getDashboardData() {
             if      (wfMap[wfId].status === 'Complete')   { statusStr = 'Complete';   stepStr = wfMap[wfId].step || 'All Actions Completed'; }
             else if (wfMap[wfId].status === 'Rejected')   { statusStr = 'Rejected';   stepStr = wfMap[wfId].step || 'Rejected'; }
             else if (wfMap[wfId].status === 'Cancelled' || wfMap[wfId].status === 'Inactive') { return; }
-            else if (wfMap[wfId].status === 'In Progress') { stepStr  = wfMap[wfId].step || stepStr; } // B3 fix
+            else if (wfMap[wfId].status === 'In Progress') { stepStr  = wfMap[wfId].step || stepStr; }
           }
 
           flows.push({
@@ -173,74 +163,101 @@ function getDashboardData() {
 
     flows.reverse();
 
-    const isAdmin = AccessControlService.isAdmin(userEmail);
-    return JSON.stringify({ success: true, workflows: flows, currentUser: userEmail, canEditDates: canEditDates, isAdmin: isAdmin });
+    return JSON.stringify({
+      success:     true,
+      workflows:   flows,
+      currentUser: userEmail,
+      canEditDates: canEditDates,
+      isAdmin:     rolePayload.isAdmin,
+      rolePayload: rolePayload
+    });
 
   } catch (error) {
-    Logger.log('Dashboard Error: ' + error.toString());
+    Logger.log('getDashboardData Error: ' + error.toString());
     return JSON.stringify({ success: false, message: error.message });
   }
 }
 
-/**
- * Returns pending action items assigned to the current user.
- * Used by the Dashboard "My Tasks" panel so assignees can find their
- * open tasks without searching old email.
- */
-function getMyPendingTasks() {
+// ─────────────────────────────────────────────────────────────────────────────
+// getMyTaskCounts
+// Replaces getMyPendingTasks(). Dual-source:
+//   • Action Items sheet   → specialist / EOE / change action item categories
+//   • Workflows sheet      → IT Setup / HR Verification / ID Setup (step-based)
+//
+// Returns counts for ALL categories regardless of caller's role.
+// Role gating is client-side only (rolePayload in sessionStorage).
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getMyTaskCounts() {
   try {
-    const userEmail = Session.getActiveUser().getEmail().toLowerCase();
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+
+    // ── Source 1: Action Items sheet ──────────────────────────────────────────
+    const aiCounts = {
+      'Safety':             0,
+      'Fleetio':            0,
+      'Business Cards':     0,
+      'Jonas':              0,
+      'Credit Card':        0,
+      '30/60/90 Review':    0,
+      'Central Purchasing': 0,
+      'SiteDocs':           0,
+      'Assets':             0,
+      'IT':                 0,
+      'HR':                 0,
+      'Fleet':              0,
+      'Finance':            0,
+      'Deactivation':       0
+    };
+
     const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
-    if (!aiSheet) return { tasks: [] };
-
-    const data = aiSheet.getDataRange().getValues();
-    const headers = data[0];
-    const wfIdx     = headers.indexOf('Workflow ID');
-    const taskIdIdx = headers.indexOf('Task ID');
-    const catIdx    = headers.indexOf('Category');
-    const nameIdx   = headers.indexOf('Task Name');
-    const assignIdx = headers.indexOf('Assigned To');
-    const statusIdx = headers.indexOf('Status');
-    const createdIdx= headers.indexOf('Created Date');
-    const tz = Session.getScriptTimeZone();
-
-    const tasks = [];
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      if (String(row[statusIdx] || '') === 'Closed') continue;
-      const assignedTo = String(row[assignIdx] || '').toLowerCase();
-      // Assigned To may be comma-separated (e.g. HR + Payroll)
-      const isAssigned = assignedTo.split(',').map(e => e.trim()).includes(userEmail);
-      if (!isAssigned) continue;
-
-      const wfId = String(row[wfIdx] || '');
-      const wf   = getWorkflow(wfId);
-      const createdVal = row[createdIdx];
-      const createdStr = createdVal instanceof Date
-        ? Utilities.formatDate(createdVal, tz, 'M/d/yyyy')
-        : String(createdVal || '');
-
-      tasks.push({
-        tid:          String(row[taskIdIdx] || ''),
-        workflowId:   wfId,
-        category:     String(row[catIdx]  || ''),
-        taskName:     String(row[nameIdx] || ''),
-        employeeName: wf ? (wf['Employee Name'] || '') : '',
-        status:       String(row[statusIdx] || ''),
-        created:      createdStr
-      });
+    if (aiSheet && aiSheet.getLastRow() > 1) {
+      const aiData    = aiSheet.getDataRange().getValues();
+      const aiHeaders = aiData[0];
+      const catIdx    = aiHeaders.indexOf('Category');
+      const statusIdx = aiHeaders.indexOf('Status');
+      for (let i = 1; i < aiData.length; i++) {
+        const status = String(aiData[i][statusIdx] || '');
+        if (status === 'Closed') continue;
+        const cat = String(aiData[i][catIdx] || '');
+        if (aiCounts.hasOwnProperty(cat)) {
+          aiCounts[cat]++;
+        }
+      }
     }
-    return { tasks: tasks };
-  } catch(e) {
-    Logger.log('[getMyPendingTasks] Error: ' + e.message);
-    return { tasks: [] };
+
+    // ── Source 2: Workflows sheet — step-based counts ─────────────────────────
+    const stepCounts = { 'IT Setup': 0, 'HR Verification': 0, 'ID Setup': 0 };
+
+    const wfSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+    if (wfSheet && wfSheet.getLastRow() > 1) {
+      const wfData    = wfSheet.getDataRange().getValues();
+      const wfHeaders = wfData[0];
+      const statusIdx = wfHeaders.indexOf('Status');
+      const stepIdx   = wfHeaders.indexOf('Current Step');
+      for (let i = 1; i < wfData.length; i++) {
+        const status = String(wfData[i][statusIdx] || '');
+        if (status === 'Cancelled' || status === 'Complete' || status === 'Completed' || status === 'Inactive') continue;
+        const step = String(wfData[i][stepIdx] || '').toLowerCase();
+        if (step === 'it_setup'        || step.includes('it setup'))          stepCounts['IT Setup']++;
+        else if (step === 'hr_verification' || step.includes('hr verification')) stepCounts['HR Verification']++;
+        else if (step === 'id_setup'        || step.includes('id setup'))          stepCounts['ID Setup']++;
+      }
+    }
+
+    return { success: true, counts: Object.assign({}, aiCounts, stepCounts) };
+
+  } catch (e) {
+    Logger.log('[getMyTaskCounts] Error: ' + e.message);
+    return { success: false, counts: {} };
   }
 }
 
-/**
- * Returns active workflow counts per step for the process map live-status badges.
- */
+// ─────────────────────────────────────────────────────────────────────────────
+// getWorkflowMapStats
+// Returns active workflow counts per step for the process map live-status badges.
+// ─────────────────────────────────────────────────────────────────────────────
+
 function getWorkflowMapStats() {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);

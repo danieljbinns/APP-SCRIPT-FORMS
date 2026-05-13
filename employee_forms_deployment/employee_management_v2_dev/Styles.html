@@ -871,4 +871,76 @@ body.aoda-mode .aoda-toggle-btn {
   .card, .card-form { padding: 20px; }
   .info-grid { flex-direction: column; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Role-gated action button styles
+   All action buttons (Cancel, Bump/Remind, View Data, View Form,
+   Edit Start Date) are VISIBLE but DISABLED when the user's role
+   doesn't permit the action.  Enabled via body role classes.
+
+   Default: all gated buttons appear disabled.
+   Body role classes (.is-admin, .is-hr, .is-it, .is-payroll,
+   .is-specialist) re-enable the appropriate buttons.
+   Owners (requester/manager of a specific workflow) are gated
+   dynamically via JS inline disabled attribute.
+══════════════════════════════════════════════════════════════ */
+
+/* Base disabled state — all role-gated buttons start here */
+.btn-role-gated,
+button[data-role-gate] {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Admin always gets everything */
+body.is-admin .btn-role-gated,
+body.is-admin button[data-role-gate] {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* HR unlocks HR-permitted actions */
+body.is-hr .btn-role-gate-hr,
+body.is-hr .btn-role-gate-edit-dates,
+body.is-hr .btn-role-gate-cancel-all,
+body.is-hr .btn-role-gate-bump-all,
+body.is-hr .btn-role-gate-view-data {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* IT unlocks IT-permitted actions */
+body.is-it .btn-role-gate-it,
+body.is-it .btn-role-gate-edit-dates,
+body.is-it .btn-role-gate-cancel-all,
+body.is-it .btn-role-gate-bump-all,
+body.is-it .btn-role-gate-view-data {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Payroll: view data only */
+body.is-payroll .btn-role-gate-view-data {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Specialist: view data + own workflow actions */
+body.is-specialist .btn-role-gate-view-data {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Inline disabled (JS-applied) always wins — do not override */
+button[disabled] {
+  opacity: 0.45 !important;
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+}
 </style>
