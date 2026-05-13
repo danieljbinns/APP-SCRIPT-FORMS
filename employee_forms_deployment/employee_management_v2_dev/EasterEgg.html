@@ -1,8 +1,9 @@
-<!-- EasterEgg.html — DEV ONLY — Unified Easter Egg Include
+﻿<!-- EasterEgg.html — DEV ONLY — Unified Easter Egg Include
      ADMIN:        Konami (↑↑↓↓←→←→BA) or Logo ×5 → admin panel (all themes)
-     Direct codes: GEOCITIES → GeoCities  |  BEAM → TOS  |  ENGAGE → TNG
-                   FRACK → BSG  |  REDPILL → Matrix  |  TARDIS → Doctor Who
-                   TWSS → The Office
+     Direct codes: ASIF → 90s Web  |  BEAM → TOS  |  ENGAGE → TNG
+                   PROPHETS → DS9  |  COFFEE → VOY  |  FRACK → BSG
+                   REDPILL → Matrix  |  TARDIS → Doctor Who
+                   TWSS → The Office  |  RIZZ → Gen Alpha
      localStorage: tg_eg_v1
      Stats fn:     google.script.run.getStarTrekStats()
      DEV ONLY — do not migrate to staging or prod -->
@@ -22,6 +23,7 @@ body.eg.t-bsg   {--st-bg:#0C0C08;--st-panel:#141410;--st-panel2:#1C1C16;--st-hi:
 body.eg.t-matrix{--st-bg:#000;--st-panel:#030903;--st-panel2:#061206;--st-hi:#AAFFAA;--st-mid:#00FF41;--st-lo:#00CC33;--st-dim:#007722;--st-faint:#002A11;--st-red:#FF3300;--st-green:#00FF41;--st-blue:#33AAFF;--st-cyan:#00FFEE;--st-fd:'Share Tech Mono','Courier New',monospace;--st-fb:'Share Tech Mono','Courier New',monospace;--st-btn-r:0px}
 body.eg.t-who   {--st-bg:#000D1A;--st-panel:#001533;--st-panel2:#001F44;--st-hi:#D6EFFF;--st-mid:#0076D6;--st-lo:#0057B3;--st-dim:#003366;--st-faint:#001433;--st-red:#CC2200;--st-green:#00BB77;--st-blue:#003B8E;--st-cyan:#87CEEB;--st-fd:'Segoe UI','Arial',sans-serif;--st-fb:'Segoe UI','Arial',sans-serif;--st-btn-r:4px}
 body.eg.t-office{--st-bg:#F5F0E6;--st-panel:#FFF;--st-panel2:#F0E8D5;--st-hi:#1A1A1A;--st-mid:#1C4E8A;--st-lo:#2460A7;--st-dim:#6B6B6B;--st-faint:#D0C8B8;--st-red:#C0392B;--st-green:#27AE60;--st-blue:#1C4E8A;--st-cyan:#2980B9;--st-fd:Arial,Helvetica,sans-serif;--st-fb:Arial,Helvetica,sans-serif;--st-btn-r:3px}
+body.eg.t-galpha{--st-bg:#0a0015;--st-panel:#130024;--st-panel2:#1e0038;--st-hi:#ffffff;--st-mid:#ff2d9e;--st-lo:#cc1a7a;--st-dim:#882299;--st-faint:#3d0066;--st-red:#ff4444;--st-green:#39ff14;--st-blue:#00d4ff;--st-cyan:#c8ff00;--st-fd:'Nunito','Segoe UI',Helvetica,sans-serif;--st-fb:'Nunito','Segoe UI',Helvetica,sans-serif;--st-btn-r:22px}
 
 /* ── ANIMATIONS ──────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
@@ -47,6 +49,9 @@ body.eg.t-office{--st-bg:#F5F0E6;--st-panel:#FFF;--st-panel2:#F0E8D5;--st-hi:#1A
 @keyframes st-data-in  {from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes st-flicker  {0%,91%,93%,96%,100%{opacity:1}92%{opacity:.93}94%,97%{opacity:.96}}
 @keyframes st-mtxglitch{0%,95%,100%{transform:none;filter:none}96%{transform:translateX(4px);filter:hue-rotate(90deg)}97%{transform:translateX(-3px)}98%{transform:translateX(2px);filter:hue-rotate(-90deg)}}
+@keyframes ga-shift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes ga-pulse{0%,100%{box-shadow:0 0 8px #ff2d9e,0 0 20px rgba(255,45,158,.3)}50%{box-shadow:0 0 16px #00d4ff,0 0 40px rgba(0,212,255,.3)}}
+@keyframes ga-glow{0%,100%{text-shadow:0 0 10px #ff2d9e,0 0 30px rgba(255,45,158,.5)}50%{text-shadow:0 0 10px #00d4ff,0 0 30px rgba(0,212,255,.5)}}
 @keyframes who-vortex  {from{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.02)}to{transform:rotate(360deg) scale(1)}}
 @keyframes office-blink{0%,49%{opacity:1}50%,100%{opacity:.3}}
 
@@ -125,10 +130,12 @@ body.eg:not(.t-geo){
 }
 body.eg.t-tos{animation:st-flicker 9s infinite!important}
 body.eg.t-matrix{animation:st-mtxglitch 8s infinite!important}
+body.eg.t-galpha{animation:ga-shift 10s ease infinite!important;background-size:300% 300%!important}
 body.eg.t-tos,body.eg.t-tng,body.eg.t-ds9,body.eg.t-voy{background-image:radial-gradient(1px 1px at 8% 15%,rgba(255,230,150,.7) 0%,transparent 100%),radial-gradient(1px 1px at 25% 70%,rgba(200,220,255,.8) 0%,transparent 100%),radial-gradient(1px 1px at 42% 35%,rgba(255,255,255,.9) 0%,transparent 100%),radial-gradient(2px 2px at 60% 85%,rgba(255,255,255,.8) 0%,transparent 100%),radial-gradient(1px 1px at 78% 55%,rgba(200,220,255,.7) 0%,transparent 100%),radial-gradient(1px 1px at 88% 20%,rgba(255,255,255,.9) 0%,transparent 100%) !important;background-size:280px 280px!important}
 body.eg.t-bsg{background-image:linear-gradient(rgba(130,160,40,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(130,160,40,.07) 1px,transparent 1px)!important;background-size:48px 48px!important}
 body.eg.t-who{background-image:radial-gradient(ellipse at 50% 50%,rgba(0,100,200,.12) 0%,transparent 70%)!important}
 body.eg.t-office{background-image:none!important}
+body.eg.t-galpha{background-image:radial-gradient(circle at 20% 50%,rgba(255,45,158,.2) 0%,transparent 40%),radial-gradient(circle at 80% 20%,rgba(0,212,255,.15) 0%,transparent 40%),radial-gradient(circle at 50% 90%,rgba(200,0,255,.15) 0%,transparent 40%)!important}
 body.eg.t-tos::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:9980}
 
 /* ── SCIFI COMPONENT OVERRIDES ───────────────────────────────── */
@@ -250,12 +257,40 @@ body.eg.t-who #st-alert{border-color:var(--st-cyan);color:var(--st-cyan)}
 body.eg.t-office #st-ctrl{background:#fff;border-bottom:2px solid var(--st-faint)}
 .st-cg{display:flex;align-items:center;gap:5px}
 .st-cl{font-size:var(--fs-2xs,10px);color:var(--st-dim,#886600);letter-spacing:3px;text-transform:uppercase;font-family:var(--st-fb,'Courier New',monospace);white-space:nowrap;margin-right:3px}
-.st-sb,.st-kb{background:var(--st-panel,#090500);border:1px solid var(--st-dim,#886600);color:var(--st-lo,#CC8800);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;text-transform:uppercase;padding:3px 9px;cursor:pointer;border-radius:var(--st-btn-r,0px);transition:background .12s,color .12s;font-weight:600}
-.st-sb:hover,.st-kb:hover{background:var(--st-lo);color:#000;border-color:var(--st-lo)}
-.st-sb.on,.st-kb.on{background:var(--st-mid);color:#000;border-color:var(--st-mid)}
-body.eg.t-office .st-sb,body.eg.t-office .st-kb{background:#f5f5f5;border-color:var(--st-faint);color:var(--st-hi)}
-body.eg.t-office .st-sb.on,body.eg.t-office .st-kb.on{background:var(--st-mid);color:#fff;border-color:var(--st-mid)}
-body.eg.is-lcars .st-sb,body.eg.is-lcars .st-kb{border-radius:14px}
+.st-sb,.st-kb,.st-ab{background:var(--st-panel,#090500);border:1px solid var(--st-dim,#886600);color:var(--st-lo,#CC8800);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;text-transform:uppercase;padding:3px 9px;cursor:pointer;border-radius:var(--st-btn-r,0px);transition:background .12s,color .12s;font-weight:600}
+.st-sb:hover,.st-kb:hover,.st-ab:hover{background:var(--st-lo);color:#000;border-color:var(--st-lo)}
+.st-sb.on,.st-kb.on,.st-ab.on{background:var(--st-mid);color:#000;border-color:var(--st-mid)}
+body.eg.t-office .st-sb,body.eg.t-office .st-kb,body.eg.t-office .st-ab{background:#f5f5f5;border-color:var(--st-faint);color:var(--st-hi)}
+body.eg.t-office .st-sb.on,body.eg.t-office .st-kb.on,body.eg.t-office .st-ab.on{background:var(--st-mid);color:#fff;border-color:var(--st-mid)}
+body.eg.is-lcars .st-sb,body.eg.is-lcars .st-kb,body.eg.is-lcars .st-ab{border-radius:14px}
+/* ── GEN ALPHA COMPONENT OVERRIDES ───────────────────────────── */
+body.eg.t-galpha header,body.eg.t-galpha .header{background:linear-gradient(135deg,#130024,#1e0038)!important;border-bottom:2px solid var(--st-mid)!important;animation:ga-pulse 4s infinite!important}
+body.eg.t-galpha h1{background:linear-gradient(90deg,#ff2d9e,#00d4ff,#c8ff00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:none!important;letter-spacing:2px!important}
+body.eg.t-galpha h2,body.eg.t-galpha h3{color:var(--st-mid)!important;animation:ga-glow 3s infinite!important}
+body.eg.t-galpha .card,body.eg.t-galpha .form-section,body.eg.t-galpha .details-section,body.eg.t-galpha .filter-group,body.eg.t-galpha .modal-content,body.eg.t-galpha .dash-card{border-radius:18px!important;border:1px solid rgba(255,45,158,.25)!important;border-top:2px solid var(--st-mid)!important;background:rgba(19,0,36,.85)!important;backdrop-filter:blur(8px)!important}
+body.eg.t-galpha input[type="text"],body.eg.t-galpha input[type="email"],body.eg.t-galpha input[type="date"],body.eg.t-galpha input[type="tel"],body.eg.t-galpha input[type="number"],body.eg.t-galpha select,body.eg.t-galpha textarea{border-radius:12px!important;border:1px solid rgba(255,45,158,.3)!important;background:rgba(30,0,56,.9)!important}
+body.eg.t-galpha .status-badge{border-radius:20px!important;padding:3px 12px!important;font-weight:700!important;letter-spacing:1px!important}
+body.eg.t-galpha button,body.eg.t-galpha .action-btn,body.eg.t-galpha .filter-btn{border-radius:22px!important;background:linear-gradient(135deg,rgba(255,45,158,.15),rgba(0,212,255,.1))!important;border:1px solid rgba(255,45,158,.4)!important}
+body.eg.t-galpha button:hover,body.eg.t-galpha .action-btn:hover,body.eg.t-galpha .filter-btn:hover{background:linear-gradient(135deg,#ff2d9e,#cc1a7a)!important;border-color:#ff2d9e!important;color:#fff!important}
+body.eg.t-galpha button[type="submit"],body.eg.t-galpha .submit-btn{background:linear-gradient(135deg,#ff2d9e,#00d4ff)!important;border:none!important;color:#fff!important;font-weight:700!important;animation:ga-pulse 2s infinite!important}
+body.eg.t-galpha .filter-btn.active,body.eg.t-galpha .filter-btn[aria-pressed="true"]{background:linear-gradient(135deg,#ff2d9e,#cc1a7a)!important;border-color:#ff2d9e!important;color:#fff!important}
+/* galpha injected UI overrides */
+body.eg.t-galpha #st-ticker{background:linear-gradient(90deg,#0a0015,#1e0038)!important;border-bottom:1px solid rgba(255,45,158,.4)!important}
+body.eg.t-galpha #st-t-text{color:#ff2d9e!important;animation:st-scroll-l 20s linear infinite!important}
+body.eg.t-galpha .st-t-side{color:rgba(255,45,158,.7)!important}
+body.eg.t-galpha #st-ctrl{background:rgba(19,0,36,.95)!important;border-bottom:1px solid rgba(255,45,158,.2)!important}
+body.eg.t-galpha #st-alert{border-color:#ff2d9e!important;color:#ff2d9e!important;background:rgba(255,45,158,.07)!important;animation:ga-pulse 1.5s infinite!important}
+body.eg.t-galpha #st-foot{background:linear-gradient(90deg,#0a0015,#1e0038)!important;border-top:1px solid rgba(255,45,158,.4)!important}
+body.eg.t-galpha .st-fs{color:rgba(255,45,158,.6)!important}
+body.eg.t-galpha #st-exit{background:transparent!important;border-color:rgba(255,45,158,.4)!important;color:#ff2d9e!important;border-radius:12px!important}
+body.eg.t-galpha #st-stog{background:transparent!important;border-color:rgba(255,45,158,.4)!important;color:#ff2d9e!important;border-radius:12px!important;animation:ga-pulse 4s infinite!important}
+body.eg.t-galpha #st-stats{background:#0a0015!important;border-color:rgba(255,45,158,.4)!important}
+body.eg.t-galpha .st-vb{background:rgba(19,0,36,.9)!important;border-color:#ff2d9e!important;color:#ff2d9e!important;box-shadow:0 0 20px rgba(255,45,158,.4)!important}
+body.eg.t-galpha .st-sx{background:rgba(19,0,36,.9)!important;border-top-color:#ff2d9e!important;border-color:rgba(255,45,158,.2)!important;border-radius:10px!important}
+body.eg.t-galpha .st-lp{background:rgba(19,0,36,.9)!important;border-radius:10px!important}
+body.eg.t-galpha .st-ab{border-radius:22px!important}
+body.eg.t-galpha .st-ab.on{background:linear-gradient(135deg,#ff2d9e,#cc1a7a)!important;border-color:#ff2d9e!important}
+
 /* hide app-level AODA / accessibility / theme toggles while easter egg is active */
 body.eg .aoda-toggle,body.eg .accessibility-toggle,body.eg [id*="aoda"],body.eg [class*="aoda"],body.eg [id*="a11y"],body.eg [class*="a11y"],body.eg [id*="theme-toggle"],body.eg [class*="theme-toggle"],body.eg [id*="dark-mode"],body.eg [class*="dark-mode"],body.eg .color-scheme-toggle{display:none!important}
 /* admin panel */
@@ -351,7 +386,8 @@ var T={
   bsg:{ship:'BS-75 GALACTICA',sector:'COLONIAL FLEET',alertIcon:'// ACTION STATIONS //',alertMsg:'INBOUND CYLON CONTACTS — ALL PILOTS TO THEIR BIRDS — NOT A DRILL',ticker:'// DRADIS ONLINE // FLEET SYSTEMS NOMINAL // SEQUENTIAL GATING ACTIVE // NO CYLON VESSELS ON DRADIS // STARBUCK: GOOD HUNTING // SO SAY WE ALL //',stitle:'// TACTICAL ANALYSIS — FLEET STATUS //',vlabel:'PERSONNEL ACTIONS — COLONIAL FLEET',vsub:'BATTLESTAR GALACTICA — COLONIAL FLEET AUTHORITY',s1:'New Assignments',s2:'Separations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Pending',s7:'Aborted',s8:'This Day',l1:'// TOP SUBMITTERS //',l2:'// ACTIVE SECTORS //',l3:'// TOP OFFICERS //',footer:'TEAM GROUP EMPLOYEE MANAGEMENT // BATTLESTAR GALACTICA BS-75 // COLONIAL FLEET AUTHORITY // SEQUENTIAL GATING V2 ACTIVE // SO SAY WE ALL //',greeting:'Action stations. All hands man your battle stations. This is not a drill. So say we all.',lcars:false,bsg:true,matrix:false,who:false,office:false},
   matrix:{ship:'THE MATRIX',sector:'THE CONSTRUCT',alertIcon:'!! ANOMALY DETECTED !!',alertMsg:'THE MATRIX HAS YOU — FOLLOW THE WHITE RABBIT — THERE IS NO SPOON',ticker:'WAKE UP, NEO... THE MATRIX HAS YOU... FOLLOW THE WHITE RABBIT... THERE IS NO SPOON... FREE YOUR MIND...',stitle:'// SIMULATION DIAGNOSTICS — ANOMALY SCAN //',vlabel:'PROGRAMS PROCESSED — MATRIX RECORDS',vsub:'THE CONSTRUCT — AUTHORIZED OPERATORS ONLY',s1:'New Programs',s2:'Decompiled',s3:'Transfers',s4:'Executed',s5:'Running',s6:'Awaiting',s7:'Killed',s8:'This Cycle',l1:'// TOP OPERATORS //',l2:'// TOP CONSTRUCTS //',l3:'// TOP AGENTS //',footer:'TEAM GROUP SIMULATION // THE MATRIX // AUTHORIZED OPERATORS ONLY // SEQUENTIAL GATING v2 ACTIVE // THERE IS NO SPOON //',greeting:'Wake up, Neo. The Matrix has you. Follow the white rabbit.',lcars:false,bsg:false,matrix:true,who:false,office:false},
   who:{ship:'THE TARDIS',sector:'ALL OF TIME & SPACE',alertIcon:'!! DALEKS DETECTED !!',alertMsg:'ALL PERSONNEL TAKE COVER — DO NOT BLINK — DO NOT EVEN BLINK — EXTERMINATE',ticker:'WIBBLY WOBBLY TIMEY WIMEY &#9830; ALL OF TIME AND SPACE &#9830; DON\'T BLINK &#9830; THE ANGELS HAVE THE PHONE BOX &#9830; FANTASTIC! &#9830; ALLONS-Y! &#9830; GERONIMO! &#9830; RUN! &#9830;',stitle:'&#9670; TARDIS TEMPORAL ANALYSIS &#9670;',vlabel:'TEMPORAL ASSIGNMENTS PROCESSED',vsub:'TIME LORD AUTHORITY — GALLIFREY FALLS NO MORE',s1:'New Companions',s2:'Regenerations',s3:'Timeline Shifts',s4:'Fixed Point',s5:'Timey Wimey',s6:'In the Vortex',s7:'Paradox',s8:'This Cycle',l1:'Top Submitters',l2:'Top Locations',l3:'Top Managers',footer:'TEAM GROUP &#9830; THE TARDIS &#9830; TIME LORD AUTHORIZED &#9830; ALL OF TIME AND SPACE &#9830; SEQUENTIAL GATING V2 &#9830; ALLONS-Y &#9830;',greeting:'Welcome aboard the TARDIS. It is bigger on the inside. Allons-y!',lcars:false,bsg:false,matrix:false,who:true,office:false},
-  office:{ship:'DUNDER MIFFLIN',sector:'SCRANTON, PA',alertIcon:'!! ATTENTION: HR NOTICE !!',alertMsg:'PLEASE SEE TOBY IN HR — COMPLIANCE TRAINING IS DUE — THAT\'S WHAT SHE SAID',ticker:'DUNDER MIFFLIN PAPER COMPANY &#9830; SCRANTON BRANCH &#9830; WORLD\'S BEST BOSS &#9830; THAT\'S WHAT SHE SAID &#9830; BEARS. BEETS. BATTLESTAR GALACTICA. &#9830; IDENTITY THEFT IS NOT A JOKE, JIM &#9830; ASSISTANT TO THE REGIONAL MANAGER &#9830;',stitle:'&#9670; DUNDER MIFFLIN — BRANCH ANALYTICS &#9670;',vlabel:'EMPLOYEE REQUESTS PROCESSED',vsub:'DUNDER MIFFLIN SCRANTON BRANCH — MICHAEL SCOTT, REGIONAL MANAGER',s1:'New Hires',s2:'Terminations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Pending',s7:'Cancelled',s8:'This Month',l1:'Top Submitters',l2:'Top Locations',l3:'Top Managers',footer:'DUNDER MIFFLIN PAPER COMPANY &#9830; SCRANTON BRANCH &#9830; LIMITLESS PAPER IN A PAPERLESS WORLD &#9830; SEQUENTIAL GATING V2 ACTIVE &#9830; THAT\'S WHAT SHE SAID &#9830;',greeting:'Dunder Mifflin, this is Michael. World\'s best boss speaking.',lcars:false,bsg:false,matrix:false,who:false,office:true}
+  office:{ship:'DUNDER MIFFLIN',sector:'SCRANTON, PA',alertIcon:'!! ATTENTION: HR NOTICE !!',alertMsg:'PLEASE SEE TOBY IN HR — COMPLIANCE TRAINING IS DUE — THAT\'S WHAT SHE SAID',ticker:'DUNDER MIFFLIN PAPER COMPANY &#9830; SCRANTON BRANCH &#9830; WORLD\'S BEST BOSS &#9830; THAT\'S WHAT SHE SAID &#9830; BEARS. BEETS. BATTLESTAR GALACTICA. &#9830; IDENTITY THEFT IS NOT A JOKE, JIM &#9830; ASSISTANT TO THE REGIONAL MANAGER &#9830;',stitle:'&#9670; DUNDER MIFFLIN — BRANCH ANALYTICS &#9670;',vlabel:'EMPLOYEE REQUESTS PROCESSED',vsub:'DUNDER MIFFLIN SCRANTON BRANCH — MICHAEL SCOTT, REGIONAL MANAGER',s1:'New Hires',s2:'Terminations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Pending',s7:'Cancelled',s8:'This Month',l1:'Top Submitters',l2:'Top Locations',l3:'Top Managers',footer:'DUNDER MIFFLIN PAPER COMPANY &#9830; SCRANTON BRANCH &#9830; LIMITLESS PAPER IN A PAPERLESS WORLD &#9830; SEQUENTIAL GATING V2 ACTIVE &#9830; THAT\'S WHAT SHE SAID &#9830;',greeting:'Dunder Mifflin, this is Michael. World\'s best boss speaking.',lcars:false,bsg:false,matrix:false,who:false,office:false},
+  galpha:{ship:'THE VIBE',sector:'NO CAP FR FR',alertIcon:'&#128293; NGL ITS LOWKEY URGENT &#128293;',alertMsg:'PERIODT &#x2022; SLAY DETECTED &#x2022; BESTIE THIS IS YOUR SIGN TO ACT &#x2022; NO CAP FR FR &#x2022; ITS GIVING ACTION REQUIRED',ticker:'NO CAP &#9830; SLAY &#9830; FR FR &#9830; IT\'S GIVING SEQUENTIAL GATING &#9830; THAT\'S LOWKEY BUSSIN &#9830; NOT THE EMPLOYEES &#9830; UNDERSTOOD THE ASSIGNMENT &#9830; PERIODT &#9830; MAIN CHARACTER ENERGY &#9830;',stitle:'&#128293; VIBE CHECK — TELEMETRY &#128293;',vlabel:'REQUESTS PROCESSED (no cap)',vsub:'TEAM GROUP — UNDERSTOOD THE ASSIGNMENT',s1:'New Hires (slay!)',s2:'Separations (rip bestie)',s3:'Transfers (the glow up)',s4:'Completed (periodt)',s5:'In Progress (lowkey)',s6:'Pending (no cap)',s7:'Cancelled (L + ratio)',s8:'This Month (bestie)',l1:'Top Girlies (submitters)',l2:'Top Locations (the vibes)',l3:'Top Managers (main characters)',footer:'TEAM GROUP &#9830; IT\'S GIVING EMPLOYEE MANAGEMENT &#9830; SEQUENTIAL GATING V2 &#9830; NO CAP &#9830; SLAY &#9830; PERIODT &#9830; UNDERSTOOD THE ASSIGNMENT &#9830;',greeting:'Bestie, the vibes are immaculate. You understood the assignment. No cap, this portal slaps.',lcars:false,bsg:false,matrix:false,who:false,office:false}
 };
 
 /* ── STATUS / SUBMIT MAPS ────────────────────────────────────── */
@@ -364,7 +400,8 @@ var STATUS_MAPS={
   bsg:   {'In Progress':'MISSION UNDERWAY',    'Pending':'AWAITING CLEARANCE',          'Completed':'STRIKE SUCCESSFUL',        'Cancelled':'ABORTED',                   'Action Required':'// ACTION REQUIRED //',       'All Specialists Complete':'STRIKE SUCCESSFUL'},
   matrix:{'In Progress':'PROCESS RUNNING',     'Pending':'AWAITING INPUT',              'Completed':'EXECUTED',                 'Cancelled':'PROCESS KILLED',            'Action Required':'!! BUFFER OVERFLOW',          'All Specialists Complete':'EXECUTED'},
   who:   {'In Progress':'WIBBLY WOBBLY',       'Pending':'IN THE VORTEX',               'Completed':'FIXED POINT IN TIME',      'Cancelled':'EXTERMINATED',              'Action Required':'!! DALEKS DETECTED !!',       'All Specialists Complete':'FIXED POINT IN TIME'},
-  office:{'In Progress':'MICHAEL IS HANDLING IT','Pending':'SEE TOBY IN HR',            'Completed':'FILED WITH TOBY',          'Cancelled':'CORPORATE SAID NO',         'Action Required':'!! TOBY WANTS A WORD',        'All Specialists Complete':'FILED WITH TOBY'}
+  office:{'In Progress':'MICHAEL IS HANDLING IT','Pending':'SEE TOBY IN HR',            'Completed':'FILED WITH TOBY',          'Cancelled':'CORPORATE SAID NO',         'Action Required':'!! TOBY WANTS A WORD',        'All Specialists Complete':'FILED WITH TOBY'},
+  galpha:{'In Progress':'LOWKEY IN PROGRESS FR', 'Pending':'ON THE LOWKEY TBH',          'Completed':'SLAY!! PERIODT!!',          'Cancelled':'L + RATIO NGL',             'Action Required':'&#128293; NGL ITS URGENT FR', 'All Specialists Complete':'SLAY!! PERIODT!!'}
 };
 var SUBMIT_MAPS={
   geo:   ['CLICK HERE TO SUBMIT!!! [>]','GO GO GO!! SUBMIT NOW!!','YES!! SEND IT!! [>>]'],
@@ -375,7 +412,8 @@ var SUBMIT_MAPS={
   bsg:   ['SUBMIT TO COMMAND','SO SAY WE ALL','LAUNCH!!'],
   matrix:['UPLOAD TO MATRIX','INSERT PROGRAM','EXECUTE'],
   who:   ['ALLONS-Y!','GERONIMO!','BIGGER ON THE INSIDE'],
-  office:["THAT'S WHAT SHE SAID",'I DECLARE BANKRUPTCY','DUNDER MIFFLIN!!!']
+  office:["THAT'S WHAT SHE SAID",'I DECLARE BANKRUPTCY','DUNDER MIFFLIN!!!'],
+  galpha:['NO CAP SUBMIT FR FR',"IT'S GIVING SUBMIT SLAY",'PERIODT BESTIE!!!']
 };
 
 /* ── STATE ───────────────────────────────────────────────────── */
@@ -392,7 +430,7 @@ function clearPref(){try{localStorage.removeItem(LS_KEY);}catch(e){}}
 function loadPref(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'null');}catch(e){return null;}}
 
 /* ── ACTIVATION SEQUENCES ────────────────────────────────────── */
-var SEQUENCES={'geocities':'geo','beam':'tos','engage':'tng','frack':'bsg','redpill':'matrix','tardis':'who','twss':'office'};
+var SEQUENCES={'asif':'geo','beam':'tos','engage':'tng','prophets':'ds9','coffee':'voy','frack':'bsg','redpill':'matrix','tardis':'who','twss':'office','rizz':'galpha'};
 var KONAMI=[38,38,40,40,37,39,37,39,66,65], kIdx=0;
 var typeBuf='', typeTimer=null;
 document.addEventListener('keydown',function(e){
@@ -460,7 +498,7 @@ function restoreSwaps(){
 }
 
 /* ── UI BUILDERS ─────────────────────────────────────────────── */
-var GEO_TITLES=['~~*~~ '+origTitle+' ~~*~~','*** GEOCITIES MODE ACTIVATED ***','!!! BEST VIEWED IN NETSCAPE 4.0 !!!','~~*~~ '+origTitle+' ~~*~~','>>> SUBMIT YOUR REQUESTS HERE <<<','--- Y2K COMPLIANT WEBSITE ---'];
+var GEO_TITLES=['~~*~~ '+origTitle+' ~~*~~','*** 90S WEB MODE ACTIVATED ***','!!! BEST VIEWED IN NETSCAPE 4.0 !!!','~~*~~ '+origTitle+' ~~*~~','>>> SUBMIT YOUR REQUESTS HERE <<<','--- Y2K COMPLIANT WEBSITE ---'];
 function buildGeoUI(){
   return '<div id="geo-top-bar" class="geo-top-bar">BEST VIEWED IN NETSCAPE NAVIGATOR 4.0 AT 800x600 -- FRAMES-FREE -- JAVASCRIPT ENABLED -- Y2K COMPLIANT</div>'+
     '<div id="geo-marquee-bar" class="geo-marquee-bar"><marquee scrollamount="5">&nbsp;&nbsp;&nbsp;&#9728; WELCOME TO THE OFFICIAL TEAM GROUP EMPLOYEE MANAGEMENT PORTAL &#9728;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&#9733; NOW WITH 100% MORE SEQUENTIAL GATING!!! &#9733;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;NO FAX REQUIRED -- SUBMIT YOUR REQUESTS ONLINE!!&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;PAPERLESS SINCE 2024!! SAVING TREES ONE FORM AT A TIME!!&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;AIM: TeamGroupHR &nbsp;|&nbsp; ICQ: 867-5309 &nbsp;|&nbsp; BEST HR INTRANET SITE 1997&nbsp;&nbsp;&nbsp;</marquee></div>'+
@@ -496,6 +534,7 @@ function buildTrekUI(d){
         '<button class="st-sb" data-theme="matrix">MATRIX</button>'+
         '<button class="st-sb" data-theme="who">WHO</button>'+
         '<button class="st-sb" data-theme="office">OFFICE</button>'+
+        '<button class="st-sb" data-theme="galpha">RIZZ</button>'+
       '</div>'+
       '<div class="st-cg"><span class="st-cl">SIZE</span>'+
         '<button class="st-kb" data-scale="sc-sm">S</button>'+
@@ -503,6 +542,7 @@ function buildTrekUI(d){
         '<button class="st-kb" data-scale="sc-lg">L</button>'+
         '<button class="st-kb" data-scale="sc-xl">XL</button>'+
       '</div>'+
+      '<div class="st-cg"><button id="st-ab" class="st-ab">&#128263; OFF</button></div>'+
     '</div>'+
     '<button id="st-exit">&#x2716; EXIT</button>'+
     '<button id="st-stog">&#9670; STATS</button>'+
@@ -531,9 +571,10 @@ function activate(theme,scale,audio){
     document.body.classList.add('t-geo');
     curTheme='geo';
     fetchStats();
-    toast('GEOCITIES MODE ACTIVATED!! \\o/  (Konami again to exit)');
+    toast('90S WEB MODE ACTIVATED!! \\o/  (Konami again to exit)');
   }else{
     document.getElementById('st-exit').addEventListener('click',function(){deactivate();});
+    document.getElementById('st-ab').addEventListener('click',stToggleAudio);
     document.getElementById('st-stog').addEventListener('click',function(){
       statsVisible=!statsVisible;
       document.getElementById('st-stats').style.display=statsVisible?'block':'none';
@@ -555,7 +596,7 @@ function deactivate(silent){
   restoreSwaps();
   var wrap=document.getElementById('eg-root');
   if(wrap&&wrap.parentNode)wrap.parentNode.removeChild(wrap);
-  var all=['eg','t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','is-lcars','is-bsg','is-matrix','sc-sm','sc-md','sc-lg','sc-xl'];
+  var all=['eg','t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','is-lcars','is-bsg','is-matrix','sc-sm','sc-md','sc-lg','sc-xl'];
   for(var i=0;i<all.length;i++)document.body.classList.remove(all[i]);
   statsLoaded=false;statsVisible=false;statsData=null;audioEnabled=false;geoMusicOn=false;
   clearPref();
@@ -566,7 +607,7 @@ function deactivate(silent){
 function stSwitchTheme(name){
   if(!T[name])return;
   var d=T[name],body=document.body;
-  var tc=['t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','is-lcars','is-bsg','is-matrix'];
+  var tc=['t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','is-lcars','is-bsg','is-matrix'];
   for(var i=0;i<tc.length;i++)body.classList.remove(tc[i]);
   body.classList.add('t-'+name);
   if(d.lcars)body.classList.add('is-lcars');
@@ -598,15 +639,16 @@ function stSetScale(sc){
 
 /* ── ADMIN PANEL ─────────────────────────────────────────────── */
 var THEME_META=[
-  {id:'geo',    label:'GEO­CITIES',      code:'GEOCITIES'},
-  {id:'tos',    label:'STAR TREK TOS',    code:'BEAM'},
-  {id:'tng',    label:'STAR TREK TNG',    code:'ENGAGE'},
-  {id:'ds9',    label:'STAR TREK DS9',    code:''},
-  {id:'voy',    label:'STAR TREK VOY',    code:''},
-  {id:'bsg',    label:'BATTLESTAR GALACTICA', code:'FRACK'},
-  {id:'matrix', label:'THE MATRIX',       code:'REDPILL'},
-  {id:'who',    label:'DOCTOR WHO',        code:'TARDIS'},
-  {id:'office', label:'THE OFFICE',        code:'TWSS'}
+  {id:'geo',    label:'90S WEB',              code:'ASIF'},
+  {id:'tos',    label:'STAR TREK TOS',        code:'BEAM'},
+  {id:'tng',    label:'STAR TREK TNG',        code:'ENGAGE'},
+  {id:'ds9',    label:'STAR TREK DS9',        code:'PROPHETS'},
+  {id:'voy',    label:'STAR TREK VOY',        code:'COFFEE'},
+  {id:'bsg',    label:'BATTLESTAR GALACTICA', code:'FRACK'},
+  {id:'matrix', label:'THE MATRIX',           code:'REDPILL'},
+  {id:'who',    label:'DOCTOR WHO',           code:'TARDIS'},
+  {id:'office', label:'THE OFFICE',           code:'TWSS'},
+  {id:'galpha', label:'GEN ALPHA',            code:'RIZZ'}
 ];
 function openAdmin(){
   if(document.getElementById('eg-admin'))return;
@@ -716,11 +758,27 @@ function stopGeoMusic(){
   var btn=document.getElementById('geo-music-btn');if(btn)btn.textContent='&#9835; MIDI: OFF';
 }
 
-var SND={tos:playTOS,tng:playLCARS,ds9:playLCARS,voy:playLCARS,bsg:playBSG,matrix:playMatrix,who:playWho,office:playOffice};
-var INT={tos:[2000,5000],tng:[4000,7000],ds9:[4000,7000],voy:[4000,7000],bsg:[2500,4500],matrix:[800,2000],who:[5000,9000],office:[6000,10000]};
+function playGalpha(){
+  if(!audioCtx)return;
+  var notes=[880,1047,1319,1568,1319,1047,1568,2093];
+  for(var i=0;i<notes.length;i++){
+    (function(freq,idx){
+      setTimeout(function(){
+        var osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+        osc.connect(gain);gain.connect(audioCtx.destination);
+        osc.type='sine';osc.frequency.setValueAtTime(freq,audioCtx.currentTime);
+        gain.gain.setValueAtTime(0,audioCtx.currentTime);gain.gain.linearRampToValueAtTime(0.06,audioCtx.currentTime+0.01);gain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.16);
+        osc.start(audioCtx.currentTime);osc.stop(audioCtx.currentTime+0.18);
+      },idx*100);
+    })(notes[i],i);
+  }
+}
+
+var SND={tos:playTOS,tng:playLCARS,ds9:playLCARS,voy:playLCARS,bsg:playBSG,matrix:playMatrix,who:playWho,office:playOffice,galpha:playGalpha};
+var INT={tos:[2000,5000],tng:[4000,7000],ds9:[4000,7000],voy:[4000,7000],bsg:[2500,4500],matrix:[800,2000],who:[5000,9000],office:[6000,10000],galpha:[1500,3500]};
 function startAmbient(){stopAmbient();if(!audioEnabled||!audioCtx)return;var fn=SND[curTheme],range=INT[curTheme]||[3000,6000];if(!fn)return;function tick(){fn();ambientTimer=setTimeout(tick,range[0]+Math.random()*(range[1]-range[0]));}ambientTimer=setTimeout(tick,range[0]*0.3);}
 function stopAmbient(){if(ambientTimer){clearTimeout(ambientTimer);ambientTimer=null;}}
-function speakGreeting(theme){if(!audioEnabled||!window.speechSynthesis)return;var d=T[theme];if(!d||!d.greeting)return;var rates={tos:0.85,tng:0.95,ds9:0.95,voy:0.95,bsg:1.1,matrix:0.7,who:0.95,office:1.05},pitches={tos:0.7,tng:1.0,ds9:0.95,voy:1.0,bsg:1.05,matrix:0.5,who:1.1,office:1.0};window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(d.greeting);u.rate=rates[theme]||0.9;u.pitch=pitches[theme]||1.0;u.volume=0.85;window.speechSynthesis.speak(u);}
+function speakGreeting(theme){if(!audioEnabled||!window.speechSynthesis)return;var d=T[theme];if(!d||!d.greeting)return;var rates={tos:0.85,tng:0.95,ds9:0.95,voy:0.95,bsg:1.1,matrix:0.7,who:0.95,office:1.05,galpha:1.3},pitches={tos:0.7,tng:1.0,ds9:0.95,voy:1.0,bsg:1.05,matrix:0.5,who:1.1,office:1.0,galpha:1.4};window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(d.greeting);u.rate=rates[theme]||0.9;u.pitch=pitches[theme]||1.0;u.volume=0.85;window.speechSynthesis.speak(u);}
 function stToggleAudio(){if(!audioEnabled){if(!initAudio())return;audioEnabled=true;startAmbient();speakGreeting(curTheme);}else{audioEnabled=false;stopAmbient();if(window.speechSynthesis)window.speechSynthesis.cancel();}var btn=document.getElementById('st-ab');if(btn){btn.textContent=audioEnabled?'🔊 ON':'🔇 OFF';btn.className='st-ab'+(audioEnabled?' on':'');}savePref();}
 
 /* ── MATRIX RAIN ─────────────────────────────────────────────── */
