@@ -318,7 +318,7 @@ body.eg.t-pokemon #st-stats{border-color:#9bbc0f!important}
 body.eg.t-pokemon #st-stog{animation:pk-bounce 2s infinite!important}
 
 /* hide app-level AODA / accessibility / theme toggles while easter egg is active */
-body.eg .aoda-toggle,body.eg .accessibility-toggle,body.eg [id*="aoda"],body.eg [class*="aoda"],body.eg [id*="a11y"],body.eg [class*="a11y"],body.eg [id*="theme-toggle"],body.eg [class*="theme-toggle"],body.eg [id*="dark-mode"],body.eg [class*="dark-mode"],body.eg .color-scheme-toggle{display:none!important}
+body.eg .aoda-toggle,body.eg .accessibility-toggle,body.eg .theme-switcher,body.eg [id*="aoda"],body.eg [class*="aoda"],body.eg [id*="a11y"],body.eg [class*="a11y"],body.eg [id*="theme-toggle"],body.eg [class*="theme-toggle"],body.eg [id*="theme-switch"],body.eg [class*="theme-switch"],body.eg [id*="dark-mode"],body.eg [class*="dark-mode"],body.eg [id*="light-mode"],body.eg [class*="light-mode"],body.eg [id*="color-mode"],body.eg [class*="color-mode"],body.eg .color-scheme-toggle,body.eg .ts-btn{display:none!important}
 /* admin panel */
 #eg-admin{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;display:flex;align-items:center;justify-content:center}
 #eg-admin-box{background:#0d0d0d;border:1px solid #333;padding:28px 24px;width:min(500px,92vw);font-family:'Courier New',monospace}
@@ -731,6 +731,18 @@ function playOsc(freq,type,vol,dur,freqEnd){
 }
 function playTOS(){playOsc([440,660,880,1100][Math.floor(Math.random()*4)],'sine',0.07,0.18);}
 function playLCARS(){playOsc(500,'sine',0.10,0.15,1400);}
+function playDS9(){
+  /* Deep Space 9 — two-tone low drone, darker/heavier than TNG */
+  if(!audioCtx)return;
+  playOsc(220,'sine',0.08,0.22,330);
+  setTimeout(function(){playOsc(165,'sine',0.06,0.30);},120);
+}
+function playVOY(){
+  /* Voyager — clean double-chirp, brighter than TNG */
+  if(!audioCtx)return;
+  playOsc(880,'sine',0.08,0.10,1200);
+  setTimeout(function(){playOsc(1100,'sine',0.07,0.12,660);},130);
+}
 function playBSG(){playOsc(330,'square',0.10,0.18);setTimeout(function(){playOsc(440,'square',0.10,0.18);},220);}
 function playMatrix(){if(!audioCtx)return;var buf=audioCtx.createBuffer(1,Math.round(audioCtx.sampleRate*0.07),audioCtx.sampleRate),ch=buf.getChannelData(0);for(var i=0;i<ch.length;i++)ch[i]=(Math.random()*2-1)*0.4;var src=audioCtx.createBufferSource();src.buffer=buf;var f=audioCtx.createBiquadFilter();f.type='bandpass';f.frequency.value=900;f.Q.value=2;var g=audioCtx.createGain();g.gain.value=0.12;src.connect(f);f.connect(g);g.connect(audioCtx.destination);src.start();}
 function playWho(){
@@ -820,7 +832,7 @@ function playGalpha(){
   }
 }
 
-var SND={tos:playTOS,tng:playLCARS,ds9:playLCARS,voy:playLCARS,bsg:playBSG,matrix:playMatrix,who:playWho,office:playOffice,galpha:playGalpha,pokemon:playPokemon};
+var SND={tos:playTOS,tng:playLCARS,ds9:playDS9,voy:playVOY,bsg:playBSG,matrix:playMatrix,who:playWho,office:playOffice,galpha:playGalpha,pokemon:playPokemon};
 var INT={tos:[2000,5000],tng:[4000,7000],ds9:[4000,7000],voy:[4000,7000],bsg:[2500,4500],matrix:[800,2000],who:[5000,9000],office:[6000,10000],galpha:[1500,3500],pokemon:[3000,6000]};
 function startAmbient(){stopAmbient();if(!audioEnabled||!audioCtx)return;var fn=SND[curTheme],range=INT[curTheme]||[3000,6000];if(!fn)return;function tick(){fn();ambientTimer=setTimeout(tick,range[0]+Math.random()*(range[1]-range[0]));}ambientTimer=setTimeout(tick,range[0]*0.3);}
 function stopAmbient(){if(ambientTimer){clearTimeout(ambientTimer);ambientTimer=null;}}
