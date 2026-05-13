@@ -1,12 +1,8 @@
 <!-- EasterEgg.html — DEV ONLY — Unified Easter Egg Include
-     Activations:  Konami (↑↑↓↓←→←→BA) → GeoCities
-                   Type GEOCITIES         → GeoCities
-                   Type BEAM              → Star Trek (TOS)
-                   Type FRACK             → Battlestar Galactica
-                   Type REDPILL           → The Matrix
-                   Type TARDIS            → Doctor Who
-                   Type DUNDERMIFFLIN     → The Office
-                   Logo ×5               → last used theme (or toggle off)
+     ADMIN:        Konami (↑↑↓↓←→←→BA) or Logo ×5 → admin panel (all themes)
+     Direct codes: GEOCITIES → GeoCities  |  BEAM → TOS  |  ENGAGE → TNG
+                   FRACK → BSG  |  REDPILL → Matrix  |  TARDIS → Doctor Who
+                   TWSS → The Office
      localStorage: tg_eg_v1
      Stats fn:     google.script.run.getStarTrekStats()
      DEV ONLY — do not migrate to staging or prod -->
@@ -254,13 +250,30 @@ body.eg.t-who #st-alert{border-color:var(--st-cyan);color:var(--st-cyan)}
 body.eg.t-office #st-ctrl{background:#fff;border-bottom:2px solid var(--st-faint)}
 .st-cg{display:flex;align-items:center;gap:5px}
 .st-cl{font-size:var(--fs-2xs,10px);color:var(--st-dim,#886600);letter-spacing:3px;text-transform:uppercase;font-family:var(--st-fb,'Courier New',monospace);white-space:nowrap;margin-right:3px}
-.st-sb,.st-kb,.st-ab{background:var(--st-panel,#090500);border:1px solid var(--st-dim,#886600);color:var(--st-lo,#CC8800);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;text-transform:uppercase;padding:3px 9px;cursor:pointer;border-radius:var(--st-btn-r,0px);transition:background .12s,color .12s;font-weight:600}
-.st-sb:hover,.st-kb:hover,.st-ab:hover{background:var(--st-lo);color:#000;border-color:var(--st-lo)}
+.st-sb,.st-kb{background:var(--st-panel,#090500);border:1px solid var(--st-dim,#886600);color:var(--st-lo,#CC8800);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;text-transform:uppercase;padding:3px 9px;cursor:pointer;border-radius:var(--st-btn-r,0px);transition:background .12s,color .12s;font-weight:600}
+.st-sb:hover,.st-kb:hover{background:var(--st-lo);color:#000;border-color:var(--st-lo)}
 .st-sb.on,.st-kb.on{background:var(--st-mid);color:#000;border-color:var(--st-mid)}
-.st-ab.on{background:var(--st-green);color:#000;border-color:var(--st-green)}
-body.eg.t-office .st-sb,body.eg.t-office .st-kb,body.eg.t-office .st-ab{background:#f5f5f5;border-color:var(--st-faint);color:var(--st-hi)}
+body.eg.t-office .st-sb,body.eg.t-office .st-kb{background:#f5f5f5;border-color:var(--st-faint);color:var(--st-hi)}
 body.eg.t-office .st-sb.on,body.eg.t-office .st-kb.on{background:var(--st-mid);color:#fff;border-color:var(--st-mid)}
-body.eg.is-lcars .st-sb,body.eg.is-lcars .st-kb,body.eg.is-lcars .st-ab{border-radius:14px}
+body.eg.is-lcars .st-sb,body.eg.is-lcars .st-kb{border-radius:14px}
+/* hide app-level AODA / accessibility / theme toggles while easter egg is active */
+body.eg .aoda-toggle,body.eg .accessibility-toggle,body.eg [id*="aoda"],body.eg [class*="aoda"],body.eg [id*="a11y"],body.eg [class*="a11y"],body.eg [id*="theme-toggle"],body.eg [class*="theme-toggle"],body.eg [id*="dark-mode"],body.eg [class*="dark-mode"],body.eg .color-scheme-toggle{display:none!important}
+/* admin panel */
+#eg-admin{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;display:flex;align-items:center;justify-content:center}
+#eg-admin-box{background:#0d0d0d;border:1px solid #333;padding:28px 24px;width:min(500px,92vw);font-family:'Courier New',monospace}
+#eg-admin-ttl{color:#fff;font-size:13px;letter-spacing:5px;text-align:center;margin-bottom:3px;text-transform:uppercase}
+#eg-admin-sub{color:#444;font-size:9px;letter-spacing:3px;text-align:center;margin-bottom:18px;text-transform:uppercase}
+#eg-admin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:18px}
+.eg-ab{background:#111;border:1px solid #222;color:#777;padding:12px 7px;cursor:pointer;font-family:'Courier New',monospace;font-size:10px;text-align:center;letter-spacing:1px;text-transform:uppercase;transition:all .1s;line-height:1.4}
+.eg-ab:hover{background:#1a1a1a;border-color:#666;color:#ccc}
+.eg-ab.on{background:#1a1a1a;border-color:#fff;color:#fff}
+.eg-ab small{display:block;color:#333;font-size:9px;margin-top:4px;text-transform:none;letter-spacing:0;font-family:'Courier New',monospace}
+.eg-ab.on small{color:#666}
+#eg-admin-actions{display:flex;gap:8px;justify-content:center}
+.eg-aa{background:#111;border:1px solid #333;color:#666;padding:7px 16px;cursor:pointer;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase}
+.eg-aa:hover{border-color:#999;color:#ccc;background:#1a1a1a}
+#eg-admin-off{border-color:rgba(192,57,43,.4);color:#c0392b}
+#eg-admin-off:hover{background:#c0392b;color:#fff;border-color:#c0392b}
 #st-exit{position:fixed;top:110px;left:14px;z-index:9993;background:#000;border:1px solid var(--st-red,#FF3300);color:var(--st-red,#FF3300);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;padding:4px 10px;cursor:pointer;text-transform:uppercase}
 #st-exit:hover{background:var(--st-red);color:#fff}
 body.eg.t-office #st-exit{background:#fff;border-color:var(--st-red);color:var(--st-red)}
@@ -379,12 +392,12 @@ function clearPref(){try{localStorage.removeItem(LS_KEY);}catch(e){}}
 function loadPref(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'null');}catch(e){return null;}}
 
 /* ── ACTIVATION SEQUENCES ────────────────────────────────────── */
-var SEQUENCES={'geocities':'geo','beam':'tos','frack':'bsg','redpill':'matrix','tardis':'who','dundermifflin':'office'};
+var SEQUENCES={'geocities':'geo','beam':'tos','engage':'tng','frack':'bsg','redpill':'matrix','tardis':'who','twss':'office'};
 var KONAMI=[38,38,40,40,37,39,37,39,66,65], kIdx=0;
 var typeBuf='', typeTimer=null;
 document.addEventListener('keydown',function(e){
   var code=e.keyCode||e.which, key=(e.key||'').toLowerCase();
-  if(code===KONAMI[kIdx]){kIdx++;if(kIdx===KONAMI.length){kIdx=0;if(document.getElementById('eg-root'))deactivate();else activate('geo');}}
+  if(code===KONAMI[kIdx]){kIdx++;if(kIdx===KONAMI.length){kIdx=0;openAdmin();}}
   else{kIdx=(code===KONAMI[0])?1:0;}
   if(key.length===1){
     typeBuf+=key;
@@ -413,7 +426,7 @@ var logoClicks=0,logoTimer2=null;
 function onLogoClick(){
   logoClicks++;
   if(logoTimer2)clearTimeout(logoTimer2);
-  if(logoClicks>=5){logoClicks=0;if(document.getElementById('eg-root'))deactivate();else{var p=loadPref();activate(p&&p.theme?p.theme:'tos');}}
+  if(logoClicks>=5){logoClicks=0;openAdmin();}
   else{logoTimer2=setTimeout(function(){logoClicks=0;},2500);}
 }
 function attachLogoHooks(){
@@ -490,7 +503,6 @@ function buildTrekUI(d){
         '<button class="st-kb" data-scale="sc-lg">L</button>'+
         '<button class="st-kb" data-scale="sc-xl">XL</button>'+
       '</div>'+
-      '<div class="st-cg"><button class="st-ab" id="st-ab">&#128263; OFF</button></div>'+
     '</div>'+
     '<button id="st-exit">&#x2716; EXIT</button>'+
     '<button id="st-stog">&#9670; STATS</button>'+
@@ -527,7 +539,6 @@ function activate(theme,scale,audio){
       document.getElementById('st-stats').style.display=statsVisible?'block':'none';
       if(statsVisible)fetchStats();
     });
-    document.getElementById('st-ab').addEventListener('click',stToggleAudio);
     var sBtns=document.querySelectorAll('.st-sb');
     for(var i=0;i<sBtns.length;i++)(function(b){b.addEventListener('click',function(){stSwitchTheme(b.getAttribute('data-theme'));});})(sBtns[i]);
     var kBtns=document.querySelectorAll('.st-kb');
@@ -584,6 +595,55 @@ function stSetScale(sc){
   for(var j=0;j<kBtns.length;j++)kBtns[j].className='st-kb'+(kBtns[j].getAttribute('data-scale')===sc?' on':'');
   curScale=sc;savePref();
 }
+
+/* ── ADMIN PANEL ─────────────────────────────────────────────── */
+var THEME_META=[
+  {id:'geo',    label:'GEO­CITIES',      code:'GEOCITIES'},
+  {id:'tos',    label:'STAR TREK TOS',    code:'BEAM'},
+  {id:'tng',    label:'STAR TREK TNG',    code:'ENGAGE'},
+  {id:'ds9',    label:'STAR TREK DS9',    code:''},
+  {id:'voy',    label:'STAR TREK VOY',    code:''},
+  {id:'bsg',    label:'BATTLESTAR GALACTICA', code:'FRACK'},
+  {id:'matrix', label:'THE MATRIX',       code:'REDPILL'},
+  {id:'who',    label:'DOCTOR WHO',        code:'TARDIS'},
+  {id:'office', label:'THE OFFICE',        code:'TWSS'}
+];
+function openAdmin(){
+  if(document.getElementById('eg-admin'))return;
+  var isActive=!!document.getElementById('eg-root');
+  var h='<div id="eg-admin-box"><div id="eg-admin-ttl">&#9670; EASTER EGG CONSOLE &#9670;</div><div id="eg-admin-sub">ADMIN ACCESS &mdash; SELECT UNIVERSE</div><div id="eg-admin-grid">';
+  for(var i=0;i<THEME_META.length;i++){
+    var m=THEME_META[i];
+    var on=(isActive&&curTheme===m.id);
+    h+='<button class="eg-ab'+(on?' on':'')+'" data-theme="'+m.id+'">'+m.label+(m.code?'<small>'+m.code+'</small>':'')+'</button>';
+  }
+  h+='</div><div id="eg-admin-actions"><button class="eg-aa" id="eg-admin-close">&#x2716;&nbsp;CLOSE</button>';
+  if(isActive)h+='<button class="eg-aa" id="eg-admin-off">&#x25fc;&nbsp;DEACTIVATE</button>';
+  h+='</div></div>';
+  var overlay=document.createElement('div');
+  overlay.id='eg-admin';
+  overlay.innerHTML=h;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)closeAdmin();});
+  document.getElementById('eg-admin-close').addEventListener('click',closeAdmin);
+  var offBtn=document.getElementById('eg-admin-off');
+  if(offBtn)offBtn.addEventListener('click',function(){closeAdmin();deactivate();});
+  var btns=overlay.querySelectorAll('.eg-ab');
+  for(var j=0;j<btns.length;j++)(function(btn){
+    btn.addEventListener('click',function(){
+      var newTheme=btn.getAttribute('data-theme');
+      closeAdmin();
+      var root=document.getElementById('eg-root');
+      if(root){
+        var geoNow=document.body.classList.contains('t-geo');
+        var geoNew=(newTheme==='geo');
+        if(geoNow===geoNew){stSwitchTheme(newTheme);}
+        else{deactivate(true);activate(newTheme);}
+      }else{activate(newTheme);}
+    });
+  })(btns[j]);
+}
+function closeAdmin(){var a=document.getElementById('eg-admin');if(a&&a.parentNode)a.parentNode.removeChild(a);}
 
 /* ── AUDIO ───────────────────────────────────────────────────── */
 function initAudio(){if(audioCtx)return true;try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();return true;}catch(e){return false;}}
