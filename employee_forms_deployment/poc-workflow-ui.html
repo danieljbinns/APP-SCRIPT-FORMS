@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<!--
+  PROOF OF CONCEPT: Standardized Workflow Flow + Step Detail Modal
+  ─────────────────────────────────────────────────────────────────
+  • FlowRenderer  — JS component, accepts a steps config array, renders
+                    the flowchart. Handles complete / active / pending /
+                    future / na / skipped states. N/A steps are collapsed
+                    by default with a "show" toggle.
+  • StepModal     — JS component, accepts any key-value data object,
+                    renders ALL fields (no skip list). Replaces the
+                    raw-data-table with a proper grid layout.
+  Both are self-contained enough to drop into SharedComponents.html.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow UI — POC</title>
+  <style>
+    /* ── Tokens (match app) ─────────────────────────────────── */
+    :root {
+      --bg:           #0c0c0c;
+      --card-bg:      #1a1a1a;
+      --card-bg-2:    #222;
+      --border:       #333;
+      --border-light: #2a2a2a;
+      --text:         #f0f0f0;
+      --text-muted:   #888;
+      --text-dim:     #555;
+      --brand:        #EB1C2D;
+      --success:      #00c853;
+      --warning:      #ffab00;
+      --info:         #4dabf7;
+      --na-color:     #444;
+      --font:         'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* ── Base ────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px 20px;
+    }
+    a { color: var(--text-muted); text-decoration: none; }
+    a:hover { color: var(--text); }
+
+    .container { max-width: 1020px; margin: 0 auto; }
+
+    /* ── Page header ─────────────────────────────────────────── */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+    }
+    .page-header h1 { font-size: 22px; font-weight: 500; margin-top: 6px; }
+    .back-link { font-size: 13px; display: flex; align-items: center; gap: 6px; }
+
+    /* ── Status pill ─────────────────────────────────────────── */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .status-pill.complete  { background: rgba(0,200,83,.15);  color: var(--success); }
+    .status-pill.active    { background: rgba(255,171,0,.15); color: var(--warning); }
+    .status-pill.pending   { background: rgba(255,171,0,.15); color: var(--warning); }
+    .status-pill.future    { background: #222; color: var(--text-muted); }
+    .status-pill.na        { background: #1e1e1e; color: var(--text-dim); }
+    .status-pill.skipped   { background: #1e1e1e; color: var(--text-dim); }
+
+    /* ── Card ────────────────────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--brand);
+      font-weight: 600;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Employee snapshot grid ──────────────────────────────── */
+    .snapshot-name { font-size: 20px; font-weight: 500; margin-bottom: 16px; }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px 20px;
+    }
+    .detail-item label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .detail-item .val { font-size: 14px; }
+    .detail-item .val.empty { color: var(--text-dim); font-style: italic; }
+
+    /* ── Workflow tabs ───────────────────────────────────────── */
+    .wf-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .wf-tab {
+      padding: 7px 18px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: var(--font);
+      transition: all .15s;
+    }
+    .wf-tab:hover { border-color: #555; color: var(--text); }
+    .wf-tab.active { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+
+    /* ════════════════════════════════════════════════════════════
+       FLOW COMPONENT
+       ════════════════════════════════════════════════════════════ */
+    .flow-section { padding: 4px 0; }
+    .flow-section-title {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+
+    .flow-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* Row wraps one step or a group of parallel steps */
+    .flow-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      position: relative;
+      width: 100%;
+    }
+
+    /* Connector between sequential rows */
+    .flow-connector {
+      width: 2px;
+      height: 32px;
+      background: var(--border);
+      margin: 0 auto;
+      flex-shrink: 0;
+    }
+
+    /* "Comb" connector above parallel group */
+    .flow-branch-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+    .flow-branch-bar {
+      width: 70%;
+      height: 2px;
+      background: var(--border);
+      position: relative;
+      margin-bottom: 0;
+    }
+
+    /* Step card */
+    .flow-card {
+      background: var(--card-bg-2);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      width: 200px;
+      min-width: 160px;
+      text-align: left;
+      cursor: pointer;
+      transition: transform .15s, border-color .15s, box-shadow .15s;
+      position: relative;
+    }
+    .flow-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+
+    .flow-card.complete  { border-top-color: var(--success); }
+    .flow-card.active    { border-top-color: var(--warning); }
+    .flow-card.pending   { border-top-color: var(--warning); opacity: .85; }
+    .flow-card.future    { border-top-color: var(--border);  opacity: .5; }
+    .flow-card.na        {
+      border-top-color: var(--na-color);
+      opacity: .45;
+      pointer-events: none; /* no click when N/A */
+    }
+    .flow-card.skipped   { border-top-color: var(--na-color); opacity: .45; }
+
+    .flow-card-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .flow-card.na    .flow-card-label,
+    .flow-card.skipped .flow-card-label { text-decoration: line-through; color: var(--text-dim); }
+
+    .flow-card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .flow-card-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 2px 7px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .flow-card.complete  .flow-card-badge { background: rgba(0,200,83,.15);  color: var(--success); }
+    .flow-card.active    .flow-card-badge { background: rgba(255,171,0,.15); color: var(--warning); }
+    .flow-card.pending   .flow-card-badge { background: rgba(255,171,0,.12); color: var(--warning); }
+    .flow-card.future    .flow-card-badge { background: #222; color: var(--text-dim); }
+    .flow-card.na        .flow-card-badge { background: #222; color: var(--na-color); }
+    .flow-card.skipped   .flow-card-badge { background: #222; color: var(--na-color); }
+
+    .flow-card-actions {
+      display: flex;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    .flow-btn {
+      flex: 1;
+      padding: 4px 0;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: opacity .15s;
+    }
+    .flow-btn:hover { opacity: .8; }
+    .flow-btn.view-data { background: #2a2a2a; color: var(--text-muted); border: 1px solid #444; }
+    .flow-btn.view-form { background: var(--brand); color: #fff; }
+    .flow-btn.remind    { background: var(--warning); color: #000; }
+
+    /* Required badge on card */
+    .flow-card-optional {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      font-size: 9px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    /* N/A collapse toggle */
+    .na-toggle {
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px 14px;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      background: transparent;
+      font-family: var(--font);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .15s;
+      margin: 4px auto 0;
+    }
+    .na-toggle:hover { border-color: #555; color: var(--text); }
+    .na-toggle .na-count {
+      background: var(--card-bg-2);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    /* Parallel group section label */
+    .parallel-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-dim);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       STEP DETAIL MODAL
+       ════════════════════════════════════════════════════════════ */
+    .step-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.85);
+      z-index: 1000;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+      overflow-y: auto;
+    }
+    .step-modal-overlay.open { display: flex; }
+
+    .step-modal {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 780px;
+      position: relative;
+      overflow: hidden;
+      animation: modalIn .15s ease-out;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Status stripe across top */
+    .step-modal-stripe {
+      height: 4px;
+      width: 100%;
+    }
+    .step-modal-stripe.complete { background: var(--success); }
+    .step-modal-stripe.active   { background: var(--warning); }
+    .step-modal-stripe.pending  { background: var(--warning); }
+    .step-modal-stripe.future   { background: var(--border); }
+    .step-modal-stripe.na       { background: var(--na-color); }
+
+    .step-modal-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .step-modal-title { font-size: 20px; font-weight: 500; margin-bottom: 6px; }
+    .step-modal-context { font-size: 13px; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; }
+    .step-modal-context span::before { content: '·'; margin-right: 10px; color: var(--text-dim); }
+    .step-modal-context span:first-child::before { display: none; }
+
+    .step-modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: -2px;
+    }
+    .step-modal-close:hover { background: #333; color: var(--text); }
+
+    .step-modal-body { padding: 20px 24px 28px; }
+
+    /* Data grid — 2 col on desktop, 1 on mobile */
+    .step-data-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    @media (max-width: 600px) {
+      .step-data-grid { grid-template-columns: 1fr; }
+    }
+
+    .step-data-cell {
+      background: var(--card-bg);
+      padding: 10px 14px;
+    }
+    .step-data-cell:hover { background: #1f1f1f; }
+    .step-data-cell .field-key {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    .step-data-cell .field-val {
+      font-size: 14px;
+      color: var(--text);
+      word-break: break-word;
+    }
+    .step-data-cell .field-val.empty { color: var(--text-dim); font-style: italic; font-size: 13px; }
+    .step-data-cell .field-val a { color: var(--info); }
+
+    /* Full-width cell for long values */
+    .step-data-cell.full-width { grid-column: 1 / -1; }
+
+    .step-data-empty {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    /* ── Flight check table ──────────────────────────────────── */
+    .flight-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .flight-table th {
+      text-align: left;
+      color: var(--text-muted);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .flight-table td { padding: 12px; border-bottom: 1px solid var(--border-light); }
+    .flight-table tr:last-child td { border-bottom: none; }
+    .flight-table tr.status-na td { opacity: .5; }
+
+    .step-name-cell { font-weight: 500; }
+    .step-optional-tag {
+      display: inline-block;
+      font-size: 9px;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 4px;
+      margin-left: 6px;
+      vertical-align: middle;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .tbl-btn {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font);
+    }
+    .tbl-btn.view-data { background: #2a2a2a; color: var(--text-muted); border: 1px solid #444; }
+    .tbl-btn.view-data:hover { background: #333; color: var(--text); }
+    .tbl-btn.remind    { background: var(--warning); color: #000; margin-left: 4px; }
+    .tbl-btn.view-form { background: var(--brand); color: #fff; margin-left: 4px; }
+
+    /* ── POC switcher (demo only) ────────────────────────────── */
+    .poc-notice {
+      background: rgba(235,28,45,.08);
+      border: 1px solid rgba(235,28,45,.25);
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    .poc-notice strong { color: var(--brand); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- POC banner -->
+  <div class="poc-notice">
+    <strong>POC — Static Demo.</strong>
+    Click any flow step to open the standardized detail modal.
+    Switch workflows using the tabs. N/A steps are collapsed by default.
+  </div>
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <a href="#" class="back-link">← Back to Dashboard</a>
+      <h1 style="margin-top:8px;">Request Details</h1>
+    </div>
+    <div id="wfStatusBadge"></div>
+  </div>
+
+  <!-- Workflow switcher (POC only — in real app this is driven by workflowId prefix) -->
+  <div class="wf-tabs">
+    <button class="wf-tab active" onclick="switchWorkflow('onboarding')">New Hire — Michael Nogalo</button>
+    <button class="wf-tab" onclick="switchWorkflow('termination')">Termination — Sara Finch</button>
+    <button class="wf-tab" onclick="switchWorkflow('change')">Status Change — David Lau</button>
+  </div>
+
+  <!-- Employee Snapshot -->
+  <div class="card" id="snapshotCard">
+    <div class="snapshot-name" id="snapshotName">Michael Nogalo</div>
+    <div class="detail-grid" id="snapshotGrid"></div>
+  </div>
+
+  <!-- Flow + Flight Check card -->
+  <div class="card">
+    <div class="card-title">Live Request Flow</div>
+    <div class="flow-section">
+      <div id="flowRoot"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Flight Check</div>
+    <table class="flight-table">
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>Status</th>
+          <th>Completed By</th>
+          <th>Timestamp</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="flightBody"></tbody>
+    </table>
+  </div>
+
+</div><!-- /container -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     STEP DETAIL MODAL  (single instance, reused for all steps)
+═══════════════════════════════════════════════════════════ -->
+<div class="step-modal-overlay" id="stepModalOverlay" onclick="handleOverlayClick(event)">
+  <div class="step-modal" id="stepModal">
+    <div class="step-modal-stripe" id="modalStripe"></div>
+    <div class="step-modal-header">
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+          <div class="step-modal-title" id="modalTitle">Step Title</div>
+          <div id="modalStatusPill"></div>
+        </div>
+        <div class="step-modal-context" id="modalContext"></div>
+      </div>
+      <button class="step-modal-close" onclick="StepModal.close()">×</button>
+    </div>
+    <div class="step-modal-body">
+      <div id="modalDataGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────
+   MOCK DATA
+───────────────────────────────────────────────────────────── */
+const WORKFLOWS = {
+
+  onboarding: {
+    status: 'active',
+    statusLabel: 'In Progress',
+    snapshot: {
+      name: 'Michael Nogalo',
+      fields: [
+        ['Workflow ID', 'WF20260512-001'],
+        ['Employment Type', 'Hourly'],
+        ['Employee Type', 'Direct Hire'],
+        ['Position Title', 'Industrial Cleaner'],
+        ['Site', 'GM Oshawa TR220 HKB'],
+        ['Job Site #', 'TR220'],
+        ['Start Date', '5/19/2026'],
+        ['Manager', 'J. McLeod · jmcleod@robinsonsolutions.com'],
+        ['Requester', 'Connie Malandrino · connie.malandrino@robinsonsolutions.com'],
+        ['System Access', 'No'],
+        ['Date Requested', '5/12/2026'],
+      ]
+    },
+    steps: [
+      { id: 'initial_request', label: 'Initial Request', desc: 'Submitted by manager', status: 'complete', required: true, group: 'seq' },
+      { id: 'id_setup',        label: 'ID Setup',        desc: 'IT system generation', status: 'complete', required: true, group: 'parallel-1' },
+      { id: 'hr_verification', label: 'HR Verification', desc: 'Core data review',     status: 'active',   required: true, group: 'parallel-1' },
+      { id: 'it_setup',        label: 'IT Setup',        desc: 'Equipment & access',   status: 'future',   required: true, group: 'seq' },
+      { id: 'jonas',           label: 'Jonas',           desc: 'Job numbers',          status: 'future',   required: false, group: 'specialist' },
+      { id: 'credit_card',     label: 'Credit Card',     desc: 'Finance approval',     status: 'na',       required: false, group: 'specialist' },
+      { id: 'fleetio',         label: 'Fleetio',         desc: 'Vehicle access',       status: 'na',       required: false, group: 'specialist' },
+      { id: 'business_cards',  label: 'Business Cards',  desc: 'Printing order',       status: 'na',       required: false, group: 'specialist' },
+      { id: 'sitedocs',        label: 'SiteDocs',        desc: 'Safety training',      status: 'future',   required: false, group: 'specialist' },
+      { id: 'review',          label: '30/60/90 Review', desc: 'Performance reviews',  status: 'future',   required: false, group: 'specialist' },
+    ],
+    stepData: {
+      initial_request: {
+        'Status': 'Complete',
+        'Submitted At': '5/12/2026 9:14 AM',
+        'First Name': 'Michael',
+        'Last Name': 'Nogalo',
+        'New Hire / Rehire': 'New Hire',
+        'Employment Type': 'Hourly',
+        'Employee Type': 'Direct Hire',
+        'Position Title': 'Industrial Cleaner',
+        'Job Site #': 'TR220 - GM Oshawa HKB',
+        'Site Name': 'GM Oshawa TR220 HKB',
+        'Department': '',
+        'System Access': 'No',
+        'Hire Date': '5/19/2026',
+        'Manager Email': 'Jmcleod@robinsonsolutions.com',
+        'Manager Name': 'James McLeod',
+        'Requester Email': 'connie.malandrino@robinsonsolutions.com',
+        'Requester Name': 'Connie Malandrino',
+        'Date Requested': '5/12/2026',
+        'Comments': '',
+        'Workflow ID': 'WF20260512-001',
+      },
+      id_setup: {
+        'Status': 'Complete',
+        'Submitted At': '5/12/2026 10:05 AM',
+        'Submitted By': 'it.admin@team-group.com',
+        'Google Email': 'mnogalo@team-group.com',
+        'Google Domain': 'team-group.com',
+        'Employee ID': '10412',
+        'Username': 'mnogalo',
+        'Requested Username': 'mnogalo',
+        'AD Groups': 'Standard Users, Payroll View',
+        'ADP Access': 'No',
+        'JR Assigned': 'Industrial Cleaner - Hourly',
+        'Notes': '',
+      },
+      hr_verification: {
+        'Status': 'In Progress',
+        'HR Reviewer': 'hr@team-group.com',
+        'Verified Name': 'Michael Nogalo',
+        'Verified Title': '',
+        'Verified JR': '',
+        'Verified Manager': '',
+        'ADP Salary Access': 'No',
+        'Notes': '',
+        'Timestamp': '',
+      },
+    }
+  },
+
+  termination: {
+    status: 'active',
+    statusLabel: 'In Progress',
+    snapshot: {
+      name: 'Sara Finch',
+      fields: [
+        ['Workflow ID', 'TERM_20260508-003'],
+        ['Employee Type', 'Salaried'],
+        ['Site', 'Head Office'],
+        ['Term Date', '5/22/2026'],
+        ['Reason', 'Voluntary Resignation'],
+        ['Requester', 'mgr@team-group.com'],
+        ['Documentation', 'View File →'],
+      ]
+    },
+    steps: [
+      { id: 'termination_request',  label: 'EOE Request',    desc: 'Submitted by manager', status: 'complete', required: true, group: 'seq' },
+      { id: 'termination_approval', label: 'HR Approval',    desc: 'HR review & decision', status: 'active',   required: true, group: 'seq' },
+      { id: 'asset_collection',     label: 'Asset Collection',    desc: 'IT assets',        status: 'future',  required: true,  group: 'action' },
+      { id: 'systems_deact',        label: 'Systems Deactivation', desc: 'IT',               status: 'future',  required: true,  group: 'action' },
+      { id: 'hr_eoe',               label: 'HR EOE Process',      desc: 'HR steps',         status: 'future',  required: true,  group: 'action' },
+      { id: 'fleet_eoe',            label: 'Fleet',               desc: 'Vehicle return',   status: 'na',      required: false, group: 'action' },
+      { id: 'finance_eoe',          label: 'Finance',             desc: 'Final pay',        status: 'future',  required: true,  group: 'action' },
+    ],
+    stepData: {
+      termination_request: {
+        'Status': 'Complete',
+        'Employee Name': 'Sara Finch',
+        'Employee Type': 'Salaried',
+        'Site': 'Head Office',
+        'Term Date': '5/22/2026',
+        'Reason': 'Voluntary Resignation',
+        'Manager Name': 'Brian Toth',
+        'Manager Email': 'btoth@team-group.com',
+        'Requester Name': 'Brian Toth',
+        'Requester Email': 'btoth@team-group.com',
+        'Submitted At': '5/8/2026',
+        'HR Pre-Approved': 'Yes',
+        'Has Reports': 'No',
+        'Systems to Deactivate': 'Google Account, ADP, Jonas',
+        'Google Account': 'Yes',
+        'Email Forwarding': 'btoth@team-group.com',
+        'Drive Files Transfer': 'btoth@team-group.com',
+        'Inbox Delegate': '',
+        'Account Duration': '30 days',
+        'Vacation Message': 'Sara Finch has left the company. Please contact Brian Toth.',
+        'Equipment to Return': 'Laptop, Phone',
+        'Phone': '416-555-0101',
+        'Computer Serial': 'MBP-2023-7742',
+        'Comments': 'Last day is May 22.',
+        'Documentation URL': 'https://drive.google.com/file/example',
+      }
+    }
+  },
+
+  change: {
+    status: 'complete',
+    statusLabel: 'Complete',
+    snapshot: {
+      name: 'David Lau',
+      fields: [
+        ['Workflow ID', 'CHANGE_20260430-012'],
+        ['Current Classification', 'Hourly'],
+        ['Current Title', 'Labourer'],
+        ['Effective Date', '5/1/2026'],
+        ['Site', 'Brampton DC'],
+        ['Change Type', 'Title Change, Site Transfer'],
+        ['Current Manager', 'ops@robinsonsolutions.com'],
+        ['Requester', 'hr@robinsonsolutions.com'],
+      ]
+    },
+    steps: [
+      { id: 'change_request',    label: 'Change Request',  desc: 'Submitted by HR',     status: 'complete', required: true,  group: 'seq' },
+      { id: 'change_approval',   label: 'HR Approval',     desc: 'HR review',           status: 'complete', required: true,  group: 'seq' },
+      { id: 'change_manager',    label: 'Manager Notify',  desc: 'New manager confirm', status: 'complete', required: true,  group: 'action' },
+      { id: 'change_it',         label: 'IT Update',       desc: 'Access changes',      status: 'complete', required: true,  group: 'action' },
+      { id: 'change_idsetup',    label: 'ID Update',       desc: 'ID system update',    status: 'complete', required: true,  group: 'action' },
+      { id: 'change_safety',     label: 'Safety',          desc: 'SiteDocs update',     status: 'complete', required: false, group: 'action' },
+      { id: 'change_creditcard', label: 'Credit Card',     desc: 'Limit update',        status: 'na',       required: false, group: 'action' },
+      { id: 'change_fleetio',    label: 'Fleetio',         desc: 'Vehicle access',      status: 'na',       required: false, group: 'action' },
+    ],
+    stepData: {}
+  }
+};
+
+
+/* ─────────────────────────────────────────────────────────────
+   FLOW RENDERER COMPONENT
+   Accepts:  steps[] array from workflow config
+   Renders:  the full vertical flow into #flowRoot
+   Rules:
+     - group: 'seq'         → full-width single card
+     - group: 'parallel-N'  → cards side by side
+     - group: 'specialist' / 'action' → parallel fan, N/A collapsible
+───────────────────────────────────────────────────────────── */
+const FlowRenderer = {
+
+  render: function(steps, workflowId) {
+    const root = document.getElementById('flowRoot');
+    root.innerHTML = '';
+
+    // Group consecutive parallel groups
+    const groups = this._groupSteps(steps);
+
+    groups.forEach((group, gi) => {
+      // Connector before each group (except first)
+      if (gi > 0) {
+        const conn = document.createElement('div');
+        conn.className = 'flow-connector';
+        root.appendChild(conn);
+      }
+
+      if (group.type === 'seq') {
+        const row = document.createElement('div');
+        row.className = 'flow-row';
+        row.appendChild(this._makeCard(group.steps[0], workflowId));
+        root.appendChild(row);
+
+      } else if (group.type === 'parallel') {
+        // Side-by-side cards
+        const row = document.createElement('div');
+        row.className = 'flow-row';
+        row.style.flexWrap = 'wrap';
+        group.steps.forEach(s => row.appendChild(this._makeCard(s, workflowId)));
+        root.appendChild(row);
+
+      } else if (group.type === 'fan') {
+        // Optional/specialist parallel group with N/A collapse
+        const naSteps      = group.steps.filter(s => s.status === 'na' || s.status === 'skipped');
+        const activeSteps  = group.steps.filter(s => s.status !== 'na' && s.status !== 'skipped');
+        const naCount      = naSteps.length;
+
+        // Label
+        const lbl = document.createElement('div');
+        lbl.className = 'parallel-label';
+        lbl.textContent = group.label || 'Specialist / Optional Tasks';
+        root.appendChild(lbl);
+
+        // Row for active steps
+        const row = document.createElement('div');
+        row.className = 'flow-row';
+        row.style.flexWrap = 'wrap';
+        activeSteps.forEach(s => row.appendChild(this._makeCard(s, workflowId)));
+        root.appendChild(row);
+
+        // N/A collapse
+        if (naCount > 0) {
+          const naWrap = document.createElement('div');
+          naWrap.id = 'naWrap_' + gi;
+
+          const naRow = document.createElement('div');
+          naRow.className = 'flow-row';
+          naRow.style.cssText = 'flex-wrap:wrap; display:none;';
+          naRow.id = 'naRow_' + gi;
+          naSteps.forEach(s => naRow.appendChild(this._makeCard(s, workflowId)));
+          naWrap.appendChild(naRow);
+
+          const toggle = document.createElement('button');
+          toggle.className = 'na-toggle';
+          toggle.id = 'naToggle_' + gi;
+          toggle.innerHTML = '<span class="na-count">' + naCount + ' N/A</span> not required — <span id="naToggleTxt_' + gi + '">show ▾</span>';
+          (function(idx) {
+            toggle.onclick = function() {
+              const r = document.getElementById('naRow_'  + idx);
+              const t = document.getElementById('naToggleTxt_' + idx);
+              const open = r.style.display !== 'none' && r.style.display !== '';
+              r.style.display = open ? 'none' : 'flex';
+              t.textContent = open ? 'show ▾' : 'hide ▴';
+            };
+          })(gi);
+          naWrap.appendChild(toggle);
+          root.appendChild(naWrap);
+        }
+      }
+    });
+  },
+
+  _groupSteps: function(steps) {
+    const groups = [];
+    let i = 0;
+    while (i < steps.length) {
+      const s = steps[i];
+      if (s.group === 'seq') {
+        groups.push({ type: 'seq', steps: [s] });
+        i++;
+      } else if (s.group && s.group.startsWith('parallel')) {
+        // collect consecutive same-group steps
+        const key = s.group;
+        const batch = [];
+        while (i < steps.length && steps[i].group === key) {
+          batch.push(steps[i]); i++;
+        }
+        groups.push({ type: 'parallel', steps: batch });
+      } else if (s.group === 'specialist' || s.group === 'action') {
+        const key = s.group;
+        const batch = [];
+        while (i < steps.length && steps[i].group === key) {
+          batch.push(steps[i]); i++;
+        }
+        groups.push({ type: 'fan', label: key === 'specialist' ? 'Specialist / Optional Tasks' : 'Action Items', steps: batch });
+      } else {
+        groups.push({ type: 'seq', steps: [s] });
+        i++;
+      }
+    }
+    return groups;
+  },
+
+  _makeCard: function(step, workflowId) {
+    const card = document.createElement('div');
+    card.className = 'flow-card ' + step.status;
+    card.id = 'flowcard_' + step.id;
+
+    if (!step.required) {
+      const opt = document.createElement('span');
+      opt.className = 'flow-card-optional';
+      opt.textContent = 'optional';
+      card.appendChild(opt);
+    }
+
+    const label = document.createElement('div');
+    label.className = 'flow-card-label';
+    label.textContent = step.label;
+    card.appendChild(label);
+
+    const desc = document.createElement('div');
+    desc.className = 'flow-card-desc';
+    desc.textContent = step.desc || '';
+    card.appendChild(desc);
+
+    const badge = document.createElement('div');
+    badge.className = 'flow-card-badge';
+    badge.textContent = step.status === 'na' ? 'N/A' : step.status === 'active' ? 'In Progress' : step.status.charAt(0).toUpperCase() + step.status.slice(1);
+    card.appendChild(badge);
+
+    // Action buttons
+    if (step.status !== 'na' && step.status !== 'skipped') {
+      const acts = document.createElement('div');
+      acts.className = 'flow-card-actions';
+
+      const viewDataBtn = document.createElement('button');
+      viewDataBtn.className = 'flow-btn view-data';
+      viewDataBtn.textContent = 'View Details';
+      (function(sid) {
+        viewDataBtn.onclick = function(e) {
+          e.stopPropagation();
+          openStepModal(sid);
+        };
+      })(step.id);
+      acts.appendChild(viewDataBtn);
+
+      if (step.status === 'pending' || step.status === 'active' || step.status === 'future') {
+        const remBtn = document.createElement('button');
+        remBtn.className = 'flow-btn remind';
+        remBtn.textContent = 'Remind';
+        remBtn.onclick = function(e) { e.stopPropagation(); alert('Reminder sent (mock).'); };
+        acts.appendChild(remBtn);
+      }
+
+      card.appendChild(acts);
+    }
+
+    return card;
+  }
+};
+
+
+/* ─────────────────────────────────────────────────────────────
+   STEP MODAL COMPONENT
+   Opens with: StepModal.open(stepId, stepLabel, status, context, dataObj)
+   dataObj:    plain key-value object — ALL keys rendered, empty = "—"
+───────────────────────────────────────────────────────────── */
+const StepModal = {
+
+  open: function(stepId, stepLabel, status, contextParts, dataObj) {
+    // Stripe + status pill
+    const stripe = document.getElementById('modalStripe');
+    stripe.className = 'step-modal-stripe ' + status;
+
+    document.getElementById('modalTitle').textContent = stepLabel;
+
+    const pill = document.getElementById('modalStatusPill');
+    const pillLabel = status === 'na' ? 'N/A' : status === 'active' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1);
+    pill.innerHTML = '<span class="status-pill ' + status + '">' + pillLabel + '</span>';
+
+    // Context line  (employee · workflow type · id)
+    const ctx = document.getElementById('modalContext');
+    ctx.innerHTML = contextParts.map(function(p) { return '<span>' + escHtml(p) + '</span>'; }).join('');
+
+    // Data grid — render ALL keys, empty → "—"
+    this._renderData(dataObj);
+
+    document.getElementById('stepModalOverlay').classList.add('open');
+    document.getElementById('stepModal').focus();
+  },
+
+  close: function() {
+    document.getElementById('stepModalOverlay').classList.remove('open');
+  },
+
+  _renderData: function(dataObj) {
+    const grid = document.getElementById('modalDataGrid');
+
+    if (!dataObj || Object.keys(dataObj).length === 0) {
+      grid.innerHTML = '<div class="step-data-empty">No data recorded for this step yet.</div>';
+      return;
+    }
+
+    // Keys to show full-width (long text, URLs, notes)
+    const FULL_WIDTH_KEYS = new Set(['Notes', 'Comments', 'Documentation URL', 'AD Groups', 'Systems to Deactivate', 'Equipment to Return', 'Vacation Message', 'Drive Files Transfer']);
+
+    let html = '<div class="step-data-grid">';
+    for (const key in dataObj) {
+      if (!dataObj.hasOwnProperty(key)) continue;
+      const val = dataObj[key];
+      const isEmpty = val === '' || val === null || val === undefined;
+      const isFull  = FULL_WIDTH_KEYS.has(key);
+      const isUrl   = typeof val === 'string' && val.startsWith('http');
+
+      let display;
+      if (isEmpty) {
+        display = '<span class="field-val empty">—</span>';
+      } else if (isUrl) {
+        display = '<a href="' + escHtml(val) + '" target="_blank" class="field-val">' + escHtml(val.length > 55 ? val.slice(0,55) + '…' : val) + '</a>';
+      } else {
+        display = '<span class="field-val">' + escHtml(String(val)) + '</span>';
+      }
+
+      html += '<div class="step-data-cell' + (isFull ? ' full-width' : '') + '">';
+      html += '<div class="field-key">' + escHtml(key) + '</div>';
+      html += display;
+      html += '</div>';
+    }
+    html += '</div>';
+    grid.innerHTML = html;
+  }
+};
+
+
+/* ─────────────────────────────────────────────────────────────
+   WIRING — opens modal for a given step ID within active workflow
+───────────────────────────────────────────────────────────── */
+let activeWorkflow = 'onboarding';
+
+function openStepModal(stepId) {
+  const wf   = WORKFLOWS[activeWorkflow];
+  const step = wf.steps.find(s => s.id === stepId);
+  if (!step) return;
+
+  const snap    = wf.snapshot;
+  const data    = (wf.stepData && wf.stepData[stepId]) || null;
+  const context = [snap.name, activeWorkflow === 'onboarding' ? 'New Hire Onboarding' : activeWorkflow === 'termination' ? 'End of Employment' : 'Status Change'];
+
+  StepModal.open(stepId, step.label, step.status, context, data);
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('stepModalOverlay')) StepModal.close();
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') StepModal.close();
+});
+
+
+/* ─────────────────────────────────────────────────────────────
+   WORKFLOW SWITCHER (POC only)
+───────────────────────────────────────────────────────────── */
+function switchWorkflow(key) {
+  activeWorkflow = key;
+  document.querySelectorAll('.wf-tab').forEach(function(t, i) {
+    t.classList.toggle('active', ['onboarding','termination','change'][i] === key);
+  });
+  renderWorkflow(key);
+}
+
+function renderWorkflow(key) {
+  const wf = WORKFLOWS[key];
+
+  // Status badge
+  const badge = document.getElementById('wfStatusBadge');
+  badge.innerHTML = '<span class="status-pill ' + wf.status + '">' + wf.statusLabel + '</span>';
+
+  // Snapshot
+  document.getElementById('snapshotName').textContent = wf.snapshot.name;
+  let snapHtml = '';
+  wf.snapshot.fields.forEach(function(f) {
+    const isEmpty = !f[1] || f[1] === '';
+    snapHtml += '<div class="detail-item">';
+    snapHtml += '<label>' + escHtml(f[0]) + '</label>';
+    snapHtml += '<div class="val' + (isEmpty ? ' empty' : '') + '">' + escHtml(f[1] || '—') + '</div>';
+    snapHtml += '</div>';
+  });
+  document.getElementById('snapshotGrid').innerHTML = snapHtml;
+
+  // Flow
+  FlowRenderer.render(wf.steps, key);
+
+  // Flight check table
+  let rows = '';
+  wf.steps.forEach(function(s) {
+    const isNA   = s.status === 'na' || s.status === 'skipped';
+    const isDone = s.status === 'complete';
+    const label  = s.status === 'na' ? 'N/A' : s.status === 'active' ? 'In Progress' : s.status.charAt(0).toUpperCase() + s.status.slice(1);
+    const color  = isDone ? 'var(--success)' : isNA ? 'var(--text-dim)' : 'var(--warning)';
+    const icon   = isDone ? '✓' : isNA ? '–' : '⏳';
+
+    let actions = '—';
+    if (!isNA) {
+      actions  = '<button class="tbl-btn view-data" onclick="openStepModal(\'' + s.id + '\')">View Details</button>';
+      if (!isDone) actions += ' <button class="tbl-btn remind" onclick="alert(\'Reminder sent (mock).\')">Remind</button>';
+    }
+
+    rows += '<tr class="' + (isNA ? 'status-na' : '') + '">';
+    rows += '<td class="step-name-cell">' + escHtml(s.label) + (!s.required ? '<span class="step-optional-tag">optional</span>' : '') + '</td>';
+    rows += '<td style="color:' + color + '; font-weight:600;">' + icon + ' ' + label + '</td>';
+    rows += '<td style="color:var(--text-muted)">—</td>';
+    rows += '<td style="color:var(--text-muted)">—</td>';
+    rows += '<td>' + actions + '</td>';
+    rows += '</tr>';
+  });
+  document.getElementById('flightBody').innerHTML = rows;
+}
+
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Init
+renderWorkflow('onboarding');
+</script>
+</body>
+</html>
