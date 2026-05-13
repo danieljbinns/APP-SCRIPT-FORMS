@@ -59,7 +59,10 @@
                 <div class="form-row">
                     <div class="form-field">
                         <label>Manager Email <span class="required">*</span></label>
-                        <input type="email" name="managerEmail" id="managerEmail" placeholder="manager@team-group.com" required>
+                        <input type="email" name="managerEmail" id="managerEmail" placeholder="manager@team-group.com"
+                          pattern="[a-zA-Z0-9._%+\-]+@(team-group\.com|robinsonsolutions\.com|industrialappliedtech\.com)"
+                          required>
+                        <span class="domain-hint">Must be a @team-group.com, @robinsonsolutions.com, or @industrialappliedtech.com address</span>
                     </div>
                     <div class="form-field">
                         <label>Manager Name <span class="required">*</span></label>
