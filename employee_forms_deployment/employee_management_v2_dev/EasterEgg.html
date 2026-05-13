@@ -1,0 +1,774 @@
+<!-- EasterEgg.html — DEV ONLY — Unified Easter Egg Include
+     Activations:  Konami (↑↑↓↓←→←→BA) → GeoCities
+                   Type GEOCITIES         → GeoCities
+                   Type BEAM              → Star Trek (TOS)
+                   Type FRACK             → Battlestar Galactica
+                   Type REDPILL           → The Matrix
+                   Type TARDIS            → Doctor Who
+                   Type DUNDERMIFFLIN     → The Office
+                   Logo ×5               → last used theme (or toggle off)
+     localStorage: tg_eg_v1
+     Stats fn:     google.script.run.getStarTrekStats()
+     DEV ONLY — do not migrate to staging or prod -->
+<style>
+/* ── FONT SCALE ──────────────────────────────────────────────── */
+body.eg{--fs-2xs:10px;--fs-xs:11px;--fs-sm:13px;--fs-body:14px;--fs-md:17px;--fs-d-sm:16px;--fs-d-md:20px;--fs-d-lg:26px;--fs-d-xl:36px;--fs-d-2xl:46px}
+body.eg.sc-sm{--fs-2xs:9px;--fs-xs:10px;--fs-sm:11px;--fs-body:12px;--fs-d-sm:14px;--fs-d-md:17px;--fs-d-lg:22px;--fs-d-xl:30px;--fs-d-2xl:38px}
+body.eg.sc-lg{--fs-2xs:11px;--fs-xs:13px;--fs-sm:15px;--fs-body:17px;--fs-d-sm:19px;--fs-d-md:24px;--fs-d-lg:31px;--fs-d-xl:42px;--fs-d-2xl:54px}
+body.eg.sc-xl{--fs-2xs:13px;--fs-xs:15px;--fs-sm:17px;--fs-body:19px;--fs-d-sm:22px;--fs-d-md:28px;--fs-d-lg:36px;--fs-d-xl:48px;--fs-d-2xl:62px}
+
+/* ── THEME TOKENS ────────────────────────────────────────────── */
+body.eg.t-tos   {--st-bg:#040200;--st-panel:#090500;--st-panel2:#0E0700;--st-hi:#FFCC55;--st-mid:#FFAA00;--st-lo:#CC8800;--st-dim:#886600;--st-faint:#3A2200;--st-red:#FF3300;--st-green:#00DD55;--st-blue:#2266DD;--st-cyan:#00BBDD;--st-fd:'VT323','Courier New',monospace;--st-fb:'Share Tech Mono','Courier New',monospace;--st-btn-r:0px}
+body.eg.t-tng   {--st-bg:#000;--st-panel:#060606;--st-panel2:#0C0C0C;--st-hi:#FFDD88;--st-mid:#FF9900;--st-lo:#CC6600;--st-dim:#884400;--st-faint:#2A1800;--st-red:#CC2200;--st-green:#33AA55;--st-blue:#4466CC;--st-cyan:#6688CC;--st-fd:'Rajdhani','Arial Narrow',sans-serif;--st-fb:'Rajdhani','Arial Narrow',sans-serif;--st-btn-r:22px}
+body.eg.t-ds9   {--st-bg:#03020A;--st-panel:#070611;--st-panel2:#0C0B18;--st-hi:#CCAAFF;--st-mid:#9966EE;--st-lo:#6633BB;--st-dim:#442288;--st-faint:#1A0A33;--st-red:#FF3344;--st-green:#00CC88;--st-blue:#0088BB;--st-cyan:#00AACC;--st-fd:'Rajdhani','Arial Narrow',sans-serif;--st-fb:'Rajdhani','Arial Narrow',sans-serif;--st-btn-r:22px}
+body.eg.t-voy   {--st-bg:#000208;--st-panel:#010411;--st-panel2:#02061A;--st-hi:#99CCFF;--st-mid:#3388FF;--st-lo:#1155CC;--st-dim:#003399;--st-faint:#001133;--st-red:#FF3344;--st-green:#00DDAA;--st-blue:#0055FF;--st-cyan:#00CCEE;--st-fd:'Rajdhani','Arial Narrow',sans-serif;--st-fb:'Rajdhani','Arial Narrow',sans-serif;--st-btn-r:22px}
+body.eg.t-bsg   {--st-bg:#0C0C08;--st-panel:#141410;--st-panel2:#1C1C16;--st-hi:#DDEEBB;--st-mid:#AABB44;--st-lo:#778822;--st-dim:#445511;--st-faint:#222211;--st-red:#DD3300;--st-green:#88BB33;--st-blue:#4477AA;--st-cyan:#44AAAA;--st-fd:'Oswald','Impact',sans-serif;--st-fb:'Share Tech Mono','Courier New',monospace;--st-btn-r:0px}
+body.eg.t-matrix{--st-bg:#000;--st-panel:#030903;--st-panel2:#061206;--st-hi:#AAFFAA;--st-mid:#00FF41;--st-lo:#00CC33;--st-dim:#007722;--st-faint:#002A11;--st-red:#FF3300;--st-green:#00FF41;--st-blue:#33AAFF;--st-cyan:#00FFEE;--st-fd:'Share Tech Mono','Courier New',monospace;--st-fb:'Share Tech Mono','Courier New',monospace;--st-btn-r:0px}
+body.eg.t-who   {--st-bg:#000D1A;--st-panel:#001533;--st-panel2:#001F44;--st-hi:#D6EFFF;--st-mid:#0076D6;--st-lo:#0057B3;--st-dim:#003366;--st-faint:#001433;--st-red:#CC2200;--st-green:#00BB77;--st-blue:#003B8E;--st-cyan:#87CEEB;--st-fd:'Segoe UI','Arial',sans-serif;--st-fb:'Segoe UI','Arial',sans-serif;--st-btn-r:4px}
+body.eg.t-office{--st-bg:#F5F0E6;--st-panel:#FFF;--st-panel2:#F0E8D5;--st-hi:#1A1A1A;--st-mid:#1C4E8A;--st-lo:#2460A7;--st-dim:#6B6B6B;--st-faint:#D0C8B8;--st-red:#C0392B;--st-green:#27AE60;--st-blue:#1C4E8A;--st-cyan:#2980B9;--st-fd:Arial,Helvetica,sans-serif;--st-fb:Arial,Helvetica,sans-serif;--st-btn-r:3px}
+
+/* ── ANIMATIONS ──────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
+@keyframes eg-rainbow  {0%{color:#f00}14%{color:#f80}28%{color:#ff0}42%{color:#0f0}57%{color:#08f}71%{color:#80f}85%{color:#f0f}100%{color:#f00}}
+@keyframes eg-blink    {0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes eg-spin     {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes eg-float    {0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes eg-shake    {0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+@keyframes eg-pulse-border{0%,100%{border-color:#f00;box-shadow:0 0 8px #f00}25%{border-color:#ff0;box-shadow:0 0 8px #ff0}50%{border-color:#0f0;box-shadow:0 0 8px #0f0}75%{border-color:#08f;box-shadow:0 0 8px #08f}}
+@keyframes eg-marquee-bg{0%{background-position:0 0}100%{background-position:400px 0}}
+@keyframes eg-neon     {0%,100%{text-shadow:0 0 5px #f0f,0 0 15px #f0f}50%{text-shadow:0 0 2px #f0f}}
+@keyframes eg-explode  {0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes eg-counter  {from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+@keyframes st-blink    {0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes st-scroll-l {from{transform:translateX(100%)}to{transform:translateX(-100%)}}
+@keyframes st-scanline {0%{top:-15%}100%{top:115%}}
+@keyframes st-glow     {0%,100%{text-shadow:0 0 7px var(--st-mid)}50%{text-shadow:0 0 18px var(--st-mid),0 0 5px var(--st-hi)}}
+@keyframes st-pulse-b  {0%,100%{box-shadow:0 0 5px var(--st-mid)}50%{box-shadow:0 0 20px var(--st-mid)}}
+@keyframes st-pulse-r  {0%,100%{background:#1A0000;border-color:#FF3300}50%{background:#330000;border-color:#FF5500}}
+@keyframes st-pulse-bsg{0%,100%{background:#0D0500;border-color:#DD3300}50%{background:#200800;border-color:#FF4400}}
+@keyframes st-pulse-mtx{0%,100%{background:#001400;border-color:#00FF41}50%{background:#002800;border-color:#00FF88}}
+@keyframes st-dradis   {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes st-data-in  {from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes st-flicker  {0%,91%,93%,96%,100%{opacity:1}92%{opacity:.93}94%,97%{opacity:.96}}
+@keyframes st-mtxglitch{0%,95%,100%{transform:none;filter:none}96%{transform:translateX(4px);filter:hue-rotate(90deg)}97%{transform:translateX(-3px)}98%{transform:translateX(2px);filter:hue-rotate(-90deg)}}
+@keyframes who-vortex  {from{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.02)}to{transform:rotate(360deg) scale(1)}}
+@keyframes office-blink{0%,49%{opacity:1}50%,100%{opacity:.3}}
+
+/* ── GEO GLOBAL ──────────────────────────────────────────────── */
+body.eg.t-geo {
+  --bg-color:#000011!important;--bg-darker:#000033!important;--card-bg:rgba(0,0,80,.9)!important;
+  --text-main:#fff!important;--text-muted:#0ff!important;--brand-red:#f0f!important;
+  --brand-red-hover:#c0c!important;--border-color:#ff0!important;--border-subtle:#334488!important;
+  --input-bg:#000033!important;--input-border:#0f0!important;--success:#0f0!important;
+  --warning:#ff0!important;--danger:#f44!important;
+  background-color:#000011!important;
+  background-image:
+    radial-gradient(1px 1px at 8% 15%,#fff 0%,transparent 100%),
+    radial-gradient(1px 1px at 25% 70%,#aaf 0%,transparent 100%),
+    radial-gradient(1px 1px at 42% 35%,#fff 0%,transparent 100%),
+    radial-gradient(1px 1px at 60% 85%,#ffa 0%,transparent 100%),
+    radial-gradient(1px 1px at 78% 55%,#fff 0%,transparent 100%),
+    radial-gradient(1px 1px at 12% 90%,#aff 0%,transparent 100%),
+    radial-gradient(1px 1px at 88% 20%,#faf 0%,transparent 100%),
+    radial-gradient(2px 2px at 35% 10%,#fff 0%,transparent 100%),
+    radial-gradient(2px 2px at 55% 60%,#aaf 0%,transparent 100%) !important;
+  background-size:200px 200px!important;
+  font-family:'Comic Neue','Comic Sans MS',cursive!important;
+  padding-bottom:44px!important;
+}
+
+/* ── GEO COMPONENT OVERRIDES ─────────────────────────────────── */
+body.eg.t-geo header,body.eg.t-geo .header{background:rgba(0,0,0,.85)!important;border-bottom:4px solid #f0f!important;animation:eg-pulse-border 2s infinite!important}
+body.eg.t-geo h1{animation:eg-rainbow 1s infinite!important;font-family:'Comic Neue','Comic Sans MS',cursive!important;text-shadow:3px 3px 0 #000,-1px -1px 0 #000!important;text-transform:uppercase!important;letter-spacing:2px!important}
+body.eg.t-geo h2,body.eg.t-geo h3{animation:eg-rainbow 1.5s infinite!important;font-family:'Comic Neue','Comic Sans MS',cursive!important}
+body.eg.t-geo .nav-links a,body.eg.t-geo .header-nav a{color:#ff0!important;font-family:'Comic Neue','Comic Sans MS',cursive!important}
+body.eg.t-geo .card,body.eg.t-geo .form-section,body.eg.t-geo .details-section,body.eg.t-geo .filter-group,body.eg.t-geo .modal-content,body.eg.t-geo .dash-card{background:rgba(0,0,80,.85)!important;border:3px solid #ff0!important;border-radius:0!important;font-family:'Comic Neue','Comic Sans MS',cursive!important}
+body.eg.t-geo .card:nth-child(2n){border-color:#f0f!important}body.eg.t-geo .card:nth-child(3n){border-color:#0ff!important}body.eg.t-geo .card:nth-child(4n){border-color:#0f8!important}
+body.eg.t-geo .card-title,body.eg.t-geo .form-section-title,body.eg.t-geo .section-heading,body.eg.t-geo label{color:#ff0!important;font-family:'Comic Neue','Comic Sans MS',cursive!important;text-shadow:1px 1px #f00!important;letter-spacing:1px!important}
+body.eg.t-geo button,body.eg.t-geo .action-btn,body.eg.t-geo .action-link,body.eg.t-geo .filter-btn,body.eg.t-geo .btn{background:linear-gradient(180deg,#48f,#006)!important;border:3px outset #88f!important;border-radius:0!important;color:#fff!important;font-family:'Comic Neue','Comic Sans MS',cursive!important;font-weight:700!important;letter-spacing:1px!important;cursor:pointer!important;transition:none!important}
+body.eg.t-geo button:active,body.eg.t-geo .action-btn:active{border-style:inset!important}
+body.eg.t-geo button[type="submit"],body.eg.t-geo .submit-btn{background:linear-gradient(180deg,#4f4,#060)!important;border-color:#0f0!important;color:#000!important;animation:eg-explode 1.5s infinite!important;font-size:1.1em!important}
+body.eg.t-geo .filter-btn.active,body.eg.t-geo .filter-btn[aria-pressed="true"]{background:linear-gradient(180deg,#ff4,#660)!important;border-color:#ff0!important;color:#000!important;border-style:inset!important}
+body.eg.t-geo input[type="text"],body.eg.t-geo input[type="email"],body.eg.t-geo input[type="date"],body.eg.t-geo input[type="tel"],body.eg.t-geo input[type="number"],body.eg.t-geo select,body.eg.t-geo textarea,body.eg.t-geo .search-box{background:#000022!important;border:2px inset #0f0!important;color:#0f0!important;font-family:'Courier New',monospace!important;border-radius:0!important;caret-color:#0f0!important}
+body.eg.t-geo input::placeholder,body.eg.t-geo textarea::placeholder{color:#060!important;opacity:1!important}
+body.eg.t-geo select option{background:#000022!important;color:#0f0!important}
+body.eg.t-geo .status-badge{border-radius:0!important;font-family:'Comic Neue','Comic Sans MS',cursive!important;font-weight:700!important;border:2px solid currentColor!important;animation:eg-blink 2s infinite!important;letter-spacing:1px!important}
+body.eg.t-geo table{border-collapse:collapse!important}
+body.eg.t-geo th{background:#008!important;color:#0ff!important;border:1px solid #0ff!important;font-family:'Comic Neue','Comic Sans MS',cursive!important;text-transform:uppercase!important;letter-spacing:1px!important}
+body.eg.t-geo td{border:1px solid #334488!important;font-family:'Comic Neue','Comic Sans MS',cursive!important}
+body.eg.t-geo tr:nth-child(even) td{background:rgba(0,0,40,.5)!important}
+body.eg.t-geo tr:hover td{background:rgba(0,0,120,.6)!important}
+body.eg.t-geo .callout,body.eg.t-geo .callout-warning{background:#200!important;border:3px solid #f44!important;border-radius:0!important;font-family:'Comic Neue','Comic Sans MS',cursive!important;animation:eg-shake 3s infinite!important;color:#f88!important}
+body.eg.t-geo .callout-info{border-color:#0ff!important;background:#023!important;color:#0ff!important;animation:none!important}
+body.eg.t-geo #success-screen,body.eg.t-geo .success-screen{background:rgba(0,40,0,.95)!important;border:4px solid #0f0!important;animation:eg-pulse-border 1.5s infinite!important;font-family:'Comic Neue','Comic Sans MS',cursive!important}
+body.eg.t-geo .success-icon{animation:eg-spin 2s linear infinite!important;font-size:3em!important}
+body.eg.t-geo #successTitle{animation:eg-rainbow 1s infinite!important}
+body.eg.t-geo img.logo,body.eg.t-geo header img,body.eg.t-geo .header img{animation:eg-float 2s ease-in-out infinite!important;filter:drop-shadow(0 0 10px #f0f)!important;cursor:pointer!important}
+body.eg.t-geo a{color:#ff0!important;text-decoration:underline!important}
+body.eg.t-geo a:hover{color:#f0f!important}body.eg.t-geo a:visited{color:#f8f!important}
+body.eg.t-geo #loading-overlay,body.eg.t-geo .loading-overlay{background:rgba(0,0,0,.92)!important;font-family:'Comic Neue','Comic Sans MS',cursive!important;color:#0f0!important}
+body.eg.t-geo .dual-list-panel{background:rgba(0,0,60,.9)!important;border:2px solid #08f!important}
+body.eg.t-geo .dual-list-panel-header{background:#008!important;color:#0ff!important}
+body.eg.t-geo .dual-list-item{color:#cfc!important;border-bottom:1px solid #242!important}
+body.eg.t-geo .dual-list-item.selected{background:#060!important;color:#fff!important}
+body.eg.t-geo .dual-list-arrow{background:#030!important;border:2px outset #0f0!important;color:#0f0!important}
+body.eg.t-geo .dual-list-btn{background:#011!important;border:2px outset #0a0!important;color:#0f0!important}
+
+/* ── SCIFI GLOBAL (all non-geo themes) ───────────────────────── */
+body.eg:not(.t-geo){
+  --bg-color:var(--st-bg)!important;--bg-darker:var(--st-panel)!important;--card-bg:var(--st-panel)!important;
+  --text-main:var(--st-hi)!important;--text-muted:var(--st-dim)!important;
+  --brand-red:var(--st-mid)!important;--brand-red-hover:var(--st-lo)!important;
+  --border-color:var(--st-mid)!important;--border-subtle:var(--st-faint)!important;
+  --input-bg:#000!important;--input-border:var(--st-faint)!important;
+  --success:var(--st-green)!important;--warning:var(--st-mid)!important;--danger:var(--st-red)!important;
+  background-color:var(--st-bg)!important;
+  font-family:var(--st-fb)!important;
+  color:var(--st-hi)!important;
+  padding-bottom:52px!important;
+}
+body.eg.t-tos{animation:st-flicker 9s infinite!important}
+body.eg.t-matrix{animation:st-mtxglitch 8s infinite!important}
+body.eg.t-tos,body.eg.t-tng,body.eg.t-ds9,body.eg.t-voy{background-image:radial-gradient(1px 1px at 8% 15%,rgba(255,230,150,.7) 0%,transparent 100%),radial-gradient(1px 1px at 25% 70%,rgba(200,220,255,.8) 0%,transparent 100%),radial-gradient(1px 1px at 42% 35%,rgba(255,255,255,.9) 0%,transparent 100%),radial-gradient(2px 2px at 60% 85%,rgba(255,255,255,.8) 0%,transparent 100%),radial-gradient(1px 1px at 78% 55%,rgba(200,220,255,.7) 0%,transparent 100%),radial-gradient(1px 1px at 88% 20%,rgba(255,255,255,.9) 0%,transparent 100%) !important;background-size:280px 280px!important}
+body.eg.t-bsg{background-image:linear-gradient(rgba(130,160,40,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(130,160,40,.07) 1px,transparent 1px)!important;background-size:48px 48px!important}
+body.eg.t-who{background-image:radial-gradient(ellipse at 50% 50%,rgba(0,100,200,.12) 0%,transparent 70%)!important}
+body.eg.t-office{background-image:none!important}
+body.eg.t-tos::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:9980}
+
+/* ── SCIFI COMPONENT OVERRIDES ───────────────────────────────── */
+body.eg:not(.t-geo) header,body.eg:not(.t-geo) .header{background:linear-gradient(180deg,var(--st-panel2),var(--st-panel))!important;border-bottom:3px solid var(--st-mid)!important;animation:st-pulse-b 5s infinite!important}
+body.eg.is-lcars header,body.eg.is-lcars .header{border-bottom:6px solid var(--st-lo)!important;animation:none!important}
+body.eg:not(.t-geo) h1{font-family:var(--st-fd)!important;color:var(--st-hi)!important;letter-spacing:3px!important;text-transform:uppercase!important;animation:st-glow 4s infinite!important}
+body.eg:not(.t-geo) h2,body.eg:not(.t-geo) h3{font-family:var(--st-fd)!important;color:var(--st-mid)!important;letter-spacing:2px!important;text-transform:uppercase!important}
+body.eg:not(.t-geo) .nav-links a,body.eg:not(.t-geo) .header-nav a{color:var(--st-lo)!important;font-family:var(--st-fb)!important;letter-spacing:2px!important;text-transform:uppercase!important}
+body.eg:not(.t-geo) .card,body.eg:not(.t-geo) .form-section,body.eg:not(.t-geo) .details-section,body.eg:not(.t-geo) .filter-group,body.eg:not(.t-geo) .modal-content,body.eg:not(.t-geo) .dash-card{background:var(--st-panel)!important;border:2px solid var(--st-faint)!important;border-top:3px solid var(--st-mid)!important;border-radius:0!important;color:var(--st-hi)!important}
+body.eg.is-lcars .card,body.eg.is-lcars .form-section,body.eg.is-lcars .details-section,body.eg.is-lcars .dash-card{border-top:none!important;border-left:8px solid var(--st-mid)!important}
+body.eg.t-bsg .card,body.eg.t-bsg .form-section,body.eg.t-bsg .dash-card{border-top:none!important;border-left:4px solid var(--st-mid)!important}
+body.eg.t-matrix .card,body.eg.t-matrix .form-section,body.eg.t-matrix .dash-card{border-top:none!important;border-left:2px solid var(--st-mid)!important}
+body.eg.t-office .card,body.eg.t-office .form-section,body.eg.t-office .dash-card{border:1px solid var(--st-faint)!important;border-top:3px solid var(--st-mid)!important;box-shadow:0 2px 6px rgba(0,0,0,.08)!important}
+body.eg:not(.t-geo) .card-title,body.eg:not(.t-geo) .form-section-title,body.eg:not(.t-geo) .section-heading{font-family:var(--st-fd)!important;color:var(--st-mid)!important;letter-spacing:3px!important;text-transform:uppercase!important}
+body.eg:not(.t-geo) label{color:var(--st-lo)!important;font-family:var(--st-fb)!important;letter-spacing:2px!important;text-transform:uppercase!important;font-size:var(--fs-xs)!important}
+body.eg:not(.t-geo) button,body.eg:not(.t-geo) .action-btn,body.eg:not(.t-geo) .action-link,body.eg:not(.t-geo) .filter-btn,body.eg:not(.t-geo) .btn{background:var(--st-panel)!important;border:2px solid var(--st-mid)!important;color:var(--st-mid)!important;font-family:var(--st-fb)!important;font-size:var(--fs-xs)!important;letter-spacing:2px!important;text-transform:uppercase!important;border-radius:var(--st-btn-r)!important;cursor:pointer!important;transition:background .12s,color .12s!important}
+body.eg:not(.t-geo) button:hover,body.eg:not(.t-geo) .action-btn:hover,body.eg:not(.t-geo) .filter-btn:hover{background:var(--st-mid)!important;color:#000!important}
+body.eg:not(.t-geo) button[type="submit"],body.eg:not(.t-geo) .submit-btn{border-color:var(--st-green)!important;color:var(--st-green)!important;animation:st-pulse-b 2s infinite!important}
+body.eg:not(.t-geo) button[type="submit"]:hover,body.eg:not(.t-geo) .submit-btn:hover{background:var(--st-green)!important;color:#000!important}
+body.eg:not(.t-geo) .filter-btn.active,body.eg:not(.t-geo) .filter-btn[aria-pressed="true"]{background:var(--st-mid)!important;color:#000!important;border-color:var(--st-mid)!important}
+body.eg:not(.t-geo) input[type="text"],body.eg:not(.t-geo) input[type="email"],body.eg:not(.t-geo) input[type="date"],body.eg:not(.t-geo) input[type="tel"],body.eg:not(.t-geo) input[type="number"],body.eg:not(.t-geo) select,body.eg:not(.t-geo) textarea,body.eg:not(.t-geo) .search-box{background:#000!important;border:1px solid var(--st-faint)!important;color:var(--st-hi)!important;font-family:var(--st-fb)!important;border-radius:0!important;caret-color:var(--st-mid)!important}
+body.eg.t-office input[type="text"],body.eg.t-office input[type="email"],body.eg.t-office input[type="date"],body.eg.t-office input[type="tel"],body.eg.t-office input[type="number"],body.eg.t-office select,body.eg.t-office textarea{background:#fff!important;border:1px solid var(--st-faint)!important;color:var(--st-hi)!important;border-radius:3px!important}
+body.eg.is-lcars input,body.eg.is-lcars select,body.eg.is-lcars textarea{border-radius:6px!important}
+body.eg:not(.t-geo) input:focus,body.eg:not(.t-geo) select:focus,body.eg:not(.t-geo) textarea:focus{border-color:var(--st-mid)!important;outline:none!important;box-shadow:0 0 8px rgba(var(--st-mid),.15)!important}
+body.eg:not(.t-geo) input::placeholder,body.eg:not(.t-geo) textarea::placeholder{color:var(--st-faint)!important;opacity:1!important}
+body.eg:not(.t-geo) select option{background:var(--st-panel)!important;color:var(--st-hi)!important}
+body.eg:not(.t-geo) .status-badge{font-family:var(--st-fd)!important;letter-spacing:2px!important;text-transform:uppercase!important;border:1px solid currentColor!important;border-radius:0!important}
+body.eg.is-lcars .status-badge{border-radius:14px!important;font-weight:700!important}
+body.eg:not(.t-geo) table{border-collapse:collapse!important}
+body.eg:not(.t-geo) th{background:var(--st-panel2)!important;color:var(--st-mid)!important;border:1px solid var(--st-faint)!important;font-family:var(--st-fd)!important;text-transform:uppercase!important;letter-spacing:2px!important}
+body.eg:not(.t-geo) td{border:1px solid var(--st-faint)!important;color:var(--st-hi)!important}
+body.eg:not(.t-geo) tr:nth-child(even) td{background:var(--st-panel)!important}
+body.eg:not(.t-geo) tr:hover td{background:var(--st-panel2)!important}
+body.eg:not(.t-geo) .callout,body.eg:not(.t-geo) .callout-warning{background:var(--st-panel2)!important;border:1px solid var(--st-faint)!important;border-left:4px solid var(--st-red)!important;border-radius:0!important;color:var(--st-lo)!important}
+body.eg:not(.t-geo) .callout-info{border-left-color:var(--st-cyan)!important;color:var(--st-cyan)!important}
+body.eg:not(.t-geo) #success-screen,body.eg:not(.t-geo) .success-screen{background:var(--st-panel)!important;border:4px solid var(--st-green)!important;color:var(--st-green)!important;animation:st-pulse-b 2s infinite!important}
+body.eg:not(.t-geo) #successTitle{animation:st-glow 2s infinite!important;color:var(--st-hi)!important}
+body.eg:not(.t-geo) .success-icon{animation:st-dradis 3s linear infinite!important}
+body.eg:not(.t-geo) img.logo,body.eg:not(.t-geo) header img,body.eg:not(.t-geo) .header img{filter:drop-shadow(0 0 10px var(--st-mid))!important;cursor:pointer!important}
+body.eg:not(.t-geo) a{color:var(--st-lo)!important}
+body.eg:not(.t-geo) a:hover{color:var(--st-hi)!important;text-decoration:none!important}
+body.eg:not(.t-geo) a:visited{color:var(--st-dim)!important}
+body.eg:not(.t-geo) #loading-overlay,body.eg:not(.t-geo) .loading-overlay{background:rgba(0,0,0,.95)!important;color:var(--st-mid)!important}
+body.eg:not(.t-geo) .dual-list-panel{background:var(--st-panel)!important;border:2px solid var(--st-faint)!important}
+body.eg:not(.t-geo) .dual-list-panel-header{background:var(--st-panel2)!important;color:var(--st-mid)!important;font-family:var(--st-fd)!important;letter-spacing:2px!important}
+body.eg:not(.t-geo) .dual-list-item{color:var(--st-hi)!important;border-bottom:1px solid var(--st-faint)!important}
+body.eg:not(.t-geo) .dual-list-item.selected{background:var(--st-faint)!important;color:var(--st-hi)!important;border-left:3px solid var(--st-mid)!important}
+body.eg:not(.t-geo) .dual-list-arrow{background:var(--st-panel2)!important;border:2px solid var(--st-mid)!important;color:var(--st-mid)!important}
+body.eg:not(.t-geo) .dual-list-btn{background:var(--st-panel)!important;border:2px solid var(--st-faint)!important;color:var(--st-lo)!important;border-radius:var(--st-btn-r)!important}
+
+/* ── GEO INJECTED ELEMENTS ───────────────────────────────────── */
+.geo-top-bar{background:linear-gradient(90deg,#f00,#f80,#ff0,#0f0,#08f,#80f,#f0f,#f00);background-size:400% 100%;animation:eg-marquee-bg 3s linear infinite;padding:5px 0;text-align:center;font-weight:700;font-size:12px;color:#000;letter-spacing:2px;font-family:'Comic Neue','Comic Sans MS',cursive;position:relative;z-index:9998}
+.geo-marquee-bar{background:#008;border-top:3px solid #ff0;border-bottom:3px solid #ff0;padding:6px 0;overflow:hidden;font-family:'Comic Neue','Comic Sans MS',cursive;font-size:13px;font-weight:700;color:#fff;position:relative;z-index:9998}
+.geo-marquee-bar marquee{display:block}
+.geo-fixed-footer{position:fixed;bottom:0;left:0;right:0;background:#000044;border-top:2px solid #00f;padding:5px 0;color:#88f;font-size:11px;font-family:'Comic Neue','Comic Sans MS',cursive;z-index:9999}
+.geo-fixed-footer marquee{display:block}
+.geo-stats-panel{background:rgba(0,0,20,.97);border:3px solid #ff0;margin:12px 0 16px;font-family:'Comic Neue','Comic Sans MS',cursive;font-size:13px;overflow:hidden}
+.geo-stats-header{background:linear-gradient(90deg,#000088,#000044);border-bottom:2px solid #ff0;padding:8px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.geo-stats-header-title{color:#ff0;font-weight:700;font-size:14px;letter-spacing:2px;animation:eg-rainbow 2s infinite}
+.geo-stats-toggle-hint{color:#888;font-size:11px}
+.geo-stats-body{padding:12px 14px}
+.geo-stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px;margin-bottom:12px}
+.geo-stat-box{background:rgba(0,0,60,.8);border:2px solid #08f;padding:8px 10px;text-align:center}
+.geo-stat-box.gg{border-color:#0f0}.geo-stat-box.gy{border-color:#ff0}.geo-stat-box.gp{border-color:#f0f}.geo-stat-box.gc{border-color:#0ff}.geo-stat-box.gr{border-color:#f44}.geo-stat-box.go{border-color:#f80}
+.geo-stat-num{font-size:26px;font-weight:700;color:#0f0;display:block;font-family:'Courier New',monospace;animation:eg-counter .5s ease-out}
+.geo-stat-box.gy .geo-stat-num{color:#ff0}.geo-stat-box.gp .geo-stat-num{color:#f8f;animation:eg-rainbow 1.5s infinite}.geo-stat-box.gc .geo-stat-num{color:#0ff}.geo-stat-box.gr .geo-stat-num{color:#f66}.geo-stat-box.go .geo-stat-num{color:#fa4}
+.geo-stat-label{color:#aaa;font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-top:2px;display:block}
+.geo-counter-row{text-align:center;padding:10px 0}
+.geo-counter-label{font-size:11px;color:#ff0;letter-spacing:2px;margin-bottom:4px}
+.geo-counter-box{background:#000;border:2px solid #0f0;padding:6px 14px;display:inline-block;font-family:'Courier New',monospace;color:#0f0;font-size:22px;letter-spacing:5px;box-shadow:0 0 10px #0f0}
+.geo-counter-sub{font-size:9px;color:#555;margin-top:2px}
+.geo-rainbow-hr{height:3px;background:linear-gradient(90deg,#f00,#f80,#ff0,#0f0,#08f,#80f,#f0f);border:none;margin:10px 0}
+.geo-leaderboard{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:10px 0}
+.geo-lb-box{background:rgba(0,0,40,.7);border:2px dashed #f8f;padding:8px 10px}
+.geo-lb-box.lb2{border-color:#8af}.geo-lb-box.lb3{border-color:#0f8}
+.geo-lb-title{color:#f8f;font-weight:700;font-size:11px;letter-spacing:1px;border-bottom:1px dashed #f8f;padding-bottom:4px;margin-bottom:6px;text-transform:uppercase}
+.geo-lb-box.lb2 .geo-lb-title{color:#8af;border-color:#8af}.geo-lb-box.lb3 .geo-lb-title{color:#0f8;border-color:#0f8}
+.geo-lb-item{padding:2px 0;font-size:12px;color:#ccc;display:flex;justify-content:space-between;align-items:center}
+.geo-lb-rank{color:#ff0;font-weight:700;margin-right:5px;font-size:11px}
+.geo-lb-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.geo-lb-count{color:#0f0;font-family:'Courier New',monospace;font-weight:700;font-size:12px}
+.geo-best-month{text-align:center;padding:8px;background:rgba(0,0,40,.7);border:2px solid #80f;margin:8px 0}
+.geo-best-month-label{color:#88f;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.geo-best-month-val{color:#f8f;font-size:18px;font-weight:700;animation:eg-neon 2s infinite}
+.geo-best-month-count{color:#888;font-size:11px}
+.geo-awards-row{text-align:center;padding:8px 0}
+.geo-award{display:inline-block;border:2px solid #fa0;padding:5px 10px;margin:3px;background:#210;text-align:center;font-size:10px;color:#fa0;vertical-align:top;min-width:56px}
+.geo-award.ac{border-color:#0ff;color:#0ff;background:#012}.geo-award.ap{border-color:#f8f;color:#f8f;background:#202}.geo-award.ag{border-color:#0f8;color:#0f8;background:#021}
+.geo-trophy{font-size:20px;display:block;animation:eg-spin 3s linear infinite;font-family:'Courier New',monospace}
+.geo-loading{color:#0f0;font-family:'Courier New',monospace;animation:eg-blink .8s infinite;text-align:center;padding:14px}
+.geo-exit-badge{position:fixed;top:50px;right:10px;background:#000;border:2px solid #f0f;color:#f0f;font-family:'Comic Neue','Comic Sans MS',cursive;font-size:10px;padding:3px 7px;z-index:9997;cursor:pointer;animation:eg-blink 3s infinite;letter-spacing:1px}
+.geo-music-btn{position:fixed;top:80px;right:10px;background:#000;border:2px solid #0f0;color:#0f0;font-family:'Comic Neue','Comic Sans MS',cursive;font-size:10px;padding:3px 7px;z-index:9997;cursor:pointer;letter-spacing:1px}
+.eg-toast{position:fixed;bottom:54px;right:16px;background:#000088;border:3px solid #ff0;color:#ff0;font-family:'Comic Neue','Comic Sans MS',cursive;font-weight:700;font-size:13px;padding:10px 16px;z-index:99999;max-width:320px;box-shadow:0 0 20px #ff0;animation:eg-shake .4s ease-out}
+
+/* ── SCIFI INJECTED ELEMENTS ─────────────────────────────────── */
+#st-rain{position:fixed;inset:0;z-index:9981;pointer-events:none;opacity:.28;display:none}
+body.eg.t-matrix #st-rain{display:block}
+#st-sweep{position:fixed;left:0;right:0;height:100px;background:linear-gradient(180deg,transparent,rgba(255,160,0,.05),transparent);pointer-events:none;z-index:9982;display:none;animation:st-scanline 7s linear infinite}
+body.eg.t-tos #st-sweep{display:block}
+#st-ticker{position:fixed;top:0;left:0;right:0;z-index:9995;background:#000;border-bottom:2px solid var(--st-faint,#3A2200);padding:4px 16px;display:flex;align-items:center;gap:12px;font-family:var(--st-fd,'Courier New',monospace);letter-spacing:2px;color:var(--st-dim,#886600);overflow:hidden;height:30px}
+.st-t-side{white-space:nowrap;flex-shrink:0;font-size:var(--fs-sm,13px)}
+#st-t-track{flex:1;overflow:hidden;height:22px;position:relative}
+#st-t-text{position:absolute;white-space:nowrap;top:2px;color:var(--st-lo,#CC8800);font-size:var(--fs-sm,13px);letter-spacing:3px;animation:st-scroll-l 32s linear infinite}
+body.eg.is-lcars #st-ticker{background:var(--st-mid);color:#000;border-bottom:none}
+body.eg.is-lcars .st-t-side{color:#000;font-weight:700}
+body.eg.is-lcars #st-t-text{color:#000;opacity:.8}
+body.eg.t-matrix #st-ticker{border-bottom-color:var(--st-mid)}
+body.eg.t-matrix #st-t-text{color:var(--st-mid);animation:st-scroll-l 20s linear infinite}
+body.eg.t-office #st-ticker{background:var(--st-mid);color:#fff;border-bottom:none}
+body.eg.t-office .st-t-side{color:#fff;font-weight:700}
+body.eg.t-office #st-t-text{color:rgba(255,255,255,.85);animation:st-scroll-l 28s linear infinite}
+#st-alert{position:fixed;top:30px;left:0;right:0;z-index:9994;border-top:2px solid var(--st-red,#FF3300);border-bottom:2px solid var(--st-red,#FF3300);padding:5px 0;text-align:center;font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-sm,16px);color:var(--st-red,#FF3300);letter-spacing:4px;animation:st-pulse-r .85s infinite;height:38px}
+body.eg.t-bsg #st-alert{animation:st-pulse-bsg .85s infinite}
+body.eg.t-matrix #st-alert{border-color:var(--st-green);color:var(--st-green);animation:st-pulse-mtx .85s infinite}
+body.eg.t-office #st-alert{border-color:var(--st-mid);color:var(--st-mid);animation:office-blink 2s infinite;background:rgba(245,240,230,.95)}
+body.eg.t-who #st-alert{border-color:var(--st-cyan);color:var(--st-cyan)}
+.st-blink{animation:st-blink .5s infinite}
+#st-ctrl{position:fixed;top:68px;left:0;right:0;z-index:9993;background:var(--st-panel2,#0E0700);border-bottom:1px solid var(--st-faint,#3A2200);padding:5px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;height:36px}
+body.eg.t-office #st-ctrl{background:#fff;border-bottom:2px solid var(--st-faint)}
+.st-cg{display:flex;align-items:center;gap:5px}
+.st-cl{font-size:var(--fs-2xs,10px);color:var(--st-dim,#886600);letter-spacing:3px;text-transform:uppercase;font-family:var(--st-fb,'Courier New',monospace);white-space:nowrap;margin-right:3px}
+.st-sb,.st-kb,.st-ab{background:var(--st-panel,#090500);border:1px solid var(--st-dim,#886600);color:var(--st-lo,#CC8800);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;text-transform:uppercase;padding:3px 9px;cursor:pointer;border-radius:var(--st-btn-r,0px);transition:background .12s,color .12s;font-weight:600}
+.st-sb:hover,.st-kb:hover,.st-ab:hover{background:var(--st-lo);color:#000;border-color:var(--st-lo)}
+.st-sb.on,.st-kb.on{background:var(--st-mid);color:#000;border-color:var(--st-mid)}
+.st-ab.on{background:var(--st-green);color:#000;border-color:var(--st-green)}
+body.eg.t-office .st-sb,body.eg.t-office .st-kb,body.eg.t-office .st-ab{background:#f5f5f5;border-color:var(--st-faint);color:var(--st-hi)}
+body.eg.t-office .st-sb.on,body.eg.t-office .st-kb.on{background:var(--st-mid);color:#fff;border-color:var(--st-mid)}
+body.eg.is-lcars .st-sb,body.eg.is-lcars .st-kb,body.eg.is-lcars .st-ab{border-radius:14px}
+#st-exit{position:fixed;top:110px;left:14px;z-index:9993;background:#000;border:1px solid var(--st-red,#FF3300);color:var(--st-red,#FF3300);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;padding:4px 10px;cursor:pointer;text-transform:uppercase}
+#st-exit:hover{background:var(--st-red);color:#fff}
+body.eg.t-office #st-exit{background:#fff;border-color:var(--st-red);color:var(--st-red)}
+#st-stog{position:fixed;top:110px;right:14px;z-index:9993;background:var(--st-panel,#090500);border:1px solid var(--st-mid,#FFAA00);color:var(--st-mid,#FFAA00);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;padding:4px 10px;cursor:pointer;text-transform:uppercase;animation:st-pulse-b 4s infinite}
+#st-stog:hover{background:var(--st-mid);color:#000}
+body.eg.t-office #st-stog{background:#fff}
+#st-stats{position:fixed;top:136px;right:0;width:min(480px,95vw);max-height:calc(100vh - 196px);overflow-y:auto;z-index:9992;background:var(--st-panel,#090500);border:2px solid var(--st-mid,#FFAA00);border-right:none;display:none;animation:st-data-in .3s ease-out both}
+body.eg.is-lcars #st-stats{border:none;border-left:8px solid var(--st-mid)}
+body.eg.t-office #st-stats{border:1px solid var(--st-faint);border-right:none;box-shadow:-4px 0 12px rgba(0,0,0,.1)}
+#st-sh{background:var(--st-panel2,#0E0700);border-bottom:2px solid var(--st-mid,#FFAA00);padding:9px 14px}
+.st-st{font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-sm,16px);color:var(--st-hi,#FFCC55);letter-spacing:3px;animation:st-glow 4s infinite}
+body.eg.t-bsg .st-st{animation:none;font-weight:700;letter-spacing:5px}
+body.eg.t-matrix .st-st{animation:st-glow 2s infinite}
+body.eg.t-office .st-st{animation:none;color:var(--st-mid);font-size:14px;font-weight:700;letter-spacing:1px}
+#st-sb2{padding:12px}
+.st-vis{text-align:center;padding:8px 0 12px;border-bottom:1px solid var(--st-faint,#3A2200);margin-bottom:12px}
+.st-vl{font-size:var(--fs-2xs,10px);letter-spacing:3px;color:var(--st-dim,#886600);text-transform:uppercase;margin-bottom:5px}
+.st-vb{background:#000;border:2px solid var(--st-green,#00DD55);display:inline-block;padding:5px 18px;font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-xl,36px);color:var(--st-green,#00DD55);letter-spacing:8px;box-shadow:0 0 12px var(--st-green,#00DD55)}
+body.eg.t-office .st-vb{background:var(--st-panel);border:2px solid var(--st-mid);color:var(--st-mid);box-shadow:none}
+.st-vs{font-size:var(--fs-2xs,10px);color:#2a2a2a;letter-spacing:2px;margin-top:4px}
+body.eg.t-office .st-vs{color:var(--st-dim)}
+.st-sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-bottom:12px}
+.st-sx{background:#000;border:2px solid var(--st-faint,#3A2200);border-top:3px solid var(--st-mid,#FFAA00);padding:7px 9px;text-align:center}
+body.eg.t-office .st-sx{background:var(--st-panel2);border-color:var(--st-faint);border-top-color:var(--st-mid)}
+body.eg.is-lcars .st-sx{border:1px solid var(--st-faint);border-left:5px solid var(--st-mid);border-top:none}
+body.eg.t-bsg .st-sx{border:1px solid var(--st-faint);border-left:3px solid var(--st-mid);border-top:none}
+body.eg.t-matrix .st-sx{border:1px solid var(--st-faint);border-left:2px solid var(--st-mid);border-top:none}
+.st-sx.sg{border-color:var(--st-green);border-top-color:var(--st-green)}.st-sx.sr{border-color:var(--st-red);border-top-color:var(--st-red)}.st-sx.sc{border-color:var(--st-cyan);border-top-color:var(--st-cyan)}.st-sx.sb{border-color:var(--st-blue);border-top-color:var(--st-blue)}
+body.eg.is-lcars .st-sx.sg{border-left-color:var(--st-green)}body.eg.is-lcars .st-sx.sr{border-left-color:var(--st-red)}body.eg.is-lcars .st-sx.sc{border-left-color:var(--st-cyan)}body.eg.is-lcars .st-sx.sb{border-left-color:var(--st-blue)}
+.st-sn{font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-md,20px);color:var(--st-hi,#FFCC55);display:block;line-height:1}
+.st-sx.sg .st-sn{color:var(--st-green)}.st-sx.sr .st-sn{color:var(--st-red)}.st-sx.sc .st-sn{color:var(--st-cyan)}.st-sx.sb .st-sn{color:var(--st-blue)}
+.st-sl{font-size:var(--fs-2xs,10px);letter-spacing:1px;text-transform:uppercase;color:var(--st-dim,#886600);margin-top:3px;display:block}
+.st-lb{display:grid;grid-template-columns:1fr;gap:8px}
+.st-lp{background:#000;border:1px solid var(--st-faint,#3A2200);padding:7px 10px}
+body.eg.t-office .st-lp{background:var(--st-panel2);border-color:var(--st-faint)}
+body.eg.is-lcars .st-lp{border-left:5px solid var(--st-mid)}
+.st-lp.l2{border-color:#004422}.st-lp.l3{border-color:#112255}
+.st-lt{font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-xs,11px);color:var(--st-mid,#FFAA00);letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid var(--st-faint);padding-bottom:4px;margin-bottom:5px}
+.st-lp.l2 .st-lt{color:var(--st-green)}.st-lp.l3 .st-lt{color:var(--st-blue)}
+.st-lr{display:flex;align-items:center;padding:2px 0}
+.st-lrk{color:var(--st-dim);width:26px;flex-shrink:0;font-size:var(--fs-xs,11px)}
+.st-lrn{flex:1;color:var(--st-lo);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-xs,11px)}
+.st-lrc{font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-sm,16px);color:var(--st-green)}
+.st-dr{display:none;text-align:center;padding:10px 0 6px}
+body.eg.t-bsg .st-dr{display:block}
+.st-drc{display:inline-block;width:80px;height:80px;border-radius:50%;border:2px solid var(--st-mid);position:relative;box-shadow:0 0 14px rgba(150,180,40,.3)}
+.st-drc::before{content:'';position:absolute;inset:10px;border-radius:50%;border:1px solid var(--st-dim)}
+.st-drc::after{content:'';position:absolute;inset:22px;border-radius:50%;border:1px solid var(--st-faint)}
+.st-drs{position:absolute;top:50%;left:50%;width:50%;height:2px;transform-origin:0 50%;background:linear-gradient(90deg,var(--st-mid),transparent);animation:st-dradis 3s linear infinite}
+.st-drl{font-size:var(--fs-2xs,10px);color:var(--st-dim);letter-spacing:3px;margin-top:4px}
+.st-sep{border:none;border-top:1px solid var(--st-faint,#3A2200);margin:9px 0}
+.st-loading{text-align:center;padding:20px;font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-sm,16px);color:var(--st-dim);letter-spacing:3px;animation:st-blink 1s infinite}
+#st-foot{position:fixed;bottom:0;left:0;right:0;z-index:9995;background:#000;border-top:2px solid var(--st-faint,#3A2200);padding:4px 0;overflow:hidden;height:24px}
+body.eg.is-lcars #st-foot{background:var(--st-faint);border-top:4px solid var(--st-mid)}
+body.eg.t-matrix #st-foot{background:rgba(0,10,0,.9);border-top-color:var(--st-mid)}
+body.eg.t-office #st-foot{background:var(--st-mid);border-top:none}
+body.eg.t-who #st-foot{background:var(--st-panel2);border-top-color:var(--st-mid)}
+.st-fs{white-space:nowrap;display:inline-block;font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);color:var(--st-dim,#886600);letter-spacing:2px;animation:st-scroll-l 38s linear infinite}
+body.eg.is-lcars .st-fs{color:var(--st-lo);font-weight:700}
+body.eg.t-matrix .st-fs{color:var(--st-mid);animation:st-scroll-l 18s linear infinite}
+body.eg.t-office .st-fs{color:rgba(255,255,255,.8);animation:st-scroll-l 30s linear infinite}
+</style>
+
+<script>
+(function(){
+'use strict';
+if(document.getElementById('eg-root'))return;
+
+/* ── THEME CONFIG ────────────────────────────────────────────── */
+var T={
+  tos:{ship:'NCC-1701',sector:'SECTOR 001',alertIcon:'&#9888; RED ALERT &#9888;',alertMsg:'REQUESTS REQUIRE ATTENTION — CAPTAIN TO THE BRIDGE',ticker:'COMPUTER ONLINE &#9830; ALL SYSTEMS NOMINAL &#9830; WARP 6 SUSTAINED &#9830; SEQUENTIAL GATING ACTIVE &#9830; NO KLINGON VESSELS DETECTED &#9830; MR. SPOCK: LOGIC IS SOUND &#9830;',stitle:'&#9672; TRICORDER ANALYSIS — TELEMETRY &#9672;',vlabel:'CREW ASSIGNMENTS PROCESSED',vsub:'EARTH SPACEDOCK — AUTHORIZED ACCESS ONLY',s1:'New Crew',s2:'Separations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Pending',s7:'Cancelled',s8:'This Cycle',l1:'Top Submitters',l2:'Active Outposts',l3:'Top Officers',footer:'TEAM GROUP EMPLOYEE MANAGEMENT &#9830; U.S.S. ENTERPRISE NCC-1701 &#9830; AUTHORIZED PERSONNEL ONLY &#9830; SEQUENTIAL GATING V2 ACTIVE &#9830; LIVE LONG AND PROSPER &#9830;',greeting:'Working. Computer online. All systems nominal.',lcars:false,bsg:false,matrix:false,who:false,office:false},
+  tng:{ship:'NCC-1701-D',sector:'SECTOR 001',alertIcon:'&#9685; RED ALERT &#9685;',alertMsg:'ALL HANDS TO BATTLE STATIONS — SENIOR STAFF TO THE BRIDGE',ticker:'LCARS ONLINE &#9830; ALL SYSTEMS NOMINAL &#9830; WARP 9 SUSTAINED &#9830; SEQUENTIAL GATING ACTIVE &#9830; COUNSELOR TROI SENSES NO DECEPTION &#9830; MAKE IT SO &#9830;',stitle:'LCARS — SYSTEM ANALYSIS',vlabel:'PERSONNEL ASSIGNMENTS PROCESSED',vsub:'EARTH SPACEDOCK — AUTHORIZED PERSONNEL ONLY',s1:'New Personnel',s2:'Separations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Standby',s7:'Cancelled',s8:'This Period',l1:'Top Submitters',l2:'Top Locations',l3:'Top Managers',footer:'TEAM GROUP EMPLOYEE MANAGEMENT &#9830; U.S.S. ENTERPRISE NCC-1701-D &#9830; LCARS SEQUENTIAL GATING V2 ACTIVE &#9830; MAKE IT SO &#9830;',greeting:'L-Cars online. Welcome, Commander.',lcars:true,bsg:false,matrix:false,who:false,office:false},
+  ds9:{ship:'DEEP SPACE 9',sector:'BAJOR SECTOR',alertIcon:'&#9672; CONDITION RED &#9672;',alertMsg:'ALL HANDS TO BATTLE STATIONS — SHIELDS UP — CLOSE ALL AIRLOCKS',ticker:'LCARS ONLINE &#9830; STATION SYSTEMS NOMINAL &#9830; WORMHOLE STABLE &#9830; SEQUENTIAL GATING ACTIVE &#9830; ODO REPORTS: NOTHING OUT OF THE ORDINARY &#9830;',stitle:'LCARS — STATION ANALYSIS',vlabel:'PERSONNEL ASSIGNMENTS — BAJOR SECTOR',vsub:'BAJORAN / STARFLEET JOINT AUTHORITY',s1:'New Assignments',s2:'Separations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Standby',s7:'Cancelled',s8:'This Cycle',l1:'Top Submitters',l2:'Active Sectors',l3:'Top Officers',footer:'TEAM GROUP EMPLOYEE MANAGEMENT &#9830; DEEP SPACE NINE &#9830; BAJORAN/STARFLEET JOINT COMMAND &#9830; SEQUENTIAL GATING V2 ACTIVE &#9830;',greeting:'L-Cars online. Station systems ready. The Prophets watch over us.',lcars:true,bsg:false,matrix:false,who:false,office:false},
+  voy:{ship:'NCC-74656',sector:'DELTA QUADRANT',alertIcon:'&#9685; RED ALERT &#9685;',alertMsg:'ALL CREW TO BATTLE STATIONS — CAPTAIN JANEWAY TO THE BRIDGE',ticker:'LCARS ONLINE &#9830; ALL SYSTEMS NOMINAL &#9830; WARP 9.9 SUSTAINED &#9830; SEQUENTIAL GATING ACTIVE &#9830; SEVEN OF NINE: RESISTANCE IS FUTILE &#9830; SET A COURSE FOR HOME &#9830;',stitle:'LCARS — ASTROMETRICS ANALYSIS',vlabel:'PERSONNEL ASSIGNMENTS — VOYAGER',vsub:'U.S.S. VOYAGER — 70,000 LIGHT YEARS FROM HOME',s1:'New Assignments',s2:'Separations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Standby',s7:'Cancelled',s8:'This Period',l1:'Top Submitters',l2:'Top Locations',l3:'Top Managers',footer:'TEAM GROUP EMPLOYEE MANAGEMENT &#9830; U.S.S. VOYAGER NCC-74656 &#9830; DELTA QUADRANT OPS &#9830; SEQUENTIAL GATING V2 ACTIVE &#9830; SET A COURSE FOR HOME &#9830;',greeting:'L-Cars online. All systems within normal parameters.',lcars:true,bsg:false,matrix:false,who:false,office:false},
+  bsg:{ship:'BS-75 GALACTICA',sector:'COLONIAL FLEET',alertIcon:'// ACTION STATIONS //',alertMsg:'INBOUND CYLON CONTACTS — ALL PILOTS TO THEIR BIRDS — NOT A DRILL',ticker:'// DRADIS ONLINE // FLEET SYSTEMS NOMINAL // SEQUENTIAL GATING ACTIVE // NO CYLON VESSELS ON DRADIS // STARBUCK: GOOD HUNTING // SO SAY WE ALL //',stitle:'// TACTICAL ANALYSIS — FLEET STATUS //',vlabel:'PERSONNEL ACTIONS — COLONIAL FLEET',vsub:'BATTLESTAR GALACTICA — COLONIAL FLEET AUTHORITY',s1:'New Assignments',s2:'Separations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Pending',s7:'Aborted',s8:'This Day',l1:'// TOP SUBMITTERS //',l2:'// ACTIVE SECTORS //',l3:'// TOP OFFICERS //',footer:'TEAM GROUP EMPLOYEE MANAGEMENT // BATTLESTAR GALACTICA BS-75 // COLONIAL FLEET AUTHORITY // SEQUENTIAL GATING V2 ACTIVE // SO SAY WE ALL //',greeting:'Action stations. All hands man your battle stations. This is not a drill. So say we all.',lcars:false,bsg:true,matrix:false,who:false,office:false},
+  matrix:{ship:'THE MATRIX',sector:'THE CONSTRUCT',alertIcon:'!! ANOMALY DETECTED !!',alertMsg:'THE MATRIX HAS YOU — FOLLOW THE WHITE RABBIT — THERE IS NO SPOON',ticker:'WAKE UP, NEO... THE MATRIX HAS YOU... FOLLOW THE WHITE RABBIT... THERE IS NO SPOON... FREE YOUR MIND...',stitle:'// SIMULATION DIAGNOSTICS — ANOMALY SCAN //',vlabel:'PROGRAMS PROCESSED — MATRIX RECORDS',vsub:'THE CONSTRUCT — AUTHORIZED OPERATORS ONLY',s1:'New Programs',s2:'Decompiled',s3:'Transfers',s4:'Executed',s5:'Running',s6:'Awaiting',s7:'Killed',s8:'This Cycle',l1:'// TOP OPERATORS //',l2:'// TOP CONSTRUCTS //',l3:'// TOP AGENTS //',footer:'TEAM GROUP SIMULATION // THE MATRIX // AUTHORIZED OPERATORS ONLY // SEQUENTIAL GATING v2 ACTIVE // THERE IS NO SPOON //',greeting:'Wake up, Neo. The Matrix has you. Follow the white rabbit.',lcars:false,bsg:false,matrix:true,who:false,office:false},
+  who:{ship:'THE TARDIS',sector:'ALL OF TIME & SPACE',alertIcon:'!! DALEKS DETECTED !!',alertMsg:'ALL PERSONNEL TAKE COVER — DO NOT BLINK — DO NOT EVEN BLINK — EXTERMINATE',ticker:'WIBBLY WOBBLY TIMEY WIMEY &#9830; ALL OF TIME AND SPACE &#9830; DON\'T BLINK &#9830; THE ANGELS HAVE THE PHONE BOX &#9830; FANTASTIC! &#9830; ALLONS-Y! &#9830; GERONIMO! &#9830; RUN! &#9830;',stitle:'&#9670; TARDIS TEMPORAL ANALYSIS &#9670;',vlabel:'TEMPORAL ASSIGNMENTS PROCESSED',vsub:'TIME LORD AUTHORITY — GALLIFREY FALLS NO MORE',s1:'New Companions',s2:'Regenerations',s3:'Timeline Shifts',s4:'Fixed Point',s5:'Timey Wimey',s6:'In the Vortex',s7:'Paradox',s8:'This Cycle',l1:'Top Submitters',l2:'Top Locations',l3:'Top Managers',footer:'TEAM GROUP &#9830; THE TARDIS &#9830; TIME LORD AUTHORIZED &#9830; ALL OF TIME AND SPACE &#9830; SEQUENTIAL GATING V2 &#9830; ALLONS-Y &#9830;',greeting:'Welcome aboard the TARDIS. It is bigger on the inside. Allons-y!',lcars:false,bsg:false,matrix:false,who:true,office:false},
+  office:{ship:'DUNDER MIFFLIN',sector:'SCRANTON, PA',alertIcon:'!! ATTENTION: HR NOTICE !!',alertMsg:'PLEASE SEE TOBY IN HR — COMPLIANCE TRAINING IS DUE — THAT\'S WHAT SHE SAID',ticker:'DUNDER MIFFLIN PAPER COMPANY &#9830; SCRANTON BRANCH &#9830; WORLD\'S BEST BOSS &#9830; THAT\'S WHAT SHE SAID &#9830; BEARS. BEETS. BATTLESTAR GALACTICA. &#9830; IDENTITY THEFT IS NOT A JOKE, JIM &#9830; ASSISTANT TO THE REGIONAL MANAGER &#9830;',stitle:'&#9670; DUNDER MIFFLIN — BRANCH ANALYTICS &#9670;',vlabel:'EMPLOYEE REQUESTS PROCESSED',vsub:'DUNDER MIFFLIN SCRANTON BRANCH — MICHAEL SCOTT, REGIONAL MANAGER',s1:'New Hires',s2:'Terminations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Pending',s7:'Cancelled',s8:'This Month',l1:'Top Submitters',l2:'Top Locations',l3:'Top Managers',footer:'DUNDER MIFFLIN PAPER COMPANY &#9830; SCRANTON BRANCH &#9830; LIMITLESS PAPER IN A PAPERLESS WORLD &#9830; SEQUENTIAL GATING V2 ACTIVE &#9830; THAT\'S WHAT SHE SAID &#9830;',greeting:'Dunder Mifflin, this is Michael. World\'s best boss speaking.',lcars:false,bsg:false,matrix:false,who:false,office:true}
+};
+
+/* ── STATUS / SUBMIT MAPS ────────────────────────────────────── */
+var STATUS_MAPS={
+  geo:   {'In Progress':'WORKIN ON IT!! :-)',  'Pending':'WAITING... (dont touch!!)',   'Completed':'DONE!! YOU WIN!!! 8-)',    'Cancelled':'RIP... (cancelled) :-(',    'Action Required':'!! ACTION REQUIRED !!',      'All Specialists Complete':'ALL DONE!! PARTY TIME!! :-D'},
+  tos:   {'In Progress':'AWAY TEAM DEPLOYED',  'Pending':'AWAITING ORDERS',             'Completed':'MISSION SUCCESS',          'Cancelled':'MISSION ABORTED',           'Action Required':'!! CAPTAIN TO BRIDGE',        'All Specialists Complete':'MISSION COMPLETE'},
+  tng:   {'In Progress':'IN PROGRESS',         'Pending':'STANDBY',                     'Completed':'TASK COMPLETE',            'Cancelled':'CANCELLED',                 'Action Required':'&#9685; ACTION REQUIRED',     'All Specialists Complete':'TASK COMPLETE'},
+  ds9:   {'In Progress':'IN PROGRESS',         'Pending':'STANDBY',                     'Completed':'COMPLETED',                'Cancelled':'CANCELLED',                 'Action Required':'&#9672; IMMEDIATE ACTION',    'All Specialists Complete':'COMPLETED'},
+  voy:   {'In Progress':'IN PROGRESS',         'Pending':'STANDBY',                     'Completed':'COMPLETED',                'Cancelled':'CANCELLED',                 'Action Required':'&#9685; ACTION REQUIRED',     'All Specialists Complete':'COMPLETED'},
+  bsg:   {'In Progress':'MISSION UNDERWAY',    'Pending':'AWAITING CLEARANCE',          'Completed':'STRIKE SUCCESSFUL',        'Cancelled':'ABORTED',                   'Action Required':'// ACTION REQUIRED //',       'All Specialists Complete':'STRIKE SUCCESSFUL'},
+  matrix:{'In Progress':'PROCESS RUNNING',     'Pending':'AWAITING INPUT',              'Completed':'EXECUTED',                 'Cancelled':'PROCESS KILLED',            'Action Required':'!! BUFFER OVERFLOW',          'All Specialists Complete':'EXECUTED'},
+  who:   {'In Progress':'WIBBLY WOBBLY',       'Pending':'IN THE VORTEX',               'Completed':'FIXED POINT IN TIME',      'Cancelled':'EXTERMINATED',              'Action Required':'!! DALEKS DETECTED !!',       'All Specialists Complete':'FIXED POINT IN TIME'},
+  office:{'In Progress':'MICHAEL IS HANDLING IT','Pending':'SEE TOBY IN HR',            'Completed':'FILED WITH TOBY',          'Cancelled':'CORPORATE SAID NO',         'Action Required':'!! TOBY WANTS A WORD',        'All Specialists Complete':'FILED WITH TOBY'}
+};
+var SUBMIT_MAPS={
+  geo:   ['CLICK HERE TO SUBMIT!!! [>]','GO GO GO!! SUBMIT NOW!!','YES!! SEND IT!! [>>]'],
+  tos:   ['TRANSMIT TO STARFLEET','BEAM UP REQUEST','ENGAGE!!'],
+  tng:   ['TRANSMIT TO COMMAND','MAKE IT SO','ENGAGE'],
+  ds9:   ['SUBMIT TO COMMAND','TRANSMIT REQUEST','CONFIRM'],
+  voy:   ['TRANSMIT TO STARFLEET','ENGAGE','CONFIRM REQUEST'],
+  bsg:   ['SUBMIT TO COMMAND','SO SAY WE ALL','LAUNCH!!'],
+  matrix:['UPLOAD TO MATRIX','INSERT PROGRAM','EXECUTE'],
+  who:   ['ALLONS-Y!','GERONIMO!','BIGGER ON THE INSIDE'],
+  office:["THAT'S WHAT SHE SAID",'I DECLARE BANKRUPTCY','DUNDER MIFFLIN!!!']
+};
+
+/* ── STATE ───────────────────────────────────────────────────── */
+var curTheme='tos', curScale='sc-md';
+var audioEnabled=false, audioCtx=null, ambientTimer=null;
+var rainTimer=null, statsVisible=false, statsLoaded=false, statsData=null;
+var geoMelodyTimer=null, geoMusicOn=false;
+var geoTitleTimer=null, origTitle=document.title, geoTIdx=0, statsOpen=true;
+var LS_KEY='tg_eg_v1';
+
+function padNum(n,len){var s=String(n<0?0:n);while(s.length<len)s='0'+s;return s;}
+function savePref(){try{localStorage.setItem(LS_KEY,JSON.stringify({on:true,theme:curTheme,scale:curScale,audio:audioEnabled}));}catch(e){}}
+function clearPref(){try{localStorage.removeItem(LS_KEY);}catch(e){}}
+function loadPref(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'null');}catch(e){return null;}}
+
+/* ── ACTIVATION SEQUENCES ────────────────────────────────────── */
+var SEQUENCES={'geocities':'geo','beam':'tos','frack':'bsg','redpill':'matrix','tardis':'who','dundermifflin':'office'};
+var KONAMI=[38,38,40,40,37,39,37,39,66,65], kIdx=0;
+var typeBuf='', typeTimer=null;
+document.addEventListener('keydown',function(e){
+  var code=e.keyCode||e.which, key=(e.key||'').toLowerCase();
+  if(code===KONAMI[kIdx]){kIdx++;if(kIdx===KONAMI.length){kIdx=0;if(document.getElementById('eg-root'))deactivate();else activate('geo');}}
+  else{kIdx=(code===KONAMI[0])?1:0;}
+  if(key.length===1){
+    typeBuf+=key;
+    if(typeTimer)clearTimeout(typeTimer);
+    typeTimer=setTimeout(function(){typeBuf='';},2000);
+    var seqs=Object.keys(SEQUENCES);
+    for(var i=0;i<seqs.length;i++){
+      var seq=seqs[i];
+      if(typeBuf.slice(-seq.length)===seq){
+        typeBuf='';
+        var newTheme=SEQUENCES[seq];
+        var root=document.getElementById('eg-root');
+        if(root){
+          var isGeoNow=(document.body.classList.contains('t-geo'));
+          var isGeoNew=(newTheme==='geo');
+          if(isGeoNow===isGeoNew){stSwitchTheme(newTheme);}
+          else{deactivate(true);activate(newTheme);}
+        }else{activate(newTheme);}
+        break;
+      }
+    }
+  }
+});
+
+var logoClicks=0,logoTimer2=null;
+function onLogoClick(){
+  logoClicks++;
+  if(logoTimer2)clearTimeout(logoTimer2);
+  if(logoClicks>=5){logoClicks=0;if(document.getElementById('eg-root'))deactivate();else{var p=loadPref();activate(p&&p.theme?p.theme:'tos');}}
+  else{logoTimer2=setTimeout(function(){logoClicks=0;},2500);}
+}
+function attachLogoHooks(){
+  var sels=['.logo','#logo','header img','header .logo-img','.brand-logo','#header-logo'];
+  for(var i=0;i<sels.length;i++){var els=document.querySelectorAll(sels[i]);for(var j=0;j<els.length;j++)els[j].addEventListener('click',onLogoClick);}
+}
+
+/* ── TEXT SWAPS ──────────────────────────────────────────────── */
+function swapStatus(theme){
+  var map=STATUS_MAPS[theme]||{};
+  var els=document.querySelectorAll('.status-badge,[class*="status-badge"]');
+  for(var i=0;i<els.length;i++){
+    var el=els[i];
+    if(!el.getAttribute('data-eg-orig'))el.setAttribute('data-eg-orig',el.textContent.trim());
+    var orig=el.getAttribute('data-eg-orig'),mapped=map[orig];
+    if(mapped)el.textContent=mapped;
+  }
+}
+function swapSubmit(theme){
+  var texts=SUBMIT_MAPS[theme]||SUBMIT_MAPS.tos;
+  var btns=document.querySelectorAll('button[type="submit"],.submit-btn');
+  for(var i=0;i<btns.length;i++){
+    var btn=btns[i];
+    if(!btn.getAttribute('data-eg-orig'))btn.setAttribute('data-eg-orig',btn.textContent.trim());
+    btn.textContent=texts[i%texts.length];
+  }
+}
+function restoreSwaps(){
+  var els=document.querySelectorAll('[data-eg-orig]');
+  for(var i=0;i<els.length;i++){var orig=els[i].getAttribute('data-eg-orig');if(orig){els[i].textContent=orig;els[i].removeAttribute('data-eg-orig');}}
+}
+
+/* ── UI BUILDERS ─────────────────────────────────────────────── */
+var GEO_TITLES=['~~*~~ '+origTitle+' ~~*~~','*** GEOCITIES MODE ACTIVATED ***','!!! BEST VIEWED IN NETSCAPE 4.0 !!!','~~*~~ '+origTitle+' ~~*~~','>>> SUBMIT YOUR REQUESTS HERE <<<','--- Y2K COMPLIANT WEBSITE ---'];
+function buildGeoUI(){
+  return '<div id="geo-top-bar" class="geo-top-bar">BEST VIEWED IN NETSCAPE NAVIGATOR 4.0 AT 800x600 -- FRAMES-FREE -- JAVASCRIPT ENABLED -- Y2K COMPLIANT</div>'+
+    '<div id="geo-marquee-bar" class="geo-marquee-bar"><marquee scrollamount="5">&nbsp;&nbsp;&nbsp;&#9728; WELCOME TO THE OFFICIAL TEAM GROUP EMPLOYEE MANAGEMENT PORTAL &#9728;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&#9733; NOW WITH 100% MORE SEQUENTIAL GATING!!! &#9733;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;NO FAX REQUIRED -- SUBMIT YOUR REQUESTS ONLINE!!&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;PAPERLESS SINCE 2024!! SAVING TREES ONE FORM AT A TIME!!&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;AIM: TeamGroupHR &nbsp;|&nbsp; ICQ: 867-5309 &nbsp;|&nbsp; BEST HR INTRANET SITE 1997&nbsp;&nbsp;&nbsp;</marquee></div>'+
+    '<div id="geo-stats-panel-wrap" class="geo-stats-panel">'+
+      '<div class="geo-stats-header" id="geo-stats-hdr"><span class="geo-stats-header-title">&#9733; SITE STATISTICS &#9733; LIVE DATA &#9733; UPDATED EVERY PAGE LOAD &#9733;</span><span class="geo-stats-toggle-hint">[click to collapse]</span></div>'+
+      '<div class="geo-stats-body" id="geo-stats-body">'+
+        '<div class="geo-counter-row"><div class="geo-counter-label">YOU ARE VISITOR NUMBER</div><div class="geo-counter-box" id="geo-visitor-num">... ... ...</div><div class="geo-counter-sub">FREE WEB COUNTER PROVIDED BY GEOCOUNTER.COM</div></div>'+
+        '<div class="geo-rainbow-hr"></div>'+
+        '<div class="geo-stats-grid" id="geo-stats-grid"><div class="geo-loading">LOADING STATS... PLEASE WAIT... (dont close this window!!)</div></div>'+
+        '<div class="geo-rainbow-hr"></div>'+
+        '<div class="geo-leaderboard" id="geo-leaderboard"><div class="geo-loading">LOADING HALL OF FAME...</div></div>'+
+        '<div class="geo-rainbow-hr"></div>'+
+        '<div id="geo-best-month-wrap"></div>'+
+        '<div class="geo-awards-row" id="geo-awards-row"><div class="geo-loading">CALCULATING AWARDS...</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div id="geo-exit-badge" class="geo-exit-badge">[GEO MODE ON]<br>click to exit</div>'+
+    '<button id="geo-music-btn" class="geo-music-btn">&#9835; MIDI: OFF</button>'+
+    '<div class="geo-fixed-footer"><marquee scrollamount="3" direction="right">&nbsp; Email: hr@team-group.com &nbsp;|&nbsp; Office Hours: 9am-5pm EST &nbsp;|&nbsp; This site is Y2K compliant &nbsp;|&nbsp; SSL secured &nbsp;|&nbsp; Running on GOOGLE APPS SCRIPT (like GeoCities Pro but free!!) &nbsp;|&nbsp; No frames!! &nbsp;|&nbsp; &lt;/&gt; HTML coded by hand in Notepad.exe &lt;/&gt; &nbsp;</marquee></div>';
+}
+function buildTrekUI(d){
+  return '<canvas id="st-rain"></canvas>'+
+    '<div id="st-sweep"></div>'+
+    '<div id="st-ticker"><span class="st-t-side">'+d.ship+'</span><div id="st-t-track"><span id="st-t-text">&nbsp;&nbsp;'+d.ticker+'&nbsp;&nbsp;</span></div><span class="st-t-side" id="st-t-sector">'+d.sector+'</span></div>'+
+    '<div id="st-alert"><span class="st-blink" id="st-ai">'+d.alertIcon+'</span> &mdash; <span id="st-am">'+d.alertMsg+'</span> &mdash; <span class="st-blink">'+d.alertIcon+'</span></div>'+
+    '<div id="st-ctrl">'+
+      '<div class="st-cg"><span class="st-cl">UNIVERSE</span>'+
+        '<button class="st-sb" data-theme="tos">TOS</button>'+
+        '<button class="st-sb" data-theme="tng">TNG</button>'+
+        '<button class="st-sb" data-theme="ds9">DS9</button>'+
+        '<button class="st-sb" data-theme="voy">VOY</button>'+
+        '<button class="st-sb" data-theme="bsg">BSG</button>'+
+        '<button class="st-sb" data-theme="matrix">MATRIX</button>'+
+        '<button class="st-sb" data-theme="who">WHO</button>'+
+        '<button class="st-sb" data-theme="office">OFFICE</button>'+
+      '</div>'+
+      '<div class="st-cg"><span class="st-cl">SIZE</span>'+
+        '<button class="st-kb" data-scale="sc-sm">S</button>'+
+        '<button class="st-kb" data-scale="sc-md">M</button>'+
+        '<button class="st-kb" data-scale="sc-lg">L</button>'+
+        '<button class="st-kb" data-scale="sc-xl">XL</button>'+
+      '</div>'+
+      '<div class="st-cg"><button class="st-ab" id="st-ab">&#128263; OFF</button></div>'+
+    '</div>'+
+    '<button id="st-exit">&#x2716; EXIT</button>'+
+    '<button id="st-stog">&#9670; STATS</button>'+
+    '<div id="st-stats"><div id="st-sh"><span class="st-st" id="st-stitle">'+d.stitle+'</span></div><div id="st-sb2"><div class="st-loading" id="st-sload">ACCESSING RECORDS&hellip;</div></div></div>'+
+    '<div id="st-foot"><span class="st-fs" id="st-ftext">&nbsp;&nbsp;'+d.footer+'&nbsp;&nbsp;</span></div>';
+}
+
+/* ── ACTIVATE / DEACTIVATE ───────────────────────────────────── */
+function activate(theme,scale,audio){
+  document.body.classList.add('eg');
+  var wrap=document.createElement('div');
+  wrap.id='eg-root';
+  var isGeo=(theme==='geo');
+  wrap.innerHTML=isGeo?buildGeoUI():buildTrekUI(T[theme]||T.tos);
+  document.body.appendChild(wrap);
+  if(isGeo){
+    document.getElementById('geo-exit-badge').addEventListener('click',function(){deactivate();});
+    document.getElementById('geo-stats-hdr').addEventListener('click',function(){
+      statsOpen=!statsOpen;
+      var b=document.getElementById('geo-stats-body');if(b)b.style.display=statsOpen?'':'none';
+      var h=this.querySelector('.geo-stats-toggle-hint');if(h)h.textContent=statsOpen?'[click to collapse]':'[click to expand]';
+    });
+    document.getElementById('geo-music-btn').addEventListener('click',toggleGeoMusic);
+    swapStatus('geo');swapSubmit('geo');
+    startGeoTitleBlink();
+    document.body.classList.add('t-geo');
+    curTheme='geo';
+    fetchStats();
+    toast('GEOCITIES MODE ACTIVATED!! \\o/  (Konami again to exit)');
+  }else{
+    document.getElementById('st-exit').addEventListener('click',function(){deactivate();});
+    document.getElementById('st-stog').addEventListener('click',function(){
+      statsVisible=!statsVisible;
+      document.getElementById('st-stats').style.display=statsVisible?'block':'none';
+      if(statsVisible)fetchStats();
+    });
+    document.getElementById('st-ab').addEventListener('click',stToggleAudio);
+    var sBtns=document.querySelectorAll('.st-sb');
+    for(var i=0;i<sBtns.length;i++)(function(b){b.addEventListener('click',function(){stSwitchTheme(b.getAttribute('data-theme'));});})(sBtns[i]);
+    var kBtns=document.querySelectorAll('.st-kb');
+    for(var j=0;j<kBtns.length;j++)(function(b){b.addEventListener('click',function(){stSetScale(b.getAttribute('data-scale'));});})(kBtns[j]);
+    stSwitchTheme(theme||'tos');
+    stSetScale(scale||'sc-md');
+    if(audio){audioEnabled=false;stToggleAudio();}
+  }
+  savePref();
+}
+function deactivate(silent){
+  stopAmbient();stopRain();stopGeoMusic();stopGeoTitleBlink();
+  if(window.speechSynthesis)window.speechSynthesis.cancel();
+  restoreSwaps();
+  var wrap=document.getElementById('eg-root');
+  if(wrap&&wrap.parentNode)wrap.parentNode.removeChild(wrap);
+  var all=['eg','t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','is-lcars','is-bsg','is-matrix','sc-sm','sc-md','sc-lg','sc-xl'];
+  for(var i=0;i<all.length;i++)document.body.classList.remove(all[i]);
+  statsLoaded=false;statsVisible=false;statsData=null;audioEnabled=false;geoMusicOn=false;
+  clearPref();
+  if(!silent)toast('Easter egg off. See you next time!');
+}
+
+/* ── THEME SWITCH ────────────────────────────────────────────── */
+function stSwitchTheme(name){
+  if(!T[name])return;
+  var d=T[name],body=document.body;
+  var tc=['t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','is-lcars','is-bsg','is-matrix'];
+  for(var i=0;i<tc.length;i++)body.classList.remove(tc[i]);
+  body.classList.add('t-'+name);
+  if(d.lcars)body.classList.add('is-lcars');
+  if(d.bsg)body.classList.add('is-bsg');
+  if(d.matrix)body.classList.add('is-matrix');
+  var ship=document.querySelector('.st-t-side');if(ship)ship.textContent=d.ship;
+  var sec=document.getElementById('st-t-sector');if(sec)sec.textContent=d.sector;
+  var tick=document.getElementById('st-t-text');if(tick)tick.innerHTML='&nbsp;&nbsp;'+d.ticker+'&nbsp;&nbsp;';
+  var ai=document.getElementById('st-ai');if(ai)ai.innerHTML=d.alertIcon;
+  var am=document.getElementById('st-am');if(am)am.textContent=d.alertMsg;
+  var st=document.getElementById('st-stitle');if(st)st.textContent=d.stitle;
+  var ft=document.getElementById('st-ftext');if(ft)ft.innerHTML='&nbsp;&nbsp;'+d.footer+'&nbsp;&nbsp;';
+  if(statsLoaded&&statsData&&statsVisible){var sb2=document.getElementById('st-sb2');if(sb2)sb2.innerHTML=renderTrekStats(statsData,d);}
+  var sBtns=document.querySelectorAll('.st-sb');
+  for(var j=0;j<sBtns.length;j++)sBtns[j].className='st-sb'+(sBtns[j].getAttribute('data-theme')===name?' on':'');
+  swapStatus(name);swapSubmit(name);
+  if(name==='matrix')startRain();else stopRain();
+  if(audioEnabled){stopAmbient();startAmbient();speakGreeting(name);}
+  curTheme=name;savePref();
+}
+function stSetScale(sc){
+  var scales=['sc-sm','sc-md','sc-lg','sc-xl'];
+  for(var i=0;i<scales.length;i++)document.body.classList.remove(scales[i]);
+  document.body.classList.add(sc);
+  var kBtns=document.querySelectorAll('.st-kb');
+  for(var j=0;j<kBtns.length;j++)kBtns[j].className='st-kb'+(kBtns[j].getAttribute('data-scale')===sc?' on':'');
+  curScale=sc;savePref();
+}
+
+/* ── AUDIO ───────────────────────────────────────────────────── */
+function initAudio(){if(audioCtx)return true;try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();return true;}catch(e){return false;}}
+function playOsc(freq,type,vol,dur,freqEnd){
+  if(!audioCtx)return;
+  var osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+  osc.connect(gain);gain.connect(audioCtx.destination);
+  osc.type=type||'sine';osc.frequency.setValueAtTime(freq,audioCtx.currentTime);
+  if(freqEnd)osc.frequency.exponentialRampToValueAtTime(freqEnd,audioCtx.currentTime+dur*0.9);
+  gain.gain.setValueAtTime(0,audioCtx.currentTime);gain.gain.linearRampToValueAtTime(vol,audioCtx.currentTime+0.02);gain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+dur);
+  osc.start(audioCtx.currentTime);osc.stop(audioCtx.currentTime+dur+0.05);
+}
+function playTOS(){playOsc([440,660,880,1100][Math.floor(Math.random()*4)],'sine',0.07,0.18);}
+function playLCARS(){playOsc(500,'sine',0.10,0.15,1400);}
+function playBSG(){playOsc(330,'square',0.10,0.18);setTimeout(function(){playOsc(440,'square',0.10,0.18);},220);}
+function playMatrix(){if(!audioCtx)return;var buf=audioCtx.createBuffer(1,Math.round(audioCtx.sampleRate*0.07),audioCtx.sampleRate),ch=buf.getChannelData(0);for(var i=0;i<ch.length;i++)ch[i]=(Math.random()*2-1)*0.4;var src=audioCtx.createBufferSource();src.buffer=buf;var f=audioCtx.createBiquadFilter();f.type='bandpass';f.frequency.value=900;f.Q.value=2;var g=audioCtx.createGain();g.gain.value=0.12;src.connect(f);f.connect(g);g.connect(audioCtx.destination);src.start();}
+function playWho(){
+  if(!audioCtx)return;
+  var now=audioCtx.currentTime;
+  var osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+  osc.connect(gain);gain.connect(audioCtx.destination);
+  osc.type='sawtooth';
+  for(var i=0;i<16;i++){var t=now+i*0.13;osc.frequency.setValueAtTime(700-i*22+(i%2===0?90:-90),t);}
+  gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(0.06,now+0.1);gain.gain.linearRampToValueAtTime(0.06,now+1.8);gain.gain.linearRampToValueAtTime(0,now+2.2);
+  osc.start(now);osc.stop(now+2.3);
+}
+function playOffice(){
+  /* Simple ascending ping — acoustic guitar feel */
+  if(!audioCtx)return;
+  var notes=[392,440,392,349,392];
+  for(var i=0;i<notes.length;i++){
+    (function(freq,idx){
+      setTimeout(function(){playOsc(freq,'sine',0.08,0.25);},idx*180);
+    })(notes[i],i);
+  }
+}
+
+/* Geo chiptune looping melody */
+var GEO_NOTES=[
+  [523.25,0.15],[659.25,0.15],[783.99,0.15],[880,0.3],[783.99,0.15],[659.25,0.15],[523.25,0.15],[392,0.3],
+  [440,0.15],[523.25,0.15],[659.25,0.15],[783.99,0.3],[1046.5,0.15],[880,0.15],[783.99,0.15],[659.25,0.3],
+  [523.25,0.15],[659.25,0.15],[783.99,0.15],[1046.5,0.15],[880,0.15],[783.99,0.15],[659.25,0.3],[523.25,0.6]
+];
+function playGeoNotes(startOffset){
+  if(!audioCtx||!geoMusicOn)return;
+  var t=audioCtx.currentTime+(startOffset||0);
+  for(var i=0;i<GEO_NOTES.length;i++){
+    var freq=GEO_NOTES[i][0],dur=GEO_NOTES[i][1];
+    var osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    osc.type='square';osc.frequency.setValueAtTime(freq,t);
+    gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(0.05,t+0.01);gain.gain.linearRampToValueAtTime(0.04,t+dur-0.02);gain.gain.linearRampToValueAtTime(0,t+dur);
+    osc.start(t);osc.stop(t+dur+0.01);
+    t+=dur;
+  }
+  var totalDur=0;for(var j=0;j<GEO_NOTES.length;j++)totalDur+=GEO_NOTES[j][1];
+  if(geoMusicOn)geoMelodyTimer=setTimeout(function(){playGeoNotes(0);},totalDur*1000-50);
+}
+function toggleGeoMusic(){
+  if(!geoMusicOn){
+    if(!initAudio())return;
+    geoMusicOn=true;
+    playGeoNotes(0);
+    var btn=document.getElementById('geo-music-btn');if(btn)btn.textContent='&#9835; MIDI: ON';
+  }else{stopGeoMusic();}
+}
+function stopGeoMusic(){
+  geoMusicOn=false;
+  if(geoMelodyTimer){clearTimeout(geoMelodyTimer);geoMelodyTimer=null;}
+  var btn=document.getElementById('geo-music-btn');if(btn)btn.textContent='&#9835; MIDI: OFF';
+}
+
+var SND={tos:playTOS,tng:playLCARS,ds9:playLCARS,voy:playLCARS,bsg:playBSG,matrix:playMatrix,who:playWho,office:playOffice};
+var INT={tos:[2000,5000],tng:[4000,7000],ds9:[4000,7000],voy:[4000,7000],bsg:[2500,4500],matrix:[800,2000],who:[5000,9000],office:[6000,10000]};
+function startAmbient(){stopAmbient();if(!audioEnabled||!audioCtx)return;var fn=SND[curTheme],range=INT[curTheme]||[3000,6000];if(!fn)return;function tick(){fn();ambientTimer=setTimeout(tick,range[0]+Math.random()*(range[1]-range[0]));}ambientTimer=setTimeout(tick,range[0]*0.3);}
+function stopAmbient(){if(ambientTimer){clearTimeout(ambientTimer);ambientTimer=null;}}
+function speakGreeting(theme){if(!audioEnabled||!window.speechSynthesis)return;var d=T[theme];if(!d||!d.greeting)return;var rates={tos:0.85,tng:0.95,ds9:0.95,voy:0.95,bsg:1.1,matrix:0.7,who:0.95,office:1.05},pitches={tos:0.7,tng:1.0,ds9:0.95,voy:1.0,bsg:1.05,matrix:0.5,who:1.1,office:1.0};window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(d.greeting);u.rate=rates[theme]||0.9;u.pitch=pitches[theme]||1.0;u.volume=0.85;window.speechSynthesis.speak(u);}
+function stToggleAudio(){if(!audioEnabled){if(!initAudio())return;audioEnabled=true;startAmbient();speakGreeting(curTheme);}else{audioEnabled=false;stopAmbient();if(window.speechSynthesis)window.speechSynthesis.cancel();}var btn=document.getElementById('st-ab');if(btn){btn.textContent=audioEnabled?'🔊 ON':'🔇 OFF';btn.className='st-ab'+(audioEnabled?' on':'');}savePref();}
+
+/* ── MATRIX RAIN ─────────────────────────────────────────────── */
+var CHARS='アイウエオカキクケコ01ABCDEF0123456789ヲン';
+function startRain(){var canvas=document.getElementById('st-rain');if(!canvas)return;canvas.width=window.innerWidth;canvas.height=window.innerHeight;var ctx=canvas.getContext('2d'),sz=15,cols=Math.floor(canvas.width/sz),drops=[];for(var i=0;i<cols;i++)drops[i]=Math.random()*-canvas.height/sz;stopRain();rainTimer=setInterval(function(){ctx.fillStyle='rgba(0,0,0,0.06)';ctx.fillRect(0,0,canvas.width,canvas.height);for(var j=0;j<drops.length;j++){var ch=CHARS[Math.floor(Math.random()*CHARS.length)];ctx.fillStyle=(drops[j]>1&&drops[j]<3)?'#CCFFCC':'#00FF41';ctx.font=sz+'px monospace';ctx.fillText(ch,j*sz,drops[j]*sz);drops[j]++;if(drops[j]*sz>canvas.height&&Math.random()>0.975)drops[j]=0;}},55);}
+function stopRain(){if(rainTimer){clearInterval(rainTimer);rainTimer=null;}var canvas=document.getElementById('st-rain');if(canvas){var ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);}}
+window.addEventListener('resize',function(){if(curTheme==='matrix'&&document.getElementById('st-rain'))startRain();});
+
+/* ── STATS ───────────────────────────────────────────────────── */
+function fetchStats(){
+  if(typeof google==='undefined'||!google.script||!google.script.run){
+    if(document.body.classList.contains('t-geo')){renderGeoStats({error:'No server (preview mode)'});}
+    else{var el=document.getElementById('st-sload');if(el)el.textContent='OFFLINE — NO SERVER CONNECTION';}
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(function(data){
+      statsLoaded=true;statsData=data;
+      if(document.body.classList.contains('t-geo')){renderGeoStats(data);}
+      else{var body=document.getElementById('st-sb2');if(body){if(!data||data.error){body.innerHTML='<div class="st-loading" style="animation:none;color:var(--st-red)">DATA UNAVAILABLE</div>';return;}body.innerHTML=renderTrekStats(data,T[curTheme]);}}
+    })
+    .withFailureHandler(function(){
+      if(document.body.classList.contains('t-geo')){renderGeoStats({error:'Server error'});}
+      else{var el=document.getElementById('st-sload');if(el){el.textContent='TRANSMISSION FAILED';el.style.animation='none';}}
+    })
+    .getStarTrekStats();
+}
+
+function renderTrekStats(data,d){
+  var t=data.totals||{},h='';
+  h+='<div class="st-dr"><div class="st-drc"><div class="st-drs"></div></div><div class="st-drl">DRADIS — NO CONTACTS</div></div>';
+  var tot=t.total||0;
+  var totStr=padNum(tot,6).split('').join(' ');
+  h+='<div class="st-vis"><div class="st-vl">'+d.vlabel+'</div><div class="st-vb">'+totStr+'</div><div class="st-vs">'+d.vsub+'</div></div>';
+  h+='<div class="st-sg">'+
+    mkSx('sg',t.newHire||0,d.s1)+mkSx('sr',t.eoe||0,d.s2)+mkSx('sc',t.change||0,d.s3)+
+    mkSx('',t.completed||0,d.s4)+mkSx('',t.inProgress||0,d.s5)+mkSx('sc',t.pending||0,d.s6)+
+    mkSx('sr',t.cancelled||0,d.s7)+mkSx('sb',t.thisMonth||0,d.s8)+
+    mkSx('',t.actionItems||0,'Action Items')+mkSx('',t.allTimeRecord||0,'Peak Month')+
+  '</div>';
+  function lbRows(arr){var s='';for(var i=0;i<arr.length;i++)s+='<div class="st-lr"><span class="st-lrk">#'+(i+1)+'</span><span class="st-lrn">'+arr[i].name+'</span><span class="st-lrc">'+arr[i].count+'</span></div>';return s||'<div class="st-lr" style="color:#444">&#8212;</div>';}
+  h+='<hr class="st-sep"><div class="st-lb">'+
+    '<div class="st-lp"><div class="st-lt">'+d.l1+'</div>'+lbRows(data.topRequesters||[])+'</div>'+
+    '<div class="st-lp l2"><div class="st-lt">'+d.l2+'</div>'+lbRows(data.topSites||[])+'</div>'+
+    '<div class="st-lp l3"><div class="st-lt">'+d.l3+'</div>'+lbRows(data.topManagers||[])+'</div>'+
+  '</div>';
+  if(data.bestMonth)h+='<hr class="st-sep"><div style="text-align:center;font-family:var(--st-fd,monospace);font-size:var(--fs-xs,11px);color:var(--st-dim);letter-spacing:2px;padding:5px 0">PEAK: <span style="color:var(--st-hi)">'+data.bestMonth.label.toUpperCase()+' &#8212; '+data.bestMonth.count+'</span></div>';
+  if(data.lastUpdated)h+='<div style="text-align:right;font-family:var(--st-fb,monospace);font-size:var(--fs-2xs,10px);color:var(--st-dim);padding-top:6px">UPDATED: '+data.lastUpdated.replace('T',' ').substring(0,19)+'</div>';
+  return h;
+}
+function mkSx(cls,val,label){return '<div class="st-sx '+cls+'"><span class="st-sn">'+val+'</span><span class="st-sl">'+label+'</span></div>';}
+
+function renderGeoStats(data){
+  var visEl=document.getElementById('geo-visitor-num');
+  var gridEl=document.getElementById('geo-stats-grid');
+  var lbEl=document.getElementById('geo-leaderboard');
+  var bmEl=document.getElementById('geo-best-month-wrap');
+  var awEl=document.getElementById('geo-awards-row');
+  if(!gridEl)return;
+  if(data&&data.error){if(visEl)visEl.textContent='? ? ? ? ? ?';gridEl.innerHTML='<div style="color:#f66;font-size:12px;">!! ERROR: '+data.error+'</div>';if(lbEl)lbEl.innerHTML='';return;}
+  var t=data.totals||{};
+  var total=t.total||0,completed=t.completed||0;
+  var rate=total>0?Math.round((completed/total)*100):0;
+  if(visEl)visEl.textContent=fmtCounter(total);
+  function gStat(v,l,c){return '<div class="geo-stat-box '+(c||'')+'"><span class="geo-stat-num">'+v+'</span><span class="geo-stat-label">'+l+'</span></div>';}
+  gridEl.innerHTML=
+    gStat(t.newHire||0,'NEW HIRE REQUESTS','gg')+gStat(t.eoe||0,'END OF EMPLOYMENT','gr')+
+    gStat(t.change||0,'POSITION CHANGES','gc')+gStat(t.equip||0,'EQUIPMENT REQUESTS','gy')+
+    gStat(completed,'COMPLETED!! (WINNERS!!)','gg')+gStat(t.inProgress||0,'IN PROGRESS (working on it)','gy')+
+    gStat(t.pending||0,'PENDING (waiting...)','gc')+gStat(t.cancelled||0,'CANCELLED (rip)','gr')+
+    gStat(rate+'%','COMPLETION RATE!!','gp')+gStat(t.actionItems||0,'TOTAL ACTION ITEMS','')+
+    gStat(t.thisMonth||0,'REQUESTS THIS MONTH!!','gy')+gStat(t.allTimeRecord||0,'BEST MONTH (all time!!)','go');
+  function mkLb(title,cls,items,fn){
+    var h='<div class="geo-lb-box '+cls+'"><div class="geo-lb-title">'+title+'</div>';
+    if(!items||!items.length){h+='<div style="color:#555;font-size:11px;padding:4px 0">No data yet -- be the first!!</div>';}
+    else{for(var i=0;i<items.length;i++){var p=fn(items[i],i);h+='<div class="geo-lb-item"><span class="geo-lb-rank">'+p[0]+'</span><span class="geo-lb-name">'+p[1]+'</span><span class="geo-lb-count">'+p[2]+'</span></div>';}}
+    return h+'</div>';
+  }
+  lbEl.innerHTML=
+    mkLb('HALL OF FAME -- TOP SUBMITTERS!!','',data.topRequesters||[],function(x,i){return['(#'+(i+1)+')',sn(x.name),x.count+' req'];})+
+    mkLb('MOST ACTIVE OUTPOSTS (SITES)!!','lb3',data.topSites||[],function(x,i){return['('+(i+1)+')',sn(x.name),String(x.count)];})+
+    mkLb('TOP MANAGERS (MOST ACTIVITY)!!','lb2',data.topManagers||[],function(x,i){return['('+(i+1)+')',sn(x.name),x.count+' req'];});
+  if(bmEl&&data.bestMonth)bmEl.innerHTML='<div class="geo-best-month"><div class="geo-best-month-label">BEST MONTH IN HISTORY!!</div><div class="geo-best-month-val">'+data.bestMonth.label+'</div><div class="geo-best-month-count">'+data.bestMonth.count+' requests that month!!</div></div>';
+  var aw='';
+  aw+=mkAw('[1ST]','BEST','INTRANET','2026','');aw+=mkAw('[WEB]','WEB','XCELLNCE','AWARD','ac');aw+=mkAw('[SEQ]','MOST','SEQ.GATNG','AWARD','ag');
+  if(rate>=80)aw+=mkAw('[80%]','80PCT+','COMPLT.','CHAMP','');
+  if(total>=50)aw+=mkAw('[50+]','50+REQ','MILESTNE','UNLCKD','ap');
+  if(total>=100)aw+=mkAw('[100]','100 REQ','MILESTONE','PRO!!!','ac');
+  if(awEl)awEl.innerHTML=aw;
+}
+function fmtCounter(n){var s=padNum(n,6),r='';for(var i=0;i<s.length;i++)r+=s[i]+(i<s.length-1?' ':'');return r;}
+function sn(name,max){max=max||20;if(!name)return'Unknown';var a=name.indexOf('@');if(a>0)name=name.substring(0,a);if(name.length>max)name=name.substring(0,max-2)+'..';return name;}
+function mkAw(icon,l1,l2,l3,cls){return'<div class="geo-award '+(cls||'')+'"><span class="geo-trophy">'+icon+'</span>'+l1+'<br>'+l2+'<br>'+l3+'</div>';}
+
+/* ── GEO TITLE BLINK ─────────────────────────────────────────── */
+function startGeoTitleBlink(){geoTIdx=0;geoTitleTimer=setInterval(function(){geoTIdx=(geoTIdx+1)%GEO_TITLES.length;document.title=GEO_TITLES[geoTIdx];},1800);}
+function stopGeoTitleBlink(){if(geoTitleTimer){clearInterval(geoTitleTimer);geoTitleTimer=null;}document.title=origTitle;}
+
+/* ── TOAST ───────────────────────────────────────────────────── */
+function toast(msg){
+  var old=document.getElementById('eg-toast');if(old&&old.parentNode)old.parentNode.removeChild(old);
+  var el=document.createElement('div');el.id='eg-toast';el.className='eg-toast';el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},4500);
+}
+
+/* ── INIT ────────────────────────────────────────────────────── */
+attachLogoHooks();
+try{var saved=loadPref();if(saved&&saved.on)activate(saved.theme,saved.scale,saved.audio===true);}catch(e){}
+})();
+</script>
