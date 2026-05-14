@@ -653,10 +653,10 @@
         }
       }
 
-      // 1. Current User Details
+      // 1. Current User Details — skip for it_confirmation (requester prefilled from original request)
       google.script.run
         .withSuccessHandler(function (user) {
-          if (user && user.email) {
+          if (user && user.email && FORM_MODE !== 'it_confirmation') {
             document.getElementById('requesterEmail').value = user.email;
             document.getElementById('requesterName').value = user.name || 'Unknown User';
           }
@@ -717,6 +717,10 @@
           var el = document.querySelector('[name="' + name + '"][value="' + CSS.escape(String(val)) + '"]');
           if (el) el.checked = true;
         }
+
+        // Requester fields — prefill from original request (prevents getCurrentUserDetails from overwriting)
+        sv('requesterEmail', d.requesterEmail);
+        sv('requesterName',  d.requesterName);
 
         // Text / date
         sv('firstName',      d.firstName);

@@ -31,9 +31,7 @@ function serveITConfirmation(workflowId) {
   template.mode          = 'it_confirmation';
   template.baseMode      = baseMode;
   template.workflowId    = workflowId;
-  template.requestData   = JSON.stringify(
-    isEquipment ? getFullEquipmentRequestData(workflowId) : getFullNewHireData(workflowId)
-  );
+  template.requestData   = JSON.stringify(getFullNewHireData(workflowId)); // equipment now in Initial_Requests
   template.referenceData = JSON.stringify(getInitialFormData());
   template.itContext     = getWorkflowContext(workflowId);   // full context for RequestHeader
   return template.evaluate()
@@ -119,43 +117,6 @@ function getFullNewHireData(workflowId) {
   }
 }
 
-function getFullEquipmentRequestData(workflowId) {
-  try {
-    const ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
-    const data  = sheet.getDataRange().getValues();
-    const splitCSV = function(v) {
-      return v ? String(v).split(', ').map(function(s) { return s.trim(); }).filter(Boolean) : [];
-    };
-    // Scan all rows — WORKFLOW_ID is now col 0 (new layout: WorkflowID[0]|FormID[1]|Timestamp[2]).
-    // Scanning from 0 is robust whether or not a header row exists
-    // (header value 'Workflow ID' will never match an EQUIP_REQ_* id).
-    const EQ = SCHEMA.EQUIPMENT_REQUESTS;
-    for (let i = 0; i < data.length; i++) {
-      if (data[i][EQ.WORKFLOW_ID] !== workflowId) continue;
-      const r = data[i];
-      return {
-        workflowId:    r[EQ.WORKFLOW_ID],
-        reqName:       r[EQ.REQUESTER_NAME]       || '',
-        reqEmail:      r[EQ.REQUESTER_EMAIL]       || '',
-        firstName:     r[EQ.EMPLOYEE_FIRST_NAME]   || '',
-        lastName:      r[EQ.EMPLOYEE_LAST_NAME]    || '',
-        siteName:      r[EQ.SITE_NAME]             || '',
-        positionTitle: r[EQ.JOB_TITLE]             || '',
-        managerName:   r[EQ.MANAGER_NAME]          || '',
-        managerEmail:  r[EQ.MANAGER_EMAIL]         || '',
-        equipment:     splitCSV(r[EQ.EQUIPMENT_REQUESTED]),
-        systems:       splitCSV(r[EQ.SYSTEMS_REQUESTED]),
-        comments:      r[EQ.COMMENTS]              || '',
-        department:    r[EQ.DEPARTMENT]            || ''
-      };
-    }
-    return null;
-  } catch (e) {
-    Logger.log('[ITConfirmation] getFullEquipmentRequestData error: ' + e.message);
-    return null;
-  }
-}
 
 function getFullPositionChangeData(workflowId) {
   try {
@@ -221,35 +182,12 @@ function submitITConfirmation(formData) {
     const csvOrStr   = function(v) { return Array.isArray(v) ? v.join(', ') : (v || ''); };
 
     // Capture original data BEFORE any writes — used for change detection below
-    const origData = isEquipment
-      ? getFullEquipmentRequestData(workflowId)
-      : (isChange ? getFullPositionChangeData(workflowId) : getFullNewHireData(workflowId));
+    // Equipment now reads from Initial_Requests via getFullNewHireData (same as new hire)
+    const origData = isChange ? getFullPositionChangeData(workflowId) : getFullNewHireData(workflowId);
 
-    if (isEquipment) {
-      // Write corrections back to Equipment_Requests sheet in-place
-      const eqSheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
-      const eqRows  = eqSheet.getDataRange().getValues();
-      const EQ = SCHEMA.EQUIPMENT_REQUESTS;
-      for (let i = 0; i < eqRows.length; i++) {
-        if (eqRows[i][EQ.WORKFLOW_ID] !== workflowId) continue;
-        const rowNum = i + 1;
-        [
-          [EQ.EMPLOYEE_FIRST_NAME,  formData.firstName                              || ''],
-          [EQ.EMPLOYEE_LAST_NAME,   formData.lastName                               || ''],
-          [EQ.SITE_NAME,            formData.siteName                               || ''],
-          [EQ.JOB_TITLE,            formData.positionTitle || formData.position     || ''],
-          [EQ.MANAGER_NAME,         formData.reportingManagerName  || formData.managerName  || ''],
-          [EQ.MANAGER_EMAIL,        formData.reportingManagerEmail || formData.managerEmail || ''],
-          [EQ.EQUIPMENT_REQUESTED,  csvOrStr(formData.equipment)],
-          [EQ.SYSTEMS_REQUESTED,    csvOrStr(formData.systems)],
-          [EQ.COMMENTS,             formData.comments || formData.notes || ''],
-          [EQ.DEPARTMENT,           formData.department || '']
-        ].forEach(function(pair) {
-          eqSheet.getRange(rowNum, pair[0] + 1).setValue(pair[1]);
-        });
-        break;
-      }
-    } else if (!isChange) {
+    if (!isChange) {
+      // Write corrections back to Initial_Requests sheet in-place (new hire AND equipment)
+      // Equipment requests now share the Initial_Requests sheet — no separate write-back needed
       // Write corrections back to Initial Requests sheet in-place
       const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
       const rows  = sheet.getDataRange().getValues();
@@ -369,7 +307,7 @@ function submitITConfirmation(formData) {
         const eqChanges = diffFormFields(origData, eqSubmitted, CHANGE_FIELDS_IT_EQUIPMENT);
         if (eqChanges.length > 0) {
           sendChangeNotifications(workflowId, 'IT Confirmation', eqChanges, context, {
-            requesterEmail: origData.reqEmail    || '',
+            requesterEmail: origData.requesterEmail || '',
             managerEmail:   eqSubmitted.managerEmail || (context && context.managerEmail) || '',
             notifySafety:   false,
             notifyIdSetup:  false
@@ -393,7 +331,7 @@ function submitITConfirmation(formData) {
         if (chChanges.length > 0) {
           const safetyTriggers = ['siteNew', 'titleNew'];
           sendChangeNotifications(workflowId, 'IT Confirmation', chChanges, context, {
-            requesterEmail: origData.reqEmail    || '',
+            requesterEmail: origData.reqEmail || origData.requesterEmail || '',
             managerEmail:   (context && context.managerEmail) || '',
             notifySafety:   chChanges.some(function(c) { return safetyTriggers.indexOf(c.field) !== -1; }),
             notifyIdSetup:  false

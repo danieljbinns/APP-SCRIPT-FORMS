@@ -102,8 +102,7 @@ function syncWorkflowState(workflowId) {
     const isEquip  = workflowId.startsWith('EQUIP_REQ_');
     const lookupSheetName = isTerm   ? CONFIG.SHEETS.TERMINATIONS
                           : isChange ? CONFIG.SHEETS.POSITION_CHANGES
-                          : isEquip  ? CONFIG.SHEETS.EQUIPMENT_REQUESTS
-                          :            CONFIG.SHEETS.INITIAL_REQUESTS;
+                          :            CONFIG.SHEETS.INITIAL_REQUESTS; // equipment + new hire both use Initial_Requests
     const lookupSheet = ss.getSheetByName(lookupSheetName);
 
     const tz = Session.getScriptTimeZone();
@@ -146,19 +145,17 @@ function syncWorkflowState(workflowId) {
           items: {}
         };
       } else if (isEquip) {
-        // Equipment_Requests: WorkflowID[0] | FormID[1] | Timestamp[2] | ReqName[3] | ReqEmail[4]
-        //   | FirstName[5] | LastName[6] | Site[7] | Position[8] | ManagerName[9] | ManagerEmail[10]
-        //   | Equipment[11] | Systems[12] | Comments[13] | Department[14]
-        const EQ = SCHEMA.EQUIPMENT_REQUESTS;
+        // Equipment requests now stored in Initial_Requests — use IR schema
+        const IR = SCHEMA.INITIAL_REQUESTS;
         reqInfo = {
-          requesterName:  row[EQ.REQUESTER_NAME]        || 'Unknown',
-          requesterEmail: row[EQ.REQUESTER_EMAIL]        || '',
-          managerEmail:   row[EQ.MANAGER_EMAIL]          || '',
-          dateRequested:  fmtDate(row[EQ.TIMESTAMP]),    // Timestamp as request date
-          hireDate:       '',                            // No start date for equipment requests
-          site:           String(row[EQ.SITE_NAME]      || ''),
+          requesterName:  row[IR.REQUESTER_NAME]   || 'Unknown',
+          requesterEmail: row[IR.REQUESTER_EMAIL]   || '',
+          managerEmail:   row[IR.MANAGER_EMAIL]     || '',
+          dateRequested:  fmtDate(row[IR.DATE_REQUESTED]),
+          hireDate:       '',                        // No start date for equipment requests
+          site:           String(row[IR.SITE_NAME] || ''),
           empType:        '',
-          items:          { isEquip: true }
+          items:          { isEquip: true }          // Different action item routing vs new hire
         };
       } else {
         const IR = SCHEMA.INITIAL_REQUESTS;

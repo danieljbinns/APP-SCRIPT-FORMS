@@ -199,40 +199,7 @@ function getWorkflowContext(workflowId) {
       }
     }
 
-    // Support for Equipment Request Workflows
-    if (workflowId && workflowId.startsWith('EQUIP_REQ_')) {
-      const eqSheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
-      if (eqSheet) {
-        const eqData = eqSheet.getDataRange().getValues();
-        const EQ = SCHEMA.EQUIPMENT_REQUESTS;
-        const eqRow = eqData.find(function(r, i) { return i > 0 && r[EQ.WORKFLOW_ID] === workflowId; });
-        if (eqRow) {
-          const systems   = eqRow[EQ.SYSTEMS_REQUESTED]    ? String(eqRow[EQ.SYSTEMS_REQUESTED]).split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
-          const equipment = eqRow[EQ.EQUIPMENT_REQUESTED]  ? String(eqRow[EQ.EQUIPMENT_REQUESTED]).split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
-          return {
-            workflowType:   'Equipment Request',
-            workflowId:     workflowId,
-            employeeName:   ((eqRow[EQ.EMPLOYEE_FIRST_NAME] || '') + ' ' + (eqRow[EQ.EMPLOYEE_LAST_NAME] || '')).trim(),
-            firstName:      eqRow[EQ.EMPLOYEE_FIRST_NAME]  || '',
-            lastName:       eqRow[EQ.EMPLOYEE_LAST_NAME]   || '',
-            siteName:       eqRow[EQ.SITE_NAME]            || '',
-            jobTitle:       eqRow[EQ.JOB_TITLE]            || '',
-            managerName:    eqRow[EQ.MANAGER_NAME]         || '',
-            managerEmail:   eqRow[EQ.MANAGER_EMAIL]        || '',
-            requesterEmail: eqRow[EQ.REQUESTER_EMAIL]      || '',
-            requesterName:  eqRow[EQ.REQUESTER_NAME]       || '',
-            systems:        systems,
-            equipmentRaw:   eqRow[EQ.EQUIPMENT_REQUESTED]  || '',
-            equipment:      equipment,
-            comments:       eqRow[EQ.COMMENTS]             || '',
-            requestDate:    eqRow[EQ.TIMESTAMP] instanceof Date
-              ? Utilities.formatDate(eqRow[EQ.TIMESTAMP], Session.getScriptTimeZone(), 'yyyy-MM-dd')
-              : String(eqRow[EQ.TIMESTAMP] || '').substring(0, 10)
-          };
-        }
-      }
-      return null;
-    }
+    // Equipment requests now stored in Initial_Requests — falls through to shared read below
 
     const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
 
@@ -263,7 +230,9 @@ function getWorkflowContext(workflowId) {
     // Default Context from Initial Request
     const context = {
       workflowId:    workflowId,
-      workflowType:  (workflowId && workflowId.indexOf('CHANGE_') === 0) ? 'Status Change' : 'New Hire',
+      workflowType:  workflowId.startsWith('EQUIP_REQ_') ? 'Equipment Request'
+                   : workflowId.startsWith('CHANGE_')   ? 'Status Change'
+                   : 'New Hire',
       firstName:     firstName,
       lastName:      lastName,
       middleName:    row[headers.indexOf('Middle Name')]    || '',
