@@ -814,10 +814,32 @@
             google.script.run.withSuccessHandler(function(res) { alert(res.message || 'Done'); }).withFailureHandler(function(err) { alert('Error: ' + err.message); }).bumpRequest(workflowId, target);
         }
 
+        var STEP_DISPLAY_NAMES = {
+            'initial_request':      'Initial Request',
+            'termination_request':  'Initial Request (EOE)',
+            'change_request':       'Initial Request (Status Change)',
+            'equipment_request':    'Initial Request (Equipment)',
+            'id_setup':             'ID Setup',
+            'hr_verification':      'HR Verification',
+            'it_setup':             'IT Setup',
+            'it_confirmation':      'IT Confirmation',
+            'termination_approval': 'HR Approval',
+            'jonas':                'Jonas',
+            'credit_card':          'Credit Card',
+            'fleetio':              'Fleetio',
+            'business_cards':       'Business Cards',
+            'sitedocs':             'SiteDocs',
+            'review':               '30/60/90 Review',
+            'payroll':              'Payroll',
+            'safety':               'Safety',
+            'specialist':           'Specialist'
+        };
+
         function viewStepData(stepType) {
             document.getElementById('dataModal').style.display = 'flex';
             document.getElementById('stepDataBody').innerHTML = `<tr><td colspan="2" style="text-align:center;">Loading...</td></tr>`;
-            document.getElementById('stepDataTitle').innerText = 'Step Details: ' + stepType.toUpperCase().replace(/_/g, ' ');
+            var _stepLabel = STEP_DISPLAY_NAMES[stepType] || stepType.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+            document.getElementById('stepDataTitle').innerText = 'Step Details: ' + _stepLabel;
 
             google.script.run
                 .withSuccessHandler(renderStepData)
