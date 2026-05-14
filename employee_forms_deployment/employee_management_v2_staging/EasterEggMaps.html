@@ -28,7 +28,12 @@ var STATUS_MAPS={
   kpop:      {'In Progress':'comeback era',      'Pending':'waiting room...',              'Completed':'triple crown achieved',  'Cancelled':'on hiatus',  'Action Required':'!! fancam needed !!', 'All Specialists Complete':'all kills certified'},
   '80s':     {'In Progress':'TOTALLY RADICAL!!',             'Pending':'HANG LOOSE...',                'Completed':'GNARLY!! MISSION DONE!!',   'Cancelled':'BUMMER DUDE',               'Action Required':'!! LIKE, ACTION NEEDED !!',   'All Specialists Complete':'TOTALLY TUBULAR!!'},
   f1:        {'In Progress':'LAP IN PROGRESS',               'Pending':'WAITING ON THE GRID',          'Completed':'P1 — RACE COMPLETE',        'Cancelled':'DNF — DID NOT FINISH',      'Action Required':'PIT STOP REQUIRED',           'All Specialists Complete':'PODIUM FINISH'},
-  corp:      {'In Progress':'LEVERAGING BANDWIDTH',          'Pending':'CIRCLING BACK',                'Completed':'MOVED THE NEEDLE',          'Cancelled':'NOT ALIGNED WITH STRATEGY', 'Action Required':'SYNERGY DEFICIT DETECTED',    'All Specialists Complete':'KPI ACHIEVED'}
+  corp:      {'In Progress':'LEVERAGING BANDWIDTH',          'Pending':'CIRCLING BACK',                'Completed':'MOVED THE NEEDLE',          'Cancelled':'NOT ALIGNED WITH STRATEGY', 'Action Required':'SYNERGY DEFICIT DETECTED',    'All Specialists Complete':'KPI ACHIEVED'},
+  diablo2:   {'In Progress':'HELL IS NOT EMPTY',             'Pending':'WAITING IN TRISTRAM',          'Completed':'THE LORD OF TERROR IS SLAIN','Cancelled':'ABANDONED IN BLOOD MOOR',   'Action Required':'!! DIABLO APPROACHES !!',     'All Specialists Complete':'THE WORLDSTONE IS PURIFIED'},
+  mario:     {'In Progress':'WORLD IN PROGRESS',             'Pending':'WAITING ON 1-1',               'Completed':'FLAGPOLE REACHED!!',         'Cancelled':'FELL IN THE PIT',           'Action Required':'!! BOWSER AHEAD !!',          'All Specialists Complete':'PRINCESS SAVED!!'},
+  rock:      {'In Progress':'SOUNDCHECK IN PROGRESS',        'Pending':'WAITING FOR THE ENCORE',       'Completed':'CROWD GOES WILD',            'Cancelled':'SHOW CANCELLED',            'Action Required':'!! MIC CHECK !!',             'All Specialists Complete':'ENCORE DELIVERED'},
+  hockey:    {'In Progress':'PUCK IS LIVE',                  'Pending':'AWAITING FACE-OFF',            'Completed':'IT\'S IN THE NET!!',         'Cancelled':'GAME CALLED',               'Action Required':'!! MAN ADVANTAGE !!',         'All Specialists Complete':'HAT TRICK COMPLETE'},
+  topgear:   {'In Progress':'LAP IN PROGRESS',               'Pending':'POWER LAAAP QUEUED',           'Completed':'AND ON THAT BOMBSHELL...',   'Cancelled':'REASONABLY PRICED CAR BROKE DOWN','Action Required':'SOME SAY... ACTION IS NEEDED','All Specialists Complete':'TOP GEAR!!'}
 };
 
 /* ── SUBMIT MAPS ─────────────────────────────────────────────────── */
@@ -51,7 +56,12 @@ var SUBMIT_MAPS={
   kpop:      ['SARANGHAE','FIGHTING!! (hwaiting)','STAN THIS FORM'],
   '80s':     ['LIKE, TOTALLY SUBMIT!!','GAG ME WITH A FORM','COWABUNGA!!'],
   f1:        ['BOX BOX BOX','LIGHTS OUT AND AWAY WE GO','FASTEST LAP!!'],
-  corp:      ['LEVERAGE THIS SUBMISSION','SYNERGIZE!!','CIRCLE BACK ON SUBMIT']
+  corp:      ['LEVERAGE THIS SUBMISSION','SYNERGIZE!!','CIRCLE BACK ON SUBMIT'],
+  diablo2:   ['STAY AWHILE AND LISTEN','EL ITH TIR NEF ETH','SOJ SUBMITTED'],
+  mario:     ['WAHOO!!','MAMMA MIA — SUBMIT!','HERE WE GOOOO!!'],
+  rock:      ['ROCK ON!!','TURN IT UP TO 11','THUNDERSTRUCK!!'],
+  hockey:    ['DROP THE PUCK','BEAUTY!! SEND IT!','SHOOT AND SCORE!!'],
+  topgear:   ['POWER!!!','AND AWAY WE GO!!','REASONABLY PRICED SUBMIT']
 };
 
 /* ── FIELD MAPS ──────────────────────────────────────────────────── */
@@ -573,6 +583,111 @@ var FIELD_MAPS = {
     [FIELDS.LBL_UPLOAD_DOCS]:    'UPLOAD SUPPORTING COLLATERAL',
     [FIELDS.LBL_VACATION_MSG]:   'OOO — RECHARGING FOR PRODUCTIVITY',
     [FIELDS.LBL_HR_APPROVED]:    'LEADERSHIP ALIGNED?'
+  },
+
+  diablo2:{
+    [FIELDS.PG_PORTAL]:          'SANCTUARY PERSONNEL RECORDS',
+    [FIELDS.PG_NEW_HIRE]:        'NEW HERO REGISTRATION',
+    [FIELDS.PG_TERMINATION]:     'HERO FALLEN — HARDCORE MODE',
+    [FIELDS.SEC_REQUESTER]:      'ELDER COUNCIL',
+    [FIELDS.SEC_EMPLOYEE]:       'HERO DOSSIER',
+    [FIELDS.SEC_SYSTEM_ACCESS]:  'SKILL TREE ACCESS',
+    [FIELDS.SEC_VERIFICATION]:   'QUEST CHECKLIST',
+    [FIELDS.SEC_NOTES]:          "DECKARD CAIN'S NOTES",
+    [FIELDS.SEC_TERM_DETAILS]:   'FALLEN HERO RECORD',
+    [FIELDS.SEC_EQUIP_ASSETS]:   'ITEM STASH',
+    [FIELDS.LBL_MGR_NAME]:       'DECKARD CAIN',
+    [FIELDS.LBL_MGR_EMAIL]:      "DECKARD CAIN'S SCROLL",
+    [FIELDS.LBL_REASON_LEAVING]: 'CAUSE OF DEATH',
+    [FIELDS.LBL_HR_DECISION]:    'ELDER COUNCIL RULING',
+    [FIELDS.LBL_COMMENTS]:       'STAY AWHILE AND LISTEN...',
+    [FIELDS.LBL_UPLOAD_DOCS]:    'ATTACH QUEST SCROLL',
+    [FIELDS.LBL_VACATION_MSG]:   'OUT OF TRISTRAM',
+    [FIELDS.LBL_HR_APPROVED]:    'ELDER COUNCIL APPROVED?'
+  },
+
+  mario:{
+    [FIELDS.PG_PORTAL]:          'MUSHROOM KINGDOM HR',
+    [FIELDS.PG_NEW_HIRE]:        'NEW PLAYER REGISTRATION',
+    [FIELDS.PG_TERMINATION]:     'GAME OVER',
+    [FIELDS.SEC_REQUESTER]:      "PRINCESS PEACH'S CASTLE",
+    [FIELDS.SEC_EMPLOYEE]:       'PLAYER PROFILE',
+    [FIELDS.SEC_SYSTEM_ACCESS]:  'POWER-UP ACCESS',
+    [FIELDS.SEC_VERIFICATION]:   'STAR CHECKLIST',
+    [FIELDS.SEC_NOTES]:          "TOAD'S NOTES",
+    [FIELDS.SEC_TERM_DETAILS]:   'GAME OVER DETAILS',
+    [FIELDS.SEC_EQUIP_ASSETS]:   'ITEM BOX',
+    [FIELDS.LBL_MGR_NAME]:       'PRINCESS PEACH',
+    [FIELDS.LBL_MGR_EMAIL]:      'MUSHROOM KINGDOM MAIL',
+    [FIELDS.LBL_REASON_LEAVING]: 'WHY THEY FELL IN THE PIT',
+    [FIELDS.LBL_HR_DECISION]:    'BOWSER SAYS...',
+    [FIELDS.LBL_COMMENTS]:       'MAMMA MIA...',
+    [FIELDS.LBL_UPLOAD_DOCS]:    'ATTACH POWER STAR',
+    [FIELDS.LBL_VACATION_MSG]:   'WORLD 1-1 AWAY NOTICE',
+    [FIELDS.LBL_HR_APPROVED]:    'PRINCESS APPROVED?'
+  },
+
+  rock:{
+    [FIELDS.PG_PORTAL]:          'HIGHWAY TO HR',
+    [FIELDS.PG_NEW_HIRE]:        'NEW BAND MEMBER REQUEST',
+    [FIELDS.PG_TERMINATION]:     'THE BAND BROKE UP',
+    [FIELDS.SEC_REQUESTER]:      'BAND MANAGER',
+    [FIELDS.SEC_EMPLOYEE]:       'BAND MEMBER FILE',
+    [FIELDS.SEC_SYSTEM_ACCESS]:  'BACKSTAGE PASS',
+    [FIELDS.SEC_VERIFICATION]:   'SETLIST CHECKLIST',
+    [FIELDS.SEC_NOTES]:          'TOUR NOTES',
+    [FIELDS.SEC_TERM_DETAILS]:   'CREATIVE DIFFERENCES — OFFICIAL',
+    [FIELDS.SEC_EQUIP_ASSETS]:   'GEAR & EQUIPMENT',
+    [FIELDS.LBL_MGR_NAME]:       'BAND MANAGER',
+    [FIELDS.LBL_MGR_EMAIL]:      'BAND MANAGER EMAIL',
+    [FIELDS.LBL_REASON_LEAVING]: 'CREATIVE DIFFERENCES',
+    [FIELDS.LBL_HR_DECISION]:    'LABEL SAYS...',
+    [FIELDS.LBL_COMMENTS]:       'ADDITIONAL RIFFS',
+    [FIELDS.LBL_UPLOAD_DOCS]:    'ATTACH RIDER',
+    [FIELDS.LBL_VACATION_MSG]:   'ON TOUR — BACK WHEN WE FEEL LIKE IT',
+    [FIELDS.LBL_HR_APPROVED]:    'LABEL APPROVED?'
+  },
+
+  hockey:{
+    [FIELDS.PG_PORTAL]:          'HOCKEY OPERATIONS',
+    [FIELDS.PG_NEW_HIRE]:        'NEW PLAYER SIGNING',
+    [FIELDS.PG_TERMINATION]:     'PLAYER RELEASED',
+    [FIELDS.SEC_REQUESTER]:      'GM / HEAD OFFICE',
+    [FIELDS.SEC_EMPLOYEE]:       'PLAYER PROFILE',
+    [FIELDS.SEC_SYSTEM_ACCESS]:  'LOCKER ROOM ACCESS',
+    [FIELDS.SEC_VERIFICATION]:   'PRE-GAME CHECKLIST',
+    [FIELDS.SEC_NOTES]:          'BENCH NOTES',
+    [FIELDS.SEC_TERM_DETAILS]:   'TRADE / RELEASE DETAILS',
+    [FIELDS.SEC_EQUIP_ASSETS]:   'EQUIPMENT BAG',
+    [FIELDS.LBL_MGR_NAME]:       'HEAD COACH',
+    [FIELDS.LBL_MGR_EMAIL]:      "COACH'S EMAIL",
+    [FIELDS.LBL_REASON_LEAVING]: 'REASON FOR TRADE / RELEASE',
+    [FIELDS.LBL_HR_DECISION]:    'GM RULING',
+    [FIELDS.LBL_COMMENTS]:       'ADDITIONAL TAPE',
+    [FIELDS.LBL_UPLOAD_DOCS]:    'ATTACH GAME FILM',
+    [FIELDS.LBL_VACATION_MSG]:   'IN THE PENALTY BOX',
+    [FIELDS.LBL_HR_APPROVED]:    'GM APPROVED?'
+  },
+
+  topgear:{
+    [FIELDS.PG_PORTAL]:          'TOP GEAR OPERATIONS',
+    [FIELDS.PG_NEW_HIRE]:        'NEW TEST DRIVER REQUEST',
+    [FIELDS.PG_TERMINATION]:     'REASONABLY PRICED DEPARTURE',
+    [FIELDS.SEC_REQUESTER]:      'THE PRODUCTION TEAM',
+    [FIELDS.SEC_EMPLOYEE]:       'SOME SAY...',
+    [FIELDS.SEC_SYSTEM_ACCESS]:  'THE COOL WALL — ACCESS',
+    [FIELDS.SEC_VERIFICATION]:   'STAR IN A REASONABLY PRICED CHECKLIST',
+    [FIELDS.SEC_NOTES]:          'AND ON THAT BOMBSHELL',
+    [FIELDS.SEC_TERM_DETAILS]:   'THEY HAVE BEEN FIRED. AGAIN.',
+    [FIELDS.SEC_EQUIP_ASSETS]:   'CAR AND EQUIPMENT',
+    [FIELDS.LBL_MGR_NAME]:       'THE STIG',
+    [FIELDS.LBL_MGR_EMAIL]:      'THE STIG (EMAIL UNKNOWN)',
+    [FIELDS.LBL_REASON_LEAVING]: 'WHY THEY LEFT THE TEST TRACK',
+    [FIELDS.LBL_HR_DECISION]:    'SOME SAY... THE RULING IS',
+    [FIELDS.LBL_COMMENTS]:       'AND ON THAT BOMBSHELL...',
+    [FIELDS.LBL_UPLOAD_DOCS]:    'ATTACH LAP TIME',
+    [FIELDS.LBL_VACATION_MSG]:   'AWAY ON THE POWER LAAAP',
+    [FIELDS.LBL_HR_APPROVED]:    'THE STIG APPROVED?'
   }
 
 };
@@ -597,6 +712,11 @@ var TITLE_THEMES = {
   kpop:       '[ ' + document.title + ' — hwaiting ]',
   '80s':      '[ ★ ' + document.title + ' ★ RADICAL!! ]',
   f1:         '[ RACE CONTROL — ' + document.title + ' ]',
-  corp:       '[ ENTERPRISE PORTAL — ' + document.title + ' ]'
+  corp:       '[ ENTERPRISE PORTAL — ' + document.title + ' ]',
+  diablo2:    '[ SANCTUARY — ' + document.title + ' ]',
+  mario:      '[ MUSHROOM KINGDOM — ' + document.title + ' ]',
+  rock:       '[ ★ ' + document.title + ' ★ ]',
+  hockey:     '[ HOCKEY OPS — ' + document.title + ' ]',
+  topgear:    '[ POWER!!! — ' + document.title + ' ]'
 };
 </script>

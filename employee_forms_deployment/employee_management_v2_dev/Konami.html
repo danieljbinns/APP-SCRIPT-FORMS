@@ -7,6 +7,8 @@
                    GONDOR → Lord of the Rings  |  SKYNET → Terminator  |  ENCOM → TRON
                    SHIELD → Marvel/MCU  |  BIAS → K-Pop  |  RADICAL → The 80s
                    BOXBOX → F1 Racing  |  SYNERGY → Corporate Buzzwords
+                   TRISTRAM → Diablo II  |  WAHOO → Mario  |  THUNDERSTRUCK → Classic Rock
+                   OVERTIME → Hockey  |  POWERRRR → Top Gear
      localStorage: tg_eg_v1
      Stats fn:     google.script.run.getStarTrekStats()
      DEV ONLY — do not migrate to staging or prod -->
@@ -36,6 +38,11 @@ body.eg.t-kpop      {--st-bg:#1a0a1e;--st-panel:#2a0f30;--st-panel2:#38143e;--st
 body.eg.t-80s       {--st-bg:#0a0015;--st-panel:#150020;--st-panel2:#1e002e;--st-hi:#FF00CC;--st-mid:#CC00AA;--st-lo:#880077;--st-dim:#550055;--st-faint:#220022;--st-red:#FF2266;--st-green:#00FF88;--st-blue:#0066FF;--st-cyan:#00FFFF;--st-fd:'VT323','Courier New',monospace;--st-fb:'VT323','Courier New',monospace;--st-btn-r:0px}
 body.eg.t-f1        {--st-bg:#0a0a0a;--st-panel:#141414;--st-panel2:#1e1e1e;--st-hi:#FF2200;--st-mid:#FFCC00;--st-lo:#CC9900;--st-dim:#886600;--st-faint:#222200;--st-red:#FF2200;--st-green:#00DD55;--st-blue:#0044CC;--st-cyan:#44AACC;--st-fd:'Oswald','Impact',sans-serif;--st-fb:'Oswald','Impact',sans-serif;--st-btn-r:0px}
 body.eg.t-corp      {--st-bg:#F0F4F8;--st-panel:#FFFFFF;--st-panel2:#E8EEF4;--st-hi:#1A2744;--st-mid:#0055AA;--st-lo:#003377;--st-dim:#6B7D8F;--st-faint:#D0D8E0;--st-red:#CC2200;--st-green:#008844;--st-blue:#0055AA;--st-cyan:#0088CC;--st-fd:Arial,Helvetica,sans-serif;--st-fb:Arial,Helvetica,sans-serif;--st-btn-r:3px}
+body.eg.t-diablo2   {--st-bg:#050200;--st-panel:#0D0700;--st-panel2:#150B00;--st-hi:#AA2200;--st-mid:#881800;--st-lo:#661200;--st-dim:#440C00;--st-faint:#1A0600;--st-red:#CC2200;--st-green:#3A6E00;--st-blue:#1A3A6E;--st-cyan:#6E3A1A;--st-fd:'Palatino Linotype','Georgia',serif;--st-fb:'Georgia',serif;--st-btn-r:2px}
+body.eg.t-mario     {--st-bg:#5C94FC;--st-panel:#3060C0;--st-panel2:#2050AA;--st-hi:#FCBC3C;--st-mid:#FC7460;--st-lo:#BC3000;--st-dim:#742000;--st-faint:#1A0800;--st-red:#FC3C3C;--st-green:#00A800;--st-blue:#3060C0;--st-cyan:#00CCFC;--st-fd:'Press Start 2P','Courier New',monospace;--st-fb:'Press Start 2P','Courier New',monospace;--st-btn-r:0px}
+body.eg.t-rock      {--st-bg:#0A0A0A;--st-panel:#141414;--st-panel2:#1E1E1E;--st-hi:#FF6600;--st-mid:#DD4400;--st-lo:#AA2200;--st-dim:#661100;--st-faint:#220800;--st-red:#FF2200;--st-green:#88CC00;--st-blue:#2244AA;--st-cyan:#44AACC;--st-fd:'Oswald','Impact',sans-serif;--st-fb:'Oswald','Impact',sans-serif;--st-btn-r:0px}
+body.eg.t-hockey    {--st-bg:#001428;--st-panel:#001E3C;--st-panel2:#002850;--st-hi:#FFFFFF;--st-mid:#AADDFF;--st-lo:#6699CC;--st-dim:#334466;--st-faint:#001428;--st-red:#CC0000;--st-green:#00AA44;--st-blue:#0055AA;--st-cyan:#44AADD;--st-fd:'Oswald','Impact',sans-serif;--st-fb:'Oswald','Impact',sans-serif;--st-btn-r:4px}
+body.eg.t-topgear   {--st-bg:#0A0A0A;--st-panel:#141414;--st-panel2:#1C1C1C;--st-hi:#FF6600;--st-mid:#FFAA00;--st-lo:#CC7700;--st-dim:#664400;--st-faint:#221100;--st-red:#FF2200;--st-green:#88BB00;--st-blue:#0044CC;--st-cyan:#44AACC;--st-fd:'Rajdhani','Arial Narrow',sans-serif;--st-fb:'Rajdhani','Arial Narrow',sans-serif;--st-btn-r:3px}
 
 /* ── ANIMATIONS ──────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Press+Start+2P&display=swap');
@@ -160,6 +167,11 @@ body.eg.t-kpop{background-image:radial-gradient(circle at 20% 30%,rgba(255,102,1
 body.eg.t-80s{background-image:radial-gradient(ellipse at 50% 30%,rgba(255,0,204,.14) 0%,transparent 60%),linear-gradient(135deg,rgba(0,255,255,.06) 0%,transparent 50%)!important}
 body.eg.t-f1{background-image:repeating-linear-gradient(135deg,rgba(255,34,0,.04) 0px,rgba(255,34,0,.04) 2px,transparent 2px,transparent 16px)!important}
 body.eg.t-corp{background-image:none!important}
+body.eg.t-diablo2{background-image:radial-gradient(ellipse at 50% 80%,rgba(170,34,0,.18) 0%,transparent 60%),radial-gradient(1px 1px at 20% 30%,rgba(170,34,0,.5) 0%,transparent 100%),radial-gradient(1px 1px at 70% 60%,rgba(170,34,0,.4) 0%,transparent 100%)!important;background-size:100% 100%,240px 240px,240px 240px!important}
+body.eg.t-mario{background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.08) 0px,rgba(0,0,0,.08) 1px,transparent 1px,transparent 8px)!important;background-size:100% 8px!important}
+body.eg.t-rock{background-image:radial-gradient(ellipse at 50% 100%,rgba(255,102,0,.12) 0%,transparent 60%)!important}
+body.eg.t-hockey{background-image:repeating-linear-gradient(90deg,rgba(170,221,255,.04) 0px,rgba(170,221,255,.04) 1px,transparent 1px,transparent 60px),repeating-linear-gradient(0deg,rgba(170,221,255,.04) 0px,rgba(170,221,255,.04) 1px,transparent 1px,transparent 60px)!important}
+body.eg.t-topgear{background-image:repeating-linear-gradient(135deg,rgba(255,102,0,.04) 0px,rgba(255,102,0,.04) 2px,transparent 2px,transparent 20px)!important}
 body.eg.t-tos::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:9980}
 
 /* ── SCIFI COMPONENT OVERRIDES ───────────────────────────────── */
@@ -453,7 +465,7 @@ function clearPref(){try{localStorage.removeItem(LS_KEY);}catch(e){}}
 function loadPref(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'null');}catch(e){return null;}}
 
 /* ── ACTIVATION SEQUENCES ────────────────────────────────────── */
-var SEQUENCES={'asif':'geo','beam':'tos','engage':'tng','prophets':'ds9','coffee':'voy','frack':'bsg','redpill':'matrix','tardis':'who','twss':'office','rizz':'galpha','pikachu':'pokemon','gondor':'lotr','skynet':'terminator','encom':'tron','shield':'mcu','bias':'kpop','radical':'80s','boxbox':'f1','synergy':'corp'};
+var SEQUENCES={'asif':'geo','beam':'tos','engage':'tng','prophets':'ds9','coffee':'voy','frack':'bsg','redpill':'matrix','tardis':'who','twss':'office','rizz':'galpha','pikachu':'pokemon','gondor':'lotr','skynet':'terminator','encom':'tron','shield':'mcu','bias':'kpop','radical':'80s','boxbox':'f1','synergy':'corp','tristram':'diablo2','wahoo':'mario','thunderstruck':'rock','overtime':'hockey','powerrrr':'topgear'};
 var KONAMI=[38,38,40,40,37,39,37,39,66,65], kIdx=0;
 var typeBuf='', typeTimer=null;
 document.addEventListener('keydown',function(e){
@@ -635,7 +647,7 @@ function deactivate(silent){
   restoreSwaps();restoreTitle();
   var wrap=document.getElementById('eg-root');
   if(wrap&&wrap.parentNode)wrap.parentNode.removeChild(wrap);
-  var all=['eg','t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','t-pokemon','is-lcars','is-bsg','is-matrix','sc-sm','sc-md','sc-lg','sc-xl'];
+  var all=['eg','t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','t-pokemon','is-lcars','is-bsg','is-matrix','sc-sm','sc-md','sc-lg','sc-xl','t-lotr','t-terminator','t-tron','t-mcu','t-kpop','t-80s','t-f1','t-corp','t-diablo2','t-mario','t-rock','t-hockey','t-topgear'];
   for(var i=0;i<all.length;i++)document.body.classList.remove(all[i]);
   statsLoaded=false;statsVisible=false;statsData=null;audioEnabled=false;geoMusicOn=false;
   clearPref();
@@ -646,7 +658,7 @@ function deactivate(silent){
 function stSwitchTheme(name){
   if(!T[name])return;
   var d=T[name],body=document.body;
-  var tc=['t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','t-pokemon','is-lcars','is-bsg','is-matrix'];
+  var tc=['t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','t-pokemon','is-lcars','is-bsg','is-matrix','t-lotr','t-terminator','t-tron','t-mcu','t-kpop','t-80s','t-f1','t-corp','t-diablo2','t-mario','t-rock','t-hockey','t-topgear'];
   for(var i=0;i<tc.length;i++)body.classList.remove(tc[i]);
   body.classList.add('t-'+name);
   if(d.lcars)body.classList.add('is-lcars');
@@ -696,7 +708,12 @@ var THEME_META=[
   {id:'kpop',       label:'K-POP',                code:'BIAS'},
   {id:'80s',        label:'THE 80S',              code:'RADICAL'},
   {id:'f1',         label:'F1 RACING',            code:'BOXBOX'},
-  {id:'corp',       label:'CORPORATE BUZZWORDS',  code:'SYNERGY'}
+  {id:'corp',       label:'CORPORATE BUZZWORDS',  code:'SYNERGY'},
+  {id:'diablo2',    label:'DIABLO II',            code:'TRISTRAM'},
+  {id:'mario',      label:'SUPER MARIO',          code:'WAHOO'},
+  {id:'rock',       label:'CLASSIC ROCK',         code:'THUNDERSTRUCK'},
+  {id:'hockey',     label:'HOCKEY',               code:'OVERTIME'},
+  {id:'topgear',    label:'TOP GEAR',             code:'POWERRRR'}
 ];
 function openAdmin(){
   if(document.getElementById('eg-admin'))return;
