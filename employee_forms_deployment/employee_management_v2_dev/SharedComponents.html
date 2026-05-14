@@ -146,7 +146,7 @@
     Applies to: new hire (NEW_EMP_), equipment request (EQUIP_REQ_), status
     change (CHANGE_). Does NOT apply to terminations.
 
-  Server-side (BOSSReviewHandler.js → serveITConfirmation):
+  Server-side (ITConfirmationHandler.js → serveITConfirmation):
     - Detects workflow type from ID prefix (NEW_EMP_ / EQUIP_REQ_ → InitialRequest.html,
       CHANGE_ → PositionSiteChangeRequest.html).
     - Passes to template: mode='it_confirmation', baseMode=<original mode>,

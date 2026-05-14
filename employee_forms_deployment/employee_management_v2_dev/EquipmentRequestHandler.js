@@ -152,7 +152,7 @@ function _sendEquipmentRequestSubmitEmails(workflowId) {
 }
 
 /**
- * Called by BOSSReviewHandler.submitBOSSReview after IT Confirmation is approved.
+ * Called by ITConfirmationHandler.submitITConfirmation after IT Confirmation is approved.
  * If Google Account is in the systems list, creates only the IT email task first.
  * Otherwise, launches all action items at once.
  * @param {string} workflowId

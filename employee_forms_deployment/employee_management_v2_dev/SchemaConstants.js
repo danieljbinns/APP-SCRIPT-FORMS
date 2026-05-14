@@ -51,7 +51,7 @@ const SCHEMA = {
 
   // ─────────────────────────────────────────────
   // INITIAL REQUESTS  (54 columns)
-  // NOTE: STATUS (col 52) is written by WorkflowManager/BOSSReviewHandler after
+  // NOTE: STATUS (col 52) is written by WorkflowManager/ITConfirmationHandler after
   //       initial submission, not by the form itself.
   // ─────────────────────────────────────────────
   INITIAL_REQUESTS: {
