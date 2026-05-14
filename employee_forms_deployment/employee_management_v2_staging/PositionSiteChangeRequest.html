@@ -507,7 +507,7 @@
     </div>
 
     <?!= include('DirectoryAutocomplete') ?>
-    <?!= include('SharedComponents') ?>
+    <?!= safeInclude('SharedComponents') ?>
     <script>
         // toggleSec: used for type-of-change sections, reporting management, cost sheet, google email reveal
         function toggleSec(id, element) {
