@@ -4,6 +4,9 @@
                    PROPHETS → DS9  |  COFFEE → VOY  |  FRACK → BSG
                    REDPILL → Matrix  |  TARDIS → Doctor Who
                    TWSS → The Office  |  RIZZ → Gen Alpha  |  PIKACHU → Pokemon
+                   GONDOR → Lord of the Rings  |  SKYNET → Terminator  |  ENCOM → TRON
+                   SHIELD → Marvel/MCU  |  BIAS → K-Pop  |  RADICAL → The 80s
+                   BOXBOX → F1 Racing  |  SYNERGY → Corporate Buzzwords
      localStorage: tg_eg_v1
      Stats fn:     google.script.run.getStarTrekStats()
      DEV ONLY — do not migrate to staging or prod -->
@@ -25,6 +28,14 @@ body.eg.t-who   {--st-bg:#000D1A;--st-panel:#001533;--st-panel2:#001F44;--st-hi:
 body.eg.t-office{--st-bg:#F5F0E6;--st-panel:#FFF;--st-panel2:#F0E8D5;--st-hi:#1A1A1A;--st-mid:#1C4E8A;--st-lo:#2460A7;--st-dim:#6B6B6B;--st-faint:#D0C8B8;--st-red:#C0392B;--st-green:#27AE60;--st-blue:#1C4E8A;--st-cyan:#2980B9;--st-fd:Arial,Helvetica,sans-serif;--st-fb:Arial,Helvetica,sans-serif;--st-btn-r:3px}
 body.eg.t-galpha {--st-bg:#0a0015;--st-panel:#130024;--st-panel2:#1e0038;--st-hi:#ffffff;--st-mid:#ff2d9e;--st-lo:#cc1a7a;--st-dim:#882299;--st-faint:#3d0066;--st-red:#ff4444;--st-green:#39ff14;--st-blue:#00d4ff;--st-cyan:#c8ff00;--st-fd:'Nunito','Segoe UI',Helvetica,sans-serif;--st-fb:'Nunito','Segoe UI',Helvetica,sans-serif;--st-btn-r:22px}
 body.eg.t-pokemon{--st-bg:#0f380f;--st-panel:#1a4a1a;--st-panel2:#306230;--st-hi:#9bbc0f;--st-mid:#8bac0f;--st-lo:#306230;--st-dim:#306230;--st-faint:#1a4a1a;--st-red:#9bbc0f;--st-green:#9bbc0f;--st-blue:#8bac0f;--st-cyan:#9bbc0f;--st-fd:'Press Start 2P','Courier New',monospace;--st-fb:'Press Start 2P','Courier New',monospace;--st-btn-r:0px}
+body.eg.t-lotr      {--st-bg:#0A0800;--st-panel:#1A1400;--st-panel2:#261E00;--st-hi:#D4AA55;--st-mid:#C49A2B;--st-lo:#8B6914;--st-dim:#5C4510;--st-faint:#2A1E00;--st-red:#CC2200;--st-green:#4A8C2A;--st-blue:#1A4A8C;--st-cyan:#6BAED6;--st-fd:'Palatino Linotype','Georgia',serif;--st-fb:'Georgia',serif;--st-btn-r:2px}
+body.eg.t-terminator{--st-bg:#000;--st-panel:#0D0000;--st-panel2:#1A0000;--st-hi:#FF4422;--st-mid:#CC2200;--st-lo:#881100;--st-dim:#440800;--st-faint:#1A0000;--st-red:#FF2200;--st-green:#00FF41;--st-blue:#FF3300;--st-cyan:#FF6644;--st-fd:'Share Tech Mono','Courier New',monospace;--st-fb:'Share Tech Mono','Courier New',monospace;--st-btn-r:0px}
+body.eg.t-tron      {--st-bg:#000;--st-panel:#001022;--st-panel2:#001A33;--st-hi:#00E5FF;--st-mid:#00B4D8;--st-lo:#0077AA;--st-dim:#004466;--st-faint:#001122;--st-red:#FF2266;--st-green:#00FF88;--st-blue:#0088FF;--st-cyan:#00E5FF;--st-fd:'Share Tech Mono','Courier New',monospace;--st-fb:'Share Tech Mono','Courier New',monospace;--st-btn-r:0px}
+body.eg.t-mcu       {--st-bg:#0A0000;--st-panel:#110000;--st-panel2:#180000;--st-hi:#FFD700;--st-mid:#CC2200;--st-lo:#881100;--st-dim:#552200;--st-faint:#1A0800;--st-red:#FF2200;--st-green:#00BB77;--st-blue:#002B6B;--st-cyan:#4488CC;--st-fd:'Oswald','Impact',sans-serif;--st-fb:'Oswald','Impact',sans-serif;--st-btn-r:3px}
+body.eg.t-kpop      {--st-bg:#1a0a1e;--st-panel:#2a0f30;--st-panel2:#38143e;--st-hi:#FFB3D9;--st-mid:#FF66AA;--st-lo:#CC3377;--st-dim:#882255;--st-faint:#3d0066;--st-red:#FF4466;--st-green:#66FF99;--st-blue:#6699FF;--st-cyan:#CC99FF;--st-fd:'Nunito','Segoe UI',sans-serif;--st-fb:'Nunito','Segoe UI',sans-serif;--st-btn-r:22px}
+body.eg.t-80s       {--st-bg:#0a0015;--st-panel:#150020;--st-panel2:#1e002e;--st-hi:#FF00CC;--st-mid:#CC00AA;--st-lo:#880077;--st-dim:#550055;--st-faint:#220022;--st-red:#FF2266;--st-green:#00FF88;--st-blue:#0066FF;--st-cyan:#00FFFF;--st-fd:'VT323','Courier New',monospace;--st-fb:'VT323','Courier New',monospace;--st-btn-r:0px}
+body.eg.t-f1        {--st-bg:#0a0a0a;--st-panel:#141414;--st-panel2:#1e1e1e;--st-hi:#FF2200;--st-mid:#FFCC00;--st-lo:#CC9900;--st-dim:#886600;--st-faint:#222200;--st-red:#FF2200;--st-green:#00DD55;--st-blue:#0044CC;--st-cyan:#44AACC;--st-fd:'Oswald','Impact',sans-serif;--st-fb:'Oswald','Impact',sans-serif;--st-btn-r:0px}
+body.eg.t-corp      {--st-bg:#F0F4F8;--st-panel:#FFFFFF;--st-panel2:#E8EEF4;--st-hi:#1A2744;--st-mid:#0055AA;--st-lo:#003377;--st-dim:#6B7D8F;--st-faint:#D0D8E0;--st-red:#CC2200;--st-green:#008844;--st-blue:#0055AA;--st-cyan:#0088CC;--st-fd:Arial,Helvetica,sans-serif;--st-fb:Arial,Helvetica,sans-serif;--st-btn-r:3px}
 
 /* ── ANIMATIONS ──────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Press+Start+2P&display=swap');
@@ -141,6 +152,14 @@ body.eg.t-who{background-image:radial-gradient(ellipse at 50% 50%,rgba(0,100,200
 body.eg.t-office{background-image:none!important}
 body.eg.t-galpha{background-image:radial-gradient(circle at 20% 50%,rgba(255,45,158,.2) 0%,transparent 40%),radial-gradient(circle at 80% 20%,rgba(0,212,255,.15) 0%,transparent 40%),radial-gradient(circle at 50% 90%,rgba(200,0,255,.15) 0%,transparent 40%)!important}
 body.eg.t-pokemon{background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.15) 0px,rgba(0,0,0,.15) 1px,transparent 1px,transparent 4px)!important;background-size:100% 4px!important;animation:pk-flash 6s infinite!important}
+body.eg.t-lotr{background-image:radial-gradient(ellipse at 30% 50%,rgba(180,140,40,.10) 0%,transparent 60%)!important}
+body.eg.t-terminator{background-image:radial-gradient(1px 1px at 15% 25%,rgba(255,68,34,.8) 0%,transparent 100%),radial-gradient(1px 1px at 50% 70%,rgba(255,68,34,.6) 0%,transparent 100%),radial-gradient(1px 1px at 80% 40%,rgba(255,68,34,.7) 0%,transparent 100%)!important;background-size:180px 180px!important}
+body.eg.t-tron{background-image:linear-gradient(rgba(0,180,216,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(0,180,216,.08) 1px,transparent 1px)!important;background-size:40px 40px!important}
+body.eg.t-mcu{background-image:radial-gradient(ellipse at 80% 20%,rgba(255,215,0,.06) 0%,transparent 50%),radial-gradient(ellipse at 20% 80%,rgba(204,34,0,.06) 0%,transparent 50%)!important}
+body.eg.t-kpop{background-image:radial-gradient(circle at 20% 30%,rgba(255,102,170,.2) 0%,transparent 40%),radial-gradient(circle at 80% 70%,rgba(204,153,255,.15) 0%,transparent 40%)!important}
+body.eg.t-80s{background-image:radial-gradient(ellipse at 50% 30%,rgba(255,0,204,.14) 0%,transparent 60%),linear-gradient(135deg,rgba(0,255,255,.06) 0%,transparent 50%)!important}
+body.eg.t-f1{background-image:repeating-linear-gradient(135deg,rgba(255,34,0,.04) 0px,rgba(255,34,0,.04) 2px,transparent 2px,transparent 16px)!important}
+body.eg.t-corp{background-image:none!important}
 body.eg.t-tos::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:9980}
 
 /* ── SCIFI COMPONENT OVERRIDES ───────────────────────────────── */
@@ -434,7 +453,7 @@ function clearPref(){try{localStorage.removeItem(LS_KEY);}catch(e){}}
 function loadPref(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'null');}catch(e){return null;}}
 
 /* ── ACTIVATION SEQUENCES ────────────────────────────────────── */
-var SEQUENCES={'asif':'geo','beam':'tos','engage':'tng','prophets':'ds9','coffee':'voy','frack':'bsg','redpill':'matrix','tardis':'who','twss':'office','rizz':'galpha','pikachu':'pokemon'};
+var SEQUENCES={'asif':'geo','beam':'tos','engage':'tng','prophets':'ds9','coffee':'voy','frack':'bsg','redpill':'matrix','tardis':'who','twss':'office','rizz':'galpha','pikachu':'pokemon','gondor':'lotr','skynet':'terminator','encom':'tron','shield':'mcu','bias':'kpop','radical':'80s','boxbox':'f1','synergy':'corp'};
 var KONAMI=[38,38,40,40,37,39,37,39,66,65], kIdx=0;
 var typeBuf='', typeTimer=null;
 document.addEventListener('keydown',function(e){
@@ -669,7 +688,15 @@ var THEME_META=[
   {id:'who',     label:'DOCTOR WHO',           code:'TARDIS'},
   {id:'office',  label:'THE OFFICE',           code:'TWSS'},
   {id:'galpha',  label:'GEN ALPHA',            code:'RIZZ'},
-  {id:'pokemon', label:'POKEMON',              code:'PIKACHU'}
+  {id:'pokemon',    label:'POKEMON',              code:'PIKACHU'},
+  {id:'lotr',       label:'LORD OF THE RINGS',    code:'GONDOR'},
+  {id:'terminator', label:'TERMINATOR',           code:'SKYNET'},
+  {id:'tron',       label:'TRON',                 code:'ENCOM'},
+  {id:'mcu',        label:'MARVEL / MCU',         code:'SHIELD'},
+  {id:'kpop',       label:'K-POP',                code:'BIAS'},
+  {id:'80s',        label:'THE 80S',              code:'RADICAL'},
+  {id:'f1',         label:'F1 RACING',            code:'BOXBOX'},
+  {id:'corp',       label:'CORPORATE BUZZWORDS',  code:'SYNERGY'}
 ];
 function openAdmin(){
   if(document.getElementById('eg-admin'))return;
