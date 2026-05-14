@@ -9,6 +9,8 @@
                    BOXBOX → F1 Racing  |  SYNERGY → Corporate Buzzwords
                    TRISTRAM → Diablo II  |  WAHOO → Mario  |  THUNDERSTRUCK → Classic Rock
                    OVERTIME → Hockey  |  POWERRRR → Top Gear
+                   FESTIVUS → Seinfeld  |  PIVOT → Friends  |  DARKSIDE → Star Wars
+                   DOUGHNUT → The Simpsons  |  NISHRUBBERY → Monty Python
      localStorage: tg_eg_v1
      Stats fn:     google.script.run.getStarTrekStats()
      DEV ONLY — do not migrate to staging or prod -->
@@ -43,6 +45,11 @@ body.eg.t-mario     {--st-bg:#5C94FC;--st-panel:#3060C0;--st-panel2:#2050AA;--st
 body.eg.t-rock      {--st-bg:#0A0A0A;--st-panel:#141414;--st-panel2:#1E1E1E;--st-hi:#FF6600;--st-mid:#DD4400;--st-lo:#AA2200;--st-dim:#661100;--st-faint:#220800;--st-red:#FF2200;--st-green:#88CC00;--st-blue:#2244AA;--st-cyan:#44AACC;--st-fd:'Oswald','Impact',sans-serif;--st-fb:'Oswald','Impact',sans-serif;--st-btn-r:0px}
 body.eg.t-hockey    {--st-bg:#001428;--st-panel:#001E3C;--st-panel2:#002850;--st-hi:#FFFFFF;--st-mid:#AADDFF;--st-lo:#6699CC;--st-dim:#334466;--st-faint:#001428;--st-red:#CC0000;--st-green:#00AA44;--st-blue:#0055AA;--st-cyan:#44AADD;--st-fd:'Oswald','Impact',sans-serif;--st-fb:'Oswald','Impact',sans-serif;--st-btn-r:4px}
 body.eg.t-topgear   {--st-bg:#0A0A0A;--st-panel:#141414;--st-panel2:#1C1C1C;--st-hi:#FF6600;--st-mid:#FFAA00;--st-lo:#CC7700;--st-dim:#664400;--st-faint:#221100;--st-red:#FF2200;--st-green:#88BB00;--st-blue:#0044CC;--st-cyan:#44AACC;--st-fd:'Rajdhani','Arial Narrow',sans-serif;--st-fb:'Rajdhani','Arial Narrow',sans-serif;--st-btn-r:3px}
+body.eg.t-seinfeld  {--st-bg:#F5F0E0;--st-panel:#FFFDF5;--st-panel2:#EDE8D5;--st-hi:#1C1C2E;--st-mid:#8B1C1C;--st-lo:#6B0E0E;--st-dim:#888;--st-faint:#D8D0BC;--st-red:#CC2200;--st-green:#226622;--st-blue:#1C2E8B;--st-cyan:#2277AA;--st-fd:Arial,Helvetica,sans-serif;--st-fb:Arial,Helvetica,sans-serif;--st-btn-r:3px}
+body.eg.t-friends   {--st-bg:#2D1B4E;--st-panel:#3D2560;--st-panel2:#4A2E70;--st-hi:#FF8C00;--st-mid:#FF6B00;--st-lo:#CC4400;--st-dim:#884400;--st-faint:#1A0D2E;--st-red:#FF3344;--st-green:#44BB44;--st-blue:#4466CC;--st-cyan:#44AACC;--st-fd:'Nunito','Segoe UI',sans-serif;--st-fb:'Nunito','Segoe UI',sans-serif;--st-btn-r:22px}
+body.eg.t-starwars  {--st-bg:#000;--st-panel:#060600;--st-panel2:#0C0C00;--st-hi:#FFE81F;--st-mid:#CC2200;--st-lo:#881100;--st-dim:#441100;--st-faint:#1A0800;--st-red:#FF2200;--st-green:#00DD55;--st-blue:#4488FF;--st-cyan:#44AAFF;--st-fd:'Oswald','Impact',sans-serif;--st-fb:'Oswald','Impact',sans-serif;--st-btn-r:0px}
+body.eg.t-simpsons  {--st-bg:#FED90F;--st-panel:#F5CC00;--st-panel2:#FFDF30;--st-hi:#1A3A6E;--st-mid:#D93000;--st-lo:#AA2000;--st-dim:#884400;--st-faint:#C8A800;--st-red:#D93000;--st-green:#007700;--st-blue:#1A3A6E;--st-cyan:#0077AA;--st-fd:Arial,Helvetica,sans-serif;--st-fb:Arial,Helvetica,sans-serif;--st-btn-r:4px}
+body.eg.t-mpython   {--st-bg:#1A1200;--st-panel:#261A00;--st-panel2:#332200;--st-hi:#C8A040;--st-mid:#8B6510;--st-lo:#6B4D0C;--st-dim:#4A3408;--st-faint:#1A1200;--st-red:#CC2200;--st-green:#447722;--st-blue:#224488;--st-cyan:#446688;--st-fd:'Palatino Linotype','Georgia',serif;--st-fb:'Georgia',serif;--st-btn-r:2px}
 
 /* ── ANIMATIONS ──────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Press+Start+2P&display=swap');
@@ -172,6 +179,11 @@ body.eg.t-mario{background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.08) 
 body.eg.t-rock{background-image:radial-gradient(ellipse at 50% 100%,rgba(255,102,0,.12) 0%,transparent 60%)!important}
 body.eg.t-hockey{background-image:repeating-linear-gradient(90deg,rgba(170,221,255,.04) 0px,rgba(170,221,255,.04) 1px,transparent 1px,transparent 60px),repeating-linear-gradient(0deg,rgba(170,221,255,.04) 0px,rgba(170,221,255,.04) 1px,transparent 1px,transparent 60px)!important}
 body.eg.t-topgear{background-image:repeating-linear-gradient(135deg,rgba(255,102,0,.04) 0px,rgba(255,102,0,.04) 2px,transparent 2px,transparent 20px)!important}
+body.eg.t-seinfeld{background-image:none!important}
+body.eg.t-friends{background-image:radial-gradient(circle at 20% 50%,rgba(255,107,0,.15) 0%,transparent 40%),radial-gradient(circle at 80% 30%,rgba(100,50,180,.2) 0%,transparent 40%)!important}
+body.eg.t-starwars{background-image:radial-gradient(1px 1px at 10% 20%,rgba(255,232,31,.9) 0%,transparent 100%),radial-gradient(1px 1px at 30% 70%,rgba(255,232,31,.7) 0%,transparent 100%),radial-gradient(1px 1px at 55% 40%,rgba(255,255,255,.8) 0%,transparent 100%),radial-gradient(1px 1px at 75% 85%,rgba(255,232,31,.6) 0%,transparent 100%),radial-gradient(1px 1px at 90% 15%,rgba(255,255,255,.9) 0%,transparent 100%)!important;background-size:300px 300px!important}
+body.eg.t-simpsons{background-image:none!important}
+body.eg.t-mpython{background-image:radial-gradient(ellipse at 30% 50%,rgba(200,160,64,.08) 0%,transparent 60%)!important}
 body.eg.t-tos::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:9980}
 
 /* ── SCIFI COMPONENT OVERRIDES ───────────────────────────────── */
@@ -194,6 +206,8 @@ body.eg:not(.t-geo) button[type="submit"]:hover,body.eg:not(.t-geo) .submit-btn:
 body.eg:not(.t-geo) .filter-btn.active,body.eg:not(.t-geo) .filter-btn[aria-pressed="true"]{background:var(--st-mid)!important;color:#000!important;border-color:var(--st-mid)!important}
 body.eg:not(.t-geo) input[type="text"],body.eg:not(.t-geo) input[type="email"],body.eg:not(.t-geo) input[type="date"],body.eg:not(.t-geo) input[type="tel"],body.eg:not(.t-geo) input[type="number"],body.eg:not(.t-geo) select,body.eg:not(.t-geo) textarea,body.eg:not(.t-geo) .search-box{background:#000!important;border:1px solid var(--st-faint)!important;color:var(--st-hi)!important;font-family:var(--st-fb)!important;border-radius:0!important;caret-color:var(--st-mid)!important}
 body.eg.t-office input[type="text"],body.eg.t-office input[type="email"],body.eg.t-office input[type="date"],body.eg.t-office input[type="tel"],body.eg.t-office input[type="number"],body.eg.t-office select,body.eg.t-office textarea{background:#fff!important;border:1px solid var(--st-faint)!important;color:var(--st-hi)!important;border-radius:3px!important}
+body.eg.t-seinfeld input[type="text"],body.eg.t-seinfeld input[type="email"],body.eg.t-seinfeld input[type="date"],body.eg.t-seinfeld input[type="tel"],body.eg.t-seinfeld input[type="number"],body.eg.t-seinfeld select,body.eg.t-seinfeld textarea{background:#fff!important;border:1px solid var(--st-faint)!important;color:var(--st-hi)!important;border-radius:3px!important}
+body.eg.t-simpsons input[type="text"],body.eg.t-simpsons input[type="email"],body.eg.t-simpsons input[type="date"],body.eg.t-simpsons input[type="tel"],body.eg.t-simpsons input[type="number"],body.eg.t-simpsons select,body.eg.t-simpsons textarea{background:#FFEF40!important;border:2px solid var(--st-hi)!important;color:var(--st-hi)!important;border-radius:4px!important}
 body.eg.is-lcars input,body.eg.is-lcars select,body.eg.is-lcars textarea{border-radius:6px!important}
 body.eg:not(.t-geo) input:focus,body.eg:not(.t-geo) select:focus,body.eg:not(.t-geo) textarea:focus{border-color:var(--st-mid)!important;outline:none!important;box-shadow:0 0 8px rgba(var(--st-mid),.15)!important}
 body.eg:not(.t-geo) input::placeholder,body.eg:not(.t-geo) textarea::placeholder{color:var(--st-faint)!important;opacity:1!important}
@@ -465,7 +479,7 @@ function clearPref(){try{localStorage.removeItem(LS_KEY);}catch(e){}}
 function loadPref(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'null');}catch(e){return null;}}
 
 /* ── ACTIVATION SEQUENCES ────────────────────────────────────── */
-var SEQUENCES={'asif':'geo','beam':'tos','engage':'tng','prophets':'ds9','coffee':'voy','frack':'bsg','redpill':'matrix','tardis':'who','twss':'office','rizz':'galpha','pikachu':'pokemon','gondor':'lotr','skynet':'terminator','encom':'tron','shield':'mcu','bias':'kpop','radical':'80s','boxbox':'f1','synergy':'corp','tristram':'diablo2','wahoo':'mario','thunderstruck':'rock','overtime':'hockey','powerrrr':'topgear'};
+var SEQUENCES={'asif':'geo','beam':'tos','engage':'tng','prophets':'ds9','coffee':'voy','frack':'bsg','redpill':'matrix','tardis':'who','twss':'office','rizz':'galpha','pikachu':'pokemon','gondor':'lotr','skynet':'terminator','encom':'tron','shield':'mcu','bias':'kpop','radical':'80s','boxbox':'f1','synergy':'corp','tristram':'diablo2','wahoo':'mario','thunderstruck':'rock','overtime':'hockey','powerrrr':'topgear','festivus':'seinfeld','pivot':'friends','darkside':'starwars','doughnut':'simpsons','nishrubbery':'mpython'};
 var KONAMI=[38,38,40,40,37,39,37,39,66,65], kIdx=0;
 var typeBuf='', typeTimer=null;
 document.addEventListener('keydown',function(e){
@@ -647,7 +661,7 @@ function deactivate(silent){
   restoreSwaps();restoreTitle();
   var wrap=document.getElementById('eg-root');
   if(wrap&&wrap.parentNode)wrap.parentNode.removeChild(wrap);
-  var all=['eg','t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','t-pokemon','is-lcars','is-bsg','is-matrix','sc-sm','sc-md','sc-lg','sc-xl','t-lotr','t-terminator','t-tron','t-mcu','t-kpop','t-80s','t-f1','t-corp','t-diablo2','t-mario','t-rock','t-hockey','t-topgear'];
+  var all=['eg','t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','t-pokemon','is-lcars','is-bsg','is-matrix','sc-sm','sc-md','sc-lg','sc-xl','t-lotr','t-terminator','t-tron','t-mcu','t-kpop','t-80s','t-f1','t-corp','t-diablo2','t-mario','t-rock','t-hockey','t-topgear','t-seinfeld','t-friends','t-starwars','t-simpsons','t-mpython'];
   for(var i=0;i<all.length;i++)document.body.classList.remove(all[i]);
   statsLoaded=false;statsVisible=false;statsData=null;audioEnabled=false;geoMusicOn=false;
   clearPref();
@@ -658,7 +672,7 @@ function deactivate(silent){
 function stSwitchTheme(name){
   if(!T[name])return;
   var d=T[name],body=document.body;
-  var tc=['t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','t-pokemon','is-lcars','is-bsg','is-matrix','t-lotr','t-terminator','t-tron','t-mcu','t-kpop','t-80s','t-f1','t-corp','t-diablo2','t-mario','t-rock','t-hockey','t-topgear'];
+  var tc=['t-geo','t-tos','t-tng','t-ds9','t-voy','t-bsg','t-matrix','t-who','t-office','t-galpha','t-pokemon','is-lcars','is-bsg','is-matrix','t-lotr','t-terminator','t-tron','t-mcu','t-kpop','t-80s','t-f1','t-corp','t-diablo2','t-mario','t-rock','t-hockey','t-topgear','t-seinfeld','t-friends','t-starwars','t-simpsons','t-mpython'];
   for(var i=0;i<tc.length;i++)body.classList.remove(tc[i]);
   body.classList.add('t-'+name);
   if(d.lcars)body.classList.add('is-lcars');
@@ -713,7 +727,12 @@ var THEME_META=[
   {id:'mario',      label:'SUPER MARIO',          code:'WAHOO'},
   {id:'rock',       label:'CLASSIC ROCK',         code:'THUNDERSTRUCK'},
   {id:'hockey',     label:'HOCKEY',               code:'OVERTIME'},
-  {id:'topgear',    label:'TOP GEAR',             code:'POWERRRR'}
+  {id:'topgear',    label:'TOP GEAR',             code:'POWERRRR'},
+  {id:'seinfeld',   label:'SEINFELD',             code:'FESTIVUS'},
+  {id:'friends',    label:'FRIENDS',              code:'PIVOT'},
+  {id:'starwars',   label:'STAR WARS',            code:'DARKSIDE'},
+  {id:'simpsons',   label:'THE SIMPSONS',         code:'DOUGHNUT'},
+  {id:'mpython',    label:'MONTY PYTHON',         code:'NISHRUBBERY'}
 ];
 function openAdmin(){
   if(document.getElementById('eg-admin'))return;

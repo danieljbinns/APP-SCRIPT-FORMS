@@ -33,7 +33,12 @@ var STATUS_MAPS={
   mario:     {'In Progress':'WORLD IN PROGRESS',             'Pending':'WAITING ON 1-1',               'Completed':'FLAGPOLE REACHED!!',         'Cancelled':'FELL IN THE PIT',           'Action Required':'!! BOWSER AHEAD !!',          'All Specialists Complete':'PRINCESS SAVED!!'},
   rock:      {'In Progress':'SOUNDCHECK IN PROGRESS',        'Pending':'WAITING FOR THE ENCORE',       'Completed':'CROWD GOES WILD',            'Cancelled':'SHOW CANCELLED',            'Action Required':'!! MIC CHECK !!',             'All Specialists Complete':'ENCORE DELIVERED'},
   hockey:    {'In Progress':'PUCK IS LIVE',                  'Pending':'AWAITING FACE-OFF',            'Completed':'IT\'S IN THE NET!!',         'Cancelled':'GAME CALLED',               'Action Required':'!! MAN ADVANTAGE !!',         'All Specialists Complete':'HAT TRICK COMPLETE'},
-  topgear:   {'In Progress':'LAP IN PROGRESS',               'Pending':'POWER LAAAP QUEUED',           'Completed':'AND ON THAT BOMBSHELL...',   'Cancelled':'REASONABLY PRICED CAR BROKE DOWN','Action Required':'SOME SAY... ACTION IS NEEDED','All Specialists Complete':'TOP GEAR!!'}
+  topgear:   {'In Progress':'LAP IN PROGRESS',               'Pending':'POWER LAAAP QUEUED',           'Completed':'AND ON THAT BOMBSHELL...',   'Cancelled':'REASONABLY PRICED CAR BROKE DOWN','Action Required':'SOME SAY... ACTION IS NEEDED','All Specialists Complete':'TOP GEAR!!'},
+  seinfeld:  {'In Progress':'SERENITY NOW',                  'Pending':'YADA YADA...',                 'Completed':'FESTIVUS MIRACLE!!',         'Cancelled':'NO SOUP FOR YOU',           'Action Required':'NEWMAN!!',                    'All Specialists Complete':'FESTIVUS MIRACLE!!'},
+  friends:   {'In Progress':'PIVOT!! PIVOT!!',               'Pending':'COULD THIS BE ANY MORE PENDING','Completed':'HOW YOU DOIN?? ✓',          'Cancelled':'WE WERE ON A BREAK',        'Action Required':'JOEY NEEDS SOMETHING',        'All Specialists Complete':'COULD WE BE ANY MORE DONE'},
+  starwars:  {'In Progress':'DISTURBANCE IN THE FORCE',      'Pending':'THE NEGOTIATIONS HAVE BEGUN',  'Completed':'MAY THE FORCE BE WITH YOU', 'Cancelled':'I AM ALTERING THE DEAL',    'Action Required':'I FIND THIS LACKING',         'All Specialists Complete':'THE EMPIRE IS SATISFIED'},
+  simpsons:  {'In Progress':'D\'OH!! WORKING ON IT',         'Pending':'MMM... PENDING',               'Completed':'EXCELLENT!!',               'Cancelled':'WHY YOU LITTLE—',           'Action Required':'MR. BURNS WANTS A WORD',      'All Specialists Complete':'EXCELLENT!!'},
+  mpython:   {'In Progress':'HE\'S A VERY NAUGHTY BOY',      'Pending':'WAITING FOR THE BLACK KNIGHT', 'Completed':'\'TIS A VICTORY!!',          'Cancelled':'\'TIS BUT A SCRATCH',       'Action Required':'NI!! NI!! NI!!',              'All Specialists Complete':'THE HOLY GRAIL IS FOUND'}
 };
 
 /* ── SUBMIT MAPS ─────────────────────────────────────────────────── */
@@ -61,7 +66,12 @@ var SUBMIT_MAPS={
   mario:     ['WAHOO!!','MAMMA MIA — SUBMIT!','HERE WE GOOOO!!'],
   rock:      ['ROCK ON!!','TURN IT UP TO 11','THUNDERSTRUCK!!'],
   hockey:    ['DROP THE PUCK','BEAUTY!! SEND IT!','SHOOT AND SCORE!!'],
-  topgear:   ['POWER!!!','AND AWAY WE GO!!','REASONABLY PRICED SUBMIT']
+  topgear:   ['POWER!!!','AND AWAY WE GO!!','REASONABLY PRICED SUBMIT'],
+  seinfeld:  ['NO SOUP FOR YOU','SERENITY NOW!!','YADA YADA SUBMIT'],
+  friends:   ['PIVOT!!','COULD THIS BE ANY MORE SUBMITTED','HOW YOU DOIN??'],
+  starwars:  ['MAY THE FORM BE WITH YOU','DO OR DO NOT','THESE ARE THE DROIDS'],
+  simpsons:  ['D\'OH!! SUBMIT','EXCELLENT!!','MMM... FORM'],
+  mpython:   ['NI!! NI!! NI!!','\'TIS DONE!!','RUN AWAY!! RUN AWAY!!']
 };
 
 /* ── FIELD MAPS ──────────────────────────────────────────────────── */
@@ -688,6 +698,110 @@ var FIELD_MAPS = {
     [FIELDS.LBL_UPLOAD_DOCS]:    'ATTACH LAP TIME',
     [FIELDS.LBL_VACATION_MSG]:   'AWAY ON THE POWER LAAAP',
     [FIELDS.LBL_HR_APPROVED]:    'THE STIG APPROVED?'
+  },
+
+  seinfeld:{
+    [FIELDS.PG_PORTAL]:          'A SHOW ABOUT NOTHING',
+    [FIELDS.PG_NEW_HIRE]:        'NEW FACE AT MONK\'S CAFE',
+    [FIELDS.PG_TERMINATION]:     'THE JERK STORE CALLED',
+    [FIELDS.SEC_REQUESTER]:      'KRAMER BURST IN',
+    [FIELDS.SEC_EMPLOYEE]:       'NOT THAT THERE\'S ANYTHING WRONG WITH THAT',
+    [FIELDS.SEC_SYSTEM_ACCESS]:  'GEORGE IS HANDLING IT',
+    [FIELDS.SEC_VERIFICATION]:   'THE FESTIVUS CHECKLIST',
+    [FIELDS.SEC_NOTES]:          'GEORGE\'S EXCUSE NOTES',
+    [FIELDS.SEC_TERM_DETAILS]:   'THE AIRING OF GRIEVANCES',
+    [FIELDS.SEC_EQUIP_ASSETS]:   'THE RE-GIFTING INVENTORY',
+    [FIELDS.LBL_MGR_NAME]:       'MR. PETERMAN',
+    [FIELDS.LBL_MGR_EMAIL]:      'MR. PETERMAN\'S OFFICE',
+    [FIELDS.LBL_REASON_LEAVING]: 'NOT THAT THERE\'S ANYTHING WRONG WITH THAT',
+    [FIELDS.LBL_HR_DECISION]:    'NO SOUP FOR YOU',
+    [FIELDS.LBL_COMMENTS]:       'YADA YADA YADA',
+    [FIELDS.LBL_UPLOAD_DOCS]:    'ATTACH THE PUFFY SHIRT CLAUSE',
+    [FIELDS.LBL_VACATION_MSG]:   'OUT — RE-GIFTING THIS VACATION',
+    [FIELDS.LBL_HR_APPROVED]:    'NEWMAN APPROVED?'
+  },
+
+  friends:{
+    [FIELDS.PG_PORTAL]:          'CENTRAL PERK HR',
+    [FIELDS.PG_NEW_HIRE]:        'NEW FRIEND REQUEST',
+    [FIELDS.PG_TERMINATION]:     'WE WERE ON A BREAK',
+    [FIELDS.SEC_REQUESTER]:      'GUNTHER SUBMITTED THIS',
+    [FIELDS.SEC_EMPLOYEE]:       'FRIEND FILE',
+    [FIELDS.SEC_SYSTEM_ACCESS]:  'THE ONE WHERE THEY GET ACCESS',
+    [FIELDS.SEC_VERIFICATION]:   'COULD THIS BE ANY MORE OF A CHECKLIST',
+    [FIELDS.SEC_NOTES]:          'JOEY DOES NOT SHARE NOTES',
+    [FIELDS.SEC_TERM_DETAILS]:   'THE ONE WHERE THEY LEAVE',
+    [FIELDS.SEC_EQUIP_ASSETS]:   'THE ONE WITH THE STUFF TO RETURN',
+    [FIELDS.LBL_MGR_NAME]:       'GUNTHER',
+    [FIELDS.LBL_MGR_EMAIL]:      'CENTRAL PERK — ASK FOR GUNTHER',
+    [FIELDS.LBL_REASON_LEAVING]: 'WE WERE ON A BREAK',
+    [FIELDS.LBL_HR_DECISION]:    'COULD THIS RULING BE ANY MORE...',
+    [FIELDS.LBL_COMMENTS]:       'OH. MY. GOD.',
+    [FIELDS.LBL_UPLOAD_DOCS]:    'ATTACH THE LAMINATED LIST',
+    [FIELDS.LBL_VACATION_MSG]:   'ON A BREAK',
+    [FIELDS.LBL_HR_APPROVED]:    'ROSS APPROVED?'
+  },
+
+  starwars:{
+    [FIELDS.PG_PORTAL]:          'GALACTIC EMPIRE HR',
+    [FIELDS.PG_NEW_HIRE]:        'NEW RECRUIT MANIFEST',
+    [FIELDS.PG_TERMINATION]:     'I FIND YOUR LACK OF EMPLOYMENT DISTURBING',
+    [FIELDS.SEC_REQUESTER]:      'COMMANDING OFFICER',
+    [FIELDS.SEC_EMPLOYEE]:       'REBEL DOSSIER',
+    [FIELDS.SEC_SYSTEM_ACCESS]:  'THESE ARE THE DROIDS YOU\'RE LOOKING FOR',
+    [FIELDS.SEC_VERIFICATION]:   'THE FORCE IS STRONG WITH THIS CHECKLIST',
+    [FIELDS.SEC_NOTES]:          'JEDI COUNCIL NOTES',
+    [FIELDS.SEC_TERM_DETAILS]:   'THE FORCE IS NOT WITH THEM',
+    [FIELDS.SEC_EQUIP_ASSETS]:   'LIGHTSABER & ASSETS',
+    [FIELDS.LBL_MGR_NAME]:       'DARTH VADER',
+    [FIELDS.LBL_MGR_EMAIL]:      'THE EMPEROR\'S OFFICE',
+    [FIELDS.LBL_REASON_LEAVING]: 'I FIND YOUR LACK OF COMMITMENT DISTURBING',
+    [FIELDS.LBL_HR_DECISION]:    'THE EMPEROR HAS SPOKEN',
+    [FIELDS.LBL_COMMENTS]:       'DO OR DO NOT — THERE IS NO TRY',
+    [FIELDS.LBL_UPLOAD_DOCS]:    'ATTACH MISSION BRIEFING',
+    [FIELDS.LBL_VACATION_MSG]:   'IN A GALAXY FAR FAR AWAY',
+    [FIELDS.LBL_HR_APPROVED]:    'THE SENATE APPROVED?'
+  },
+
+  simpsons:{
+    [FIELDS.PG_PORTAL]:          'SPRINGFIELD NUCLEAR POWER PLANT HR',
+    [FIELDS.PG_NEW_HIRE]:        'NEW PLANT EMPLOYEE — D\'OH',
+    [FIELDS.PG_TERMINATION]:     'D\'OH!! THEY\'RE FIRED',
+    [FIELDS.SEC_REQUESTER]:      'MR. BURNS REQUESTED THIS',
+    [FIELDS.SEC_EMPLOYEE]:       'PLANT WORKER FILE',
+    [FIELDS.SEC_VERIFICATION]:   'EXCELLENT... CHECKLIST',
+    [FIELDS.SEC_NOTES]:          'HOMER\'S NOTES (MAY CONTAIN DOUGHNUT)',
+    [FIELDS.SEC_TERM_DETAILS]:   'THE FIRING (D\'OH)',
+    [FIELDS.SEC_EQUIP_ASSETS]:   'RETURN THE DOUGHNUT',
+    [FIELDS.LBL_MGR_NAME]:       'MR. BURNS',
+    [FIELDS.LBL_MGR_EMAIL]:      'BURNS MANOR — SMITHERS WILL ANSWER',
+    [FIELDS.LBL_REASON_LEAVING]: 'D\'OH — WHY ARE THEY LEAVING',
+    [FIELDS.LBL_HR_DECISION]:    'EXCELLENT...',
+    [FIELDS.LBL_COMMENTS]:       'MMM... NOTES',
+    [FIELDS.LBL_UPLOAD_DOCS]:    'ATTACH TO WAFFLE',
+    [FIELDS.LBL_VACATION_MSG]:   'OUT — WENT TO MOE\'S',
+    [FIELDS.LBL_HR_APPROVED]:    'MR. BURNS APPROVED?'
+  },
+
+  mpython:{
+    [FIELDS.PG_PORTAL]:          'MINISTRY OF SILLY JOBS',
+    [FIELDS.PG_NEW_HIRE]:        'AND NOW FOR SOMETHING COMPLETELY NEW',
+    [FIELDS.PG_TERMINATION]:     'HE\'S NOT DEAD YET... WAIT',
+    [FIELDS.SEC_REQUESTER]:      'BRAVE SIR REQUESTER',
+    [FIELDS.SEC_EMPLOYEE]:       'KNIGHT WHO SAYS NI — FILE',
+    [FIELDS.SEC_SYSTEM_ACCESS]:  'THE SPANISH INQUISITION ACCESS',
+    [FIELDS.SEC_VERIFICATION]:   'BRING OUT YOUR CHECKLIST',
+    [FIELDS.SEC_NOTES]:          'STRANGE WOMEN LYING IN PONDS',
+    [FIELDS.SEC_TERM_DETAILS]:   'JUST A FLESH WOUND',
+    [FIELDS.SEC_EQUIP_ASSETS]:   'HOLY HAND GRENADE INVENTORY',
+    [FIELDS.LBL_MGR_NAME]:       'KING ARTHUR',
+    [FIELDS.LBL_MGR_EMAIL]:      'CASTLE AAAAGH',
+    [FIELDS.LBL_REASON_LEAVING]: '\'TIS MERELY A FLESH WOUND',
+    [FIELDS.LBL_HR_DECISION]:    'WE ARE THE KNIGHTS WHO SAY...',
+    [FIELDS.LBL_COMMENTS]:       'AND NOW FOR SOMETHING COMPLETELY DIFFERENT',
+    [FIELDS.LBL_UPLOAD_DOCS]:    'ATTACH THE BOOK OF ARMAMENTS',
+    [FIELDS.LBL_VACATION_MSG]:   'SEEKING THE HOLY GRAIL',
+    [FIELDS.LBL_HR_APPROVED]:    'BRING OUT YOUR APPROVAL'
   }
 
 };
@@ -717,6 +831,11 @@ var TITLE_THEMES = {
   mario:      '[ MUSHROOM KINGDOM — ' + document.title + ' ]',
   rock:       '[ ★ ' + document.title + ' ★ ]',
   hockey:     '[ HOCKEY OPS — ' + document.title + ' ]',
-  topgear:    '[ POWER!!! — ' + document.title + ' ]'
+  topgear:    '[ POWER!!! — ' + document.title + ' ]',
+  seinfeld:   '[ A SHOW ABOUT NOTHING — ' + document.title + ' ]',
+  friends:    '[ THE ONE WITH THE HR FORM — ' + document.title + ' ]',
+  starwars:   '[ GALACTIC EMPIRE — ' + document.title + ' ]',
+  simpsons:   '[ EXCELLENT... — ' + document.title + ' ]',
+  mpython:    '[ MINISTRY OF SILLY JOBS — ' + document.title + ' ]'
 };
 </script>
