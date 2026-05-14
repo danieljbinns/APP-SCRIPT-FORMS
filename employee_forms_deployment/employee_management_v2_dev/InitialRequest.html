@@ -690,9 +690,9 @@
         if (_jnWrap) _jnWrap.style.display = 'none';
       }
 
-      function prefillBossReview(d) {
+      function prefillITConfirmation(d) {
         if (!d) return;
-        console.log('[prefillBossReview] data:', JSON.stringify({ siteName: d.siteName, jobSiteNumber: d.jobSiteNumber, equipment: d.equipment, systemAccess: d.systemAccess, creditCardUSA: d.creditCardUSA }));
+        console.log('[prefillITConfirmation] data:', JSON.stringify({ siteName: d.siteName, jobSiteNumber: d.jobSiteNumber, equipment: d.equipment, systemAccess: d.systemAccess, creditCardUSA: d.creditCardUSA }));
 
         function sv(name, val) {
           var el = document.querySelector('[name="' + name + '"]');
@@ -705,7 +705,7 @@
             opt.textContent = String(val);
             el.insertBefore(opt, el.firstChild.nextSibling || null);
             el.value = String(val);
-            console.warn('[prefillBossReview] sv() added missing option for', name, '=', val);
+            console.warn('[prefillITConfirmation] sv() added missing option for', name, '=', val);
           }
         }
         function setRadio(name, val) {
@@ -870,7 +870,7 @@
         }
 
         if (FORM_MODE === 'it_confirmation' && INJECTED_REQUEST_DATA) {
-          prefillBossReview(INJECTED_REQUEST_DATA);
+          prefillITConfirmation(INJECTED_REQUEST_DATA);
         }
       };
 

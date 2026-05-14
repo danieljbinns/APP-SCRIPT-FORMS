@@ -160,9 +160,9 @@
     - FORM_MODE='it_confirmation' detected from <?= mode ?> template var.
     - INJECTED_REQUEST_DATA holds the full request JSON (parsed from requestData).
     - IT_CONFIRM_WF_ID holds the workflow ID for the submit call.
-    - After populateAll() populates all dropdowns and dual-lists, prefillBossReview()
+    - After populateAll() populates all dropdowns and dual-lists, prefillITConfirmation()
       is called to pre-populate all form fields with the existing request data.
-    - prefillBossReview() rebuilds dual-lists with selected values, sets radios/
+    - prefillITConfirmation() rebuilds dual-lists with selected values, sets radios/
       checkboxes, and fires UI toggle functions to reveal dependent sections.
     - Submit routes to google.script.run.submitITConfirmation(data) instead of the
       normal submitInitialRequest / submitPositionChangeRequest.
