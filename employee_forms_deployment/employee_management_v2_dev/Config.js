@@ -17,6 +17,9 @@ const CONFIG = {
   get DEPLOYMENT_URL() { return ConfigurationService.getSetting('DEPLOYMENT_URL'); },
   ALLOWED_DOMAINS: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com'],
   ADMIN_EMAILS: ['dbinns@team-group.com', 'dbinns@robinsonsolutions.com', 'no-reply@team-group.com', 'davelangohr@team-group.com'],
+
+  // Set true in dev to skip all MailApp.sendEmail calls — logs instead
+  SUPPRESS_EMAILS: true,
   
   // ==========================================================================
   // SHEET NAMES

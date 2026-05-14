@@ -371,6 +371,12 @@ function sendFormEmail(options) {
     return false;
   }
 
+  // DEV: suppress all emails when CONFIG.SUPPRESS_EMAILS is true
+  if (CONFIG.SUPPRESS_EMAILS) {
+    Logger.log('[EMAIL SUPPRESSED] To: ' + to + ' | Subject: ' + subject);
+    return true;
+  }
+
   try {
     // E1: Build standardized subject — canonical format defined in buildEmailSubject()
     var enrichedSubject = buildEmailSubject(subject, contextData, subjectOpts);
