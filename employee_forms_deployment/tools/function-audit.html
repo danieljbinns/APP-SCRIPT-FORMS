@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Function Audit — employee_management_v2_dev</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    padding: 40px 32px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* PAGE HEADER */
+  .page-header { margin-bottom: 32px; }
+  .page-header h1 { font-size: 24px; font-weight: 700; color: #111; margin-bottom: 8px; }
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stat-pill {
+    background: #fff; border: 1px solid #dde1e9; border-radius: 20px;
+    padding: 4px 14px; font-size: 13px; color: #555; font-weight: 500;
+  }
+  .stat-pill strong { color: #111; }
+  .stat-pill.warn { border-color: #e65100; color: #e65100; }
+  .stat-pill.warn strong { color: #e65100; }
+
+  /* SECTION */
+  .section { background: #fff; border: 1px solid #dde1e9; border-radius: 12px; margin-bottom: 28px; overflow: hidden; }
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 20px; background: #f7f8fa; border-bottom: 1px solid #dde1e9;
+  }
+  .section-header h2 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #555; }
+  .badge { border-radius: 10px; padding: 1px 8px; font-size: 11px; font-weight: 700; color: #fff; }
+  .badge-orange { background: #e65100; }
+  .badge-blue   { background: #1565c0; }
+
+  /* ACTIONS */
+  .actions-bar { display: flex; gap: 10px; margin-bottom: 24px; align-items: center; }
+  .btn { border: none; border-radius: 7px; padding: 8px 18px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; transition: filter .15s; }
+  .btn:hover { filter: brightness(.92); }
+  .btn-primary { background: #1565c0; color: #fff; }
+  .btn-ghost   { background: #fff; color: #555; border: 1px solid #dde1e9; }
+  .save-msg { font-size: 12.5px; color: #2e7d32; display:none; }
+  .save-msg.show { display: inline; }
+
+  /* FLAG CARDS */
+  .flags-grid { padding: 16px 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(520px, 1fr)); gap: 14px; }
+
+  .flag-card { border: 1px solid #e0c8b0; border-radius: 10px; background: #fffaf5; overflow: hidden; }
+
+  .flag-card-header {
+    display: grid; grid-template-columns: 44px 1fr auto;
+    align-items: start; gap: 0;
+    border-bottom: 1px solid #f0dcc8;
+    background: #fff4eb;
+  }
+  .flag-num {
+    background: #e65100; color: #fff; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    align-self: stretch; min-height: 56px;
+  }
+  .flag-title { padding: 10px 12px; }
+  .flag-fns {
+    font-family: 'Consolas', 'Cascadia Code', monospace;
+    font-size: 13px; font-weight: 700; color: #1a237e; line-height: 1.4;
+  }
+  .flag-fns .and { color: #aaa; font-weight: 400; margin: 0 4px; font-style: normal; }
+  .flag-issue { font-size: 12.5px; color: #bf360c; margin-top: 3px; }
+
+  .flag-new-tag {
+    margin: 10px 12px 10px 0; align-self: start;
+    background: #1b5e20; color: #fff;
+    border-radius: 5px; padding: 2px 8px;
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    white-space: nowrap;
+  }
+
+  /* Status badges on card headers */
+  .status-tag {
+    margin: 10px 12px 10px 0; align-self: start;
+    border-radius: 5px; padding: 3px 9px;
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    white-space: nowrap; line-height: 1.4;
+  }
+  .status-ok       { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+  .status-delete   { background: #fce4ec; color: #880e4f; border: 1px solid #f48fb1; }
+  .status-live     { background: #fff3e0; color: #bf360c; border: 1px solid #ffcc80; }
+  .status-test     { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+  .status-decision { background: #f3e5f5; color: #4a148c; border: 1px solid #ce93d8; }
+  .status-watch    { background: #fff8e1; color: #e65100; border: 1px solid #ffe082; }
+
+
+  /* Card body rows */
+  .flag-body { padding: 0; }
+  .flag-row {
+    display: grid; grid-template-columns: 90px 1fr;
+    border-top: 1px solid #f0dcc8;
+    font-size: 13px;
+  }
+  .flag-row-label {
+    padding: 8px 10px 8px 14px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; color: #999;
+    background: #fdf5ee;
+    display: flex; align-items: flex-start; padding-top: 10px;
+  }
+  .flag-row-val { padding: 8px 14px; color: #333; line-height: 1.5; }
+  .flag-row-val code {
+    font-family: 'Consolas', monospace; font-size: 12px;
+    background: #f0f2f5; border-radius: 3px; padding: 1px 5px; color: #1a237e;
+  }
+  .flag-row-val .file-chip {
+    display: inline-block;
+    font-family: 'Consolas', monospace; font-size: 12px;
+    background: #e8eaf6; color: #283593; border-radius: 4px;
+    padding: 1px 7px; margin: 1px 3px 1px 0;
+  }
+  .flag-row-val .file-chip.new { background: #e8f5e9; color: #1b5e20; }
+
+  /* Comment row */
+  .flag-comment {
+    border-top: 1px solid #f0dcc8;
+    display: grid; grid-template-columns: 90px 1fr;
+  }
+  .flag-comment label {
+    padding: 8px 10px 8px 14px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; color: #999; background: #fdf5ee;
+    display: flex; align-items: center;
+  }
+  .flag-comment input {
+    margin: 6px 10px; flex: 1;
+    border: 1px solid #e0c4a8; border-radius: 5px;
+    padding: 5px 10px; font-size: 13px; font-family: inherit;
+    color: #333; background: #fff; outline: none;
+    transition: border-color .15s;
+  }
+  .flag-comment input:focus { border-color: #e65100; }
+  .flag-comment input::placeholder { color: #c8b89a; }
+
+  /* FULL TABLE */
+  .filter-row {
+    padding: 11px 18px; border-bottom: 1px solid #eef0f4;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    background: #fafbfc;
+  }
+  .filter-row input[type=text] {
+    border: 1px solid #dde1e9; border-radius: 6px;
+    padding: 6px 12px; font-size: 13px; font-family: inherit;
+    outline: none; width: 240px; transition: border-color .15s;
+  }
+  .filter-row input[type=text]:focus { border-color: #1565c0; }
+  .filter-row label { font-size: 12.5px; color: #666; display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
+  .filter-row label input { accent-color: #e65100; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: #f0f2f5; text-align: left; padding: 9px 14px;
+    font-size: 11px; font-weight: 700; color: #777;
+    letter-spacing: .06em; text-transform: uppercase;
+    border-bottom: 2px solid #dde1e9;
+  }
+  tbody tr { border-bottom: 1px solid #f0f2f5; transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f7f9fc; }
+  tbody tr.flagged { background: #fff8f2; }
+  tbody tr.flagged:hover { background: #fff1e6; }
+  tbody tr.hidden { display: none; }
+
+  td { padding: 8px 14px; vertical-align: middle; }
+  td.fn  { font-family: 'Consolas', monospace; font-size: 13px; font-weight: 600; color: #1a237e; white-space: nowrap; }
+  td.file { font-family: 'Consolas', monospace; font-size: 12px; color: #555; white-space: nowrap; }
+  td.sus  { font-size: 12px; color: #bf360c; font-style: italic; }
+  td.comment-cell { padding: 5px 8px; min-width: 160px; }
+  td.comment-cell input {
+    width: 100%; border: 1px solid transparent; border-radius: 4px;
+    padding: 4px 8px; font-size: 12.5px; font-family: inherit;
+    color: #333; background: transparent; outline: none;
+    transition: border-color .15s, background .15s;
+  }
+  td.comment-cell input:hover  { border-color: #dde1e9; background: #fff; }
+  td.comment-cell input:focus  { border-color: #1565c0; background: #fff; }
+  td.comment-cell input::placeholder { color: #ccc; }
+  .fbadge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #e65100; color: #fff; border-radius: 50%;
+    width: 17px; height: 17px; font-size: 9.5px; font-weight: 700;
+    margin-right: 4px; vertical-align: middle;
+  }
+  .new-dot {
+    display: inline-block; width: 7px; height: 7px;
+    background: #2e7d32; border-radius: 50%; margin-right: 5px; vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Function Audit — employee_management_v2_dev</h1>
+  <div class="stats">
+    <div class="stat-pill">Generated <strong>2026-05-14</strong></div>
+    <div class="stat-pill"><strong>37</strong> JS files</div>
+    <div class="stat-pill"><strong>177</strong> functions</div>
+    <div class="stat-pill"><strong>0</strong> duplicates</div>
+    <div class="stat-pill warn"><strong>9</strong> need attention</div>
+    <div class="stat-pill" style="border-color:#2e7d32;color:#2e7d32"><span class="new-dot"></span> = new / modified by us this session</div>
+  </div>
+  <div style="margin-top:16px;background:#fff;border:1px solid #dde1e9;border-radius:8px;padding:14px 18px;font-size:13px;line-height:1.9;color:#333;">
+    <strong style="display:block;margin-bottom:6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#888;">Quick summary</strong>
+    <span style="color:#880e4f;font-weight:600;">Delete:</span> <code>generateRequestId</code> (SheetUtils) and <code>updateWorkflowStatus</code> (SheetUtils) — zero callers confirmed.<br>
+    <span style="color:#4a148c;font-weight:600;">Comment out:</span> <code>adminPurgeWorkflows</code> body in WorkflowManager.js — keep the shell.<br>
+    <span style="color:#bf360c;font-weight:600;">Do not touch:</span> <code>createContextBlock</code> / <code>createEmailTemplate</code> V1s — still live, V2 not yet wired in.<br>
+    <span style="color:#0d47a1;font-weight:600;">Test:</span> Equipment action items end-to-end — <code>launchEquipmentActionItems</code> reads data affected by our consolidation.<br>
+    <span style="color:#e65100;font-weight:600;">Future:</span> Move <code>getFullNewHireData</code> / <code>getFullPositionChangeData</code> out of ITConfirmationHandler into a DataService.
+  </div>
+</div>
+
+<div class="actions-bar">
+  <button class="btn btn-primary" onclick="saveComments()">Save Comments</button>
+  <button class="btn btn-ghost"   onclick="clearComments()">Clear All</button>
+  <span class="save-msg" id="saveMsg">Saved to localStorage</span>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     FLAGGED SECTION
+══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>Needs Attention</h2>
+    <span class="badge badge-orange">9</span>
+  </div>
+  <div class="flags-grid">
+
+    <!-- 2 -->
+    <div class="flag-card">
+      <div class="flag-card-header">
+        <div class="flag-num">2</div>
+        <div class="flag-title">
+          <div class="flag-fns">adminDeleteWorkflows <em class="and">&amp;</em> adminPurgeWorkflows</div>
+          <div class="flag-issue">Two admin-delete entry points in different files — keep both, comment out adminPurgeWorkflows.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin:10px 12px 10px 0;align-self:start;">
+          <div class="flag-new-tag" style="margin:0">Modified by us</div>
+          <div class="status-tag status-decision" style="margin:0">↳ Comment out</div>
+        </div>
+      </div>
+      <div class="flag-body">
+        <div class="flag-row">
+          <div class="flag-row-label">File(s)</div>
+          <div class="flag-row-val">
+            <span class="file-chip new">DashboardActionsHandler.js</span>
+            <span class="file-chip">WorkflowManager.js</span>
+          </div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Affects</div>
+          <div class="flag-row-val"><code>adminDeleteWorkflows</code> — called from Dashboard admin tools, soft-deletes selected workflow rows. <code>adminPurgeWorkflows</code> — bulk hard-delete in WorkflowManager; dev/cleanup utility.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Caller check</div>
+          <div class="flag-row-val">⚠️ Decision made: keep both files as-is but <strong>comment out <code>adminPurgeWorkflows</code></strong> body in WorkflowManager.js so it can't be accidentally run. <code>adminDeleteWorkflows</code> stays active.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">New from us</div>
+          <div class="flag-row-val"><code>adminDeleteWorkflows</code> was moved from WorkflowManager → DashboardActionsHandler.js during the handler split.</div>
+        </div>
+      </div>
+      <div class="flag-comment"><label>Your note</label><input type="text" id="fc2" placeholder="Add a note…" oninput="markDirty()"></div>
+    </div>
+
+    <!-- 3 -->
+    <div class="flag-card">
+      <div class="flag-card-header">
+        <div class="flag-num">3</div>
+        <div class="flag-title">
+          <div class="flag-fns">createContextBlock <em class="and">(V1)</em></div>
+          <div class="flag-issue">V1 alongside V2 — still live. V2 exists but is not yet wired in.</div>
+        </div>
+        <div class="status-tag status-live">🔴 Do not delete</div>
+      </div>
+      <div class="flag-body">
+        <div class="flag-row">
+          <div class="flag-row-label">File(s)</div>
+          <div class="flag-row-val"><span class="file-chip">EmailUtils.js</span></div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Affects</div>
+          <div class="flag-row-val">Builds the info-block section of outgoing emails. Called by <code>createEmailTemplate</code> (V1) which is still the active template builder.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Caller check</div>
+          <div class="flag-row-val">🔴 Still active. <code>createEmailTemplate</code> V1 calls <code>createContextBlock</code> V1 at line 426. A comment in EmailUtils.js at line 977 says V2 is a "drop-in replacement… not yet wired in." <strong>Do NOT delete V1s</strong> until V2 is fully wired.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">New from us</div>
+          <div class="flag-row-val">No — both versions pre-date this session.</div>
+        </div>
+      </div>
+      <div class="flag-comment"><label>Your note</label><input type="text" id="fc3" placeholder="Add a note…" oninput="markDirty()"></div>
+    </div>
+
+    <!-- 4 -->
+    <div class="flag-card">
+      <div class="flag-card-header">
+        <div class="flag-num">4</div>
+        <div class="flag-title">
+          <div class="flag-fns">createEmailTemplate <em class="and">(V1)</em></div>
+          <div class="flag-issue">V1 alongside V2 — still live. V2 is ready but not yet switched over.</div>
+        </div>
+        <div class="status-tag status-live">🔴 Do not delete</div>
+      </div>
+      <div class="flag-body">
+        <div class="flag-row">
+          <div class="flag-row-label">File(s)</div>
+          <div class="flag-row-val"><span class="file-chip">EmailUtils.js</span></div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Affects</div>
+          <div class="flag-row-val">Email HTML wrapper — outer shell (header, footer, branding). Called from <code>sendFormEmail()</code> which is the main dispatch function used across all form submissions.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Caller check</div>
+          <div class="flag-row-val">🔴 Still active. Called at EmailUtils.js line 397 via ternary in <code>sendFormEmail</code>. V2 exists alongside it with a "not wired in" comment. <strong>Do NOT delete</strong> — future cleanup task to cut over to V2.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">New from us</div>
+          <div class="flag-row-val">No — pre-existing. Same situation as #3.</div>
+        </div>
+      </div>
+      <div class="flag-comment"><label>Your note</label><input type="text" id="fc4" placeholder="Add a note…" oninput="markDirty()"></div>
+    </div>
+
+    <!-- 5 -->
+    <div class="flag-card resolved">
+      <div class="flag-card-header">
+        <div class="flag-num">5</div>
+        <div class="flag-title">
+          <div class="flag-fns">generateRequestId</div>
+          <div class="flag-issue">Third ID generator — confirmed dead, zero callers.</div>
+        </div>
+        <div class="status-tag status-delete">🗑 Delete</div>
+      </div>
+      <div class="flag-body">
+        <div class="flag-row">
+          <div class="flag-row-label">File(s)</div>
+          <div class="flag-row-val"><span class="file-chip">SheetUtils.js</span></div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Affects</div>
+          <div class="flag-row-val">Nothing — zero callers found anywhere in the codebase. <code>generateFormId</code> and <code>generateWorkflowId</code> in WorkflowManager.js handle all ID generation at submission time.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Caller check</div>
+          <div class="flag-row-val">✅ Confirmed dead. Only appearance is its own definition in SheetUtils.js. <strong>Safe to delete.</strong></div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">New from us</div>
+          <div class="flag-row-val">No — pre-existing. We didn't add or change it.</div>
+        </div>
+      </div>
+      <div class="flag-comment"><label>Your note</label><input type="text" id="fc5" placeholder="Add a note…" oninput="markDirty()"></div>
+    </div>
+
+    <!-- 6 -->
+    <div class="flag-card">
+      <div class="flag-card-header">
+        <div class="flag-num">6</div>
+        <div class="flag-title">
+          <div class="flag-fns">getFullNewHireData</div>
+          <div class="flag-issue">Data-fetch utility in a handler — actively called cross-file by 3 other files.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin:10px 12px 10px 0;align-self:start;">
+          <div class="flag-new-tag" style="margin:0">Modified by us</div>
+          <div class="status-tag status-watch" style="margin:0">Future cleanup</div>
+        </div>
+      </div>
+      <div class="flag-body">
+        <div class="flag-row">
+          <div class="flag-row-label">File(s)</div>
+          <div class="flag-row-val"><span class="file-chip new">ITConfirmationHandler.js</span></div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Affects</div>
+          <div class="flag-row-val">Reads a full row from Initial_Requests by workflowId. Used by the IT Confirmation form serve/submit, equipment request data fetch, and replay email planning.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Caller check</div>
+          <div class="flag-row-val">🔴 Active, called from 3 files: <code>EquipmentRequestHandler.js</code> (getEquipmentRequestData), <code>ITConfirmationHandler.js</code> (serve + submit), and indirectly by ReplayService. Works fine where it is — move to a DataService is a future cleanup only, not urgent.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">New from us</div>
+          <div class="flag-row-val">We modified it — equipment now writes to Initial_Requests so this fn serves both new hire and equipment reads. Placement smell is pre-existing.</div>
+        </div>
+      </div>
+      <div class="flag-comment"><label>Your note</label><input type="text" id="fc6" placeholder="Add a note…" oninput="markDirty()"></div>
+    </div>
+
+    <!-- 7 -->
+    <div class="flag-card">
+      <div class="flag-card-header">
+        <div class="flag-num">7</div>
+        <div class="flag-title">
+          <div class="flag-fns">getFullPositionChangeData</div>
+          <div class="flag-issue">Same placement issue as #6 — active, called cross-file.</div>
+        </div>
+        <div class="status-tag status-watch">Future cleanup</div>
+      </div>
+      <div class="flag-body">
+        <div class="flag-row">
+          <div class="flag-row-label">File(s)</div>
+          <div class="flag-row-val"><span class="file-chip">ITConfirmationHandler.js</span></div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Affects</div>
+          <div class="flag-row-val">Reads a full row from the Position Changes sheet by workflowId. Used for the IT Confirmation serve/submit on change workflows and replay email planning.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Caller check</div>
+          <div class="flag-row-val">🔴 Active, called from <code>ITConfirmationHandler.js</code> (serve + submit) and <code>ReplayService.js</code> (_planChangeEmails). Same future-cleanup note as #6 — no action needed now.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">New from us</div>
+          <div class="flag-row-val">No — pre-existing. We didn't change this function.</div>
+        </div>
+      </div>
+      <div class="flag-comment"><label>Your note</label><input type="text" id="fc7" placeholder="Add a note…" oninput="markDirty()"></div>
+    </div>
+
+    <!-- 9 -->
+    <div class="flag-card">
+      <div class="flag-card-header">
+        <div class="flag-num">9</div>
+        <div class="flag-title">
+          <div class="flag-fns">launchEquipmentActionItems <em class="and">&amp;</em> launchRemainingEquipmentTasks</div>
+          <div class="flag-issue">Both active and needed — but both call getEquipmentRequestData which now delegates to getFullNewHireData. Verify in testing.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin:10px 12px 10px 0;align-self:start;">
+          <div class="flag-new-tag" style="margin:0">Affected by us</div>
+          <div class="status-tag status-test" style="margin:0">Needs testing</div>
+        </div>
+      </div>
+      <div class="flag-body">
+        <div class="flag-row">
+          <div class="flag-row-label">File(s)</div>
+          <div class="flag-row-val"><span class="file-chip new">EquipmentRequestHandler.js</span></div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Affects</div>
+          <div class="flag-row-val">Action Items creation for equipment workflows. <code>launchEquipmentActionItems</code> → called by <code>ITConfirmationHandler</code> on IT confirm. <code>launchRemainingEquipmentTasks</code> → called by <code>launchEquipmentActionItems</code> internally AND by <code>ActionItemService.js</code> when all IT action items close.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Caller check</div>
+          <div class="flag-row-val">🟡 Both active and intentional — not redundant, they serve different steps in the flow. However both internally call <code>getEquipmentRequestData()</code> which now delegates to <code>getFullNewHireData()</code>. <strong>Test equipment action item creation</strong> after the consolidation to confirm the data shape is still correct.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">New from us</div>
+          <div class="flag-row-val">We changed equipment to write to Initial_Requests — these launchers read that data, so the chain is affected. Needs test coverage.</div>
+        </div>
+      </div>
+      <div class="flag-comment"><label>Your note</label><input type="text" id="fc9" placeholder="Add a note…" oninput="markDirty()"></div>
+    </div>
+
+    <!-- 11 -->
+    <div class="flag-card">
+      <div class="flag-card-header">
+        <div class="flag-num">11</div>
+        <div class="flag-title">
+          <div class="flag-fns">sendSafetyOnboardingEmail</div>
+          <div class="flag-issue">Defined in IDSetup.js but called cross-file from HRVerificationHandler too.</div>
+        </div>
+        <div class="status-tag status-watch">Good to know</div>
+      </div>
+      <div class="flag-body">
+        <div class="flag-row">
+          <div class="flag-row-label">File(s)</div>
+          <div class="flag-row-val"><span class="file-chip">IDSetup.js</span></div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Affects</div>
+          <div class="flag-row-val">Sends the safety onboarding notification email to the Safety team after ID setup completes. Triggers their onboarding checklist for the new hire.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Caller check</div>
+          <div class="flag-row-val">🟡 Cross-file caller found — <code>HRVerificationHandler.js</code> line 314 calls it, as does <code>IDSetup.js</code> line 336. Defined in IDSetup.js but used by HR Verification too. Works fine in GAS (global scope), but worth noting for future refactors.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">New from us</div>
+          <div class="flag-row-val">No — pre-existing.</div>
+        </div>
+      </div>
+      <div class="flag-comment"><label>Your note</label><input type="text" id="fc11" placeholder="Add a note…" oninput="markDirty()"></div>
+    </div>
+
+    <!-- 12 -->
+    <div class="flag-card">
+      <div class="flag-card-header">
+        <div class="flag-num">12</div>
+        <div class="flag-title">
+          <div class="flag-fns">updateWorkflow <em class="and">&amp;</em> updateWorkflowStatus</div>
+          <div class="flag-issue">updateWorkflow is heavily used everywhere. updateWorkflowStatus has zero callers — likely dead.</div>
+        </div>
+        <div class="status-tag status-delete">🗑 Delete status version</div>
+      </div>
+      <div class="flag-body">
+        <div class="flag-row">
+          <div class="flag-row-label">File(s)</div>
+          <div class="flag-row-val">
+            <span class="file-chip">WorkflowManager.js</span>
+            <span class="file-chip">SheetUtils.js</span>
+          </div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Affects</div>
+          <div class="flag-row-val"><code>updateWorkflow</code> — updates the Workflows sheet (status, current step, employee name, timestamps). Core function called at every step transition. <code>updateWorkflowStatus</code> — intended to update Status column on a request sheet row (Initial_Requests etc.) but appears unused.</div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">Caller check</div>
+          <div class="flag-row-val">🔴 <code>updateWorkflow</code> — called 12+ times across EquipmentRequestHandler, InitialRequestHandler, HRVerification, IDSetup, ITConfirmation, ITSetup, PositionChange, RequestActions, Termination, ActionItemService. Critical function. <br><br>✅ <code>updateWorkflowStatus</code> — zero callers found anywhere. Only its own definition in SheetUtils.js. <strong>Likely dead — safe to delete.</strong></div>
+        </div>
+        <div class="flag-row">
+          <div class="flag-row-label">New from us</div>
+          <div class="flag-row-val">No — both pre-existing. The dead one predates this session.</div>
+        </div>
+      </div>
+      <div class="flag-comment"><label>Your note</label><input type="text" id="fc12" placeholder="Add a note…" oninput="markDirty()"></div>
+    </div>
+
+  </div><!-- /flags-grid -->
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     FULL FUNCTION TABLE
+══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>All Functions</h2>
+    <span class="badge badge-blue">177</span>
+  </div>
+  <div class="filter-row">
+    <input type="text" id="searchBox" placeholder="Filter by name or file…" oninput="filterTable()">
+    <label><input type="checkbox" id="flaggedOnly" onchange="filterTable()"> Flagged only</label>
+    <label><input type="checkbox" id="newOnly" onchange="filterTable()"> <span class="new-dot"></span> New / modified only</label>
+  </div>
+  <table id="fnTable">
+    <thead>
+      <tr>
+        <th style="width:260px">Function</th>
+        <th style="width:260px">File</th>
+        <th style="width:240px">Flag note</th>
+        <th>Your comment</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="fn">_assertDevOnly</td><td class="file">TestRunner.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__assertDevOnly" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_closeAllActionItems</td><td class="file">TestRunner.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__closeAllActionItems" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_copySheet</td><td class="file">MigrationTools.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__copySheet" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_copySheetWithExtraCols</td><td class="file">MigrationTools.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__copySheetWithExtraCols" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_getTestWorkflowIds</td><td class="file">TestRunner.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__getTestWorkflowIds" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_isSpecialist</td><td class="file">EmailTemplates.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__isSpecialist" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_notifyEquipmentTask</td><td class="file">EquipmentRequestHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__notifyEquipmentTask" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_planChangeEmails</td><td class="file">ReplayService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__planChangeEmails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_planEquipReqEmails</td><td class="file">ReplayService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__planEquipReqEmails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_planNewEmpEmails</td><td class="file">ReplayService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__planNewEmpEmails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_planTermEmails</td><td class="file">ReplayService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__planTermEmails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_replayGetWorkflowRow</td><td class="file">ReplayService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__replayGetWorkflowRow" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_sendActionItemBump</td><td class="file">RequestActionsHandler.js</td><td class="sus" style="color:#2e7d32">✓ Cleared — chain: bumpRequest → _sendBumpEmail → this</td><td class="comment-cell"><input type="text" data-key="r__sendActionItemBump" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_sendBumpEmail</td><td class="file">RequestActionsHandler.js</td><td class="sus" style="color:#2e7d32">✓ Cleared — called by bumpRequest, calls _sendActionItemBump</td><td class="comment-cell"><input type="text" data-key="r__sendBumpEmail" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_sendEquipmentRequestSubmitEmails</td><td class="file">EquipmentRequestHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__sendEquipmentRequestSubmitEmails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_sendInitialRequestSubmitEmails</td><td class="file">InitialRequestHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__sendInitialRequestSubmitEmails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_sendPositionChangeSubmitEmails</td><td class="file">PositionChangeHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__sendPositionChangeSubmitEmails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_sendTerminationSubmitEmails</td><td class="file">TerminationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__sendTerminationSubmitEmails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">_step</td><td class="file">TestRunner.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r__step" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">addSheetRow</td><td class="file">SheetUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_addSheetRow" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr class="flagged is-new"><td class="fn"><span class="fbadge">2</span><span class="new-dot"></span>adminDeleteWorkflows</td><td class="file">DashboardActionsHandler.js</td><td class="sus">Moved here by us — vs adminPurgeWorkflows</td><td class="comment-cell"><input type="text" data-key="r_adminDeleteWorkflows" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr class="flagged"><td class="fn"><span class="fbadge">2</span>adminPurgeWorkflows</td><td class="file">WorkflowManager.js</td><td class="sus">See flag #2</td><td class="comment-cell"><input type="text" data-key="r_adminPurgeWorkflows" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">buildChangesHtml</td><td class="file">ChangeNotify.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_buildChangesHtml" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">buildDashboardView</td><td class="file">MigrationTools.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_buildDashboardView" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">buildEmailSubject</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_buildEmailSubject" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">buildEquipmentContextBlock</td><td class="file">EmailTemplates.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_buildEquipmentContextBlock" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">buildFormUrl</td><td class="file">Router.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_buildFormUrl" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">buildNewHireContextBlock</td><td class="file">EmailTemplates.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_buildNewHireContextBlock" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">buildStartDateCalendarLink_</td><td class="file">IDSetup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_buildStartDateCalendarLink_" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">buildStatusChangeContextBlock</td><td class="file">EmailTemplates.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_buildStatusChangeContextBlock" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">buildTerminationContextBlock</td><td class="file">EmailTemplates.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_buildTerminationContextBlock" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">bumpRequest</td><td class="file">RequestActionsHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_bumpRequest" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">cancelRequest</td><td class="file">RequestActionsHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_cancelRequest" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">cleanupAllTestWorkflows</td><td class="file">TestRunner.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_cleanupAllTestWorkflows" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">cleanupTestWorkflow</td><td class="file">TestRunner.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_cleanupTestWorkflow" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">closeActionItemWithNotes</td><td class="file">Services\ActionItemService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_closeActionItemWithNotes" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr class="flagged"><td class="fn"><span class="fbadge">3</span>createContextBlock</td><td class="file">EmailUtils.js</td><td class="sus">V1 — may be dead</td><td class="comment-cell"><input type="text" data-key="r_createContextBlock" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">createContextBlockV2</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_createContextBlockV2" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">createDataLookupSheet</td><td class="file">Setup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_createDataLookupSheet" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr class="flagged"><td class="fn"><span class="fbadge">4</span>createEmailTemplate</td><td class="file">EmailUtils.js</td><td class="sus">V1 — may be dead</td><td class="comment-cell"><input type="text" data-key="r_createEmailTemplate" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">createEmailTemplateV2</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_createEmailTemplateV2" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">createWorkflow</td><td class="file">WorkflowManager.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_createWorkflow" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">diffFormFields</td><td class="file">ChangeNotify.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_diffFormFields" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">doGet</td><td class="file">Router.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_doGet" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">esBadge</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_esBadge" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">esBtn</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_esBtn" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">esBtnRow</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_esBtnRow" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">esCalBtn</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_esCalBtn" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">esDivider</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_esDivider" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">esRow</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_esRow" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">esSection</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_esSection" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">esVal</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_esVal" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">fmtDate_</td><td class="file">TerminationHandler.js</td><td class="sus" style="color:#2e7d32">✓ Cleared — internal only, 10+ uses in TerminationHandler</td><td class="comment-cell"><input type="text" data-key="r_fmtDate_" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">formatInitialRequestData</td><td class="file">InitialRequestHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_formatInitialRequestData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">generateDssUsername</td><td class="file">IDSetup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_generateDssUsername" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">generateEmployeeId</td><td class="file">IDSetup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_generateEmployeeId" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">generateFormId</td><td class="file">WorkflowManager.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_generateFormId" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr class="flagged"><td class="fn"><span class="fbadge">5</span>generateRequestId</td><td class="file">SheetUtils.js</td><td class="sus">Third ID generator — likely dead</td><td class="comment-cell"><input type="text" data-key="r_generateRequestId" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">generateWorkflowId</td><td class="file">WorkflowManager.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_generateWorkflowId" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getAllReferenceData</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getAllReferenceData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getBaseUrl</td><td class="file">Router.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getBaseUrl" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getBossCostSheetsList</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getBossCostSheetsList" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getBossJobSitesList</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getBossJobSitesList" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getChangeDetails</td><td class="file">RequestDetailsHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getChangeDetails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getCurrentUserDetails</td><td class="file">DirectoryService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getCurrentUserDetails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getCurrentUserEmail</td><td class="file">LandingPageHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getCurrentUserEmail" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getDashboardData</td><td class="file">DashboardDataHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getDashboardData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getDataLookupByIndex</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getDataLookupByIndex" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getDataLookupColumn</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getDataLookupColumn" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getEquipmentRequestData</td><td class="file">EquipmentRequestHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getEquipmentRequestData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getEquipmentRequestDetails</td><td class="file">RequestDetailsHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getEquipmentRequestDetails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr class="flagged is-new"><td class="fn"><span class="fbadge">6</span><span class="new-dot"></span>getFullNewHireData</td><td class="file">ITConfirmationHandler.js</td><td class="sus">Data util in wrong file; now serves equip too</td><td class="comment-cell"><input type="text" data-key="r_getFullNewHireData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr class="flagged"><td class="fn"><span class="fbadge">7</span>getFullPositionChangeData</td><td class="file">ITConfirmationHandler.js</td><td class="sus">Data util in wrong file</td><td class="comment-cell"><input type="text" data-key="r_getFullPositionChangeData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getGeoCitiesStats</td><td class="file">GeoCitiesStats.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getGeoCitiesStats" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getHRVerificationData</td><td class="file">HRVerificationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getHRVerificationData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getIDSetupRequestData</td><td class="file">IDSetup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getIDSetupRequestData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getInitialFormData</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getInitialFormData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getITConfirmationData</td><td class="file">ITConfirmationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getITConfirmationData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getITContextData</td><td class="file">ITSetupHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getITContextData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getJobCodesList</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getJobCodesList" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getJobNumbersList</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getJobNumbersList" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getJRsList</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getJRsList" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getManagersList</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getManagersList" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getMyTaskCounts</td><td class="file">DashboardDataHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getMyTaskCounts" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getPositionChangeData</td><td class="file">PositionChangeHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getPositionChangeData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getRequestDetails</td><td class="file">RequestDetailsHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getRequestDetails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getRequestersList</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getRequestersList" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getRowByRequestId</td><td class="file">SheetUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getRowByRequestId" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getSiteOptions</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getSiteOptions" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getSitesList</td><td class="file">Services\ReferenceDataService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getSitesList" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getStarTrekStats</td><td class="file">StarTrekTOSStats.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getStarTrekStats" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getStepResultData</td><td class="file">RequestDetailsHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getStepResultData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getTerminationData</td><td class="file">TerminationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getTerminationData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getTerminationDetails</td><td class="file">RequestDetailsHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getTerminationDetails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getWorkflow</td><td class="file">WorkflowManager.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getWorkflow" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getWorkflowContext</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getWorkflowContext" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">getWorkflowMapStats</td><td class="file">DashboardDataHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_getWorkflowMapStats" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">include</td><td class="file">LandingPageHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_include" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">includeWithData</td><td class="file">LandingPageHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_includeWithData" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">initializeSystem</td><td class="file">Setup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_initializeSystem" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">initSheet</td><td class="file">Setup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_initSheet" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">isFutureDate</td><td class="file">ValidationUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_isFutureDate" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">isValidEmail</td><td class="file">ValidationUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_isValidEmail" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">isValidPhone</td><td class="file">ValidationUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_isValidPhone" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr class="flagged is-new"><td class="fn"><span class="fbadge">9</span><span class="new-dot"></span>launchEquipmentActionItems</td><td class="file">EquipmentRequestHandler.js</td><td class="sus">Post-consolidation — still reading right sheet?</td><td class="comment-cell"><input type="text" data-key="r_launchEquipmentActionItems" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr class="flagged is-new"><td class="fn"><span class="fbadge">9</span><span class="new-dot"></span>launchRemainingEquipmentTasks</td><td class="file">EquipmentRequestHandler.js</td><td class="sus">See flag #9</td><td class="comment-cell"><input type="text" data-key="r_launchRemainingEquipmentTasks" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">listScriptProperties</td><td class="file">Setup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_listScriptProperties" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">listTestWorkflows</td><td class="file">TestRunner.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_listTestWorkflows" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">logFormEdit</td><td class="file">WorkflowManager.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_logFormEdit" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">manuallySyncAllWorkflows</td><td class="file">StateSync.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_manuallySyncAllWorkflows" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">migrateActionItems</td><td class="file">MigrationTools.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_migrateActionItems" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">migrateFromProd</td><td class="file">MigrationTools.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_migrateFromProd" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">migrateInitialRequests</td><td class="file">MigrationTools.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_migrateInitialRequests" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">parseDurationMonths_</td><td class="file">TerminationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_parseDurationMonths_" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">planWorkflowEmailReplay</td><td class="file">ReplayService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_planWorkflowEmailReplay" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">recheckStuckSpecialistCompletions</td><td class="file">StateSync.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_recheckStuckSpecialistCompletions" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">replayPlan</td><td class="file">ReplayService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_replayPlan" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">replaySend</td><td class="file">ReplayService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_replaySend" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">replayWorkflowEmails</td><td class="file">ReplayService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_replayWorkflowEmails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">restoreEmailRedirect</td><td class="file">TestRunner.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_restoreEmailRedirect" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">runFullTestWorkflow</td><td class="file">TestRunner.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_runFullTestWorkflow" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">safeInclude</td><td class="file">LandingPageHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_safeInclude" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">sanitizeInput</td><td class="file">ValidationUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_sanitizeInput" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">saveActionItemDraft</td><td class="file">Services\ActionItemService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_saveActionItemDraft" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">scheduleAccountDeletion</td><td class="file">TerminationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_scheduleAccountDeletion" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">searchDirectoryUsers</td><td class="file">DirectoryService.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_searchDirectoryUsers" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">sendActionItemEmail</td><td class="file">TerminationHandler.js</td><td class="sus" style="color:#2e7d32">✓ Cleared — internal only, 6 uses in TerminationHandler</td><td class="comment-cell"><input type="text" data-key="r_sendActionItemEmail" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">sendBatchEmails</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_sendBatchEmails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">sendChangeNotifications</td><td class="file">ChangeNotify.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_sendChangeNotifications" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">sendFormEmail</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_sendFormEmail" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">sendInitialRequestEmails</td><td class="file">EmailUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_sendInitialRequestEmails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr class="flagged"><td class="fn"><span class="fbadge">11</span>sendSafetyOnboardingEmail</td><td class="file">IDSetup.js</td><td class="sus">Email sender in handler, not EmailUtils</td><td class="comment-cell"><input type="text" data-key="r_sendSafetyOnboardingEmail" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveAccessDenied</td><td class="file">Router.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveAccessDenied" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveDashboard</td><td class="file">DashboardUIHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveDashboard" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveEquipmentRequest</td><td class="file">EquipmentRequestHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveEquipmentRequest" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveHRVerification</td><td class="file">HRVerificationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveHRVerification" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveIDSetup</td><td class="file">IDSetup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveIDSetup" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveInitialRequest</td><td class="file">InitialRequestHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveInitialRequest" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveITConfirmation</td><td class="file">ITConfirmationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveITConfirmation" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveITSetup</td><td class="file">ITSetupHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveITSetup" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveLandingPage</td><td class="file">LandingPageHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveLandingPage" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">servePositionChangeApproval</td><td class="file">PositionChangeHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_servePositionChangeApproval" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">servePositionSiteChange</td><td class="file">PositionChangeHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_servePositionSiteChange" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveRefPage</td><td class="file">Router.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveRefPage" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveRequestDetails</td><td class="file">RequestDetailsHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveRequestDetails" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveSpecialist</td><td class="file">Specialist.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveSpecialist" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveTerminationApproval</td><td class="file">TerminationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveTerminationApproval" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveTerminationRequest</td><td class="file">TerminationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveTerminationRequest" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">serveWorkflowMap</td><td class="file">DashboardUIHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_serveWorkflowMap" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">setTestEmailRedirect</td><td class="file">TestRunner.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_setTestEmailRedirect" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">setupProdScriptProperties</td><td class="file">Setup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_setupProdScriptProperties" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">setupSheetHeaders</td><td class="file">SheetUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_setupSheetHeaders" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">submitEmployeeIDSetup</td><td class="file">IDSetup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_submitEmployeeIDSetup" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">submitEquipmentRequest</td><td class="file">EquipmentRequestHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_submitEquipmentRequest" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">submitHRVerification</td><td class="file">HRVerificationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_submitHRVerification" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">submitInitialRequest</td><td class="file">InitialRequestHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_submitInitialRequest" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">submitITConfirmation</td><td class="file">ITConfirmationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_submitITConfirmation" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">submitITSetup</td><td class="file">ITSetupHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_submitITSetup" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">submitPositionChangeApproval</td><td class="file">PositionChangeHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_submitPositionChangeApproval" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">submitPositionChangeRequest</td><td class="file">PositionChangeHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_submitPositionChangeRequest" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">submitSpecialistForm</td><td class="file">Specialist.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_submitSpecialistForm" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">submitTerminationApproval</td><td class="file">TerminationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_submitTerminationApproval" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">submitTerminationRequest</td><td class="file">TerminationHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_submitTerminationRequest" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">syncStatusToRequestSheet</td><td class="file">WorkflowManager.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_syncStatusToRequestSheet" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">syncWorkflowState</td><td class="file">StateSync.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_syncWorkflowState" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">testEmailSend</td><td class="file">TestRunner.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_testEmailSend" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">triggerNextStepFromIDSetup</td><td class="file">IDSetup.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_triggerNextStepFromIDSetup" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">triggerSpecialists</td><td class="file">ITSetupHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_triggerSpecialists" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">updateHireDate</td><td class="file">RequestActionsHandler.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_updateHireDate" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">updateWorkflow</td><td class="file">WorkflowManager.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_updateWorkflow" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr class="flagged"><td class="fn"><span class="fbadge">12</span>updateWorkflowStatus</td><td class="file">SheetUtils.js</td><td class="sus">vs updateWorkflow — overlapping names</td><td class="comment-cell"><input type="text" data-key="r_updateWorkflowStatus" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">uploadBusinessCardsFile</td><td class="file">Specialist.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_uploadBusinessCardsFile" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">validateHireDate</td><td class="file">ValidationUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_validateHireDate" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">validateName</td><td class="file">ValidationUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_validateName" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">validateRequiredFields</td><td class="file">ValidationUtils.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_validateRequiredFields" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">wipeDevSheets</td><td class="file">MigrationTools.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_wipeDevSheets" placeholder="…" oninput="markDirty()"></td></tr>
+      <tr><td class="fn">writeAuditLog</td><td class="file">AuditLog.js</td><td class="sus"></td><td class="comment-cell"><input type="text" data-key="r_writeAuditLog" placeholder="…" oninput="markDirty()"></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const STORE_KEY = 'fn_audit_v2';
+  let dirty = false;
+  function markDirty() { dirty = true; }
+
+  function saveComments() {
+    const data = {};
+    for (let i = 1; i <= 12; i++) {
+      const el = document.getElementById('fc' + i);
+      if (el && el.value.trim()) data['fc' + i] = el.value.trim();
+    }
+    document.querySelectorAll('[data-key]').forEach(function(el) {
+      if (el.value.trim()) data[el.dataset.key] = el.value.trim();
+    });
+    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    dirty = false;
+    const msg = document.getElementById('saveMsg');
+    msg.classList.add('show');
+    setTimeout(function() { msg.classList.remove('show'); }, 2500);
+  }
+
+  function clearComments() {
+    if (!confirm('Clear all comments?')) return;
+    localStorage.removeItem(STORE_KEY);
+    for (let i = 1; i <= 12; i++) {
+      const el = document.getElementById('fc' + i);
+      if (el) el.value = '';
+    }
+    document.querySelectorAll('[data-key]').forEach(function(el) { el.value = ''; });
+    dirty = false;
+  }
+
+  function loadComments() {
+    try {
+      const data = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+      for (const [k, v] of Object.entries(data)) {
+        const el = document.getElementById(k) || document.querySelector('[data-key="' + k + '"]');
+        if (el) el.value = v;
+      }
+    } catch(e) {}
+  }
+
+  function filterTable() {
+    const q        = document.getElementById('searchBox').value.toLowerCase();
+    const flagOnly = document.getElementById('flaggedOnly').checked;
+    const newOnly  = document.getElementById('newOnly').checked;
+    document.querySelectorAll('#fnTable tbody tr').forEach(function(tr) {
+      const fn   = tr.cells[0] ? tr.cells[0].textContent.toLowerCase() : '';
+      const file = tr.cells[1] ? tr.cells[1].textContent.toLowerCase() : '';
+      const matchSearch = !q        || fn.includes(q) || file.includes(q);
+      const matchFlag   = !flagOnly || tr.classList.contains('flagged');
+      const matchNew    = !newOnly  || tr.classList.contains('is-new');
+      tr.classList.toggle('hidden', !matchSearch || !matchFlag || !matchNew);
+    });
+  }
+
+  window.addEventListener('beforeunload', function(e) {
+    if (dirty) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  loadComments();
+</script>
+</body>
+</html>

@@ -198,56 +198,7 @@ function submitEmployeeIDSetup(formData) {
   }
 }
 
-function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
-  try {
-    const siteDocsJobCode = (setupData && setupData.siteDocsJobCode) || (function() {
-      try {
-        var sh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
-        if (!sh) return '';
-        var rows = sh.getDataRange().getValues();
-        var row = rows.find(function(r) { return r[SCHEMA.ID_SETUP_RESULTS.WORKFLOW_ID] === workflowId; });
-        return row ? String(row[SCHEMA.ID_SETUP_RESULTS.SITEDOCS_JOB_CODE] || '') : '';
-      } catch(e) { return ''; }
-    })();
-
-    // Use full workflow context so all Request Details fields are populated in the email
-    var contextData = (typeof getWorkflowContext === 'function' ? getWorkflowContext(workflowId) : null) || {};
-    contextData.workflowType = 'New Hire';
-    // Supplement with any extra fields from requestData that may not yet be in the sheet
-    if (!contextData.employeeName && requestData.employeeName) contextData.employeeName = requestData.employeeName;
-    if (!contextData.jobTitle    && requestData.position)      contextData.jobTitle     = requestData.position;
-    if (!contextData.siteName    && requestData.siteName)      contextData.siteName     = requestData.siteName;
-    if (!contextData.hireDate    && requestData.hireDate)      contextData.hireDate     = requestData.hireDate;
-    if (siteDocsJobCode) contextData.siteDocsJobCode = siteDocsJobCode;
-
-    const description = JSON.stringify([
-      'Assign SiteDocs locations for employee',
-      'Assign DSS learning paths'
-    ]);
-
-    const tid = ActionItemService.createActionItem(
-      workflowId,
-      'Safety',
-      'Safety Onboarding — ' + requestData.employeeName,
-      description,
-      CONFIG.EMAILS.SAFETY,
-      'safety_onboarding'
-    );
-
-    sendFormEmail({
-      to: CONFIG.EMAILS.SAFETY,
-      subject: 'Safety Onboarding Required — ' + requestData.employeeName,
-      body: 'Please assign SiteDocs locations and DSS learning paths for this employee. Complete the action item using the button below.',
-      formUrl: buildFormUrl('action_item_view', { tid: tid }),
-      displayName: 'TEAM Group - Employee Onboarding',
-      contextData: contextData
-    });
-
-    Logger.log('[SUCCESS] Safety Onboarding Action Item created (' + tid + ') for ' + workflowId);
-  } catch (safeErr) {
-    Logger.log('[ERROR] Failed to create Safety Onboarding Action Item: ' + safeErr.toString());
-  }
-}
+// sendSafetyOnboardingEmail() moved to EmailUtils.js (2026-05-14)
 
 function buildStartDateCalendarLink_(requestData) {
   try {

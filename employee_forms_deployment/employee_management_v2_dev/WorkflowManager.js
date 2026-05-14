@@ -201,6 +201,12 @@ function syncStatusToRequestSheet(ss, workflowId, status) {
  * @returns {{ success: boolean, deleted: number, errors: string[] }}
  */
 function adminPurgeWorkflows(workflowIds) {
+  // TODO: confirm if still needed — no callers found as of 2026-05-14.
+  // adminDeleteWorkflows() in DashboardActionsHandler.js is the live admin-delete entry point.
+  // Body commented out to prevent accidental invocation; keep shell until confirmed dead.
+  return { success: false, message: 'adminPurgeWorkflows is disabled pending review.' };
+
+  /* --- original body (disabled) ---
   try {
     const userEmail = Session.getActiveUser().getEmail();
     if (!AccessControlService.isAdmin(userEmail)) {
@@ -263,6 +269,7 @@ function adminPurgeWorkflows(workflowIds) {
     Logger.log('[adminPurgeWorkflows] Fatal: ' + e.message);
     return { success: false, message: e.message };
   }
+  --- end original body */
 }
 
 /**

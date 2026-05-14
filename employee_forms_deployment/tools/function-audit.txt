@@ -1,0 +1,201 @@
+FUNCTION AUDIT — employee_management_v2_dev
+Generated: 2026-05-14
+JS files: 37   Functions: 177   Duplicates: 0
+================================================================================
+
+Function                           File(s)
+--------------------------------------------------------------------------------
+_assertDevOnly                     TestRunner.js
+_closeAllActionItems               TestRunner.js
+_copySheet                         MigrationTools.js
+_copySheetWithExtraCols            MigrationTools.js
+_getTestWorkflowIds                TestRunner.js
+_isSpecialist                      EmailTemplates.js
+_notifyEquipmentTask               EquipmentRequestHandler.js
+_planChangeEmails                  ReplayService.js
+_planEquipReqEmails                ReplayService.js
+_planNewEmpEmails                  ReplayService.js
+_planTermEmails                    ReplayService.js
+_replayGetWorkflowRow              ReplayService.js
+_sendActionItemBump                RequestActionsHandler.js
+_sendBumpEmail                     RequestActionsHandler.js                      ??? _sendActionItemBump and _sendBumpEmail both in same file — are these two doing the same thing?
+_sendEquipmentRequestSubmitEmails  EquipmentRequestHandler.js
+_sendInitialRequestSubmitEmails    InitialRequestHandler.js
+_sendPositionChangeSubmitEmails    PositionChangeHandler.js
+_sendTerminationSubmitEmails       TerminationHandler.js
+_step                              TestRunner.js
+addSheetRow                        SheetUtils.js
+adminDeleteWorkflows               DashboardActionsHandler.js
+adminPurgeWorkflows                WorkflowManager.js                            ??? adminDeleteWorkflows (DashboardActionsHandler) vs adminPurgeWorkflows (WorkflowManager) — two admin delete functions?
+buildChangesHtml                   ChangeNotify.js
+buildDashboardView                 MigrationTools.js
+buildEmailSubject                  EmailUtils.js
+buildEquipmentContextBlock         EmailTemplates.js
+buildFormUrl                       Router.js
+buildNewHireContextBlock           EmailTemplates.js
+buildStartDateCalendarLink_        IDSetup.js
+buildStatusChangeContextBlock      EmailTemplates.js
+buildTerminationContextBlock       EmailTemplates.js
+bumpRequest                        RequestActionsHandler.js
+cancelRequest                      RequestActionsHandler.js
+cleanupAllTestWorkflows            TestRunner.js
+cleanupTestWorkflow                TestRunner.js
+closeActionItemWithNotes           Services\ActionItemService.js
+createContextBlock                 EmailUtils.js                                 ??? V1 — is this still called anywhere or superseded by createContextBlockV2?
+createContextBlockV2               EmailUtils.js
+createDataLookupSheet              Setup.js
+createEmailTemplate                EmailUtils.js                                 ??? V1 — is this still called anywhere or superseded by createEmailTemplateV2?
+createEmailTemplateV2              EmailUtils.js
+createWorkflow                     WorkflowManager.js
+diffFormFields                     ChangeNotify.js
+doGet                              Router.js
+esBadge                            EmailUtils.js
+esBtn                              EmailUtils.js
+esBtnRow                           EmailUtils.js
+esCalBtn                           EmailUtils.js
+esDivider                          EmailUtils.js
+esRow                              EmailUtils.js
+esSection                          EmailUtils.js
+esVal                              EmailUtils.js
+fmtDate_                           TerminationHandler.js                         ??? private date formatter in TerminationHandler — should this be in a shared util?
+formatInitialRequestData           InitialRequestHandler.js
+generateDssUsername                IDSetup.js
+generateEmployeeId                 IDSetup.js
+generateFormId                     WorkflowManager.js
+generateRequestId                  SheetUtils.js                                 ??? possibly dead — generateFormId and generateWorkflowId both exist in WorkflowManager; is generateRequestId still called anywhere?
+generateWorkflowId                 WorkflowManager.js
+getAllReferenceData                 Services\ReferenceDataService.js
+getBaseUrl                         Router.js
+getBossCostSheetsList              Services\ReferenceDataService.js
+getBossJobSitesList                Services\ReferenceDataService.js
+getChangeDetails                   RequestDetailsHandler.js
+getCurrentUserDetails              DirectoryService.js
+getCurrentUserEmail                LandingPageHandler.js
+getDashboardData                   DashboardDataHandler.js
+getDataLookupByIndex               Services\ReferenceDataService.js
+getDataLookupColumn                Services\ReferenceDataService.js
+getEquipmentRequestData            EquipmentRequestHandler.js
+getEquipmentRequestDetails         RequestDetailsHandler.js
+getFullNewHireData                 ITConfirmationHandler.js                      ??? data-fetch utility living in a handler file — called by StateSync, ReplayService, etc.; probably belongs in a DataService
+getFullPositionChangeData          ITConfirmationHandler.js                      ??? same — data-fetch living in wrong file
+getGeoCitiesStats                  GeoCitiesStats.js
+getHRVerificationData              HRVerificationHandler.js
+getIDSetupRequestData              IDSetup.js
+getInitialFormData                 Services\ReferenceDataService.js
+getITConfirmationData              ITConfirmationHandler.js
+getITContextData                   ITSetupHandler.js
+getJobCodesList                    Services\ReferenceDataService.js
+getJobNumbersList                  Services\ReferenceDataService.js
+getJRsList                         Services\ReferenceDataService.js
+getManagersList                    Services\ReferenceDataService.js
+getMyTaskCounts                    DashboardDataHandler.js
+getPositionChangeData              PositionChangeHandler.js
+getRequestDetails                  RequestDetailsHandler.js
+getRequestersList                  Services\ReferenceDataService.js
+getRowByRequestId                  SheetUtils.js
+getSiteOptions                     Services\ReferenceDataService.js
+getSitesList                       Services\ReferenceDataService.js
+getStarTrekStats                   StarTrekTOSStats.js
+getStepResultData                  RequestDetailsHandler.js
+getTerminationData                 TerminationHandler.js
+getTerminationDetails              RequestDetailsHandler.js
+getWorkflow                        WorkflowManager.js
+getWorkflowContext                 EmailUtils.js
+getWorkflowMapStats                DashboardDataHandler.js
+include                            LandingPageHandler.js
+includeWithData                    LandingPageHandler.js
+initializeSystem                   Setup.js
+initSheet                          Setup.js
+isFutureDate                       ValidationUtils.js
+isValidEmail                       ValidationUtils.js
+isValidPhone                       ValidationUtils.js
+launchEquipmentActionItems         EquipmentRequestHandler.js
+launchRemainingEquipmentTasks      EquipmentRequestHandler.js                    ??? two equipment launch functions — are both still needed post-consolidation?
+listScriptProperties               Setup.js
+listTestWorkflows                  TestRunner.js
+logFormEdit                        WorkflowManager.js
+manuallySyncAllWorkflows           StateSync.js
+migrateActionItems                 MigrationTools.js
+migrateFromProd                    MigrationTools.js
+migrateInitialRequests             MigrationTools.js
+parseDurationMonths_               TerminationHandler.js
+planWorkflowEmailReplay            ReplayService.js
+recheckStuckSpecialistCompletions  StateSync.js
+replayPlan                         ReplayService.js
+replaySend                         ReplayService.js
+replayWorkflowEmails               ReplayService.js
+restoreEmailRedirect               TestRunner.js
+runFullTestWorkflow                TestRunner.js
+safeInclude                        LandingPageHandler.js
+sanitizeInput                      ValidationUtils.js
+saveActionItemDraft                Services\ActionItemService.js
+scheduleAccountDeletion            TerminationHandler.js
+searchDirectoryUsers               DirectoryService.js
+sendActionItemEmail                TerminationHandler.js                         ??? email sender living in a handler file, not EmailUtils — intentional?
+sendBatchEmails                    EmailUtils.js
+sendChangeNotifications            ChangeNotify.js
+sendFormEmail                      EmailUtils.js
+sendInitialRequestEmails           EmailUtils.js
+sendSafetyOnboardingEmail          IDSetup.js                                    ??? email sender in IDSetup.js, not EmailUtils — intentional?
+serveAccessDenied                  Router.js
+serveDashboard                     DashboardUIHandler.js
+serveEquipmentRequest              EquipmentRequestHandler.js
+serveHRVerification                HRVerificationHandler.js
+serveIDSetup                       IDSetup.js
+serveInitialRequest                InitialRequestHandler.js
+serveITConfirmation                ITConfirmationHandler.js
+serveITSetup                       ITSetupHandler.js
+serveLandingPage                   LandingPageHandler.js
+servePositionChangeApproval        PositionChangeHandler.js
+servePositionSiteChange            PositionChangeHandler.js
+serveRefPage                       Router.js
+serveRequestDetails                RequestDetailsHandler.js
+serveSpecialist                    Specialist.js
+serveTerminationApproval           TerminationHandler.js
+serveTerminationRequest            TerminationHandler.js
+serveWorkflowMap                   DashboardUIHandler.js
+setTestEmailRedirect               TestRunner.js
+setupProdScriptProperties          Setup.js
+setupSheetHeaders                  SheetUtils.js
+submitEmployeeIDSetup              IDSetup.js
+submitEquipmentRequest             EquipmentRequestHandler.js
+submitHRVerification               HRVerificationHandler.js
+submitInitialRequest               InitialRequestHandler.js
+submitITConfirmation               ITConfirmationHandler.js
+submitITSetup                      ITSetupHandler.js
+submitPositionChangeApproval       PositionChangeHandler.js
+submitPositionChangeRequest        PositionChangeHandler.js
+submitSpecialistForm               Specialist.js
+submitTerminationApproval          TerminationHandler.js
+submitTerminationRequest           TerminationHandler.js
+syncStatusToRequestSheet           WorkflowManager.js
+syncWorkflowState                  StateSync.js
+testEmailSend                      TestRunner.js
+triggerNextStepFromIDSetup         IDSetup.js
+triggerSpecialists                 ITSetupHandler.js
+updateHireDate                     RequestActionsHandler.js
+updateWorkflow                     WorkflowManager.js
+updateWorkflowStatus               SheetUtils.js                                 ??? updateWorkflow (WorkflowManager) vs updateWorkflowStatus (SheetUtils) — overlapping concerns?
+uploadBusinessCardsFile            Specialist.js
+validateHireDate                   ValidationUtils.js
+validateName                       ValidationUtils.js
+validateRequiredFields             ValidationUtils.js
+wipeDevSheets                      MigrationTools.js
+writeAuditLog                      AuditLog.js
+
+================================================================================
+FLAGGED ITEMS SUMMARY
+================================================================================
+
+1.  _sendActionItemBump vs _sendBumpEmail        RequestActionsHandler.js        — two private bump email functions in same file; likely one calls the other but worth confirming they aren't redundant
+2.  adminDeleteWorkflows vs adminPurgeWorkflows   DashboardActionsHandler / WorkflowManager — two admin-delete entry points; do they do different things or is one dead?
+3.  createContextBlock (V1)                       EmailUtils.js                   — V1 alongside V2; grep callers to confirm dead before deleting
+4.  createEmailTemplate (V1)                      EmailUtils.js                   — same as above
+5.  generateRequestId                             SheetUtils.js                   — third ID generator; generateFormId + generateWorkflowId exist in WorkflowManager; probably dead
+6.  getFullNewHireData                            ITConfirmationHandler.js        — data utility in wrong file; called cross-handler; move to ReferenceDataService or a WorkflowDataService
+7.  getFullPositionChangeData                     ITConfirmationHandler.js        — same issue
+8.  fmtDate_                                      TerminationHandler.js           — private date util; low priority but duplicates effort with similar helpers elsewhere
+9.  launchEquipmentActionItems vs launchRemainingEquipmentTasks  EquipmentRequestHandler.js — post-consolidation, are both paths still exercised?
+10. sendActionItemEmail                           TerminationHandler.js           — email sender stranded in a handler; was it intentional or left over?
+11. sendSafetyOnboardingEmail                     IDSetup.js                      — same question; email logic outside EmailUtils
+12. updateWorkflow vs updateWorkflowStatus        WorkflowManager / SheetUtils    — names suggest overlap; confirm they touch different things
