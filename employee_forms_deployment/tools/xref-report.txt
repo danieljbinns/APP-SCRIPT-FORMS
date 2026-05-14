@@ -1,0 +1,1189 @@
+========================================================================
+  GAS CROSS-REFERENCE REPORT
+  Target  : P:\Repos\github\danieljbinns\APP SCRIPT FORMS\employee_forms_deployment\employee_management_v2_dev
+  JS files: 37
+  Defined : 220
+  Dead    : 0   (defined but never called)
+  Dupes   : 3   (same name in multiple files)
+  Missing : 39   (called but never defined)
+========================================================================
+
+------------------------------------------------------------------------
+A. ALL DEFINED FUNCTIONS
+------------------------------------------------------------------------
+  Function                                   File                                   Callers
+  ----------------------------------------  ------------------------------------  -------
+  _assertDevOnly                             TestRunner.js                          1
+  _calBtn                                    PositionChangeHandler.js               1
+  _closeAllActionItems                       TestRunner.js                          1
+  _copySheet                                 MigrationTools.js                      1
+  _copySheetWithExtraCols                    MigrationTools.js                      1
+  _emptyPayload                              Services\AccessControlService.js       1
+  _fmt                                       RequestDetailsHandler.js               1
+  _fmtDisp                                   EmailTemplates.js                      1 [DUPE]
+                                             EmailTemplates.js
+  _getTestWorkflowIds                        TestRunner.js                          1
+  _inGroup                                   Services\AccessControlService.js       1
+  _isSpecialist                              EmailTemplates.js                      1
+  _notifyEquipmentTask                       EquipmentRequestHandler.js             1
+  _planChangeEmails                          ReplayService.js                       1
+  _planEquipReqEmails                        ReplayService.js                       1
+  _planNewEmpEmails                          ReplayService.js                       1
+  _planTermEmails                            ReplayService.js                       1
+  _replayGetWorkflowRow                      ReplayService.js                       1
+  _sendActionItemBump                        RequestActionsHandler.js               1
+  _sendBumpEmail                             RequestActionsHandler.js               1
+  _sendEquipmentRequestSubmitEmails          EquipmentRequestHandler.js             2
+  _sendInitialRequestSubmitEmails            InitialRequestHandler.js               2
+  _sendPositionChangeSubmitEmails            PositionChangeHandler.js               2
+  _sendTerminationSubmitEmails               TerminationHandler.js                  2
+  _showChange                                EmailTemplates.js                      1
+  _specialistGroupMap                        Services\AccessControlService.js       1
+  _step                                      TestRunner.js                          1
+  _sv                                        RequestDetailsHandler.js               1
+  addSheetRow                                SheetUtils.js                          6
+  adminDeleteWorkflows                       DashboardActionsHandler.js             1
+  adminPurgeWorkflows                        WorkflowManager.js                     2
+  buildChangesHtml                           ChangeNotify.js                        1
+  buildDashboardView                         MigrationTools.js                      1
+  buildEmailSubject                          EmailUtils.js                          1
+  buildEquipmentContextBlock                 EmailTemplates.js                      2
+  buildFormUrl                               Router.js                              11
+  buildNewHireContextBlock                   EmailTemplates.js                      2
+  buildStartDateCalendarLink_                IDSetup.js                             1
+  buildStatusChangeContextBlock              EmailTemplates.js                      2
+  buildTerminationContextBlock               EmailTemplates.js                      2
+  bumpRequest                                RequestActionsHandler.js               1
+  canAccessDashboard                         Services\AccessControlService.js       1
+  canBump                                    Services\AccessControlService.js       1
+  canCancel                                  Services\AccessControlService.js       1
+  cancelRequest                              RequestActionsHandler.js               1
+  canHide                                    Services\AccessControlService.js       1
+  canViewForm                                Services\AccessControlService.js       1
+  canViewStepData                            Services\AccessControlService.js       1
+  checkSheet                                 RequestDetailsHandler.js               1
+  checkWorkflowCompletion                    Services\ActionItemService.js          1
+  cleanupAllTestWorkflows                    TestRunner.js                          1
+  cleanupTestWorkflow                        TestRunner.js                          1
+  closeActionItem                            Services\ActionItemService.js          1
+  closeActionItemWithNotes                   Services\ActionItemService.js          1
+  createActionItem                           Services\ActionItemService.js          1
+  createContextBlockV2                       EmailUtils.js                          1
+  createDataLookupSheet                      Setup.js                               1
+  createEmailTemplateV2                      EmailUtils.js                          1
+  createWorkflow                             WorkflowManager.js                     5
+  csvOrStr                                   ITConfirmationHandler.js               1
+  diffFormFields                             ChangeNotify.js                        3
+  doGet                                      Router.js                              1
+  esBadge                                    EmailUtils.js                          1
+  esBtn                                      EmailUtils.js                          1
+  esBtnRow                                   EmailUtils.js                          1
+  esCalBtn                                   EmailUtils.js                          1
+  esDivider                                  EmailUtils.js                          2
+  esRow                                      EmailUtils.js                          2
+  esSection                                  EmailUtils.js                          2
+  esVal                                      EmailUtils.js                          2
+  fetchUsers                                 DirectoryService.js                    1
+  fmtD                                       RequestDetailsHandler.js               1
+  fmtDate                                    Services\ReferenceDataService.js       3
+  fmtDate_                                   TerminationHandler.js                  1
+  fmtV                                       RequestDetailsHandler.js               1
+  formatInitialRequestData                   InitialRequestHandler.js               2
+  generateDssUsername                        IDSetup.js                             1
+  generateEmployeeId                         IDSetup.js                             1
+  generateFormId                             WorkflowManager.js                     10
+  generateWorkflowId                         WorkflowManager.js                     1
+  get                                        IDSetup.js                             1
+  getAllReferenceData                        Services\ReferenceDataService.js       1
+  getAllSettings                             Services\ConfigurationService.js       1
+  getBaseUrl                                 Router.js                              6
+  getBossCostSheetsList                      Services\ReferenceDataService.js       1
+  getBossJobSitesList                        Services\ReferenceDataService.js       1
+  getChangeDetails                           RequestDetailsHandler.js               1
+  getCurrentUserDetails                      DirectoryService.js                    1
+  getCurrentUserEmail                        LandingPageHandler.js                  1
+  getDashboardData                           DashboardDataHandler.js                1
+  getDataLookupByIndex                       Services\ReferenceDataService.js       1
+  getDataLookupColumn                        Services\ReferenceDataService.js       1
+  getEquipmentRequestData                    EquipmentRequestHandler.js             2
+  getEquipmentRequestDetails                 RequestDetailsHandler.js               1
+  getFullNewHireData                         Services\ReferenceDataService.js       3
+  getFullPositionChangeData                  Services\ReferenceDataService.js       2
+  getGeoCitiesStats                          GeoCitiesStats.js                      1
+  getHRVerificationData                      HRVerificationHandler.js               1
+  getIDSetupRequestData                      IDSetup.js                             1
+  getInitialFormData                         Services\ReferenceDataService.js       6
+  getITConfirmationData                      ITConfirmationHandler.js               2
+  getITContextData                           ITSetupHandler.js                      2
+  getJobCodesList                            Services\ReferenceDataService.js       1
+  getJobNumbersList                          Services\ReferenceDataService.js       1
+  getJRsList                                 Services\ReferenceDataService.js       1
+  getManagersList                            Services\ReferenceDataService.js       1
+  getMyTaskCounts                            DashboardDataHandler.js                1
+  getPendingTasks                            Services\ActionItemService.js          1
+  getPositionChangeData                      PositionChangeHandler.js               3
+  getRequestDetails                          RequestDetailsHandler.js               1
+  getRequestersList                          Services\ReferenceDataService.js       1
+  getRequiredSpecialistCats                  Services\ActionItemService.js          1
+  getRowByRequestId                          SheetUtils.js                          5
+  getSetting                                 Services\ConfigurationService.js       1
+  getSiteOptions                             Services\ReferenceDataService.js       1
+  getSitesList                               Services\ReferenceDataService.js       1
+  getStarTrekStats                           StarTrekTOSStats.js                    1
+  getStepResultData                          RequestDetailsHandler.js               1
+  getTask                                    Services\ActionItemService.js          1
+  getTerminationData                         TerminationHandler.js                  3
+  getTerminationDetails                      RequestDetailsHandler.js               1
+  getUserAccessFlags                         Services\AccessControlService.js       1
+  getUserRolePayload                         Services\AccessControlService.js       1
+  getWorkflow                                WorkflowManager.js                     4
+  getWorkflowContext                         EmailUtils.js                          10
+  getWorkflowMapStats                        DashboardDataHandler.js                1
+  include                                    LandingPageHandler.js                  1
+  includeWithData                            LandingPageHandler.js                  1
+  initializeSystem                           Setup.js                               1
+  initSheet                                  Setup.js                               1
+  isAdmin                                    Services\AccessControlService.js       1
+  isFutureDate                               ValidationUtils.js                     1
+  isValidEmail                               ValidationUtils.js                     1
+  isValidPhone                               ValidationUtils.js                     1
+  launchEquipmentActionItems                 EquipmentRequestHandler.js             2
+  launchRemainingEquipmentTasks              EquipmentRequestHandler.js             2
+  listScriptProperties                       Setup.js                               1
+  listTestWorkflows                          TestRunner.js                          1
+  logFormEdit                                WorkflowManager.js                     3
+  manuallySyncAllWorkflows                   StateSync.js                           1
+  migrateActionItems                         MigrationTools.js                      1
+  migrateFromProd                            MigrationTools.js                      1
+  migrateInitialRequests                     MigrationTools.js                      1
+  notifyTaskClosure                          Services\ActionItemService.js          1
+  notifyWorkflowClosure                      Services\ActionItemService.js          1
+  parseDurationMonths_                       TerminationHandler.js                  1
+  planWorkflowEmailReplay                    ReplayService.js                       1
+  pRow                                       EmailTemplates.js                      1
+  qRow                                       EmailTemplates.js                      1
+  readActionItems                            RequestDetailsHandler.js               1
+  readAllFromSheet                           RequestDetailsHandler.js               1
+  recheckStuckSpecialistCompletions          StateSync.js                           1
+  replayPlan                                 ReplayService.js                       1
+  replaySend                                 ReplayService.js                       1
+  replayWorkflowEmails                       ReplayService.js                       1
+  restoreEmailRedirect                       TestRunner.js                          1
+  runFullTestWorkflow                        TestRunner.js                          1
+  safeInclude                                LandingPageHandler.js                  1
+  sanitizeInput                              ValidationUtils.js                     1
+  saveActionItemDraft                        Services\ActionItemService.js          1 [DUPE]
+                                             Services\ActionItemService.js
+  saveSettings                               Services\ConfigurationService.js       1
+  scheduleAccountDeletion                    TerminationHandler.js                  1
+  searchDirectoryUsers                       DirectoryService.js                    1
+  sendActionItemEmail                        TerminationHandler.js                  1
+  sendBatchEmails                            EmailUtils.js                          1
+  sendChangeNotifications                    ChangeNotify.js                        3
+  sendFormEmail                              EmailUtils.js                          13
+  sendInitialRequestEmails                   EmailUtils.js                          2
+  sendSafetyOnboardingEmail                  EmailUtils.js                          3
+  serveAccessDenied                          Router.js                              1
+  serveActionItem                            Services\ActionItemService.js          1
+  serveDashboard                             DashboardUIHandler.js                  2
+  serveEquipmentRequest                      EquipmentRequestHandler.js             2
+  serveHRVerification                        HRVerificationHandler.js               2
+  serveIDSetup                               IDSetup.js                             2
+  serveInitialRequest                        InitialRequestHandler.js               2
+  serveITConfirmation                        ITConfirmationHandler.js               2
+  serveITSetup                               ITSetupHandler.js                      2
+  serveLandingPage                           LandingPageHandler.js                  2
+  servePositionChangeApproval                PositionChangeHandler.js               2
+  servePositionSiteChange                    PositionChangeHandler.js               2
+  serveRefPage                               Router.js                              1
+  serveRequestDetails                        RequestDetailsHandler.js               2
+  serveSpecialist                            Specialist.js                          2
+  serveTerminationApproval                   TerminationHandler.js                  2
+  serveTerminationRequest                    TerminationHandler.js                  2
+  serveWorkflowMap                           DashboardUIHandler.js                  2
+  setTestEmailRedirect                       TestRunner.js                          1
+  setupProdScriptProperties                  Setup.js                               1
+  setupSheetHeaders                          SheetUtils.js                          1
+  splitCSV                                   Services\ReferenceDataService.js       1
+  splitPair                                  Services\ReferenceDataService.js       1
+  submitEmployeeIDSetup                      IDSetup.js                             2
+  submitEquipmentRequest                     EquipmentRequestHandler.js             1
+  submitHRVerification                       HRVerificationHandler.js               2
+  submitInitialRequest                       InitialRequestHandler.js               2
+  submitITConfirmation                       ITConfirmationHandler.js               2
+  submitITSetup                              ITSetupHandler.js                      2
+  submitPositionChangeApproval               PositionChangeHandler.js               1
+  submitPositionChangeRequest                PositionChangeHandler.js               1
+  submitSpecialistForm                       Specialist.js                          1
+  submitTerminationApproval                  TerminationHandler.js                  1
+  submitTerminationRequest                   TerminationHandler.js                  1
+  syncStatusToRequestSheet                   WorkflowManager.js                     1
+  syncWorkflowState                          StateSync.js                           11
+  TEST_HR_VERIFICATION                       TestRunner.js                          1
+  TEST_ID_SETUP                              TestRunner.js                          1
+  TEST_IT_CONFIRMATION                       TestRunner.js                          1
+  TEST_IT_SETUP                              TestRunner.js                          1
+  testEmailSend                              TestRunner.js                          1
+  topN                                       GeoCitiesStats.js                      2 [DUPE]
+                                             StarTrekTOSStats.js
+  triggerNextStepFromIDSetup                 IDSetup.js                             1
+  triggerSpecialists                         ITSetupHandler.js                      1
+  updateHireDate                             RequestActionsHandler.js               1
+  updateWorkflow                             WorkflowManager.js                     11
+  uploadBusinessCardsFile                    Specialist.js                          1
+  validateHireDate                           ValidationUtils.js                     1
+  validateName                               ValidationUtils.js                     1
+  validateRequiredFields                     ValidationUtils.js                     3
+  wipeDevSheets                              MigrationTools.js                      1
+  writeAuditLog                              AuditLog.js                            3
+
+------------------------------------------------------------------------
+B. CALLER LIST  (who calls each function)
+------------------------------------------------------------------------
+
+  _assertDevOnly  (1)
+    <- TestRunner.js
+
+  _calBtn  (1)
+    <- PositionChangeHandler.js
+
+  _closeAllActionItems  (1)
+    <- TestRunner.js
+
+  _copySheet  (1)
+    <- MigrationTools.js
+
+  _copySheetWithExtraCols  (1)
+    <- MigrationTools.js
+
+  _emptyPayload  (1)
+    <- Services\AccessControlService.js
+
+  _fmt  (1)
+    <- RequestDetailsHandler.js
+
+  _fmtDisp  (1)
+    <- EmailTemplates.js
+
+  _getTestWorkflowIds  (1)
+    <- TestRunner.js
+
+  _inGroup  (1)
+    <- Services\AccessControlService.js
+
+  _isSpecialist  (1)
+    <- EmailTemplates.js
+
+  _notifyEquipmentTask  (1)
+    <- EquipmentRequestHandler.js
+
+  _planChangeEmails  (1)
+    <- ReplayService.js
+
+  _planEquipReqEmails  (1)
+    <- ReplayService.js
+
+  _planNewEmpEmails  (1)
+    <- ReplayService.js
+
+  _planTermEmails  (1)
+    <- ReplayService.js
+
+  _replayGetWorkflowRow  (1)
+    <- ReplayService.js
+
+  _sendActionItemBump  (1)
+    <- RequestActionsHandler.js
+
+  _sendBumpEmail  (1)
+    <- RequestActionsHandler.js
+
+  _sendEquipmentRequestSubmitEmails  (2)
+    <- EquipmentRequestHandler.js
+    <- ReplayService.js
+
+  _sendInitialRequestSubmitEmails  (2)
+    <- InitialRequestHandler.js
+    <- ReplayService.js
+
+  _sendPositionChangeSubmitEmails  (2)
+    <- PositionChangeHandler.js
+    <- ReplayService.js
+
+  _sendTerminationSubmitEmails  (2)
+    <- ReplayService.js
+    <- TerminationHandler.js
+
+  _showChange  (1)
+    <- EmailTemplates.js
+
+  _specialistGroupMap  (1)
+    <- Services\AccessControlService.js
+
+  _step  (1)
+    <- TestRunner.js
+
+  _sv  (1)
+    <- RequestDetailsHandler.js
+
+  addSheetRow  (6)
+    <- EquipmentRequestHandler.js
+    <- InitialRequestHandler.js
+    <- PositionChangeHandler.js
+    <- Services\ActionItemService.js
+    <- SheetUtils.js
+    <- TerminationHandler.js
+
+  adminDeleteWorkflows  (1)
+    <- DashboardActionsHandler.js
+
+  adminPurgeWorkflows  (2)
+    <- TestRunner.js
+    <- WorkflowManager.js
+
+  buildChangesHtml  (1)
+    <- ChangeNotify.js
+
+  buildDashboardView  (1)
+    <- MigrationTools.js
+
+  buildEmailSubject  (1)
+    <- EmailUtils.js
+
+  buildEquipmentContextBlock  (2)
+    <- EmailTemplates.js
+    <- EmailUtils.js
+
+  buildFormUrl  (11)
+    <- EmailUtils.js
+    <- EquipmentRequestHandler.js
+    <- HRVerificationHandler.js
+    <- IDSetup.js
+    <- ITConfirmationHandler.js
+    <- ITSetupHandler.js
+    <- InitialRequestHandler.js
+    <- PositionChangeHandler.js
+    <- RequestActionsHandler.js
+    <- Router.js
+    <- TerminationHandler.js
+
+  buildNewHireContextBlock  (2)
+    <- EmailTemplates.js
+    <- EmailUtils.js
+
+  buildStartDateCalendarLink_  (1)
+    <- IDSetup.js
+
+  buildStatusChangeContextBlock  (2)
+    <- EmailTemplates.js
+    <- EmailUtils.js
+
+  buildTerminationContextBlock  (2)
+    <- EmailTemplates.js
+    <- EmailUtils.js
+
+  bumpRequest  (1)
+    <- RequestActionsHandler.js
+
+  canAccessDashboard  (1)
+    <- Services\AccessControlService.js
+
+  canBump  (1)
+    <- Services\AccessControlService.js
+
+  canCancel  (1)
+    <- Services\AccessControlService.js
+
+  cancelRequest  (1)
+    <- RequestActionsHandler.js
+
+  canHide  (1)
+    <- Services\AccessControlService.js
+
+  canViewForm  (1)
+    <- Services\AccessControlService.js
+
+  canViewStepData  (1)
+    <- Services\AccessControlService.js
+
+  checkSheet  (1)
+    <- RequestDetailsHandler.js
+
+  checkWorkflowCompletion  (1)
+    <- Services\ActionItemService.js
+
+  cleanupAllTestWorkflows  (1)
+    <- TestRunner.js
+
+  cleanupTestWorkflow  (1)
+    <- TestRunner.js
+
+  closeActionItem  (1)
+    <- Services\ActionItemService.js
+
+  closeActionItemWithNotes  (1)
+    <- Services\ActionItemService.js
+
+  createActionItem  (1)
+    <- Services\ActionItemService.js
+
+  createContextBlockV2  (1)
+    <- EmailUtils.js
+
+  createDataLookupSheet  (1)
+    <- Setup.js
+
+  createEmailTemplateV2  (1)
+    <- EmailUtils.js
+
+  createWorkflow  (5)
+    <- EquipmentRequestHandler.js
+    <- InitialRequestHandler.js
+    <- PositionChangeHandler.js
+    <- TerminationHandler.js
+    <- WorkflowManager.js
+
+  csvOrStr  (1)
+    <- ITConfirmationHandler.js
+
+  diffFormFields  (3)
+    <- ChangeNotify.js
+    <- HRVerificationHandler.js
+    <- ITConfirmationHandler.js
+
+  doGet  (1)
+    <- Router.js
+
+  esBadge  (1)
+    <- EmailUtils.js
+
+  esBtn  (1)
+    <- EmailUtils.js
+
+  esBtnRow  (1)
+    <- EmailUtils.js
+
+  esCalBtn  (1)
+    <- EmailUtils.js
+
+  esDivider  (2)
+    <- EmailTemplates.js
+    <- EmailUtils.js
+
+  esRow  (2)
+    <- EmailTemplates.js
+    <- EmailUtils.js
+
+  esSection  (2)
+    <- EmailTemplates.js
+    <- EmailUtils.js
+
+  esVal  (2)
+    <- EmailTemplates.js
+    <- EmailUtils.js
+
+  fetchUsers  (1)
+    <- DirectoryService.js
+
+  fmtD  (1)
+    <- RequestDetailsHandler.js
+
+  fmtDate  (3)
+    <- DashboardDataHandler.js
+    <- Services\ReferenceDataService.js
+    <- StateSync.js
+
+  fmtDate_  (1)
+    <- TerminationHandler.js
+
+  fmtV  (1)
+    <- RequestDetailsHandler.js
+
+  formatInitialRequestData  (2)
+    <- EquipmentRequestHandler.js
+    <- InitialRequestHandler.js
+
+  generateDssUsername  (1)
+    <- IDSetup.js
+
+  generateEmployeeId  (1)
+    <- IDSetup.js
+
+  generateFormId  (10)
+    <- EquipmentRequestHandler.js
+    <- HRVerificationHandler.js
+    <- IDSetup.js
+    <- ITConfirmationHandler.js
+    <- ITSetupHandler.js
+    <- InitialRequestHandler.js
+    <- PositionChangeHandler.js
+    <- Specialist.js
+    <- TerminationHandler.js
+    <- WorkflowManager.js
+
+  generateWorkflowId  (1)
+    <- WorkflowManager.js
+
+  get  (1)
+    <- IDSetup.js
+
+  getAllReferenceData  (1)
+    <- Services\ReferenceDataService.js
+
+  getAllSettings  (1)
+    <- Services\ConfigurationService.js
+
+  getBaseUrl  (6)
+    <- DashboardUIHandler.js
+    <- EquipmentRequestHandler.js
+    <- RequestActionsHandler.js
+    <- RequestDetailsHandler.js
+    <- Router.js
+    <- Specialist.js
+
+  getBossCostSheetsList  (1)
+    <- Services\ReferenceDataService.js
+
+  getBossJobSitesList  (1)
+    <- Services\ReferenceDataService.js
+
+  getChangeDetails  (1)
+    <- RequestDetailsHandler.js
+
+  getCurrentUserDetails  (1)
+    <- DirectoryService.js
+
+  getCurrentUserEmail  (1)
+    <- LandingPageHandler.js
+
+  getDashboardData  (1)
+    <- DashboardDataHandler.js
+
+  getDataLookupByIndex  (1)
+    <- Services\ReferenceDataService.js
+
+  getDataLookupColumn  (1)
+    <- Services\ReferenceDataService.js
+
+  getEquipmentRequestData  (2)
+    <- EquipmentRequestHandler.js
+    <- ReplayService.js
+
+  getEquipmentRequestDetails  (1)
+    <- RequestDetailsHandler.js
+
+  getFullNewHireData  (3)
+    <- EquipmentRequestHandler.js
+    <- ITConfirmationHandler.js
+    <- Services\ReferenceDataService.js
+
+  getFullPositionChangeData  (2)
+    <- ITConfirmationHandler.js
+    <- Services\ReferenceDataService.js
+
+  getGeoCitiesStats  (1)
+    <- GeoCitiesStats.js
+
+  getHRVerificationData  (1)
+    <- HRVerificationHandler.js
+
+  getIDSetupRequestData  (1)
+    <- IDSetup.js
+
+  getInitialFormData  (6)
+    <- EquipmentRequestHandler.js
+    <- ITConfirmationHandler.js
+    <- InitialRequestHandler.js
+    <- PositionChangeHandler.js
+    <- Services\ReferenceDataService.js
+    <- TerminationHandler.js
+
+  getITConfirmationData  (2)
+    <- ITConfirmationHandler.js
+    <- ITSetupHandler.js
+
+  getITContextData  (2)
+    <- ITSetupHandler.js
+    <- Specialist.js
+
+  getJobCodesList  (1)
+    <- Services\ReferenceDataService.js
+
+  getJobNumbersList  (1)
+    <- Services\ReferenceDataService.js
+
+  getJRsList  (1)
+    <- Services\ReferenceDataService.js
+
+  getManagersList  (1)
+    <- Services\ReferenceDataService.js
+
+  getMyTaskCounts  (1)
+    <- DashboardDataHandler.js
+
+  getPendingTasks  (1)
+    <- Services\ActionItemService.js
+
+  getPositionChangeData  (3)
+    <- EmailUtils.js
+    <- PositionChangeHandler.js
+    <- ReplayService.js
+
+  getRequestDetails  (1)
+    <- RequestDetailsHandler.js
+
+  getRequestersList  (1)
+    <- Services\ReferenceDataService.js
+
+  getRequiredSpecialistCats  (1)
+    <- Services\ActionItemService.js
+
+  getRowByRequestId  (5)
+    <- InitialRequestHandler.js
+    <- PositionChangeHandler.js
+    <- ReplayService.js
+    <- SheetUtils.js
+    <- TerminationHandler.js
+
+  getSetting  (1)
+    <- Services\ConfigurationService.js
+
+  getSiteOptions  (1)
+    <- Services\ReferenceDataService.js
+
+  getSitesList  (1)
+    <- Services\ReferenceDataService.js
+
+  getStarTrekStats  (1)
+    <- StarTrekTOSStats.js
+
+  getStepResultData  (1)
+    <- RequestDetailsHandler.js
+
+  getTask  (1)
+    <- Services\ActionItemService.js
+
+  getTerminationData  (3)
+    <- EmailUtils.js
+    <- ReplayService.js
+    <- TerminationHandler.js
+
+  getTerminationDetails  (1)
+    <- RequestDetailsHandler.js
+
+  getUserAccessFlags  (1)
+    <- Services\AccessControlService.js
+
+  getUserRolePayload  (1)
+    <- Services\AccessControlService.js
+
+  getWorkflow  (4)
+    <- RequestActionsHandler.js
+    <- RequestDetailsHandler.js
+    <- Services\ActionItemService.js
+    <- WorkflowManager.js
+
+  getWorkflowContext  (10)
+    <- EmailUtils.js
+    <- EquipmentRequestHandler.js
+    <- HRVerificationHandler.js
+    <- IDSetup.js
+    <- ITConfirmationHandler.js
+    <- PositionChangeHandler.js
+    <- RequestActionsHandler.js
+    <- Services\ActionItemService.js
+    <- Specialist.js
+    <- TerminationHandler.js
+
+  getWorkflowMapStats  (1)
+    <- DashboardDataHandler.js
+
+  include  (1)
+    <- LandingPageHandler.js
+
+  includeWithData  (1)
+    <- LandingPageHandler.js
+
+  initializeSystem  (1)
+    <- Setup.js
+
+  initSheet  (1)
+    <- Setup.js
+
+  isAdmin  (1)
+    <- Services\AccessControlService.js
+
+  isFutureDate  (1)
+    <- ValidationUtils.js
+
+  isValidEmail  (1)
+    <- ValidationUtils.js
+
+  isValidPhone  (1)
+    <- ValidationUtils.js
+
+  launchEquipmentActionItems  (2)
+    <- EquipmentRequestHandler.js
+    <- ITConfirmationHandler.js
+
+  launchRemainingEquipmentTasks  (2)
+    <- EquipmentRequestHandler.js
+    <- Services\ActionItemService.js
+
+  listScriptProperties  (1)
+    <- Setup.js
+
+  listTestWorkflows  (1)
+    <- TestRunner.js
+
+  logFormEdit  (3)
+    <- HRVerificationHandler.js
+    <- ITSetupHandler.js
+    <- WorkflowManager.js
+
+  manuallySyncAllWorkflows  (1)
+    <- StateSync.js
+
+  migrateActionItems  (1)
+    <- MigrationTools.js
+
+  migrateFromProd  (1)
+    <- MigrationTools.js
+
+  migrateInitialRequests  (1)
+    <- MigrationTools.js
+
+  notifyTaskClosure  (1)
+    <- Services\ActionItemService.js
+
+  notifyWorkflowClosure  (1)
+    <- Services\ActionItemService.js
+
+  parseDurationMonths_  (1)
+    <- TerminationHandler.js
+
+  planWorkflowEmailReplay  (1)
+    <- ReplayService.js
+
+  pRow  (1)
+    <- EmailTemplates.js
+
+  qRow  (1)
+    <- EmailTemplates.js
+
+  readActionItems  (1)
+    <- RequestDetailsHandler.js
+
+  readAllFromSheet  (1)
+    <- RequestDetailsHandler.js
+
+  recheckStuckSpecialistCompletions  (1)
+    <- StateSync.js
+
+  replayPlan  (1)
+    <- ReplayService.js
+
+  replaySend  (1)
+    <- ReplayService.js
+
+  replayWorkflowEmails  (1)
+    <- ReplayService.js
+
+  restoreEmailRedirect  (1)
+    <- TestRunner.js
+
+  runFullTestWorkflow  (1)
+    <- TestRunner.js
+
+  safeInclude  (1)
+    <- LandingPageHandler.js
+
+  sanitizeInput  (1)
+    <- ValidationUtils.js
+
+  saveActionItemDraft  (1)
+    <- Services\ActionItemService.js
+
+  saveSettings  (1)
+    <- Services\ConfigurationService.js
+
+  scheduleAccountDeletion  (1)
+    <- TerminationHandler.js
+
+  searchDirectoryUsers  (1)
+    <- DirectoryService.js
+
+  sendActionItemEmail  (1)
+    <- TerminationHandler.js
+
+  sendBatchEmails  (1)
+    <- EmailUtils.js
+
+  sendChangeNotifications  (3)
+    <- ChangeNotify.js
+    <- HRVerificationHandler.js
+    <- ITConfirmationHandler.js
+
+  sendFormEmail  (13)
+    <- ChangeNotify.js
+    <- EmailUtils.js
+    <- EquipmentRequestHandler.js
+    <- HRVerificationHandler.js
+    <- IDSetup.js
+    <- ITConfirmationHandler.js
+    <- ITSetupHandler.js
+    <- PositionChangeHandler.js
+    <- RequestActionsHandler.js
+    <- Services\ActionItemService.js
+    <- Specialist.js
+    <- TerminationHandler.js
+    <- TestRunner.js
+
+  sendInitialRequestEmails  (2)
+    <- EmailUtils.js
+    <- InitialRequestHandler.js
+
+  sendSafetyOnboardingEmail  (3)
+    <- EmailUtils.js
+    <- HRVerificationHandler.js
+    <- IDSetup.js
+
+  serveAccessDenied  (1)
+    <- Router.js
+
+  serveActionItem  (1)
+    <- Services\ActionItemService.js
+
+  serveDashboard  (2)
+    <- DashboardUIHandler.js
+    <- Router.js
+
+  serveEquipmentRequest  (2)
+    <- EquipmentRequestHandler.js
+    <- Router.js
+
+  serveHRVerification  (2)
+    <- HRVerificationHandler.js
+    <- Router.js
+
+  serveIDSetup  (2)
+    <- IDSetup.js
+    <- Router.js
+
+  serveInitialRequest  (2)
+    <- InitialRequestHandler.js
+    <- Router.js
+
+  serveITConfirmation  (2)
+    <- ITConfirmationHandler.js
+    <- Router.js
+
+  serveITSetup  (2)
+    <- ITSetupHandler.js
+    <- Router.js
+
+  serveLandingPage  (2)
+    <- LandingPageHandler.js
+    <- Router.js
+
+  servePositionChangeApproval  (2)
+    <- PositionChangeHandler.js
+    <- Router.js
+
+  servePositionSiteChange  (2)
+    <- PositionChangeHandler.js
+    <- Router.js
+
+  serveRefPage  (1)
+    <- Router.js
+
+  serveRequestDetails  (2)
+    <- RequestDetailsHandler.js
+    <- Router.js
+
+  serveSpecialist  (2)
+    <- Router.js
+    <- Specialist.js
+
+  serveTerminationApproval  (2)
+    <- Router.js
+    <- TerminationHandler.js
+
+  serveTerminationRequest  (2)
+    <- Router.js
+    <- TerminationHandler.js
+
+  serveWorkflowMap  (2)
+    <- DashboardUIHandler.js
+    <- Router.js
+
+  setTestEmailRedirect  (1)
+    <- TestRunner.js
+
+  setupProdScriptProperties  (1)
+    <- Setup.js
+
+  setupSheetHeaders  (1)
+    <- SheetUtils.js
+
+  splitCSV  (1)
+    <- Services\ReferenceDataService.js
+
+  splitPair  (1)
+    <- Services\ReferenceDataService.js
+
+  submitEmployeeIDSetup  (2)
+    <- IDSetup.js
+    <- TestRunner.js
+
+  submitEquipmentRequest  (1)
+    <- EquipmentRequestHandler.js
+
+  submitHRVerification  (2)
+    <- HRVerificationHandler.js
+    <- TestRunner.js
+
+  submitInitialRequest  (2)
+    <- InitialRequestHandler.js
+    <- TestRunner.js
+
+  submitITConfirmation  (2)
+    <- ITConfirmationHandler.js
+    <- TestRunner.js
+
+  submitITSetup  (2)
+    <- ITSetupHandler.js
+    <- TestRunner.js
+
+  submitPositionChangeApproval  (1)
+    <- PositionChangeHandler.js
+
+  submitPositionChangeRequest  (1)
+    <- PositionChangeHandler.js
+
+  submitSpecialistForm  (1)
+    <- Specialist.js
+
+  submitTerminationApproval  (1)
+    <- TerminationHandler.js
+
+  submitTerminationRequest  (1)
+    <- TerminationHandler.js
+
+  syncStatusToRequestSheet  (1)
+    <- WorkflowManager.js
+
+  syncWorkflowState  (11)
+    <- EquipmentRequestHandler.js
+    <- HRVerificationHandler.js
+    <- IDSetup.js
+    <- ITConfirmationHandler.js
+    <- ITSetupHandler.js
+    <- InitialRequestHandler.js
+    <- PositionChangeHandler.js
+    <- RequestActionsHandler.js
+    <- Services\ActionItemService.js
+    <- StateSync.js
+    <- TerminationHandler.js
+
+  TEST_HR_VERIFICATION  (1)
+    <- TestRunner.js
+
+  TEST_ID_SETUP  (1)
+    <- TestRunner.js
+
+  TEST_IT_CONFIRMATION  (1)
+    <- TestRunner.js
+
+  TEST_IT_SETUP  (1)
+    <- TestRunner.js
+
+  testEmailSend  (1)
+    <- TestRunner.js
+
+  topN  (2)
+    <- GeoCitiesStats.js
+    <- StarTrekTOSStats.js
+
+  triggerNextStepFromIDSetup  (1)
+    <- IDSetup.js
+
+  triggerSpecialists  (1)
+    <- ITSetupHandler.js
+
+  updateHireDate  (1)
+    <- RequestActionsHandler.js
+
+  updateWorkflow  (11)
+    <- EquipmentRequestHandler.js
+    <- HRVerificationHandler.js
+    <- IDSetup.js
+    <- ITConfirmationHandler.js
+    <- ITSetupHandler.js
+    <- InitialRequestHandler.js
+    <- PositionChangeHandler.js
+    <- RequestActionsHandler.js
+    <- Services\ActionItemService.js
+    <- TerminationHandler.js
+    <- WorkflowManager.js
+
+  uploadBusinessCardsFile  (1)
+    <- Specialist.js
+
+  validateHireDate  (1)
+    <- ValidationUtils.js
+
+  validateName  (1)
+    <- ValidationUtils.js
+
+  validateRequiredFields  (3)
+    <- EquipmentRequestHandler.js
+    <- InitialRequestHandler.js
+    <- ValidationUtils.js
+
+  wipeDevSheets  (1)
+    <- MigrationTools.js
+
+  writeAuditLog  (3)
+    <- AuditLog.js
+    <- DashboardActionsHandler.js
+    <- RequestActionsHandler.js
+
+------------------------------------------------------------------------
+C. DEAD — defined but never called  (0)
+------------------------------------------------------------------------
+  (none)
+
+------------------------------------------------------------------------
+D. MISSING — called but never defined  (39)
+   (GAS builtins and JS keywords suppressed)
+------------------------------------------------------------------------
+
+  [MISSING]  A
+    -> EmailTemplates.js
+
+  [MISSING]  Change
+    -> Setup.js
+
+  [MISSING]  Classification
+    -> Setup.js
+
+  [MISSING]  col
+    -> MigrationTools.js
+
+  [MISSING]  created
+    -> EmailUtils.js
+    -> ITSetupHandler.js
+
+  [MISSING]  days
+    -> ValidationUtils.js
+
+  [MISSING]  deactivation
+    -> TerminationHandler.js
+
+  [MISSING]  DEPLOYMENT_URL
+    -> Config.js
+
+  [MISSING]  EMAILS
+    -> Config.js
+
+  [MISSING]  error
+    -> DirectoryService.js
+
+  [MISSING]  extract
+    -> Services\ReferenceDataService.js
+
+  [MISSING]  fmtDateTime
+    -> DashboardDataHandler.js
+    -> StateSync.js
+
+  [MISSING]  fn
+    -> TestRunner.js
+
+  [MISSING]  gradient
+    -> EmailUtils.js
+    -> PositionChangeHandler.js
+
+  [MISSING]  ID
+    -> TestRunner.js
+
+  [MISSING]  Inactive
+    -> DashboardActionsHandler.js
+
+  [MISSING]  item
+    -> ITSetupHandler.js
+    -> TestRunner.js
+
+  [MISSING]  link
+    -> ITSetupHandler.js
+
+  [MISSING]  MAIN_FOLDER_ID
+    -> Config.js
+
+  [MISSING]  manager
+    -> HRVerificationHandler.js
+    -> IDSetup.js
+    -> TerminationHandler.js
+
+  [MISSING]  Manager
+    -> PositionChangeHandler.js
+
+  [MISSING]  module
+    -> ITSetupHandler.js
+
+  [MISSING]  Payroll
+    -> IDSetup.js
+
+  [MISSING]  PLAN
+    -> ReplayService.js
+
+  [MISSING]  replayed
+    -> ReplayService.js
+
+  [MISSING]  reports
+    -> PositionChangeHandler.js
+
+  [MISSING]  rgba
+    -> EmailUtils.js
+    -> PositionChangeHandler.js
+
+  [MISSING]  role
+    -> PositionChangeHandler.js
+
+  [MISSING]  row
+    -> DashboardActionsHandler.js
+
+  [MISSING]  rows
+    -> MigrationTools.js
+
+  [MISSING]  Safety
+    -> ITSetupHandler.js
+
+  [MISSING]  sent
+    -> HRVerificationHandler.js
+
+  [MISSING]  SHARED_DRIVE_ID
+    -> Config.js
+
+  [MISSING]  sheet
+    -> TestRunner.js
+
+  [MISSING]  SPREADSHEET_ID
+    -> Config.js
+
+  [MISSING]  Transfer
+    -> Setup.js
+
+  [MISSING]  type
+    -> PositionChangeHandler.js
+
+  [MISSING]  User
+    -> Setup.js
+
+  [MISSING]  workflow
+    -> StateSync.js
+    -> TestRunner.js
+
+========================================================================
+END OF REPORT
+========================================================================
