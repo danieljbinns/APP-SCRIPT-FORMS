@@ -408,13 +408,22 @@
             <button id="btnDeleteSelected" onclick="openDeleteConfirm()">🚫 Hide Selected (<span id="selCount">0</span>)</button>
         </div>
 
-        <!-- My Tasks Panel — shown only when current user has pending action items -->
-        <div id="myTasksPanel" style="display:none; background:rgba(235,28,45,0.06); border:1px solid rgba(235,28,45,0.3); border-radius:8px; padding:16px; margin-bottom:20px;">
+        <!-- My Tasks Panel — open task counts per category, role-gated click -->
+        <div id="myTasksPanel" style="display:none; background:rgba(235,28,45,0.06); border:1px solid rgba(235,28,45,0.3); border-radius:8px; padding:16px; margin-bottom:12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <strong style="color:var(--brand-red); font-size:14px;">⚡ My Pending Tasks</strong>
                 <span id="myTasksCount" style="background:var(--brand-red); color:white; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;"></span>
             </div>
             <div id="myTasksList" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+        </div>
+
+        <!-- My Open Requests Panel — workflows where current user is requester or manager -->
+        <div id="myRequestsPanel" style="display:none; background:rgba(33,150,243,0.06); border:1px solid rgba(33,150,243,0.3); border-radius:8px; padding:16px; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <strong style="color:#2196f3; font-size:14px;">📋 My Open Requests</strong>
+                <span id="myRequestsCount" style="background:#2196f3; color:white; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;"></span>
+            </div>
+            <div id="myRequestsList" style="display:flex; flex-direction:column; gap:4px;"></div>
         </div>
 
         <div class="table-container">
@@ -490,7 +499,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
-            loadMyTasks();
+            // loadMyTasks() is called inside displayData() after rolePayload is in sessionStorage
         });
         let allWorkflows = [];
         let filteredWorkflows = []; // For search + pagination combo
@@ -585,6 +594,45 @@
             window.open(SERVER_BASE_URL + '?form=dashboard', '_self');
         }
 
+        /**
+         * Renders the My Open Requests panel — client-side filter of already-loaded
+         * workflows where the current user is the requester or manager.
+         */
+        function renderMyRequests(workflows, currentUser) {
+            var panel   = document.getElementById('myRequestsPanel');
+            var list    = document.getElementById('myRequestsList');
+            var countEl = document.getElementById('myRequestsCount');
+            if (!panel || !list || !currentUser) return;
+
+            var cu = currentUser.toLowerCase();
+            var myWfs = (workflows || []).filter(function(wf) {
+                var s = (wf.status || '').toLowerCase();
+                if (s === 'cancelled' || s === 'completed' || s === 'complete') return false;
+                return (wf.requesterEmail || '').toLowerCase() === cu ||
+                       (wf.managerEmail   || '').toLowerCase() === cu;
+            });
+
+            if (myWfs.length === 0) return; // hide panel if nothing
+            panel.style.display = 'block';
+            if (countEl) countEl.textContent = myWfs.length;
+
+            var sColors = { 'Completed':'var(--success)', 'Complete':'var(--success)', 'Cancelled':'#888' };
+            list.innerHTML = myWfs.map(function(wf) {
+                var sCol = sColors[wf.status] || 'var(--warning)';
+                var name = escapeHtml(wf.employee || wf.id);
+                var type = escapeHtml(wf.type || '');
+                var step = escapeHtml(wf.step || wf.status || '');
+                var url  = SERVER_BASE_URL + '?form=request_details&id=' + encodeURIComponent(wf.id);
+                return '<div style="display:flex; align-items:center; gap:10px; padding:5px 0; border-bottom:1px solid var(--border-color);">' +
+                    '<span style="flex:1; font-size:13px; font-weight:600;">' + name + '</span>' +
+                    '<span style="font-size:11px; color:var(--text-muted);">' + type + '</span>' +
+                    '<span style="font-size:11px; color:var(--text-muted);">' + step + '</span>' +
+                    '<span style="background:' + sCol + '; color:#000; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">' + escapeHtml(wf.status || '') + '</span>' +
+                    '<a href="' + url + '" target="_blank" style="color:#2196f3; font-size:12px; text-decoration:none; white-space:nowrap;">View →</a>' +
+                    '</div>';
+            }).join('');
+        }
+
         function displayData(responseStr) {
             let response = null;
             try {
@@ -616,6 +664,11 @@
             if (rp.isPayroll)  document.body.classList.add('is-payroll');
             if (rp.isSpecialist) document.body.classList.add('is-specialist');
             applyFiltersAndSort(); // Triggers sorting and initially setting filteredWorkflows
+
+            // Load task counts now that rolePayload is in sessionStorage (avoids race condition)
+            loadMyTasks();
+            // Render My Open Requests panel — client-side filter of already-loaded workflows
+            renderMyRequests(allWorkflows, response.currentUser);
         }
 
         // formatDate() provided by SharedComponents.html (included at bottom of page)

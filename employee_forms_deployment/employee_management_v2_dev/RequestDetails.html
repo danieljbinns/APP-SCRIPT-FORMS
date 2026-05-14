@@ -607,6 +607,9 @@
                 if (canEditDate && !workflowId.startsWith('TERM_') && !workflowId.startsWith('CHANGE_') && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
                     sBadge += ' <button class="btn" style="margin-left:10px; background:#555; color:white; font-size:12px;" onclick="editStartDate()">Edit Start Date</button>';
                 }
+                if (canCancelWf && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
+                    sBadge += ' <button class="btn" style="margin-left:6px; background:#c62828; color:white; font-size:12px;" onclick="cancelRequest()">Cancel Request</button>';
+                }
                 statusEl.innerHTML = sBadge;
             }
 
@@ -807,6 +810,17 @@
                 })
                 .withFailureHandler(function(err) { alert('Error: ' + err.message); })
                 .updateHireDate(workflowId, newDate);
+        }
+
+        function cancelRequest() {
+            if (!confirm('Are you sure you want to CANCEL this request? This cannot be undone.')) return;
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res.success) { alert('Request cancelled.'); loadDetails(); }
+                    else alert('Error: ' + res.message);
+                })
+                .withFailureHandler(function(err) { alert('Error: ' + err.message); })
+                .cancelRequest(workflowId);
         }
 
         function bump(target) {
