@@ -385,16 +385,8 @@ function sendFormEmail(options) {
       finalBody = `[DEVELOPMENT MODE - REDIRECTED FROM: ${to}]\n\n` + body;
     }
 
-    // V2 template for all supported workflow types
-    const useV2 = contextData && (
-      contextData.workflowType === 'New Hire'          ||
-      contextData.workflowType === 'Equipment Request' ||
-      contextData.workflowType === 'Termination'       ||
-      contextData.workflowType === 'Status Change'
-    );
-    const htmlBody = useV2
-      ? createEmailTemplateV2(finalSubject, finalBody, formUrl, contextData, emailOpts || {})
-      : createEmailTemplate(finalSubject, finalBody, formUrl, contextData);
+    // Always use V2 template — createContextBlockV2 defaults to 'New Hire' if workflowType absent
+    const htmlBody = createEmailTemplateV2(finalSubject, finalBody, formUrl, contextData || {}, emailOpts || {});
     
     const emailOptions = {
       to: finalTo,
@@ -422,195 +414,10 @@ function sendFormEmail(options) {
   }
 }
 
-function createEmailTemplate(subject, body, formUrl, contextData) {
-  const contextHtml = contextData ? createContextBlock(contextData) : '';
-  
-  const htmlBody = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    <body style="margin: 0; padding: 20px; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <!-- Header -->
-        <tr>
-          <td style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); padding: 30px; text-align: center; border-bottom: 3px solid #EB1C2D;">
-            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">${subject}</h1>
-          </td>
-        </tr>
-        
-        <!-- Context Panel (if provided) -->
-        ${contextHtml}
-        
-        <!-- Body -->
-        <tr>
-          <td style="padding: 30px;">
-            <div style="color: #333333; font-size: 16px; line-height: 1.6;">
-              ${(body.includes('<table') || body.includes('<div')) ? body : body.replace(/\n/g, '<br>')}
-            </div>
-            
-            ${formUrl ? `
-            <div style="margin-top: 30px; text-align: center;">
-              <a href="${formUrl}" style="background: linear-gradient(135deg, #EB1C2D 0%, #c41828 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(235, 28, 45, 0.3);">
-                Open Form →
-              </a>
-            </div>
-            ` : ''}
-          </td>
-        </tr>
-        
-        <!-- Footer -->
-        <tr>
-          <td style="background-color: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
-            <p style="margin: 0; color: #666666; font-size: 12px;">
-              TEAM Group - Employee Management System
-            </p>
-            <p style="margin: 8px 0 0 0; color: #999999; font-size: 11px;">
-              This is an automated notification. Please do not reply to this email.
-            </p>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-  `;
-  
-  return htmlBody;
-}
 
-/**
- * Create context information block for emails
- * @param {Object} context - Request context data
- * @returns {string} HTML for context block
- */
-function createContextBlock(context) {
-  if (!context) return '';
+// createContextBlock (V1) deleted 2026-05-14 — sendFormEmail now always uses createEmailTemplateV2
+// which calls createContextBlockV2 (delegates to per-workflow builders in EmailTemplates.js).
 
-  var workflowType = context.workflowType || '';
-
-  // System access summary
-  var systemAccessText = 'None';
-  if (context.systems) {
-    systemAccessText = Array.isArray(context.systems)
-      ? (context.systems.length > 0 ? context.systems.join(', ') : 'None')
-      : (String(context.systems) || 'None');
-  }
-
-  // Dynamic date label based on workflow type
-  var dateLabel = 'Date';
-  if (workflowType === 'New Hire')           dateLabel = 'Start Date';
-  else if (workflowType === 'Termination')   dateLabel = 'Termination Date';
-  else if (workflowType === 'Status Change') dateLabel = 'Effective Date';
-
-  // Employment type with fallback for termination (termData uses empType field)
-  var employmentType = context.employmentType || context.empType || '';
-
-  // Format hireDate for display
-  var hireDateDisplay = '';
-  if (context.hireDate) {
-    try {
-      var hd = context.hireDate instanceof Date ? context.hireDate : new Date(String(context.hireDate).replace(/^(\d{4}-\d{2}-\d{2})$/, '$1T12:00:00'));
-      hireDateDisplay = !isNaN(hd.getTime())
-        ? Utilities.formatDate(hd, Session.getScriptTimeZone(), 'yyyy-MM-dd')
-        : String(context.hireDate).substring(0, 10);
-    } catch (e) { hireDateDisplay = String(context.hireDate).substring(0, 10); }
-  }
-
-  // Termination-specific rows (highlighted in red)
-  var termRows = '';
-  if (workflowType === 'Termination') {
-    termRows =
-      (context.lastDayWorked ? '<tr><td style="padding:4px 0;font-weight:600;width:160px;color:#c00;">Last Day Worked:</td><td style="padding:4px 0;">' + context.lastDayWorked + '</td></tr>' : '') +
-      (context.hasReports ? '<tr><td style="padding:4px 0;font-weight:600;color:#c00;">Has Direct Reports:</td><td style="padding:4px 0;">' + context.hasReports + '</td></tr>' : '') +
-      (context.reportsToNew && context.reportsToNew !== 'N/A' ? '<tr><td style="padding:4px 0;font-weight:600;color:#c00;">Reports Reassigned To:</td><td style="padding:4px 0;">' + context.reportsToNew + '</td></tr>' : '');
-  }
-
-  // Status Change-specific rows
-  var changeRows = '';
-  if (workflowType === 'Status Change') {
-    // Normalize change field display: identical sides or N/A -> N/A shows "Unchanged"
-    var nc = function(val) {
-      if (val === undefined || val === null) return null;
-      var v = String(val).trim();
-      if (!v || v === 'N/A -> N/A' || v === 'N/A (N/A) -> N/A (N/A)') return 'Unchanged';
-      var idx = v.indexOf(' -> ');
-      if (idx !== -1 && v.substring(0, idx).trim() === v.substring(idx + 4).trim()) return 'Unchanged';
-      return v;
-    };
-    var stVal = nc(context.siteTransfer);
-    var tcVal = nc(context.titleChange);
-    var ccVal = nc(context.classChange);
-    changeRows =
-      (context.changeTypes ? '<tr><td style="padding:4px 0;font-weight:600;width:160px;">Changes:</td><td style="padding:4px 0;">' + context.changeTypes + '</td></tr>' : '') +
-      (stVal !== null ? '<tr><td style="padding:4px 0;font-weight:600;">Site Transfer:</td><td style="padding:4px 0;">' + stVal + '</td></tr>' : '') +
-      (tcVal !== null ? '<tr><td style="padding:4px 0;font-weight:600;">Title Change:</td><td style="padding:4px 0;">' + tcVal + '</td></tr>' : '') +
-      (ccVal !== null ? '<tr><td style="padding:4px 0;font-weight:600;">Classification:</td><td style="padding:4px 0;">' + ccVal + '</td></tr>' : '') +
-      (context.managerChange ? '<tr><td style="padding:4px 0;font-weight:600;">Manager Change:</td><td style="padding:4px 0;">' + context.managerChange + '</td></tr>' : '');
-  }
-
-  // Checklist items section
-  var checklistRows = '';
-  if (context.checklistItems) {
-    try {
-      var items = Array.isArray(context.checklistItems) ? context.checklistItems : JSON.parse(String(context.checklistItems));
-      if (items && items.length > 0) {
-        var itemsHtml = items.map(function(item) { return '<li style="padding:2px 0;">' + item + '</li>'; }).join('');
-        checklistRows = '<tr><td colspan="2" style="padding:12px 0 4px 0;">' +
-          '<div style="font-weight:600;color:#EB1C2D;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Action Items</div>' +
-          '<ul style="margin:0;padding-left:20px;color:#333;">' + itemsHtml + '</ul></td></tr>';
-      }
-    } catch (e) { /* ignore parse errors */ }
-  }
-
-  // Credentials section (shown when any credential field or a credentialNote is present)
-  var credRows = '';
-  if (context.dssUsername || context.siteDocsUsername || context.assignedEmail || context.internalEmployeeId || context.credentialNote) {
-    credRows = '<tr><td colspan="2" style="padding:12px 0 4px 0;">' +
-      '<div style="font-weight:600;color:#EB1C2D;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Credentials</div>' +
-      '<table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#333;">' +
-      (context.internalEmployeeId ? '<tr><td style="padding:3px 0;font-weight:600;width:160px;">Employee ID:</td><td style="padding:3px 0;">' + context.internalEmployeeId + '</td></tr>' : '') +
-      (context.adpAssociateId ? '<tr><td style="padding:3px 0;font-weight:600;">ADP Associate ID:</td><td style="padding:3px 0;">' + context.adpAssociateId + '</td></tr>' : '') +
-      (context.assignedEmail ? '<tr><td style="padding:3px 0;font-weight:600;">Assigned Email:</td><td style="padding:3px 0;">' + context.assignedEmail + '</td></tr>' : '') +
-      (context.dssUsername ? '<tr><td style="padding:3px 0;font-weight:600;">DSS:</td><td style="padding:3px 0;">' + context.dssUsername + ' / Pwd: ' + (context.dssPassword || 'N/A') + '</td></tr>' : '') +
-      (context.siteDocsUsername ? '<tr><td style="padding:3px 0;font-weight:600;">SiteDocs:</td><td style="padding:3px 0;">' + context.siteDocsUsername + ' / Pwd: ' + (context.siteDocsPassword || 'N/A') + '</td></tr>' : '') +
-      (context.siteDocsWorkerId  ? '<tr><td style="padding:3px 0;font-weight:600;">SiteDocs Worker ID:</td><td style="padding:3px 0;">' + context.siteDocsWorkerId  + '</td></tr>' : '') +
-      (context.siteDocsJobCode   ? '<tr><td style="padding:3px 0;font-weight:600;">SiteDocs Job Code:</td><td style="padding:3px 0;">'  + context.siteDocsJobCode   + '</td></tr>' : '') +
-      (context.credentialNote ? '<tr><td colspan="2" style="padding:4px 0;color:#666;font-style:italic;">' + context.credentialNote + '</td></tr>' : '') +
-      '</table></td></tr>';
-  }
-
-  return `
-    <tr>
-      <td style="padding: 20px 30px; background-color: #f8f9fa; border-bottom: 1px solid #e0e0e0;">
-        <h3 style="margin: 0 0 15px 0; color: #EB1C2D; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Request Details</h3>
-        <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #333;">
-          ${context.employeeName ? `<tr><td style="padding:6px 0;font-weight:600;width:160px;">Employee:</td><td style="padding:6px 0;">${context.employeeName}</td></tr>` : ''}
-          ${context.jobTitle ? `<tr><td style="padding:6px 0;font-weight:600;">Job Title:</td><td style="padding:6px 0;">${context.jobTitle}</td></tr>` : ''}
-          ${context.jrTitle ? `<tr><td style="padding:6px 0;font-weight:600;">JR Title:</td><td style="padding:6px 0;">${context.jrTitle}</td></tr>` : ''}
-          ${context.department ? `<tr><td style="padding:6px 0;font-weight:600;">Department:</td><td style="padding:6px 0;">${context.department}</td></tr>` : ''}
-          ${context.siteName ? `<tr><td style="padding:6px 0;font-weight:600;">Site:</td><td style="padding:6px 0;">${context.siteName}</td></tr>` : ''}
-          ${hireDateDisplay ? `<tr><td style="padding:6px 0;font-weight:600;">${dateLabel}:</td><td style="padding:6px 0;">${hireDateDisplay}</td></tr>` : ''}
-          ${employmentType ? `<tr><td style="padding:6px 0;font-weight:600;">Employment Type:</td><td style="padding:6px 0;">${employmentType}</td></tr>` : ''}
-          ${context.employeeType ? `<tr><td style="padding:6px 0;font-weight:600;">Employee Type:</td><td style="padding:6px 0;">${context.employeeType}</td></tr>` : ''}
-          ${context.newHireOrRehire ? `<tr><td style="padding:6px 0;font-weight:600;">Status:</td><td style="padding:6px 0;">${context.newHireOrRehire}</td></tr>` : ''}
-          ${context.reason ? `<tr><td style="padding:6px 0;font-weight:600;">Reason:</td><td style="padding:6px 0;">${context.reason}</td></tr>` : ''}
-          ${context.managerName ? `<tr><td style="padding:6px 0;font-weight:600;">Manager:</td><td style="padding:6px 0;">${context.managerName}${context.managerEmail ? ' (' + context.managerEmail + ')' : ''}</td></tr>` : ''}
-          ${context.systemAccess !== 'No' && context.systems ? `<tr><td style="padding:6px 0;font-weight:600;">System Access:</td><td style="padding:6px 0;">${systemAccessText}</td></tr>` : ''}
-          ${context.equipmentRaw ? `<tr><td style="padding:6px 0;font-weight:600;">Equipment:</td><td style="padding:6px 0;">${context.equipmentRaw}${context.computerType ? '<br><span style="font-size:12px;color:#666">Computer: ' + context.computerType + (context.computerRequestType ? ' (' + context.computerRequestType + ')' : '') + '</span>' : ''}${context.phoneRequestType ? '<br><span style="font-size:12px;color:#666">Phone: ' + context.phoneRequestType + ' Request</span>' : ''}</td></tr>` : ''}
-          ${context.jobSiteNumber ? `<tr><td style="padding:6px 0;font-weight:600;">Job Site #:</td><td style="padding:6px 0;">${context.jobSiteNumber}</td></tr>` : ''}
-          ${context.requesterEmail ? `<tr><td style="padding:6px 0;font-weight:600;">Requested By:</td><td style="padding:6px 0;">${context.requesterEmail}</td></tr>` : ''}
-          ${context.requestDate ? `<tr><td style="padding:6px 0;font-weight:600;">Request Date:</td><td style="padding:6px 0;">${context.requestDate}</td></tr>` : ''}
-          ${termRows}
-          ${changeRows}
-          ${checklistRows}
-          ${credRows}
-        </table>
-      </td>
-    </tr>
-  `;
-}
 
 /**
  * Send multiple emails (batch)
@@ -710,9 +517,9 @@ function sendInitialRequestEmails(config) {
 
 
 // ================================================================
-// ▼▼▼  V2 EMAIL TEMPLATE SYSTEM  ▼▼▼
-// All originals above are preserved unchanged.
-// Wire into sendFormEmail via opts.useNewTemplate when ready.
+// V2 EMAIL TEMPLATE SYSTEM
+// sendFormEmail() always calls createEmailTemplateV2() as of 2026-05-14.
+// V1 (createEmailTemplate + createContextBlock) deleted.
 // ================================================================
 
 // ================================================================
@@ -973,9 +780,7 @@ function createContextBlockV2(context, opts) {
 
 
 // ================================================================
-// EMAIL TEMPLATE SHELL — V2
-// Drop-in replacement for createEmailTemplate(). Not wired into
-// sendFormEmail yet — call directly or pass opts.useNewTemplate.
+// EMAIL TEMPLATE — V2
 // ================================================================
 
 /**
