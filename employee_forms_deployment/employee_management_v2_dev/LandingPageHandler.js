@@ -24,7 +24,9 @@ function include(filename) {
  */
 function safeInclude(filename) {
   try {
-    return HtmlService.createHtmlOutputFromFile(filename).getContent();
+    // createTemplateFromFile required (not createHtmlOutputFromFile) so that
+    // scriptlets inside the included file (e.g. nested includes) are evaluated.
+    return HtmlService.createTemplateFromFile(filename).evaluate().getContent();
   } catch(e) {
     return '';
   }
