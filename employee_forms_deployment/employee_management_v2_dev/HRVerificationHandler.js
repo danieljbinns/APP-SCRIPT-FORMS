@@ -44,6 +44,7 @@ function getHRVerificationData(workflowId) {
         ...result,
         ...context,
         success: true,
+        message: '',
         position: context.jobTitle,
         jrRequired: jrRequired
       };
@@ -186,7 +187,7 @@ function submitHRVerification(formData) {
       workflowId, formId, new Date(), formData.adpAssociateId,
       formData.firstName + ' ' + formData.lastName,
       formData.managerName, formData.managerEmail,
-      formData.jobTitle + ' / ' + formData.jrTitle,
+      formData.jrTitle ? formData.jobTitle + ' / ' + formData.jrTitle : formData.jobTitle,
       verificationNotes, actingUser
     ];
 

@@ -118,44 +118,83 @@ function syncWorkflowState(workflowId) {
       const row = lookupSheet.getRange(foundReq.getRow(), 1, 1, lastCol).getValues()[0];
       if (isTerm) {
         const TR = SCHEMA.TERMINATIONS;
+        const termSystems = String(row[TR.SYSTEMS_TO_DEACTIVATE] || '');
+        const termEquip   = String(row[TR.EQUIPMENT_TO_RETURN]   || '');
         reqInfo = {
-          requesterName:  row[TR.REQUESTER_NAME]  || 'Unknown',
-          requesterEmail: row[TR.REQUESTER_EMAIL]  || '',
-          managerEmail:   row[TR.MANAGER_EMAIL]    || '',
+          requesterName:  String(row[TR.REQUESTER_NAME]   || 'Unknown'),
+          requesterEmail: String(row[TR.REQUESTER_EMAIL]  || ''),
+          managerEmail:   String(row[TR.MANAGER_EMAIL]    || ''),
           dateRequested:  fmtDate(row[TR.TIMESTAMP]),
-          hireDate:       fmtDate(row[TR.TERM_DATE]), // Term Date → shown in Effective Date column
-          site:           String(row[TR.SITE]      || ''),
-          empType:        String(row[TR.EMPLOYEE_TYPE] || ''),
-          items: { isTerm: true }
+          hireDate:       fmtDate(row[TR.TERM_DATE]),
+          site:           String(row[TR.SITE]             || ''),
+          empType:        String(row[TR.EMPLOYEE_TYPE]    || ''),
+          items: {
+            isTerm:        true,
+            hasEquipReturn:!!(termEquip  && termEquip.trim()   && termEquip  !== 'N/A'),
+            hasSystems:    !!(termSystems && termSystems.trim() && termSystems !== 'N/A'),
+            hasReports:    !!(row[TR.HAS_REPORTS] && String(row[TR.HAS_REPORTS]).trim() === 'Yes'),
+            fleetio:       termSystems.includes('Fleetio'),
+            siteDocs:      termSystems.includes('SiteDocs'),
+            hasGoogleOffboarding: !!(row[TR.EMAIL_FORWARDING] && String(row[TR.EMAIL_FORWARDING]).trim() && String(row[TR.EMAIL_FORWARDING]).trim() !== 'N/A')
+          }
         };
       } else if (isChange) {
         const PC = SCHEMA.POSITION_CHANGES;
-        const classChange = String(row[PC.CLASSIFICATION] || '');
-        const classOld = classChange.includes(' -> ') ? classChange.split(' -> ')[0].trim() : '';
+        // Use classNew (right side of "old -> new") for empType — shows what employee is becoming
+        const classChange  = String(row[PC.CLASSIFICATION] || '');
+        const classNew     = classChange.includes(' -> ') ? classChange.split(' -> ')[1].trim() : '';
         const currentClass = String(row[PC.CURRENT_CLASS] || '');
-        const empTypeFromClass = (classOld && classOld !== 'N/A') ? classOld : (currentClass || '');
+        // Fall back chain: classNew > currentClass > classOld
+        const classOld     = classChange.includes(' -> ') ? classChange.split(' -> ')[0].trim() : '';
+        const empTypeFromClass = (classNew && classNew !== 'N/A') ? classNew
+                               : (currentClass || (classOld && classOld !== 'N/A' ? classOld : ''));
+        // Receiving/new manager email — prefer RECEIVING_MANAGER_EMAIL, fall back to CURRENT_MANAGER_EMAIL
+        const pcManagerEmail = String(row[PC.RECEIVING_MANAGER_EMAIL] || row[PC.CURRENT_MANAGER_EMAIL] || '');
         reqInfo = {
-          requesterName:  row[PC.REQUESTER_NAME]   || 'Unknown',
-          requesterEmail: row[PC.REQUESTER_EMAIL]   || '',
-          managerEmail:   String(row[PC.CURRENT_MANAGER_EMAIL] || ''),
-          dateRequested:  fmtDate(row[PC.TIMESTAMP]),
-          hireDate:       fmtDate(row[PC.EFFECTIVE_DATE]), // Effective Date → shown in Effective Date column
-          site:           String(row[PC.CURRENT_SITE] || ''),
+          requesterName:  String(row[PC.REQUESTER_NAME]   || 'Unknown'),
+          requesterEmail: String(row[PC.REQUESTER_EMAIL]  || ''),
+          managerEmail:   pcManagerEmail,
+          dateRequested:  fmtDate(row[PC.DATE_REQUESTED] || row[PC.TIMESTAMP]), // prefer reqDate, fall back to server timestamp
+          hireDate:       fmtDate(row[PC.EFFECTIVE_DATE]),
+          site:           String(row[PC.CURRENT_SITE]     || ''),
           empType:        empTypeFromClass,
-          items: {}
+          items: {
+            // Position change action item indicators for dashboard
+            hasEquipment:    !!(row[PC.EQUIPMENT]      && String(row[PC.EQUIPMENT]).trim()),
+            hasSystems:      !!(row[PC.SYSTEMS_ADDED]  && String(row[PC.SYSTEMS_ADDED]).trim()),
+            hasReturn:       !!(row[PC.EQUIPMENT_RETURN] && String(row[PC.EQUIPMENT_RETURN]).trim()),
+            hasRemoval:      !!(row[PC.REMOVED_ACCESS] && String(row[PC.REMOVED_ACCESS]).trim()),
+            creditCard:      (String(row[PC.CC_USA] || '') === 'Yes' || String(row[PC.CC_CAN] || '') === 'Yes' || String(row[PC.CC_HD] || '') === 'Yes'),
+            jonas:           !!(row[PC.JONAS_JOB_NUMBERS] && String(row[PC.JONAS_JOB_NUMBERS]).trim()),
+            fleetio:         !!(row[PC.SYSTEMS_ADDED] && String(row[PC.SYSTEMS_ADDED]).includes('Fleetio')),
+            businessCards:   !!(row[PC.EQUIPMENT] && String(row[PC.EQUIPMENT]).includes('Business Cards')),
+            siteDocs:        !!(row[PC.SYSTEMS_ADDED] && String(row[PC.SYSTEMS_ADDED]).includes('SiteDocs')),
+            review:          (String(row[PC.PLAN_306090] || '') === 'Yes'),
+            isChange:        true
+          }
         };
       } else if (isEquip) {
         // Equipment requests now stored in Initial_Requests — use IR schema
         const IR = SCHEMA.INITIAL_REQUESTS;
         reqInfo = {
-          requesterName:  row[IR.REQUESTER_NAME]   || 'Unknown',
-          requesterEmail: row[IR.REQUESTER_EMAIL]   || '',
-          managerEmail:   row[IR.MANAGER_EMAIL]     || '',
+          requesterName:  String(row[IR.REQUESTER_NAME]  || 'Unknown'),
+          requesterEmail: String(row[IR.REQUESTER_EMAIL] || ''),
+          managerEmail:   String(row[IR.MANAGER_EMAIL]   || ''),
           dateRequested:  fmtDate(row[IR.DATE_REQUESTED]),
-          hireDate:       '',                        // No start date for equipment requests
-          site:           String(row[IR.SITE_NAME] || ''),
+          hireDate:       '',
+          site:           String(row[IR.SITE_NAME]       || ''),
           empType:        '',
-          items:          { isEquip: true }          // Different action item routing vs new hire
+          items: {
+            // Full item detail — same logic as new hire, equipment reads same IR schema
+            jonas:         !!(row[IR.JONAS_JOB_NUMBERS] && String(row[IR.JONAS_JOB_NUMBERS]).trim().length > 0),
+            creditCard:    (row[IR.CC_USA] === 'Yes' || row[IR.CC_CAN] === 'Yes' || row[IR.CC_HD] === 'Yes'),
+            fleetio:       !!(row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('Fleetio')),
+            businessCards: !!(row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('Business Cards')),
+            siteDocs:      !!((row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('SiteDocs')) || (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('SiteDocs Tablet'))),
+            review:        false,
+            safety:        false,
+            isEquip:       true
+          }
         };
       } else {
         const IR = SCHEMA.INITIAL_REQUESTS;

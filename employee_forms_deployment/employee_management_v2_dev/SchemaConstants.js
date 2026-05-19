@@ -157,7 +157,7 @@ const SCHEMA = {
     ASSIGNED_EMAIL:        4,   // string   — Assigned Email
     EMAIL_PASSWORD:        5,   // string   — Email Password
     COMPUTER_ASSIGNED:     6,   // boolean  — Computer Assigned
-    COMPUTER_MAKE:         7,   // string   — Computer Make
+    COMPUTER_SERIAL:       7,   // string   — Computer Serial
     COMPUTER_MODEL:        8,   // string   — Computer Model
     COMPUTER_TYPE:         9,   // string   — Computer Type
     PHONE_ASSIGNED:        10,  // boolean  — Phone Assigned
@@ -216,7 +216,7 @@ const SCHEMA = {
   },
 
   // ─────────────────────────────────────────────
-  // TERMINATIONS  (28 columns)
+  // TERMINATIONS  (29 columns, 0–28)
   // ─────────────────────────────────────────────
   TERMINATIONS: {
     WORKFLOW_ID:            0,   // string   — Workflow ID
@@ -272,37 +272,71 @@ const SCHEMA = {
   },
 
   // ─────────────────────────────────────────────
-  // POSITION CHANGES  (28 columns)
+  // POSITION CHANGES  (60 columns)
   // ─────────────────────────────────────────────
   POSITION_CHANGES: {
     WORKFLOW_ID:              0,   // string   — Workflow ID
     FORM_ID:                  1,   // string   — Form ID
-    TIMESTAMP:                2,   // datetime — Timestamp
+    TIMESTAMP:                2,   // datetime — Server submit timestamp
     REQUESTER_NAME:           3,   // string   — Requester Name
     REQUESTER_EMAIL:          4,   // string   — Requester Email
-    EMPLOYEE_NAME:            5,   // string   — Employee Name
-    EMPLOYEE_ID:              6,   // string   — Employee ID
-    EFFECTIVE_DATE:           7,   // date     — Effective Date
-    CURRENT_SITE:             8,   // string   — Current Site
-    CHANGE_TYPES:             9,   // csv      — Change Types
+    EMPLOYEE_NAME:            5,   // string   — Employee Full Name
+    EMPLOYEE_ID:              6,   // string   — Employee ID (legacy N/A)
+    EFFECTIVE_DATE:           7,   // date     — Effective Date of Change
+    CURRENT_SITE:             8,   // string   — Current/Primary Site
+    CHANGE_TYPES:             9,   // csv      — Change Types checked
     SITE_TRANSFER:            10,  // string   — Site Transfer (Old -> New)
     TITLE_CHANGE:             11,  // string   — Title Change (Old -> New)
     CLASSIFICATION:           12,  // string   — Classification (Old -> New)
-    MANAGER_CHANGE:           13,  // string   — Manager Change (Old -> New Email)
-    REASSIGN_OLD_REPORTS:     14,  // boolean  — Reassign Old Reports
-    GAIN_NEW_REPORTS:         15,  // boolean  — Gain New Reports
-    GOOGLE_ACCOUNT:           16,  // string   — Google Account
-    SYSTEMS_ADDED:            17,  // csv      — Systems Added
-    EQUIPMENT:                18,  // csv      — Equipment
-    REMOVED_ACCESS:           19,  // csv      — Removed Access
-    COMMENTS:                 20,  // string   — Comments
-    DEPARTMENT:               21,  // string   — Department
-    PURCHASING_SITES:         22,  // csv      — Purchasing Sites
-    RECEIVING_MANAGER_EMAIL:  23,  // string   — Receiving Manager Email
-    CURRENT_TITLE:            24,  // string   — Current Title
-    CURRENT_MANAGER_EMAIL:    25,  // string   — Current Manager Email
-    CURRENT_MANAGER_NAME:     26,  // string   — Current Manager Name
-    CURRENT_CLASS:            27   // string   — Current Class (Hourly/Salary)
+    MANAGER_CHANGE:           13,  // string   — Manager Change (Old -> New)
+    REASSIGN_OLD_REPORTS:     14,  // string   — Reassign old reports to (email)
+    GAIN_NEW_REPORTS:         15,  // string   — New reports previously reported to (email)
+    GOOGLE_ACCOUNT:           16,  // string   — Existing -> New Google account
+    SYSTEMS_ADDED:            17,  // csv      — New systems requested
+    EQUIPMENT:                18,  // csv      — Equipment requested
+    REMOVED_ACCESS:           19,  // csv      — Systems to remove access from
+    COMMENTS:                 20,  // string   — Rationale / Comments
+    DEPARTMENT:               21,  // string   — New Department
+    PURCHASING_SITES:         22,  // csv      — Jonas Purchasing Site Numbers
+    RECEIVING_MANAGER_EMAIL:  23,  // string   — Receiving/New Manager Email
+    CURRENT_TITLE:            24,  // string   — Current Job Title (before change)
+    CURRENT_MANAGER_EMAIL:    25,  // string   — Current Manager Email (before change)
+    CURRENT_MANAGER_NAME:     26,  // string   — Current Manager Name (before change)
+    CURRENT_CLASS:            27,  // string   — Current Classification (before change)
+    // ── EXTENDED COLUMNS (added 2026-05-14) ─────────────────────────────────
+    DATE_REQUESTED:           28,  // date     — Date entered by requester (separate from server TIMESTAMP)
+    FIRST_NAME:               29,  // string   — Employee First Name
+    LAST_NAME:                30,  // string   — Employee Last Name
+    BOSS_TRAINING_ONLY:       31,  // string   — BOSS Training User Only (Yes/No)
+    BOSS_SITES:               32,  // csv      — BOSS Committees assigned
+    BOSS_COST_SHEET:          33,  // string   — BOSS Cost Sheet access (Yes/No)
+    BOSS_COST_JOBS:           34,  // csv      — BOSS Cost Sheet job numbers
+    BOSS_TRIP:                35,  // string   — BOSS Trip Reports access (Yes/No)
+    BOSS_GRIEVANCES:          36,  // string   — BOSS Grievances access (Yes/No)
+    ADP_SITES:                37,  // csv      — ADP Job Site Numbers
+    ADP_SALARY_ACCESS:        38,  // string   — ADP Salary Data access (Yes/No)
+    JR_REQUIRED:              39,  // string   — JR Required (Yes/No)
+    JR_ASSIGNMENT:            40,  // string   — JR Title to assign
+    PLAN_306090:              41,  // string   — 30/60/90 Plan Required (Yes/No)
+    COMPUTER_REQ:             42,  // string   — Computer request type (New/Reassignment)
+    COMPUTER_TYPE:            43,  // string   — Computer type (Chromebook/Windows/Mac)
+    COMPUTER_PREV_USER:       44,  // string   — Previous computer user name
+    COMPUTER_PREV_TYPE:       45,  // string   — Previous computer type
+    COMPUTER_SERIAL:          46,  // string   — Serial number (if known)
+    OFFICE_365:               47,  // string   — Office 365 required (Yes/No)
+    CC_USA:                   48,  // string   — USA Credit Card (Yes/No)
+    CC_LIMIT_USA:             49,  // string   — USA Credit Card monthly limit
+    CC_CAN:                   50,  // string   — Canada Credit Card (Yes/No)
+    CC_LIMIT_CAN:             51,  // string   — Canada Credit Card monthly limit
+    CC_HD:                    52,  // string   — Home Depot Credit Card (Yes/No)
+    CC_LIMIT_HD:              53,  // string   — Home Depot Credit Card monthly limit
+    PHONE_REQ:                54,  // string   — Phone request type (New/Reassignment)
+    PHONE_PREV_USER:          55,  // string   — Previous phone user name
+    PHONE_PREV_NUMBER:        56,  // string   — Previous phone number
+    JONAS_JOB_NUMBERS:        57,  // csv      — Jonas Job Numbers assigned
+    EQUIPMENT_RETURN:         58,  // csv      — Equipment to be returned
+    STATUS:                   59,  // string   — Workflow status (synced from Workflows sheet)
+    ATTACHMENT_URL:           60   // string   — Supporting docs Drive link
   },
 
   // ─────────────────────────────────────────────
@@ -339,17 +373,19 @@ const SCHEMA = {
   },
 
   // ─────────────────────────────────────────────
-  // POSITION CHANGE APPROVAL RESULT  (7 columns)
-  // Identical structure to TERMINATION_APPROVAL_RESULTS
+  // POSITION CHANGE APPROVAL RESULT  (8 columns)
+  // Extended vs Termination Approval: cols 5-6 capture HR's confirmed
+  // title and new manager email; col 7 = submitter.
   // ─────────────────────────────────────────────
   POSITION_CHANGE_APPROVAL: {
-    WORKFLOW_ID:       0,  // string   — Workflow ID
-    FORM_ID:           1,  // string   — Form ID
-    TIMESTAMP:         2,  // datetime — Timestamp
-    DECISION:          3,  // Decision
-    NOTES:             4,  // string   — Notes
-    FOLLOWUP_REQUIRED: 5,  // boolean  — Follow-up Required
-    SUBMITTED_BY:      6   // string   — Submitted By
+    WORKFLOW_ID:          0,  // string   — Workflow ID
+    FORM_ID:              1,  // string   — Form ID
+    TIMESTAMP:            2,  // datetime — Timestamp
+    DECISION:             3,  // string   — Decision (Approved/Rejected)
+    NOTES:                4,  // string   — Notes
+    CONFIRMED_TITLE:      5,  // string   — Confirmed Title (from HR review)
+    CONFIRMED_NEW_MGR:    6,  // string   — Confirmed New Manager email (from HR review)
+    SUBMITTED_BY:         7   // string   — Submitted By (approver email)
   },
 
   // ─────────────────────────────────────────────

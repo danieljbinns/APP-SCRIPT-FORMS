@@ -283,7 +283,7 @@ function launchRemainingEquipmentTasks(workflowId) {
         JSON.stringify(itSoftware.map(function(s) { return 'Grant access: ' + s; })),
         CONFIG.EMAILS.IT, 'it_software'
       );
-      _notifyEquipmentTask(workflowId, tid, 'IT Software', CONFIG.EMAILS.IDSETUP, context,
+      _notifyEquipmentTask(workflowId, tid, 'IT Software', CONFIG.EMAILS.IT, context,
         'Please set up the following software access for <b>' + employeeName + '</b>:<br><ul><li>' + itSoftware.join('</li><li>') + '</li></ul>');
     }
 

@@ -303,11 +303,11 @@ body.eg.t-matrix #st-alert{border-color:var(--st-green);color:var(--st-green);an
 body.eg.t-office #st-alert{border-color:var(--st-mid);color:var(--st-mid);animation:office-blink 2s infinite;background:rgba(245,240,230,.95)}
 body.eg.t-who #st-alert{border-color:var(--st-cyan);color:var(--st-cyan)}
 .st-blink{animation:st-blink .5s infinite}
-#st-ctrl{position:fixed;top:68px;left:0;right:0;z-index:9993;background:var(--st-panel2,#0E0700);border-bottom:1px solid var(--st-faint,#3A2200);padding:5px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;height:36px}
+#st-ctrl{position:fixed;top:68px;right:0;z-index:9993;background:var(--st-panel2,#0E0700);border-left:1px solid var(--st-faint,#3A2200);border-bottom:1px solid var(--st-faint,#3A2200);padding:6px 4px;display:flex;flex-direction:column;align-items:stretch;gap:3px;max-height:calc(100vh - 80px);overflow-y:auto;width:68px}
 body.eg.t-office #st-ctrl{background:#fff;border-bottom:2px solid var(--st-faint)}
 .st-cg{display:flex;align-items:center;gap:5px}
 .st-cl{font-size:var(--fs-2xs,10px);color:var(--st-dim,#886600);letter-spacing:3px;text-transform:uppercase;font-family:var(--st-fb,'Courier New',monospace);white-space:nowrap;margin-right:3px}
-.st-sb,.st-kb,.st-ab{background:var(--st-panel,#090500);border:1px solid var(--st-dim,#886600);color:var(--st-lo,#CC8800);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;text-transform:uppercase;padding:3px 9px;cursor:pointer;border-radius:var(--st-btn-r,0px);transition:background .12s,color .12s;font-weight:600}
+.st-sb,.st-ab{background:var(--st-panel,#090500);border:1px solid var(--st-dim,#886600);color:var(--st-lo,#CC8800);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:1px;text-transform:uppercase;padding:3px 2px;cursor:pointer;border-radius:var(--st-btn-r,0px);transition:background .12s,color .12s;font-weight:600;width:100%;text-align:center}
 .st-sb:hover,.st-kb:hover,.st-ab:hover{background:var(--st-lo);color:#000;border-color:var(--st-lo)}
 .st-sb.on,.st-kb.on,.st-ab.on{background:var(--st-mid);color:#000;border-color:var(--st-mid)}
 body.eg.t-office .st-sb,body.eg.t-office .st-kb,body.eg.t-office .st-ab{background:#f5f5f5;border-color:var(--st-faint);color:var(--st-hi)}
@@ -607,24 +607,34 @@ function buildTrekUI(d){
     '<div id="st-ticker"><span class="st-t-side">'+d.ship+'</span><div id="st-t-track"><span id="st-t-text">&nbsp;&nbsp;'+d.ticker+'&nbsp;&nbsp;</span></div><span class="st-t-side" id="st-t-sector">'+d.sector+'</span></div>'+
     '<div id="st-alert"><span class="st-blink" id="st-ai">'+d.alertIcon+'</span> &mdash; <span id="st-am">'+d.alertMsg+'</span> &mdash; <span class="st-blink">'+d.alertIcon+'</span></div>'+
     '<div id="st-ctrl">'+
-      '<div class="st-cg"><span class="st-cl">UNIVERSE</span>'+
-        '<button class="st-sb" data-theme="tos">TOS</button>'+
-        '<button class="st-sb" data-theme="tng">TNG</button>'+
-        '<button class="st-sb" data-theme="ds9">DS9</button>'+
-        '<button class="st-sb" data-theme="voy">VOY</button>'+
-        '<button class="st-sb" data-theme="bsg">BSG</button>'+
-        '<button class="st-sb" data-theme="matrix">MATRIX</button>'+
-        '<button class="st-sb" data-theme="who">WHO</button>'+
-        '<button class="st-sb" data-theme="office">OFFICE</button>'+
-        '<button class="st-sb" data-theme="galpha">RIZZ</button>'+
-        '<button class="st-sb" data-theme="pokemon">PKMN</button>'+
-      '</div>'+
-      '<div class="st-cg"><span class="st-cl">SIZE</span>'+
-        '<button class="st-kb" data-scale="sc-sm">S</button>'+
-        '<button class="st-kb" data-scale="sc-md">M</button>'+
-        '<button class="st-kb" data-scale="sc-lg">L</button>'+
-        '<button class="st-kb" data-scale="sc-xl">XL</button>'+
-      '</div>'+
+      '<button class="st-sb" data-theme="tos">TOS</button>'+
+      '<button class="st-sb" data-theme="tng">TNG</button>'+
+      '<button class="st-sb" data-theme="ds9">DS9</button>'+
+      '<button class="st-sb" data-theme="voy">VOY</button>'+
+      '<button class="st-sb" data-theme="bsg">BSG</button>'+
+      '<button class="st-sb" data-theme="matrix">MTRX</button>'+
+      '<button class="st-sb" data-theme="who">WHO</button>'+
+      '<button class="st-sb" data-theme="office">OFFC</button>'+
+      '<button class="st-sb" data-theme="galpha">RIZZ</button>'+
+      '<button class="st-sb" data-theme="pokemon">PKMN</button>'+
+      '<button class="st-sb" data-theme="lotr">LOTR</button>'+
+      '<button class="st-sb" data-theme="terminator">TRMT</button>'+
+      '<button class="st-sb" data-theme="tron">TRON</button>'+
+      '<button class="st-sb" data-theme="mcu">MCU</button>'+
+      '<button class="st-sb" data-theme="kpop">KPOP</button>'+
+      '<button class="st-sb" data-theme="80s">80S</button>'+
+      '<button class="st-sb" data-theme="f1">F1</button>'+
+      '<button class="st-sb" data-theme="corp">CORP</button>'+
+      '<button class="st-sb" data-theme="diablo2">D2</button>'+
+      '<button class="st-sb" data-theme="mario">MARI</button>'+
+      '<button class="st-sb" data-theme="rock">ROCK</button>'+
+      '<button class="st-sb" data-theme="hockey">HCKY</button>'+
+      '<button class="st-sb" data-theme="topgear">GEAR</button>'+
+      '<button class="st-sb" data-theme="seinfeld">SEIN</button>'+
+      '<button class="st-sb" data-theme="friends">FRND</button>'+
+      '<button class="st-sb" data-theme="starwars">SW</button>'+
+      '<button class="st-sb" data-theme="simpsons">SIMP</button>'+
+      '<button class="st-sb" data-theme="mpython">PYTH</button>'+
       '<div class="st-cg"><button id="st-ab" class="st-ab">&#128263; OFF</button></div>'+
     '</div>'+
     '<button id="st-exit">&#x2716; EXIT</button>'+

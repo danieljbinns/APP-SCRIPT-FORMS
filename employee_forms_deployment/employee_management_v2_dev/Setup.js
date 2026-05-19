@@ -64,7 +64,7 @@ function initializeSystem() {
     // 5. Initialize IT Results
     initSheet(ss, CONFIG.SHEETS.IT_RESULTS, [
       'Workflow ID', 'Form ID', 'Submission Timestamp', 'Email Created', 'Assigned Email', 'Email Password',
-      'Computer Assigned', 'Computer Make', 'Computer Model', 'Computer Type',
+      'Computer Assigned', 'Computer Serial', 'Computer Model', 'Computer Type',
       'Phone Assigned', 'Phone Carrier', 'Phone Model', 'Phone Number', 'Phone VM Password',
       'BOSS Access', 'Incidents Access', 'CAA Access', 'Delivery App Access', 'Net Promoter Access',
       'IT Notes', 'Submitted By'
@@ -82,11 +82,26 @@ function initializeSystem() {
     ]);
     
     initSheet(ss, CONFIG.SHEETS.POSITION_CHANGES, [
-      'Workflow ID', 'Form ID', 'Timestamp', 'Requester Name', 'Requester Email', 
-      'Employee Name', 'Employee ID', 'Effective Date', 'Current Site', 'Change Types', 
-      'Site Transfer (Old -> New)', 'Title Change (Old -> New)', 'Classification (Old -> New)', 
-      'Manager Change (Old -> New Email)', 'Reassign Old Reports', 'Gain New Reports',
-      'Google Account', 'Systems Added', 'Equipment', 'Removed Access', 'Comments', 'Department'
+      // cols 0-27 (original)
+      'Workflow ID', 'Form ID', 'Timestamp', 'Requester Name', 'Requester Email',
+      'Employee Name', 'Employee ID', 'Effective Date', 'Current Site', 'Change Types',
+      'Site Transfer (Old -> New)', 'Title Change (Old -> New)', 'Classification (Old -> New)',
+      'Manager Change (Old -> New)', 'Reassign Old Reports To', 'New Reports From',
+      'Google Account', 'Systems Added', 'Equipment', 'Removed Access', 'Comments', 'Department',
+      'Purchasing Sites', 'Receiving Manager Email', 'Current Title', 'Current Manager Email',
+      'Current Manager Name', 'Current Class',
+      // cols 28-59 (extended 2026-05-14)
+      'Date Requested', 'First Name', 'Last Name',
+      'BOSS Training Only', 'BOSS Sites', 'BOSS Cost Sheet', 'BOSS Cost Jobs',
+      'BOSS Trip Reports', 'BOSS Grievances',
+      'ADP Sites', 'ADP Salary Access',
+      'JR Required', 'JR Assignment', '30/60/90 Plan',
+      'Computer Req', 'Computer Type', 'Computer Prev User', 'Computer Prev Type', 'Computer Serial', 'Office 365',
+      'CC USA', 'CC Limit USA', 'CC Canada', 'CC Limit Canada', 'CC Home Depot', 'CC Limit Home Depot',
+      'Phone Req', 'Phone Prev User', 'Phone Prev Number',
+      'Jonas Job Numbers', 'Equipment to Return', 'Status',
+      // col 60 (added 2026-05-15)
+      'Attachment URL'
     ]);
 
     // 7b. Initialize Equipment Requests
@@ -97,9 +112,11 @@ function initializeSystem() {
     ]);
 
     // 8. Initialize Approval & Collection Results
-    const approvalHeaders = ['Workflow ID', 'Form ID', 'Timestamp', 'Decision', 'Notes', 'Follow-up Required', 'Submitted By'];
-    initSheet(ss, CONFIG.SHEETS.TERMINATION_APPROVALS, approvalHeaders);
-    initSheet(ss, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, approvalHeaders);
+    const termApprovalHeaders = ['Workflow ID', 'Form ID', 'Timestamp', 'Decision', 'Notes', 'Follow-up Required', 'Submitted By'];
+    initSheet(ss, CONFIG.SHEETS.TERMINATION_APPROVALS, termApprovalHeaders);
+    // Position change approvals carry confirmed title/manager from HR review step
+    const pcApprovalHeaders = ['Workflow ID', 'Form ID', 'Timestamp', 'Decision', 'Notes', 'Confirmed Title', 'Confirmed New Manager', 'Submitted By'];
+    initSheet(ss, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, pcApprovalHeaders);
     
     // Asset Collection Results sheet removed — asset collection now uses Action Items.
 
@@ -245,6 +262,10 @@ function setupProdScriptProperties() {
     // ── Directory search domain ─────────────────────────────────────
     'DIRECTORY_DOMAIN': 'team-group.com',
 
+    // ── Attachment folders (attachments/prod/*) ─────────────────────
+    'TERM_ATTACHMENTS_FOLDER_ID':   '1egsT3OM4Gx4fd448HHg-2D5MMJraiSfg',  // attachments/prod/Termination
+    'CHANGE_ATTACHMENTS_FOLDER_ID': '1SdYD9SHK1Q9pceAKbNz_pJA0yzZGi4JV', // attachments/prod/Position Change
+
     // ── Paste the prod /exec URL after creating a new deployment ───
     // Deploy → Manage Deployments → New version → copy /exec URL
     'DEPLOYMENT_URL':   ''   // ← fill in after first deployment
@@ -254,6 +275,108 @@ function setupProdScriptProperties() {
   Logger.log('[setupProdScriptProperties] Done.');
   Logger.log('  SPREADSHEET_ID = ' + id);
   Logger.log('  Spreadsheet name: ' + SpreadsheetApp.openById(id).getName());
+}
+
+/**
+ * migratePositionChangesSchema()
+ * Run ONCE manually from Apps Script editor on the dev spreadsheet.
+ * Adds the 32 extended columns (28–59) to an existing Position Changes sheet
+ * that already has data rows — does NOT wipe existing data.
+ *
+ * Safe to re-run: skips columns that already exist by header name.
+ */
+function migratePositionChangesSchema() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGES);
+  if (!sheet) {
+    Logger.log('[migratePositionChangesSchema] Sheet not found: ' + CONFIG.SHEETS.POSITION_CHANGES);
+    return;
+  }
+
+  const newHeaders = [
+    'Date Requested',       // 28
+    'First Name',           // 29
+    'Last Name',            // 30
+    'BOSS Training Only',   // 31
+    'BOSS Sites',           // 32
+    'BOSS Cost Sheet',      // 33
+    'BOSS Cost Jobs',       // 34
+    'BOSS Trip Reports',    // 35
+    'BOSS Grievances',      // 36
+    'ADP Sites',            // 37
+    'ADP Salary Access',    // 38
+    'JR Required',          // 39
+    'JR Assignment',        // 40
+    '30/60/90 Plan',        // 41
+    'Computer Req',         // 42
+    'Computer Type',        // 43
+    'Computer Prev User',   // 44
+    'Computer Prev Type',   // 45
+    'Computer Serial',      // 46
+    'Office 365',           // 47
+    'CC USA',               // 48
+    'CC Limit USA',         // 49
+    'CC Canada',            // 50
+    'CC Limit Canada',      // 51
+    'CC Home Depot',        // 52
+    'CC Limit Home Depot',  // 53
+    'Phone Req',            // 54
+    'Phone Prev User',      // 55
+    'Phone Prev Number',    // 56
+    'Jonas Job Numbers',    // 57
+    'Equipment to Return',  // 58
+    'Status'                // 59
+  ];
+
+  // Read existing header row
+  const lastCol = sheet.getLastColumn();
+  const existingHeaders = lastCol > 0
+    ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String)
+    : [];
+
+  let added = 0;
+  newHeaders.forEach(function(h) {
+    if (existingHeaders.indexOf(h) === -1) {
+      const nextCol = sheet.getLastColumn() + 1;
+      sheet.getRange(1, nextCol).setValue(h)
+        .setFontWeight('bold')
+        .setBackground('#EB1C2D')
+        .setFontColor('#ffffff');
+      added++;
+      Logger.log('[migratePositionChangesSchema] Added column: ' + h + ' at col ' + nextCol);
+    } else {
+      Logger.log('[migratePositionChangesSchema] Already exists, skipped: ' + h);
+    }
+  });
+
+  Logger.log('[migratePositionChangesSchema] Done. Added ' + added + ' new column(s).');
+}
+
+/**
+ * migratePositionChangesAttachmentUrl()
+ * Run ONCE manually from Apps Script editor.
+ * Adds the Attachment URL column (col 60, index BI) to an existing Position Changes sheet.
+ * Safe to re-run — skips if the column already exists.
+ */
+function migratePositionChangesAttachmentUrl() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGES);
+  if (!sheet) {
+    Logger.log('[migratePositionChangesAttachmentUrl] Sheet not found: ' + CONFIG.SHEETS.POSITION_CHANGES);
+    return;
+  }
+  const lastCol = sheet.getLastColumn();
+  const existingHeaders = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String) : [];
+  if (existingHeaders.indexOf('Attachment URL') !== -1) {
+    Logger.log('[migratePositionChangesAttachmentUrl] Already exists, nothing to do.');
+    return;
+  }
+  const nextCol = sheet.getLastColumn() + 1;
+  sheet.getRange(1, nextCol).setValue('Attachment URL')
+    .setFontWeight('bold')
+    .setBackground('#EB1C2D')
+    .setFontColor('#ffffff');
+  Logger.log('[migratePositionChangesAttachmentUrl] Added Attachment URL at col ' + nextCol);
 }
 
 /**

@@ -406,6 +406,7 @@
 
             <button class="refresh-btn" onclick="loadData()">Refresh</button>
             <button id="btnDeleteSelected" onclick="openDeleteConfirm()">🚫 Hide Selected (<span id="selCount">0</span>)</button>
+            <span id="activeCategoryChip" onclick="clearCategoryFilter()" style="display:none; cursor:pointer; background:var(--brand-red); color:white; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:700;" title="Click to clear category filter"></span>
         </div>
 
         <!-- My Tasks Panel — open task counts per category, role-gated click -->
@@ -511,6 +512,7 @@
         let activeTypeFilters = new Set();
         let activeStatusFilters = new Set();
         let searchTerm = '';
+        let activeCategoryFilter = null; // set by View Tasks button in My Pending Tasks panel
 
         // Pagination State
         const ITEMS_PER_PAGE = 25;
@@ -574,11 +576,12 @@
                         var canAccess = !!accessMap[cat];
                         var color = catColors[cat] || '#555';
                         var disabledStyle = canAccess ? '' : 'opacity:0.45; pointer-events:none; cursor:not-allowed;';
-                        return '<div style="background:var(--card-bg); border:1px solid var(--border-color); border-left:3px solid ' + color + '; border-radius:6px; padding:10px 14px; min-width:180px;">' +
-                            '<div style="font-size:11px; color:' + color + '; font-weight:700; text-transform:uppercase;">' + escapeHtml(cat) + '</div>' +
-                            '<div style="font-size:22px; font-weight:700; margin:4px 0;">' + n + '</div>' +
-                            '<div style="font-size:11px; color:var(--text-muted);">open task' + (n !== 1 ? 's' : '') + '</div>' +
-                            '<button class="action-btn" style="margin-top:8px; background:var(--brand-red); color:white; width:100%; font-size:12px; ' + disabledStyle + '" ' +
+                        return '<div style="background:var(--card-bg); border:1px solid var(--border-color); border-left:3px solid ' + color + '; border-radius:6px; padding:6px 10px; min-width:130px;">' +
+                            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">' +
+                            '<span style="font-size:11px; color:' + color + '; font-weight:700; text-transform:uppercase; margin-right:6px;">' + escapeHtml(cat) + '</span>' +
+                            '<span style="font-size:18px; font-weight:700;">' + n + '</span>' +
+                            '</div>' +
+                            '<button class="action-btn" style="background:var(--brand-red); color:white; width:100%; font-size:11px; padding:4px 8px; ' + disabledStyle + '" ' +
                             (canAccess ? 'onclick="filterByCategory(\'' + escapeHtml(cat) + '\')"' : 'disabled title="Access not permitted for your role"') + '>' +
                             'View Tasks</button>' +
                             '</div>';
@@ -588,10 +591,52 @@
                 .getMyTaskCounts();
         }
 
+        // Step-based categories map to workflow step strings rather than action item categories
+        const STEP_CATEGORY_TERMS = {
+            'IT Setup':       ['it setup'],
+            'HR Verification':['hr verification'],
+            'ID Setup':       ['id setup']
+        };
+
         function filterByCategory(cat) {
-            // Navigate to action items filtered by category — future enhancement.
-            // For now, open dashboard filtered to relevant workflows.
-            window.open(SERVER_BASE_URL + '?form=dashboard', '_self');
+            activeCategoryFilter = cat;
+            // Show chip so user can clear the filter
+            var chip = document.getElementById('activeCategoryChip');
+            chip.textContent = '✕ ' + cat;
+            chip.style.display = 'inline-flex';
+            // Make sure "Action Required" status is active so filtered rows are visible
+            if (!activeStatusFilters.has('PENDING')) {
+                activeStatusFilters.add('PENDING');
+                var pendingBtn = document.querySelector('.filter-btn[data-value="PENDING"]');
+                if (pendingBtn) pendingBtn.classList.add('active');
+            }
+            applyFiltersAndSort();
+            // Scroll down to the table
+            var tbl = document.getElementById('dashboardTable') || document.querySelector('table');
+            if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function clearCategoryFilter() {
+            activeCategoryFilter = null;
+            document.getElementById('activeCategoryChip').style.display = 'none';
+            applyFiltersAndSort();
+        }
+
+        /**
+         * Filter the main table to show workflows for a given employee name.
+         * Called when clicking a row in the My Open Requests panel.
+         */
+        function filterToEmployee(name) {
+            if (!name) return;
+            var input = document.getElementById('searchInput');
+            input.value = name;
+            searchTerm = name.toLowerCase();
+            // Ensure completed/cancelled are also visible so nothing hides
+            activeStatusFilters.clear();
+            document.querySelectorAll('.filter-btn[data-filter="status"]').forEach(function(b) { b.classList.remove('active'); });
+            applyFiltersAndSort();
+            var tbl = document.querySelector('.table-container');
+            if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         /**
@@ -622,13 +667,16 @@
                 var name = escapeHtml(wf.employee || wf.id);
                 var type = escapeHtml(wf.type || '');
                 var step = escapeHtml(wf.step || wf.status || '');
-                var url  = SERVER_BASE_URL + '?form=request_details&id=' + encodeURIComponent(wf.id);
-                return '<div style="display:flex; align-items:center; gap:10px; padding:5px 0; border-bottom:1px solid var(--border-color);">' +
+                var safeId   = escapeHtml(wf.id);
+                var safeType = escapeHtml(wf.type || '');
+                var safeName = (wf.employee || '').replace(/'/g, "\\'");
+                return '<div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-color); cursor:pointer;" ' +
+                    'onclick="filterToEmployee(\'' + safeName + '\')" title="Filter dashboard to ' + name + '">' +
                     '<span style="flex:1; font-size:13px; font-weight:600;">' + name + '</span>' +
                     '<span style="font-size:11px; color:var(--text-muted);">' + type + '</span>' +
                     '<span style="font-size:11px; color:var(--text-muted);">' + step + '</span>' +
                     '<span style="background:' + sCol + '; color:#000; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">' + escapeHtml(wf.status || '') + '</span>' +
-                    '<a href="' + url + '" target="_blank" style="color:#2196f3; font-size:12px; text-decoration:none; white-space:nowrap;">View →</a>' +
+                    '<span style="color:#2196f3; font-size:12px; white-space:nowrap;">Filter ↓</span>' +
                     '</div>';
             }).join('');
         }
@@ -849,6 +897,19 @@
                         (activeStatusFilters.has('CANCELLED') && isCancelled) ||
                         (activeStatusFilters.has('PENDING') && isPending);
                     if (!matchesAny) return false;
+                }
+
+                // Category filter — set by View Tasks button in My Pending Tasks panel
+                if (activeCategoryFilter) {
+                    if (STEP_CATEGORY_TERMS[activeCategoryFilter]) {
+                        // Step-based: filter by workflow step string
+                        const terms = STEP_CATEGORY_TERMS[activeCategoryFilter];
+                        const stepLower = (wf.step || '').toLowerCase();
+                        if (!terms.some(t => stepLower.includes(t))) return false;
+                    } else {
+                        // Action-item-based: filter by openCategories array on workflow object
+                        if (!wf.openCategories || !wf.openCategories.includes(activeCategoryFilter)) return false;
+                    }
                 }
 
                 return true;
@@ -1243,6 +1304,7 @@
     </div>
 
   <?!= include('SharedComponents') ?>
+<?!= safeInclude('Konami') ?>
 </body>
 
 </html>

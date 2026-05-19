@@ -260,8 +260,8 @@ function getWorkflowContext(workflowId) {
       phoneRequestType:    row[headers.indexOf('Mobile Phone Request Type')] || row[SCHEMA.INITIAL_REQUESTS.PHONE_REQ],
       googleEmail:   row[headers.indexOf('Google Email')]  || '',
       googleDomain:  row[headers.indexOf('Google Domain')] || '',
-      adpSites:      row[headers.indexOf('ADP Sites')]     || '',
-      purchasingSites: row[headers.indexOf('Purchasing Sites')] || '',
+      adpSites:      String(row[headers.indexOf('ADP Sites')]        || ''),
+      purchasingSites: String(row[headers.indexOf('Purchasing Sites')] || ''),
       // BOSS & Review Config fields
       bossJobSites:     row[headers.indexOf('BOSS Job Sites')]          || row[headers.indexOf('Boss Job Sites')] || '',
       bossCostSheet:    row[headers.indexOf('BOSS Cost Sheet Access')]  || row[headers.indexOf('Cost Sheet Access')] || '',
@@ -327,7 +327,7 @@ function getWorkflowContext(workflowId) {
             context.assignedEmail      = itRow[IT.ASSIGNED_EMAIL]      || '';
             context.emailTempPassword  = (itRow[IT.EMAIL_PASSWORD]     && itRow[IT.EMAIL_PASSWORD]     !== 'N/A') ? String(itRow[IT.EMAIL_PASSWORD])     : '';
             context.computerAssigned   = itRow[IT.COMPUTER_ASSIGNED]   || '';
-            context.computerSerial     = (itRow[IT.COMPUTER_MAKE]      && itRow[IT.COMPUTER_MAKE]      !== 'N/A') ? String(itRow[IT.COMPUTER_MAKE])      : '';
+            context.computerSerial     = (itRow[IT.COMPUTER_SERIAL]    && itRow[IT.COMPUTER_SERIAL]    !== 'N/A') ? String(itRow[IT.COMPUTER_SERIAL])    : '';
             context.computerModel      = (itRow[IT.COMPUTER_MODEL]     && itRow[IT.COMPUTER_MODEL]     !== 'N/A') ? String(itRow[IT.COMPUTER_MODEL])     : '';
             if (itRow[IT.COMPUTER_TYPE] && itRow[IT.COMPUTER_TYPE] !== 'N/A') context.computerType = String(itRow[IT.COMPUTER_TYPE]);  // overrides request-time value
             context.phoneAssigned      = itRow[IT.PHONE_ASSIGNED]      || '';
@@ -490,7 +490,7 @@ function sendInitialRequestEmails(config) {
   };
   
   try {
-    // 1. Email to SITEDOCS team for Employee ID Setup
+    // 1. Email to ID Setup team for Employee ID Setup
     sendFormEmail({
       to: siteDocsEmail,
       subject: 'ID Setup Required',
@@ -500,7 +500,7 @@ function sendInitialRequestEmails(config) {
       contextData: contextData
     });
     
-    Logger.log('✓ Email sent to SITEDOCS: ' + siteDocsEmail);
+    Logger.log('✓ Email sent to ID Setup: ' + siteDocsEmail);
     
     // 2. Confirmation to requester
     sendFormEmail({

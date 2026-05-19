@@ -11,10 +11,15 @@ const CONFIG = {
   // GOOGLE RESOURCES
   // ==========================================================================
   
-  get SPREADSHEET_ID() { return ConfigurationService.getSetting('SPREADSHEET_ID'); },
-  get SHARED_DRIVE_ID() { return ConfigurationService.getSetting('SHARED_DRIVE_ID'); },
-  get MAIN_FOLDER_ID() { return ConfigurationService.getSetting('MAIN_FOLDER_ID'); },
-  get DEPLOYMENT_URL() { return ConfigurationService.getSetting('DEPLOYMENT_URL'); },
+  get SPREADSHEET_ID()          { return ConfigurationService.getSetting('SPREADSHEET_ID'); },
+  get SHARED_DRIVE_ID()         { return ConfigurationService.getSetting('SHARED_DRIVE_ID'); },
+  get MAIN_FOLDER_ID()          { return ConfigurationService.getSetting('MAIN_FOLDER_ID'); },
+  // Attachment folders — dev IDs are defaults in ConfigurationService, override via Script Properties for staging/prod.
+  // TERM_ATTACHMENTS_FOLDER_ID   → attachments/{env}/Termination
+  // CHANGE_ATTACHMENTS_FOLDER_ID → attachments/{env}/Position Change
+  get TERM_FOLDER_ID()          { return ConfigurationService.getSetting('TERM_ATTACHMENTS_FOLDER_ID'); },
+  get CHANGE_FOLDER_ID()        { return ConfigurationService.getSetting('CHANGE_ATTACHMENTS_FOLDER_ID'); },
+  get DEPLOYMENT_URL()          { return ConfigurationService.getSetting('DEPLOYMENT_URL'); },
   ALLOWED_DOMAINS: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com'],
   ADMIN_EMAILS: ['dbinns@team-group.com', 'dbinns@robinsonsolutions.com', 'no-reply@team-group.com', 'davelangohr@team-group.com'],
 
@@ -36,7 +41,7 @@ const CONFIG = {
     // Specialist result sheets removed — specialist steps now use Action Items.
     // Asset collection removed — asset collection now uses Action Items.
     TERMINATION_APPROVALS: 'Termination Approval Results',
-    POSITION_CHANGE_APPROVALS: 'Position Change Approval Results',
+    POSITION_CHANGE_APPROVALS: 'Position Change Approval Result',
     TERMINATIONS: 'Terminations',
     POSITION_CHANGES: 'Position Changes',
     // Reference Data for Lookups

@@ -324,7 +324,7 @@ function _closeAllActionItems(workflowId) {
 
     pending.forEach(function(row) {
       var taskId = row[AI.TASK_ID];
-      Logger.log('[TestRunner]   Closing task ' + taskId + ' (' + row[AI.NAME] + ')');
+      Logger.log('[TestRunner]   Closing task ' + taskId + ' (' + row[AI.TASK_NAME] + ')');
       var result = ActionItemService.closeActionItem(
         taskId,
         'AUTOMATED TEST CLOSE',
@@ -419,41 +419,76 @@ function runFullTestWorkflow() {
 // ── Cleanup ───────────────────────────────────────────────────────────────────
 
 /**
- * Delete all data rows written by test runs.
- * Finds them by scanning the Workflows sheet for Employee Name = TEST_EMPLOYEE_NAME.
- * You must be an admin (ADMIN_EMAILS list in Config.js).
+ * Hard-delete all rows written by test runs from every sheet.
+ * Scans all sheets for rows where column A matches a test workflow ID.
+ * Logs deleted row counts per sheet for confirmation.
  */
 function cleanupAllTestWorkflows() {
   _assertDevOnly();
 
   var ids = _getTestWorkflowIds();
   if (ids.length === 0) {
-    Logger.log('[TestRunner] No test workflows found in sheet — nothing to delete.');
-    return;
+    Logger.log('[TestRunner] No test workflows found — nothing to delete.');
+    return { deleted: 0, sheets: {} };
   }
 
-  Logger.log('[TestRunner] Purging ' + ids.length + ' test workflow(s): ' + ids.join(', '));
-  var result = adminPurgeWorkflows(ids);
-  Logger.log('[TestRunner] adminPurgeWorkflows → ' + JSON.stringify(result));
-  return result;
+  Logger.log('[TestRunner] Found ' + ids.length + ' test workflow(s): ' + ids.join(', '));
+  return _purgeWorkflowRows(ids);
 }
 
 /**
- * Delete a specific test workflow by ID.
+ * Hard-delete a specific test workflow by ID.
  * @param {string} workflowId
  */
 function cleanupTestWorkflow(workflowId) {
   _assertDevOnly();
-
-  if (!workflowId) {
-    Logger.log('[TestRunner] cleanupTestWorkflow: no ID provided.');
-    return;
-  }
-
+  if (!workflowId) { Logger.log('[TestRunner] cleanupTestWorkflow: no ID provided.'); return; }
   Logger.log('[TestRunner] Purging workflow: ' + workflowId);
-  var result = adminPurgeWorkflows([workflowId]);
-  Logger.log('[TestRunner] adminPurgeWorkflows → ' + JSON.stringify(result));
-  return result;
+  return _purgeWorkflowRows([workflowId]);
+}
+
+/**
+ * Scan every sheet and delete rows where column A is in workflowIds.
+ * Iterates bottom-up per sheet so row indices stay valid while deleting.
+ * @param {string[]} workflowIds
+ * @returns {{ totalDeleted: number, sheets: Object }}
+ */
+function _purgeWorkflowRows(workflowIds) {
+  var ss       = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var sheets   = ss.getSheets();
+  var idSet    = {};
+  workflowIds.forEach(function(id) { idSet[id] = true; });
+
+  var totalDeleted = 0;
+  var report       = {};
+
+  sheets.forEach(function(sheet) {
+    var name    = sheet.getName();
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return; // header only or empty
+
+    var colA    = sheet.getRange(1, 1, lastRow, 1).getValues();
+    var toDelete = [];
+
+    for (var r = lastRow - 1; r >= 1; r--) { // skip header row 0
+      var cellVal = String(colA[r][0] || '').trim();
+      if (idSet[cellVal]) toDelete.push(r + 1); // 1-based
+    }
+
+    if (toDelete.length === 0) return;
+
+    // Delete from bottom up (already collected bottom-up, but sort descending to be safe)
+    toDelete.sort(function(a, b) { return b - a; });
+    toDelete.forEach(function(rowNum) { sheet.deleteRow(rowNum); });
+
+    report[name] = toDelete.length;
+    totalDeleted += toDelete.length;
+    Logger.log('[TestRunner] Deleted ' + toDelete.length + ' row(s) from "' + name + '"');
+  });
+
+  Logger.log('[TestRunner] Cleanup complete — ' + totalDeleted + ' total row(s) deleted across ' + Object.keys(report).length + ' sheet(s).');
+  Logger.log('[TestRunner] Summary: ' + JSON.stringify(report));
+  return { totalDeleted: totalDeleted, sheets: report };
 }
 
 /**
@@ -466,4 +501,481 @@ function listTestWorkflows() {
   Logger.log('[TestRunner] Test workflows in sheet (' + ids.length + '):');
   ids.forEach(function(id) { Logger.log('  ' + id); });
   return ids;
+}
+
+// ── Sheet / email check helpers ───────────────────────────────────────────────
+
+/** Log a PASS line. */
+function _chkPass(label, val) {
+  Logger.log('[CHECK ✓] ' + label + (val !== undefined ? ' = "' + val + '"' : ''));
+}
+
+/** Log a FAIL line and throw so the test aborts. */
+function _chkFail(label, detail) {
+  var msg = '[CHECK ✗] ' + label + (detail ? ' — ' + detail : '');
+  Logger.log(msg);
+  throw new Error(msg);
+}
+
+/** Assert a value is non-empty. */
+function _chkNotEmpty(label, val) {
+  if (val === null || val === undefined || String(val).trim() === '') {
+    _chkFail(label, 'expected non-empty, got "' + val + '"');
+  }
+  _chkPass(label, val);
+}
+
+/** Assert a value equals expected. */
+function _chkEquals(label, actual, expected) {
+  if (String(actual) !== String(expected)) {
+    _chkFail(label, 'expected "' + expected + '" got "' + actual + '"');
+  }
+  _chkPass(label, actual);
+}
+
+/** Assert a string value contains a substring. */
+function _chkContains(label, actual, substr) {
+  if (String(actual).indexOf(substr) === -1) {
+    _chkFail(label, 'expected to contain "' + substr + '", got "' + actual + '"');
+  }
+  _chkPass(label, actual);
+}
+
+/**
+ * Confirm emails are suppressed for dev.
+ * Run this any time you want to verify the dev email state.
+ */
+function checkDevEmailSuppression() {
+  Logger.log('══ Email Suppression Check ══');
+  var suppressed = (typeof CONFIG !== 'undefined' && CONFIG.SUPPRESS_EMAILS === true);
+  Logger.log('  CONFIG.SUPPRESS_EMAILS  : ' + (suppressed ? '✓ true (emails log only)' : '✗ FALSE — emails will send!'));
+
+  var redirect = PropertiesService.getScriptProperties().getProperty('EMAIL_REDIRECT_ALL') || '';
+  Logger.log('  EMAIL_REDIRECT_ALL prop : ' + (redirect ? '"' + redirect + '" (all mail → this address)' : '(not set)'));
+
+  if (!suppressed && !redirect) {
+    Logger.log('  ⚠ WARNING: Neither suppression nor redirect is active — real emails will fire!');
+  } else {
+    Logger.log('  ✓ Safe to run tests — no real emails will reach recipients.');
+  }
+  Logger.log('════════════════════════════');
+  return { suppressed: suppressed, redirect: redirect };
+}
+
+/**
+ * Read the Position Changes sheet row for workflowId and assert key fields.
+ * @param {string} workflowId
+ * @param {boolean} expectAttachmentUrl  - true if a Drive URL should be in col BI
+ */
+function _checkPositionChangeSheet(workflowId, expectAttachmentUrl) {
+  Logger.log('[TestRunner] — Sheet check: Position Changes —');
+  var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGES);
+  if (!sheet) _chkFail('Position Changes sheet', 'sheet not found');
+
+  var data = sheet.getDataRange().getValues();
+  var PC   = SCHEMA.POSITION_CHANGES;
+  var row  = null;
+  for (var i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+    if (String(data[i][PC.WORKFLOW_ID]) === workflowId) { row = data[i]; break; }
+  }
+  if (!row) _chkFail('Position Changes row', 'workflowId ' + workflowId + ' not found in sheet');
+
+  _chkEquals  ('WORKFLOW_ID',      row[PC.WORKFLOW_ID],     workflowId);
+  _chkNotEmpty ('REQUESTER_NAME',   row[PC.REQUESTER_NAME]);
+  _chkNotEmpty ('EMPLOYEE_NAME',    row[PC.EMPLOYEE_NAME]);
+  _chkNotEmpty ('EFFECTIVE_DATE',   row[PC.EFFECTIVE_DATE]);
+  _chkNotEmpty ('CHANGE_TYPES',     row[PC.CHANGE_TYPES]);
+  _chkNotEmpty ('BOSS_SITES',       row[PC.BOSS_SITES]);
+  _chkNotEmpty ('BOSS_COST_SHEET',  row[PC.BOSS_COST_SHEET]);
+  _chkNotEmpty ('BOSS_COST_JOBS',   row[PC.BOSS_COST_JOBS]);
+  _chkNotEmpty ('ADP_SITES',        row[PC.ADP_SITES]);
+  _chkNotEmpty ('CC_USA',           row[PC.CC_USA]);
+  _chkNotEmpty ('EQUIPMENT_RETURN', row[PC.EQUIPMENT_RETURN]);
+  _chkNotEmpty ('JONAS_JOB_NUMBERS',row[PC.JONAS_JOB_NUMBERS]);
+  _chkEquals  ('STATUS',            row[PC.STATUS],          'In Progress');
+
+  if (expectAttachmentUrl) {
+    _chkContains('ATTACHMENT_URL', row[PC.ATTACHMENT_URL], 'https://');
+  } else {
+    _chkPass('ATTACHMENT_URL (no file — empty expected)', row[PC.ATTACHMENT_URL]);
+  }
+}
+
+/**
+ * Read the Terminations sheet row for workflowId and assert key fields.
+ * @param {string} workflowId
+ * @param {boolean} expectAttachmentUrl
+ */
+function _checkTerminationSheet(workflowId, expectAttachmentUrl) {
+  Logger.log('[TestRunner] — Sheet check: Terminations —');
+  var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
+  if (!sheet) _chkFail('Terminations sheet', 'sheet not found');
+
+  var data = sheet.getDataRange().getValues();
+  var TR   = SCHEMA.TERMINATIONS;
+  var row  = null;
+  for (var i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+    if (String(data[i][TR.WORKFLOW_ID]) === workflowId) { row = data[i]; break; }
+  }
+  if (!row) _chkFail('Terminations row', 'workflowId ' + workflowId + ' not found in sheet');
+
+  _chkEquals  ('WORKFLOW_ID',    row[TR.WORKFLOW_ID],  workflowId);
+  _chkNotEmpty ('EMPLOYEE_NAME', row[TR.EMPLOYEE_NAME]);
+  _chkNotEmpty ('TERM_DATE',     row[TR.TERM_DATE]);
+  _chkNotEmpty ('REASON',        row[TR.REASON]);
+  _chkNotEmpty ('SITE',          row[TR.SITE]);
+
+  if (expectAttachmentUrl) {
+    _chkContains('ATTACHMENT_URL', row[TR.ATTACHMENT_URL], 'https://');
+  } else {
+    _chkPass('ATTACHMENT_URL (no file — empty expected)', row[TR.ATTACHMENT_URL]);
+  }
+}
+
+/**
+ * Assert that at least one action item exists for each category in expectedCategories.
+ * @param {string} workflowId
+ * @param {string[]} expectedCategories
+ */
+function _checkActionItemsExist(workflowId, expectedCategories) {
+  Logger.log('[TestRunner] — Action Items check —');
+  var tasks = ActionItemService.getPendingTasks(workflowId);
+  Logger.log('[TestRunner]   Total open tasks: ' + tasks.length);
+  var AI = SCHEMA.ACTION_ITEMS;
+
+  var found = {};
+  tasks.forEach(function(row) {
+    var cat = String(row[AI.CATEGORY] || '');
+    found[cat] = (found[cat] || 0) + 1;
+    Logger.log('[TestRunner]   [' + cat + '] ' + row[AI.TASK_NAME]);
+  });
+
+  expectedCategories.forEach(function(cat) {
+    if (found[cat]) {
+      _chkPass('Action Item category "' + cat + '"', found[cat] + ' task(s)');
+    } else {
+      _chkFail('Action Item category "' + cat + '"', 'not found among created tasks');
+    }
+  });
+}
+
+// ── Position Change Test ──────────────────────────────────────────────────────
+
+var TEST_POSITION_CHANGE = {
+  // Requester
+  reqName:  'Test Runner',
+  reqEmail: TEST_EMAIL,
+  reqDate:  new Date().toISOString().substring(0, 10),
+
+  // Employee
+  firstName:  'TestFirst',
+  lastName:   'TestLast',
+  siteName:   'Test Site — DO NOT USE',
+  effDate:    '2099-06-01',
+
+  // Change types
+  changeType: ['Site Transfer', 'Title Change', 'Classification Change'],
+
+  // Site transfer
+  siteOld: 'Old Site', siteNew: 'New Site',
+
+  // Title
+  titleOld: 'Junior Tester', titleNew: 'Senior Tester',
+
+  // Classification
+  classOld: 'Hourly', classNew: 'Salary',
+  currentClass: 'Hourly',
+
+  // Manager
+  currentTitle:        'Junior Tester',
+  currentManagerName:  'Old Manager',
+  currentManagerEmail: TEST_EMAIL,
+  mgrOldName:          'Old Manager',
+  mgrOldEmail:         TEST_EMAIL,
+  mgrNewName:          'New Manager',
+  mgrNewEmail:         TEST_EMAIL,
+  receivingManagerEmail: TEST_EMAIL,
+  oldReportsTo:        '',
+  newReportsFrom:      '',
+
+  // Google
+  existingEmail: 'testfirst.testlast@team-group.com',
+  googleEmail:   '', googleDomain:  '',
+
+  // Systems & equipment
+  sys:      ['BOSS', 'ADP Supervisor Access'],
+  equip:    ['Computer', 'Business Cards', 'Credit Card'],
+  rem:      ['SiteDocs', 'Fleetio'],
+  equipRem: ['Vehicle', 'Credit Card'],
+
+  // BOSS details
+  bossTrainingOnly: 'No',
+  bossComm:    ['North Region', 'Safety'],
+  bossCost:    'Yes',
+  bossCostJobs: ['J-1001', 'J-1002'],
+  bossTrip:    'Yes',
+  bossGriev:   'Yes',
+
+  // ADP details
+  adpSites:        ['9999'],
+  adpSalaryAccess: 'Yes',
+
+  // JR / 30-60-90
+  jrReq:     'Yes',
+  jrTitle:   'Test JR Title',
+  plan306090: 'Yes',
+
+  // Computer
+  computerRequestType:  'Reassignment',
+  computerType:         'Laptop',
+  computerPreviousUser: 'Previous User',
+  computerPreviousType: 'Windows',
+  computerSerialNumber: 'TEST-SER-001',
+  office365Required:    'Yes',
+
+  // Credit card
+  creditCardUSA:          'Yes', creditCardLimitUSA:        '2000',
+  creditCardCanada:        'Yes', creditCardLimitCanada:      '1000',
+  creditCardHomeDepot:     'No',  creditCardLimitHomeDepot:   '',
+
+  // Phone
+  phoneRequestType:  'None',
+  phonePreviousUser: '', phonePreviousNumber: '',
+
+  // Jonas & purchasing
+  jonasJobs:      ['12345'],
+  purchasingSites: ['9001'],
+
+  // Misc
+  comments:   'AUTOMATED TEST — DELETE AFTER REVIEW',
+  department: 'Operations'
+};
+
+var TEST_PC_APPROVAL = function(workflowId) {
+  return {
+    workflowId:           workflowId,
+    decision:             'Approved',
+    notes:                'AUTOMATED TEST APPROVAL',
+    confirmedTitle:       'Senior Tester',
+    confirmedNewManager:  TEST_EMAIL,
+    confirmedJrTitle:     'Test JR Title'
+  };
+};
+
+/**
+ * End-to-end position change test with sheet checks and attachment simulation.
+ *
+ * Steps:
+ *   1. Email suppression check
+ *   2. Submit position change (with simulated attachment)
+ *   3. Sheet check — all 61 cols populated, attachment URL present
+ *   4. HR approval
+ *   5. Action items check — expected categories present
+ *   6. syncWorkflowState
+ */
+function runPositionChangeTest() {
+  _assertDevOnly();
+
+  Logger.log('══════════════════════════════════════════');
+  Logger.log('[TestRunner] POSITION CHANGE TEST — ' + new Date().toISOString());
+  Logger.log('══════════════════════════════════════════');
+
+  var workflowId;
+
+  try {
+    // Step 1: Confirm emails are suppressed
+    checkDevEmailSuppression();
+
+    // Step 2: Submit with a simulated attachment
+    var formDataWithAttachment = {};
+    for (var k in TEST_POSITION_CHANGE) formDataWithAttachment[k] = TEST_POSITION_CHANGE[k];
+    formDataWithAttachment.attachmentBase64  = Utilities.base64Encode('AUTOMATED TEST ATTACHMENT — position change');
+    formDataWithAttachment.attachmentName    = 'test-attachment.txt';
+    formDataWithAttachment.attachmentMimeType = 'text/plain';
+
+    var initResult = _step('1. submitPositionChangeRequest (with attachment)', function() {
+      return submitPositionChangeRequest(formDataWithAttachment);
+    });
+    workflowId = initResult.workflowId;
+    Logger.log('[TestRunner] Workflow ID: ' + workflowId);
+
+    // Step 3: Sheet checks
+    _checkPositionChangeSheet(workflowId, true /* expectAttachmentUrl */);
+
+    // Step 4: HR approval
+    _step('2. submitPositionChangeApproval', function() {
+      return submitPositionChangeApproval(TEST_PC_APPROVAL(workflowId));
+    });
+
+    // Step 5: Action items check
+    _checkActionItemsExist(workflowId, [
+      'Manager', 'IT', 'Business Cards', 'Credit Card', 'Fleetio', 'Jonas', 'Safety', 'ID Setup'
+    ]);
+
+    // Step 6: State sync
+    syncWorkflowState(workflowId);
+    Logger.log('[TestRunner] syncWorkflowState called — check Dashboard_View sheet');
+
+    Logger.log('══════════════════════════════════════════');
+    Logger.log('[TestRunner] POSITION CHANGE TEST PASSED ✓  Workflow ID: ' + workflowId);
+    Logger.log('[TestRunner] Run cleanupAllTestWorkflows() to remove test data.');
+    Logger.log('══════════════════════════════════════════');
+
+  } catch (e) {
+    Logger.log('[TestRunner] POSITION CHANGE TEST FAILED ✗ — ' + e.message);
+    Logger.log('[TestRunner] Partial workflow ID (if any): ' + (workflowId || 'none'));
+    throw e;
+  }
+
+  return workflowId || null;
+}
+
+// ── Termination Test ──────────────────────────────────────────────────────────
+
+var TEST_TERMINATION = {
+  reqName:             'Test Runner',
+  reqEmail:            TEST_EMAIL,
+  empName:             TEST_EMPLOYEE_NAME,
+  empType:             'Salaried',
+  empWorkEmail:        'testfirst.testlast@team-group.com',
+  empPhone:            '555-0100',
+  empSerial:           'TEST-SER-001',
+  siteName:            'Test Site — DO NOT USE',
+  termDate:            '2099-06-01',
+  reason:              'Voluntary Resignation',
+  managerName:         'Test Manager',
+  managerEmail:        TEST_EMAIL,
+  has_reports:         'No',
+  reports_to_new:      '',
+  systems:             ['BOSS', 'SiteDocs', 'ADP'],
+  equip:               ['Laptop', 'Phone'],
+  google_forward:      TEST_EMAIL,
+  google_files:        TEST_EMAIL,
+  google_delegate:     '',
+  google_duration:     '1 Month',
+  google_vacation:     'Yes',
+  equipReturn:         ['Laptop', 'Phone', 'Key Fob'],
+  comments:            'AUTOMATED TEST — DELETE AFTER REVIEW',
+  lastDayWorked:       '2099-05-30'
+};
+
+var TEST_TERM_APPROVAL = function(workflowId) {
+  return {
+    workflowId:       workflowId,
+    decision:         'Approved',
+    notes:            'AUTOMATED TEST APPROVAL',
+    followUpRequired: 'No'
+  };
+};
+
+/**
+ * End-to-end termination test with sheet checks and attachment simulation.
+ *
+ * Steps:
+ *   1. Email suppression check
+ *   2. Submit termination (with simulated attachment)
+ *   3. Sheet check — attachment URL present
+ *   4. HR approval
+ *   5. Action items check
+ *   6. syncWorkflowState
+ */
+function runTerminationTest() {
+  _assertDevOnly();
+
+  Logger.log('══════════════════════════════════════════');
+  Logger.log('[TestRunner] TERMINATION TEST — ' + new Date().toISOString());
+  Logger.log('══════════════════════════════════════════');
+
+  var workflowId;
+
+  try {
+    // Step 1: Confirm emails are suppressed
+    checkDevEmailSuppression();
+
+    // Step 2: Submit with a simulated attachment
+    var formDataWithAttachment = {};
+    for (var k in TEST_TERMINATION) formDataWithAttachment[k] = TEST_TERMINATION[k];
+    formDataWithAttachment.attachmentBase64   = Utilities.base64Encode('AUTOMATED TEST ATTACHMENT — termination');
+    formDataWithAttachment.attachmentName     = 'test-resignation-letter.txt';
+    formDataWithAttachment.attachmentMimeType = 'text/plain';
+
+    var initResult = _step('1. submitTerminationRequest (with attachment)', function() {
+      return submitTerminationRequest(formDataWithAttachment);
+    });
+    workflowId = initResult.workflowId;
+    Logger.log('[TestRunner] Workflow ID: ' + workflowId);
+
+    // Step 3: Sheet checks
+    _checkTerminationSheet(workflowId, true /* expectAttachmentUrl */);
+
+    // Step 4: HR approval
+    _step('2. submitTerminationApproval', function() {
+      return submitTerminationApproval(TEST_TERM_APPROVAL(workflowId));
+    });
+
+    // Step 5: Action items check
+    // Termination creates: IT deactivation, Deactivation (ID Setup), EOE (HR), Assets
+    // Safety receives an FYI email only — no action item category
+    _checkActionItemsExist(workflowId, [
+      'IT', 'Deactivation', 'EOE', 'Assets'
+    ]);
+
+    // Step 6: State sync
+    syncWorkflowState(workflowId);
+    Logger.log('[TestRunner] syncWorkflowState called — check Dashboard_View sheet');
+
+    Logger.log('══════════════════════════════════════════');
+    Logger.log('[TestRunner] TERMINATION TEST PASSED ✓  Workflow ID: ' + workflowId);
+    Logger.log('[TestRunner] Run cleanupAllTestWorkflows() to remove test data.');
+    Logger.log('══════════════════════════════════════════');
+
+  } catch (e) {
+    Logger.log('[TestRunner] TERMINATION TEST FAILED ✗ — ' + e.message);
+    Logger.log('[TestRunner] Partial workflow ID (if any): ' + (workflowId || 'none'));
+    throw e; // re-throw so runAllTests() correctly marks this as FAILED
+  }
+
+  return workflowId || null;
+}
+
+// ── Run All Tests ─────────────────────────────────────────────────────────────
+
+/**
+ * Run all three test suites in sequence.
+ * Any individual failure is logged but does NOT stop the remaining tests.
+ *
+ * Entry points:
+ *   runAllTests()          — new hire + position change + termination
+ *   runFullTestWorkflow()  — new hire only
+ *   runPositionChangeTest()— position change only
+ *   runTerminationTest()   — termination only
+ */
+function runAllTests() {
+  _assertDevOnly();
+  var results = {};
+
+  Logger.log('██████████████████████████████████████████');
+  Logger.log('[TestRunner] RUN ALL TESTS — ' + new Date().toISOString());
+  Logger.log('██████████████████████████████████████████');
+
+  try { runFullTestWorkflow();   results.newHire       = 'PASSED'; }
+  catch(e) { results.newHire       = 'FAILED: ' + e.message; }
+
+  try { runPositionChangeTest(); results.positionChange = 'PASSED'; }
+  catch(e) { results.positionChange = 'FAILED: ' + e.message; }
+
+  try { runTerminationTest();    results.termination    = 'PASSED'; }
+  catch(e) { results.termination    = 'FAILED: ' + e.message; }
+
+  Logger.log('██████████████████████████████████████████');
+  Logger.log('[TestRunner] RESULTS:');
+  Logger.log('  New Hire       : ' + results.newHire);
+  Logger.log('  Position Change: ' + results.positionChange);
+  Logger.log('  Termination    : ' + results.termination);
+  Logger.log('██████████████████████████████████████████');
+  Logger.log('[TestRunner] Run cleanupAllTestWorkflows() to remove all test data.');
+
+  return results;
 }

@@ -288,13 +288,18 @@ function getStepResultData(workflowId, stepTarget) {
       case 'hr_verification':   return readAllFromSheet(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
       case 'it_setup':          return readAllFromSheet(CONFIG.SHEETS.IT_RESULTS);
 
-      case 'creditcard':        return readActionItems('Credit Card');
-      case 'businesscards':     return readActionItems('Business Cards');
+      case 'creditcard':
+      case 'credit_card':       return readActionItems('Credit Card');
+      case 'businesscards':
+      case 'business_cards':    return readActionItems('Business Cards');
       case 'fleetio':           return readActionItems('Fleetio');
       case 'jonas':             return readActionItems('Jonas');
-      case 'centralpurchasing': return readActionItems('Central Purchasing');
-      case 'review_306090':     return readActionItems('30/60/90 Review');
-      case 'safety_onboarding': return readActionItems('Safety');
+      case 'centralpurchasing':
+      case 'central_purchasing':return readActionItems('Central Purchasing');
+      case 'review_306090':
+      case 'review':            return readActionItems('30/60/90 Review');
+      case 'safety_onboarding':
+      case 'safety':            return readActionItems('Safety');
       case 'safety_term':       return readActionItems('Safety');
 
       case 'sitedocs': {
@@ -313,14 +318,17 @@ function getStepResultData(workflowId, stepTarget) {
       case 'termination_request':  return readAllFromSheet(CONFIG.SHEETS.TERMINATIONS);
       case 'termination_approval': {
         const appr = readAllFromSheet(CONFIG.SHEETS.TERMINATION_APPROVALS);
-        // Supplement with base request context so modal has employee name / term date
+        // Context fields first so modal shows employee/site/date before the decision
         const base = readAllFromSheet(CONFIG.SHEETS.TERMINATIONS);
-        return Object.assign({}, appr, {
-          '_Employee Name': base['Employee Name'] || '',
-          '_Site':          base['Site']          || '',
-          '_Term Date':     base['Term Date']      || '',
-          '_Reason':        base['Reason']         || ''
-        });
+        return Object.assign(
+          {
+            '_Employee Name': base['Employee Name'] || '',
+            '_Site':          base['Site']          || '',
+            '_Term Date':     base['Term Date']     || '',
+            '_Reason':        base['Reason']        || ''
+          },
+          appr
+        );
       }
       case 'asset_collection':           return readActionItems('Assets');
       case 'systems_deactivation':       return readActionItems('IT');
@@ -333,12 +341,16 @@ function getStepResultData(workflowId, stepTarget) {
       case 'change_request':          return readAllFromSheet(CONFIG.SHEETS.POSITION_CHANGES);
       case 'position_change_approval': {
         const appr = readAllFromSheet(CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
+        // Context fields first so modal shows employee/date/change type before the decision
         const base = readAllFromSheet(CONFIG.SHEETS.POSITION_CHANGES);
-        return Object.assign({}, appr, {
-          '_Employee Name': base['Employee Name'] || '',
-          '_Effective Date': base['Effective Date'] || '',
-          '_Change Type':   base['Change Types']  || ''
-        });
+        return Object.assign(
+          {
+            '_Employee Name':  base['Employee Name']  || '',
+            '_Effective Date': base['Effective Date'] || '',
+            '_Change Types':   base['Change Types']   || ''
+          },
+          appr
+        );
       }
       case 'change_manager':      return readActionItems('Manager');
       case 'change_it':           return readActionItems('IT');
@@ -533,14 +545,33 @@ function getEquipmentRequestDetails(workflowId) {
       const wfCol  = h.indexOf('Workflow ID'), catCol  = h.indexOf('Category'),
             nmCol  = h.indexOf('Task Name'),   stCol   = h.indexOf('Status'),
             byCol  = h.indexOf('Closed By'),   tmCol   = h.indexOf('Completed Date'),
-            tidCol = h.indexOf('Task ID');
+            tidCol = h.indexOf('Task ID'),     ftCol   = h.indexOf('Form Type');
+
+      // Category → stepTarget mapping (must match getStepResultData switch cases)
+      const EQUIP_CAT_TARGET = {
+        'Credit Card':       'creditcard',
+        'Business Cards':    'businesscards',
+        'Fleetio':           'fleetio',
+        'Jonas':             'jonas',
+        'Safety':            'safety_onboarding',
+        'IT':                'it_setup',
+        'ID Setup':          'id_setup',
+        'Central Purchasing':'centralpurchasing',
+        '30/60/90 Review':   'review_306090'
+      };
+
       for (let i = 1; i < aiData.length; i++) {
         if (String(aiData[i][wfCol]) !== workflowId) continue;
-        const st = String(aiData[i][stCol] || 'Open');
-        const tDate = aiData[i][tmCol];
+        const st     = String(aiData[i][stCol] || 'Open');
+        const tDate  = aiData[i][tmCol];
+        const catVal = String(aiData[i][catCol] || '');
+        const ftVal  = ftCol >= 0 ? String(aiData[i][ftCol] || '') : '';
+        // Derive target: prefer Form Type (matches action item form routes), then category map, then slugify
+        const target = ftVal || EQUIP_CAT_TARGET[catVal] || catVal.toLowerCase().replace(/[\s\/]+/g, '');
         context.checklist.push({
-          name:   String(aiData[i][nmCol] || aiData[i][catCol] || ''),
+          name:   String(aiData[i][nmCol] || catVal || ''),
           status: st === 'Closed' ? 'Complete' : st,
+          target: target,
           by:     String(aiData[i][byCol] || ''),
           time:   tDate instanceof Date ? Utilities.formatDate(tDate, _tz, 'M/d/yyyy h:mm a') : String(tDate || ''),
           tid:    String(aiData[i][tidCol] || '')

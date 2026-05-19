@@ -52,7 +52,7 @@ function submitTerminationRequest(formData) {
         attachmentBlob = Utilities.newBlob(bytes, formData.attachmentMimeType || 'application/octet-stream', formData.attachmentName);
         const safeName = 'TERM_' + String(formData.empName || workflowId).replace(/\s/g, '_') + '_' + formData.attachmentName;
         attachmentBlob.setName(safeName);
-        const mainFolder = DriveApp.getFolderById(CONFIG.MAIN_FOLDER_ID);
+        const mainFolder = DriveApp.getFolderById(CONFIG.TERM_FOLDER_ID);
         const driveFile = mainFolder.createFile(attachmentBlob);
         attachmentUrl = driveFile.getUrl();
         Logger.log('[TerminationHandler] Attachment saved to Drive: ' + attachmentUrl);

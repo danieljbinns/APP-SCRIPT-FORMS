@@ -685,13 +685,22 @@
                 const apprNode   = document.getElementById('eoe_node_approval');
 
                 // Relabel the Initial Request node based on workflow type
+                // AND fix onclick to match the correct step target (static HTML defaults to TERM_ targets)
                 if (reqNode) {
                     const h3el = reqNode.querySelector('h3');
                     if (h3el) {
-                        if (isChangeWf)  h3el.textContent = 'Change Request';
+                        if (isChangeWf)      h3el.textContent = 'Change Request';
                         else if (isEquipReq) h3el.textContent = 'Equipment Request';
                         // TERM_ already says "EOE Request" — leave as-is
                     }
+                    if (isChangeWf)      reqNode.onclick = function() { viewStepData('change_request'); };
+                    else if (isEquipReq) reqNode.onclick = function() { viewStepData('equipment_request'); };
+                    // else TERM_: 'termination_request' onclick is already correct
+                }
+                // Fix approval node onclick for Status Change
+                if (apprNode) {
+                    if (isChangeWf) apprNode.onclick = function() { viewStepData('position_change_approval'); };
+                    // TERM_: 'termination_approval' is already correct; EQUIP: node hidden below
                 }
                 // Hide the HR Approval node for equipment requests (no approval step)
                 if (apprNode && isEquipReq) apprNode.style.display = 'none';
@@ -829,24 +838,51 @@
         }
 
         var STEP_DISPLAY_NAMES = {
-            'initial_request':      'Initial Request',
-            'termination_request':  'Initial Request (EOE)',
-            'change_request':       'Initial Request (Status Change)',
-            'equipment_request':    'Initial Request (Equipment)',
-            'id_setup':             'ID Setup',
-            'hr_verification':      'HR Verification',
-            'it_setup':             'IT Setup',
-            'it_confirmation':      'IT Confirmation',
-            'termination_approval': 'HR Approval',
-            'jonas':                'Jonas',
-            'credit_card':          'Credit Card',
-            'fleetio':              'Fleetio',
-            'business_cards':       'Business Cards',
-            'sitedocs':             'SiteDocs',
-            'review':               '30/60/90 Review',
-            'payroll':              'Payroll',
-            'safety':               'Safety',
-            'specialist':           'Specialist'
+            // ── Onboarding ─────────────────────────────────────────────────────
+            'initial_request':          'Initial Request',
+            'id_setup':                 'ID Setup',
+            'hr_verification':          'HR Verification',
+            'it_setup':                 'IT Setup',
+            'it_confirmation':          'IT Confirmation',
+            'jonas':                    'Jonas',
+            'credit_card':              'Credit Card',     // NODE_MAP-remapped onboarding target
+            'creditcard':               'Credit Card',     // equipment / raw-slug target
+            'fleetio':                  'Fleetio',
+            'business_cards':           'Business Cards',  // NODE_MAP-remapped onboarding target
+            'businesscards':            'Business Cards',  // equipment / raw-slug target
+            'sitedocs':                 'SiteDocs',
+            'review':                   '30/60/90 Review', // NODE_MAP-remapped onboarding target
+            'review_306090':            '30/60/90 Review', // raw-slug alias
+            'safety':                   'Safety',          // NODE_MAP-remapped onboarding target
+            'safety_onboarding':        'Safety',
+            'centralpurchasing':        'Central Purchasing',
+            'central_purchasing':       'Central Purchasing',
+            'payroll':                  'Payroll',
+            'specialist':               'Specialist',
+            // ── End of Employment ──────────────────────────────────────────────
+            'termination_request':      'Initial Request (EOE)',
+            'termination_approval':     'HR Approval',
+            'safety_term':              'Safety',
+            'asset_collection':         'Asset Collection',
+            'systems_deactivation':     'IT Systems Deactivation',
+            'systems_deactivation_hr':  'HR Systems Deactivation',
+            'systems_deactivation_fleet':   'Fleet Deactivation',
+            'systems_deactivation_finance': 'Finance Deactivation',
+            'systems_deactivation_deact':   'Account Deactivation',
+            // ── Status Change ─────────────────────────────────────────────────
+            'change_request':               'Initial Request (Status Change)',
+            'position_change_approval':     'HR Approval',
+            'change_manager':               'Manager Notification',
+            'change_it':                    'IT Setup',
+            'change_idsetup':               'ID Setup',
+            'change_safety':                'Safety',
+            'change_businesscards':         'Business Cards',
+            'change_creditcard':            'Credit Card',
+            'change_fleetio':               'Fleetio',
+            'change_jonas':                 'Jonas',
+            'change_purchasing':            'Central Purchasing',
+            // ── Equipment ────────────────────────────────────────────────────
+            'equipment_request':            'Initial Request (Equipment)'
         };
 
         function viewStepData(stepType) {
@@ -870,15 +906,64 @@
                 return;
             }
 
-            var html = '';
+            // Internal/metadata columns — never useful to display
+            var SKIP_KEYS = new Set(['Workflow ID', 'Form ID', 'Timestamp', 'Form Data', 'Draft', 'Form Type']);
+
+            var contextHtml = '';
+            var dataHtml = '';
+
             for (var key in data) {
-                if (data.hasOwnProperty(key)) {
-                    var val = data[key];
-                    if (key === 'Workflow ID' || key === 'Form ID' || val === '' || val === 'N/A') continue;
-                    html += '<tr><td>' + escapeHtml(key) + '</td><td>' + escapeHtml(val) + '</td></tr>';
+                if (!data.hasOwnProperty(key)) continue;
+                if (SKIP_KEYS.has(key)) continue;
+                var val = String(data[key] == null ? '' : data[key]);
+                if (val === '' || val === 'N/A') continue;
+
+                var isContext = key.charAt(0) === '_';
+                var displayKey = isContext ? key.slice(1) : key;
+
+                // Render value — detect JSON arrays (e.g. Description field on action items)
+                // and display as a bullet list instead of raw ["...","..."] string
+                var renderedVal;
+                if (val.charAt(0) === '[') {
+                    try {
+                        var parsed = JSON.parse(val);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            if (parsed.length === 1) {
+                                renderedVal = escapeHtml(parsed[0]);
+                            } else {
+                                renderedVal = '<ul style="margin:0; padding-left:18px;">' +
+                                    parsed.map(function(item) { return '<li>' + escapeHtml(String(item)) + '</li>'; }).join('') +
+                                    '</ul>';
+                            }
+                        } else {
+                            renderedVal = escapeHtml(val);
+                        }
+                    } catch(e) {
+                        renderedVal = escapeHtml(val);
+                    }
+                } else {
+                    renderedVal = escapeHtml(val);
+                }
+
+                if (isContext) {
+                    // Context rows (supplemental info): muted, italic, rendered before main data
+                    contextHtml += '<tr style="background:rgba(255,255,255,0.03);">' +
+                        '<td style="color:var(--text-muted); font-style:italic; font-size:13px;">' + escapeHtml(displayKey) + '</td>' +
+                        '<td style="color:var(--text-muted); font-size:13px;">' + renderedVal + '</td>' +
+                        '</tr>';
+                } else {
+                    dataHtml += '<tr><td>' + escapeHtml(displayKey) + '</td><td>' + renderedVal + '</td></tr>';
                 }
             }
-            tbody.innerHTML = html;
+
+            // Context section first, then a divider if both sections have content, then main data
+            var html = contextHtml;
+            if (contextHtml && dataHtml) {
+                html += '<tr><td colspan="2" style="padding:2px 0; border-bottom:1px solid var(--border-color);"></td></tr>';
+            }
+            html += dataHtml;
+
+            tbody.innerHTML = html || '<tr><td colspan="2" style="text-align:center;">No data found.</td></tr>';
         }
 
         function closeDataModal() {
@@ -903,6 +988,7 @@
         });
     </script>
   <?!= include('SharedComponents') ?>
+<?!= safeInclude('Konami') ?>
 </body>
 
 </html>

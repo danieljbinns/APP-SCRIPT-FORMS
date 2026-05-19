@@ -159,8 +159,8 @@ function syncStatusToRequestSheet(ss, workflowId, status) {
 
     const STATUS_COL_BY_SHEET = {
       [CONFIG.SHEETS.INITIAL_REQUESTS]: SCHEMA.INITIAL_REQUESTS.STATUS,
-      [CONFIG.SHEETS.TERMINATIONS]:     SCHEMA.TERMINATIONS.HR_APPROVED_STATUS
-      // POSITION_CHANGES has no status column in schema — skip
+      [CONFIG.SHEETS.TERMINATIONS]:     SCHEMA.TERMINATIONS.HR_APPROVED_STATUS,
+      [CONFIG.SHEETS.POSITION_CHANGES]: SCHEMA.POSITION_CHANGES.STATUS
     };
 
     for (const sheetName of originSheets) {

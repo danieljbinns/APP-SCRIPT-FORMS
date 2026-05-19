@@ -180,7 +180,7 @@
   /* ══════════════════════════════════════════════════════════════
      Shared utilities — escapeHtml, formatDate, renderWorkflowFields
      Defined here once; Dashboard.html and RequestDetails.html rely
-     on this via <?!= include('SharedComponents') ?>.
+     on this via include('SharedComponents') in the page template.
   ══════════════════════════════════════════════════════════════ */
 
   /**
@@ -536,4 +536,4 @@
     }
   })();
 </script>
-<?!= safeInclude('Konami') ?>
+<!-- Konami easter egg loaded per-page via safeInclude('Konami') in each template directly -->

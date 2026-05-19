@@ -71,6 +71,26 @@ function getDashboardData() {
       return s;
     };
 
+    // Build open-category map from Action Items sheet — used to power filterByCategory on the client.
+    // One bulk read here avoids any per-workflow server round-trips.
+    const openCategoriesMap = {};
+    const aiSheetForMap = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    if (aiSheetForMap && aiSheetForMap.getLastRow() > 1) {
+      const aiMapData    = aiSheetForMap.getDataRange().getValues();
+      const aiMapHeaders = aiMapData[0];
+      const aiWfIdx      = aiMapHeaders.indexOf('Workflow ID');
+      const aiCatIdx     = aiMapHeaders.indexOf('Category');
+      const aiStatIdx    = aiMapHeaders.indexOf('Status');
+      for (let i = 1; i < aiMapData.length; i++) {
+        if (String(aiMapData[i][aiStatIdx] || '') === 'Closed') continue;
+        const wfId = String(aiMapData[i][aiWfIdx] || '');
+        const cat  = String(aiMapData[i][aiCatIdx] || '');
+        if (!wfId || !cat) continue;
+        if (!openCategoriesMap[wfId]) openCategoriesMap[wfId] = [];
+        if (!openCategoriesMap[wfId].includes(cat)) openCategoriesMap[wfId].push(cat);
+      }
+    }
+
     const DV = SCHEMA.DASHBOARD_VIEW;
     const flows = data.slice(1).map(row => {
       let items = {};
@@ -92,7 +112,8 @@ function getDashboardData() {
         hireDate:       fmtDate(row[DV.HIRE_DATE]),
         site:           String(row[DV.SITE]             || ''),
         empType:        String(row[DV.EMPLOYMENT_TYPE]  || '') || (workflowId.startsWith('TERM_') ? (termEmpTypeMap[workflowId] || '') : ''),
-        type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Status Change' : (workflowId.startsWith('EQUIP_REQ_') ? 'Equipment' : 'Onboarding'))
+        type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Status Change' : (workflowId.startsWith('EQUIP_REQ_') ? 'Equipment' : 'Onboarding')),
+        openCategories: openCategoriesMap[workflowId] || []
       };
     }).filter(wf => {
       return wf.status !== 'Cancelled' && wf.status !== 'Inactive';
@@ -155,7 +176,8 @@ function getDashboardData() {
             empType:        String(row[TR.EMPLOYEE_TYPE]    || ''),
             requestedItems: {},
             pendingItems:   [],
-            type: 'End of Employment'
+            type:           'End of Employment',
+            openCategories: openCategoriesMap[wfId] || []
           });
         });
       }

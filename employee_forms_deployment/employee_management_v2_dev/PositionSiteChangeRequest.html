@@ -653,25 +653,52 @@
                     .withFailureHandler(onFail)
                     .submitITConfirmation(formData);
             } else {
-                google.script.run
-                    .withSuccessHandler(function (response) {
-                        if (response.success) {
-                            document.getElementById('form-container').innerHTML = `
-                                <div style="text-align:center; padding:40px;">
-                                    <h2 style="color:var(--brand-red);">✓ Request Submitted</h2>
-                                    <p>Workflow ID: <strong>${response.workflowId}</strong></p>
-                                    <p>${response.message}</p>
-                                    <button onclick="resetForm()" style="margin-top:20px; background:var(--brand-red); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">Submit Another</button>
-                                </div>
-                            `;
-                        } else {
-                            alert('Error: ' + response.message);
-                            btn.disabled = false;
-                            btn.textContent = 'Submit Change Request';
-                        }
-                    })
-                    .withFailureHandler(onFail)
-                    .submitPositionChangeRequest(formData);
+                const doSubmitChange = function() {
+                    google.script.run
+                        .withSuccessHandler(function (response) {
+                            if (response.success) {
+                                document.getElementById('form-container').innerHTML = `
+                                    <div style="text-align:center; padding:40px;">
+                                        <h2 style="color:var(--brand-red);">✓ Request Submitted</h2>
+                                        <p>Workflow ID: <strong>${response.workflowId}</strong></p>
+                                        <p>${response.message}</p>
+                                        <button onclick="resetForm()" style="margin-top:20px; background:var(--brand-red); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">Submit Another</button>
+                                    </div>
+                                `;
+                            } else {
+                                alert('Error: ' + response.message);
+                                btn.disabled = false;
+                                btn.textContent = 'Submit Change Request';
+                            }
+                        })
+                        .withFailureHandler(onFail)
+                        .submitPositionChangeRequest(formData);
+                };
+
+                // If a file was selected, read it as base64 before submitting
+                const fileInput = document.querySelector('input[name="attachment"]');
+                const fileToUpload = fileInput && fileInput.files && fileInput.files[0];
+                if (fileToUpload) {
+                    btn.textContent = 'Uploading file...';
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        formData.attachmentBase64 = ev.target.result.split(',')[1];
+                        formData.attachmentName = fileToUpload.name;
+                        formData.attachmentMimeType = fileToUpload.type || 'application/octet-stream';
+                        delete formData.attachment; // remove the raw filename string
+                        btn.textContent = 'Submitting...';
+                        doSubmitChange();
+                    };
+                    reader.onerror = function() {
+                        // File read failed — submit without attachment
+                        delete formData.attachment;
+                        doSubmitChange();
+                    };
+                    reader.readAsDataURL(fileToUpload);
+                } else {
+                    delete formData.attachment;
+                    doSubmitChange();
+                }
             }
         });
 
@@ -783,6 +810,7 @@
                 .getBaseUrl();
         }
     </script>
+<?!= safeInclude('Konami') ?>
 </body>
 
 </html>

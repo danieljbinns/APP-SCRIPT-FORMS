@@ -65,12 +65,16 @@ function getCurrentUserDetails() {
       Logger.log('Could not fetch user name from directory: ' + e.toString());
     }
     
+    // Fall back to email username prefix if directory name not available
+    if (!name && email) name = email.split('@')[0];
+
     return {
       email: email,
       name: name
     };
   } catch (error) {
     Logger.log('Error getting current user details: ' + error.toString());
-    return { email: Session.getActiveUser().getEmail(), name: '' };
+    const _e = Session.getActiveUser().getEmail();
+    return { email: _e, name: _e ? _e.split('@')[0] : '' };
   }
 }
