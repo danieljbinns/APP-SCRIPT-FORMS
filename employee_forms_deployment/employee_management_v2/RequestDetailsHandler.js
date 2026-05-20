@@ -512,44 +512,74 @@ function getEquipmentRequestDetails(workflowId) {
     if (!foundWf) return { success: false, message: 'Workflow not found' };
     const wfRow = wfSheet.getRange(foundWf.getRow(), 1, 1, 9).getValues()[0];
 
-    // Read from INITIAL_REQUESTS (54-col live sheet) — Equipment_Requests is orphaned
+    // Read from INITIAL_REQUESTS (54-col live sheet).
+    // Fall back to legacy Equipment_Requests sheet for pre-migration submissions.
     const irSheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
-    const foundReq = irSheet ? irSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
+    let foundReq = irSheet ? irSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
+    let sourceSheet = irSheet;
+    let isLegacy = false;
+    if (!foundReq) {
+      const legacySheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
+      const legacyFound = legacySheet ? legacySheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
+      if (legacyFound) { foundReq = legacyFound; sourceSheet = legacySheet; isLegacy = true; }
+    }
     if (!foundReq) return { success: false, message: 'Request ID not found in database' };
-    const row = irSheet.getRange(foundReq.getRow(), 1, 1, irSheet.getLastColumn()).getValues()[0];
+    const row = sourceSheet.getRange(foundReq.getRow(), 1, 1, sourceSheet.getLastColumn()).getValues()[0];
 
     const _tz  = Session.getScriptTimeZone();
     const fmtD = function(v) { return v instanceof Date ? Utilities.formatDate(v, _tz, 'M/d/yyyy') : String(v || ''); };
 
-    const IR  = SCHEMA.INITIAL_REQUESTS;
     const WFS = SCHEMA.WORKFLOWS;
-    const requestData = {
-      'First Name':       String(row[IR.FIRST_NAME]       || ''),
-      'Last Name':        String(row[IR.LAST_NAME]        || ''),
-      'Position Title':   String(row[IR.POSITION_TITLE]   || ''),
-      'Site Name':        String(row[IR.SITE_NAME]        || ''),
-      'Job Site #':       String(row[IR.JOB_SITE_NUMBER]  || ''),
-      'Manager Name':     String(row[IR.MANAGER_NAME]     || ''),
-      'Manager Email':    String(row[IR.MANAGER_EMAIL]    || ''),
-      'Equipment':        String(row[IR.EQUIPMENT]        || ''),
-      'Systems':          String(row[IR.SYSTEMS]          || ''),
-      'Comments':         String(row[IR.COMMENTS]         || ''),
-      'Department':       String(row[IR.DEPARTMENT]       || ''),
-      'Requester Name':   String(row[IR.REQUESTER_NAME]   || ''),
-      'Requester Email':  String(row[IR.REQUESTER_EMAIL]  || ''),
-      'Date Requested':   fmtD(row[IR.DATE_REQUESTED]),
-      'Employment Type':  String(row[IR.EMPLOYMENT_TYPE]  || ''),
-      'Employee Type':    String(row[IR.EMPLOYEE_TYPE]    || ''),
-      'System Access':    String(row[IR.SYSTEM_ACCESS]    || ''),
-      'Computer Req':     String(row[IR.COMPUTER_REQ]     || ''),
-      'Computer Type':    String(row[IR.COMPUTER_TYPE]    || ''),
-      'Phone Req':        String(row[IR.PHONE_REQ]        || ''),
-      'BOSS Sites':       String(row[IR.BOSS_SITES]       || ''),
-      'CC USA':           String(row[IR.CC_USA]           || ''),
-      'CC CAN':           String(row[IR.CC_CAN]           || ''),
-      'Office 365':       String(row[IR.OFFICE_365]       || ''),
-      'Google Email':     String(row[IR.GOOGLE_EMAIL]     || '')
-    };
+    let requestData;
+    if (isLegacy) {
+      // Pre-migration row — use old 15-col EQUIPMENT_REQUESTS schema
+      const EQD = SCHEMA.EQUIPMENT_REQUESTS;
+      requestData = {
+        'First Name':      String(row[EQD.EMPLOYEE_FIRST_NAME] || ''),
+        'Last Name':       String(row[EQD.EMPLOYEE_LAST_NAME]  || ''),
+        'Position Title':  String(row[EQD.JOB_TITLE]           || ''),
+        'Site Name':       String(row[EQD.SITE_NAME]           || ''),
+        'Manager Name':    String(row[EQD.MANAGER_NAME]        || ''),
+        'Manager Email':   String(row[EQD.MANAGER_EMAIL]       || ''),
+        'Equipment':       String(row[EQD.EQUIPMENT_REQUESTED] || ''),
+        'Systems':         String(row[EQD.SYSTEMS_REQUESTED]   || ''),
+        'Comments':        String(row[EQD.COMMENTS]            || ''),
+        'Department':      String(row[EQD.DEPARTMENT]          || ''),
+        'Requester Name':  String(row[EQD.REQUESTER_NAME]      || ''),
+        'Requester Email': String(row[EQD.REQUESTER_EMAIL]     || ''),
+        'Date Requested':  fmtD(row[EQD.TIMESTAMP])
+      };
+    } else {
+      // Current schema — 54-col INITIAL_REQUESTS
+      const IR = SCHEMA.INITIAL_REQUESTS;
+      requestData = {
+        'First Name':       String(row[IR.FIRST_NAME]       || ''),
+        'Last Name':        String(row[IR.LAST_NAME]        || ''),
+        'Position Title':   String(row[IR.POSITION_TITLE]   || ''),
+        'Site Name':        String(row[IR.SITE_NAME]        || ''),
+        'Job Site #':       String(row[IR.JOB_SITE_NUMBER]  || ''),
+        'Manager Name':     String(row[IR.MANAGER_NAME]     || ''),
+        'Manager Email':    String(row[IR.MANAGER_EMAIL]    || ''),
+        'Equipment':        String(row[IR.EQUIPMENT]        || ''),
+        'Systems':          String(row[IR.SYSTEMS]          || ''),
+        'Comments':         String(row[IR.COMMENTS]         || ''),
+        'Department':       String(row[IR.DEPARTMENT]       || ''),
+        'Requester Name':   String(row[IR.REQUESTER_NAME]   || ''),
+        'Requester Email':  String(row[IR.REQUESTER_EMAIL]  || ''),
+        'Date Requested':   fmtD(row[IR.DATE_REQUESTED]),
+        'Employment Type':  String(row[IR.EMPLOYMENT_TYPE]  || ''),
+        'Employee Type':    String(row[IR.EMPLOYEE_TYPE]    || ''),
+        'System Access':    String(row[IR.SYSTEM_ACCESS]    || ''),
+        'Computer Req':     String(row[IR.COMPUTER_REQ]     || ''),
+        'Computer Type':    String(row[IR.COMPUTER_TYPE]    || ''),
+        'Phone Req':        String(row[IR.PHONE_REQ]        || ''),
+        'BOSS Sites':       String(row[IR.BOSS_SITES]       || ''),
+        'CC USA':           String(row[IR.CC_USA]           || ''),
+        'CC CAN':           String(row[IR.CC_CAN]           || ''),
+        'Office 365':       String(row[IR.OFFICE_365]       || ''),
+        'Google Email':     String(row[IR.GOOGLE_EMAIL]     || '')
+      };
+    }
 
     const _cu3 = Session.getActiveUser().getEmail();
     const context = {
