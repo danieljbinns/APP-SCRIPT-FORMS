@@ -266,8 +266,14 @@ function syncWorkflowState(workflowId) {
         const sheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
         const done = sheet && sheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() !== null;
         if (!done) granularStatus = 'Pending: IT Setup';
+      } else if (currentStep === 'HR Verification Needed') {
+        granularStatus = 'Pending: HR Verification';
       } else if (currentStep === 'ID Setup Needed') {
         granularStatus = 'Pending: ID Setup';
+      } else if (currentStep === 'ID Setup Complete') {
+        // Legacy step value — IDSetup.js used to leave this instead of advancing
+        // to 'HR Verification Needed'. Treat as HR Verification pending in the view.
+        granularStatus = 'Pending: HR Verification';
       }
     }
     

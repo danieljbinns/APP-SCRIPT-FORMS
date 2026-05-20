@@ -412,7 +412,7 @@
         <!-- My Tasks Panel — open task counts per category, role-gated click -->
         <div id="myTasksPanel" style="display:none; background:rgba(235,28,45,0.06); border:1px solid rgba(235,28,45,0.3); border-radius:8px; padding:16px; margin-bottom:12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <strong style="color:var(--brand-red); font-size:14px;">⚡ My Pending Tasks</strong>
+                <strong style="color:var(--brand-red); font-size:14px;">⚡ Open Task Queue</strong>
                 <span id="myTasksCount" style="background:var(--brand-red); color:white; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;"></span>
             </div>
             <div id="myTasksList" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
@@ -591,11 +591,13 @@
                 .getMyTaskCounts();
         }
 
-        // Step-based categories map to workflow step strings rather than action item categories
+        // Step-based categories: match against GRANULAR_STEP from Dashboard_View.
+        // Use the 'Pending: X' prefixed strings produced by StateSync.js — exact prefix
+        // avoids false matches like 'Pending: IT Setup Complete' or 'ID Setup Complete'.
         const STEP_CATEGORY_TERMS = {
-            'IT Setup':       ['it setup'],
-            'HR Verification':['hr verification'],
-            'ID Setup':       ['id setup']
+            'IT Setup':        ['pending: it setup'],
+            'HR Verification': ['pending: hr verification'],
+            'ID Setup':        ['pending: id setup']
         };
 
         function filterByCategory(cat) {

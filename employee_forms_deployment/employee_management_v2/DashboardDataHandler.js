@@ -261,9 +261,12 @@ function getMyTaskCounts() {
         const status = String(wfData[i][statusIdx] || '');
         if (status === 'Cancelled' || status === 'Complete' || status === 'Completed' || status === 'Inactive') continue;
         const step = String(wfData[i][stepIdx] || '').toLowerCase();
-        if (step === 'it_setup'        || step.includes('it setup'))          stepCounts['IT Setup']++;
-        else if (step === 'hr_verification' || step.includes('hr verification')) stepCounts['HR Verification']++;
-        else if (step === 'id_setup'        || step.includes('id setup'))          stepCounts['ID Setup']++;
+        // Use exact step name matching — 'ID Setup Complete' must NOT count as ID Setup pending.
+        // Step strings set by handlers: 'IT Setup Needed', 'HR Verification Needed', 'ID Setup Needed'.
+        // Legacy 'ID Setup Complete' (pre-fix workflows) maps to HR Verification.
+        if      (step === 'it setup needed')                                         stepCounts['IT Setup']++;
+        else if (step === 'hr verification needed' || step === 'id setup complete')  stepCounts['HR Verification']++;
+        else if (step === 'id setup needed')                                         stepCounts['ID Setup']++;
       }
     }
 

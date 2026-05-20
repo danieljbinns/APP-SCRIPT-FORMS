@@ -400,3 +400,69 @@ function buildDashboardView() {
   dvSheet.getRange(2, 1, dvRows.length, 14).setValues(dvRows);
   Logger.log('=== buildDashboardView complete — ' + dvRows.length + ' rows written ===');
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// fixIDSetupCompleteSteps
+//
+// One-time migration for prod (run from GAS editor — prod or dev script).
+//
+// Bug: IDSetup.js used to set Current Step = 'ID Setup Complete' after submission
+// and never advanced to 'HR Verification Needed'. This left 48+ workflows with the
+// wrong step, causing them to count as "ID Setup pending" in getMyTaskCounts() and
+// show incorrectly in the ID Setup filter on the Dashboard.
+//
+// Fix: Scan Workflows sheet. For any row where:
+//   Status  = 'In Progress'   AND
+//   Current Step = 'ID Setup Complete'
+// → set Current Step = 'HR Verification Needed'
+// → call syncWorkflowState() to update Dashboard_View granular step
+//
+// Run ONCE after deploying the IDSetup.js fix to prod.
+// Safe to run multiple times — only touches rows still at 'ID Setup Complete'.
+// ─────────────────────────────────────────────────────────────────────────────
+function fixIDSetupCompleteSteps() {
+  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var wfSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+  if (!wfSheet) { Logger.log('[fixIDSetupCompleteSteps] Workflows sheet not found'); return; }
+
+  var data    = wfSheet.getDataRange().getValues();
+  var headers = data[0];
+  var idIdx     = headers.indexOf('Workflow ID');
+  var statusIdx = headers.indexOf('Status');
+  var stepIdx   = headers.indexOf('Current Step');
+
+  if (idIdx < 0 || statusIdx < 0 || stepIdx < 0) {
+    Logger.log('[fixIDSetupCompleteSteps] Required columns not found');
+    return;
+  }
+
+  var fixed = 0;
+  var skipped = 0;
+
+  for (var i = 1; i < data.length; i++) {
+    var status = String(data[i][statusIdx] || '');
+    var step   = String(data[i][stepIdx]   || '');
+    var wfId   = String(data[i][idIdx]     || '');
+
+    if (!wfId || status !== 'In Progress' || step !== 'ID Setup Complete') {
+      skipped++;
+      continue;
+    }
+
+    // Advance step
+    wfSheet.getRange(i + 1, stepIdx + 1).setValue('HR Verification Needed');
+    Logger.log('[fixIDSetupCompleteSteps] Fixed ' + wfId + ': ID Setup Complete → HR Verification Needed');
+
+    // Re-sync Dashboard_View granular step for this workflow
+    try {
+      syncWorkflowState(wfId);
+    } catch(e) {
+      Logger.log('[fixIDSetupCompleteSteps] syncWorkflowState failed for ' + wfId + ': ' + e.message);
+    }
+
+    fixed++;
+  }
+
+  Logger.log('[fixIDSetupCompleteSteps] Done — ' + fixed + ' workflows fixed, ' + skipped + ' skipped');
+  Logger.log('Run this function on PROD after deploying the IDSetup.js step-name fix.');
+}

@@ -179,7 +179,10 @@ function submitEmployeeIDSetup(formData) {
     ]);
     
     const actingUser = Session.getActiveUser().getEmail();
-    updateWorkflow(workflowId, 'In Progress', 'ID Setup Complete', '', actingUser);
+    // Advance directly to HR Verification — no intermediate 'ID Setup Complete' step.
+    // triggerNextStepFromIDSetup sends the HR Verification email; step must already
+    // reflect what is actually pending so Dashboard_View and task counts are correct.
+    updateWorkflow(workflowId, 'In Progress', 'HR Verification Needed', '', actingUser);
     syncWorkflowState(workflowId);
 
     triggerNextStepFromIDSetup(workflowId, formData, requestData);
