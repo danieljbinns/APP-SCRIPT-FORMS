@@ -466,3 +466,110 @@ function fixIDSetupCompleteSteps() {
   Logger.log('[fixIDSetupCompleteSteps] Done — ' + fixed + ' workflows fixed, ' + skipped + ' skipped');
   Logger.log('Run this function on PROD after deploying the IDSetup.js step-name fix.');
 }
+
+/**
+ * migrateEquipmentRequestsToInitialRequests()
+ *
+ * Migrates pre-migration equipment request rows from the old 15-col Equipment_Requests
+ * sheet into the live 54-col Initial Requests sheet.
+ *
+ * Safe to run multiple times — skips any Workflow ID already in Initial Requests.
+ * Does NOT delete rows from Equipment_Requests (left as archive).
+ *
+ * Run from GAS editor on DEV, then on PROD.
+ */
+function migrateEquipmentRequestsToInitialRequests() {
+  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+
+  var eqSheet = ss.getSheetByName('Equipment_Requests');
+  if (!eqSheet || eqSheet.getLastRow() <= 1) {
+    Logger.log('[migrateEquip] Equipment_Requests is empty or missing — nothing to migrate.');
+    return { migrated: 0, skipped: 0 };
+  }
+
+  var irSheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
+  if (!irSheet) {
+    Logger.log('[migrateEquip] Initial Requests sheet not found.');
+    return { migrated: 0, skipped: 0 };
+  }
+
+  // Build set of workflow IDs already in Initial Requests
+  var irData      = irSheet.getDataRange().getValues();
+  var existingIds = new Set();
+  for (var i = 1; i < irData.length; i++) {
+    var id = String(irData[i][0] || '');
+    if (id) existingIds.add(id);
+  }
+
+  // Read old Equipment_Requests rows
+  var eqData    = eqSheet.getDataRange().getValues();
+  var EQD       = SCHEMA.EQUIPMENT_REQUESTS;
+  var newRows   = [];
+  var migrated  = 0;
+  var skipped   = 0;
+
+  for (var j = 1; j < eqData.length; j++) {
+    var row    = eqData[j];
+    var wfId   = String(row[EQD.WORKFLOW_ID] || '');
+    if (!wfId) continue;
+
+    if (existingIds.has(wfId)) {
+      Logger.log('[migrateEquip] SKIP (already exists): ' + wfId);
+      skipped++;
+      continue;
+    }
+
+    // Build 54-column row — blank by default
+    var newRow = new Array(54).fill('');
+
+    var ts = row[EQD.TIMESTAMP];
+    var dateOnly = ts instanceof Date
+      ? Utilities.formatDate(ts, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+      : String(ts || '').substring(0, 10);
+
+    // Map old fields → new columns (using SCHEMA.INITIAL_REQUESTS indices)
+    var IR = SCHEMA.INITIAL_REQUESTS;
+    newRow[IR.WORKFLOW_ID]      = wfId;
+    newRow[IR.FORM_ID]          = String(row[EQD.FORM_ID]              || '');
+    newRow[IR.TIMESTAMP]        = ts || '';
+    newRow[IR.DATE_REQUESTED]   = dateOnly;
+    newRow[IR.REQUESTER_NAME]   = String(row[EQD.REQUESTER_NAME]       || '');
+    newRow[IR.REQUESTER_EMAIL]  = String(row[EQD.REQUESTER_EMAIL]      || '');
+    newRow[IR.FIRST_NAME]       = String(row[EQD.EMPLOYEE_FIRST_NAME]  || '');
+    newRow[IR.LAST_NAME]        = String(row[EQD.EMPLOYEE_LAST_NAME]   || '');
+    newRow[IR.POSITION_TITLE]   = String(row[EQD.JOB_TITLE]            || '');
+    newRow[IR.SITE_NAME]        = String(row[EQD.SITE_NAME]            || '');
+    newRow[IR.MANAGER_NAME]     = String(row[EQD.MANAGER_NAME]         || '');
+    newRow[IR.MANAGER_EMAIL]    = String(row[EQD.MANAGER_EMAIL]        || '');
+    newRow[IR.EQUIPMENT]        = String(row[EQD.EQUIPMENT_REQUESTED]  || '');
+    newRow[IR.SYSTEMS]          = String(row[EQD.SYSTEMS_REQUESTED]    || '');
+    newRow[IR.COMMENTS]         = String(row[EQD.COMMENTS]             || '');
+    newRow[IR.DEPARTMENT]       = String(row[EQD.DEPARTMENT]           || '');
+    newRow[IR.SYSTEM_ACCESS]    = 'Yes';  // equipment requests always need access
+
+    newRows.push(newRow);
+    Logger.log('[migrateEquip] Queued for migration: ' + wfId);
+    migrated++;
+  }
+
+  if (newRows.length > 0) {
+    var startRow = irSheet.getLastRow() + 1;
+    irSheet.getRange(startRow, 1, newRows.length, 54).setValues(newRows);
+    Logger.log('[migrateEquip] Wrote ' + newRows.length + ' rows to Initial Requests starting at row ' + startRow);
+
+    // Sync Dashboard_View for each migrated workflow
+    newRows.forEach(function(r) {
+      var id = String(r[0] || '');
+      if (!id) return;
+      try {
+        syncWorkflowState(id);
+        Logger.log('[migrateEquip] syncWorkflowState OK: ' + id);
+      } catch(e) {
+        Logger.log('[migrateEquip] syncWorkflowState FAILED for ' + id + ': ' + e.message);
+      }
+    });
+  }
+
+  Logger.log('[migrateEquip] Done — migrated: ' + migrated + ', skipped (already existed): ' + skipped);
+  return { migrated: migrated, skipped: skipped };
+}
