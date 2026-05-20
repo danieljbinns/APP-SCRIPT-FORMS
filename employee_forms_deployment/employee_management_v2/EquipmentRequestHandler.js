@@ -2,10 +2,11 @@
  * System & Equipment Access Form - Backend Handler
  *
  * Flow:
- *   1. submitEquipmentRequest → status "BOSS Verification Needed"
+ *   1. submitEquipmentRequest → status "IT Confirmation Needed"
+ *        → writes to Initial_Requests sheet (same as new hire, different workflowId prefix)
  *        → confirmation email to requester
  *        → IT Confirmation form link to Dave Langohr
- *   2. submitITConfirmation (in BOSSReviewHandler.js) → calls launchEquipmentActionItems()
+ *   2. submitITConfirmation (in ITConfirmationHandler.js) → calls launchEquipmentActionItems()
  *   3. launchEquipmentActionItems:
  *        a. Google Account in systems → create IT email task only, status "Email Setup Needed"
  *        b. Otherwise → launchRemainingEquipmentTasks() immediately
@@ -44,13 +45,22 @@ function submitEquipmentRequest(formData) {
 
     const employeeName = formData.firstName + ' ' + formData.lastName;
 
-    // 3. Set status — awaiting IT Confirmation (BOSS review)
+    // 3. Set status — awaiting IT Confirmation
     updateWorkflow(workflowId, 'In Progress', 'IT Confirmation Needed', employeeName);
 
-    // 4. Write row to Equipment_Requests sheet
-    const rowData = formatEquipmentRequestData(formData);
-    const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.EQUIPMENT_REQUESTS, rowData);
-    if (!sheetSuccess) throw new Error('Failed to write request to Equipment Requests database');
+    // 4. Normalize field aliases from equipment form to standard InitialRequest format
+    //    (client submits both aliased names AND standard names; prefer standard, fall back to alias)
+    formData.requesterName         = formData.requesterName         || formData.reqName   || '';
+    formData.requesterEmail        = formData.requesterEmail        || formData.reqEmail  || '';
+    formData.positionTitle         = formData.positionTitle         || formData.position  || '';
+    formData.reportingManagerEmail = formData.reportingManagerEmail || formData.managerEmail || '';
+    formData.reportingManagerName  = formData.reportingManagerName  || formData.managerName  || '';
+    formData.systemAccess          = 'Yes'; // equipment requests always involve system/equipment access
+
+    // 5. Write row to Initial_Requests sheet (same sheet as new hire — shares all columns)
+    const rowData = formatInitialRequestData(formData);
+    const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.INITIAL_REQUESTS, rowData);
+    if (!sheetSuccess) throw new Error('Failed to write request to Initial Requests database');
 
     // 5 & 6. Send confirmation and IT notification — extracted helper so ReplayService can refire missed emails
     _sendEquipmentRequestSubmitEmails(workflowId);
@@ -66,32 +76,28 @@ function submitEquipmentRequest(formData) {
 }
 
 /**
- * Read an Equipment Request row from the sheet by workflow ID.
- * Returns a structured object mirroring the form fields, or null if not found.
+ * Read an Equipment Request row from Initial_Requests by workflow ID.
+ * Delegates to getFullNewHireData (same sheet/schema) and maps to the standard shape
+ * used by _sendEquipmentRequestSubmitEmails and launchEquipmentActionItems.
  */
 function getEquipmentRequestData(workflowId) {
-  const data = getRowByRequestId(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.EQUIPMENT_REQUESTS, workflowId);
-  if (!data) return null;
-  const ER = SCHEMA.EQUIPMENT_REQUESTS;
-  const firstName    = String(data[ER.EMPLOYEE_FIRST_NAME] || '');
-  const lastName     = String(data[ER.EMPLOYEE_LAST_NAME]  || '');
-  const systemsStr   = String(data[ER.SYSTEMS_REQUESTED]   || '');
-  const equipmentStr = String(data[ER.EQUIPMENT_REQUESTED] || '');
+  const d = getFullNewHireData(workflowId);
+  if (!d) return null;
   return {
-    workflowId:     String(data[ER.WORKFLOW_ID]    || ''),
-    requesterName:  String(data[ER.REQUESTER_NAME]  || ''),
-    requesterEmail: String(data[ER.REQUESTER_EMAIL] || ''),
-    employeeName:   (firstName + ' ' + lastName).trim(),
-    firstName:      firstName,
-    lastName:       lastName,
-    siteName:       String(data[ER.SITE_NAME]     || ''),
-    jobTitle:       String(data[ER.JOB_TITLE]     || ''),
-    managerName:    String(data[ER.MANAGER_NAME]  || ''),
-    managerEmail:   String(data[ER.MANAGER_EMAIL] || ''),
-    systems:        systemsStr   ? systemsStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean)   : [],
-    equipment:      equipmentStr ? equipmentStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [],
-    comments:       String(data[ER.COMMENTS]   || ''),
-    department:     String(data[ER.DEPARTMENT] || '')
+    workflowId:     d.workflowId,
+    requesterName:  d.requesterName,
+    requesterEmail: d.requesterEmail,
+    employeeName:   (d.firstName + ' ' + d.lastName).trim(),
+    firstName:      d.firstName,
+    lastName:       d.lastName,
+    siteName:       d.siteName,
+    jobTitle:       d.positionTitle,
+    managerName:    d.managerName,
+    managerEmail:   d.managerEmail,
+    systems:        Array.isArray(d.systems)   ? d.systems   : [],
+    equipment:      Array.isArray(d.equipment) ? d.equipment : [],
+    comments:       d.comments,
+    department:     d.department
   };
 }
 
@@ -146,7 +152,7 @@ function _sendEquipmentRequestSubmitEmails(workflowId) {
 }
 
 /**
- * Called by BOSSReviewHandler.submitBOSSReview after IT Confirmation is approved.
+ * Called by ITConfirmationHandler.submitITConfirmation after IT Confirmation is approved.
  * If Google Account is in the systems list, creates only the IT email task first.
  * Otherwise, launches all action items at once.
  * @param {string} workflowId
@@ -277,7 +283,7 @@ function launchRemainingEquipmentTasks(workflowId) {
         JSON.stringify(itSoftware.map(function(s) { return 'Grant access: ' + s; })),
         CONFIG.EMAILS.IT, 'it_software'
       );
-      _notifyEquipmentTask(workflowId, tid, 'IT Software', CONFIG.EMAILS.IDSETUP, context,
+      _notifyEquipmentTask(workflowId, tid, 'IT Software', CONFIG.EMAILS.IT, context,
         'Please set up the following software access for <b>' + employeeName + '</b>:<br><ul><li>' + itSoftware.join('</li><li>') + '</li></ul>');
     }
 
@@ -380,25 +386,3 @@ function _notifyEquipmentTask(workflowId, taskId, teamLabel, assignedTo, context
   }
 }
 
-/**
- * Helper to flatten formData into a row array for Equipment_Requests sheet
- */
-function formatEquipmentRequestData(formData) {
-  return [
-    formData.workflowId || '',
-    formData.formId     || '',
-    new Date(),
-    formData.reqName    || '',
-    formData.reqEmail   || '',
-    formData.firstName  || '',
-    formData.lastName   || '',
-    formData.siteName   || '',
-    formData.position   || '',
-    formData.managerName  || '',
-    formData.managerEmail || '',
-    Array.isArray(formData.equipment) ? formData.equipment.join(', ') : (formData.equipment || ''),
-    Array.isArray(formData.systems)   ? formData.systems.join(', ')   : (formData.systems   || ''),
-    formData.comments    || '',
-    formData.department  || ''
-  ];
-}

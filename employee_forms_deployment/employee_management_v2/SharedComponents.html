@@ -7,24 +7,68 @@
   ══════════════════════════════════════════════════════════════════
 -->
 <style>
-  /* ── Theme switcher button group ─────────────────────────────── */
+  /* ── Theme switcher — vertical collapsible panel, right edge ─── */
   .theme-switcher {
     position: fixed;
-    top: 14px;
-    right: 16px;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
     z-index: 9999;
     display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    border-radius: 8px 0 0 8px;
+    overflow: hidden;
+    box-shadow: -2px 2px 10px rgba(0,0,0,0.35);
+  }
+  /* Panel — the 3 buttons stacked vertically */
+  .ts-panel {
+    display: flex;
+    flex-direction: column;
     background: var(--card-bg, #1e1e1e);
     border: 1px solid var(--border-color, #444);
-    border-radius: 8px;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    max-width: 38px;
+    max-height: 200px;
+    opacity: 1;
+    transition: max-width 0.2s ease, max-height 0.2s ease, opacity 0.15s ease;
   }
+  .theme-switcher.ts-collapsed .ts-panel {
+    max-width: 0;
+    max-height: 0;
+    opacity: 0;
+    border: none;
+  }
+  /* Handle tab — always visible, flush to right edge */
+  .ts-handle {
+    width: 14px;
+    min-height: 42px;
+    background: var(--brand-red, #eb1c2d);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    opacity: 0.75;
+    transition: opacity 0.15s;
+    color: #fff;
+    font-size: 9px;
+    font-weight: bold;
+    font-family: inherit;
+  }
+  .ts-handle:hover { opacity: 1; }
+  /* Arrow points left (›) when collapsed = click to expand */
+  .theme-switcher.ts-collapsed .ts-handle { opacity: 0.6; }
+  /* Buttons */
   .ts-btn {
     width: 38px;
-    height: 30px;
+    height: 36px;
     border: none;
-    border-right: 1px solid var(--border-color, #444);
+    border-bottom: 1px solid var(--border-color, #444);
     background: transparent;
     color: var(--text-muted, #888);
     cursor: pointer;
@@ -38,7 +82,7 @@
     letter-spacing: 0.04em;
     transition: background 0.15s, color 0.15s;
   }
-  .ts-btn:last-child { border-right: none; }
+  .ts-btn:last-child { border-bottom: none; }
   .ts-btn svg {
     width: 13px; height: 13px;
     stroke: currentColor; fill: none;
@@ -58,28 +102,27 @@
   }
 
   /* Light mode */
-  body.light-mode .theme-switcher {
+  body.light-mode .ts-panel {
     background: #ffffff;
     border-color: #cccccc;
   }
   body.light-mode .ts-btn {
     color: #666;
-    border-right-color: #cccccc;
+    border-bottom-color: #cccccc;
   }
 
-  /* AODA mode — high-contrast group */
-  body.aoda-mode .theme-switcher {
+  /* AODA mode */
+  body.aoda-mode .ts-panel {
     background: #ffffff;
     border: 2px solid #000000;
-    border-radius: 6px;
   }
   body.aoda-mode .ts-btn {
     color: #000000;
-    border-right: 1px solid #000000;
-    height: 32px;
+    border-bottom: 1px solid #000000;
+    height: 38px;
     font-size: 11px;
   }
-  body.aoda-mode .ts-btn:last-child { border-right: none; }
+  body.aoda-mode .ts-btn:last-child { border-bottom: none; }
   body.aoda-mode .ts-btn:hover {
     background: #f0f0f0;
     color: #a50000;
@@ -87,6 +130,9 @@
   body.aoda-mode .ts-btn.ts-active {
     background: #000000;
     color: #ffffff;
+  }
+  body.aoda-mode .ts-handle {
+    background: #000000;
   }
 </style>
 
@@ -100,7 +146,7 @@
     Applies to: new hire (NEW_EMP_), equipment request (EQUIP_REQ_), status
     change (CHANGE_). Does NOT apply to terminations.
 
-  Server-side (BOSSReviewHandler.js → serveITConfirmation):
+  Server-side (ITConfirmationHandler.js → serveITConfirmation):
     - Detects workflow type from ID prefix (NEW_EMP_ / EQUIP_REQ_ → InitialRequest.html,
       CHANGE_ → PositionSiteChangeRequest.html).
     - Passes to template: mode='it_confirmation', baseMode=<original mode>,
@@ -111,12 +157,12 @@
       appends an audit row to IT Confirmation Results, and triggers the IT Setup email.
 
   Client-side (InitialRequest.html / PositionSiteChangeRequest.html):
-    - FORM_MODE='it_confirmation' detected from <?= mode ?> template var.
+    - FORM_MODE='it_confirmation' detected from [mode] template var.
     - INJECTED_REQUEST_DATA holds the full request JSON (parsed from requestData).
     - IT_CONFIRM_WF_ID holds the workflow ID for the submit call.
-    - After populateAll() populates all dropdowns and dual-lists, prefillBossReview()
+    - After populateAll() populates all dropdowns and dual-lists, prefillITConfirmation()
       is called to pre-populate all form fields with the existing request data.
-    - prefillBossReview() rebuilds dual-lists with selected values, sets radios/
+    - prefillITConfirmation() rebuilds dual-lists with selected values, sets radios/
       checkboxes, and fires UI toggle functions to reveal dependent sections.
     - Submit routes to google.script.run.submitITConfirmation(data) instead of the
       normal submitInitialRequest / submitPositionChangeRequest.
@@ -130,6 +176,134 @@
     6. Route submit to submitITConfirmation and show success screen.
   ══════════════════════════════════════════════════════════════════
 -->
+<script>
+  /* ══════════════════════════════════════════════════════════════
+     Shared utilities — escapeHtml, formatDate, renderWorkflowFields
+     Defined here once; Dashboard.html and RequestDetails.html rely
+     on this via include('SharedComponents') in the page template.
+  ══════════════════════════════════════════════════════════════ */
+
+  /**
+   * HTML-escape a value for safe injection into innerHTML.
+   */
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /**
+   * Format a date string or Date to M/d/yyyy.
+   * Returns '-' for empty / invalid input.
+   */
+  function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    if (dateStr instanceof Date) {
+      if (isNaN(dateStr.getTime())) return '-';
+      return (dateStr.getMonth() + 1) + '/' + dateStr.getDate() + '/' + dateStr.getFullYear();
+    }
+    // Already formatted M/d/yyyy or m/d/yyyy — pass through
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(String(dateStr))) return String(dateStr);
+    const d = new Date(String(dateStr).replace(/\//g, '-'));
+    if (isNaN(d.getTime())) return String(dateStr);
+    return (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear();
+  }
+
+  /**
+   * renderWorkflowFields(r, wfId)
+   *
+   * Returns an HTML string — a <div class="detail-grid"> block — containing
+   * all relevant fields for the given workflow.  Called from both:
+   *   • Dashboard.html  → renderModalDetails() (overlay)
+   *   • RequestDetails.html → renderDetails() (full page snapshotGrid)
+   *
+   * @param {Object} r    — requestData flat object from getRequestDetails /
+   *                        getTerminationDetails / getChangeDetails / etc.
+   * @param {string} wfId — Workflow ID (used to detect type from prefix)
+   * @returns {string} HTML
+   */
+  function renderWorkflowFields(r, wfId) {
+    r = r || {};
+    wfId = wfId || '';
+    var _di = function(label, val) {
+      if (val == null || val === '' || val === 'N/A') return '';
+      return '<div class="detail-item"><label>' + escapeHtml(label) + '</label><div>' + escapeHtml(val) + '</div></div>';
+    };
+    var _diRaw = function(label, html) {
+      if (!html) return '';
+      return '<div class="detail-item"><label>' + escapeHtml(label) + '</label><div>' + html + '</div></div>';
+    };
+
+    var html = '<div class="detail-grid">';
+
+    if (wfId.startsWith('CHANGE_')) {
+      html +=
+        _di('Workflow ID',      wfId) +
+        _di('Employee',         r['Employee Name']) +
+        _di('Classification',   r['Current Classification']) +
+        _di('Current Title',    r['Current Title']) +
+        _di('Effective Date',   r['Effective Date']) +
+        _di('Site',             r['Site Name'] || r['Site']) +
+        _di('Changes',          r['Change Type']) +
+        _di('Department',       r['Department']) +
+        _di('Current Manager',  (r['Current Manager Name'] || '') + (r['Current Manager Email'] ? ' \xb7 ' + r['Current Manager Email'] : '') || null) +
+        _di('Requester',        (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : '') || null);
+
+    } else if (wfId.startsWith('TERM_')) {
+      var termAttach = r['Attachment URL'] || r['Attachment Url'] || '';
+      html +=
+        _di('Workflow ID',    wfId) +
+        _di('Employee',       r['Employee Name']) +
+        _di('Employee Type',  r['Employee Type']) +
+        _di('Site',           r['Site']) +
+        _di('Term Date',      r['Term Date'] || r['Termination Date']) +
+        _di('Reason',         r['Reason']) +
+        _di('Requester',      r['Requester Email']) +
+        (termAttach ? _diRaw('Documentation', '<a href="' + escapeHtml(termAttach) + '" target="_blank" style="color:#EB1C2D;">View Attached File</a>') : '');
+
+    } else if (wfId.startsWith('EQUIP_REQ_')) {
+      var eqName = ((r['First Name'] || '') + ' ' + (r['Last Name'] || '')).trim() || r['Employee Name'] || '';
+      html +=
+        _di('Workflow ID',   wfId) +
+        _di('Employee',      eqName) +
+        _di('Position',      r['Position Title']) +
+        _di('Site',          r['Site Name'] || r['Site']) +
+        _di('Department',    r['Department']) +
+        _di('Equipment',     r['Equipment']) +
+        _di('Systems',       r['Systems']) +
+        _di('Date Requested',r['Date Requested']) +
+        _di('Manager',       (r['Manager Name'] || '') + (r['Manager Email'] ? ' \xb7 ' + r['Manager Email'] : '') || null) +
+        _di('Requester',     (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : '') || null) +
+        _di('Comments',      r['Comments']);
+
+    } else {
+      // Onboarding (NEW_EMP_ prefix or bare numeric)
+      html +=
+        _di('Workflow ID',    wfId) +
+        _di('First Name',     r['First Name']) +
+        _di('Last Name',      r['Last Name']) +
+        _di('Employment Type',r['Employment Type']) +
+        _di('Employee Type',  r['Employee Type']) +
+        _di('Position Title', r['Position Title'] || r['HR Verified Title'] || r['Position/JR Title']) +
+        _di('Department',     r['Department']) +
+        _di('Site',           r['Site/Office Location'] || r['Site Name'] || r['Site']) +
+        _di('Job Site #',     r['Job Site #']) +
+        _di('Start Date',     r['Hire Date'] || r['Hire/Start Date']) +
+        _di('System Access',  r['System Access']) +
+        _di('Manager',        (r['Manager Name'] || '') + (r['Manager Email'] ? ' \xb7 ' + r['Manager Email'] : '') || null) +
+        _di('Requester',      (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : '') || null) +
+        _di('Date Requested', r['Date Requested']);
+    }
+
+    html += '</div>';
+    return html;
+  }
+</script>
+
 <script>
   /* ══════════════════════════════════════════════════════════════
      Dual-List Picker — shared widget
@@ -290,20 +464,26 @@
     }
 
     function init() {
-      var saved = localStorage.getItem(KEY) || 'dark';
+      var saved        = localStorage.getItem(KEY) || 'dark';
+      var PANEL_KEY    = 'tg_theme_panel';
+      var panelOpen    = localStorage.getItem(PANEL_KEY) !== 'closed';
 
-      // Apply immediately to prevent flash
+      // Apply theme immediately to prevent flash
       applyTheme(saved);
 
-      // Build the switcher group
+      // Wrapper
       var group = document.createElement('div');
-      group.className = 'theme-switcher';
+      group.className = 'theme-switcher' + (panelOpen ? '' : ' ts-collapsed');
       group.setAttribute('role', 'group');
       group.setAttribute('aria-label', 'Display theme');
 
+      // Panel (holds the 3 buttons)
+      var panel = document.createElement('div');
+      panel.className = 'ts-panel';
+
       var BUTTONS = [
-        { theme: 'dark',  html: MOON_SVG, tip: 'Dark mode'                          },
-        { theme: 'light', html: SUN_SVG,  tip: 'Light mode'                         },
+        { theme: 'dark',  html: MOON_SVG, tip: 'Dark mode'                           },
+        { theme: 'light', html: SUN_SVG,  tip: 'Light mode'                          },
         { theme: 'aoda',  html: 'AODA',   tip: 'High-contrast mode (AODA / WCAG AA)' }
       ];
 
@@ -320,9 +500,31 @@
           applyTheme(def.theme);
           setActive(group, def.theme);
         });
-        group.appendChild(btn);
+        panel.appendChild(btn);
       });
 
+      // Handle tab (always visible, toggles panel)
+      var handle = document.createElement('button');
+      handle.type = 'button';
+      handle.className = 'ts-handle';
+      handle.title = 'Toggle theme switcher';
+      handle.setAttribute('aria-label', 'Toggle theme switcher');
+      handle.innerHTML = panelOpen ? '›' : '‹';
+      handle.addEventListener('click', function() {
+        var isOpen = !group.classList.contains('ts-collapsed');
+        if (isOpen) {
+          group.classList.add('ts-collapsed');
+          handle.innerHTML = '‹';
+          localStorage.setItem(PANEL_KEY, 'closed');
+        } else {
+          group.classList.remove('ts-collapsed');
+          handle.innerHTML = '›';
+          localStorage.setItem(PANEL_KEY, 'open');
+        }
+      });
+
+      group.appendChild(panel);
+      group.appendChild(handle);
       document.body.appendChild(group);
       setActive(group, saved);
     }
@@ -334,3 +536,4 @@
     }
   })();
 </script>
+<!-- Konami easter egg loaded per-page via safeInclude('Konami') in each template directly -->

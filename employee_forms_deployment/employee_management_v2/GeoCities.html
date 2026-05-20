@@ -1,1 +1,946 @@
-<!-- GeoCities easter egg disabled in PROD -->
+<!-- GeoCities.html
+     DEV ONLY — do not migrate to staging or prod.
+     Include in any GAS template: <?!= include('GeoCities') ?>
+     Toggle: Konami code (UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A)
+             OR click the TEAM logo 5 times quickly
+     State:  localStorage key 'tg_geo_v1'
+-->
+<style>
+/* ============================================================
+   GEOCITIES MODE
+   All rules scoped to body.geocities -- zero impact when inactive.
+   Single include activates the whole thing site-wide.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
+
+/* ---- ANIMATIONS ------------------------------------------ */
+@keyframes geo-rainbow {
+  0%   { color: #ff0000; } 14%  { color: #ff8800; }
+  28%  { color: #ffff00; } 42%  { color: #00ff00; }
+  57%  { color: #0088ff; } 71%  { color: #8800ff; }
+  85%  { color: #ff00ff; } 100% { color: #ff0000; }
+}
+@keyframes geo-blink    { 0%,49%{opacity:1}  50%,100%{opacity:0} }
+@keyframes geo-spin     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes geo-float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes geo-shake    {
+  0%,100%{transform:translateX(0)} 20%{transform:translateX(-3px)}
+  40%{transform:translateX(3px)}   60%{transform:translateX(-3px)} 80%{transform:translateX(3px)}
+}
+@keyframes geo-pulse-border {
+  0%,100%{border-color:#ff0000;box-shadow:0 0 8px #ff0000}
+  25%    {border-color:#ffff00;box-shadow:0 0 8px #ffff00}
+  50%    {border-color:#00ff00;box-shadow:0 0 8px #00ff00}
+  75%    {border-color:#0088ff;box-shadow:0 0 8px #0088ff}
+}
+@keyframes geo-marquee-bg {
+  0%{background-position:0 0} 100%{background-position:400px 0}
+}
+@keyframes geo-neon {
+  0%,100%{text-shadow:0 0 5px #ff00ff,0 0 15px #ff00ff}
+  50%    {text-shadow:0 0 2px #ff00ff}
+}
+@keyframes geo-explode  { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+@keyframes geo-counter  { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
+
+/* ---- GLOBAL OVERRIDES ------------------------------------ */
+body.geocities {
+  --bg-color:        #000011 !important;
+  --bg-darker:       #000033 !important;
+  --card-bg:         rgba(0,0,80,0.9) !important;
+  --text-main:       #ffffff !important;
+  --text-muted:      #00ffff !important;
+  --brand-red:       #ff00ff !important;
+  --brand-red-hover: #cc00cc !important;
+  --border-color:    #ffff00 !important;
+  --border-subtle:   #334488 !important;
+  --input-bg:        #000033 !important;
+  --input-border:    #00ff00 !important;
+  --success:         #00ff00 !important;
+  --warning:         #ffff00 !important;
+  --danger:          #ff4444 !important;
+
+  background-color: #000011 !important;
+  background-image:
+    radial-gradient(1px 1px at  8% 15%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 70%, #aaf 0%, transparent 100%),
+    radial-gradient(1px 1px at 42% 35%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 85%, #ffa 0%, transparent 100%),
+    radial-gradient(1px 1px at 78% 55%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 12% 90%, #aff 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 20%, #faf 0%, transparent 100%),
+    radial-gradient(2px 2px at 35% 10%, #fff 0%, transparent 100%),
+    radial-gradient(2px 2px at 55% 60%, #aaf 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 75%, #fff 0%, transparent 100%) !important;
+  background-size: 200px 200px !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+  padding-bottom: 44px !important;
+}
+
+/* ---- HEADER / NAV --------------------------------------- */
+body.geocities header,
+body.geocities .header {
+  background: rgba(0,0,0,0.85) !important;
+  border-bottom: 4px solid #ff00ff !important;
+  animation: geo-pulse-border 2s infinite !important;
+}
+body.geocities header h1,
+body.geocities .header h1,
+body.geocities h1 {
+  animation: geo-rainbow 1s infinite !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+  text-shadow: 3px 3px 0 #000, -1px -1px 0 #000 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+}
+body.geocities h2, body.geocities h3 {
+  animation: geo-rainbow 1.5s infinite !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+}
+body.geocities .nav-links a,
+body.geocities .header-nav a {
+  color: #ffff00 !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+}
+
+/* ---- CARDS / SECTIONS ----------------------------------- */
+body.geocities .card,
+body.geocities .form-section,
+body.geocities .details-section,
+body.geocities .filter-group,
+body.geocities .modal-content,
+body.geocities .popover,
+body.geocities .dash-card {
+  background: rgba(0,0,80,0.85) !important;
+  border: 3px solid #ffff00 !important;
+  border-radius: 0 !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+}
+body.geocities .card:nth-child(2n)  { border-color: #ff00ff !important; }
+body.geocities .card:nth-child(3n)  { border-color: #00ffff !important; }
+body.geocities .card:nth-child(4n)  { border-color: #00ff88 !important; }
+body.geocities .card-title,
+body.geocities .form-section-title,
+body.geocities .section-heading,
+body.geocities label {
+  color: #ffff00 !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+  text-shadow: 1px 1px #ff0000 !important;
+  letter-spacing: 1px !important;
+}
+
+/* ---- BUTTONS -------------------------------------------- */
+body.geocities button,
+body.geocities .action-btn,
+body.geocities .action-link,
+body.geocities .filter-btn,
+body.geocities .btn {
+  background: linear-gradient(180deg, #4488ff, #000066) !important;
+  border: 3px outset #8888ff !important;
+  border-radius: 0 !important;
+  color: #ffffff !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+  cursor: pointer !important;
+  transition: none !important;
+  text-decoration: none !important;
+}
+body.geocities button:active,
+body.geocities .action-btn:active  { border-style: inset !important; }
+body.geocities button[type="submit"],
+body.geocities .submit-btn {
+  background: linear-gradient(180deg, #44ff44, #006600) !important;
+  border-color: #00ff00 !important;
+  color: #000 !important;
+  animation: geo-explode 1.5s infinite !important;
+  font-size: 1.1em !important;
+}
+body.geocities .filter-btn.active,
+body.geocities .filter-btn[aria-pressed="true"] {
+  background: linear-gradient(180deg, #ffff44, #666600) !important;
+  border-color: #ffff00 !important;
+  color: #000 !important;
+  border-style: inset !important;
+}
+body.geocities a.action-link[href*="initial_request"],
+body.geocities .btn-primary {
+  background: linear-gradient(180deg, #ff8844, #660000) !important;
+  border-color: #ff4400 !important;
+  color: #fff !important;
+}
+
+/* ---- INPUTS --------------------------------------------- */
+body.geocities input[type="text"],
+body.geocities input[type="email"],
+body.geocities input[type="date"],
+body.geocities input[type="tel"],
+body.geocities input[type="number"],
+body.geocities select,
+body.geocities textarea,
+body.geocities .search-box {
+  background: #000022 !important;
+  border: 2px inset #00ff00 !important;
+  color: #00ff00 !important;
+  font-family: 'Courier New', monospace !important;
+  border-radius: 0 !important;
+  caret-color: #00ff00 !important;
+}
+body.geocities input::placeholder,
+body.geocities textarea::placeholder { color: #006600 !important; opacity:1 !important; }
+body.geocities select option         { background: #000022 !important; color: #00ff00 !important; }
+
+/* ---- STATUS BADGES -------------------------------------- */
+body.geocities .status-badge {
+  border-radius: 0 !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+  font-weight: 700 !important;
+  border: 2px solid currentColor !important;
+  animation: geo-blink 2s infinite !important;
+  letter-spacing: 1px !important;
+}
+
+/* ---- TABLES --------------------------------------------- */
+body.geocities table         { border-collapse: collapse !important; }
+body.geocities th {
+  background: #000088 !important;
+  color: #00ffff !important;
+  border: 1px solid #00ffff !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+body.geocities td            { border: 1px solid #334488 !important; font-family: 'Comic Neue', 'Comic Sans MS', cursive !important; }
+body.geocities tr:nth-child(even) td { background: rgba(0,0,40,0.5) !important; }
+body.geocities tr:hover td   { background: rgba(0,0,120,0.6) !important; }
+
+/* ---- CALLOUTS ------------------------------------------- */
+body.geocities .callout,
+body.geocities .callout-warning {
+  background: #220000 !important;
+  border: 3px solid #ff4444 !important;
+  border-radius: 0 !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+  animation: geo-shake 3s infinite !important;
+  color: #ff8888 !important;
+}
+body.geocities .callout-info {
+  border-color: #00ffff !important;
+  background: #002233 !important;
+  color: #00ffff !important;
+  animation: none !important;
+}
+
+/* ---- SUCCESS SCREEN ------------------------------------- */
+body.geocities #success-screen,
+body.geocities .success-screen {
+  background: rgba(0,40,0,0.95) !important;
+  border: 4px solid #00ff00 !important;
+  animation: geo-pulse-border 1.5s infinite !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+}
+body.geocities .success-icon { animation: geo-spin 2s linear infinite !important; font-size: 3em !important; }
+body.geocities #successTitle { animation: geo-rainbow 1s infinite !important; }
+
+/* ---- LOGO ----------------------------------------------- */
+body.geocities img.logo,
+body.geocities header img,
+body.geocities .header img {
+  animation: geo-float 2s ease-in-out infinite !important;
+  filter: drop-shadow(0 0 10px #ff00ff) !important;
+  cursor: pointer !important;
+}
+
+/* ---- LINKS ---------------------------------------------- */
+body.geocities a              { color: #ffff00 !important; text-decoration: underline !important; }
+body.geocities a:hover        { color: #ff00ff !important; }
+body.geocities a:visited      { color: #ff88ff !important; }
+
+/* ---- LOADING OVERLAY ------------------------------------ */
+body.geocities #loading-overlay,
+body.geocities .loading-overlay {
+  background: rgba(0,0,0,0.92) !important;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
+  color: #00ff00 !important;
+}
+
+/* ---- DUAL LIST WIDGET ----------------------------------- */
+body.geocities .dual-list-panel        { background: rgba(0,0,60,0.9) !important; border: 2px solid #0088ff !important; }
+body.geocities .dual-list-panel-header { background: #000088 !important; color: #00ffff !important; }
+body.geocities .dual-list-item         { color: #ccffcc !important; border-bottom: 1px solid #224422 !important; }
+body.geocities .dual-list-item.selected{ background: #006600 !important; color: #fff !important; }
+body.geocities .dual-list-arrow        { background: #003300 !important; border: 2px outset #00ff00 !important; color: #00ff00 !important; }
+body.geocities .dual-list-btn          { background: #001100 !important; border: 2px outset #00aa00 !important; color: #00ff00 !important; }
+
+/* ====================================================================
+   INJECTED GEOCITIES UI ELEMENTS
+   ==================================================================== */
+
+/* ---- TOP BARS ------------------------------------------- */
+.geo-top-bar {
+  background: linear-gradient(90deg,#ff0000,#ff8800,#ffff00,#00ff00,#0088ff,#8800ff,#ff00ff,#ff0000);
+  background-size: 400% 100%;
+  animation: geo-marquee-bg 3s linear infinite;
+  padding: 5px 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 12px;
+  color: #000;
+  letter-spacing: 2px;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+  position: relative;
+  z-index: 9998;
+}
+.geo-marquee-bar {
+  background: #000088;
+  border-top: 3px solid #ffff00;
+  border-bottom: 3px solid #ffff00;
+  padding: 6px 0;
+  overflow: hidden;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  position: relative;
+  z-index: 9998;
+}
+.geo-marquee-bar marquee { display: block; }
+
+/* ---- FIXED FOOTER --------------------------------------- */
+.geo-fixed-footer {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #000044;
+  border-top: 2px solid #0000ff;
+  padding: 5px 0;
+  color: #8888ff;
+  font-size: 11px;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+  z-index: 9999;
+}
+.geo-fixed-footer marquee { display: block; }
+
+/* ---- STATS PANEL ---------------------------------------- */
+.geo-stats-panel {
+  background: rgba(0,0,20,0.97);
+  border: 3px solid #ffff00;
+  margin: 12px 0 16px 0;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+  font-size: 13px;
+  overflow: hidden;
+}
+.geo-stats-header {
+  background: linear-gradient(90deg, #000088, #000044);
+  border-bottom: 2px solid #ffff00;
+  padding: 8px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+.geo-stats-header-title {
+  color: #ffff00;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 2px;
+  animation: geo-rainbow 2s infinite;
+}
+.geo-stats-toggle-hint { color: #888; font-size: 11px; }
+.geo-stats-body        { padding: 12px 14px; }
+
+.geo-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.geo-stat-box {
+  background: rgba(0,0,60,0.8);
+  border: 2px solid #0088ff;
+  padding: 8px 10px;
+  text-align: center;
+}
+.geo-stat-box.geo-green  { border-color: #00ff00; }
+.geo-stat-box.geo-yellow { border-color: #ffff00; }
+.geo-stat-box.geo-pink   { border-color: #ff00ff; }
+.geo-stat-box.geo-cyan   { border-color: #00ffff; }
+.geo-stat-box.geo-red    { border-color: #ff4444; }
+.geo-stat-box.geo-orange { border-color: #ff8800; }
+
+.geo-stat-num {
+  font-size: 26px;
+  font-weight: 700;
+  color: #00ff00;
+  display: block;
+  font-family: 'Courier New', monospace;
+  animation: geo-counter 0.5s ease-out;
+}
+.geo-stat-box.geo-yellow .geo-stat-num { color: #ffff00; }
+.geo-stat-box.geo-pink   .geo-stat-num { color: #ff88ff; animation: geo-rainbow 1.5s infinite; }
+.geo-stat-box.geo-cyan   .geo-stat-num { color: #00ffff; }
+.geo-stat-box.geo-red    .geo-stat-num { color: #ff6666; }
+.geo-stat-box.geo-orange .geo-stat-num { color: #ffaa44; }
+.geo-stat-label { color: #aaaaaa; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; display: block; }
+
+.geo-counter-row { text-align: center; padding: 10px 0; }
+.geo-counter-label { font-size: 11px; color: #ffff00; letter-spacing: 2px; margin-bottom: 4px; }
+.geo-counter-box {
+  background: #000;
+  border: 2px solid #00ff00;
+  padding: 6px 14px;
+  display: inline-block;
+  font-family: 'Courier New', monospace;
+  color: #00ff00;
+  font-size: 22px;
+  letter-spacing: 5px;
+  box-shadow: 0 0 10px #00ff00;
+}
+.geo-counter-sub { font-size: 9px; color: #555; margin-top: 2px; }
+
+.geo-rainbow-hr { height: 3px; background: linear-gradient(90deg,#ff0000,#ff8800,#ffff00,#00ff00,#0088ff,#8800ff,#ff00ff); border: none; margin: 10px 0; }
+
+.geo-leaderboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin: 10px 0; }
+.geo-lb-box { background: rgba(0,0,40,0.7); border: 2px dashed #ff88ff; padding: 8px 10px; }
+.geo-lb-box.geo-lb-blue  { border-color: #88aaff; }
+.geo-lb-box.geo-lb-green { border-color: #00ff88; }
+.geo-lb-title {
+  color: #ff88ff;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1px;
+  border-bottom: 1px dashed #ff88ff;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.geo-lb-box.geo-lb-blue  .geo-lb-title  { color: #88aaff; border-color: #88aaff; }
+.geo-lb-box.geo-lb-green .geo-lb-title  { color: #00ff88; border-color: #00ff88; }
+.geo-lb-item { padding: 2px 0; font-size: 12px; color: #cccccc; display: flex; justify-content: space-between; align-items: center; }
+.geo-lb-rank  { color: #ffff00; font-weight: 700; margin-right: 5px; font-size: 11px; }
+.geo-lb-count { color: #00ff00; font-family: 'Courier New', monospace; font-weight: 700; font-size: 12px; }
+.geo-lb-name  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.geo-awards-row { text-align: center; padding: 8px 0; }
+.geo-award {
+  display: inline-block;
+  border: 2px solid #ffaa00;
+  padding: 5px 10px;
+  margin: 3px;
+  background: #221100;
+  text-align: center;
+  font-size: 10px;
+  color: #ffaa00;
+  vertical-align: top;
+  min-width: 56px;
+}
+.geo-award.geo-award-cyan  { border-color: #00ffff; color: #00ffff; background: #001122; }
+.geo-award.geo-award-pink  { border-color: #ff88ff; color: #ff88ff; background: #220022; }
+.geo-award.geo-award-green { border-color: #00ff88; color: #00ff88; background: #002211; }
+.geo-trophy { font-size: 20px; display: block; animation: geo-spin 3s linear infinite; font-family: 'Courier New', monospace; }
+
+.geo-best-month {
+  text-align: center;
+  padding: 8px;
+  background: rgba(0,0,40,0.7);
+  border: 2px solid #8800ff;
+  margin: 8px 0;
+}
+.geo-best-month-label { color: #8888ff; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+.geo-best-month-val   { color: #ff88ff; font-size: 18px; font-weight: 700; animation: geo-neon 2s infinite; }
+.geo-best-month-count { color: #888; font-size: 11px; }
+
+.geo-loading { color: #00ff00; font-family: 'Courier New', monospace; animation: geo-blink 0.8s infinite; text-align: center; padding: 14px; }
+
+/* ---- BADGE (exit button) -------------------------------- */
+.geo-exit-badge {
+  position: fixed;
+  top: 50px; right: 10px;
+  background: #000;
+  border: 2px solid #ff00ff;
+  color: #ff00ff;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+  font-size: 10px;
+  padding: 3px 7px;
+  z-index: 9997;
+  cursor: pointer;
+  animation: geo-blink 3s infinite;
+  letter-spacing: 1px;
+}
+
+/* ---- TOAST ---------------------------------------------- */
+.geo-toast {
+  position: fixed;
+  bottom: 54px; right: 16px;
+  background: #000088;
+  border: 3px solid #ffff00;
+  color: #ffff00;
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 16px;
+  z-index: 99999;
+  max-width: 320px;
+  box-shadow: 0 0 20px #ffff00;
+  animation: geo-shake 0.4s ease-out;
+}
+</style>
+
+<script>
+/* ============================================================
+   GeoCities Mode Engine v1.0
+   No template literals (GAS sandbox compatibility).
+   No globals -- everything in IIFE.
+   ============================================================ */
+(function() {
+
+  var GEO_KEY = 'tg_geo_v1';
+  var KONAMI  = [38,38,40,40,37,39,37,39,66,65];
+  var kIdx    = 0;
+  var geoOn   = false;
+  var tTimer  = null;
+  var origTitle = document.title;
+  var lClicks = 0;
+  var lTimer  = null;
+  var statsOpen = true;
+
+  var GEO_TITLES = [
+    '~~*~~ ' + origTitle + ' ~~*~~',
+    '*** GEOCITIES MODE ACTIVATED ***',
+    '!!! BEST VIEWED IN NETSCAPE 4.0 !!!',
+    '~~*~~ ' + origTitle + ' ~~*~~',
+    '>>> SUBMIT YOUR REQUESTS HERE <<<',
+    '--- Y2K COMPLIANT WEBSITE ---'
+  ];
+  var tIdx = 0;
+
+  var STATUS_MAP = {
+    'In Progress':               'WORKIN ON IT!! :-)',
+    'Pending':                   'WAITING... (dont touch!!)',
+    'Completed':                 'DONE!! YOU WIN!!! 8-)',
+    'Cancelled':                 'RIP... (cancelled) :-(',
+    'Action Required':           '!! ACTION REQUIRED !!',
+    'All Specialists Complete':  'ALL DONE!! PARTY TIME!! :-D',
+    'Pending: IT Setup':         'WAITING ON IT DEPT...',
+    'Pending: ID Setup':         'WAITING ON HR/PAYROLL...'
+  };
+
+  var SUBMIT_TEXTS = [
+    'CLICK HERE TO SUBMIT!!! [>]',
+    'GO GO GO!! SUBMIT NOW!!',
+    'YES!! SEND IT!! [>>]',
+    'CLICK TO SUBMIT!! FREE!!',
+    'SUBMIT!! (it is free!!)'
+  ];
+
+  /* ---- State -------------------------------------------- */
+  function isOn()   { try { return localStorage.getItem(GEO_KEY) === '1'; } catch(e) { return false; } }
+  function setPref(v) { try { if(v) localStorage.setItem(GEO_KEY,'1'); else localStorage.removeItem(GEO_KEY); } catch(e){} }
+
+  /* ---- Toggle ------------------------------------------- */
+  function toggle() { if (geoOn) deactivate(); else activate(); }
+
+  /* ---- Activate ----------------------------------------- */
+  function activate() {
+    geoOn = true;
+    setPref(true);
+    document.body.classList.add('geocities');
+    injectTopBar();
+    injectMarquee();
+    injectFixedFooter();
+    injectExitBadge();
+    injectStatsPanel();
+    swapStatus(true);
+    swapSubmit(true);
+    startTitleBlink();
+    toast('GEOCITIES MODE ACTIVATED!! \\o/  (Konami again to exit)');
+  }
+
+  /* ---- Deactivate --------------------------------------- */
+  function deactivate() {
+    geoOn = false;
+    setPref(false);
+    document.body.classList.remove('geocities');
+    var ids = ['geo-top-bar','geo-marquee-bar','geo-fixed-footer','geo-exit-badge','geo-stats-panel-wrap'];
+    ids.forEach(function(id) { var el=document.getElementById(id); if(el && el.parentNode) el.parentNode.removeChild(el); });
+    swapStatus(false);
+    swapSubmit(false);
+    stopTitleBlink();
+    toast('GeoCities mode off. Back to the future. :(');
+  }
+
+  /* ---- Top rainbow bar ---------------------------------- */
+  function injectTopBar() {
+    if (document.getElementById('geo-top-bar')) return;
+    var el = document.createElement('div');
+    el.id = 'geo-top-bar';
+    el.className = 'geo-top-bar';
+    el.textContent = 'BEST VIEWED IN NETSCAPE NAVIGATOR 4.0 AT 800x600 -- FRAMES-FREE -- JAVASCRIPT ENABLED -- Y2K COMPLIANT';
+    document.body.insertBefore(el, document.body.firstChild);
+  }
+
+  /* ---- Scrolling marquee -------------------------------- */
+  function injectMarquee() {
+    if (document.getElementById('geo-marquee-bar')) return;
+    var el = document.createElement('div');
+    el.id = 'geo-marquee-bar';
+    el.className = 'geo-marquee-bar';
+    el.innerHTML =
+      '<marquee scrollamount="5">' +
+      '&nbsp;&nbsp;&nbsp;' +
+      '&#9728; WELCOME TO THE OFFICIAL TEAM GROUP EMPLOYEE MANAGEMENT PORTAL &#9728;' +
+      '&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;' +
+      '&#9733; NOW WITH 100% MORE SEQUENTIAL GATING!!! &#9733;' +
+      '&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;' +
+      'NO FAX REQUIRED -- SUBMIT YOUR REQUESTS ONLINE!!' +
+      '&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;' +
+      'PAPERLESS SINCE 2024!! SAVING TREES ONE FORM AT A TIME!!' +
+      '&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;' +
+      'NEW!! EQUIPMENT &amp; SYSTEMS REQUEST NOW AVAILABLE!!' +
+      '&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;' +
+      'AIM: TeamGroupHR &nbsp;|&nbsp; ICQ: 867-5309 &nbsp;|&nbsp; BEST HR INTRANET SITE 1997' +
+      '&nbsp;&nbsp;&nbsp;' +
+      '</marquee>';
+    var topBar = document.getElementById('geo-top-bar');
+    document.body.insertBefore(el, topBar ? topBar.nextSibling : document.body.firstChild);
+  }
+
+  /* ---- Fixed scrolling footer --------------------------- */
+  function injectFixedFooter() {
+    if (document.getElementById('geo-fixed-footer')) return;
+    var el = document.createElement('div');
+    el.id = 'geo-fixed-footer';
+    el.className = 'geo-fixed-footer';
+    el.innerHTML =
+      '<marquee scrollamount="3" direction="right">' +
+      '&nbsp; Email: hr@team-group.com &nbsp;|&nbsp;' +
+      ' Office Hours: 9am-5pm EST &nbsp;|&nbsp;' +
+      ' This site is Y2K compliant &nbsp;|&nbsp;' +
+      ' SSL secured &nbsp;|&nbsp;' +
+      ' Running on GOOGLE APPS SCRIPT (like GeoCities Pro but free!!) &nbsp;|&nbsp;' +
+      ' No frames!! &nbsp;|&nbsp;' +
+      ' &lt;/&gt; HTML coded by hand in Notepad.exe &lt;/&gt;' +
+      ' &nbsp;' +
+      '</marquee>';
+    document.body.appendChild(el);
+  }
+
+  /* ---- Exit badge --------------------------------------- */
+  function injectExitBadge() {
+    if (document.getElementById('geo-exit-badge')) return;
+    var el = document.createElement('div');
+    el.id = 'geo-exit-badge';
+    el.className = 'geo-exit-badge';
+    el.innerHTML = '[GEO MODE ON]<br>click to exit';
+    el.title = 'Click to disable GeoCities mode (or press Konami code again)';
+    el.addEventListener('click', toggle);
+    document.body.appendChild(el);
+  }
+
+  /* ---- Stats panel -------------------------------------- */
+  function injectStatsPanel() {
+    if (document.getElementById('geo-stats-panel-wrap')) return;
+
+    var anchor = document.querySelector('header') ||
+                 document.querySelector('.header') ||
+                 document.querySelector('.container') ||
+                 document.body;
+
+    var wrap = document.createElement('div');
+    wrap.id = 'geo-stats-panel-wrap';
+    wrap.className = 'geo-stats-panel';
+    wrap.innerHTML =
+      '<div class="geo-stats-header" id="geo-stats-hdr">' +
+        '<span class="geo-stats-header-title">' +
+          '&#9733; SITE STATISTICS &#9733; LIVE DATA &#9733; UPDATED EVERY PAGE LOAD &#9733;' +
+        '</span>' +
+        '<span class="geo-stats-toggle-hint">[click to collapse]</span>' +
+      '</div>' +
+      '<div class="geo-stats-body" id="geo-stats-body">' +
+        '<div class="geo-counter-row">' +
+          '<div class="geo-counter-label">YOU ARE VISITOR NUMBER</div>' +
+          '<div class="geo-counter-box" id="geo-visitor-num">... ... ...</div>' +
+          '<div class="geo-counter-sub">FREE WEB COUNTER PROVIDED BY GEOCOUNTER.COM</div>' +
+        '</div>' +
+        '<div class="geo-rainbow-hr"></div>' +
+        '<div class="geo-stats-grid" id="geo-stats-grid">' +
+          '<div class="geo-loading">LOADING STATS... PLEASE WAIT... (dont close this window!!)</div>' +
+        '</div>' +
+        '<div class="geo-rainbow-hr"></div>' +
+        '<div class="geo-leaderboard" id="geo-leaderboard">' +
+          '<div class="geo-loading">LOADING HALL OF FAME...</div>' +
+        '</div>' +
+        '<div class="geo-rainbow-hr"></div>' +
+        '<div id="geo-best-month-wrap"></div>' +
+        '<div class="geo-awards-row" id="geo-awards-row">' +
+          '<div class="geo-loading">CALCULATING AWARDS...</div>' +
+        '</div>' +
+      '</div>';
+
+    if (anchor.tagName !== 'BODY') {
+      anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
+    } else {
+      var first = anchor.firstChild;
+      var topBar = document.getElementById('geo-top-bar');
+      var mBar   = document.getElementById('geo-marquee-bar');
+      var insertAfter = mBar || topBar || first;
+      if (insertAfter && insertAfter.nextSibling) {
+        anchor.insertBefore(wrap, insertAfter.nextSibling);
+      } else {
+        anchor.appendChild(wrap);
+      }
+    }
+
+    document.getElementById('geo-stats-hdr').addEventListener('click', function() {
+      statsOpen = !statsOpen;
+      var body = document.getElementById('geo-stats-body');
+      if (body) body.style.display = statsOpen ? '' : 'none';
+      var hint = this.querySelector('.geo-stats-toggle-hint');
+      if (hint) hint.textContent = statsOpen ? '[click to collapse]' : '[click to expand]';
+    });
+
+    fetchStats();
+  }
+
+  /* ---- Load stats from server --------------------------- */
+  function fetchStats() {
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      renderStats({ error: 'No server (preview mode) -- stats unavailable' });
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(renderStats)
+      .withFailureHandler(function(e) { renderStats({ error: e.message || 'Unknown error' }); })
+      .getGeoCitiesStats();
+  }
+
+  function padNum(n, len) {
+    var s = String(n < 0 ? 0 : n);
+    while (s.length < len) s = '0' + s;
+    return s;
+  }
+
+  function fmtCounter(n) {
+    var s = padNum(n, 6);
+    var r = '';
+    for (var i = 0; i < s.length; i++) r += s[i] + (i < s.length - 1 ? ' ' : '');
+    return r;
+  }
+
+  /* ---- Render stats ------------------------------------- */
+  function renderStats(data) {
+    var visEl  = document.getElementById('geo-visitor-num');
+    var gridEl = document.getElementById('geo-stats-grid');
+    var lbEl   = document.getElementById('geo-leaderboard');
+    var bmEl   = document.getElementById('geo-best-month-wrap');
+    var awEl   = document.getElementById('geo-awards-row');
+
+    if (!gridEl) return;
+
+    if (data && data.error) {
+      if (visEl)  visEl.textContent = '? ? ? ? ? ?';
+      gridEl.innerHTML = '<div style="color:#ff6666; font-size:12px;">!! ERROR: ' + data.error + '</div>';
+      if (lbEl) lbEl.innerHTML = '';
+      return;
+    }
+
+    var t = data.totals || {};
+    var total     = t.total     || 0;
+    var completed = t.completed || 0;
+    var rate      = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    if (visEl) visEl.textContent = fmtCounter(total);
+
+    /* Grid */
+    gridEl.innerHTML =
+      mkStat(t.newHire   || 0, 'NEW HIRE REQUESTS',         'geo-green')  +
+      mkStat(t.eoe       || 0, 'END OF EMPLOYMENT',          'geo-red')    +
+      mkStat(t.change    || 0, 'POSITION CHANGES',           'geo-cyan')   +
+      mkStat(t.equip     || 0, 'EQUIPMENT REQUESTS',         'geo-yellow') +
+      mkStat(completed,        'COMPLETED!! (WINNERS!!)',    'geo-green')  +
+      mkStat(t.inProgress||0,  'IN PROGRESS (working on it)','geo-yellow') +
+      mkStat(t.pending   ||0,  'PENDING (waiting...)',       'geo-cyan')   +
+      mkStat(t.cancelled ||0,  'CANCELLED (rip)',            'geo-red')    +
+      mkStat(rate + '%',       'COMPLETION RATE!!',          'geo-pink')   +
+      mkStat(t.actionItems||0, 'TOTAL ACTION ITEMS',         '')           +
+      mkStat(t.thisMonth ||0,  'REQUESTS THIS MONTH!!',      'geo-yellow') +
+      mkStat(t.allTimeRecord||0,'BEST MONTH (all time!!)',   'geo-orange');
+
+    /* Leaderboards */
+    var lbHtml = '';
+
+    var req = data.topRequesters || [];
+    lbHtml += mkLbBox('HALL OF FAME -- TOP SUBMITTERS!!', '', req, function(x,i) {
+      return ['(#' + (i+1) + ')', shortName(x.name), x.count + ' req'];
+    });
+
+    var sites = data.topSites || [];
+    lbHtml += mkLbBox('MOST ACTIVE OUTPOSTS (SITES)!!', 'geo-lb-green', sites, function(x,i) {
+      return ['(' + (i+1) + ')', shortName(x.name), String(x.count)];
+    });
+
+    var mgrs = data.topManagers || [];
+    if (mgrs.length > 0) {
+      lbHtml += mkLbBox('TOP MANAGERS (MOST ACTIVITY)!!', 'geo-lb-blue', mgrs, function(x,i) {
+        return ['(' + (i+1) + ')', shortName(x.name), x.count + ' req'];
+      });
+    }
+
+    lbEl.innerHTML = lbHtml;
+
+    /* Best month callout */
+    if (bmEl && data.bestMonth) {
+      bmEl.innerHTML =
+        '<div class="geo-best-month">' +
+        '<div class="geo-best-month-label">BEST MONTH IN HISTORY!!</div>' +
+        '<div class="geo-best-month-val">' + data.bestMonth.label + '</div>' +
+        '<div class="geo-best-month-count">' + data.bestMonth.count + ' requests that month!!</div>' +
+        '</div>';
+    }
+
+    /* Awards */
+    var aw = '';
+    aw += mkAward('[1ST]', 'BEST',     'INTRANET', '2026',   '');
+    aw += mkAward('[WEB]', 'WEB',      'XCELLNCE', 'AWARD',  'geo-award-cyan');
+    aw += mkAward('[SEQ]', 'MOST',     'SEQ.GATNG','AWARD',  'geo-award-green');
+    if (rate >= 80) aw += mkAward('[80%]', '80PCT+', 'COMPLT.', 'CHAMP', '');
+    if (total >= 50) aw += mkAward('[50+]', '50+REQ', 'MILESTNE','UNLCKD', 'geo-award-pink');
+    if (total >= 100) aw += mkAward('[100]', '100 REQ','MILESTONE','PRO!!!','geo-award-cyan');
+    if (sites.length > 0) aw += mkAward('[TOP]', shortName(sites[0].name, 6), 'BSYSITE', '#1!!!', 'geo-award-green');
+    awEl.innerHTML = aw;
+  }
+
+  function mkStat(val, label, cls) {
+    return '<div class="geo-stat-box ' + cls + '">' +
+      '<span class="geo-stat-num">' + val + '</span>' +
+      '<span class="geo-stat-label">' + label + '</span>' +
+      '</div>';
+  }
+
+  function mkLbBox(title, cls, items, rowFn) {
+    var h = '<div class="geo-lb-box ' + cls + '"><div class="geo-lb-title">' + title + '</div>';
+    if (!items || items.length === 0) {
+      h += '<div style="color:#555; font-size:11px; padding:4px 0;">No data yet -- be the first!!</div>';
+    } else {
+      for (var i = 0; i < items.length; i++) {
+        var parts = rowFn(items[i], i);
+        h += '<div class="geo-lb-item">' +
+          '<span class="geo-lb-rank">' + parts[0] + '</span>' +
+          '<span class="geo-lb-name">' + parts[1] + '</span>' +
+          '<span class="geo-lb-count">' + parts[2] + '</span>' +
+          '</div>';
+      }
+    }
+    return h + '</div>';
+  }
+
+  function mkAward(icon, l1, l2, l3, cls) {
+    return '<div class="geo-award ' + (cls||'') + '">' +
+      '<span class="geo-trophy">' + icon + '</span>' +
+      l1 + '<br>' + l2 + '<br>' + l3 +
+      '</div>';
+  }
+
+  function shortName(name, max) {
+    max = max || 20;
+    if (!name) return 'Unknown';
+    // show first part of email or just truncate
+    var atIdx = name.indexOf('@');
+    if (atIdx > 0) name = name.substring(0, atIdx);
+    if (name.length > max) name = name.substring(0, max - 2) + '..';
+    return name;
+  }
+
+  /* ---- Language swaps ----------------------------------- */
+  function swapStatus(on) {
+    var els = document.querySelectorAll('.status-badge, [class*="status-badge"]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (on) {
+        var orig = el.textContent.trim();
+        if (!el.getAttribute('data-geo-orig')) el.setAttribute('data-geo-orig', orig);
+        var mapped = STATUS_MAP[orig];
+        if (mapped) el.textContent = mapped;
+      } else {
+        var origTxt = el.getAttribute('data-geo-orig');
+        if (origTxt) el.textContent = origTxt;
+      }
+    }
+  }
+
+  function swapSubmit(on) {
+    var btns = document.querySelectorAll('button[type="submit"], .submit-btn');
+    for (var i = 0; i < btns.length; i++) {
+      var btn = btns[i];
+      if (on) {
+        if (!btn.getAttribute('data-geo-orig')) btn.setAttribute('data-geo-orig', btn.textContent.trim());
+        btn.textContent = SUBMIT_TEXTS[i % SUBMIT_TEXTS.length];
+      } else {
+        var origBtn = btn.getAttribute('data-geo-orig');
+        if (origBtn) btn.textContent = origBtn;
+      }
+    }
+  }
+
+  /* ---- Title blinker ------------------------------------ */
+  function startTitleBlink() {
+    tIdx = 0;
+    tTimer = setInterval(function() {
+      tIdx = (tIdx + 1) % GEO_TITLES.length;
+      document.title = GEO_TITLES[tIdx];
+    }, 1800);
+  }
+  function stopTitleBlink() {
+    if (tTimer) { clearInterval(tTimer); tTimer = null; }
+    document.title = origTitle;
+  }
+
+  /* ---- Toast -------------------------------------------- */
+  function toast(msg) {
+    var old = document.getElementById('geo-toast');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    var el = document.createElement('div');
+    el.id = 'geo-toast';
+    el.className = 'geo-toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 4200);
+  }
+
+  /* ---- Konami code -------------------------------------- */
+  document.addEventListener('keydown', function(e) {
+    var code = e.keyCode || e.which;
+    if (code === KONAMI[kIdx]) {
+      kIdx++;
+      if (kIdx === KONAMI.length) { kIdx = 0; toggle(); }
+    } else {
+      kIdx = (code === KONAMI[0]) ? 1 : 0;
+    }
+  });
+
+  /* ---- Logo 5x click secret ----------------------------- */
+  document.addEventListener('click', function(e) {
+    var t = e.target;
+    var isLogo = (t.tagName === 'IMG' &&
+                  (t.classList.contains('logo') ||
+                   (t.src && t.src.indexOf('team-signature-logos') >= 0))) ||
+                 t.classList.contains('logo');
+    if (!isLogo) return;
+    lClicks++;
+    if (lTimer) clearTimeout(lTimer);
+    lTimer = setTimeout(function() { lClicks = 0; }, 2500);
+    if (lClicks >= 5) { lClicks = 0; toggle(); }
+  });
+
+  /* ---- Init --------------------------------------------- */
+  function init() { if (isOn()) activate(); }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    setTimeout(init, 0);
+  }
+
+})();
+</script>

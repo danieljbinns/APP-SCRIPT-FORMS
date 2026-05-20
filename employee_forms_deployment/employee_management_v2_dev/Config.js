@@ -23,8 +23,13 @@ const CONFIG = {
   ALLOWED_DOMAINS: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com'],
   ADMIN_EMAILS: ['dbinns@team-group.com', 'dbinns@robinsonsolutions.com', 'no-reply@team-group.com', 'davelangohr@team-group.com'],
 
-  // Set true in dev to skip all MailApp.sendEmail calls — logs instead
-  SUPPRESS_EMAILS: true,
+  // Set true in dev to skip all MailApp.sendEmail calls — logs instead.
+  // Can be overridden at runtime via SUPPRESS_EMAILS_OVERRIDE Script Property ('true'/'false').
+  get SUPPRESS_EMAILS() {
+    var ov = ConfigurationService.getSetting('SUPPRESS_EMAILS_OVERRIDE');
+    if (ov === 'true' || ov === 'false') return ov === 'true';
+    return true; // dev default: always suppress
+  },
   
   // ==========================================================================
   // SHEET NAMES

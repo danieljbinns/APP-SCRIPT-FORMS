@@ -36,42 +36,53 @@ function doGet(e) {
         return serveRequestDetails(workflowId);
 
       case 'id_setup':
-        // Allow domain users - typically accessed via email link
-        // Access check removed as requested
+        // ID Setup group + Admin only
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.IDSETUP)) return serveAccessDenied();
         return serveIDSetup(workflowId);
-        
+
       case 'hr_verification':
-        // Allow domain users - typically accessed via email link
-        // Access check removed as requested
+        // HR group + Admin only
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.HR)) return serveAccessDenied();
         return serveHRVerification(workflowId);
-        
+
       case 'it_setup':
-        // Allow domain users - typically accessed via email link
-        // Access check removed as requested
+        // IT group + Admin only
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.IT)) return serveAccessDenied();
         return serveITSetup(workflowId);
-        
+
       case 'specialist':
-        // Specialist queue
-        // Access check removed as requested
+        // Domain check — dept/tid-level auth enforced inside serveSpecialist / ActionItemService
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         const dept = e.parameter.dept || '';
         return serveSpecialist(workflowId, dept);
-        
+
       case 'termination_request':
         return serveTerminationRequest();
 
       case 'position_site_change':
         return servePositionSiteChange();
-        
+
       case 'termination_approval':
+        // HR group + Payroll + Admin
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.HR) &&
+            !AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.PAYROLL)) return serveAccessDenied();
         return serveTerminationApproval(workflowId);
-        
+
       case 'position_change_approval':
+        // HR group + Payroll + Admin
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.HR) &&
+            !AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.PAYROLL)) return serveAccessDenied();
         return servePositionChangeApproval(workflowId);
-        
+
       case 'it_confirmation':
+        // Dave Langohr (BUSINESS_CARDS personal email) + IT group + Admin
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.BUSINESS_CARDS) &&
+            !AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.IT)) return serveAccessDenied();
         return serveITConfirmation(workflowId);
 
       case 'action_item_view':
+        // Domain check — tid-level auth enforced inside ActionItemService.serveActionItem
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return ActionItemService.serveActionItem(e.parameter.tid);
 
       // ── Reference guides ──────────────────────────────────────────────────

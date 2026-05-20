@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 
 <head>
@@ -536,42 +536,29 @@
             }
         };
 
-        function formatDate(dateStr) {
-            if (!dateStr) return '-';
-            const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr;
-            return d.toLocaleDateString();
-        }
+        // formatDate() provided by SharedComponents.html (included at bottom of page)
 
-        let viewDataTarget = null;
         function loadDetails() {
             document.getElementById('loading').style.display = 'block';
-            document.getElementById('content').style.display = 'none'; // Changed from workflowContent
+            document.getElementById('content').style.display = 'none';
             document.getElementById('flowSection').style.display = 'none';
-            
-            // Check for view data auto-open parameter first
-            google.script.url.getLocation(function(loc) {
-                if (loc && loc.parameter && loc.parameter.vd) {
-                    viewDataTarget = loc.parameter.vd;
-                }
-                
-                // Route appropriately based on ID
-                if (workflowId.startsWith('TERM_')) { 
-                    google.script.run
-                        .withSuccessHandler(renderDetails)
-                        .withFailureHandler(err => {
-                            document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
-                        })
-                        .getTerminationDetails(workflowId);
-                } else {
-                    google.script.run
-                        .withSuccessHandler(renderDetails)
-                        .withFailureHandler(err => {
-                            document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
-                        })
-                        .getRequestDetails(workflowId);
-                }
-            });
+
+            // Route appropriately based on ID
+            if (workflowId.startsWith('TERM_')) {
+                google.script.run
+                    .withSuccessHandler(renderDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
+                    })
+                    .getTerminationDetails(workflowId);
+            } else {
+                google.script.run
+                    .withSuccessHandler(renderDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
+                    })
+                    .getRequestDetails(workflowId);
+            }
         }
 
         function renderDetails(data) {
@@ -583,13 +570,45 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('content').style.display = 'block';
 
+            // Persist rolePayload + currentUser to sessionStorage for button gating
+            if (data.rolePayload) {
+                try { sessionStorage.setItem('rolePayload', JSON.stringify(data.rolePayload)); } catch(e) {}
+            }
+            if (data.currentUser) {
+                try { sessionStorage.setItem('currentUser', data.currentUser); } catch(e) {}
+            }
+
+            // Apply role body classes for CSS-based static button gating
+            var rp = data.rolePayload || {};
+            if (rp.isAdmin)     document.body.classList.add('is-admin');
+            if (rp.isHR)        document.body.classList.add('is-hr');
+            if (rp.isIT)        document.body.classList.add('is-it');
+            if (rp.isPayroll)   document.body.classList.add('is-payroll');
+            if (rp.isSpecialist) document.body.classList.add('is-specialist');
+
+            // Resolve per-workflow role context for this request
+            var cu          = data.currentUser || '';
+            var wfRequester = String(data.requesterEmail || '').toLowerCase();
+            var wfManager   = String(data.managerEmail   || '').toLowerCase();
+            var cuLower     = cu.toLowerCase();
+            var isOwner     = cuLower && (cuLower === wfRequester || cuLower === wfManager);
+            var canBumpWf   = rp.canBumpAll   || isOwner;
+            var canCancelWf = rp.canCancelAll || isOwner;
+            var canEditDate = rp.canEditDates;
+            var canViewData = rp.canViewAllStepData || isOwner;
+            // Store on window for use by dynamic checklist rendering
+            window._rdRoleCtx = { canBumpWf, canCancelWf, canEditDate, canViewData };
+
             // Status badge + Edit Start Date button
             var statusEl = document.getElementById('statusBadge');
             if (statusEl) {
                 var sColor = (data.status === 'Completed' || data.status === 'Complete') ? 'var(--success)' : data.status === 'Cancelled' ? '#aaa' : 'var(--warning)';
                 var sBadge = '<span style="background:' + sColor + '; color:#000; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700; display:inline-block;">' + escapeHtml(data.status || '') + '</span>';
-                if (!workflowId.startsWith('TERM_') && !workflowId.startsWith('CHANGE_') && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
+                if (canEditDate && !workflowId.startsWith('TERM_') && !workflowId.startsWith('CHANGE_') && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
                     sBadge += ' <button class="btn" style="margin-left:10px; background:#555; color:white; font-size:12px;" onclick="editStartDate()">Edit Start Date</button>';
+                }
+                if (canCancelWf && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
+                    sBadge += ' <button class="btn" style="margin-left:6px; background:#c62828; color:white; font-size:12px;" onclick="cancelRequest()">Cancel Request</button>';
                 }
                 statusEl.innerHTML = sBadge;
             }
@@ -666,13 +685,22 @@
                 const apprNode   = document.getElementById('eoe_node_approval');
 
                 // Relabel the Initial Request node based on workflow type
+                // AND fix onclick to match the correct step target (static HTML defaults to TERM_ targets)
                 if (reqNode) {
                     const h3el = reqNode.querySelector('h3');
                     if (h3el) {
-                        if (isChangeWf)  h3el.textContent = 'Change Request';
+                        if (isChangeWf)      h3el.textContent = 'Change Request';
                         else if (isEquipReq) h3el.textContent = 'Equipment Request';
                         // TERM_ already says "EOE Request" — leave as-is
                     }
+                    if (isChangeWf)      reqNode.onclick = function() { viewStepData('change_request'); };
+                    else if (isEquipReq) reqNode.onclick = function() { viewStepData('equipment_request'); };
+                    // else TERM_: 'termination_request' onclick is already correct
+                }
+                // Fix approval node onclick for Status Change
+                if (apprNode) {
+                    if (isChangeWf) apprNode.onclick = function() { viewStepData('position_change_approval'); };
+                    // TERM_: 'termination_approval' is already correct; EQUIP: node hidden below
                 }
                 // Hide the HR Approval node for equipment requests (no approval step)
                 if (apprNode && isEquipReq) apprNode.style.display = 'none';
@@ -701,70 +729,14 @@
                 });
             }
 
-            // Snapshot - adapt fields for EOE / Status Change / Onboarding
-            if (workflowId.startsWith('CHANGE_')) {
-                document.getElementById('employeeName').innerText = r['Employee Name'] || data.id;
-                var _diC = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
-                document.getElementById('snapshotGrid').innerHTML =
-                    _diC('Workflow ID', data.id) +
-                    _diC('Employee', r['Employee Name']) +
-                    _diC('Classification', r['Current Classification']) +
-                    _diC('Current Title', r['Current Title']) +
-                    _diC('Effective Date', r['Effective Date']) +
-                    _diC('Site', r['Site Name']) +
-                    _diC('Changes', r['Change Type']) +
-                    _diC('Department', r['Department']) +
-                    _diC('Current Manager', (r['Current Manager Name'] || '') + (r['Current Manager Email'] ? ' \xb7 ' + r['Current Manager Email'] : '')) +
-                    _diC('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : ''));
-            } else if (workflowId.startsWith('TERM_')) {
-                document.getElementById('employeeName').innerText = r['Employee Name'] || data.id;
-                var termAttach = r['Attachment URL'] || r['Attachment Url'] || '';
-                document.getElementById('snapshotGrid').innerHTML =
-                    '<div class="detail-item"><label>Workflow ID</label><div>' + data.id + '</div></div>' +
-                    '<div class="detail-item"><label>Employee</label><div>' + (r['Employee Name'] || '-') + '</div></div>' +
-                    (r['Employee Type'] ? '<div class="detail-item"><label>Employee Type</label><div>' + escapeHtml(r['Employee Type']) + '</div></div>' : '') +
-                    '<div class="detail-item"><label>Site</label><div>' + (r['Site'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Term Date</label><div>' + (r['Term Date'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Reason</label><div>' + (r['Reason'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Requester</label><div>' + (r['Requester Email'] || '-') + '</div></div>' +
-                    (termAttach ? '<div class="detail-item"><label>Documentation</label><div><a href="' + termAttach + '" target="_blank" style="color:#EB1C2D;">View Attached File</a></div></div>' : '');
-            } else if (workflowId.startsWith('EQUIP_REQ_')) {
-                document.getElementById('employeeName').innerText = ((r['First Name'] || '') + ' ' + (r['Last Name'] || '')).trim() || data.id;
-                var _diEq = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
-                document.getElementById('snapshotGrid').innerHTML =
-                    _diEq('Workflow ID', data.id) +
-                    _diEq('Position', r['Position Title']) +
-                    _diEq('Site', r['Site Name']) +
-                    _diEq('Department', r['Department']) +
-                    _diEq('Equipment', r['Equipment']) +
-                    _diEq('Systems', r['Systems']) +
-                    _diEq('Date Requested', r['Date Requested']) +
-                    _diEq('Manager', (r['Manager Name'] || '') + (r['Manager Email'] ? ' \xb7 ' + r['Manager Email'] : '')) +
-                    _diEq('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : '')) +
-                    _diEq('Comments', r['Comments']);
-            } else {
-                document.getElementById('employeeName').innerText = (r['First Name'] || '') + ' ' + (r['Last Name'] || '');
-                var _di = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
-                document.getElementById('snapshotGrid').innerHTML =
-                    _di('Workflow ID', data.id) +
-                    _di('Employment Type', r['Employment Type']) +
-                    _di('Employee Type', r['Employee Type']) +
-                    _di('Position Title', r['Position Title'] || r['HR Verified Title'] || r['Position/JR Title']) +
-                    _di('Department', r['Department']) +
-                    _di('Site', r['Site/Office Location'] || r['Site Name']) +
-                    _di('Job Site #', r['Job Site #']) +
-                    _di('Start Date', r['Hire Date'] || r['Hire/Start Date']) +
-                    _di('Manager', (r['Manager Name'] || '') + (r['Manager Email'] ? ' · ' + r['Manager Email'] : '')) +
-                    _di('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' · ' + r['Requester Email'] : '')) +
-                    _di('System Access', r['System Access']) +
-                    _di('Date Requested', r['Date Requested']);
-            }
-
-            // Auto-launch specific viewing modal if vd parameter provided via Dashboard
-            if (viewDataTarget) {
-                const capturedVD = viewDataTarget;
-                viewDataTarget = null;
-                setTimeout(() => viewStepData(capturedVD), 600);
+            // Snapshot — shared renderer from SharedComponents.html
+            {
+                var _empName = workflowId.startsWith('CHANGE_') ? (r['Employee Name'] || data.id) :
+                               workflowId.startsWith('TERM_')   ? (r['Employee Name'] || data.id) :
+                               workflowId.startsWith('EQUIP_REQ_') ? (((r['First Name'] || '') + ' ' + (r['Last Name'] || '')).trim() || data.id) :
+                               (r['First Name'] || '') + ' ' + (r['Last Name'] || '');
+                document.getElementById('employeeName').innerText = _empName.trim() || data.id;
+                document.getElementById('snapshotGrid').innerHTML = renderWorkflowFields(r, workflowId);
             }
 
             // Checklist & Flow Update
@@ -806,15 +778,18 @@
                 }
 
                 var isNA = item.status === 'N/A' || item.status === 'Skipped';
+                var ctx  = window._rdRoleCtx || {};
+                var _rdDis = function(ok) { return ok ? '' : ' disabled title="Insufficient permissions" style="opacity:0.45;pointer-events:none;cursor:not-allowed;"'; };
                 var actions = '-';
                 if (!isComplete && !isNA && item.target) {
-                    actions = '<button class="btn" style="background:var(--warning); color:black;" onclick="bump(\'' + item.target + '\')">Remind</button>';
+                    actions = '<button class="btn" style="background:var(--warning); color:black;"' + _rdDis(ctx.canBumpWf) + ' onclick="bump(\'' + item.target + '\')">Remind</button>';
                     if (item.tid) {
                         actions += ' <button class="btn" style="background:var(--brand-red); color:white;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
                     }
                 } else if (isComplete && item.target) {
-                    actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
+                    actions = '<button class="btn view-data-btn"' + _rdDis(ctx.canViewData) + ' onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
                 } else if (isComplete && item.name === 'Initial Request') {
+                    // Initial request data open to all — no role gate
                     var targetData = workflowId.startsWith('TERM_')      ? 'termination_request'
                                    : workflowId.startsWith('CHANGE_')    ? 'change_request'
                                    : workflowId.startsWith('EQUIP_REQ_') ? 'equipment_request'
@@ -846,15 +821,75 @@
                 .updateHireDate(workflowId, newDate);
         }
 
+        function cancelRequest() {
+            if (!confirm('Are you sure you want to CANCEL this request? This cannot be undone.')) return;
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res.success) { alert('Request cancelled.'); loadDetails(); }
+                    else alert('Error: ' + res.message);
+                })
+                .withFailureHandler(function(err) { alert('Error: ' + err.message); })
+                .cancelRequest(workflowId);
+        }
+
         function bump(target) {
             if (!confirm('Send reminder email?')) return;
             google.script.run.withSuccessHandler(function(res) { alert(res.message || 'Done'); }).withFailureHandler(function(err) { alert('Error: ' + err.message); }).bumpRequest(workflowId, target);
         }
 
+        var STEP_DISPLAY_NAMES = {
+            // ── Onboarding ─────────────────────────────────────────────────────
+            'initial_request':          'Initial Request',
+            'id_setup':                 'ID Setup',
+            'hr_verification':          'HR Verification',
+            'it_setup':                 'IT Setup',
+            'it_confirmation':          'IT Confirmation',
+            'jonas':                    'Jonas',
+            'credit_card':              'Credit Card',     // NODE_MAP-remapped onboarding target
+            'creditcard':               'Credit Card',     // equipment / raw-slug target
+            'fleetio':                  'Fleetio',
+            'business_cards':           'Business Cards',  // NODE_MAP-remapped onboarding target
+            'businesscards':            'Business Cards',  // equipment / raw-slug target
+            'sitedocs':                 'SiteDocs',
+            'review':                   '30/60/90 Review', // NODE_MAP-remapped onboarding target
+            'review_306090':            '30/60/90 Review', // raw-slug alias
+            'safety':                   'Safety',          // NODE_MAP-remapped onboarding target
+            'safety_onboarding':        'Safety',
+            'centralpurchasing':        'Central Purchasing',
+            'central_purchasing':       'Central Purchasing',
+            'payroll':                  'Payroll',
+            'specialist':               'Specialist',
+            // ── End of Employment ──────────────────────────────────────────────
+            'termination_request':      'Initial Request (EOE)',
+            'termination_approval':     'HR Approval',
+            'safety_term':              'Safety',
+            'asset_collection':         'Asset Collection',
+            'systems_deactivation':     'IT Systems Deactivation',
+            'systems_deactivation_hr':  'HR Systems Deactivation',
+            'systems_deactivation_fleet':   'Fleet Deactivation',
+            'systems_deactivation_finance': 'Finance Deactivation',
+            'systems_deactivation_deact':   'Account Deactivation',
+            // ── Status Change ─────────────────────────────────────────────────
+            'change_request':               'Initial Request (Status Change)',
+            'position_change_approval':     'HR Approval',
+            'change_manager':               'Manager Notification',
+            'change_it':                    'IT Setup',
+            'change_idsetup':               'ID Setup',
+            'change_safety':                'Safety',
+            'change_businesscards':         'Business Cards',
+            'change_creditcard':            'Credit Card',
+            'change_fleetio':               'Fleetio',
+            'change_jonas':                 'Jonas',
+            'change_purchasing':            'Central Purchasing',
+            // ── Equipment ────────────────────────────────────────────────────
+            'equipment_request':            'Initial Request (Equipment)'
+        };
+
         function viewStepData(stepType) {
             document.getElementById('dataModal').style.display = 'flex';
             document.getElementById('stepDataBody').innerHTML = `<tr><td colspan="2" style="text-align:center;">Loading...</td></tr>`;
-            document.getElementById('stepDataTitle').innerText = 'Step Details: ' + stepType.toUpperCase().replace(/_/g, ' ');
+            var _stepLabel = STEP_DISPLAY_NAMES[stepType] || stepType.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+            document.getElementById('stepDataTitle').innerText = 'Step Details: ' + _stepLabel;
 
             google.script.run
                 .withSuccessHandler(renderStepData)
@@ -862,10 +897,7 @@
                 .getStepResultData(workflowId, stepType);
         }
 
-        function escapeHtml(s) {
-            if (s == null) return '';
-            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-        }
+        // escapeHtml() provided by SharedComponents.html (included at bottom of page)
 
         function renderStepData(data) {
             const tbody = document.getElementById('stepDataBody');
@@ -874,15 +906,64 @@
                 return;
             }
 
-            var html = '';
+            // Internal/metadata columns — never useful to display
+            var SKIP_KEYS = new Set(['Workflow ID', 'Form ID', 'Timestamp', 'Form Data', 'Draft', 'Form Type']);
+
+            var contextHtml = '';
+            var dataHtml = '';
+
             for (var key in data) {
-                if (data.hasOwnProperty(key)) {
-                    var val = data[key];
-                    if (key === 'Workflow ID' || key === 'Form ID' || val === '' || val === 'N/A') continue;
-                    html += '<tr><td>' + escapeHtml(key) + '</td><td>' + escapeHtml(val) + '</td></tr>';
+                if (!data.hasOwnProperty(key)) continue;
+                if (SKIP_KEYS.has(key)) continue;
+                var val = String(data[key] == null ? '' : data[key]);
+                if (val === '' || val === 'N/A') continue;
+
+                var isContext = key.charAt(0) === '_';
+                var displayKey = isContext ? key.slice(1) : key;
+
+                // Render value — detect JSON arrays (e.g. Description field on action items)
+                // and display as a bullet list instead of raw ["...","..."] string
+                var renderedVal;
+                if (val.charAt(0) === '[') {
+                    try {
+                        var parsed = JSON.parse(val);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            if (parsed.length === 1) {
+                                renderedVal = escapeHtml(parsed[0]);
+                            } else {
+                                renderedVal = '<ul style="margin:0; padding-left:18px;">' +
+                                    parsed.map(function(item) { return '<li>' + escapeHtml(String(item)) + '</li>'; }).join('') +
+                                    '</ul>';
+                            }
+                        } else {
+                            renderedVal = escapeHtml(val);
+                        }
+                    } catch(e) {
+                        renderedVal = escapeHtml(val);
+                    }
+                } else {
+                    renderedVal = escapeHtml(val);
+                }
+
+                if (isContext) {
+                    // Context rows (supplemental info): muted, italic, rendered before main data
+                    contextHtml += '<tr style="background:rgba(255,255,255,0.03);">' +
+                        '<td style="color:var(--text-muted); font-style:italic; font-size:13px;">' + escapeHtml(displayKey) + '</td>' +
+                        '<td style="color:var(--text-muted); font-size:13px;">' + renderedVal + '</td>' +
+                        '</tr>';
+                } else {
+                    dataHtml += '<tr><td>' + escapeHtml(displayKey) + '</td><td>' + renderedVal + '</td></tr>';
                 }
             }
-            tbody.innerHTML = html;
+
+            // Context section first, then a divider if both sections have content, then main data
+            var html = contextHtml;
+            if (contextHtml && dataHtml) {
+                html += '<tr><td colspan="2" style="padding:2px 0; border-bottom:1px solid var(--border-color);"></td></tr>';
+            }
+            html += dataHtml;
+
+            tbody.innerHTML = html || '<tr><td colspan="2" style="text-align:center;">No data found.</td></tr>';
         }
 
         function closeDataModal() {
@@ -907,7 +988,7 @@
         });
     </script>
   <?!= include('SharedComponents') ?>
-  <?!= include('GeoCities') ?>
+<!-- <?!= safeInclude('Konami') ?> DISABLED ON PROD -->
 </body>
 
 </html>

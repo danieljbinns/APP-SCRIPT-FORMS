@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 
 <head>
@@ -406,15 +406,25 @@
 
             <button class="refresh-btn" onclick="loadData()">Refresh</button>
             <button id="btnDeleteSelected" onclick="openDeleteConfirm()">🚫 Hide Selected (<span id="selCount">0</span>)</button>
+            <span id="activeCategoryChip" onclick="clearCategoryFilter()" style="display:none; cursor:pointer; background:var(--brand-red); color:white; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:700;" title="Click to clear category filter"></span>
         </div>
 
-        <!-- My Tasks Panel — shown only when current user has pending action items -->
-        <div id="myTasksPanel" style="display:none; background:rgba(235,28,45,0.06); border:1px solid rgba(235,28,45,0.3); border-radius:8px; padding:16px; margin-bottom:20px;">
+        <!-- My Tasks Panel — open task counts per category, role-gated click -->
+        <div id="myTasksPanel" style="display:none; background:rgba(235,28,45,0.06); border:1px solid rgba(235,28,45,0.3); border-radius:8px; padding:16px; margin-bottom:12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <strong style="color:var(--brand-red); font-size:14px;">⚡ My Pending Tasks</strong>
                 <span id="myTasksCount" style="background:var(--brand-red); color:white; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;"></span>
             </div>
             <div id="myTasksList" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+        </div>
+
+        <!-- My Open Requests Panel — workflows where current user is requester or manager -->
+        <div id="myRequestsPanel" style="display:none; background:rgba(33,150,243,0.06); border:1px solid rgba(33,150,243,0.3); border-radius:8px; padding:16px; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <strong style="color:#2196f3; font-size:14px;">📋 My Open Requests</strong>
+                <span id="myRequestsCount" style="background:#2196f3; color:white; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;"></span>
+            </div>
+            <div id="myRequestsList" style="display:flex; flex-direction:column; gap:4px;"></div>
         </div>
 
         <div class="table-container">
@@ -481,10 +491,7 @@
     </div>
 
     <script>
-        function escapeHtml(s) {
-            if (s == null) return '';
-            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-        }
+        // escapeHtml() provided by SharedComponents.html (included at bottom of page)
 
         // Use server-injected Base URL
         var SERVER_BASE_URL = "<?= baseUrl ?>";
@@ -493,7 +500,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
-            loadMyTasks();
+            // loadMyTasks() is called inside displayData() after rolePayload is in sessionStorage
         });
         let allWorkflows = [];
         let filteredWorkflows = []; // For search + pagination combo
@@ -505,6 +512,7 @@
         let activeTypeFilters = new Set();
         let activeStatusFilters = new Set();
         let searchTerm = '';
+        let activeCategoryFilter = null; // set by View Tasks button in My Pending Tasks panel
 
         // Pagination State
         const ITEMS_PER_PAGE = 25;
@@ -519,30 +527,158 @@
         function loadMyTasks() {
             google.script.run
                 .withSuccessHandler(function(res) {
-                    const tasks = res.tasks || [];
-                    const panel = document.getElementById('myTasksPanel');
-                    const list  = document.getElementById('myTasksList');
-                    const count = document.getElementById('myTasksCount');
-                    if (tasks.length === 0) { panel.style.display = 'none'; return; }
+                    if (!res || !res.success) return;
+                    var counts  = res.counts || {};
+                    var panel   = document.getElementById('myTasksPanel');
+                    var list    = document.getElementById('myTasksList');
+                    var countEl = document.getElementById('myTasksCount');
+
+                    // Get rolePayload from sessionStorage (set by displayData)
+                    var rolePayload = {};
+                    try { rolePayload = JSON.parse(sessionStorage.getItem('rolePayload') || '{}'); } catch(e) {}
+
+                    // Group access map — which categories this user's role grants access to
+                    var accessMap = {
+                        'Safety':             rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('SAFETY') >= 0),
+                        'Fleetio':            rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('FLEETIO') >= 0),
+                        'Business Cards':     rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('BUSINESS_CARDS') >= 0),
+                        'Jonas':              rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('JONAS') >= 0),
+                        'Credit Card':        rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('CREDIT_CARD') >= 0),
+                        '30/60/90 Review':    rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('REVIEW_306090_JR') >= 0),
+                        'Central Purchasing': rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('JONAS') >= 0),
+                        'SiteDocs':           rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT,
+                        'Assets':             rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT,
+                        'IT':                 rolePayload.isAdmin || rolePayload.isIT,
+                        'HR':                 rolePayload.isAdmin || rolePayload.isHR,
+                        'Fleet':              rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('FLEETIO') >= 0),
+                        'Finance':            rolePayload.isAdmin || rolePayload.isHR,
+                        'Deactivation':       rolePayload.isAdmin || rolePayload.isIT,
+                        'IT Setup':           rolePayload.isAdmin || rolePayload.isIT,
+                        'HR Verification':    rolePayload.isAdmin || rolePayload.isHR,
+                        'ID Setup':           rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT
+                    };
+
+                    var catColors = {
+                        'Safety':'#ff5722','Fleetio':'#00bcd4','Business Cards':'#9c27b0',
+                        'Jonas':'#3f51b5','Credit Card':'#ff9800','30/60/90 Review':'#8bc34a',
+                        'Central Purchasing':'#795548','SiteDocs':'#607d8b',
+                        'Assets':'#ff9800','IT':'#2196f3','HR':'#9c27b0','Fleet':'#00bcd4',
+                        'Finance':'#4caf50','Deactivation':'#607d8b',
+                        'IT Setup':'#2196f3','HR Verification':'#9c27b0','ID Setup':'#00acc1'
+                    };
+
+                    var totalOpen = Object.values(counts).reduce(function(s, v) { return s + (v || 0); }, 0);
                     panel.style.display = 'block';
-                    count.textContent = tasks.length + ' open';
-                    list.innerHTML = tasks.map(function(t) {
-                        var catColors = {
-                            'Assets':'#ff9800','IT':'#2196f3','HR':'#9c27b0','Fleet':'#00bcd4',
-                            'Finance':'#4caf50','Deactivation':'#607d8b','Safety':'#ff5722'
-                        };
-                        var catColor = catColors[t.category] || '#555';
-                        return '<div style="background:var(--card-bg); border:1px solid var(--border-color); border-left:3px solid ' + catColor + '; border-radius:6px; padding:12px 14px; min-width:220px; max-width:300px;">' +
-                            '<div style="font-size:11px; color:' + catColor + '; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">' + escapeHtml(t.category) + '</div>' +
-                            '<div style="font-size:13px; font-weight:600; margin:4px 0;">' + escapeHtml(t.employeeName || t.workflowId) + '</div>' +
-                            '<div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">' + escapeHtml(t.created) + '</div>' +
-                            '<button class="action-btn" style="background:var(--brand-red); color:white; width:100%; font-size:12px;" ' +
-                            'onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + escapeHtml(t.tid) + '\', \'_blank\')">Open Task</button>' +
+                    if (countEl) countEl.textContent = totalOpen + ' open';
+
+                    list.innerHTML = Object.keys(counts).map(function(cat) {
+                        var n = counts[cat] || 0;
+                        var canAccess = !!accessMap[cat];
+                        var color = catColors[cat] || '#555';
+                        var disabledStyle = canAccess ? '' : 'opacity:0.45; pointer-events:none; cursor:not-allowed;';
+                        return '<div style="background:var(--card-bg); border:1px solid var(--border-color); border-left:3px solid ' + color + '; border-radius:6px; padding:6px 10px; min-width:130px;">' +
+                            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">' +
+                            '<span style="font-size:11px; color:' + color + '; font-weight:700; text-transform:uppercase; margin-right:6px;">' + escapeHtml(cat) + '</span>' +
+                            '<span style="font-size:18px; font-weight:700;">' + n + '</span>' +
+                            '</div>' +
+                            '<button class="action-btn" style="background:var(--brand-red); color:white; width:100%; font-size:11px; padding:4px 8px; ' + disabledStyle + '" ' +
+                            (canAccess ? 'onclick="filterByCategory(\'' + escapeHtml(cat) + '\')"' : 'disabled title="Access not permitted for your role"') + '>' +
+                            'View Tasks</button>' +
                             '</div>';
                     }).join('');
                 })
                 .withFailureHandler(function() { /* silently fail */ })
-                .getMyPendingTasks();
+                .getMyTaskCounts();
+        }
+
+        // Step-based categories map to workflow step strings rather than action item categories
+        const STEP_CATEGORY_TERMS = {
+            'IT Setup':       ['it setup'],
+            'HR Verification':['hr verification'],
+            'ID Setup':       ['id setup']
+        };
+
+        function filterByCategory(cat) {
+            activeCategoryFilter = cat;
+            // Show chip so user can clear the filter
+            var chip = document.getElementById('activeCategoryChip');
+            chip.textContent = '✕ ' + cat;
+            chip.style.display = 'inline-flex';
+            // Make sure "Action Required" status is active so filtered rows are visible
+            if (!activeStatusFilters.has('PENDING')) {
+                activeStatusFilters.add('PENDING');
+                var pendingBtn = document.querySelector('.filter-btn[data-value="PENDING"]');
+                if (pendingBtn) pendingBtn.classList.add('active');
+            }
+            applyFiltersAndSort();
+            // Scroll down to the table
+            var tbl = document.getElementById('dashboardTable') || document.querySelector('table');
+            if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function clearCategoryFilter() {
+            activeCategoryFilter = null;
+            document.getElementById('activeCategoryChip').style.display = 'none';
+            applyFiltersAndSort();
+        }
+
+        /**
+         * Filter the main table to show workflows for a given employee name.
+         * Called when clicking a row in the My Open Requests panel.
+         */
+        function filterToEmployee(name) {
+            if (!name) return;
+            var input = document.getElementById('searchInput');
+            input.value = name;
+            searchTerm = name.toLowerCase();
+            // Ensure completed/cancelled are also visible so nothing hides
+            activeStatusFilters.clear();
+            document.querySelectorAll('.filter-btn[data-filter="status"]').forEach(function(b) { b.classList.remove('active'); });
+            applyFiltersAndSort();
+            var tbl = document.querySelector('.table-container');
+            if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        /**
+         * Renders the My Open Requests panel — client-side filter of already-loaded
+         * workflows where the current user is the requester or manager.
+         */
+        function renderMyRequests(workflows, currentUser) {
+            var panel   = document.getElementById('myRequestsPanel');
+            var list    = document.getElementById('myRequestsList');
+            var countEl = document.getElementById('myRequestsCount');
+            if (!panel || !list || !currentUser) return;
+
+            var cu = currentUser.toLowerCase();
+            var myWfs = (workflows || []).filter(function(wf) {
+                var s = (wf.status || '').toLowerCase();
+                if (s === 'cancelled' || s === 'completed' || s === 'complete') return false;
+                return (wf.requesterEmail || '').toLowerCase() === cu ||
+                       (wf.managerEmail   || '').toLowerCase() === cu;
+            });
+
+            if (myWfs.length === 0) return; // hide panel if nothing
+            panel.style.display = 'block';
+            if (countEl) countEl.textContent = myWfs.length;
+
+            var sColors = { 'Completed':'var(--success)', 'Complete':'var(--success)', 'Cancelled':'#888' };
+            list.innerHTML = myWfs.map(function(wf) {
+                var sCol = sColors[wf.status] || 'var(--warning)';
+                var name = escapeHtml(wf.employee || wf.id);
+                var type = escapeHtml(wf.type || '');
+                var step = escapeHtml(wf.step || wf.status || '');
+                var safeId   = escapeHtml(wf.id);
+                var safeType = escapeHtml(wf.type || '');
+                var safeName = (wf.employee || '').replace(/'/g, "\\'");
+                return '<div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-color); cursor:pointer;" ' +
+                    'onclick="filterToEmployee(\'' + safeName + '\')" title="Filter dashboard to ' + name + '">' +
+                    '<span style="flex:1; font-size:13px; font-weight:600;">' + name + '</span>' +
+                    '<span style="font-size:11px; color:var(--text-muted);">' + type + '</span>' +
+                    '<span style="font-size:11px; color:var(--text-muted);">' + step + '</span>' +
+                    '<span style="background:' + sCol + '; color:#000; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">' + escapeHtml(wf.status || '') + '</span>' +
+                    '<span style="color:#2196f3; font-size:12px; white-space:nowrap;">Filter ↓</span>' +
+                    '</div>';
+            }).join('');
         }
 
         function displayData(responseStr) {
@@ -558,25 +694,32 @@
                 return;
             }
             allWorkflows = response.workflows;
+            // Store role context — used by renderModalDetails to gate action buttons
+            if (response.rolePayload) {
+                try { sessionStorage.setItem('rolePayload', JSON.stringify(response.rolePayload)); } catch(e) {}
+            }
+            if (response.currentUser) {
+                try { sessionStorage.setItem('currentUser', response.currentUser); } catch(e) {}
+            }
             if (response.isAdmin) {
                 isAdmin = true;
                 document.body.classList.add('is-admin');
             }
+            // Apply role body classes for CSS-based static button gating
+            var rp = response.rolePayload || {};
+            if (rp.isHR)       document.body.classList.add('is-hr');
+            if (rp.isIT)       document.body.classList.add('is-it');
+            if (rp.isPayroll)  document.body.classList.add('is-payroll');
+            if (rp.isSpecialist) document.body.classList.add('is-specialist');
             applyFiltersAndSort(); // Triggers sorting and initially setting filteredWorkflows
+
+            // Load task counts now that rolePayload is in sessionStorage (avoids race condition)
+            loadMyTasks();
+            // Render My Open Requests panel — client-side filter of already-loaded workflows
+            renderMyRequests(allWorkflows, response.currentUser);
         }
 
-        // Helper to safely format dates
-        function formatDate(dateStr) {
-            if (!dateStr) return '-';
-            // Already yyyy/MM/dd — return as-is if it matches
-            if (/^\d{4}\/\d{2}\/\d{2}/.test(dateStr)) return dateStr;
-            const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr;
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return y + '/' + m + '/' + day;
-        }
+        // formatDate() provided by SharedComponents.html (included at bottom of page)
 
         function renderTable() {
             const tbody = document.getElementById('tableBody');
@@ -756,6 +899,19 @@
                     if (!matchesAny) return false;
                 }
 
+                // Category filter — set by View Tasks button in My Pending Tasks panel
+                if (activeCategoryFilter) {
+                    if (STEP_CATEGORY_TERMS[activeCategoryFilter]) {
+                        // Step-based: filter by workflow step string
+                        const terms = STEP_CATEGORY_TERMS[activeCategoryFilter];
+                        const stepLower = (wf.step || '').toLowerCase();
+                        if (!terms.some(t => stepLower.includes(t))) return false;
+                    } else {
+                        // Action-item-based: filter by openCategories array on workflow object
+                        if (!wf.openCategories || !wf.openCategories.includes(activeCategoryFilter)) return false;
+                    }
+                }
+
                 return true;
             });
 
@@ -815,6 +971,20 @@
 
             const r = details.requestData || {};
             const checklist = details.checklist || [];
+
+            // Role payload for button gating — loaded from sessionStorage set by displayData()
+            var rp = {};
+            try { rp = JSON.parse(sessionStorage.getItem('rolePayload') || '{}'); } catch(e) {}
+            var cu = '';
+            try { cu = sessionStorage.getItem('currentUser') || ''; } catch(e) {}
+            var wfRequester = String(details.requesterEmail || r['Requester Email'] || '').toLowerCase();
+            var wfManager   = String(details.managerEmail   || r['Manager Email']   || '').toLowerCase();
+            var cuLower     = cu.toLowerCase();
+            var isOwner     = cuLower && (cuLower === wfRequester || cuLower === wfManager);
+            var canBump     = rp.canBumpAll   || isOwner;
+            var canCancel   = rp.canCancelAll || isOwner;
+            var canViewData = rp.canViewAllStepData || isOwner;
+            var _dis = function(allowed) { return allowed ? '' : ' disabled title="Insufficient permissions" style="opacity:0.45; pointer-events:none; cursor:not-allowed;"'; };
 
             // --- Stepper Logic ---
             const isOnboarding = details.type === 'Onboarding';
@@ -896,19 +1066,8 @@
                 stepperHtml += '</div>';
             }
 
-            var _dateLabel = isEOE ? 'Term Date' : 'Start Date';
-            var _dateVal = isEOE
-                ? (r['Term Date'] || r['Termination Date'] || '-')
-                : (r['Hire Date'] || r['Hire/Start Date'] || r['Start Date'] || '-');
             var html = stepperHtml +
-                '<div class="detail-grid">' +
-                '<div class="detail-item"><label>Employee Name</label><div>' + escapeHtml(r['Employee Name'] || ((r['First Name'] || '') + ' ' + (r['Last Name'] || '')).trim() || '-') + '</div></div>' +
-                '<div class="detail-item"><label>Job Title</label><div>' + escapeHtml(r['Position Title'] || r['HR Verified Title'] || r['Position/JR Title'] || r['Job Title'] || '-') + '</div></div>' +
-                '<div class="detail-item"><label>Site</label><div>' + escapeHtml(r['Site/Office Location'] || r['Site Name'] || r['Site'] || '-') + '</div></div>' +
-                '<div class="detail-item"><label>' + _dateLabel + '</label><div>' + escapeHtml(_dateVal) + '</div></div>' +
-                '<div class="detail-item"><label>Date Requested</label><div>' + escapeHtml(r['Date Requested'] || r['Timestamp'] || '-') + '</div></div>' +
-                '<div class="detail-item"><label>Employment Type</label><div>' + escapeHtml(r['Employment Type'] || '-') + '</div></div>' +
-                '</div>' +
+                renderWorkflowFields(r, details.id) +
                 '<h3 class="section-header">Status Checklist</h3>' +
                 '<table style="width:100%; border-collapse: collapse; margin-top: 10px;">' +
                 '<thead>' +
@@ -937,19 +1096,20 @@
                     if (!isComplete && !isNA && item.target) {
                         if (item.tid) {
                             // EOE Action Item — route to the specific Action Item form via tid
-                            actionBtn = '<button class="action-btn" style="background: #444;" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
+                            actionBtn = '<button class="action-btn" style="background: #444;"' + _dis(canBump) + ' onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
                             actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
                         } else {
-                            actionBtn = '<button class="action-btn" style="background: #444;" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
+                            actionBtn = '<button class="action-btn" style="background: #444;"' + _dis(canBump) + ' onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
                             actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="openFormForWorkflow(\'' + item.target + '\', \'' + details.id + '\')">View Form</button>';
                         }
                     } else if (isComplete && item.target) {
-                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + item.target + '\')">View Data</button>';
+                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;"' + _dis(canViewData) + ' onclick="openStepDataView(\'' + item.target + '\')">View Data</button>';
                         if (item.tid) {
                             actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
                         }
                     } else if (isComplete && item.name === 'Initial Request') {
                         var targetForm = details.type === 'End of Employment' ? 'termination_request' : 'initial_request';
+                        // Initial request data is open to all — no role gate
                         actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + targetForm + '\')">View Data</button>';
                     }
 
@@ -973,6 +1133,22 @@
 
 
             document.getElementById('modalContent').innerHTML = html;
+
+            // Gate the Cancel button in the modal footer
+            var btnCancel = document.getElementById('btnCancel');
+            if (btnCancel) {
+                if (canCancel) {
+                    btnCancel.removeAttribute('disabled');
+                    btnCancel.style.opacity = '';
+                    btnCancel.style.pointerEvents = '';
+                    btnCancel.title = '';
+                } else {
+                    btnCancel.setAttribute('disabled', 'disabled');
+                    btnCancel.style.opacity = '0.4';
+                    btnCancel.style.pointerEvents = 'none';
+                    btnCancel.title = 'Insufficient permissions';
+                }
+            }
         }
 
         function closeModal() {
@@ -998,8 +1174,9 @@
         });
 
         function openStepDataView(target) {
+            // Opens RequestDetails page. ?vd= auto-open removed — user navigates normally.
             if (currentWorkflowId) {
-                window.open(SERVER_BASE_URL + '?form=request_details&id=' + currentWorkflowId + '&vd=' + target, '_blank');
+                window.open(SERVER_BASE_URL + '?form=request_details&id=' + currentWorkflowId, '_blank');
             }
         }
 
@@ -1127,7 +1304,7 @@
     </div>
 
   <?!= include('SharedComponents') ?>
-  <?!= include('GeoCities') ?>
+<!-- <?!= safeInclude('Konami') ?> DISABLED ON PROD -->
 </body>
 
 </html>

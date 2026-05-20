@@ -263,8 +263,8 @@ function setupProdScriptProperties() {
     'DIRECTORY_DOMAIN': 'team-group.com',
 
     // ── Attachment folders (attachments/prod/*) ─────────────────────
-    'TERM_ATTACHMENTS_FOLDER_ID':   '1egsT3OM4Gx4fd448HHg-2D5MMJraiSfg',  // attachments/prod/Termination
-    'CHANGE_ATTACHMENTS_FOLDER_ID': '1SdYD9SHK1Q9pceAKbNz_pJA0yzZGi4JV', // attachments/prod/Position Change
+    'TERM_ATTACHMENTS_FOLDER_ID':   '1f7_oFZgjTk1O6ckkorjPjFCIr-jL6n0D',  // attachments/Termination
+    'CHANGE_ATTACHMENTS_FOLDER_ID': '1h6XfuSa0vCRBezcpTkPaNZ0TPKbiBH39', // attachments/Position Change
 
     // ── Paste the prod /exec URL after creating a new deployment ───
     // Deploy → Manage Deployments → New version → copy /exec URL

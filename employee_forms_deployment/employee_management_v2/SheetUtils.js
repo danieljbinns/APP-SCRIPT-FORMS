@@ -4,17 +4,6 @@
  */
 
 /**
- * Generate unique request ID
- * @param {string} prefix - Request type prefix (e.g., 'NEW_EMP', 'CHANGE', 'FLEETIO')
- * @returns {string} Unique request ID
- */
-function generateRequestId(prefix) {
-  const timestamp = Utilities.formatDate(new Date(), 'America/New_York', 'yyyyMMdd-HHmmss');
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `${prefix}-${timestamp}-${random}`;
-}
-
-/**
  * Add row to spreadsheet
  * @param {string} spreadsheetId - Spreadsheet ID
  * @param {string} sheetName - Sheet name
@@ -115,35 +104,3 @@ function getRowByRequestId(spreadsheetId, sheetName, requestId, requestIdColumn)
   }
 }
 
-/**
- * Update workflow status
- * @param {string} spreadsheetId - Spreadsheet ID
- * @param {string} sheetName - Sheet name
- * @param {string} requestId - Request ID
- * @param {string} status - New status
- * @param {number} [statusColumn] - Status column number (default: last column)
- * @returns {boolean} Success status
- */
-function updateWorkflowStatus(spreadsheetId, sheetName, requestId, status, statusColumn) {
-  try {
-    const ss = SpreadsheetApp.openById(spreadsheetId);
-    const sheet = ss.getSheetByName(sheetName);
-    const data = sheet.getDataRange().getValues();
-    
-    for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
-      if (data[i][0] === requestId) { // Workflow ID always in col 0 across all sheets
-        const col = statusColumn || sheet.getLastColumn();
-        sheet.getRange(i + 1, col).setValue(status);
-        Logger.log('✓ Status updated: ' + requestId + ' → ' + status);
-        return true;
-      }
-    }
-    
-    Logger.log('Request ID not found for status update: ' + requestId);
-    return false;
-    
-  } catch (error) {
-    Logger.log('❌ Error updating status: ' + error.toString());
-    return false;
-  }
-}

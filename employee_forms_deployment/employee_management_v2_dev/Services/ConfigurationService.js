@@ -56,10 +56,19 @@ var ConfigurationService = (function() {
 
   /**
    * Gets a single setting value.
+   * Special keys:
+   *   SPREADSHEET_ID      — TEST_SPREADSHEET_ID script property takes precedence (smoke test redirect)
+   *   SUPPRESS_EMAILS_OVERRIDE — checked by Config.SUPPRESS_EMAILS; 'true'/'false' or '' (use default)
    */
   function getSetting(key) {
     try {
-      var val = PropertiesService.getScriptProperties().getProperty(key);
+      var props = PropertiesService.getScriptProperties();
+      // Smoke test redirect: TEST_SPREADSHEET_ID overrides SPREADSHEET_ID
+      if (key === 'SPREADSHEET_ID') {
+        var testId = props.getProperty('TEST_SPREADSHEET_ID');
+        if (testId) return testId;
+      }
+      var val = props.getProperty(key);
       return val || DEFAULTS[key];
     } catch (e) {
       return DEFAULTS[key];

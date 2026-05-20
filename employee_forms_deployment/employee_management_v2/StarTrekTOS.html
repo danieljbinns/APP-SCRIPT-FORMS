@@ -1,0 +1,600 @@
+<!-- StarTrekTOS.html — DEV ONLY — Multi-Series Easter Egg Include
+     Activation: type B-E-A-M  OR  click logo 5× within 2s
+     localStorage key: tg_trek_v1
+     Server fn: google.script.run.getStarTrekStats()
+     DEV ONLY — do not migrate to staging or prod -->
+<style>
+/* ── All rules scoped to body.startrek ── */
+
+/* ============================================================
+   FONT-SCALE TOKENS
+   ============================================================ */
+body.startrek{--fs-2xs:10px;--fs-xs:11px;--fs-sm:13px;--fs-body:14px;--fs-md:17px;--fs-d-sm:16px;--fs-d-md:20px;--fs-d-lg:26px;--fs-d-xl:36px;--fs-d-2xl:46px}
+body.startrek.sc-sm{--fs-2xs:9px;--fs-xs:10px;--fs-sm:11px;--fs-body:12px;--fs-d-sm:14px;--fs-d-md:17px;--fs-d-lg:22px;--fs-d-xl:30px;--fs-d-2xl:38px}
+body.startrek.sc-lg{--fs-2xs:11px;--fs-xs:13px;--fs-sm:15px;--fs-body:17px;--fs-d-sm:19px;--fs-d-md:24px;--fs-d-lg:31px;--fs-d-xl:42px;--fs-d-2xl:54px}
+body.startrek.sc-xl{--fs-2xs:13px;--fs-xs:15px;--fs-sm:17px;--fs-body:19px;--fs-d-sm:22px;--fs-d-md:28px;--fs-d-lg:36px;--fs-d-xl:48px;--fs-d-2xl:62px}
+
+/* ============================================================
+   THEME TOKENS
+   ============================================================ */
+body.startrek.theme-tos  {--st-bg:#040200;--st-panel:#090500;--st-panel2:#0E0700;--st-hi:#FFCC55;--st-mid:#FFAA00;--st-lo:#CC8800;--st-dim:#886600;--st-faint:#3A2200;--st-red:#FF3300;--st-green:#00DD55;--st-blue:#2266DD;--st-cyan:#00BBDD;--st-fd:'VT323','Courier New',monospace;--st-fb:'Share Tech Mono','Courier New',monospace;--st-btn-r:0px}
+body.startrek.theme-tng  {--st-bg:#000;--st-panel:#060606;--st-panel2:#0C0C0C;--st-hi:#FFDD88;--st-mid:#FF9900;--st-lo:#CC6600;--st-dim:#884400;--st-faint:#2A1800;--st-red:#CC2200;--st-green:#33AA55;--st-blue:#4466CC;--st-cyan:#6688CC;--st-fd:'Rajdhani','Arial Narrow',sans-serif;--st-fb:'Rajdhani','Arial Narrow',sans-serif;--st-btn-r:22px}
+body.startrek.theme-ds9  {--st-bg:#03020A;--st-panel:#070611;--st-panel2:#0C0B18;--st-hi:#CCAAFF;--st-mid:#9966EE;--st-lo:#6633BB;--st-dim:#442288;--st-faint:#1A0A33;--st-red:#FF3344;--st-green:#00CC88;--st-blue:#0088BB;--st-cyan:#00AACC;--st-fd:'Rajdhani','Arial Narrow',sans-serif;--st-fb:'Rajdhani','Arial Narrow',sans-serif;--st-btn-r:22px}
+body.startrek.theme-voy  {--st-bg:#000208;--st-panel:#010411;--st-panel2:#02061A;--st-hi:#99CCFF;--st-mid:#3388FF;--st-lo:#1155CC;--st-dim:#003399;--st-faint:#001133;--st-red:#FF3344;--st-green:#00DDAA;--st-blue:#0055FF;--st-cyan:#00CCEE;--st-fd:'Rajdhani','Arial Narrow',sans-serif;--st-fb:'Rajdhani','Arial Narrow',sans-serif;--st-btn-r:22px}
+body.startrek.theme-bsg  {--st-bg:#0C0C08;--st-panel:#141410;--st-panel2:#1C1C16;--st-hi:#DDEEBB;--st-mid:#AABB44;--st-lo:#778822;--st-dim:#445511;--st-faint:#222211;--st-red:#DD3300;--st-green:#88BB33;--st-blue:#4477AA;--st-cyan:#44AAAA;--st-fd:'Oswald','Impact',sans-serif;--st-fb:'Share Tech Mono','Courier New',monospace;--st-btn-r:0px}
+body.startrek.theme-matrix{--st-bg:#000;--st-panel:#030903;--st-panel2:#061206;--st-hi:#AAFFAA;--st-mid:#00FF41;--st-lo:#00CC33;--st-dim:#007722;--st-faint:#002A11;--st-red:#FF3300;--st-green:#00FF41;--st-blue:#33AAFF;--st-cyan:#00FFEE;--st-fd:'Share Tech Mono','Courier New',monospace;--st-fb:'Share Tech Mono','Courier New',monospace;--st-btn-r:0px}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes st-blink    {0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes st-scroll-l {from{transform:translateX(100%)}to{transform:translateX(-100%)}}
+@keyframes st-scanline {0%{top:-15%}100%{top:115%}}
+@keyframes st-glow     {0%,100%{text-shadow:0 0 7px var(--st-mid)}50%{text-shadow:0 0 18px var(--st-mid),0 0 5px var(--st-hi)}}
+@keyframes st-pulse-b  {0%,100%{box-shadow:0 0 5px var(--st-mid)}50%{box-shadow:0 0 20px var(--st-mid)}}
+@keyframes st-pulse-r  {0%,100%{background:#1A0000;border-color:#FF3300}50%{background:#330000;border-color:#FF5500}}
+@keyframes st-pulse-bsg{0%,100%{background:#0D0500;border-color:#DD3300}50%{background:#200800;border-color:#FF4400}}
+@keyframes st-pulse-mtx{0%,100%{background:#001400;border-color:#00FF41}50%{background:#002800;border-color:#00FF88}}
+@keyframes st-dradis   {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes st-data-in  {from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes st-flicker  {0%,91%,93%,96%,100%{opacity:1}92%{opacity:.93}94%,97%{opacity:.96}}
+@keyframes st-mtxglitch{0%,95%,100%{transform:none;filter:none}96%{transform:translateX(4px);filter:hue-rotate(90deg)}97%{transform:translateX(-3px)}98%{transform:translateX(2px);filter:hue-rotate(-90deg)}}
+
+/* ============================================================
+   GLOBAL PAGE OVERRIDES — remap app CSS variables
+   ============================================================ */
+body.startrek {
+  --bg-color:        var(--st-bg)    !important;
+  --bg-darker:       var(--st-panel) !important;
+  --card-bg:         var(--st-panel) !important;
+  --text-main:       var(--st-hi)    !important;
+  --text-muted:      var(--st-dim)   !important;
+  --brand-red:       var(--st-mid)   !important;
+  --brand-red-hover: var(--st-lo)    !important;
+  --border-color:    var(--st-mid)   !important;
+  --border-subtle:   var(--st-faint) !important;
+  --input-bg:        #000            !important;
+  --input-border:    var(--st-faint) !important;
+  --success:         var(--st-green) !important;
+  --warning:         var(--st-mid)   !important;
+  --danger:          var(--st-red)   !important;
+
+  background-color: var(--st-bg) !important;
+  font-family: var(--st-fb) !important;
+  color: var(--st-hi) !important;
+  padding-bottom: 52px !important;
+}
+
+body.startrek.theme-tos    { animation: st-flicker 9s infinite !important; }
+body.startrek.theme-matrix { animation: st-mtxglitch 8s infinite !important; }
+
+body.startrek.theme-tos,
+body.startrek.theme-tng,
+body.startrek.theme-ds9,
+body.startrek.theme-voy {
+  background-image:
+    radial-gradient(1px 1px at  8% 15%,rgba(255,230,150,.7) 0%,transparent 100%),
+    radial-gradient(1px 1px at 25% 70%,rgba(200,220,255,.8) 0%,transparent 100%),
+    radial-gradient(1px 1px at 42% 35%,rgba(255,255,255,.9) 0%,transparent 100%),
+    radial-gradient(2px 2px at 60% 85%,rgba(255,255,255,.8) 0%,transparent 100%),
+    radial-gradient(1px 1px at 78% 55%,rgba(200,220,255,.7) 0%,transparent 100%),
+    radial-gradient(1px 1px at 12% 90%,rgba(255,255,255,.6) 0%,transparent 100%),
+    radial-gradient(1px 1px at 88% 20%,rgba(255,255,255,.9) 0%,transparent 100%) !important;
+  background-size: 280px 280px !important;
+}
+body.startrek.theme-bsg {
+  background-image:
+    linear-gradient(rgba(130,160,40,.07) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(130,160,40,.07) 1px,transparent 1px) !important;
+  background-size: 48px 48px !important;
+}
+body.startrek.theme-tos::after {
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);
+  pointer-events:none;z-index:9980
+}
+
+/* ============================================================
+   HEADER / NAV
+   ============================================================ */
+body.startrek header,
+body.startrek .header {
+  background: linear-gradient(180deg,var(--st-panel2),var(--st-panel)) !important;
+  border-bottom: 3px solid var(--st-mid) !important;
+  animation: st-pulse-b 5s infinite !important;
+}
+body.startrek.is-lcars header,
+body.startrek.is-lcars .header { border-bottom: 6px solid var(--st-lo) !important; animation: none !important; }
+body.startrek header h1,
+body.startrek .header h1,
+body.startrek h1 {
+  font-family: var(--st-fd) !important;
+  color: var(--st-hi) !important;
+  letter-spacing: 3px !important;
+  text-transform: uppercase !important;
+  animation: st-glow 4s infinite !important;
+}
+body.startrek h2,
+body.startrek h3 { font-family: var(--st-fd) !important; color: var(--st-mid) !important; letter-spacing: 2px !important; text-transform: uppercase !important; }
+body.startrek .nav-links a,
+body.startrek .header-nav a { color: var(--st-lo) !important; font-family: var(--st-fb) !important; letter-spacing: 2px !important; text-transform: uppercase !important; }
+
+/* ============================================================
+   CARDS / SECTIONS
+   ============================================================ */
+body.startrek .card,
+body.startrek .form-section,
+body.startrek .details-section,
+body.startrek .filter-group,
+body.startrek .modal-content,
+body.startrek .popover,
+body.startrek .dash-card {
+  background: var(--st-panel) !important;
+  border: 2px solid var(--st-faint) !important;
+  border-top: 3px solid var(--st-mid) !important;
+  border-radius: 0 !important;
+  color: var(--st-hi) !important;
+}
+body.startrek.is-lcars .card,
+body.startrek.is-lcars .form-section,
+body.startrek.is-lcars .details-section,
+body.startrek.is-lcars .filter-group,
+body.startrek.is-lcars .dash-card { border-top: none !important; border-left: 8px solid var(--st-mid) !important; }
+body.startrek.theme-bsg .card,
+body.startrek.theme-bsg .form-section,
+body.startrek.theme-bsg .dash-card { border-top: none !important; border-left: 4px solid var(--st-mid) !important; }
+body.startrek.theme-matrix .card,
+body.startrek.theme-matrix .form-section,
+body.startrek.theme-matrix .dash-card { border-top: none !important; border-left: 2px solid var(--st-mid) !important; }
+body.startrek .card-title,
+body.startrek .form-section-title,
+body.startrek .section-heading { font-family: var(--st-fd) !important; color: var(--st-mid) !important; letter-spacing: 3px !important; text-transform: uppercase !important; }
+body.startrek label { color: var(--st-lo) !important; font-family: var(--st-fb) !important; letter-spacing: 2px !important; text-transform: uppercase !important; font-size: var(--fs-xs,11px) !important; }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+body.startrek button,
+body.startrek .action-btn,
+body.startrek .action-link,
+body.startrek .filter-btn,
+body.startrek .btn {
+  background: var(--st-panel) !important;
+  border: 2px solid var(--st-mid) !important;
+  color: var(--st-mid) !important;
+  font-family: var(--st-fb) !important;
+  font-size: var(--fs-xs,11px) !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  border-radius: var(--st-btn-r) !important;
+  cursor: pointer !important;
+  transition: background .12s,color .12s !important;
+}
+body.startrek button:hover,
+body.startrek .action-btn:hover,
+body.startrek .action-link:hover,
+body.startrek .filter-btn:hover,
+body.startrek .btn:hover { background: var(--st-mid) !important; color: #000 !important; }
+body.startrek button[type="submit"],
+body.startrek .submit-btn { border-color: var(--st-green) !important; color: var(--st-green) !important; animation: st-pulse-b 2s infinite !important; }
+body.startrek button[type="submit"]:hover,
+body.startrek .submit-btn:hover { background: var(--st-green) !important; color: #000 !important; }
+body.startrek .filter-btn.active,
+body.startrek .filter-btn[aria-pressed="true"] { background: var(--st-mid) !important; color: #000 !important; border-color: var(--st-mid) !important; }
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+body.startrek input[type="text"],
+body.startrek input[type="email"],
+body.startrek input[type="date"],
+body.startrek input[type="tel"],
+body.startrek input[type="number"],
+body.startrek select,
+body.startrek textarea,
+body.startrek .search-box {
+  background: #000 !important;
+  border: 1px solid var(--st-faint) !important;
+  color: var(--st-hi) !important;
+  font-family: var(--st-fb) !important;
+  border-radius: 0 !important;
+  caret-color: var(--st-mid) !important;
+}
+body.startrek.is-lcars input[type="text"],
+body.startrek.is-lcars input[type="email"],
+body.startrek.is-lcars input[type="date"],
+body.startrek.is-lcars input[type="tel"],
+body.startrek.is-lcars input[type="number"],
+body.startrek.is-lcars select,
+body.startrek.is-lcars textarea { border-radius: 6px !important; }
+body.startrek input:focus,
+body.startrek select:focus,
+body.startrek textarea:focus { border-color: var(--st-mid) !important; box-shadow: 0 0 10px rgba(255,170,0,.15) !important; outline: none !important; }
+body.startrek input::placeholder,
+body.startrek textarea::placeholder { color: var(--st-faint) !important; opacity:1 !important; }
+body.startrek select option { background: var(--st-panel) !important; color: var(--st-hi) !important; }
+
+/* ============================================================
+   STATUS BADGES
+   ============================================================ */
+body.startrek .status-badge {
+  font-family: var(--st-fd) !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  border: 1px solid currentColor !important;
+  border-radius: 0 !important;
+}
+body.startrek.is-lcars .status-badge { border-radius: 14px !important; font-weight: 700 !important; }
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+body.startrek table { border-collapse: collapse !important; }
+body.startrek th { background: var(--st-panel2) !important; color: var(--st-mid) !important; border: 1px solid var(--st-faint) !important; font-family: var(--st-fd) !important; text-transform: uppercase !important; letter-spacing: 2px !important; }
+body.startrek td { border: 1px solid var(--st-faint) !important; color: var(--st-hi) !important; }
+body.startrek tr:nth-child(even) td { background: var(--st-panel) !important; }
+body.startrek tr:hover td { background: var(--st-panel2) !important; }
+
+/* ============================================================
+   CALLOUTS
+   ============================================================ */
+body.startrek .callout,
+body.startrek .callout-warning { background: var(--st-panel2) !important; border: 1px solid var(--st-faint) !important; border-left: 4px solid var(--st-red) !important; border-radius: 0 !important; color: var(--st-lo) !important; }
+body.startrek .callout-info { border-left-color: var(--st-cyan) !important; color: var(--st-cyan) !important; }
+
+/* ============================================================
+   SUCCESS SCREEN / LOGO / LINKS / MISC
+   ============================================================ */
+body.startrek #success-screen,
+body.startrek .success-screen { background: var(--st-panel) !important; border: 4px solid var(--st-green) !important; color: var(--st-green) !important; animation: st-pulse-b 2s infinite !important; }
+body.startrek #successTitle   { animation: st-glow 2s infinite !important; color: var(--st-hi) !important; }
+body.startrek .success-icon   { animation: st-dradis 3s linear infinite !important; }
+body.startrek img.logo,
+body.startrek header img,
+body.startrek .header img     { filter: drop-shadow(0 0 10px var(--st-mid)) !important; cursor: pointer !important; }
+body.startrek a               { color: var(--st-lo) !important; }
+body.startrek a:hover         { color: var(--st-hi) !important; text-decoration: none !important; }
+body.startrek a:visited       { color: var(--st-dim) !important; }
+body.startrek #loading-overlay,
+body.startrek .loading-overlay { background: rgba(0,0,0,0.95) !important; color: var(--st-mid) !important; }
+
+/* ============================================================
+   DUAL LIST WIDGET
+   ============================================================ */
+body.startrek .dual-list-panel        { background: var(--st-panel) !important; border: 2px solid var(--st-faint) !important; }
+body.startrek .dual-list-panel-header { background: var(--st-panel2) !important; color: var(--st-mid) !important; font-family: var(--st-fd) !important; letter-spacing: 2px !important; }
+body.startrek .dual-list-item         { color: var(--st-hi) !important; border-bottom: 1px solid var(--st-faint) !important; }
+body.startrek .dual-list-item.selected{ background: var(--st-faint) !important; color: var(--st-hi) !important; border-left: 3px solid var(--st-mid) !important; }
+body.startrek .dual-list-arrow        { background: var(--st-panel2) !important; border: 2px solid var(--st-mid) !important; color: var(--st-mid) !important; }
+body.startrek .dual-list-btn          { background: var(--st-panel) !important; border: 2px solid var(--st-faint) !important; color: var(--st-lo) !important; border-radius: var(--st-btn-r) !important; }
+
+/* ============================================================
+   INJECTED OVERLAY ELEMENTS
+   ============================================================ */
+#st-rain{position:fixed;inset:0;z-index:9981;pointer-events:none;opacity:.28;display:none}
+body.startrek.theme-matrix #st-rain{display:block}
+#st-sweep{position:fixed;left:0;right:0;height:100px;background:linear-gradient(180deg,transparent,rgba(255,160,0,.05),transparent);pointer-events:none;z-index:9982;display:none;animation:st-scanline 7s linear infinite}
+body.startrek.theme-tos #st-sweep{display:block}
+#st-ticker{position:fixed;top:0;left:0;right:0;z-index:9995;background:#000;border-bottom:2px solid var(--st-faint,#3A2200);padding:4px 16px;display:flex;align-items:center;gap:12px;font-family:var(--st-fd,'Courier New',monospace);letter-spacing:2px;color:var(--st-dim,#886600);overflow:hidden;height:30px}
+.st-t-side{white-space:nowrap;flex-shrink:0;font-size:var(--fs-sm,13px)}
+#st-t-track{flex:1;overflow:hidden;height:22px;position:relative}
+#st-t-text{position:absolute;white-space:nowrap;top:2px;color:var(--st-lo,#CC8800);font-size:var(--fs-sm,13px);letter-spacing:3px;animation:st-scroll-l 32s linear infinite}
+body.startrek.is-lcars #st-ticker{background:var(--st-mid);color:#000;border-bottom:none}
+body.startrek.is-lcars .st-t-side{color:#000;font-weight:700}
+body.startrek.is-lcars #st-t-text{color:#000;opacity:.8}
+body.startrek.theme-matrix #st-ticker{border-bottom-color:var(--st-mid)}
+body.startrek.theme-matrix #st-t-text{color:var(--st-mid);animation:st-scroll-l 20s linear infinite}
+#st-alert{position:fixed;top:30px;left:0;right:0;z-index:9994;border-top:2px solid var(--st-red,#FF3300);border-bottom:2px solid var(--st-red,#FF3300);padding:5px 0;text-align:center;font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-sm,16px);color:var(--st-red,#FF3300);letter-spacing:4px;animation:st-pulse-r .85s infinite;height:38px}
+body.startrek.theme-bsg    #st-alert{animation:st-pulse-bsg .85s infinite}
+body.startrek.theme-matrix #st-alert{border-color:var(--st-green);color:var(--st-green);animation:st-pulse-mtx .85s infinite}
+.st-blink{animation:st-blink .5s infinite}
+#st-ctrl{position:fixed;top:68px;left:0;right:0;z-index:9993;background:var(--st-panel2,#0E0700);border-bottom:1px solid var(--st-faint,#3A2200);padding:5px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;height:36px}
+.st-cg{display:flex;align-items:center;gap:5px}
+.st-cl{font-size:var(--fs-2xs,10px);color:var(--st-dim,#886600);letter-spacing:3px;text-transform:uppercase;font-family:var(--st-fb,'Courier New',monospace);white-space:nowrap;margin-right:3px}
+.st-sb,.st-kb,.st-ab{background:var(--st-panel,#090500);border:1px solid var(--st-dim,#886600);color:var(--st-lo,#CC8800);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;text-transform:uppercase;padding:3px 9px;cursor:pointer;border-radius:var(--st-btn-r,0px);transition:background .12s,color .12s;font-weight:600}
+.st-sb:hover,.st-kb:hover,.st-ab:hover{background:var(--st-lo);color:#000;border-color:var(--st-lo)}
+.st-sb.on,.st-kb.on{background:var(--st-mid);color:#000;border-color:var(--st-mid)}
+.st-ab.on{background:var(--st-green);color:#000;border-color:var(--st-green)}
+body.startrek.is-lcars .st-sb,body.startrek.is-lcars .st-kb,body.startrek.is-lcars .st-ab{border-radius:14px}
+#st-exit{position:fixed;top:110px;left:14px;z-index:9993;background:#000;border:1px solid var(--st-red,#FF3300);color:var(--st-red,#FF3300);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;padding:4px 10px;cursor:pointer;text-transform:uppercase}
+#st-exit:hover{background:var(--st-red);color:#fff}
+#st-stog{position:fixed;top:110px;right:14px;z-index:9993;background:var(--st-panel,#090500);border:1px solid var(--st-mid,#FFAA00);color:var(--st-mid,#FFAA00);font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);letter-spacing:2px;padding:4px 10px;cursor:pointer;text-transform:uppercase;animation:st-pulse-b 4s infinite}
+#st-stog:hover{background:var(--st-mid);color:#000}
+#st-stats{position:fixed;top:136px;right:0;width:min(480px,95vw);max-height:calc(100vh - 196px);overflow-y:auto;z-index:9992;background:var(--st-panel,#090500);border:2px solid var(--st-mid,#FFAA00);border-right:none;display:none;animation:st-data-in .3s ease-out both}
+body.startrek.is-lcars #st-stats{border:none;border-left:8px solid var(--st-mid)}
+#st-sh{background:var(--st-panel2,#0E0700);border-bottom:2px solid var(--st-mid,#FFAA00);padding:9px 14px}
+body.startrek.is-lcars #st-sh{background:var(--st-faint);border-bottom:4px solid var(--st-mid)}
+.st-st{font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-sm,16px);color:var(--st-hi,#FFCC55);letter-spacing:3px;animation:st-glow 4s infinite}
+body.startrek.theme-bsg .st-st{animation:none;font-weight:700;letter-spacing:5px}
+body.startrek.theme-matrix .st-st{animation:st-glow 2s infinite}
+#st-sb2{padding:12px}
+.st-vis{text-align:center;padding:8px 0 12px;border-bottom:1px solid var(--st-faint,#3A2200);margin-bottom:12px}
+.st-vl{font-size:var(--fs-2xs,10px);letter-spacing:3px;color:var(--st-dim,#886600);text-transform:uppercase;margin-bottom:5px}
+.st-vb{background:#000;border:2px solid var(--st-green,#00DD55);display:inline-block;padding:5px 18px;font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-xl,36px);color:var(--st-green,#00DD55);letter-spacing:8px;box-shadow:0 0 12px var(--st-green,#00DD55)}
+.st-vs{font-size:var(--fs-2xs,10px);color:#2a2a2a;letter-spacing:2px;margin-top:4px}
+.st-sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-bottom:12px}
+.st-sx{background:#000;border:2px solid var(--st-faint,#3A2200);border-top:3px solid var(--st-mid,#FFAA00);padding:7px 9px;text-align:center}
+body.startrek.is-lcars .st-sx{border:1px solid var(--st-faint);border-left:5px solid var(--st-mid);border-top:none}
+body.startrek.theme-bsg    .st-sx{border:1px solid var(--st-faint);border-left:3px solid var(--st-mid);border-top:none}
+body.startrek.theme-matrix .st-sx{border:1px solid var(--st-faint);border-left:2px solid var(--st-mid);border-top:none}
+.st-sx.sg{border-color:var(--st-green);border-top-color:var(--st-green)} .st-sx.sr{border-color:var(--st-red);border-top-color:var(--st-red)}
+.st-sx.sc{border-color:var(--st-cyan);border-top-color:var(--st-cyan)}   .st-sx.sb{border-color:var(--st-blue);border-top-color:var(--st-blue)}
+body.startrek.is-lcars .st-sx.sg{border-left-color:var(--st-green)} body.startrek.is-lcars .st-sx.sr{border-left-color:var(--st-red)}
+body.startrek.is-lcars .st-sx.sc{border-left-color:var(--st-cyan)}  body.startrek.is-lcars .st-sx.sb{border-left-color:var(--st-blue)}
+.st-sn{font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-md,20px);color:var(--st-hi,#FFCC55);display:block;line-height:1}
+.st-sx.sg .st-sn{color:var(--st-green)} .st-sx.sr .st-sn{color:var(--st-red)} .st-sx.sc .st-sn{color:var(--st-cyan)} .st-sx.sb .st-sn{color:var(--st-blue)}
+.st-sl{font-size:var(--fs-2xs,10px);letter-spacing:1px;text-transform:uppercase;color:var(--st-dim,#886600);margin-top:3px;display:block}
+.st-lb{display:grid;grid-template-columns:1fr;gap:8px}
+.st-lp{background:#000;border:1px solid var(--st-faint,#3A2200);padding:7px 10px}
+body.startrek.is-lcars .st-lp{border-left:5px solid var(--st-mid)}
+.st-lp.l2{border-color:#004422} .st-lp.l3{border-color:#112255}
+body.startrek.is-lcars .st-lp.l2{border-left-color:var(--st-cyan)} body.startrek.is-lcars .st-lp.l3{border-left-color:var(--st-blue)}
+.st-lt{font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-xs,11px);color:var(--st-mid,#FFAA00);letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid var(--st-faint);padding-bottom:4px;margin-bottom:5px}
+.st-lp.l2 .st-lt{color:var(--st-green)} .st-lp.l3 .st-lt{color:var(--st-blue)}
+.st-lr{display:flex;align-items:center;padding:2px 0}
+.st-lrk{color:var(--st-dim);width:26px;flex-shrink:0;font-size:var(--fs-xs,11px)}
+.st-lrn{flex:1;color:var(--st-lo);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-xs,11px)}
+.st-lrc{font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-sm,16px);color:var(--st-green)}
+.st-dr{display:none;text-align:center;padding:10px 0 6px}
+body.startrek.theme-bsg .st-dr{display:block}
+.st-drc{display:inline-block;width:80px;height:80px;border-radius:50%;border:2px solid var(--st-mid);position:relative;box-shadow:0 0 14px rgba(150,180,40,.3)}
+.st-drc::before{content:'';position:absolute;inset:10px;border-radius:50%;border:1px solid var(--st-dim)}
+.st-drc::after{content:'';position:absolute;inset:22px;border-radius:50%;border:1px solid var(--st-faint)}
+.st-drs{position:absolute;top:50%;left:50%;width:50%;height:2px;transform-origin:0 50%;background:linear-gradient(90deg,var(--st-mid),transparent);animation:st-dradis 3s linear infinite}
+.st-drl{font-size:var(--fs-2xs,10px);color:var(--st-dim);letter-spacing:3px;margin-top:4px}
+.st-sep{border:none;border-top:1px solid var(--st-faint,#3A2200);margin:9px 0}
+.st-loading{text-align:center;padding:20px;font-family:var(--st-fd,'Courier New',monospace);font-size:var(--fs-d-sm,16px);color:var(--st-dim);letter-spacing:3px;animation:st-blink 1s infinite}
+#st-foot{position:fixed;bottom:0;left:0;right:0;z-index:9995;background:#000;border-top:2px solid var(--st-faint,#3A2200);padding:4px 0;overflow:hidden;height:24px}
+body.startrek.is-lcars   #st-foot{background:var(--st-faint);border-top:4px solid var(--st-mid)}
+body.startrek.theme-matrix #st-foot{background:rgba(0,10,0,.9);border-top-color:var(--st-mid)}
+.st-fs{white-space:nowrap;display:inline-block;font-family:var(--st-fb,'Courier New',monospace);font-size:var(--fs-2xs,10px);color:var(--st-dim,#886600);letter-spacing:2px;animation:st-scroll-l 38s linear infinite}
+body.startrek.is-lcars   .st-fs{color:var(--st-lo);font-weight:700}
+body.startrek.theme-matrix .st-fs{color:var(--st-mid);animation:st-scroll-l 18s linear infinite}
+</style>
+
+<script>
+(function() {
+  'use strict';
+  if (document.getElementById('st-ticker')) return;
+
+  var T = {
+    tos:{ship:'NCC-1701',sector:'SECTOR 001',sd:'2265.4',alertIcon:'&#9888; RED ALERT &#9888;',alertMsg:'REQUESTS REQUIRE ATTENTION — CAPTAIN TO THE BRIDGE',ticker:'COMPUTER ONLINE &#9830; ALL SYSTEMS NOMINAL &#9830; WARP 6 SUSTAINED &#9830; SEQUENTIAL GATING ACTIVE &#9830; NO KLINGON VESSELS DETECTED &#9830; MR. SPOCK: LOGIC IS SOUND &#9830;',stitle:'&#9672; TRICORDER ANALYSIS — TELEMETRY &#9672;',vlabel:'CREW ASSIGNMENTS PROCESSED',vsub:'EARTH SPACEDOCK — AUTHORIZED ACCESS ONLY',s1:'New Crew',s2:'Separations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Pending',s7:'Cancelled',s8:'This Cycle',l1:'Top Submitters',l2:'Active Outposts',l3:'Top Officers',footer:'TEAM GROUP EMPLOYEE MANAGEMENT &#9830; U.S.S. ENTERPRISE NCC-1701 &#9830; AUTHORIZED PERSONNEL ONLY &#9830; SEQUENTIAL GATING V2 ACTIVE &#9830; LIVE LONG AND PROSPER &#9830;',greeting:'Working. Computer online. All systems nominal.',lcars:false,bsg:false,matrix:false},
+    tng:{ship:'NCC-1701-D',sector:'SECTOR 001',sd:'47634.44',alertIcon:'&#9685; RED ALERT &#9685;',alertMsg:'ALL HANDS TO BATTLE STATIONS — SENIOR STAFF TO THE BRIDGE',ticker:'LCARS ONLINE &#9830; ALL SYSTEMS NOMINAL &#9830; WARP 9 SUSTAINED &#9830; SEQUENTIAL GATING ACTIVE &#9830; COUNSELOR TROI SENSES NO DECEPTION &#9830; MAKE IT SO &#9830;',stitle:'LCARS — SYSTEM ANALYSIS',vlabel:'PERSONNEL ASSIGNMENTS PROCESSED',vsub:'EARTH SPACEDOCK — AUTHORIZED PERSONNEL ONLY',s1:'New Personnel',s2:'Separations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Standby',s7:'Cancelled',s8:'This Period',l1:'Top Submitters',l2:'Top Locations',l3:'Top Managers',footer:'TEAM GROUP EMPLOYEE MANAGEMENT &#9830; U.S.S. ENTERPRISE NCC-1701-D &#9830; LCARS SEQUENTIAL GATING V2 ACTIVE &#9830; MAKE IT SO &#9830;',greeting:'L-Cars online. Welcome, Commander.',lcars:true,bsg:false,matrix:false},
+    ds9:{ship:'DEEP SPACE 9',sector:'BAJOR SECTOR',sd:'47634.44',alertIcon:'&#9672; CONDITION RED &#9672;',alertMsg:'ALL HANDS TO BATTLE STATIONS — SHIELDS UP — CLOSE ALL AIRLOCKS',ticker:'LCARS ONLINE &#9830; STATION SYSTEMS NOMINAL &#9830; WORMHOLE STABLE &#9830; SEQUENTIAL GATING ACTIVE &#9830; ODO REPORTS: NOTHING OUT OF THE ORDINARY &#9830;',stitle:'LCARS — STATION ANALYSIS',vlabel:'PERSONNEL ASSIGNMENTS — BAJOR SECTOR',vsub:'BAJORAN / STARFLEET JOINT AUTHORITY',s1:'New Assignments',s2:'Separations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Standby',s7:'Cancelled',s8:'This Cycle',l1:'Top Submitters',l2:'Active Sectors',l3:'Top Officers',footer:'TEAM GROUP EMPLOYEE MANAGEMENT &#9830; DEEP SPACE NINE OPERATIONS &#9830; BAJORAN/STARFLEET JOINT COMMAND &#9830; SEQUENTIAL GATING V2 ACTIVE &#9830;',greeting:'L-Cars online. Station systems ready. The Prophets watch over us.',lcars:true,bsg:false,matrix:false},
+    voy:{ship:'NCC-74656',sector:'DELTA QUADRANT',sd:'50984.3',alertIcon:'&#9685; RED ALERT &#9685;',alertMsg:'ALL CREW TO BATTLE STATIONS — CAPTAIN JANEWAY TO THE BRIDGE',ticker:'LCARS ONLINE &#9830; ALL SYSTEMS NOMINAL &#9830; WARP 9.9 SUSTAINED &#9830; SEQUENTIAL GATING ACTIVE &#9830; SEVEN OF NINE: RESISTANCE IS FUTILE &#9830;',stitle:'LCARS — ASTROMETRICS ANALYSIS',vlabel:'PERSONNEL ASSIGNMENTS — VOYAGER RECORDS',vsub:'U.S.S. VOYAGER — 70,000 LIGHT YEARS FROM HOME',s1:'New Assignments',s2:'Separations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Standby',s7:'Cancelled',s8:'This Period',l1:'Top Submitters',l2:'Top Locations',l3:'Top Managers',footer:'TEAM GROUP EMPLOYEE MANAGEMENT &#9830; U.S.S. VOYAGER NCC-74656 &#9830; DELTA QUADRANT OPS &#9830; SEQUENTIAL GATING V2 ACTIVE &#9830; SET A COURSE FOR HOME &#9830;',greeting:'L-Cars online. All systems within normal parameters.',lcars:true,bsg:false,matrix:false},
+    bsg:{ship:'BS-75',sector:'COLONIAL FLEET',sd:'47',alertIcon:'// ACTION STATIONS //',alertMsg:'INBOUND CYLON CONTACTS — ALL PILOTS TO THEIR BIRDS — NOT A DRILL',ticker:'// DRADIS ONLINE // FLEET SYSTEMS NOMINAL // SEQUENTIAL GATING ACTIVE // NO CYLON VESSELS ON DRADIS // STARBUCK: GOOD HUNTING // SO SAY WE ALL //',stitle:'// TACTICAL ANALYSIS — FLEET STATUS //',vlabel:'PERSONNEL ACTIONS — COLONIAL FLEET',vsub:'BATTLESTAR GALACTICA — COLONIAL FLEET AUTHORITY',s1:'New Assignments',s2:'Separations',s3:'Transfers',s4:'Completed',s5:'In Progress',s6:'Pending',s7:'Aborted',s8:'This Day',l1:'// TOP SUBMITTERS //',l2:'// ACTIVE SECTORS //',l3:'// TOP OFFICERS //',footer:'TEAM GROUP EMPLOYEE MANAGEMENT // BATTLESTAR GALACTICA BS-75 // COLONIAL FLEET AUTHORITY // SEQUENTIAL GATING V2 ACTIVE // SO SAY WE ALL //',greeting:'Action stations. All hands man your battle stations. This is not a drill. So say we all.',lcars:false,bsg:true,matrix:false},
+    matrix:{ship:'THE MATRIX',sector:'CONSTRUCT',sd:'ERROR',alertIcon:'!! ANOMALY DETECTED !!',alertMsg:'THE MATRIX HAS YOU — FOLLOW THE WHITE RABBIT — THERE IS NO SPOON',ticker:'WAKE UP, NEO... THE MATRIX HAS YOU... FOLLOW THE WHITE RABBIT... THERE IS NO SPOON... FREE YOUR MIND...',stitle:'// SIMULATION DIAGNOSTICS — ANOMALY SCAN //',vlabel:'PROGRAMS PROCESSED — MATRIX RECORDS',vsub:'THE CONSTRUCT — AUTHORIZED OPERATORS ONLY',s1:'New Programs',s2:'Decompiled',s3:'Transfers',s4:'Executed',s5:'Running',s6:'Awaiting',s7:'Killed',s8:'This Cycle',l1:'// TOP OPERATORS //',l2:'// TOP CONSTRUCTS //',l3:'// TOP AGENTS //',footer:'TEAM GROUP SIMULATION // THE MATRIX // AUTHORIZED OPERATORS ONLY // SEQUENTIAL GATING v2 ACTIVE // THERE IS NO SPOON //',greeting:'Wake up, Neo. The Matrix has you. Follow the white rabbit.',lcars:false,bsg:false,matrix:true}
+  };
+
+  var STATUS_MAPS = {
+    tos:   {'In Progress':'AWAY TEAM DEPLOYED','Pending':'AWAITING ORDERS','Completed':'MISSION SUCCESS','Cancelled':'MISSION ABORTED','Action Required':'!! CAPTAIN TO BRIDGE','All Specialists Complete':'MISSION COMPLETE'},
+    tng:   {'In Progress':'IN PROGRESS','Pending':'STANDBY','Completed':'TASK COMPLETE','Cancelled':'CANCELLED','Action Required':'&#9685; ACTION REQUIRED','All Specialists Complete':'TASK COMPLETE'},
+    ds9:   {'In Progress':'IN PROGRESS','Pending':'STANDBY','Completed':'COMPLETED','Cancelled':'CANCELLED','Action Required':'&#9672; IMMEDIATE ACTION','All Specialists Complete':'COMPLETED'},
+    voy:   {'In Progress':'IN PROGRESS','Pending':'STANDBY','Completed':'COMPLETED','Cancelled':'CANCELLED','Action Required':'&#9685; ACTION REQUIRED','All Specialists Complete':'COMPLETED'},
+    bsg:   {'In Progress':'MISSION UNDERWAY','Pending':'AWAITING CLEARANCE','Completed':'STRIKE SUCCESSFUL','Cancelled':'ABORTED','Action Required':'// ACTION REQUIRED //','All Specialists Complete':'STRIKE SUCCESSFUL'},
+    matrix:{'In Progress':'PROCESS RUNNING','Pending':'AWAITING INPUT','Completed':'EXECUTED','Cancelled':'PROCESS KILLED','Action Required':'!! BUFFER OVERFLOW','All Specialists Complete':'EXECUTED'}
+  };
+
+  var SUBMIT_MAPS = {
+    tos:   ['TRANSMIT TO STARFLEET','BEAM UP REQUEST','ENGAGE!!'],
+    tng:   ['TRANSMIT TO STARFLEET COMMAND','MAKE IT SO','ENGAGE'],
+    ds9:   ['SUBMIT TO COMMAND','TRANSMIT REQUEST','CONFIRM'],
+    voy:   ['TRANSMIT TO STARFLEET','ENGAGE','CONFIRM REQUEST'],
+    bsg:   ['SUBMIT TO COMMAND','SO SAY WE ALL','LAUNCH!!'],
+    matrix:['UPLOAD TO MATRIX','INSERT PROGRAM','EXECUTE']
+  };
+
+  var curTheme='tos', curScale='sc-md';
+  var audioEnabled=false, audioCtx=null, ambientTimer=null;
+  var rainTimer=null, statsVisible=false, statsLoaded=false, statsData=null;
+  var LS_KEY='tg_trek_v1';
+
+  function savePref(){ try{ localStorage.setItem(LS_KEY,JSON.stringify({on:true,theme:curTheme,scale:curScale,audio:audioEnabled})); }catch(e){} }
+  function clearPref(){ try{ localStorage.removeItem(LS_KEY); }catch(e){} }
+
+  var BEAM=['b','e','a','m'], beamBuf=[];
+  var logoClicks=0, logoTimer=null;
+
+  document.addEventListener('keydown',function(e){
+    if (document.getElementById('st-ticker')) return;
+    var k=(e.key||'').toLowerCase();
+    if (k===BEAM[beamBuf.length]){ beamBuf.push(k); if(beamBuf.length===BEAM.length){beamBuf=[];activate();} }
+    else{ beamBuf=[]; if(k===BEAM[0])beamBuf.push(k); }
+  });
+
+  function onLogo(){
+    if (document.getElementById('st-ticker')) return;
+    logoClicks++;
+    if (logoTimer) clearTimeout(logoTimer);
+    if (logoClicks>=5){ logoClicks=0; activate(); return; }
+    logoTimer=setTimeout(function(){ logoClicks=0; },2000);
+  }
+
+  function attachLogoHooks(){
+    var sels=['.logo','#logo','header img','header .logo-img','.brand-logo','#header-logo'];
+    for(var i=0;i<sels.length;i++){ var els=document.querySelectorAll(sels[i]); for(var j=0;j<els.length;j++) els[j].addEventListener('click',onLogo); }
+  }
+
+  function swapStatus(theme){
+    var map=STATUS_MAPS[theme]||{};
+    var els=document.querySelectorAll('.status-badge,[class*="status-badge"]');
+    for(var i=0;i<els.length;i++){
+      var el=els[i];
+      if(!el.getAttribute('data-st-orig')) el.setAttribute('data-st-orig',el.textContent.trim());
+      var orig=el.getAttribute('data-st-orig'), mapped=map[orig];
+      if(mapped) el.innerHTML=mapped;
+    }
+  }
+
+  function swapSubmit(theme){
+    var texts=SUBMIT_MAPS[theme]||SUBMIT_MAPS.tos;
+    var btns=document.querySelectorAll('button[type="submit"],.submit-btn');
+    for(var i=0;i<btns.length;i++){
+      var btn=btns[i];
+      if(!btn.getAttribute('data-st-orig')) btn.setAttribute('data-st-orig',btn.textContent.trim());
+      btn.textContent=texts[i%texts.length];
+    }
+  }
+
+  function restoreSwaps(){
+    var els=document.querySelectorAll('[data-st-orig]');
+    for(var i=0;i<els.length;i++){
+      var orig=els[i].getAttribute('data-st-orig');
+      if(orig){ els[i].textContent=orig; els[i].removeAttribute('data-st-orig'); }
+    }
+  }
+
+  function buildUI(d){
+    return '<canvas id="st-rain"></canvas>'+
+      '<div id="st-sweep"></div>'+
+      '<div id="st-ticker"><span class="st-t-side">'+d.ship+'</span><div id="st-t-track"><span id="st-t-text">&nbsp;&nbsp;'+d.ticker+'&nbsp;&nbsp;</span></div><span class="st-t-side" id="st-t-sector">'+d.sector+'</span></div>'+
+      '<div id="st-alert"><span class="st-blink" id="st-ai">'+d.alertIcon+'</span> &mdash; <span id="st-am">'+d.alertMsg+'</span> &mdash; <span class="st-blink">'+d.alertIcon+'</span></div>'+
+      '<div id="st-ctrl">'+
+        '<div class="st-cg"><span class="st-cl">SERIES</span>'+
+          '<button class="st-sb" data-theme="tos">TOS</button>'+
+          '<button class="st-sb" data-theme="tng">TNG</button>'+
+          '<button class="st-sb" data-theme="ds9">DS9</button>'+
+          '<button class="st-sb" data-theme="voy">VOY</button>'+
+          '<button class="st-sb" data-theme="bsg">BSG</button>'+
+          '<button class="st-sb" data-theme="matrix">MATRIX</button>'+
+        '</div>'+
+        '<div class="st-cg"><span class="st-cl">SCALE</span>'+
+          '<button class="st-kb" data-scale="sc-sm">S</button>'+
+          '<button class="st-kb" data-scale="sc-md">M</button>'+
+          '<button class="st-kb" data-scale="sc-lg">L</button>'+
+          '<button class="st-kb" data-scale="sc-xl">XL</button>'+
+        '</div>'+
+        '<div class="st-cg"><button class="st-ab" id="st-ab">&#128263; OFF</button></div>'+
+      '</div>'+
+      '<button id="st-exit">&#x2716; EXIT WARP</button>'+
+      '<button id="st-stog">&#9670; STATS</button>'+
+      '<div id="st-stats"><div id="st-sh"><span class="st-st" id="st-stitle">'+d.stitle+'</span></div><div id="st-sb2"><div class="st-loading" id="st-sload">ACCESSING RECORDS&hellip;</div></div></div>'+
+      '<div id="st-foot"><span class="st-fs" id="st-ftext">&nbsp;&nbsp;'+d.footer+'&nbsp;&nbsp;</span></div>';
+  }
+
+  function renderStats(data,d){
+    var t=data.totals||{}, h='';
+    h+='<div class="st-dr"><div class="st-drc"><div class="st-drs"></div></div><div class="st-drl">DRADIS — NO CONTACTS</div></div>';
+    h+='<div class="st-vis"><div class="st-vl">'+d.vlabel+'</div><div class="st-vb">'+String(t.total||0).padStart(6,'0').split('').join(' ')+'</div><div class="st-vs">'+d.vsub+'</div></div>';
+    h+='<div class="st-sg">'+
+      '<div class="st-sx sg"><span class="st-sn">'+(t.newHire||0)+'</span><span class="st-sl">'+d.s1+'</span></div>'+
+      '<div class="st-sx sr"><span class="st-sn">'+(t.eoe||0)+'</span><span class="st-sl">'+d.s2+'</span></div>'+
+      '<div class="st-sx sc"><span class="st-sn">'+(t.change||0)+'</span><span class="st-sl">'+d.s3+'</span></div>'+
+      '<div class="st-sx"   ><span class="st-sn">'+(t.completed||0)+'</span><span class="st-sl">'+d.s4+'</span></div>'+
+      '<div class="st-sx"   ><span class="st-sn">'+(t.inProgress||0)+'</span><span class="st-sl">'+d.s5+'</span></div>'+
+      '<div class="st-sx sc"><span class="st-sn">'+(t.pending||0)+'</span><span class="st-sl">'+d.s6+'</span></div>'+
+      '<div class="st-sx sr"><span class="st-sn">'+(t.cancelled||0)+'</span><span class="st-sl">'+d.s7+'</span></div>'+
+      '<div class="st-sx sb"><span class="st-sn">'+(t.thisMonth||0)+'</span><span class="st-sl">'+d.s8+'</span></div>'+
+      '<div class="st-sx"   ><span class="st-sn">'+(t.actionItems||0)+'</span><span class="st-sl">Action Items</span></div>'+
+      '<div class="st-sx"   ><span class="st-sn">'+(t.allTimeRecord||0)+'</span><span class="st-sl">Peak Month</span></div>'+
+    '</div>';
+    function lbRows(arr){ var s=''; for(var i=0;i<arr.length;i++) s+='<div class="st-lr"><span class="st-lrk">#'+(i+1)+'</span><span class="st-lrn">'+arr[i].name+'</span><span class="st-lrc">'+arr[i].count+'</span></div>'; return s||'<div class="st-lr" style="color:#444">&#8212;</div>'; }
+    h+='<hr class="st-sep"><div class="st-lb">'+
+      '<div class="st-lp"><div class="st-lt">'+d.l1+'</div>'+lbRows(data.topRequesters||[])+'</div>'+
+      '<div class="st-lp l2"><div class="st-lt">'+d.l2+'</div>'+lbRows(data.topSites||[])+'</div>'+
+      '<div class="st-lp l3"><div class="st-lt">'+d.l3+'</div>'+lbRows(data.topManagers||[])+'</div>'+
+    '</div>';
+    if(data.bestMonth) h+='<hr class="st-sep"><div style="text-align:center;font-family:var(--st-fd,monospace);font-size:var(--fs-xs,11px);color:var(--st-dim);letter-spacing:2px;padding:5px 0">PEAK CYCLE: <span style="color:var(--st-hi)">'+data.bestMonth.label.toUpperCase()+' &#8212; '+data.bestMonth.count+'</span></div>';
+    if(data.lastUpdated) h+='<div style="text-align:right;font-family:var(--st-fb,monospace);font-size:var(--fs-2xs,10px);color:var(--st-dim);padding-top:6px">UPDATED: '+data.lastUpdated.replace('T',' ').substring(0,19)+'</div>';
+    return h;
+  }
+
+  function loadStats(){
+    if(statsLoaded) return;
+    if(typeof google==='undefined'||!google.script){ var el=document.getElementById('st-sload'); if(el) el.textContent='OFFLINE — NO SERVER CONNECTION'; return; }
+    google.script.run
+      .withSuccessHandler(function(data){ statsLoaded=true; statsData=data; var body=document.getElementById('st-sb2'); if(!body) return; if(!data||data.error){body.innerHTML='<div class="st-loading" style="animation:none;color:var(--st-red)">DATA UNAVAILABLE</div>';return;} body.innerHTML=renderStats(data,T[curTheme]); })
+      .withFailureHandler(function(){ var el=document.getElementById('st-sload'); if(el){el.textContent='TRANSMISSION FAILED';el.style.animation='none';} })
+      .getStarTrekStats();
+  }
+
+  function activate(theme,scale,audio){
+    var wrap=document.createElement('div'); wrap.id='st-wrap'; wrap.innerHTML=buildUI(T[theme||'tos']); document.body.appendChild(wrap);
+    document.body.classList.add('startrek');
+    document.getElementById('st-exit').addEventListener('click',deactivate);
+    document.getElementById('st-stog').addEventListener('click',function(){ statsVisible=!statsVisible; document.getElementById('st-stats').style.display=statsVisible?'block':'none'; if(statsVisible)loadStats(); });
+    document.getElementById('st-ab').addEventListener('click',stToggleAudio);
+    var sBtns=document.querySelectorAll('.st-sb');
+    for(var i=0;i<sBtns.length;i++){ (function(btn){btn.addEventListener('click',function(){stSwitchTheme(btn.getAttribute('data-theme'));});})(sBtns[i]); }
+    var kBtns=document.querySelectorAll('.st-kb');
+    for(var j=0;j<kBtns.length;j++){ (function(btn){btn.addEventListener('click',function(){stSetScale(btn.getAttribute('data-scale'));});})(kBtns[j]); }
+    stSwitchTheme(theme||'tos');
+    stSetScale(scale||'sc-md');
+    if(audio){audioEnabled=false;stToggleAudio();}
+    savePref();
+  }
+
+  function deactivate(){
+    stopAmbient(); stopRain();
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
+    restoreSwaps();
+    var wrap=document.getElementById('st-wrap'); if(wrap&&wrap.parentNode) wrap.parentNode.removeChild(wrap);
+    var rm=['startrek','theme-tos','theme-tng','theme-ds9','theme-voy','theme-bsg','theme-matrix','is-lcars','is-bsg','is-matrix','sc-sm','sc-md','sc-lg','sc-xl'];
+    for(var i=0;i<rm.length;i++) document.body.classList.remove(rm[i]);
+    statsLoaded=false;statsVisible=false;statsData=null;audioEnabled=false;
+    clearPref();
+  }
+
+  function stSwitchTheme(name){
+    if(!T[name]) return;
+    var d=T[name], body=document.body;
+    var tc=['theme-tos','theme-tng','theme-ds9','theme-voy','theme-bsg','theme-matrix','is-lcars','is-bsg','is-matrix'];
+    for(var i=0;i<tc.length;i++) body.classList.remove(tc[i]);
+    body.classList.add('theme-'+name);
+    if(d.lcars) body.classList.add('is-lcars');
+    if(d.bsg)   body.classList.add('is-bsg');
+    if(d.matrix)body.classList.add('is-matrix');
+    var ship=document.querySelector('.st-t-side');      if(ship)  ship.textContent=d.ship;
+    var sec=document.getElementById('st-t-sector');     if(sec)   sec.textContent=d.sector;
+    var tick=document.getElementById('st-t-text');      if(tick)  tick.innerHTML='&nbsp;&nbsp;'+d.ticker+'&nbsp;&nbsp;';
+    var ai=document.getElementById('st-ai');            if(ai)    ai.innerHTML=d.alertIcon;
+    var am=document.getElementById('st-am');            if(am)    am.textContent=d.alertMsg;
+    var st=document.getElementById('st-stitle');        if(st)    st.textContent=d.stitle;
+    var ft=document.getElementById('st-ftext');         if(ft)    ft.innerHTML='&nbsp;&nbsp;'+d.footer+'&nbsp;&nbsp;';
+    if(statsLoaded&&statsData&&statsVisible){ var sb2=document.getElementById('st-sb2'); if(sb2) sb2.innerHTML=renderStats(statsData,d); }
+    var sBtns=document.querySelectorAll('.st-sb');
+    for(var j=0;j<sBtns.length;j++) sBtns[j].className='st-sb'+(sBtns[j].getAttribute('data-theme')===name?' on':'');
+    swapStatus(name);
+    swapSubmit(name);
+    if(name==='matrix') startRain(); else stopRain();
+    if(audioEnabled){stopAmbient();startAmbient();speakGreeting(name);}
+    curTheme=name; savePref();
+  }
+
+  function stSetScale(sc){
+    var scales=['sc-sm','sc-md','sc-lg','sc-xl']; for(var i=0;i<scales.length;i++) document.body.classList.remove(scales[i]);
+    document.body.classList.add(sc);
+    var kBtns=document.querySelectorAll('.st-kb'); for(var j=0;j<kBtns.length;j++) kBtns[j].className='st-kb'+(kBtns[j].getAttribute('data-scale')===sc?' on':'');
+    curScale=sc; savePref();
+  }
+
+  function initAudio(){ if(audioCtx) return true; try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();return true;}catch(e){return false;} }
+  function playOsc(freq,type,vol,dur,freqEnd){
+    if(!audioCtx) return;
+    var osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    osc.type=type||'sine'; osc.frequency.setValueAtTime(freq,audioCtx.currentTime);
+    if(freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd,audioCtx.currentTime+dur*0.9);
+    gain.gain.setValueAtTime(0,audioCtx.currentTime); gain.gain.linearRampToValueAtTime(vol,audioCtx.currentTime+0.02); gain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+dur);
+    osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime+dur+0.05);
+  }
+  function playTOS()   { playOsc([440,660,880,1100][Math.floor(Math.random()*4)],'sine',0.07,0.18); }
+  function playLCARS() { playOsc(500,'sine',0.10,0.15,1400); }
+  function playBSG()   { playOsc(330,'square',0.10,0.18); setTimeout(function(){playOsc(440,'square',0.10,0.18);},220); }
+  function playMatrix(){ if(!audioCtx)return; var buf=audioCtx.createBuffer(1,Math.round(audioCtx.sampleRate*0.07),audioCtx.sampleRate),ch=buf.getChannelData(0); for(var i=0;i<ch.length;i++) ch[i]=(Math.random()*2-1)*0.4; var src=audioCtx.createBufferSource();src.buffer=buf; var f=audioCtx.createBiquadFilter();f.type='bandpass';f.frequency.value=900;f.Q.value=2; var g=audioCtx.createGain();g.gain.value=0.12; src.connect(f);f.connect(g);g.connect(audioCtx.destination);src.start(); }
+  var SND={tos:playTOS,tng:playLCARS,ds9:playLCARS,voy:playLCARS,bsg:playBSG,matrix:playMatrix};
+  var INT={tos:[2000,5000],tng:[4000,7000],ds9:[4000,7000],voy:[4000,7000],bsg:[2500,4500],matrix:[800,2000]};
+  function startAmbient(){ stopAmbient(); if(!audioEnabled||!audioCtx)return; var fn=SND[curTheme],range=INT[curTheme]||[3000,6000]; if(!fn)return; function tick(){fn();ambientTimer=setTimeout(tick,range[0]+Math.random()*(range[1]-range[0]));} ambientTimer=setTimeout(tick,range[0]*0.3); }
+  function stopAmbient(){ if(ambientTimer){clearTimeout(ambientTimer);ambientTimer=null;} }
+  function speakGreeting(theme){ if(!audioEnabled||!window.speechSynthesis)return; var d=T[theme];if(!d||!d.greeting)return; var rates={tos:0.85,tng:0.95,ds9:0.95,voy:0.95,bsg:1.1,matrix:0.7},pitches={tos:0.7,tng:1.0,ds9:0.95,voy:1.0,bsg:1.05,matrix:0.5}; window.speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(d.greeting);u.rate=rates[theme];u.pitch=pitches[theme];u.volume=0.85;window.speechSynthesis.speak(u); }
+  function stToggleAudio(){ if(!audioEnabled){if(!initAudio())return;audioEnabled=true;startAmbient();speakGreeting(curTheme);}else{audioEnabled=false;stopAmbient();if(window.speechSynthesis)window.speechSynthesis.cancel();} var btn=document.getElementById('st-ab');if(btn){btn.textContent=audioEnabled?'🔊 ON':'🔇 OFF';btn.className='st-ab'+(audioEnabled?' on':'');} savePref(); }
+
+  var CHARS='アイウエオカキクケコ01ABCDEF0123456789ヲン';
+  function startRain(){ var canvas=document.getElementById('st-rain');if(!canvas)return; canvas.width=window.innerWidth;canvas.height=window.innerHeight; var ctx=canvas.getContext('2d'),sz=15,cols=Math.floor(canvas.width/sz),drops=[]; for(var i=0;i<cols;i++) drops[i]=Math.random()*-canvas.height/sz; stopRain(); rainTimer=setInterval(function(){ ctx.fillStyle='rgba(0,0,0,0.06)';ctx.fillRect(0,0,canvas.width,canvas.height); for(var j=0;j<drops.length;j++){var ch=CHARS[Math.floor(Math.random()*CHARS.length)];ctx.fillStyle=(drops[j]>1&&drops[j]<3)?'#CCFFCC':'#00FF41';ctx.font=sz+'px monospace';ctx.fillText(ch,j*sz,drops[j]*sz);drops[j]++;if(drops[j]*sz>canvas.height&&Math.random()>0.975)drops[j]=0;} },55); }
+  function stopRain(){ if(rainTimer){clearInterval(rainTimer);rainTimer=null;} var canvas=document.getElementById('st-rain');if(canvas)canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); }
+  window.addEventListener('resize',function(){if(curTheme==='matrix'&&document.getElementById('st-rain'))startRain();});
+
+  attachLogoHooks();
+  try{ var saved=JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(saved&&saved.on) activate(saved.theme,saved.scale,saved.audio===true); }catch(e){}
+})();
+</script>

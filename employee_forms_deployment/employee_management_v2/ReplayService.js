@@ -258,7 +258,7 @@ function _planChangeEmails(workflowId) {
 
 function _planEquipReqEmails(workflowId) {
   const d = getEquipmentRequestData(workflowId);
-  if (!d) return [{ to: '(no row in Equipment_Requests sheet)', subject: 'Request Submitted' }];
+  if (!d) return [{ to: '(no row found in Initial_Requests sheet)', subject: 'Request Submitted' }];
   const emails = [];
   if (d.requesterEmail) {
     emails.push({ subject: 'Request Submitted',       to: d.requesterEmail });
