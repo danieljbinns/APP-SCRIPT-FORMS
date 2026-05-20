@@ -363,7 +363,24 @@ function getStepResultData(workflowId, stepTarget) {
       case 'change_jonas':        return readActionItems('Jonas');
 
       // ── Equipment Request ───────────────────────────────────────────────────
-      case 'equipment_request':   return readAllFromSheet(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
+      case 'equipment_request':   return readAllFromSheet(CONFIG.SHEETS.INITIAL_REQUESTS);
+      case 'it_confirmation': {
+        const ss2    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+        const icSh   = ss2.getSheetByName('IT Confirmation Results');
+        if (!icSh) return {};
+        const icData = icSh.getDataRange().getValues();
+        const icHdrs = icData[0];
+        const icWfIdx = icHdrs.indexOf('Workflow ID');
+        if (icWfIdx < 0) return {};
+        const SKIP = new Set(['Workflow ID', 'Form ID']);
+        for (let i = 1; i < icData.length; i++) {
+          if (String(icData[i][icWfIdx] || '') !== workflowId) continue;
+          const out = {};
+          icHdrs.forEach(function(h, j) { if (h && !SKIP.has(h)) out[h] = String(icData[i][j] || ''); });
+          return out;
+        }
+        return {};
+      }
 
       default: return {};
     }
@@ -495,30 +512,43 @@ function getEquipmentRequestDetails(workflowId) {
     if (!foundWf) return { success: false, message: 'Workflow not found' };
     const wfRow = wfSheet.getRange(foundWf.getRow(), 1, 1, 9).getValues()[0];
 
-    const eqSheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
-    const foundReq = eqSheet ? eqSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
+    // Read from INITIAL_REQUESTS (54-col live sheet) — Equipment_Requests is orphaned
+    const irSheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
+    const foundReq = irSheet ? irSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext() : null;
     if (!foundReq) return { success: false, message: 'Request ID not found in database' };
-    const row = eqSheet.getRange(foundReq.getRow(), 1, 1, eqSheet.getLastColumn()).getValues()[0];
+    const row = irSheet.getRange(foundReq.getRow(), 1, 1, irSheet.getLastColumn()).getValues()[0];
 
     const _tz  = Session.getScriptTimeZone();
     const fmtD = function(v) { return v instanceof Date ? Utilities.formatDate(v, _tz, 'M/d/yyyy') : String(v || ''); };
 
-    const EQD = SCHEMA.EQUIPMENT_REQUESTS;
+    const IR  = SCHEMA.INITIAL_REQUESTS;
     const WFS = SCHEMA.WORKFLOWS;
     const requestData = {
-      'First Name':      String(row[EQD.EMPLOYEE_FIRST_NAME] || ''),
-      'Last Name':       String(row[EQD.EMPLOYEE_LAST_NAME]  || ''),
-      'Position Title':  String(row[EQD.JOB_TITLE]           || ''),
-      'Site Name':       String(row[EQD.SITE_NAME]           || ''),
-      'Manager Name':    String(row[EQD.MANAGER_NAME]        || ''),
-      'Manager Email':   String(row[EQD.MANAGER_EMAIL]       || ''),
-      'Equipment':       String(row[EQD.EQUIPMENT_REQUESTED] || ''),
-      'Systems':         String(row[EQD.SYSTEMS_REQUESTED]   || ''),
-      'Comments':        String(row[EQD.COMMENTS]            || ''),
-      'Department':      String(row[EQD.DEPARTMENT]          || ''),
-      'Requester Name':  String(row[EQD.REQUESTER_NAME]      || ''),
-      'Requester Email': String(row[EQD.REQUESTER_EMAIL]     || ''),
-      'Date Requested':  fmtD(row[EQD.TIMESTAMP])
+      'First Name':       String(row[IR.FIRST_NAME]       || ''),
+      'Last Name':        String(row[IR.LAST_NAME]        || ''),
+      'Position Title':   String(row[IR.POSITION_TITLE]   || ''),
+      'Site Name':        String(row[IR.SITE_NAME]        || ''),
+      'Job Site #':       String(row[IR.JOB_SITE_NUMBER]  || ''),
+      'Manager Name':     String(row[IR.MANAGER_NAME]     || ''),
+      'Manager Email':    String(row[IR.MANAGER_EMAIL]    || ''),
+      'Equipment':        String(row[IR.EQUIPMENT]        || ''),
+      'Systems':          String(row[IR.SYSTEMS]          || ''),
+      'Comments':         String(row[IR.COMMENTS]         || ''),
+      'Department':       String(row[IR.DEPARTMENT]       || ''),
+      'Requester Name':   String(row[IR.REQUESTER_NAME]   || ''),
+      'Requester Email':  String(row[IR.REQUESTER_EMAIL]  || ''),
+      'Date Requested':   fmtD(row[IR.DATE_REQUESTED]),
+      'Employment Type':  String(row[IR.EMPLOYMENT_TYPE]  || ''),
+      'Employee Type':    String(row[IR.EMPLOYEE_TYPE]    || ''),
+      'System Access':    String(row[IR.SYSTEM_ACCESS]    || ''),
+      'Computer Req':     String(row[IR.COMPUTER_REQ]     || ''),
+      'Computer Type':    String(row[IR.COMPUTER_TYPE]    || ''),
+      'Phone Req':        String(row[IR.PHONE_REQ]        || ''),
+      'BOSS Sites':       String(row[IR.BOSS_SITES]       || ''),
+      'CC USA':           String(row[IR.CC_USA]           || ''),
+      'CC CAN':           String(row[IR.CC_CAN]           || ''),
+      'Office 365':       String(row[IR.OFFICE_365]       || ''),
+      'Google Email':     String(row[IR.GOOGLE_EMAIL]     || '')
     };
 
     const _cu3 = Session.getActiveUser().getEmail();
@@ -537,6 +567,28 @@ function getEquipmentRequestDetails(workflowId) {
       by:   requestData['Requester Email'] || 'Unknown',
       time: requestData['Date Requested']  || ''
     });
+
+    // IT Confirmation step — check IT Confirmation Results sheet
+    const itConfSheet = ss.getSheetByName('IT Confirmation Results');
+    const foundConf   = itConfSheet
+      ? itConfSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext()
+      : null;
+    if (foundConf) {
+      const confRow  = itConfSheet.getRange(foundConf.getRow(), 1, 1, itConfSheet.getLastColumn()).getValues()[0];
+      const confHdrs = itConfSheet.getRange(1, 1, 1, itConfSheet.getLastColumn()).getValues()[0];
+      const tsIdx    = confHdrs.indexOf('Timestamp');
+      const byIdx    = confHdrs.indexOf('Submitted By');
+      const confTs   = tsIdx >= 0 && confRow[tsIdx] instanceof Date
+        ? Utilities.formatDate(confRow[tsIdx], _tz, 'M/d/yyyy h:mm a')
+        : String(confRow[tsIdx] || '');
+      context.checklist.push({
+        name: 'IT Confirmation', status: 'Complete', target: 'it_confirmation',
+        by:   byIdx >= 0 ? String(confRow[byIdx] || '') : '',
+        time: confTs
+      });
+    } else {
+      context.checklist.push({ name: 'IT Confirmation', status: 'Pending', target: 'it_confirmation' });
+    }
 
     const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
     if (aiSheet) {
