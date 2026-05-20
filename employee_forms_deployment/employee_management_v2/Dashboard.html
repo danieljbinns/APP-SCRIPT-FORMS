@@ -412,7 +412,7 @@
         <!-- My Tasks Panel — open task counts per category, role-gated click -->
         <div id="myTasksPanel" style="display:none; background:rgba(235,28,45,0.06); border:1px solid rgba(235,28,45,0.3); border-radius:8px; padding:16px; margin-bottom:12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <strong style="color:var(--brand-red); font-size:14px;">⚡ Open Task Queue</strong>
+                <strong style="color:var(--brand-red); font-size:14px;">⚡ My Pending Tasks</strong>
                 <span id="myTasksCount" style="background:var(--brand-red); color:white; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;"></span>
             </div>
             <div id="myTasksList" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
@@ -500,7 +500,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
-            // loadMyTasks() is called inside displayData() after rolePayload is in sessionStorage
+            // loadMyTasks() is called inside displayData() once _rolePayload is set
         });
         let allWorkflows = [];
         let filteredWorkflows = []; // For search + pagination combo
@@ -512,7 +512,11 @@
         let activeTypeFilters = new Set();
         let activeStatusFilters = new Set();
         let searchTerm = '';
-        let activeCategoryFilter = null; // set by View Tasks button in My Pending Tasks panel
+        let activeCategoryFilter = null; // set by View Tasks button in My Tasks panel
+
+        // rolePayload stored here — NOT in sessionStorage (unreliable in GAS iframes).
+        // Set by displayData() before loadMyTasks() is called.
+        let _rolePayload = {};
 
         // Pagination State
         const ITEMS_PER_PAGE = 25;
@@ -528,34 +532,35 @@
             google.script.run
                 .withSuccessHandler(function(res) {
                     if (!res || !res.success) return;
-                    var counts  = res.counts || {};
-                    var panel   = document.getElementById('myTasksPanel');
-                    var list    = document.getElementById('myTasksList');
-                    var countEl = document.getElementById('myTasksCount');
+                    var counts = res.counts || {};
 
-                    // Get rolePayload from sessionStorage (set by displayData)
-                    var rolePayload = {};
-                    try { rolePayload = JSON.parse(sessionStorage.getItem('rolePayload') || '{}'); } catch(e) {}
+                    // Use module-level _rolePayload — set by displayData() before this call.
+                    // Never use sessionStorage here: it is unreliable inside GAS iframes
+                    // (browsers may block cross-origin storage) and will silently return {}
+                    // causing all canAccess values to be false and all buttons to be disabled.
+                    var rp = _rolePayload;
+                    var sg = rp.specialistGroups || [];
+                    function inSg(key) { return sg.indexOf(key) >= 0; }
 
-                    // Group access map — which categories this user's role grants access to
+                    // Which categories this user's role can act on (View Tasks button enabled)
                     var accessMap = {
-                        'Safety':             rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('SAFETY') >= 0),
-                        'Fleetio':            rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('FLEETIO') >= 0),
-                        'Business Cards':     rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('BUSINESS_CARDS') >= 0),
-                        'Jonas':              rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('JONAS') >= 0),
-                        'Credit Card':        rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('CREDIT_CARD') >= 0),
-                        '30/60/90 Review':    rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('REVIEW_306090_JR') >= 0),
-                        'Central Purchasing': rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('JONAS') >= 0),
-                        'SiteDocs':           rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT,
-                        'Assets':             rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT,
-                        'IT':                 rolePayload.isAdmin || rolePayload.isIT,
-                        'HR':                 rolePayload.isAdmin || rolePayload.isHR,
-                        'Fleet':              rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT || (rolePayload.specialistGroups && rolePayload.specialistGroups.indexOf('FLEETIO') >= 0),
-                        'Finance':            rolePayload.isAdmin || rolePayload.isHR,
-                        'Deactivation':       rolePayload.isAdmin || rolePayload.isIT,
-                        'IT Setup':           rolePayload.isAdmin || rolePayload.isIT,
-                        'HR Verification':    rolePayload.isAdmin || rolePayload.isHR,
-                        'ID Setup':           rolePayload.isAdmin || rolePayload.isHR || rolePayload.isIT
+                        'Safety':             rp.isAdmin || rp.isHR || rp.isIT || inSg('SAFETY'),
+                        'Fleetio':            rp.isAdmin || rp.isHR || rp.isIT || inSg('FLEETIO'),
+                        'Business Cards':     rp.isAdmin || rp.isHR || rp.isIT || inSg('BUSINESS_CARDS'),
+                        'Jonas':              rp.isAdmin || rp.isHR || rp.isIT || inSg('JONAS'),
+                        'Credit Card':        rp.isAdmin || rp.isHR || rp.isIT || inSg('CREDIT_CARD'),
+                        '30/60/90 Review':    rp.isAdmin || rp.isHR || rp.isIT || inSg('REVIEW_306090_JR'),
+                        'Central Purchasing': rp.isAdmin || rp.isHR || rp.isIT || inSg('JONAS'),
+                        'SiteDocs':           rp.isAdmin || rp.isHR || rp.isIT,
+                        'Assets':             rp.isAdmin || rp.isHR || rp.isIT,
+                        'IT':                 rp.isAdmin || rp.isIT,
+                        'HR':                 rp.isAdmin || rp.isHR,
+                        'Fleet':              rp.isAdmin || rp.isHR || rp.isIT || inSg('FLEETIO'),
+                        'Finance':            rp.isAdmin || rp.isHR,
+                        'Deactivation':       rp.isAdmin || rp.isIT,
+                        'IT Setup':           rp.isAdmin || rp.isIT,
+                        'HR Verification':    rp.isAdmin || rp.isHR,
+                        'ID Setup':           rp.isAdmin || rp.isHR || rp.isIT
                     };
 
                     var catColors = {
@@ -567,25 +572,70 @@
                         'IT Setup':'#2196f3','HR Verification':'#9c27b0','ID Setup':'#00acc1'
                     };
 
-                    var totalOpen = Object.values(counts).reduce(function(s, v) { return s + (v || 0); }, 0);
+                    // Split categories: mine (can act on) vs others (read-only context)
+                    var myCats    = Object.keys(counts).filter(function(c) { return !!accessMap[c]; });
+                    var otherCats = Object.keys(counts).filter(function(c) { return !accessMap[c]; });
+
+                    var myTotal    = myCats.reduce(function(s, c)    { return s + (counts[c] || 0); }, 0);
+                    var otherTotal = otherCats.reduce(function(s, c) { return s + (counts[c] || 0); }, 0);
+                    var totalOpen  = myTotal + otherTotal;
+
+                    var panel   = document.getElementById('myTasksPanel');
+                    var list    = document.getElementById('myTasksList');
+                    var countEl = document.getElementById('myTasksCount');
+
                     panel.style.display = 'block';
                     if (countEl) countEl.textContent = totalOpen + ' open';
 
-                    list.innerHTML = Object.keys(counts).map(function(cat) {
-                        var n = counts[cat] || 0;
-                        var canAccess = !!accessMap[cat];
-                        var color = catColors[cat] || '#555';
-                        var disabledStyle = canAccess ? '' : 'opacity:0.45; pointer-events:none; cursor:not-allowed;';
-                        return '<div style="background:var(--card-bg); border:1px solid var(--border-color); border-left:3px solid ' + color + '; border-radius:6px; padding:6px 10px; min-width:130px;">' +
-                            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">' +
-                            '<span style="font-size:11px; color:' + color + '; font-weight:700; text-transform:uppercase; margin-right:6px;">' + escapeHtml(cat) + '</span>' +
-                            '<span style="font-size:18px; font-weight:700;">' + n + '</span>' +
-                            '</div>' +
-                            '<button class="action-btn" style="background:var(--brand-red); color:white; width:100%; font-size:11px; padding:4px 8px; ' + disabledStyle + '" ' +
-                            (canAccess ? 'onclick="filterByCategory(\'' + escapeHtml(cat) + '\')"' : 'disabled title="Access not permitted for your role"') + '>' +
-                            'View Tasks</button>' +
+                    // ── Section 1: My Tasks (categories the user can act on) ──────────
+                    var mySection = '';
+                    if (myCats.length > 0) {
+                        mySection += '<div style="width:100%; margin-bottom:4px;">' +
+                            '<span style="font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:0.5px;">My Tasks</span>' +
+                            '<span style="font-size:10px; color:#aaa; margin-left:6px;">(' + myTotal + ' open)</span>' +
                             '</div>';
-                    }).join('');
+                        mySection += myCats.map(function(cat) {
+                            var n     = counts[cat] || 0;
+                            var color = catColors[cat] || '#555';
+                            var safeC = cat.replace(/'/g, "\\'");
+                            return '<div style="background:var(--card-bg); border:1px solid var(--border-color); border-left:3px solid ' + color + '; border-radius:6px; padding:6px 10px; min-width:130px;">' +
+                                '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">' +
+                                '<span style="font-size:11px; color:' + color + '; font-weight:700; text-transform:uppercase; margin-right:6px;">' + escapeHtml(cat) + '</span>' +
+                                '<span style="font-size:18px; font-weight:700;">' + n + '</span>' +
+                                '</div>' +
+                                '<button class="action-btn" style="background:var(--brand-red); color:white; width:100%; font-size:11px; padding:4px 8px;" ' +
+                                'onclick="filterByCategory(\'' + safeC + '\')">' +
+                                'View Tasks</button>' +
+                                '</div>';
+                        }).join('');
+                    } else {
+                        mySection = '<div style="color:var(--text-muted); font-size:12px; padding:6px 0;">No task groups assigned to your role.</div>';
+                    }
+
+                    // ── Section 2: Other Open (context only — no buttons) ─────────────
+                    var otherSection = '';
+                    if (otherCats.length > 0 && otherTotal > 0) {
+                        // Only show other-group categories if they have open tasks
+                        var nonZeroOther = otherCats.filter(function(c) { return (counts[c] || 0) > 0; });
+                        if (nonZeroOther.length > 0) {
+                            otherSection += '<div style="width:100%; margin-top:10px; margin-bottom:4px; border-top:1px solid var(--border-color); padding-top:8px;">' +
+                                '<span style="font-size:10px; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:0.5px;">Other Open</span>' +
+                                '<span style="font-size:10px; color:#666; margin-left:6px;">(' + otherTotal + ' open — other groups)</span>' +
+                                '</div>';
+                            otherSection += nonZeroOther.map(function(cat) {
+                                var n     = counts[cat] || 0;
+                                var color = catColors[cat] || '#555';
+                                return '<div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-left:3px solid ' + color + '; border-radius:6px; padding:4px 10px; min-width:110px; opacity:0.6;">' +
+                                    '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                                    '<span style="font-size:10px; color:' + color + '; font-weight:700; text-transform:uppercase; margin-right:6px;">' + escapeHtml(cat) + '</span>' +
+                                    '<span style="font-size:16px; font-weight:700; color:var(--text-muted);">' + n + '</span>' +
+                                    '</div>' +
+                                    '</div>';
+                            }).join('');
+                        }
+                    }
+
+                    list.innerHTML = mySection + otherSection;
                 })
                 .withFailureHandler(function() { /* silently fail */ })
                 .getMyTaskCounts();
@@ -696,7 +746,9 @@
                 return;
             }
             allWorkflows = response.workflows;
-            // Store role context — used by renderModalDetails to gate action buttons
+            // Store role context in module-level variable (reliable) AND sessionStorage
+            // (best-effort, may be blocked in some iframe configurations).
+            _rolePayload = response.rolePayload || {};
             if (response.rolePayload) {
                 try { sessionStorage.setItem('rolePayload', JSON.stringify(response.rolePayload)); } catch(e) {}
             }
@@ -715,7 +767,7 @@
             if (rp.isSpecialist) document.body.classList.add('is-specialist');
             applyFiltersAndSort(); // Triggers sorting and initially setting filteredWorkflows
 
-            // Load task counts now that rolePayload is in sessionStorage (avoids race condition)
+            // Load task counts now that _rolePayload is set (avoids race condition)
             loadMyTasks();
             // Render My Open Requests panel — client-side filter of already-loaded workflows
             renderMyRequests(allWorkflows, response.currentUser);
@@ -974,9 +1026,13 @@
             const r = details.requestData || {};
             const checklist = details.checklist || [];
 
-            // Role payload for button gating — loaded from sessionStorage set by displayData()
-            var rp = {};
-            try { rp = JSON.parse(sessionStorage.getItem('rolePayload') || '{}'); } catch(e) {}
+            // Role payload for button gating — use module-level _rolePayload (reliable).
+            // sessionStorage is also tried as fallback in case the modal fires before
+            // displayData() completes (very unlikely but defensive).
+            var rp = _rolePayload && (_rolePayload.isAdmin !== undefined) ? _rolePayload : {};
+            if (!rp.isAdmin && !rp.isHR && !rp.isIT) {
+                try { rp = JSON.parse(sessionStorage.getItem('rolePayload') || '{}'); } catch(e) {}
+            }
             var cu = '';
             try { cu = sessionStorage.getItem('currentUser') || ''; } catch(e) {}
             var wfRequester = String(details.requesterEmail || r['Requester Email'] || '').toLowerCase();
