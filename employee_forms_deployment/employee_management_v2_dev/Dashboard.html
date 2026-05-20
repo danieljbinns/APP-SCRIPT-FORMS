@@ -1006,6 +1006,13 @@
                         document.getElementById('modalContent').innerHTML = '<div style="color:red; padding:20px;">Error loading details: ' + err.message + '</div>';
                     })
                     .getTerminationDetails(id);
+            } else if (type === 'Equipment' || id.startsWith('EQUIP_REQ_')) {
+                google.script.run
+                    .withSuccessHandler(renderModalDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('modalContent').innerHTML = '<div style="color:red; padding:20px;">Error loading details: ' + err.message + '</div>';
+                    })
+                    .getEquipmentRequestDetails(id);
             } else {
                 google.script.run
                     .withSuccessHandler(renderModalDetails)
