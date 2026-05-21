@@ -357,7 +357,7 @@ function updateVacationResponder(email) {
                         if (response.success) {
                             document.getElementById('form-container').innerHTML = `
                                 <div style="text-align:center; padding:40px;">
-                                    <h1 style="color:var(--success-green);">&#10003; Submission Successful</h1>
+                                    <h1 style="color:var(--success);">&#10003; Submission Successful</h1>
                                     <p>Workflow ID: <strong>${response.workflowId}</strong></p>
                                     <button onclick="resetForm()" class="btn btn-primary" style="margin-top:20px; width:auto; padding:10px 20px;">Submit Another</button>
                                 </div>
@@ -443,7 +443,7 @@ function updateVacationResponder(email) {
         }
     </script>
   <?!= include('SharedComponents') ?>
-<!-- <?!= safeInclude('Konami') ?> DISABLED ON PROD -->
+<?!= safeInclude('Konami') ?>
 </body>
 
 </html>

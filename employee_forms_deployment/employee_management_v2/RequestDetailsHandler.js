@@ -376,6 +376,14 @@ function getStepResultData(workflowId, stepTarget) {
         for (let i = 1; i < icData.length; i++) {
           if (String(icData[i][icWfIdx] || '') !== workflowId) continue;
           const out = {};
+          // Pull confirmed systems/equipment from Initial Requests (written back in-place by submitITConfirmation)
+          const irRow = readAllFromSheet(CONFIG.SHEETS.INITIAL_REQUESTS);
+          if (irRow['System Access']) out['System Access'] = irRow['System Access'];
+          if (irRow['Systems'])       out['Systems']       = irRow['Systems'];
+          if (irRow['Equipment'])     out['Equipment']     = irRow['Equipment'];
+          if (irRow['Google Email'])  out['Google Email']  = irRow['Google Email'];
+          if (irRow['Office 365'])    out['Office 365']    = irRow['Office 365'];
+          // Append IT Confirmation Results audit data (submitter, hardware, BOSS, notes)
           icHdrs.forEach(function(h, j) { if (h && !SKIP.has(h)) out[h] = String(icData[i][j] || ''); });
           return out;
         }

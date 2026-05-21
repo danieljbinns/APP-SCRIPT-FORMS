@@ -24,14 +24,12 @@ function searchDirectoryUsers(query) {
   }
 
   // Run explicit first-name, last-name, and email queries and merge.
-  // Using givenName:/familyName: instead of name: because the Admin SDK's
-  // name: query anchors to the start of fullName (often "First Last"), so
-  // typing a last name prefix like "roberts" hits name: by luck but a first
-  // name prefix like "russell" can miss if fullName ordering differs.
-  // Explicit field queries are reliable regardless of how fullName is stored.
-  const byFirst = fetchUsers('givenName:'  + query);
-  const byLast  = fetchUsers('familyName:' + query);
-  const byEmail = fetchUsers('email:'      + query);
+  // The Admin SDK requires full word/token match unless a trailing * wildcard
+  // is used. Always append * so that partial prefixes like "rus" match "Russell".
+  const q = query + '*';
+  const byFirst = fetchUsers('givenName:'  + q);
+  const byLast  = fetchUsers('familyName:' + q);
+  const byEmail = fetchUsers('email:'      + q);
   const seen = {};
   const merged = [];
   byFirst.concat(byLast).concat(byEmail).forEach(function(u) {
@@ -45,6 +43,41 @@ function searchDirectoryUsers(query) {
     }
   });
   return merged;
+}
+
+/**
+ * TEST ONLY — run from GAS Script Editor to diagnose directory search
+ * Logs raw results + any errors from AdminDirectory.Users.list()
+ */
+function testDirectorySearch() {
+  const query = 'dbi';
+  Logger.log('=== testDirectorySearch: query=' + query + ' ===');
+  try {
+    const r = AdminDirectory.Users.list({
+      customer: 'my_customer',
+      query: 'givenName:' + query + '*',
+      maxResults: 5,
+      orderBy: 'givenName',
+      projection: 'basic'
+    });
+    Logger.log('givenName query result count: ' + (r && r.users ? r.users.length : 0));
+    if (r && r.users) r.users.forEach(function(u) { Logger.log('  user: ' + u.primaryEmail + ' name: ' + (u.name && u.name.fullName)); });
+  } catch (e) {
+    Logger.log('ERROR on givenName query: ' + e.toString());
+  }
+  try {
+    const r2 = AdminDirectory.Users.list({
+      customer: 'my_customer',
+      query: 'email:' + query + '*',
+      maxResults: 5,
+      orderBy: 'givenName',
+      projection: 'basic'
+    });
+    Logger.log('email query result count: ' + (r2 && r2.users ? r2.users.length : 0));
+    if (r2 && r2.users) r2.users.forEach(function(u) { Logger.log('  user: ' + u.primaryEmail + ' name: ' + (u.name && u.name.fullName)); });
+  } catch (e) {
+    Logger.log('ERROR on email query: ' + e.toString());
+  }
 }
 
 /**
