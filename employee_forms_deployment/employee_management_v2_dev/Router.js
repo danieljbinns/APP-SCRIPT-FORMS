@@ -5,6 +5,13 @@
 
 function doGet(e) {
   try {
+    // Maintenance mode — serve splash page for all requests when MAINTENANCE_MODE='true' in Script Properties.
+    if (CONFIG.MAINTENANCE_MODE) {
+      return HtmlService.createTemplateFromFile('MaintenancePage').evaluate()
+        .setTitle('Down for Maintenance')
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+    }
+
     const userEmail = Session.getActiveUser().getEmail();
     const form = e.parameter.form;
     const workflowId = e.parameter.wf || e.parameter.id || '';

@@ -23,12 +23,17 @@ const CONFIG = {
   ALLOWED_DOMAINS: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com'],
   ADMIN_EMAILS: ['dbinns@team-group.com', 'dbinns@robinsonsolutions.com', 'no-reply@team-group.com', 'davelangohr@team-group.com'],
 
-  // Set true in dev to skip all MailApp.sendEmail calls — logs instead.
-  // Can be overridden at runtime via SUPPRESS_EMAILS_OVERRIDE Script Property ('true'/'false').
+  // Suppress emails in prod by setting SUPPRESS_EMAILS_OVERRIDE='true' in Script Properties.
+  // ProdSmokeTest sets this automatically — no manual Config change needed.
   get SUPPRESS_EMAILS() {
     var ov = ConfigurationService.getSetting('SUPPRESS_EMAILS_OVERRIDE');
     if (ov === 'true' || ov === 'false') return ov === 'true';
-    return true; // dev default: always suppress
+    return false; // prod default: send real emails
+  },
+
+  // Set Script Property MAINTENANCE_MODE='true' to serve the maintenance splash page.
+  get MAINTENANCE_MODE() {
+    return ConfigurationService.getSetting('MAINTENANCE_MODE') === 'true';
   },
   
   // ==========================================================================

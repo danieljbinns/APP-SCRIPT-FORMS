@@ -30,6 +30,11 @@ const CONFIG = {
     if (ov === 'true' || ov === 'false') return ov === 'true';
     return false; // prod default: send real emails
   },
+
+  // Set Script Property MAINTENANCE_MODE='true' to serve the maintenance splash page.
+  get MAINTENANCE_MODE() {
+    return ConfigurationService.getSetting('MAINTENANCE_MODE') === 'true';
+  },
   
   // ==========================================================================
   // SHEET NAMES
