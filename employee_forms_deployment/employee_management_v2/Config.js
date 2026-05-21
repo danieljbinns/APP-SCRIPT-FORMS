@@ -28,7 +28,7 @@ const CONFIG = {
   get SUPPRESS_EMAILS() {
     var ov = ConfigurationService.getSetting('SUPPRESS_EMAILS_OVERRIDE');
     if (ov === 'true' || ov === 'false') return ov === 'true';
-    return false; // prod default: send real emails
+    return false;
   },
 
   // Set Script Property MAINTENANCE_MODE='true' to serve the maintenance splash page.

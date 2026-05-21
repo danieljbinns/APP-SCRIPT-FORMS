@@ -1806,3 +1806,18 @@ function runSuperDebugAllWithLog() {
     gasLog: Logger.getLog()
   };
 }
+
+/**
+ * _sdSetEmailRedirect — Set or clear EMAIL_REDIRECT_ALL Script Property.
+ * Called by run_superdebug.py --prod before/after suite runs.
+ * Pass empty string to clear.
+ */
+function _sdSetEmailRedirect(email) {
+  var props = PropertiesService.getScriptProperties();
+  if (email) {
+    props.setProperty('EMAIL_REDIRECT_ALL', email);
+  } else {
+    props.deleteProperty('EMAIL_REDIRECT_ALL');
+  }
+  return { ok: true, email: email || '(cleared)' };
+}
