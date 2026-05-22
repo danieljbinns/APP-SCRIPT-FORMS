@@ -18,14 +18,13 @@ function include(filename) {
 }
 
 /**
- * Safe include — returns empty string if file is missing or errors.
+ * Safe include — returns empty string if file is missing, errors, or easter eggs are disabled.
+ * Gate: Script Property EASTER_EGGS_ENABLED must equal 'true' or nothing is loaded.
  * Use instead of include() for optional components (e.g. EasterEgg).
- * Allows per-page commenting out without breaking anything if file absent.
  */
 function safeInclude(filename) {
   try {
-    // createTemplateFromFile required (not createHtmlOutputFromFile) so that
-    // scriptlets inside the included file (e.g. nested includes) are evaluated.
+    if (PropertiesService.getScriptProperties().getProperty('EASTER_EGGS_ENABLED') !== 'true') return '';
     return HtmlService.createTemplateFromFile(filename).evaluate().getContent();
   } catch(e) {
     return '';

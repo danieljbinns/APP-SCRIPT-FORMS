@@ -397,3 +397,5 @@ function setEmailRedirect(addr)   { var a = addr || 'dbinns@team-group.com'; Pro
 function clearEmailRedirect()     { PropertiesService.getScriptProperties().deleteProperty('EMAIL_REDIRECT_ALL'); Logger.log('EMAIL_REDIRECT_ALL cleared'); }
 function suppressEmails()         { PropertiesService.getScriptProperties().setProperty('SUPPRESS_EMAILS_OVERRIDE', 'true');  Logger.log('SUPPRESS_EMAILS_OVERRIDE = true'); }
 function unsuppressEmails()       { PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE'); Logger.log('SUPPRESS_EMAILS_OVERRIDE cleared'); }
+function enableEasterEggs()       { PropertiesService.getScriptProperties().setProperty('EASTER_EGGS_ENABLED', 'true'); Logger.log('EASTER_EGGS_ENABLED = true'); }
+function disableEasterEggs()      { PropertiesService.getScriptProperties().deleteProperty('EASTER_EGGS_ENABLED'); Logger.log('EASTER_EGGS_ENABLED cleared'); }

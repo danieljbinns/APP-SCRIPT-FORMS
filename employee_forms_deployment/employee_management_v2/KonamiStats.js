@@ -1,13 +1,10 @@
 /**
- * StarTrekTOSStats.js
- * Server-side stats for the StarTrekTOS / Multi-Series easter egg.
- * Called via google.script.run.getStarTrekStats() from StarTrekTOS.html.
- * Parallel to GeoCitiesStats.js — same data source, separate function name.
- *
- * DEV ONLY — do not migrate to staging or prod.
+ * KonamiStats.js
+ * Server-side stats for the Konami easter egg system (all themes).
+ * Called via google.script.run.getKonamiStats() from Konami.html.
  */
 
-function getStarTrekStats() {
+function getKonamiStats() {
   try {
     var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
 
@@ -112,7 +109,7 @@ function getStarTrekStats() {
     }));
 
   } catch (e) {
-    Logger.log('getStarTrekStats error: ' + e.message);
+    Logger.log('getKonamiStats error: ' + e.message);
     return JSON.parse(JSON.stringify({ error: e.message }));
   }
 }

@@ -12,7 +12,7 @@
                    FESTIVUS → Seinfeld  |  PIVOT → Friends  |  DARKSIDE → Star Wars
                    DOUGHNUT → The Simpsons  |  NISHRUBBERY → Monty Python
      localStorage: tg_eg_v1
-     Stats fn:     google.script.run.getStarTrekStats()
+     Stats fn:     google.script.run.getKonamiStats()
      DEV ONLY — do not migrate to staging or prod -->
 <style>
 /* ── FONT SCALE ──────────────────────────────────────────────── */
@@ -943,7 +943,7 @@ function fetchStats(){
       if(document.body.classList.contains('t-geo')){renderGeoStats({error:'Server error'});}
       else{var el=document.getElementById('st-sload');if(el){el.textContent='TRANSMISSION FAILED';el.style.animation='none';}}
     })
-    .getStarTrekStats();
+    .getKonamiStats();
 }
 
 function renderTrekStats(data,d){
