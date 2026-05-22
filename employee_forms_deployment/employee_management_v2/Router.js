@@ -118,11 +118,15 @@ function doGet(e) {
  * Get the base URL for this web app (for form links)
  */
 function getBaseUrl() {
-  // Prefer dynamic URL to avoid hardcoding issues, fall back to config if needed (e.g. simple triggers)
+  // Prefer configured DEPLOYMENT_URL Script Property so functions run from the editor
+  // (e.g. ReplayService, triggers) always use the correct /exec URL rather than the
+  // /dev test URL that ScriptApp.getService().getUrl() returns in editor context.
+  var configured = CONFIG.DEPLOYMENT_URL;
+  if (configured) return configured;
   try {
     return ScriptApp.getService().getUrl();
   } catch (e) {
-    return CONFIG.DEPLOYMENT_URL;
+    return '';
   }
 }
 

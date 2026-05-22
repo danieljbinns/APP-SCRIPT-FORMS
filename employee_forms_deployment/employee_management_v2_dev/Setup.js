@@ -390,3 +390,8 @@ function listScriptProperties() {
     Logger.log('  ' + k + ' = ' + props[k]);
   });
 }
+
+function enableMaintenanceMode()  { PropertiesService.getScriptProperties().setProperty('MAINTENANCE_MODE', 'true');  Logger.log('MAINTENANCE_MODE = true'); }
+function disableMaintenanceMode() { PropertiesService.getScriptProperties().deleteProperty('MAINTENANCE_MODE'); Logger.log('MAINTENANCE_MODE cleared'); }
+function setEmailRedirect(addr)   { var a = addr || 'dbinns@team-group.com'; PropertiesService.getScriptProperties().setProperty('EMAIL_REDIRECT_ALL', a); Logger.log('EMAIL_REDIRECT_ALL = ' + a); }
+function clearEmailRedirect()     { PropertiesService.getScriptProperties().deleteProperty('EMAIL_REDIRECT_ALL'); Logger.log('EMAIL_REDIRECT_ALL cleared'); }

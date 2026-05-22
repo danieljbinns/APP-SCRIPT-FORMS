@@ -153,8 +153,9 @@ function _sendEquipmentRequestSubmitEmails(workflowId) {
 
 /**
  * Called by ITConfirmationHandler.submitITConfirmation after IT Confirmation is approved.
- * If Google Account is in the systems list, creates only the IT email task first.
- * Otherwise, launches all action items at once.
+ * Phase 1: all IT tasks (Google Account, hardware, software) launch together.
+ * Phase 2: non-IT tasks (HR, Finance, Credit Card, Business Cards, Vehicle) launch once
+ *   IT closes all their tasks — triggered by ActionItemService.checkWorkflowCompletion.
  * @param {string} workflowId
  */
 function launchEquipmentActionItems(workflowId) {
@@ -165,49 +166,80 @@ function launchEquipmentActionItems(workflowId) {
       return;
     }
 
-    const systems   = Array.isArray(context.systems)   ? context.systems   : [];
-    const needsEmail = systems.some(function(s) {
+    const employeeName = context.employeeName || workflowId;
+    const systems  = Array.isArray(context.systems)  ? context.systems  : [];
+    const equipment = Array.isArray(context.equipment) ? context.equipment
+      : (context.equipmentRaw ? context.equipmentRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : []);
+
+    // Collect all IT tasks
+    const itTasks = [];
+
+    // Google Account
+    const needsGoogle = systems.some(function(s) {
       return s.toLowerCase().indexOf('google') !== -1 || s.toLowerCase().indexOf('email') !== -1;
     });
-
-    if (needsEmail) {
-      // Google Account must be provisioned first — create IT email task only
-      const itEmailTaskId = ActionItemService.createActionItem(
-        workflowId,
-        'IT',
-        'Google Account Setup',
-        JSON.stringify(['Create Google account and assign email address']),
-        CONFIG.EMAILS.IT,
-        'it_email_setup'
-      );
-
-      updateWorkflow(workflowId, 'In Progress', 'Email Setup Needed');
-      syncWorkflowState(workflowId);
-
-      if (itEmailTaskId) {
-        const taskUrl = buildFormUrl('action_item_view', { tid: itEmailTaskId });
-        sendFormEmail({
-          to: CONFIG.EMAILS.IT,
-          subject: 'Google Account Setup Required',
-          body: 'An equipment request has been approved for <b>' + (context.employeeName || '') + '</b>. Please create their Google account first — remaining access will be set up after email is assigned.',
-          formUrl: taskUrl,
-          displayName: 'TEAM Group — Employee Onboarding',
-          contextData: context
-        });
-      }
-      Logger.log('[EquipReq] Email Setup step created for ' + workflowId);
-    } else {
-      // No Google Account needed — launch all tasks immediately
-      launchRemainingEquipmentTasks(workflowId);
+    if (needsGoogle) {
+      itTasks.push({ name: 'Google Account Setup', description: JSON.stringify(['Create Google account and assign email address']), formType: 'it_email_setup' });
     }
+
+    // IT hardware (computer, phone, tablet — not credit card, business cards, vehicle)
+    const itHardware = equipment.filter(function(eq) {
+      const eql = eq.toLowerCase();
+      return eql.indexOf('credit card') === -1 && eql.indexOf('business card') === -1 && eql.indexOf('vehicle') === -1;
+    });
+    if (itHardware.length > 0) {
+      itTasks.push({ name: 'Hardware Provisioning', description: JSON.stringify(itHardware.map(function(e) { return 'Provision: ' + e; })), formType: 'it_hardware' });
+    }
+
+    // IT software: everything that isn't Google, HR systems, Finance, or Payroll
+    const itSoftware = systems.filter(function(s) {
+      const sl = s.toLowerCase();
+      return sl.indexOf('google') === -1 && sl.indexOf('email') === -1 &&
+             sl.indexOf('adp') === -1 && sl.indexOf('payroll') === -1 &&
+             sl.indexOf('jonas') === -1 &&
+             sl.indexOf('incident') === -1 && sl.indexOf('net promoter') === -1;
+    });
+    if (itSoftware.length > 0) {
+      itTasks.push({ name: 'Software Access Setup', description: JSON.stringify(itSoftware.map(function(s) { return 'Grant access: ' + s; })), formType: 'it_software' });
+    }
+
+    if (itTasks.length === 0) {
+      // No IT work — launch non-IT tasks directly
+      launchRemainingEquipmentTasks(workflowId);
+      return;
+    }
+
+    // Create all IT action items and send one consolidated email
+    const itTaskLinks = [];
+    itTasks.forEach(function(task) {
+      const tid = ActionItemService.createActionItem(workflowId, 'IT', task.name, task.description, CONFIG.EMAILS.IT, task.formType);
+      if (tid) itTaskLinks.push('<li><a href="' + buildFormUrl('action_item_view', { tid: tid }) + '">' + task.name + '</a></li>');
+    });
+
+    updateWorkflow(workflowId, 'In Progress', 'Email Setup Needed');
+    syncWorkflowState(workflowId);
+
+    if (itTaskLinks.length > 0) {
+      sendFormEmail({
+        to: CONFIG.EMAILS.IT,
+        subject: 'IT Action Items Required — ' + employeeName + ' (' + itTaskLinks.length + ' task' + (itTaskLinks.length > 1 ? 's' : '') + ')',
+        body: 'An equipment request has been approved for <b>' + employeeName + '</b>. Please complete all IT tasks — remaining team notifications will send once IT tasks are closed.<br><ul>' + itTaskLinks.join('') + '</ul>',
+        formUrl: '',
+        displayName: 'TEAM Group — Employee Onboarding',
+        contextData: context
+      });
+    }
+
+    Logger.log('[EquipReq] ' + itTaskLinks.length + ' IT task(s) created for ' + workflowId);
   } catch (e) {
     Logger.log('[ERROR] launchEquipmentActionItems: ' + e.message);
   }
 }
 
 /**
- * Creates all remaining action items for an equipment request (excluding Google Account
- * which was handled separately if Email Setup Needed step was used).
+ * Phase 2: creates all non-IT action items for an equipment request.
+ * Called by ActionItemService.checkWorkflowCompletion once all IT tasks are closed,
+ * or directly by launchEquipmentActionItems when there are no IT tasks.
  * Sets workflow status to "Action Items Pending".
  * @param {string} workflowId
  */
@@ -224,14 +256,7 @@ function launchRemainingEquipmentTasks(workflowId) {
     const equipment = Array.isArray(context.equipment)  ? context.equipment
       : (context.equipmentRaw ? context.equipmentRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : []);
 
-    // Skip Google Account — already handled in Email Setup Needed step (if it was done)
-    const otherSystems = systems.filter(function(s) {
-      return s.toLowerCase().indexOf('google') === -1 && s.toLowerCase().indexOf('email') === -1;
-    });
-
-    // Group tasks by team
-    const itHardware    = [];
-    const itSoftware    = [];
+    // Non-IT teams only — IT tasks already handled in phase 1
     const hrSystems     = [];
     let creditCard    = false;
     let businessCards = false;
@@ -239,7 +264,7 @@ function launchRemainingEquipmentTasks(workflowId) {
     let jonas         = false;
     let adp           = false;
 
-    otherSystems.forEach(function(s) {
+    systems.forEach(function(s) {
       const sl = s.toLowerCase();
       if (sl.indexOf('adp') !== -1 || sl.indexOf('payroll') !== -1) {
         adp = true;
@@ -247,9 +272,8 @@ function launchRemainingEquipmentTasks(workflowId) {
         jonas = true;
       } else if (sl.indexOf('incident') !== -1 || sl.indexOf('net promoter') !== -1) {
         hrSystems.push(s);
-      } else {
-        itSoftware.push(s);
       }
+      // Google, hardware, IT software — already done in phase 1, skip
     });
 
     equipment.forEach(function(eq) {
@@ -260,33 +284,11 @@ function launchRemainingEquipmentTasks(workflowId) {
         businessCards = true;
       } else if (eql.indexOf('vehicle') !== -1) {
         vehicle = true;
-      } else {
-        // Computer, Mobile Phone, Tablet → IT hardware
-        itHardware.push(eq);
       }
+      // Hardware (computer, phone, tablet) — already done in phase 1, skip
     });
 
-    // Create action items and notify teams
-    if (itHardware.length > 0) {
-      const tid = ActionItemService.createActionItem(
-        workflowId, 'IT', 'Hardware Provisioning',
-        JSON.stringify(itHardware.map(function(e) { return 'Provision: ' + e; })),
-        CONFIG.EMAILS.IT, 'it_hardware'
-      );
-      _notifyEquipmentTask(workflowId, tid, 'IT', CONFIG.EMAILS.IT, context,
-        'Please provision the following hardware for <b>' + employeeName + '</b>:<br><ul><li>' + itHardware.join('</li><li>') + '</li></ul>');
-    }
-
-    if (itSoftware.length > 0) {
-      const tid = ActionItemService.createActionItem(
-        workflowId, 'IT', 'Software Access Setup',
-        JSON.stringify(itSoftware.map(function(s) { return 'Grant access: ' + s; })),
-        CONFIG.EMAILS.IT, 'it_software'
-      );
-      _notifyEquipmentTask(workflowId, tid, 'IT Software', CONFIG.EMAILS.IT, context,
-        'Please set up the following software access for <b>' + employeeName + '</b>:<br><ul><li>' + itSoftware.join('</li><li>') + '</li></ul>');
-    }
-
+    // Create action items and notify non-IT teams
     if (hrSystems.length > 0) {
       const tid = ActionItemService.createActionItem(
         workflowId, 'HR', 'HR Systems Access',

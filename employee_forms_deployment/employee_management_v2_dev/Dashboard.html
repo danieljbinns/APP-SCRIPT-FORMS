@@ -645,9 +645,9 @@
         // Use the 'Pending: X' prefixed strings produced by StateSync.js — exact prefix
         // avoids false matches like 'Pending: IT Setup Complete' or 'ID Setup Complete'.
         const STEP_CATEGORY_TERMS = {
-            'IT Setup':        ['pending: it setup'],
-            'HR Verification': ['pending: hr verification'],
-            'ID Setup':        ['pending: id setup']
+            'IT Setup':        ['it setup needed', 'it setup'],
+            'HR Verification': ['hr verification needed', 'id setup complete'],
+            'ID Setup':        ['id setup needed']
         };
 
         function filterByCategory(cat) {
@@ -1369,7 +1369,6 @@
     </div>
 
   <?!= include('SharedComponents') ?>
-<?!= safeInclude('Konami') ?>
 </body>
 
 </html>
