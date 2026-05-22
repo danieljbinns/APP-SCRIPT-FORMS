@@ -204,8 +204,8 @@ function launchEquipmentActionItems(workflowId) {
     }
 
     if (itTasks.length === 0) {
-      // No IT work — launch non-IT tasks directly
-      launchRemainingEquipmentTasks(workflowId);
+      // No IT work — launch all tasks (IT + non-IT) directly
+      launchRemainingEquipmentTasks(workflowId, false);
       return;
     }
 
@@ -237,13 +237,14 @@ function launchEquipmentActionItems(workflowId) {
 }
 
 /**
- * Phase 2: creates all non-IT action items for an equipment request.
- * Called by ActionItemService.checkWorkflowCompletion once all IT tasks are closed,
- * or directly by launchEquipmentActionItems when there are no IT tasks.
+ * Creates non-IT (and optionally IT) action items for an equipment request.
+ * - Called by launchEquipmentActionItems directly when no Google Account needed (skipIT=false) → creates everything.
+ * - Called by ActionItemService.checkWorkflowCompletion after IT closes phase-1 tasks (skipIT=true) → non-IT only.
  * Sets workflow status to "Action Items Pending".
  * @param {string} workflowId
+ * @param {boolean} [skipIT=false] pass true when IT tasks were already created in phase 1
  */
-function launchRemainingEquipmentTasks(workflowId) {
+function launchRemainingEquipmentTasks(workflowId, skipIT) {
   try {
     const context = getWorkflowContext(workflowId);
     if (!context) {
@@ -256,8 +257,9 @@ function launchRemainingEquipmentTasks(workflowId) {
     const equipment = Array.isArray(context.equipment)  ? context.equipment
       : (context.equipmentRaw ? context.equipmentRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : []);
 
-    // Non-IT teams only — IT tasks already handled in phase 1
-    const hrSystems     = [];
+    const itHardware  = [];
+    const itSoftware  = [];
+    const hrSystems   = [];
     let creditCard    = false;
     let businessCards = false;
     let vehicle       = false;
@@ -266,14 +268,17 @@ function launchRemainingEquipmentTasks(workflowId) {
 
     systems.forEach(function(s) {
       const sl = s.toLowerCase();
-      if (sl.indexOf('adp') !== -1 || sl.indexOf('payroll') !== -1) {
+      if (sl.indexOf('google') !== -1 || sl.indexOf('email') !== -1) {
+        return; // always skip — Google Account handled in phase 1 or not requested
+      } else if (sl.indexOf('adp') !== -1 || sl.indexOf('payroll') !== -1) {
         adp = true;
       } else if (sl.indexOf('jonas') !== -1) {
         jonas = true;
       } else if (sl.indexOf('incident') !== -1 || sl.indexOf('net promoter') !== -1) {
         hrSystems.push(s);
+      } else if (!skipIT) {
+        itSoftware.push(s); // IT software only when not already done in phase 1
       }
-      // Google, hardware, IT software — already done in phase 1, skip
     });
 
     equipment.forEach(function(eq) {
@@ -284,11 +289,32 @@ function launchRemainingEquipmentTasks(workflowId) {
         businessCards = true;
       } else if (eql.indexOf('vehicle') !== -1) {
         vehicle = true;
+      } else if (!skipIT) {
+        itHardware.push(eq); // IT hardware only when not already done in phase 1
       }
-      // Hardware (computer, phone, tablet) — already done in phase 1, skip
     });
 
-    // Create action items and notify non-IT teams
+    // Create action items and notify teams
+    if (itHardware.length > 0) {
+      const tid = ActionItemService.createActionItem(
+        workflowId, 'IT', 'Hardware Provisioning',
+        JSON.stringify(itHardware.map(function(e) { return 'Provision: ' + e; })),
+        CONFIG.EMAILS.IT, 'it_hardware'
+      );
+      _notifyEquipmentTask(workflowId, tid, 'IT', CONFIG.EMAILS.IT, context,
+        'Please provision the following hardware for <b>' + employeeName + '</b>:<br><ul><li>' + itHardware.join('</li><li>') + '</li></ul>');
+    }
+
+    if (itSoftware.length > 0) {
+      const tid = ActionItemService.createActionItem(
+        workflowId, 'IT', 'Software Access Setup',
+        JSON.stringify(itSoftware.map(function(s) { return 'Grant access: ' + s; })),
+        CONFIG.EMAILS.IT, 'it_software'
+      );
+      _notifyEquipmentTask(workflowId, tid, 'IT Software', CONFIG.EMAILS.IT, context,
+        'Please set up the following software access for <b>' + employeeName + '</b>:<br><ul><li>' + itSoftware.join('</li><li>') + '</li></ul>');
+    }
+
     if (hrSystems.length > 0) {
       const tid = ActionItemService.createActionItem(
         workflowId, 'HR', 'HR Systems Access',

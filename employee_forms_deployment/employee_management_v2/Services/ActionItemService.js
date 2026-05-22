@@ -219,7 +219,7 @@ var ActionItemService = (function() {
       if (pending.length === 0) {
         Logger.log(`[ActionItemService] Email Setup closed for ${workflowId}. Launching remaining equipment tasks.`);
         if (typeof launchRemainingEquipmentTasks === 'function') {
-          launchRemainingEquipmentTasks(workflowId);
+          launchRemainingEquipmentTasks(workflowId, true); // skipIT=true — IT tasks already created in phase 1
         }
       }
       return;

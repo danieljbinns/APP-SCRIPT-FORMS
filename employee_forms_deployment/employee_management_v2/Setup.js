@@ -395,3 +395,5 @@ function enableMaintenanceMode()  { PropertiesService.getScriptProperties().setP
 function disableMaintenanceMode() { PropertiesService.getScriptProperties().deleteProperty('MAINTENANCE_MODE'); Logger.log('MAINTENANCE_MODE cleared'); }
 function setEmailRedirect(addr)   { var a = addr || 'dbinns@team-group.com'; PropertiesService.getScriptProperties().setProperty('EMAIL_REDIRECT_ALL', a); Logger.log('EMAIL_REDIRECT_ALL = ' + a); }
 function clearEmailRedirect()     { PropertiesService.getScriptProperties().deleteProperty('EMAIL_REDIRECT_ALL'); Logger.log('EMAIL_REDIRECT_ALL cleared'); }
+function suppressEmails()         { PropertiesService.getScriptProperties().setProperty('SUPPRESS_EMAILS_OVERRIDE', 'true');  Logger.log('SUPPRESS_EMAILS_OVERRIDE = true'); }
+function unsuppressEmails()       { PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE'); Logger.log('SUPPRESS_EMAILS_OVERRIDE cleared'); }

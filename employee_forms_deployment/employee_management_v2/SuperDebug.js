@@ -1496,28 +1496,30 @@ function runSuperDebugEquipment() {
 
     Utilities.sleep(500);
 
-    // ── Phase 4: Close IT Email Setup AI → triggers launchRemainingEquipmentTasks
-    _sdSection(4, 'Close initial IT AI → triggers remaining equipment tasks');
+    // ── Phase 4: Close ALL IT tasks → triggers launchRemainingEquipmentTasks
+    // Phase 1 now creates multiple IT tasks (Google Account + Hardware + Software).
+    // launchRemainingEquipmentTasks only fires when ALL phase-1 IT tasks are closed.
+    _sdSection(4, 'Close all IT AIs → triggers remaining equipment tasks');
     var pending4 = ActionItemService.getPendingTasks(wfId);
-    _sdLog('INFO', 'Phase 4', pending4.length + ' open AI(s) before first close');
+    _sdLog('INFO', 'Phase 4', pending4.length + ' open IT AI(s) to close');
 
     _sdEmailCapture();
-    if (pending4.length > 0) {
-      var firstTask = pending4[0];
+    var closedIT = 0;
+    pending4.forEach(function(task) {
       var closeR = ActionItemService.closeActionItem(
-        firstTask[SCHEMA.ACTION_ITEMS.TASK_ID],
-        'SUPERDEBUG close IT Email Setup',
+        task[SCHEMA.ACTION_ITEMS.TASK_ID],
+        'SUPERDEBUG close IT task',
         SD_EMAIL, null, null
       );
       SpreadsheetApp.flush();
       if (closeR && closeR.success !== false) {
-        _sdLog('PASS', 'Phase 4', 'Initial IT AI closed ✓');
+        closedIT++;
       } else {
         _sdLog('WARN', 'Phase 4', 'Close returned: ' + JSON.stringify(closeR));
       }
-    } else {
-      _sdLog('WARN', 'Phase 4', 'No open AIs found to close — launchEquipmentActionItems may have already run');
-    }
+      Utilities.sleep(300);
+    });
+    _sdLog(closedIT === pending4.length ? 'PASS' : 'WARN', 'Phase 4', 'Closed ' + closedIT + '/' + pending4.length + ' IT AI(s) ✓');
     _sdEmailExtract('Phase 4 IT close');
     Utilities.sleep(500);
 
