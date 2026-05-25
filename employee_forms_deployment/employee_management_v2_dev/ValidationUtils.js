@@ -100,18 +100,30 @@ function isValidPhone(phone) {
  */
 function validateRequiredFields(formData, requiredFields) {
   const missing = [];
-  
+  const formulaFields = [];
+  const FORMULA_CHARS = ['=', '+', '-', '@'];
+
   requiredFields.forEach(field => {
     if (!formData[field] || formData[field].toString().trim() === '') {
       missing.push(field);
     }
   });
-  
-  return {
-    valid: missing.length === 0,
-    missing: missing,
-    message: missing.length > 0 ? `Missing required fields: ${missing.join(', ')}` : 'All required fields present'
-  };
+
+  // Check all string fields in formData for formula injection chars at start
+  Object.keys(formData).forEach(field => {
+    const val = formData[field];
+    if (typeof val === 'string' && val.length > 0 && FORMULA_CHARS.includes(val[0])) {
+      formulaFields.push(field);
+    }
+  });
+
+  if (missing.length > 0) {
+    return { valid: false, missing: missing, message: 'Missing required fields: ' + missing.join(', ') };
+  }
+  if (formulaFields.length > 0) {
+    return { valid: false, missing: [], message: 'Invalid character at start of field(s): ' + formulaFields.join(', ') + '. Values cannot begin with =, +, -, or @.' };
+  }
+  return { valid: true, missing: [], message: 'All required fields present' };
 }
 
 /**

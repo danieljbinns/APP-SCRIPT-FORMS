@@ -535,4 +535,60 @@
       document.addEventListener('DOMContentLoaded', init);
     }
   })();
+
+  // ── Formula-injection blur guard ──────────────────────────────────────────
+  // Runs on every form page. Attaches a blur listener to all text inputs and
+  // textareas. If a value starts with = + - @ the field is flagged inline so
+  // the user can correct it before submission. Server-side validation in
+  // validateRequiredFields() is the authoritative backstop.
+  (function () {
+    var FORMULA_CHARS = ['=', '+', '-', '@'];
+    var ERROR_ATTR    = 'data-formula-error';
+
+    function checkField(el) {
+      var val = (el.value || '').trimStart();
+      if (val.length > 0 && FORMULA_CHARS.indexOf(val[0]) !== -1) {
+        flagField(el);
+      } else {
+        clearFlag(el);
+      }
+    }
+
+    function flagField(el) {
+      if (el.getAttribute(ERROR_ATTR)) return; // already flagged
+      el.style.borderColor = '#c0392b';
+      var msg = document.createElement('div');
+      msg.setAttribute(ERROR_ATTR, '1');
+      msg.style.cssText = 'color:#c0392b;font-size:0.8em;margin-top:2px;';
+      msg.textContent   = 'Value cannot start with =, +, -, or @';
+      el.setAttribute(ERROR_ATTR, '1');
+      el.parentNode.insertBefore(msg, el.nextSibling);
+    }
+
+    function clearFlag(el) {
+      if (!el.getAttribute(ERROR_ATTR)) return;
+      el.style.borderColor = '';
+      el.removeAttribute(ERROR_ATTR);
+      var next = el.nextSibling;
+      if (next && next.getAttribute && next.getAttribute(ERROR_ATTR)) {
+        next.parentNode.removeChild(next);
+      }
+    }
+
+    function attach(el) {
+      el.addEventListener('blur',  function () { checkField(el); });
+      el.addEventListener('input', function () { if (el.getAttribute(ERROR_ATTR)) checkField(el); });
+    }
+
+    function attachAll() {
+      document.querySelectorAll('input[type="text"], input[type="email"], input:not([type]), textarea')
+        .forEach(attach);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', attachAll);
+    } else {
+      attachAll();
+    }
+  })();
 </script>
