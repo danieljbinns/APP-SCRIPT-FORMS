@@ -186,7 +186,7 @@ function getTerminationData(workflowId) {
     empID:          data[TR.EMPLOYEE_ID],
     empType:        data[TR.EMPLOYEE_TYPE],
     siteName:       data[TR.SITE],
-    termDate:       data[TR.TERM_DATE] ? Utilities.formatDate(new Date(data[TR.TERM_DATE]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+    termDate:       data[TR.TERM_DATE] ? (data[TR.TERM_DATE] instanceof Date ? Utilities.formatDate(data[TR.TERM_DATE], Session.getScriptTimeZone(), 'yyyy-MM-dd') : Utilities.formatDate(new Date(data[TR.TERM_DATE]), Session.getScriptTimeZone(), 'yyyy-MM-dd')) : '',
     reason:         data[TR.REASON],
     requesterEmail: data[TR.REQUESTER_EMAIL],
     managerName:    data[TR.MANAGER_NAME],

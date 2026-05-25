@@ -140,9 +140,9 @@ function getDashboardData() {
       }
     }
 
-    const termSheet = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
+    const termSheet = termSheetForType; // reuse — already read above for termEmpTypeMap
     if (termSheet) {
-      const termData = termSheet.getDataRange().getValues();
+      const termData = tData; // reuse data already fetched
       if (termData.length > 1) {
         termData.slice(1).forEach(row => {
           const wfId = String(row[SCHEMA.TERMINATIONS.WORKFLOW_ID] || '');
@@ -287,7 +287,7 @@ function getWorkflowMapStats() {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const wfSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
-    if (!wfSheet) return { onboarding: {}, eoe: {} };
+    if (!wfSheet) return { success: false, onboarding: {}, eoe: {} };
 
     const data    = wfSheet.getDataRange().getValues();
     const headers = data[0];
@@ -311,9 +311,9 @@ function getWorkflowMapStats() {
         onbCounts[step] = (onbCounts[step] || 0) + 1;
       }
     }
-    return { onboarding: onbCounts, eoe: eoeCounts };
+    return { success: true, onboarding: onbCounts, eoe: eoeCounts };
   } catch(e) {
     Logger.log('[getWorkflowMapStats] Error: ' + e.message);
-    return { onboarding: {}, eoe: {} };
+    return { success: false, onboarding: {}, eoe: {} };
   }
 }
