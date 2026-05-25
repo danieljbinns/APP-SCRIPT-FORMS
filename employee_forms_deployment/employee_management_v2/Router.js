@@ -6,7 +6,8 @@
 function doGet(e) {
   try {
     // Maintenance mode — serve splash page for all requests when MAINTENANCE_MODE='true' in Script Properties.
-    if (CONFIG.MAINTENANCE_MODE) {
+    // Admin users bypass maintenance mode so they can review the live app before going live.
+    if (CONFIG.MAINTENANCE_MODE && !AccessControlService.isAdmin(Session.getActiveUser().getEmail())) {
       return HtmlService.createTemplateFromFile('MaintenancePage').evaluate()
         .setTitle('Down for Maintenance')
         .addMetaTag('viewport', 'width=device-width, initial-scale=1');
