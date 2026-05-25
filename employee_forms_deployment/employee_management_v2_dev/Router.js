@@ -6,11 +6,16 @@
 function doGet(e) {
   try {
     // Maintenance mode — serve splash page for all requests when MAINTENANCE_MODE='true' in Script Properties.
-    // Admin users bypass maintenance mode so they can review the live app before going live.
-    if (CONFIG.MAINTENANCE_MODE && !AccessControlService.isAdmin(Session.getActiveUser().getEmail())) {
-      return HtmlService.createTemplateFromFile('MaintenancePage').evaluate()
-        .setTitle('Down for Maintenance')
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+    // MAINTENANCE_BYPASS_EMAILS Script Property (comma-separated) allows specific users through.
+    if (CONFIG.MAINTENANCE_MODE) {
+      var _userEmail = Session.getActiveUser().getEmail().toLowerCase();
+      var _bypass = (PropertiesService.getScriptProperties().getProperty('MAINTENANCE_BYPASS_EMAILS') || '')
+        .split(',').map(function(e) { return e.trim().toLowerCase(); }).filter(Boolean);
+      if (_bypass.indexOf(_userEmail) === -1) {
+        return HtmlService.createTemplateFromFile('MaintenancePage').evaluate()
+          .setTitle('Down for Maintenance')
+          .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      }
     }
 
     const userEmail = Session.getActiveUser().getEmail();

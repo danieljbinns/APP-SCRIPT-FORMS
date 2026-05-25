@@ -395,6 +395,8 @@ function enableMaintenanceMode()  { PropertiesService.getScriptProperties().setP
 function disableMaintenanceMode() { PropertiesService.getScriptProperties().deleteProperty('MAINTENANCE_MODE'); Logger.log('MAINTENANCE_MODE cleared'); }
 function setEmailRedirect(addr)   { var a = addr || 'dbinns@team-group.com'; PropertiesService.getScriptProperties().setProperty('EMAIL_REDIRECT_ALL', a); Logger.log('EMAIL_REDIRECT_ALL = ' + a); }
 function clearEmailRedirect()     { PropertiesService.getScriptProperties().deleteProperty('EMAIL_REDIRECT_ALL'); Logger.log('EMAIL_REDIRECT_ALL cleared'); }
+function setMaintenanceBypass(emails) { var v = emails || 'dbinns@robinsonsolutions.com'; PropertiesService.getScriptProperties().setProperty('MAINTENANCE_BYPASS_EMAILS', v); Logger.log('MAINTENANCE_BYPASS_EMAILS = ' + v); return { ok: true, value: v }; }
+function clearMaintenanceBypass()     { PropertiesService.getScriptProperties().deleteProperty('MAINTENANCE_BYPASS_EMAILS'); Logger.log('MAINTENANCE_BYPASS_EMAILS cleared'); return { ok: true }; }
 function suppressEmails()         { PropertiesService.getScriptProperties().setProperty('SUPPRESS_EMAILS_OVERRIDE', 'true');  Logger.log('SUPPRESS_EMAILS_OVERRIDE = true'); }
 function unsuppressEmails()       { PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE'); Logger.log('SUPPRESS_EMAILS_OVERRIDE cleared'); }
 function enableEasterEggs()       { PropertiesService.getScriptProperties().setProperty('EASTER_EGGS_ENABLED', 'true'); Logger.log('EASTER_EGGS_ENABLED = true'); }
