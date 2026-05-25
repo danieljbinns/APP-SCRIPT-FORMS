@@ -14,6 +14,7 @@
  *  runSuperDebugStatusChange_Site()  — Site transfer + manager + Fleetio + vehicle
  *  runSuperDebugStatusChange_Full()  — All change types, kitchen sink
  *  runSuperDebugEquipment()          — Full equipment request trace (8 phases)
+ *  runSuperDebugAggregation()        — getDashboardData / getRequestDetails / getWorkflowMapStats / getMyTaskCounts
  *
  * UTILITIES
  * -----------
@@ -1822,4 +1823,171 @@ function _sdSetEmailRedirect(email) {
     props.deleteProperty('EMAIL_REDIRECT_ALL');
   }
   return { ok: true, email: email || '(cleared)' };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// runSuperDebugAggregation
+// Tests the aggregation / data-fetch layer that the sheet-read suites never call:
+//   getDashboardData()      — verifies SD_ new hire appears in the returned list
+//   getRequestDetails()     — verifies returned shape for the same workflow
+//   getWorkflowMapStats()   — verifies success + expected keys
+//   getMyTaskCounts()       — verifies success + expected category keys
+//
+// Must be run AFTER the existing suites (needs an SD_ workflow in the sheets).
+// ─────────────────────────────────────────────────────────────────────────────
+
+function runSuperDebugAggregation() {
+  _SD_RESULTS    = [];
+  _SD_EMAIL_COUNTS = {};
+  var tag = 'AGG';
+
+  _sdSection(1, 'Find SD new hire workflow ID');
+
+  // Locate the SD_ new hire workflow by scanning Workflows sheet for sentinel name
+  var ss      = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var wfSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+  var sdWfId  = null;
+  if (wfSheet && wfSheet.getLastRow() > 1) {
+    var wfData = wfSheet.getDataRange().getValues();
+    var wfHeaders = wfData[0];
+    var idIdx   = wfHeaders.indexOf('Workflow ID');
+    var nameIdx = wfHeaders.indexOf('Employee Name');
+    for (var i = 1; i < wfData.length; i++) {
+      if (String(wfData[i][nameIdx] || '') === SD_NH_NAME) {
+        sdWfId = String(wfData[i][idIdx] || '');
+        break;
+      }
+    }
+  }
+
+  if (!sdWfId) {
+    _sdLog('FAIL', tag, 'No SD new hire workflow found — run runSuperDebugNewHire() first');
+    return _sdSummary('Aggregation Layer');
+  }
+  _sdLog('PASS', tag, 'Found SD new hire workflow: ' + sdWfId);
+
+  // ── Phase 2: getDashboardData ─────────────────────────────────────────────
+  _sdSection(2, 'getDashboardData()');
+  try {
+    var dashRaw = getDashboardData();
+    var dash    = JSON.parse(dashRaw);
+    if (!dash.success) {
+      _sdLog('FAIL', tag, 'getDashboardData returned success=false: ' + dash.message);
+    } else {
+      _sdLog('PASS', tag, 'getDashboardData success=true, ' + (dash.workflows || []).length + ' workflow(s) returned');
+      var found = (dash.workflows || []).filter(function(w) { return w.id === sdWfId; });
+      if (found.length === 0) {
+        _sdLog('FAIL', tag, 'SD workflow ' + sdWfId + ' not found in getDashboardData result');
+      } else {
+        var wf = found[0];
+        _sdLog('PASS', tag, 'SD workflow present in dashboard list ✓');
+        // Assert key fields
+        var checks = {
+          employee:  { actual: wf.employee,  expected: SD_NH_NAME },
+          type:      { actual: wf.type,      expected: 'Onboarding' },
+          status:    { actual: wf.status,    expected: '__notempty__' },
+          hireDate:  { actual: wf.hireDate,  expected: '__notempty__' }
+        };
+        Object.keys(checks).forEach(function(k) {
+          var c = checks[k];
+          var ok = c.expected === '__notempty__' ? (c.actual || '').trim() !== '' : c.actual === c.expected;
+          _sdLog(ok ? 'PASS' : 'FAIL', tag, 'dashboard.' + k + ' = "' + c.actual + '"' + (ok ? ' ✓' : ' ✗ expected "' + c.expected + '"'));
+        });
+        // Verify rolePayload present
+        if (dash.rolePayload && typeof dash.rolePayload === 'object') {
+          _sdLog('PASS', tag, 'rolePayload returned ✓');
+        } else {
+          _sdLog('FAIL', tag, 'rolePayload missing from getDashboardData result');
+        }
+      }
+    }
+  } catch (e) {
+    _sdLog('FAIL', tag, 'getDashboardData threw: ' + e.message);
+  }
+
+  // ── Phase 3: getRequestDetails ────────────────────────────────────────────
+  _sdSection(3, 'getRequestDetails()');
+  try {
+    var details = getRequestDetails(sdWfId);
+    if (!details || !details.success) {
+      _sdLog('FAIL', tag, 'getRequestDetails returned success=false: ' + (details ? details.message : 'null'));
+    } else {
+      _sdLog('PASS', tag, 'getRequestDetails success=true ✓');
+      var rd = details.requestData || {};
+      // Check employee name field — header name in Initial Requests sheet
+      var empName = rd['Employee Name'] || rd['First Name'] || '';
+      if ((empName + '').indexOf('Sd') !== -1) {
+        _sdLog('PASS', tag, 'requestData employee name contains sentinel "Sd" ✓');
+      } else {
+        _sdLog('WARN', tag, 'requestData employee name = "' + empName + '" (could not assert sentinel name — check field header)');
+      }
+      // Check checklist array present
+      if (Array.isArray(details.checklist)) {
+        _sdLog('PASS', tag, 'checklist array present (' + details.checklist.length + ' items) ✓');
+      } else {
+        _sdLog('FAIL', tag, 'checklist missing or not an array');
+      }
+    }
+  } catch (e) {
+    _sdLog('FAIL', tag, 'getRequestDetails threw: ' + e.message);
+  }
+
+  // ── Phase 4: getWorkflowMapStats ──────────────────────────────────────────
+  _sdSection(4, 'getWorkflowMapStats()');
+  try {
+    var mapStats = getWorkflowMapStats();
+    if (!mapStats || !mapStats.success) {
+      _sdLog('FAIL', tag, 'getWorkflowMapStats returned success=false');
+    } else {
+      _sdLog('PASS', tag, 'getWorkflowMapStats success=true ✓');
+      if (typeof mapStats.onboarding === 'object') _sdLog('PASS', tag, 'onboarding key present ✓');
+      else _sdLog('FAIL', tag, 'onboarding key missing');
+      if (typeof mapStats.eoe === 'object') _sdLog('PASS', tag, 'eoe key present ✓');
+      else _sdLog('FAIL', tag, 'eoe key missing');
+    }
+  } catch (e) {
+    _sdLog('FAIL', tag, 'getWorkflowMapStats threw: ' + e.message);
+  }
+
+  // ── Phase 5: getMyTaskCounts ──────────────────────────────────────────────
+  _sdSection(5, 'getMyTaskCounts()');
+  try {
+    var taskCounts = getMyTaskCounts();
+    if (!taskCounts || !taskCounts.success) {
+      _sdLog('FAIL', tag, 'getMyTaskCounts returned success=false');
+    } else {
+      _sdLog('PASS', tag, 'getMyTaskCounts success=true ✓');
+      var expectedCats = ['IT', 'HR', 'Safety', 'IT Setup', 'HR Verification', 'ID Setup'];
+      expectedCats.forEach(function(cat) {
+        if (taskCounts.counts.hasOwnProperty(cat)) {
+          _sdLog('PASS', tag, 'counts.' + cat + ' present = ' + taskCounts.counts[cat] + ' ✓');
+        } else {
+          _sdLog('FAIL', tag, 'counts.' + cat + ' key missing');
+        }
+      });
+    }
+  } catch (e) {
+    _sdLog('FAIL', tag, 'getMyTaskCounts threw: ' + e.message);
+  }
+
+  return _sdSummary('Aggregation Layer');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// runSuperDebugCleanup
+// gas_runner.py-friendly wrapper for cleanupSuperDebugAll().
+// Returns { pass, fail, deleted, gasLog } so the standard runner log parsing works.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function runSuperDebugCleanup() {
+  var result = cleanupSuperDebugAll();
+  var deleted = result ? (result.deleted || result.totalDeleted || 0) : 0;
+  Logger.log('[SD] runSuperDebugCleanup: deleted=' + deleted + ' rows');
+  return {
+    pass:    deleted >= 0 ? 1 : 0,
+    fail:    0,
+    deleted: deleted,
+    sheets:  result ? result.sheets : {},
+    gasLog:  Logger.getLog()
+  };
 }

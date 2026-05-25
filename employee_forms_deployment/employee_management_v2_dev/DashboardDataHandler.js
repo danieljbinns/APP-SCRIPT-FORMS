@@ -40,8 +40,9 @@ function getDashboardData() {
     // (synced before the empType fix) can be supplemented without a full re-sync.
     const termEmpTypeMap = {};
     const termSheetForType = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
+    let tData = [];
     if (termSheetForType) {
-      const tData = termSheetForType.getDataRange().getValues();
+      tData = termSheetForType.getDataRange().getValues();
       const TR = SCHEMA.TERMINATIONS;
       for (let i = SCHEMA.ROW.FIRST_DATA; i < tData.length; i++) {
         const wfId = String(tData[i][TR.WORKFLOW_ID] || '');
