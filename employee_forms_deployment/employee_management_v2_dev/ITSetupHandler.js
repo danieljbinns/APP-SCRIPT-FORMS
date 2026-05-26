@@ -157,6 +157,7 @@ function getITContextData(workflowId) {
 
 function submitITSetup(formData) {
   try {
+    rawLog('submitITSetup', formData);
     const workflowId = formData.workflowId || formData.requestId;
     const formId = generateFormId('IT_SETUP');
     Logger.log('IT Setup submitted for: ' + workflowId);

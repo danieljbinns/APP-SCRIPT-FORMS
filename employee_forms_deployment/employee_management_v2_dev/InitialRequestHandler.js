@@ -16,6 +16,7 @@ function serveInitialRequest() {
 
 function submitInitialRequest(formData) {
   try {
+    rawLog('submitInitialRequest', formData);
     // Create workflow first
     const workflowId = createWorkflow('NEW_EMP', 'New Employee Onboarding', formData.requesterEmail);
     const formId = generateFormId('INIT_REQ');
