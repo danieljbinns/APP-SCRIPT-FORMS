@@ -1897,7 +1897,7 @@ function runSuperDebugAggregation() {
         if (dash.rolePayload && typeof dash.rolePayload === 'object') {
           _sdLog('PASS', tag, 'rolePayload returned ✓');
         } else {
-          _sdLog('FAIL', tag, 'rolePayload missing from getDashboardData result');
+          _sdLog('FAIL', tag, 'rolePayload missing from getDashboardData result — keys: ' + Object.keys(dash).join(', '));
         }
       }
     }
@@ -1937,7 +1937,7 @@ function runSuperDebugAggregation() {
   try {
     var mapStats = getWorkflowMapStats();
     if (!mapStats || !mapStats.success) {
-      _sdLog('FAIL', tag, 'getWorkflowMapStats returned success=false');
+      _sdLog('FAIL', tag, 'getWorkflowMapStats returned success=false: ' + JSON.stringify(mapStats));
     } else {
       _sdLog('PASS', tag, 'getWorkflowMapStats success=true ✓');
       if (typeof mapStats.onboarding === 'object') _sdLog('PASS', tag, 'onboarding key present ✓');

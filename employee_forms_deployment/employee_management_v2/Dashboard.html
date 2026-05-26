@@ -143,6 +143,8 @@
             background: var(--info);
             color: white;
         }
+        button.action-btn.btn-remind    { background: var(--warning); color: #000; }
+        button.action-btn.btn-view-data { background: transparent; border: 1px solid #444; color: var(--text-main); }
 
         button.cancel-btn {
             background: #d32f2f;
@@ -559,7 +561,6 @@
                         'Finance':            rp.isAdmin || rp.isHR,
                         'Deactivation':       rp.isAdmin || rp.isIT,
                         'IT Setup':           rp.isAdmin || rp.isIT,
-                        'HR Verification':    rp.isAdmin || rp.isHR,
                         'ID Setup':           rp.isAdmin || rp.isHR || rp.isIT
                     };
 
@@ -569,7 +570,7 @@
                         'Central Purchasing':'#795548','SiteDocs':'#607d8b',
                         'Assets':'#ff9800','IT':'#2196f3','HR':'#9c27b0','Fleet':'#00bcd4',
                         'Finance':'#4caf50','Deactivation':'#607d8b',
-                        'IT Setup':'#2196f3','HR Verification':'#9c27b0','ID Setup':'#00acc1'
+                        'IT Setup':'#2196f3','ID Setup':'#00acc1'
                     };
 
                     // Split categories: mine (can act on) vs others (read-only context)
@@ -641,13 +642,13 @@
                 .getMyTaskCounts();
         }
 
-        // Step-based categories: match against GRANULAR_STEP from Dashboard_View.
-        // Use the 'Pending: X' prefixed strings produced by StateSync.js — exact prefix
-        // avoids false matches like 'Pending: IT Setup Complete' or 'ID Setup Complete'.
+        // Step-based categories: match against granularStatus from Dashboard_View.
+        // StateSync writes 'Pending: HR Verification', 'Pending: IT Setup', etc.
+        // HR key also covers HR Verification step so one button handles both.
         const STEP_CATEGORY_TERMS = {
-            'IT Setup':        ['it setup needed', 'it setup'],
-            'HR Verification': ['hr verification needed', 'id setup complete'],
-            'ID Setup':        ['id setup needed']
+            'IT Setup': ['pending: it setup'],
+            'ID Setup': ['pending: id setup'],
+            'HR':       ['pending: hr verification']
         };
 
         function filterByCategory(cat) {
@@ -766,6 +767,7 @@
             if (rp.isPayroll)  document.body.classList.add('is-payroll');
             if (rp.isSpecialist) document.body.classList.add('is-specialist');
             applyFiltersAndSort(); // Triggers sorting and initially setting filteredWorkflows
+            updateFilterCounts();
 
             // Load task counts now that _rolePayload is set (avoids race condition)
             loadMyTasks();
@@ -883,6 +885,29 @@
             document.getElementById('tableBody').innerHTML = '<tr><td colspan="12" style="padding: 20px; color: #ef4444; text-align: center;">Error: ' + msg + '</td></tr>';
         }
 
+        function updateFilterCounts() {
+            var typeCounts = {};
+            var statusCounts = {};
+            allWorkflows.forEach(function(wf) {
+                var t = wf.type === 'Onboarding' ? 'ONBOARDING' : wf.type === 'End of Employment' ? 'EOE' : wf.type === 'Status Change' ? 'CHANGE' : wf.type === 'Equipment' ? 'EQUIP' : null;
+                if (t) typeCounts[t] = (typeCounts[t] || 0) + 1;
+                var s = (wf.status === 'Completed' || wf.status === 'Complete') ? 'COMPLETED' : wf.status === 'Cancelled' ? 'CANCELLED' : 'PENDING';
+                statusCounts[s] = (statusCounts[s] || 0) + 1;
+            });
+            document.querySelectorAll('.filter-btn[data-filter="type"]').forEach(function(btn) {
+                var n = typeCounts[btn.dataset.value] || 0;
+                var base = btn.dataset.label || btn.textContent.replace(/\s*\(\d+\)$/, '').trim();
+                btn.dataset.label = base;
+                btn.textContent = base + ' (' + n + ')';
+            });
+            document.querySelectorAll('.filter-btn[data-filter="status"]').forEach(function(btn) {
+                var n = statusCounts[btn.dataset.value] || 0;
+                var base = btn.dataset.label || btn.textContent.replace(/\s*\(\d+\)$/, '').trim();
+                btn.dataset.label = base;
+                btn.textContent = base + ' (' + n + ')';
+            });
+        }
+
         // Setup Search and Filter Event Listeners
         let searchDebounce;
         document.getElementById('searchInput').addEventListener('input', function (e) {
@@ -955,15 +980,11 @@
 
                 // Category filter — set by View Tasks button in My Pending Tasks panel
                 if (activeCategoryFilter) {
-                    if (STEP_CATEGORY_TERMS[activeCategoryFilter]) {
-                        // Step-based: filter by workflow step string
-                        const terms = STEP_CATEGORY_TERMS[activeCategoryFilter];
-                        const stepLower = (wf.step || '').toLowerCase();
-                        if (!terms.some(t => stepLower.includes(t))) return false;
-                    } else {
-                        // Action-item-based: filter by openCategories array on workflow object
-                        if (!wf.openCategories || !wf.openCategories.includes(activeCategoryFilter)) return false;
-                    }
+                    const stepTerms = STEP_CATEGORY_TERMS[activeCategoryFilter];
+                    const stepLower = (wf.step || '').toLowerCase();
+                    const matchesStep = stepTerms && stepTerms.some(t => stepLower.includes(t));
+                    const matchesActionItem = wf.openCategories && wf.openCategories.includes(activeCategoryFilter);
+                    if (!matchesStep && !matchesActionItem) return false;
                 }
 
                 return true;
@@ -1054,9 +1075,11 @@
             // --- Stepper Logic ---
             const isOnboarding = details.type === 'Onboarding';
             const isEOE = details.type === 'End of Employment';
+            const isChange = details.type === 'Status Change';
+            const isEquip = details.type === 'Equipment';
             let stepperHtml = '';
 
-            if (isOnboarding || isEOE) {
+            if (isOnboarding || isEOE || isChange || isEquip) {
                 let steps = [];
                 let statusMap = {};
 
@@ -1073,31 +1096,61 @@
                     });
                 } else if (isEOE) {
                     steps = ["Initial Request", "Approval", "Assets", "Systems"];
-                    
+
                     // Pre-fill N/A for conditionally generated items so they don't default to pending
                     statusMap["Assets"] = "N/A";
                     statusMap["Systems"] = "N/A";
-                    
+
                     checklist.forEach(c => {
                         let key = c.name;
                         // Map asset categories
                         if (key === "Asset Collection" || key === "Assets") {
                             if (statusMap["Assets"] === "N/A" || statusMap["Assets"] === "Complete") {
-                                statusMap["Assets"] = c.status; // Pending overwrites N/A or Complete
+                                statusMap["Assets"] = c.status;
                             }
                         }
-                        
                         // Map all deactivation action items to "Systems"
-                        else if (['IT', 'HR', 'Fleet', 'Finance', 'Deactivation', 'IT Systems Deactivation'].includes(key)) {
-                            // If ANY systems item is pending, the stepper shows Pending
+                        else if (['IT', 'HR', 'Fleet', 'Finance', 'Deactivation', 'IT Systems Deactivation', 'Safety'].includes(key)) {
                             if (c.status === "Pending") {
                                 statusMap["Systems"] = "Pending";
                             } else if (statusMap["Systems"] === "N/A") {
-                                statusMap["Systems"] = c.status; // e.g. Complete
+                                statusMap["Systems"] = c.status;
                             }
                         } else {
-                            // Fallback for Initial Request and Approval
                             if (!statusMap[key]) statusMap[key] = c.status;
+                        }
+                    });
+                } else if (isChange) {
+                    steps = ["Change Request", "Approval"];
+                    const specialistNames = ['IT', 'HR', 'Business Cards', 'Fleetio', 'Fleet', 'Jonas', 'Credit Card', 'Central Purchasing', 'SiteDocs', 'Safety', 'Assets', 'Finance'];
+                    const hasSpecialists = checklist.some(c => specialistNames.includes(c.name));
+                    if (hasSpecialists) steps.push("Action Items");
+
+                    statusMap["Action Items"] = "N/A";
+                    checklist.forEach(c => {
+                        if (c.name === 'Initial Request') { statusMap["Change Request"] = c.status; }
+                        else if (c.name === 'Approval' || c.name === 'HR Approval') { statusMap["Approval"] = c.status; }
+                        else if (specialistNames.includes(c.name)) {
+                            if (c.status === "Pending") statusMap["Action Items"] = "Pending";
+                            else if (statusMap["Action Items"] === "N/A") statusMap["Action Items"] = c.status;
+                        }
+                    });
+                } else if (isEquip) {
+                    steps = ["Request", "IT Setup"];
+                    const nonItNames = ['Business Cards', 'Fleetio', 'Fleet', 'Jonas', 'Credit Card', 'Central Purchasing', 'Finance', 'HR', 'Payroll'];
+                    const hasNonIT = checklist.some(c => nonItNames.includes(c.name));
+                    if (hasNonIT) steps.push("Specialists");
+
+                    statusMap["IT Setup"] = "N/A";
+                    statusMap["Specialists"] = "N/A";
+                    checklist.forEach(c => {
+                        if (c.name === 'Initial Request') { statusMap["Request"] = c.status; }
+                        else if (c.name === 'IT' || c.name === 'IT Setup') {
+                            if (c.status === "Pending") statusMap["IT Setup"] = "Pending";
+                            else if (statusMap["IT Setup"] === "N/A") statusMap["IT Setup"] = c.status;
+                        } else if (nonItNames.includes(c.name)) {
+                            if (c.status === "Pending") statusMap["Specialists"] = "Pending";
+                            else if (statusMap["Specialists"] === "N/A") statusMap["Specialists"] = c.status;
                         }
                     });
                 }
@@ -1158,24 +1211,27 @@
 
                     var actionBtn = '-';
 
+                    var _btnRow = function(btns) { return '<div style="display:flex;gap:6px;justify-content:flex-end;">' + btns.join('') + '</div>'; };
                     if (!isComplete && !isNA && item.target) {
+                        var remBtns = ['<button class="action-btn btn-remind"' + _dis(canBump) + ' onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>'];
                         if (item.tid) {
-                            // EOE Action Item — route to the specific Action Item form via tid
-                            actionBtn = '<button class="action-btn" style="background: #444;"' + _dis(canBump) + ' onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
-                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                            remBtns.push('<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>');
                         } else {
-                            actionBtn = '<button class="action-btn" style="background: #444;"' + _dis(canBump) + ' onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
-                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="openFormForWorkflow(\'' + item.target + '\', \'' + details.id + '\')">View Form</button>';
+                            remBtns.push('<button class="action-btn" style="background:#555;" onclick="openFormForWorkflow(\'' + item.target + '\', \'' + details.id + '\')">View Form</button>');
                         }
+                        actionBtn = _btnRow(remBtns);
                     } else if (isComplete && item.target) {
-                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;"' + _dis(canViewData) + ' onclick="openStepDataView(\'' + item.target + '\')">View Data</button>';
+                        var DIRECT_FORM_TARGETS_D = ['id_setup','hr_verification','it_setup','it_confirmation','termination_approval','position_change_approval','specialist'];
+                        var dataBtns = ['<button class="action-btn btn-view-data"' + _dis(canViewData) + ' onclick="openStepDataView(\'' + item.target + '\')">View Data</button>'];
                         if (item.tid) {
-                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                            dataBtns.push('<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>');
+                        } else if (isAdmin && DIRECT_FORM_TARGETS_D.indexOf(item.target) >= 0) {
+                            dataBtns.push('<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=' + item.target + '&wf=' + details.id + '&id=' + details.id + '\', \'_blank\')">View Form</button>');
                         }
+                        actionBtn = _btnRow(dataBtns);
                     } else if (isComplete && item.name === 'Initial Request') {
-                        var targetForm = details.type === 'End of Employment' ? 'termination_request' : 'initial_request';
-                        // Initial request data is open to all — no role gate
-                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + targetForm + '\')">View Data</button>';
+                        var targetForm = details.type === 'End of Employment' ? 'termination_request' : details.type === 'Status Change' ? 'change_request' : details.type === 'Equipment' ? 'equipment_request' : 'initial_request';
+                        actionBtn = _btnRow(['<button class="action-btn btn-view-data" onclick="openStepDataView(\'' + targetForm + '\')">View Data</button>']);
                     }
 
                     html +=

@@ -394,7 +394,7 @@ function getStepResultData(workflowId, stepTarget) {
     }
   } catch (e) {
     Logger.log('getStepResultData Error: ' + e.toString());
-    return { 'Error': e.message };
+    return { success: false, message: e.message };
   }
 }
 

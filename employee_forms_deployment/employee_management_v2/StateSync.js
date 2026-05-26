@@ -223,11 +223,11 @@ function syncWorkflowState(workflowId) {
     }
     
     // 2. Determine Pre-Calculated Status String
-    const baseStatus  = wfRow[SCHEMA.WORKFLOWS.STATUS];        // 'Pending', 'In Progress', 'Completed', 'Cancelled'
+    const baseStatus  = wfRow[SCHEMA.WORKFLOWS.STATUS];        // 'Pending', 'In Progress', 'Complete', 'Cancelled'
     const currentStep = wfRow[SCHEMA.WORKFLOWS.CURRENT_STEP];
     let granularStatus = currentStep;
-    
-    if (baseStatus !== 'Cancelled' && baseStatus !== 'Completed') {
+
+    if (baseStatus !== 'Cancelled' && baseStatus !== 'Complete') {
       if (currentStep === 'Specialist Forms Needed') {
         // Check Action Items sheet for open specialist tasks
         const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);

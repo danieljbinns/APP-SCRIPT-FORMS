@@ -241,17 +241,73 @@
     var html = '<div class="detail-grid">';
 
     if (wfId.startsWith('CHANGE_')) {
+      var changeAttach = r['Attachment URL'] || '';
       html +=
-        _di('Workflow ID',      wfId) +
-        _di('Employee',         r['Employee Name']) +
-        _di('Classification',   r['Current Classification']) +
-        _di('Current Title',    r['Current Title']) +
-        _di('Effective Date',   r['Effective Date']) +
-        _di('Site',             r['Site Name'] || r['Site']) +
-        _di('Changes',          r['Change Type']) +
-        _di('Department',       r['Department']) +
-        _di('Current Manager',  (r['Current Manager Name'] || '') + (r['Current Manager Email'] ? ' \xb7 ' + r['Current Manager Email'] : '') || null) +
-        _di('Requester',        (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : '') || null);
+        // ── Identity ──
+        _di('Workflow ID',           wfId) +
+        _di('Employee',              r['Employee Name']) +
+        _di('Effective Date',        r['Effective Date']) +
+        _di('Date Requested',        r['Date Requested']) +
+        _di('Current Site',          r['Site Name'] || r['Current Site']) +
+        _di('Department',            r['Department']) +
+        _di('Current Classification',r['Current Classification'] || r['Current Class']) +
+        _di('Current Title',         r['Current Title']) +
+        _di('Current Manager',       (r['Current Manager Name'] || '') + (r['Current Manager Email'] ? ' \xb7 ' + r['Current Manager Email'] : '') || null) +
+        _di('Receiving Manager',     r['Receiving Manager Email']) +
+        _di('Requester',             (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : '') || null) +
+        // ── What's changing ──
+        _di('Changes',               r['Change Type'] || r['Change Types']) +
+        _di('Title Change',          r['Title Change (Old -> New)']) +
+        _di('Site Transfer',         r['Site Transfer (Old -> New)']) +
+        _di('Classification Change', r['Classification (Old -> New)']) +
+        _di('Manager Change',        r['Manager Change (Old -> New)']) +
+        _di('Reassign Old Reports To', r['Reassign Old Reports To']) +
+        _di('New Reports From',      r['New Reports From']) +
+        _di('Google Account',        r['Google Account']) +
+        // ── Systems & Access ──
+        _di('Systems Added',         r['Systems Added']) +
+        _di('Access Removal',        r['Removed Access']) +
+        // ── BOSS ──
+        _di('BOSS Training Only',    r['BOSS Training Only']) +
+        _di('BOSS Committees',       r['BOSS Sites']) +
+        _di('BOSS Cost Sheet',       r['BOSS Cost Sheet']) +
+        _di('BOSS Cost Jobs',        r['BOSS Cost Jobs']) +
+        _di('BOSS Trip Reports',     r['BOSS Trip Reports']) +
+        _di('BOSS Grievances',       r['BOSS Grievances']) +
+        // ── ADP ──
+        _di('ADP Sites',             r['ADP Sites']) +
+        _di('ADP Salary Access',     r['ADP Salary Access']) +
+        // ── Jonas / Purchasing ──
+        _di('Purchasing Sites',      r['Purchasing Sites']) +
+        _di('Jonas Job Numbers',     r['Jonas Job Numbers']) +
+        // ── JR / 30-60-90 ──
+        _di('JR Required',           r['JR Required']) +
+        _di('JR Assignment',         r['JR Assignment']) +
+        _di('30/60/90 Plan',         r['30/60/90 Plan']) +
+        // ── Equipment ──
+        _di('Equipment',             r['Equipment']) +
+        _di('Equipment to Return',   r['Equipment to Return']) +
+        // ── Computer ──
+        _di('Computer Request',      r['Computer Req']) +
+        _di('Computer Type',         r['Computer Type']) +
+        _di('Computer Prev User',    r['Computer Prev User']) +
+        _di('Computer Prev Type',    r['Computer Prev Type']) +
+        _di('Computer Serial',       r['Computer Serial']) +
+        _di('Office 365',            r['Office 365']) +
+        // ── Phone ──
+        _di('Phone Request',         r['Phone Req']) +
+        _di('Phone Prev User',       r['Phone Prev User']) +
+        _di('Phone Prev Number',     r['Phone Prev Number']) +
+        // ── Credit Card ──
+        _di('CC USA',                r['CC USA']) +
+        _di('CC Limit USA',          r['CC Limit USA']) +
+        _di('CC Canada',             r['CC Canada']) +
+        _di('CC Limit Canada',       r['CC Limit Canada']) +
+        _di('CC Home Depot',         r['CC Home Depot']) +
+        _di('CC Limit Home Depot',   r['CC Limit Home Depot']) +
+        // ── Other ──
+        _di('Comments',              r['Comments']) +
+        (changeAttach ? _diRaw('Documentation', '<a href="' + escapeHtml(changeAttach) + '" target="_blank" style="color:#EB1C2D;">View Attached File</a>') : '');
 
     } else if (wfId.startsWith('TERM_')) {
       var termAttach = r['Attachment URL'] || r['Attachment Url'] || '';
@@ -533,6 +589,62 @@
       init();
     } else {
       document.addEventListener('DOMContentLoaded', init);
+    }
+  })();
+
+  // ── Formula-injection blur guard ──────────────────────────────────────────
+  // Runs on every form page. Attaches a blur listener to all text inputs and
+  // textareas. If a value starts with = + - @ the field is flagged inline so
+  // the user can correct it before submission. Server-side validation in
+  // validateRequiredFields() is the authoritative backstop.
+  (function () {
+    var FORMULA_CHARS = ['=', '+', '-', '@'];
+    var ERROR_ATTR    = 'data-formula-error';
+
+    function checkField(el) {
+      var val = (el.value || '').trimStart();
+      if (val.length > 0 && FORMULA_CHARS.indexOf(val[0]) !== -1) {
+        flagField(el);
+      } else {
+        clearFlag(el);
+      }
+    }
+
+    function flagField(el) {
+      if (el.getAttribute(ERROR_ATTR)) return; // already flagged
+      el.style.borderColor = '#c0392b';
+      var msg = document.createElement('div');
+      msg.setAttribute(ERROR_ATTR, '1');
+      msg.style.cssText = 'color:#c0392b;font-size:0.8em;margin-top:2px;';
+      msg.textContent   = 'Value cannot start with =, +, -, or @';
+      el.setAttribute(ERROR_ATTR, '1');
+      el.parentNode.insertBefore(msg, el.nextSibling);
+    }
+
+    function clearFlag(el) {
+      if (!el.getAttribute(ERROR_ATTR)) return;
+      el.style.borderColor = '';
+      el.removeAttribute(ERROR_ATTR);
+      var next = el.nextSibling;
+      if (next && next.getAttribute && next.getAttribute(ERROR_ATTR)) {
+        next.parentNode.removeChild(next);
+      }
+    }
+
+    function attach(el) {
+      el.addEventListener('blur',  function () { checkField(el); });
+      el.addEventListener('input', function () { if (el.getAttribute(ERROR_ATTR)) checkField(el); });
+    }
+
+    function attachAll() {
+      document.querySelectorAll('input[type="text"], input[type="email"], input:not([type]), textarea')
+        .forEach(attach);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', attachAll);
+    } else {
+      attachAll();
     }
   })();
 </script>

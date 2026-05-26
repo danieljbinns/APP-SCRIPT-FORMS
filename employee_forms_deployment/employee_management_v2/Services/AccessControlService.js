@@ -73,9 +73,20 @@ var AccessControlService = (function() {
     if (!userEmail || !configEmail) return false;
     if (userEmail.toLowerCase() === configEmail.toLowerCase()) return true;
     try {
-      return AdminDirectory.Members.hasMember(configEmail, userEmail).isMember;
+      if (AdminDirectory.Members.hasMember(configEmail, userEmail).isMember) return true;
+      // If not found, resolve primary email (handles alias logins across domains)
+      try {
+        var primaryEmail = AdminDirectory.Users.get(userEmail).primaryEmail;
+        if (primaryEmail && primaryEmail.toLowerCase() !== userEmail.toLowerCase()) {
+          return AdminDirectory.Members.hasMember(configEmail, primaryEmail).isMember;
+        }
+      } catch (e2) {}
+      return false;
     } catch (e) {
-      Logger.log('AccessControl: group check skipped for ' + userEmail + ' in ' + configEmail + '. ' + e.message);
+      // "Not Authorized" fires when configEmail is a personal address, not a Google Group — expected, not an error.
+      if (e.message && e.message.indexOf('Not Authorized') === -1) {
+        Logger.log('AccessControl: group check skipped for ' + userEmail + ' in ' + configEmail + '. ' + e.message);
+      }
       return false;
     }
   }

@@ -86,12 +86,29 @@
         <? if (rd.assignedEmail) { ?><span class="rh-step rh-s-done">IT ✓</span>
         <? } else { ?><span class="rh-step rh-s-asgn">IT ⏳</span><? } ?>
       </div>
-      <? } else if (isTerm || isChange) { ?>
+      <? } else if (isTerm) { ?>
       <div class="rh-steps">
         <span class="rh-step rh-s-done">Init ✓</span>
         <? if (rd.hrDecision === 'Approved') { ?><span class="rh-step rh-s-done">HR ✓</span>
         <? } else if (rd.hrDecision === 'Rejected') { ?><span class="rh-step" style="background:rgba(235,28,45,0.15);color:var(--brand-red);border:1px solid rgba(235,28,45,0.3);">HR ✗</span>
         <? } else { ?><span class="rh-step rh-s-asgn">HR ⏳</span><? } ?>
+        <? if (rd.hrDecision === 'Approved') { ?>
+          <? if (hasSystems) { ?><span class="rh-step rh-s-req">Systems</span><? } ?>
+          <? if (hasEquip)   { ?><span class="rh-step rh-s-req">Assets</span><? } ?>
+        <? } ?>
+      </div>
+      <? } else if (isChange) { ?>
+      <div class="rh-steps">
+        <span class="rh-step rh-s-done">Init ✓</span>
+        <? if (rd.hrDecision === 'Approved') { ?><span class="rh-step rh-s-done">HR ✓</span>
+        <? } else if (rd.hrDecision === 'Rejected') { ?><span class="rh-step" style="background:rgba(235,28,45,0.15);color:var(--brand-red);border:1px solid rgba(235,28,45,0.3);">HR ✗</span>
+        <? } else { ?><span class="rh-step rh-s-asgn">HR ⏳</span><? } ?>
+        <? if (rd.hrDecision === 'Approved') { ?>
+          <? var hasAccessChg = hasSystems || rd.removalAccess || rd.adpSites || rd.bossSites || rd.purchasingSites || rd.jonasJobNumbers; ?>
+          <? var hasEquipChg  = hasEquip || rd.equipmentReturn || rd.computerRequestType || rd.phoneRequestType; ?>
+          <? if (hasAccessChg) { ?><span class="rh-step rh-s-req">Access</span><? } ?>
+          <? if (hasEquipChg)  { ?><span class="rh-step rh-s-req">Equipment</span><? } ?>
+        <? } ?>
       </div>
       <? } ?>
     </div>
@@ -184,18 +201,23 @@
       <? if (rd.originalComments) { ?><div class="rh-f rh-f--full"><span class="rh-l">Comments</span><span class="rh-v"><?= rd.originalComments ?></span></div><? } ?>
       <? } /* end isTerm */ ?>
 
-      <!-- ── Status Change: effective date + change summary ── -->
+      <!-- ── Status Change: effective date + full change summary ── -->
       <? if (isChange) { ?>
       <div class="rh-f"><span class="rh-l">Effective Date</span><span class="rh-v"><?= rd.hireDate ? Utilities.formatDate(new Date(rd.hireDate + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') : '—' ?></span></div>
-      <? if (rd.changeTypes) { ?><div class="rh-f"><span class="rh-l">Change Types</span><span class="rh-v"><?= rd.changeTypes ?></span></div><? } ?>
+      <? if (rd.receivingManagerEmail) { ?><div class="rh-f"><span class="rh-l">Receiving Manager</span><span class="rh-v link"><?= rd.receivingManagerEmail ?></span></div><? } ?>
+      <? if (rd.changeTypes) { ?><div class="rh-f" style="grid-column:1/-1;"><span class="rh-l">Change Types</span><span class="rh-v"><?= rd.changeTypes ?></span></div><? } ?>
       <? var tcVal = String(rd.titleChange || ''); var tcParts = tcVal.split(' -> '); var showTc = tcVal && tcVal.indexOf('N/A') === -1 && (tcParts.length < 2 || tcParts[0].trim() !== tcParts[1].trim()); ?>
-      <? if (showTc) { ?><div class="rh-f"><span class="rh-l">Title Change</span>         <span class="rh-v"><?= rd.titleChange ?></span></div><? } ?>
+      <? if (showTc) { ?><div class="rh-f"><span class="rh-l">Title Change</span><span class="rh-v"><?= rd.titleChange ?></span></div><? } ?>
       <? var stVal = String(rd.siteTransfer || ''); var stParts = stVal.split(' -> '); var showSt = stVal && stVal.indexOf('N/A') === -1 && (stParts.length < 2 || stParts[0].trim() !== stParts[1].trim()); ?>
-      <? if (showSt) { ?><div class="rh-f"><span class="rh-l">Site Transfer</span>        <span class="rh-v"><?= rd.siteTransfer ?></span></div><? } ?>
+      <? if (showSt) { ?><div class="rh-f"><span class="rh-l">Site Transfer</span><span class="rh-v"><?= rd.siteTransfer ?></span></div><? } ?>
       <? var ccVal = String(rd.classChange || ''); var ccParts = ccVal.split(' -> '); var showCc = ccVal && ccVal.indexOf('N/A') === -1 && (ccParts.length < 2 || ccParts[0].trim() !== ccParts[1].trim()); ?>
-      <? if (showCc) { ?><div class="rh-f"><span class="rh-l">Classification</span>       <span class="rh-v"><?= rd.classChange ?></span></div><? } ?>
-      <? var mcVal = String(rd.managerChange || ''); var showMc = mcVal && mcVal.indexOf('N/A (N/A)') === -1 && mcVal.indexOf('N/A -> N/A') === -1 && mcVal.indexOf(' -> ') !== -1; var mcParts = mcVal.split(' -> '); var showMcFinal = showMc && (mcParts.length < 2 || mcParts[0].trim() !== mcParts[1].trim()); ?>
-      <? if (showMcFinal) { ?><div class="rh-f"><span class="rh-l">Manager Change</span>  <span class="rh-v"><?= rd.managerChange ?></span></div><? } ?>
+      <? if (showCc) { ?><div class="rh-f"><span class="rh-l">Classification</span><span class="rh-v"><?= rd.classChange ?></span></div><? } ?>
+      <? var mcVal = String(rd.managerChange || ''); var mcParts = mcVal.split(' -> '); var showMcFinal = mcVal && mcVal.indexOf('N/A (N/A)') === -1 && mcVal.indexOf(' -> ') !== -1 && (mcParts.length < 2 || mcParts[0].trim() !== mcParts[1].trim()); ?>
+      <? if (showMcFinal) { ?><div class="rh-f"><span class="rh-l">Manager Change</span><span class="rh-v"><?= rd.managerChange ?></span></div><? } ?>
+      <? if (rd.googleAccount) { ?><div class="rh-f"><span class="rh-l">Google Account</span><span class="rh-v"><?= rd.googleAccount ?></span></div><? } ?>
+      <? if (rd.oldReportsTo)  { ?><div class="rh-f"><span class="rh-l">Reassign Old Reports To</span><span class="rh-v link"><?= rd.oldReportsTo ?></span></div><? } ?>
+      <? if (rd.newReportsFrom){ ?><div class="rh-f"><span class="rh-l">New Reports From</span><span class="rh-v link"><?= rd.newReportsFrom ?></span></div><? } ?>
+      <? if (rd.comments)      { ?><div class="rh-f" style="grid-column:1/-1;"><span class="rh-l">Comments</span><span class="rh-v"><?= rd.comments ?></span></div><? } ?>
       <? } /* end isChange */ ?>
     </div>
   </div>
@@ -270,22 +292,104 @@
   <? } ?>
 
   <!-- ── Access & Equipment Changes — Status Change ── -->
-  <? if (isChange && (hasSystems || hasEquip || rd.purchasingSites)) { ?>
+  <? var hasRemoval = isChange && rd.removalAccess && rd.removalAccess.length > 0; ?>
+  <? var hasReturn  = isChange && rd.equipmentReturn && rd.equipmentReturn.length > 0; ?>
+  <? var hasComputer = isChange && (rd.computerRequestType || rd.computerType); ?>
+  <? var hasPhone    = isChange && rd.phoneRequestType; ?>
+  <? var hasBoss     = isChange && (rd.bossSites || rd.bossTrainingOnly); ?>
+  <? var hasAdp      = isChange && rd.adpSites; ?>
+  <? var hasCC       = isChange && (rd.ccUSA === 'Yes' || rd.ccCAN === 'Yes' || rd.ccHD === 'Yes'); ?>
+  <? var hasJonas    = isChange && (rd.purchasingSites || rd.jonasJobNumbers); ?>
+  <? var hasJR       = isChange && rd.jrRequired; ?>
+  <? var hasPlan     = isChange && rd.plan306090; ?>
+  <? if (isChange && (hasSystems || hasEquip || hasRemoval || hasReturn || hasComputer || hasPhone || hasBoss || hasAdp || hasCC || hasJonas || hasJR || hasPlan)) { ?>
   <div class="rh-sec">
     <div class="rh-hdr"><span class="rh-title">Access &amp; Equipment Changes</span></div>
     <div class="rh-gw">
+
       <? if (hasSystems) { ?>
       <div class="rh-f"><span class="rh-l">Systems to Add</span>
-        <div class="rh-tags"><? for (var sci=0; sci<rd.systems.length; sci++) { ?><span class="rh-tag"><?= rd.systems[sci] ?></span><? } ?></div>
+        <div class="rh-tags"><? var sysArr = String(rd.systems).split(','); for (var sci=0; sci<sysArr.length; sci++) { if(sysArr[sci].trim()) { ?><span class="rh-tag"><?= sysArr[sci].trim() ?></span><? } } ?></div>
       </div><? } ?>
+
+      <? if (hasRemoval) { ?>
+      <div class="rh-f"><span class="rh-l">Access to Remove</span>
+        <div class="rh-tags"><? var remArr = String(rd.removalAccess).split(','); for (var ri=0; ri<remArr.length; ri++) { if(remArr[ri].trim()) { ?><span class="rh-tag"><?= remArr[ri].trim() ?></span><? } } ?></div>
+      </div><? } ?>
+
       <? if (hasEquip) { ?>
-      <div class="rh-f"><span class="rh-l">Equipment</span>
+      <div class="rh-f"><span class="rh-l">Equipment to Add</span>
         <div class="rh-tags"><? for (var eci=0; eci<equipment.length; eci++) { ?><span class="rh-tag"><?= equipment[eci] ?></span><? } ?></div>
       </div><? } ?>
+
+      <? if (hasReturn) { ?>
+      <div class="rh-f"><span class="rh-l">Equipment to Return</span>
+        <div class="rh-tags"><? var retArr = String(rd.equipmentReturn).split(','); for (var reti=0; reti<retArr.length; reti++) { if(retArr[reti].trim()) { ?><span class="rh-tag"><?= retArr[reti].trim() ?></span><? } } ?></div>
+      </div><? } ?>
+
+      <? if (hasComputer) { ?>
+      <div class="rh-f">
+        <span class="rh-l">Computer</span>
+        <span class="rh-v"><?= rd.computerRequestType || '' ?><?= (rd.computerRequestType && rd.computerType) ? ' — ' : '' ?><?= rd.computerType || '' ?></span>
+        <div class="rh-hs"><div class="rh-hs-hdr">Computer Details</div>
+          <? if (rd.computerRequestType) { ?><div class="rh-hr"><span class="rh-hl">Request Type</span><span class="rh-hv"><?= rd.computerRequestType ?></span></div><? } ?>
+          <? if (rd.computerType)        { ?><div class="rh-hr"><span class="rh-hl">Type</span>        <span class="rh-hv"><?= rd.computerType        ?></span></div><? } ?>
+          <? if (rd.computerPrevUser)    { ?><div class="rh-hr"><span class="rh-hl">Prev User</span>   <span class="rh-hv"><?= rd.computerPrevUser    ?></span></div><? } ?>
+          <? if (rd.computerPrevType)    { ?><div class="rh-hr"><span class="rh-hl">Prev Type</span>   <span class="rh-hv"><?= rd.computerPrevType    ?></span></div><? } ?>
+          <? if (rd.computerSerial)      { ?><div class="rh-hr"><span class="rh-hl">Serial #</span>    <span class="rh-hv mono"><?= rd.computerSerial   ?></span></div><? } ?>
+          <? if (rd.office365 === 'Yes') { ?><div class="rh-hr"><span class="rh-hl">Office 365</span> <span class="rh-hv">Required</span></div><? } ?>
+        </div>
+      </div><? } ?>
+
+      <? if (hasPhone) { ?>
+      <div class="rh-f"><span class="rh-l">Mobile Phone</span>
+        <span class="rh-v"><?= rd.phoneRequestType ?><?= rd.phonePrevUser ? ' — from ' + rd.phonePrevUser : '' ?></span>
+      </div><? } ?>
+
+      <? if (hasBoss) { ?>
+      <div class="rh-f">
+        <span class="rh-l">BOSS Access</span>
+        <span class="rh-v"><?= rd.bossTrainingOnly === 'Yes' ? 'Training User Only' : (rd.bossSites || 'Full Access') ?></span>
+        <? if (rd.bossTrainingOnly !== 'Yes') { ?>
+        <div class="rh-hs"><div class="rh-hs-hdr">BOSS Details</div>
+          <? if (rd.bossSites)       { ?><div class="rh-hr"><span class="rh-hl">Committees</span>   <span class="rh-hv"><?= rd.bossSites       ?></span></div><? } ?>
+          <? if (rd.bossCostSheet === 'Yes') { ?><div class="rh-hr"><span class="rh-hl">Cost Sheet</span><span class="rh-hv">Yes<?= rd.bossCostJobs ? ' — ' + rd.bossCostJobs : '' ?></span></div><? } ?>
+          <? if (rd.bossTrip === 'Yes')      { ?><div class="rh-hr"><span class="rh-hl">Trip Reports</span><span class="rh-hv">Yes</span></div><? } ?>
+          <? if (rd.bossGrievances === 'Yes'){ ?><div class="rh-hr"><span class="rh-hl">Grievances</span><span class="rh-hv">Yes</span></div><? } ?>
+        </div><? } ?>
+      </div><? } ?>
+
+      <? if (hasAdp) { ?>
+      <div class="rh-f"><span class="rh-l">ADP Sites</span>
+        <div class="rh-tags"><? var adpArr2 = String(rd.adpSites).split(','); for (var ai=0; ai<adpArr2.length; ai++) { if(adpArr2[ai].trim()) { ?><span class="rh-tag"><?= adpArr2[ai].trim() ?></span><? } } ?></div>
+        <? if (rd.adpSalaryAccess === 'Yes') { ?><span class="rh-v" style="font-size:10px;color:var(--accent-amber);">Salary Data Access Required</span><? } ?>
+      </div><? } ?>
+
+      <? if (hasJonas) { ?>
       <? if (rd.purchasingSites) { ?>
       <div class="rh-f"><span class="rh-l">Purchasing Sites</span>
         <div class="rh-tags"><? var psArr = String(rd.purchasingSites).split(','); for (var psi=0; psi<psArr.length; psi++) { if(psArr[psi].trim()) { ?><span class="rh-tag"><?= psArr[psi].trim() ?></span><? } } ?></div>
       </div><? } ?>
+      <? if (rd.jonasJobNumbers) { ?>
+      <div class="rh-f"><span class="rh-l">Jonas Job Numbers</span>
+        <div class="rh-tags"><? var jArr = String(rd.jonasJobNumbers).split(','); for (var ji=0; ji<jArr.length; ji++) { if(jArr[ji].trim()) { ?><span class="rh-tag"><?= jArr[ji].trim() ?></span><? } } ?></div>
+      </div><? } ?>
+      <? } ?>
+
+      <? if (hasCC) { ?>
+      <div class="rh-f"><span class="rh-l">Credit Card</span>
+        <div class="rh-tags">
+          <? if (rd.ccUSA === 'Yes') { ?><span class="rh-tag">USA<?= rd.ccLimitUSA ? ' $' + rd.ccLimitUSA : '' ?></span><? } ?>
+          <? if (rd.ccCAN === 'Yes') { ?><span class="rh-tag">Canada<?= rd.ccLimitCAN ? ' $' + rd.ccLimitCAN : '' ?></span><? } ?>
+          <? if (rd.ccHD  === 'Yes') { ?><span class="rh-tag">Home Depot<?= rd.ccLimitHD ? ' $' + rd.ccLimitHD : '' ?></span><? } ?>
+        </div>
+      </div><? } ?>
+
+      <? if (hasJR) { ?>
+      <div class="rh-f"><span class="rh-l">JR Required</span><span class="rh-v"><?= rd.jrRequired ?><?= rd.jrTitle ? ' — ' + rd.jrTitle : '' ?></span></div><? } ?>
+      <? if (hasPlan) { ?>
+      <div class="rh-f"><span class="rh-l">30/60/90 Plan</span><span class="rh-v"><?= rd.plan306090 ?></span></div><? } ?>
+
     </div>
   </div>
   <? } ?>

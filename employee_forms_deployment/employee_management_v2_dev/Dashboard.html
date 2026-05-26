@@ -559,7 +559,6 @@
                         'Finance':            rp.isAdmin || rp.isHR,
                         'Deactivation':       rp.isAdmin || rp.isIT,
                         'IT Setup':           rp.isAdmin || rp.isIT,
-                        'HR Verification':    rp.isAdmin || rp.isHR,
                         'ID Setup':           rp.isAdmin || rp.isHR || rp.isIT
                     };
 
@@ -569,7 +568,7 @@
                         'Central Purchasing':'#795548','SiteDocs':'#607d8b',
                         'Assets':'#ff9800','IT':'#2196f3','HR':'#9c27b0','Fleet':'#00bcd4',
                         'Finance':'#4caf50','Deactivation':'#607d8b',
-                        'IT Setup':'#2196f3','HR Verification':'#9c27b0','ID Setup':'#00acc1'
+                        'IT Setup':'#2196f3','ID Setup':'#00acc1'
                     };
 
                     // Split categories: mine (can act on) vs others (read-only context)
@@ -641,13 +640,13 @@
                 .getMyTaskCounts();
         }
 
-        // Step-based categories: match against GRANULAR_STEP from Dashboard_View.
-        // Use the 'Pending: X' prefixed strings produced by StateSync.js — exact prefix
-        // avoids false matches like 'Pending: IT Setup Complete' or 'ID Setup Complete'.
+        // Step-based categories: match against granularStatus from Dashboard_View.
+        // StateSync writes 'Pending: HR Verification', 'Pending: IT Setup', etc.
+        // HR key also covers HR Verification step so one button handles both.
         const STEP_CATEGORY_TERMS = {
-            'IT Setup':        ['it setup needed', 'it setup'],
-            'HR Verification': ['hr verification needed', 'id setup complete'],
-            'ID Setup':        ['id setup needed']
+            'IT Setup': ['pending: it setup'],
+            'ID Setup': ['pending: id setup'],
+            'HR':       ['pending: hr verification']
         };
 
         function filterByCategory(cat) {

@@ -335,6 +335,12 @@
             background: rgba(0, 200, 83, 0.2);
             color: var(--success);
         }
+        .flow-card.complete { border-color: rgba(0,200,83,0.3); background: rgba(0,200,83,0.05); }
+        .flow-card.pending  { border-color: rgba(255,171,0,0.3); }
+        .btn { display:inline-block; padding:6px 12px; border:none; border-radius:6px; font-weight:600; font-size:12px; cursor:pointer; font-family:inherit; }
+        .btn-remind    { background: var(--warning); color: #000; }
+        .btn-view-data { background: transparent; border: 1px solid #444; color: var(--text-main); }
+        .btn:disabled, .btn[disabled] { opacity:0.45; cursor:not-allowed; pointer-events:none; }
     </style>
 </head>
 
@@ -427,6 +433,12 @@
                             <h3>Business Cards</h3>
                             <p>Printing Order</p>
                             <div class="status-badge" id="badge_business_cards">-</div>
+                        </div>
+
+                        <div class="flow-card" id="node_safety" onclick="viewStepData('safety')">
+                            <h3>Safety</h3>
+                            <p>Safety Onboarding</p>
+                            <div class="status-badge" id="badge_safety">-</div>
                         </div>
 
                         <div class="flow-card" id="node_sitedocs" onclick="viewStepData('sitedocs')">
@@ -597,7 +609,7 @@
             var canEditDate = rp.canEditDates;
             var canViewData = rp.canViewAllStepData || isOwner;
             // Store on window for use by dynamic checklist rendering
-            window._rdRoleCtx = { canBumpWf, canCancelWf, canEditDate, canViewData };
+            window._rdRoleCtx = { canBumpWf, canCancelWf, canEditDate, canViewData, isAdmin: !!rp.isAdmin };
 
             // Status badge + Edit Start Date button
             var statusEl = document.getElementById('statusBadge');
@@ -651,8 +663,8 @@
                         const btnRow = document.createElement('div');
                         btnRow.style.cssText = 'display:flex; gap:4px; margin-top:8px;';
                         const remBtn = document.createElement('button');
-                        remBtn.className = 'btn';
-                        remBtn.style.cssText = 'flex:1; font-size:10px; padding:3px 6px; background:var(--warning); color:black;';
+                        remBtn.className = 'btn btn-remind';
+                        remBtn.style.cssText = 'flex:1; font-size:10px; padding:3px 6px;';
                         remBtn.textContent = 'Remind';
                         (function(tgt) { remBtn.onclick = function(e) { e.stopPropagation(); bump(tgt); }; })(item.target);
                         btnRow.appendChild(remBtn);
@@ -780,21 +792,38 @@
                 var isNA = item.status === 'N/A' || item.status === 'Skipped';
                 var ctx  = window._rdRoleCtx || {};
                 var _rdDis = function(ok) { return ok ? '' : ' disabled title="Insufficient permissions" style="opacity:0.45;pointer-events:none;cursor:not-allowed;"'; };
+                // Form targets that have a direct URL route (not action-item-view)
+                var DIRECT_FORM_TARGETS = ['id_setup','hr_verification','it_setup','it_confirmation','termination_approval','position_change_approval','specialist'];
+                var _viewFormBtn = function(tid, target) {
+                    var url = tid
+                        ? (SERVER_BASE_URL + '?form=action_item_view&tid=' + tid)
+                        : (SERVER_BASE_URL + '?form=' + target + '&wf=' + workflowId + '&id=' + workflowId);
+                    return ' <button class="btn" style="background:var(--brand-red); color:white;" onclick="window.open(\'' + url + '\', \'_blank\')">View Form</button>';
+                };
+                var _btnGroup = function(btns) { return '<div style="display:flex;gap:6px;justify-content:flex-end;">' + btns.join('') + '</div>'; };
                 var actions = '-';
                 if (!isComplete && !isNA && item.target) {
-                    actions = '<button class="btn" style="background:var(--warning); color:black;"' + _rdDis(ctx.canBumpWf) + ' onclick="bump(\'' + item.target + '\')">Remind</button>';
+                    var remBtns2 = ['<button class="btn btn-remind"' + _rdDis(ctx.canBumpWf) + ' onclick="bump(\'' + item.target + '\')">Remind</button>'];
                     if (item.tid) {
-                        actions += ' <button class="btn" style="background:var(--brand-red); color:white;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                        remBtns2.push(_viewFormBtn(item.tid, null));
+                    } else if (ctx.isAdmin && DIRECT_FORM_TARGETS.indexOf(item.target) >= 0) {
+                        remBtns2.push(_viewFormBtn(null, item.target));
                     }
+                    actions = _btnGroup(remBtns2);
                 } else if (isComplete && item.target) {
-                    actions = '<button class="btn view-data-btn"' + _rdDis(ctx.canViewData) + ' onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
+                    var dataBtns2 = ['<button class="btn btn-view-data"' + _rdDis(ctx.canViewData) + ' onclick="viewStepData(\'' + item.target + '\')">View Data</button>'];
+                    if (item.tid) {
+                        dataBtns2.push(_viewFormBtn(item.tid, null));
+                    } else if (ctx.isAdmin && DIRECT_FORM_TARGETS.indexOf(item.target) >= 0) {
+                        dataBtns2.push(_viewFormBtn(null, item.target));
+                    }
+                    actions = _btnGroup(dataBtns2);
                 } else if (isComplete && item.name === 'Initial Request') {
-                    // Initial request data open to all — no role gate
                     var targetData = workflowId.startsWith('TERM_')      ? 'termination_request'
                                    : workflowId.startsWith('CHANGE_')    ? 'change_request'
                                    : workflowId.startsWith('EQUIP_REQ_') ? 'equipment_request'
                                    : 'initial_request';
-                    actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + targetData + '\')">View Data</button>';
+                    actions = _btnGroup(['<button class="btn btn-view-data" onclick="viewStepData(\'' + targetData + '\')">View Data</button>']);
                 }
 
                 rows += '<tr>' +

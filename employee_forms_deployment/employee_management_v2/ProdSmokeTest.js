@@ -53,36 +53,8 @@ function checkProdSmokeOverrides() {
   var props = PropertiesService.getScriptProperties().getProperties();
   Logger.log('[SMOKE CHECK] TEST_SPREADSHEET_ID   = ' + (props['TEST_SPREADSHEET_ID']   || '(not set — safe)'));
   Logger.log('[SMOKE CHECK] SUPPRESS_EMAILS_OVERRIDE = ' + (props['SUPPRESS_EMAILS_OVERRIDE'] || '(not set — prod sends real emails)'));
-  Logger.log('[SMOKE CHECK] SPREADSHEET_ID (raw)  = ' + (props['SPREADSHEET_ID'] || '(not set)'));
   Logger.log('[SMOKE CHECK] Active SPREADSHEET_ID  = ' + CONFIG.SPREADSHEET_ID);
   Logger.log('[SMOKE CHECK] SUPPRESS_EMAILS        = ' + CONFIG.SUPPRESS_EMAILS);
-  Logger.log('[SMOKE CHECK] ENVIRONMENT            = ' + (typeof ENVIRONMENT !== 'undefined' ? ENVIRONMENT : 'undefined'));
-  return {
-    TEST_SPREADSHEET_ID:     props['TEST_SPREADSHEET_ID']     || null,
-    SUPPRESS_EMAILS_OVERRIDE: props['SUPPRESS_EMAILS_OVERRIDE'] || null,
-    SPREADSHEET_ID:          props['SPREADSHEET_ID']          || null,
-    activeSpreadsheetId:     CONFIG.SPREADSHEET_ID,
-    suppressEmails:          CONFIG.SUPPRESS_EMAILS,
-    environment:             (typeof ENVIRONMENT !== 'undefined' ? ENVIRONMENT : 'undefined')
-  };
-}
-
-/**
- * Explicitly delete smoke test override properties.
- * Call this if _smokeTeardown didn't fire (e.g. execution timeout).
- */
-function clearProdSmokeOverrides() {
-  var props = PropertiesService.getScriptProperties();
-  props.deleteProperty('TEST_SPREADSHEET_ID');
-  props.deleteProperty('SUPPRESS_EMAILS_OVERRIDE');
-  var remaining = PropertiesService.getScriptProperties().getProperties();
-  Logger.log('[SMOKE CLEAR] Done. Remaining TEST_SPREADSHEET_ID = ' + (remaining['TEST_SPREADSHEET_ID'] || 'null (cleared)'));
-  Logger.log('[SMOKE CLEAR] Remaining SUPPRESS_EMAILS_OVERRIDE  = ' + (remaining['SUPPRESS_EMAILS_OVERRIDE'] || 'null (cleared)'));
-  return {
-    cleared: true,
-    TEST_SPREADSHEET_ID: remaining['TEST_SPREADSHEET_ID'] || null,
-    SUPPRESS_EMAILS_OVERRIDE: remaining['SUPPRESS_EMAILS_OVERRIDE'] || null
-  };
 }
 
 function cleanupProdSmokeTest() {

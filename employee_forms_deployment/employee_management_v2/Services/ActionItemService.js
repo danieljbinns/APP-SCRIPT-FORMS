@@ -41,6 +41,7 @@ var ActionItemService = (function() {
       return taskId;
     } catch (e) {
       Logger.log(`[ERROR] Failed to create action item: ${e.message}`);
+      notifyAdminActionItemFailure(workflowId, category, name, assignedTo, e.message);
       return null;
     }
   }
@@ -72,6 +73,13 @@ var ActionItemService = (function() {
       }
 
       if (rowIndex === -1) throw new Error('Task not found: ' + taskId);
+
+      // Guard against double-submit / page reload closing an already-closed task
+      const currentStatus = data[rowIndex - 1][AI.STATUS];
+      if (currentStatus === 'Closed') {
+        Logger.log(`[ActionItemService] Task ${taskId} already closed — ignoring duplicate submission`);
+        return { success: false, message: 'This task has already been submitted.' };
+      }
 
       sheet.getRange(rowIndex, AI.STATUS + 1).setValue('Closed');
       sheet.getRange(rowIndex, AI.COMPLETED_DATE + 1).setValue(new Date());
