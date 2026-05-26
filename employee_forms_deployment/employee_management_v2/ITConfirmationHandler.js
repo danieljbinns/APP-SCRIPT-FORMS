@@ -43,6 +43,7 @@ function serveITConfirmation(workflowId) {
 
 function submitITConfirmation(formData) {
   try {
+    rawLog('submitITConfirmation', formData);
     const workflowId = formData.workflowId;
     if (!workflowId) return { success: false, message: 'Missing workflow ID.' };
 

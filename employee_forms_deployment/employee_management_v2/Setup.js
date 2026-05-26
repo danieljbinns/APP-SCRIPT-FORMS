@@ -391,13 +391,38 @@ function listScriptProperties() {
   });
 }
 
-function enableMaintenanceMode()  { PropertiesService.getScriptProperties().setProperty('MAINTENANCE_MODE', 'true');  Logger.log('MAINTENANCE_MODE = true'); }
-function disableMaintenanceMode() { PropertiesService.getScriptProperties().deleteProperty('MAINTENANCE_MODE'); Logger.log('MAINTENANCE_MODE cleared'); }
+function prodHealthPing() {
+  var errors = [];
+  try {
+    var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    var wfSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+    if (!wfSheet) errors.push('Workflows sheet missing');
+    var irSheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
+    if (!irSheet) errors.push('Initial Requests sheet missing');
+    var rawLog = ss.getSheetByName('Raw Log');
+    var recentErrors = [];
+    if (rawLog && rawLog.getLastRow() > 1) {
+      var cutoff = new Date(Date.now() - 16 * 60 * 1000); // last 16 min
+      var rows = rawLog.getDataRange().getValues();
+      for (var i = rows.length - 1; i >= 1; i--) {
+        var ts = rows[i][0];
+        if (ts instanceof Date && ts < cutoff) break;
+        var json = String(rows[i][4] || '');
+        if (json.indexOf('"success":false') !== -1 || json.indexOf('"error"') !== -1) {
+          recentErrors.push(rows[i][1] + ' @ ' + ts);
+        }
+      }
+    }
+    if (recentErrors.length > 0) errors.push('Raw Log errors: ' + recentErrors.join(' | '));
+    var wfRows = wfSheet ? wfSheet.getLastRow() : 0;
+    Logger.log('[HEALTH] Workflows rows: ' + wfRows);
+  } catch (e) {
+    errors.push('Exception: ' + e.message);
+  }
+  Logger.log('[HEALTH] errors=' + errors.length + (errors.length ? ' — ' + errors.join('; ') : ' — OK'));
+  return { ok: errors.length === 0, errors: errors, ts: new Date().toISOString() };
+}
 function setEmailRedirect(addr)   { var a = addr || 'dbinns@team-group.com'; PropertiesService.getScriptProperties().setProperty('EMAIL_REDIRECT_ALL', a); Logger.log('EMAIL_REDIRECT_ALL = ' + a); }
 function clearEmailRedirect()     { PropertiesService.getScriptProperties().deleteProperty('EMAIL_REDIRECT_ALL'); Logger.log('EMAIL_REDIRECT_ALL cleared'); }
-function setMaintenanceBypass(emails) { var v = emails || 'dbinns@robinsonsolutions.com'; PropertiesService.getScriptProperties().setProperty('MAINTENANCE_BYPASS_EMAILS', v); Logger.log('MAINTENANCE_BYPASS_EMAILS = ' + v); return { ok: true, value: v }; }
-function clearMaintenanceBypass()     { PropertiesService.getScriptProperties().deleteProperty('MAINTENANCE_BYPASS_EMAILS'); Logger.log('MAINTENANCE_BYPASS_EMAILS cleared'); return { ok: true }; }
-function suppressEmails()         { PropertiesService.getScriptProperties().setProperty('SUPPRESS_EMAILS_OVERRIDE', 'true');  Logger.log('SUPPRESS_EMAILS_OVERRIDE = true'); }
-function unsuppressEmails()       { PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE'); Logger.log('SUPPRESS_EMAILS_OVERRIDE cleared'); }
 function enableEasterEggs()       { PropertiesService.getScriptProperties().setProperty('EASTER_EGGS_ENABLED', 'true'); Logger.log('EASTER_EGGS_ENABLED = true'); }
 function disableEasterEggs()      { PropertiesService.getScriptProperties().deleteProperty('EASTER_EGGS_ENABLED'); Logger.log('EASTER_EGGS_ENABLED cleared'); }

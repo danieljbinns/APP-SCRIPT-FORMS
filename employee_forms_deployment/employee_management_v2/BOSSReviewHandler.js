@@ -120,41 +120,9 @@ function getFullNewHireData(workflowId) {
 }
 
 function getFullEquipmentRequestData(workflowId) {
-  try {
-    const ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
-    const data  = sheet.getDataRange().getValues();
-    const splitCSV = function(v) {
-      return v ? String(v).split(', ').map(function(s) { return s.trim(); }).filter(Boolean) : [];
-    };
-    // Scan all rows — WORKFLOW_ID is now col 0 (new layout: WorkflowID[0]|FormID[1]|Timestamp[2]).
-    // Scanning from 0 is robust whether or not a header row exists
-    // (header value 'Workflow ID' will never match an EQUIP_REQ_* id).
-    const EQ = SCHEMA.EQUIPMENT_REQUESTS;
-    for (let i = 0; i < data.length; i++) {
-      if (data[i][EQ.WORKFLOW_ID] !== workflowId) continue;
-      const r = data[i];
-      return {
-        workflowId:    r[EQ.WORKFLOW_ID],
-        reqName:       r[EQ.REQUESTER_NAME]       || '',
-        reqEmail:      r[EQ.REQUESTER_EMAIL]       || '',
-        firstName:     r[EQ.EMPLOYEE_FIRST_NAME]   || '',
-        lastName:      r[EQ.EMPLOYEE_LAST_NAME]    || '',
-        siteName:      r[EQ.SITE_NAME]             || '',
-        positionTitle: r[EQ.JOB_TITLE]             || '',
-        managerName:   r[EQ.MANAGER_NAME]          || '',
-        managerEmail:  r[EQ.MANAGER_EMAIL]         || '',
-        equipment:     splitCSV(r[EQ.EQUIPMENT_REQUESTED]),
-        systems:       splitCSV(r[EQ.SYSTEMS_REQUESTED]),
-        comments:      r[EQ.COMMENTS]              || '',
-        department:    r[EQ.DEPARTMENT]            || ''
-      };
-    }
-    return null;
-  } catch (e) {
-    Logger.log('[ITConfirmation] getFullEquipmentRequestData error: ' + e.message);
-    return null;
-  }
+  // Equipment requests write to INITIAL_REQUESTS (same sheet/schema as new hire).
+  // Delegate to getFullNewHireData so InitialRequest.html gets the full prefill shape.
+  return getFullNewHireData(workflowId);
 }
 
 function getFullPositionChangeData(workflowId) {
@@ -212,6 +180,7 @@ function getFullPositionChangeData(workflowId) {
 
 function submitITConfirmation(formData) {
   try {
+    rawLog('submitITConfirmation', formData);
     const workflowId = formData.workflowId;
     if (!workflowId) return { success: false, message: 'Missing workflow ID.' };
 
@@ -225,31 +194,8 @@ function submitITConfirmation(formData) {
       ? getFullEquipmentRequestData(workflowId)
       : (isChange ? getFullPositionChangeData(workflowId) : getFullNewHireData(workflowId));
 
-    if (isEquipment) {
-      // Write corrections back to Equipment_Requests sheet in-place
-      const eqSheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
-      const eqRows  = eqSheet.getDataRange().getValues();
-      const EQ = SCHEMA.EQUIPMENT_REQUESTS;
-      for (let i = 0; i < eqRows.length; i++) {
-        if (eqRows[i][EQ.WORKFLOW_ID] !== workflowId) continue;
-        const rowNum = i + 1;
-        [
-          [EQ.EMPLOYEE_FIRST_NAME,  formData.firstName                              || ''],
-          [EQ.EMPLOYEE_LAST_NAME,   formData.lastName                               || ''],
-          [EQ.SITE_NAME,            formData.siteName                               || ''],
-          [EQ.JOB_TITLE,            formData.positionTitle || formData.position     || ''],
-          [EQ.MANAGER_NAME,         formData.reportingManagerName  || formData.managerName  || ''],
-          [EQ.MANAGER_EMAIL,        formData.reportingManagerEmail || formData.managerEmail || ''],
-          [EQ.EQUIPMENT_REQUESTED,  csvOrStr(formData.equipment)],
-          [EQ.SYSTEMS_REQUESTED,    csvOrStr(formData.systems)],
-          [EQ.COMMENTS,             formData.comments || formData.notes || ''],
-          [EQ.DEPARTMENT,           formData.department || '']
-        ].forEach(function(pair) {
-          eqSheet.getRange(rowNum, pair[0] + 1).setValue(pair[1]);
-        });
-        break;
-      }
-    } else if (!isChange) {
+    if (!isChange) {
+      // Equipment and new hire both write to INITIAL_REQUESTS (same sheet/schema)
       // Write corrections back to Initial Requests sheet in-place
       const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
       const rows  = sheet.getDataRange().getValues();
@@ -354,29 +300,7 @@ function submitITConfirmation(formData) {
 
     // ── Change detection ────────────────────────────────────────────────────
     if (origData) {
-      if (isEquipment) {
-        // Equipment: compare key identity + access fields
-        const eqSubmitted = {
-          firstName:     formData.firstName                                    || '',
-          lastName:      formData.lastName                                     || '',
-          siteName:      formData.siteName                                     || '',
-          positionTitle: formData.positionTitle || formData.position           || '',
-          managerName:   formData.reportingManagerName  || formData.managerName  || '',
-          managerEmail:  formData.reportingManagerEmail || formData.managerEmail || '',
-          systems:       Array.isArray(formData.systems)   ? formData.systems   : [],
-          equipment:     Array.isArray(formData.equipment) ? formData.equipment : []
-        };
-        const eqChanges = diffFormFields(origData, eqSubmitted, CHANGE_FIELDS_IT_EQUIPMENT);
-        if (eqChanges.length > 0) {
-          sendChangeNotifications(workflowId, 'IT Confirmation', eqChanges, context, {
-            requesterEmail: origData.reqEmail    || '',
-            managerEmail:   eqSubmitted.managerEmail || (context && context.managerEmail) || '',
-            notifySafety:   false,
-            notifyIdSetup:  false
-          });
-        }
-
-      } else if (isChange) {
+      if (isChange) {
         // Status change: compare new-side values and access lists
         // PositionSiteChangeRequest.html uses sys/equip/rem as checkbox names
         const chSubmitted = {

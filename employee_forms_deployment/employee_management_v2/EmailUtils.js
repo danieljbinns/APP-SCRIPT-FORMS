@@ -371,12 +371,6 @@ function sendFormEmail(options) {
     return false;
   }
 
-  // DEV: suppress all emails when CONFIG.SUPPRESS_EMAILS is true
-  if (CONFIG.SUPPRESS_EMAILS) {
-    Logger.log('[EMAIL SUPPRESSED] To: ' + to + ' | Subject: ' + subject);
-    return true;
-  }
-
   try {
     // E1: Build standardized subject — canonical format defined in buildEmailSubject()
     var enrichedSubject = buildEmailSubject(subject, contextData, subjectOpts);
@@ -925,5 +919,47 @@ function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
     Logger.log('[SUCCESS] Safety Onboarding Action Item created (' + tid + ') for ' + workflowId);
   } catch (safeErr) {
     Logger.log('[ERROR] Failed to create Safety Onboarding Action Item: ' + safeErr.toString());
+  }
+}
+
+/**
+ * Sends an admin alert when ActionItemService.createActionItem fails.
+ * Called centrally from the createActionItem catch block — do not call from handlers.
+ *
+ * @param {string} workflowId
+ * @param {string} category   - e.g. 'IT', 'HR', 'Safety'
+ * @param {string} taskName
+ * @param {string} assignedTo - email that was supposed to receive the task
+ * @param {string} errorMsg
+ */
+function notifyAdminActionItemFailure(workflowId, category, taskName, assignedTo, errorMsg) {
+  try {
+    const subject = '[ACTION REQUIRED] Action item creation failed — ' + workflowId;
+    const body =
+      'An action item could not be created. The assigned team was <b>NOT notified</b> and this task ' +
+      'will <b>not appear</b> in the workflow checklist. Manual intervention is required.<br><br>' +
+      '<b>Workflow ID:</b> ' + workflowId + '<br>' +
+      '<b>Category:</b> ' + category + '<br>' +
+      '<b>Task:</b> ' + taskName + '<br>' +
+      '<b>Was to be assigned to:</b> ' + assignedTo + '<br>' +
+      '<b>Error:</b> ' + errorMsg + '<br><br>' +
+      'To resolve: open the GAS script editor, locate the workflow in the Action Items sheet, ' +
+      'and manually trigger the relevant handler function or re-create the task.';
+
+    const adminEmails = CONFIG.ADMIN_EMAILS;
+    if (!adminEmails || !adminEmails.length) {
+      Logger.log('[notifyAdminActionItemFailure] No ADMIN_EMAILS configured — alert not sent.');
+      return;
+    }
+
+    MailApp.sendEmail({
+      to: adminEmails.join(','),
+      subject: subject,
+      htmlBody: body
+    });
+
+    Logger.log('[notifyAdminActionItemFailure] Alert sent for ' + workflowId + ' / ' + category);
+  } catch (e) {
+    Logger.log('[ERROR] notifyAdminActionItemFailure failed: ' + e.message);
   }
 }

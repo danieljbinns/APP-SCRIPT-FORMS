@@ -57,6 +57,7 @@ function serveSpecialist(workflowId, dept) {
 
 function submitSpecialistForm(formData) {
   try {
+    rawLog('submitSpecialistForm', formData);
     const workflowId = formData.workflowId;
     const dept = formData.department;
     const formId = generateFormId('SPEC_' + dept.toUpperCase());

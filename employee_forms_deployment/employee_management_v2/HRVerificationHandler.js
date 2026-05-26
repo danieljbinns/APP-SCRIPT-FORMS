@@ -92,6 +92,7 @@ function getHRVerificationData(workflowId) {
 
 function submitHRVerification(formData) {
   try {
+    rawLog('submitHRVerification', formData);
     const workflowId = formData.workflowId;
     const formId = generateFormId('HR_VERIF');
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);

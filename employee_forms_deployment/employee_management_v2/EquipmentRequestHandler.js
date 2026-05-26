@@ -30,6 +30,7 @@ function serveEquipmentRequest() {
 
 function submitEquipmentRequest(formData) {
   try {
+    rawLog('submitEquipmentRequest', formData);
     // 1. Create Workflow Record
     const workflowId = createWorkflow('EQUIP_REQ', 'System & Equipment Request', formData.reqEmail || formData.requesterEmail);
     const formId = generateFormId('EQUIP');
@@ -171,27 +172,20 @@ function launchEquipmentActionItems(workflowId) {
     const equipment = Array.isArray(context.equipment) ? context.equipment
       : (context.equipmentRaw ? context.equipmentRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : []);
 
-    // Collect all IT tasks
-    const itTasks = [];
+    // Build one combined IT task description (like new hire IT Setup)
+    const itDesc = [];
 
-    // Google Account
     const needsGoogle = systems.some(function(s) {
       return s.toLowerCase().indexOf('google') !== -1 || s.toLowerCase().indexOf('email') !== -1;
     });
-    if (needsGoogle) {
-      itTasks.push({ name: 'Google Account Setup', description: JSON.stringify(['Create Google account and assign email address']), formType: 'it_email_setup' });
-    }
+    if (needsGoogle) itDesc.push('Create Google account and assign email address');
 
-    // IT hardware (computer, phone, tablet — not credit card, business cards, vehicle)
     const itHardware = equipment.filter(function(eq) {
       const eql = eq.toLowerCase();
       return eql.indexOf('credit card') === -1 && eql.indexOf('business card') === -1 && eql.indexOf('vehicle') === -1;
     });
-    if (itHardware.length > 0) {
-      itTasks.push({ name: 'Hardware Provisioning', description: JSON.stringify(itHardware.map(function(e) { return 'Provision: ' + e; })), formType: 'it_hardware' });
-    }
+    itHardware.forEach(function(e) { itDesc.push('Provision: ' + e); });
 
-    // IT software: everything that isn't Google, HR systems, Finance, or Payroll
     const itSoftware = systems.filter(function(s) {
       const sl = s.toLowerCase();
       return sl.indexOf('google') === -1 && sl.indexOf('email') === -1 &&
@@ -199,36 +193,29 @@ function launchEquipmentActionItems(workflowId) {
              sl.indexOf('jonas') === -1 &&
              sl.indexOf('incident') === -1 && sl.indexOf('net promoter') === -1;
     });
-    if (itSoftware.length > 0) {
-      itTasks.push({ name: 'Software Access Setup', description: JSON.stringify(itSoftware.map(function(s) { return 'Grant access: ' + s; })), formType: 'it_software' });
-    }
+    itSoftware.forEach(function(s) { itDesc.push('Grant access: ' + s); });
 
-    if (itTasks.length === 0) {
+    if (itDesc.length === 0) {
       // No IT work — launch all tasks (IT + non-IT) directly
       launchRemainingEquipmentTasks(workflowId, false);
       return;
     }
 
-    // Create all IT action items and send one consolidated email
-    const itTaskLinks = [];
-    itTasks.forEach(function(task) {
-      const tid = ActionItemService.createActionItem(workflowId, 'IT', task.name, task.description, CONFIG.EMAILS.IT, task.formType);
-      if (tid) itTaskLinks.push('<li><a href="' + buildFormUrl('action_item_view', { tid: tid }) + '">' + task.name + '</a></li>');
-    });
+    // Create one IT Setup action item and send one consolidated email
+    const tid = ActionItemService.createActionItem(workflowId, 'IT', 'IT Setup', JSON.stringify(itDesc), CONFIG.EMAILS.IT, 'it_setup');
+    const taskLink = tid ? '<li><a href="' + buildFormUrl('action_item_view', { tid: tid }) + '">IT Setup</a></li>' : '';
 
     updateWorkflow(workflowId, 'In Progress', 'Email Setup Needed');
     syncWorkflowState(workflowId);
 
-    if (itTaskLinks.length > 0) {
-      sendFormEmail({
-        to: CONFIG.EMAILS.IT,
-        subject: 'IT Action Items Required — ' + employeeName + ' (' + itTaskLinks.length + ' task' + (itTaskLinks.length > 1 ? 's' : '') + ')',
-        body: 'An equipment request has been approved for <b>' + employeeName + '</b>. Please complete all IT tasks — remaining team notifications will send once IT tasks are closed.<br><ul>' + itTaskLinks.join('') + '</ul>',
-        formUrl: '',
-        displayName: 'TEAM Group — Employee Onboarding',
-        contextData: context
-      });
-    }
+    sendFormEmail({
+      to: CONFIG.EMAILS.IT,
+      subject: 'IT Setup Required — ' + employeeName,
+      body: 'An equipment request has been approved for <b>' + employeeName + '</b>. Please complete IT setup — remaining team notifications will send once IT tasks are closed.<br><ul>' + taskLink + '</ul>',
+      formUrl: '',
+      displayName: 'TEAM Group — Employee Onboarding',
+      contextData: context
+    });
 
     Logger.log('[EquipReq] ' + itTaskLinks.length + ' IT task(s) created for ' + workflowId);
   } catch (e) {
@@ -295,24 +282,14 @@ function launchRemainingEquipmentTasks(workflowId, skipIT) {
     });
 
     // Create action items and notify teams
-    if (itHardware.length > 0) {
-      const tid = ActionItemService.createActionItem(
-        workflowId, 'IT', 'Hardware Provisioning',
-        JSON.stringify(itHardware.map(function(e) { return 'Provision: ' + e; })),
-        CONFIG.EMAILS.IT, 'it_hardware'
-      );
-      _notifyEquipmentTask(workflowId, tid, 'IT', CONFIG.EMAILS.IT, context,
-        'Please provision the following hardware for <b>' + employeeName + '</b>:<br><ul><li>' + itHardware.join('</li><li>') + '</li></ul>');
-    }
-
-    if (itSoftware.length > 0) {
-      const tid = ActionItemService.createActionItem(
-        workflowId, 'IT', 'Software Access Setup',
-        JSON.stringify(itSoftware.map(function(s) { return 'Grant access: ' + s; })),
-        CONFIG.EMAILS.IT, 'it_software'
-      );
-      _notifyEquipmentTask(workflowId, tid, 'IT Software', CONFIG.EMAILS.IT, context,
-        'Please set up the following software access for <b>' + employeeName + '</b>:<br><ul><li>' + itSoftware.join('</li><li>') + '</li></ul>');
+    // IT hardware + software are always handled in phase 1 (launchEquipmentActionItems).
+    // launchRemainingEquipmentTasks only runs when skipIT=true (non-IT tasks after IT closes)
+    // or when skipIT=false and there was no IT work (itHardware/itSoftware irrelevant).
+    if (!skipIT && (itHardware.length > 0 || itSoftware.length > 0)) {
+      const itDesc2 = itHardware.map(function(e) { return 'Provision: ' + e; }).concat(itSoftware.map(function(s) { return 'Grant access: ' + s; }));
+      const tid2 = ActionItemService.createActionItem(workflowId, 'IT', 'IT Setup', JSON.stringify(itDesc2), CONFIG.EMAILS.IT, 'it_setup');
+      _notifyEquipmentTask(workflowId, tid2, 'IT', CONFIG.EMAILS.IT, context,
+        'Please complete IT setup for <b>' + employeeName + '</b>:<br><ul><li>' + itDesc2.join('</li><li>') + '</li></ul>');
     }
 
     if (hrSystems.length > 0) {

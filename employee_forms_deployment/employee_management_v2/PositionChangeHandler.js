@@ -15,6 +15,7 @@ function servePositionSiteChange() {
 
 function submitPositionChangeRequest(formData) {
   try {
+    rawLog('submitPositionChangeRequest', formData);
     const workflowId = createWorkflow('CHANGE', 'Position/Site Change Request', formData.reqEmail || Session.getActiveUser().getEmail());
     const formId = generateFormId('POS_CHANGE');
 
@@ -323,6 +324,7 @@ function getPositionChangeData(workflowId) {
  */
 function submitPositionChangeApproval(formData) {
   try {
+    rawLog('submitPositionChangeApproval', formData);
     const { workflowId, decision, notes, confirmedNewManager, confirmedTitle, confirmedJrTitle } = formData;
     const formId = generateFormId('CHG_APP');
 
@@ -364,13 +366,14 @@ function submitPositionChangeApproval(formData) {
 
       // Build enriched context for all approval emails
       const changeContext = {
+        workflowId: workflowId,
         workflowType: 'Status Change',
         department: changeData.department || '',
         employeeName: changeData.employeeName,
         jobTitle: effectiveTitle,
         siteName: changeData.siteName,
         hireDate: changeData.effDate,
-        requestDate: changeData.effDate,   // used for section sub-label
+        requestDate: changeData.effDate,
         requesterEmail: changeData.requesterEmail,
         changeTypes: changeData.changes,
         siteTransfer: changeData.siteTransfer,
@@ -383,13 +386,49 @@ function submitPositionChangeApproval(formData) {
         managerNewEmail: mgrNewEmail,
         currentManagerName: changeData.currentManagerName || '',
         currentManagerEmail: mgrOldEmail,
+        receivingManagerEmail: receivingManagerEmail || '',
         systems: changeData.systems,
         equipmentRaw: changeData.equipment,
+        removalAccess: changeData.removalAccess || '',
+        equipmentReturn: changeData.equipmentReturn || '',
         purchasingSites: changeData.purchasingSites || '',
-        employmentType: changeData.currentClass || '',
-        currentTitle: changeData.currentTitle || '',
+        jonasJobNumbers: changeData.jonasJobNumbers || '',
+        googleAccount: changeData.googleAccount || '',
         oldReportsTo: changeData.oldReportsTo || '',
         newReportsFrom: changeData.newReportsFrom || '',
+        // BOSS
+        bossTrainingOnly: changeData.bossTrainingOnly || '',
+        bossSites: changeData.bossSites || '',
+        bossCostSheet: changeData.bossCostSheet || '',
+        bossCostJobs: changeData.bossCostJobs || '',
+        bossTrip: changeData.bossTrip || '',
+        bossGrievances: changeData.bossGrievances || '',
+        // ADP
+        adpSites: changeData.adpSites || '',
+        adpSalaryAccess: changeData.adpSalaryAccess || '',
+        // JR / 30-60-90
+        jrRequired: changeData.jrRequired || '',
+        jrTitle: changeData.jrTitle || '',
+        plan306090: changeData.plan306090 || '',
+        // Computer
+        computerRequestType: changeData.computerReq || '',
+        computerType: changeData.computerType || '',
+        computerPrevUser: changeData.computerPrevUser || '',
+        computerPrevType: changeData.computerPrevType || '',
+        computerSerial: changeData.computerSerial || '',
+        office365: changeData.office365 || '',
+        // Phone
+        phoneRequestType: changeData.phoneReq || '',
+        phonePrevUser: changeData.phonePrevUser || '',
+        phonePrevNumber: changeData.phonePrevNumber || '',
+        // Credit card
+        ccUSA: changeData.ccUSA || '', ccLimitUSA: changeData.ccLimitUSA || '',
+        ccCAN: changeData.ccCAN || '', ccLimitCAN: changeData.ccLimitCAN || '',
+        ccHD:  changeData.ccHD  || '', ccLimitHD:  changeData.ccLimitHD  || '',
+        // Other
+        comments: changeData.comments || '',
+        employmentType: changeData.currentClass || '',
+        currentTitle: changeData.currentTitle || '',
         hrDecision: 'Approved',
         hrNotes: notes || '',
         confirmedTitle: effectiveTitle,
@@ -618,10 +657,7 @@ function submitPositionChangeApproval(formData) {
         });
         // Access removal
         itRemoval.forEach(function(s) { itDescItems.push('REMOVE access: ' + s); });
-        // Computer return (handled by IT not manager)
-        if (retList.includes('Computer')) itDescItems.push('COLLECT computer from employee — update asset records');
-        if (retList.includes('Mobile Phone')) itDescItems.push('COLLECT mobile phone from employee — update asset records');
-        if (retList.includes('SiteDocs Tablet')) itDescItems.push('COLLECT SiteDocs tablet from employee — update asset records');
+        // Computer/phone/tablet retrieval goes to old manager asset task, not IT
 
         if (itDescItems.length > 0) {
           const itTid = ActionItemService.createActionItem(workflowId, 'IT', 'IT Access & Equipment Setup', JSON.stringify(itDescItems), CONFIG.EMAILS.IT);
@@ -637,25 +673,22 @@ function submitPositionChangeApproval(formData) {
         }
       }
 
-      // Asset collection — equipment to return (manager/requester)
-      // Handles: Credit Card return (finance via requester), SiteDocs Tablet (if not IT)
-      const managerReturnItems = retList.filter(function(e) {
-        return e !== 'Computer' && e !== 'Mobile Phone' && e !== 'SiteDocs Tablet' && e !== 'Vehicle';
-      });
-      // Always create asset checklist if any items to return
+      // Asset collection — ALL equipment to return goes to old manager (same as EOE)
       if (retList.length > 0) {
         const assetItems = retList.map(function(e) { return 'Collect: ' + e + ' from ' + changeData.employeeName; });
         assetItems.push('Confirm all items received and in acceptable condition');
         assetItems.push('Note any damaged or missing items');
-        const assetRecipients = [changeData.requesterEmail];
-        if (receivingManagerEmail && receivingManagerEmail !== changeData.requesterEmail) assetRecipients.push(receivingManagerEmail);
-        const assetTid = ActionItemService.createActionItem(workflowId, 'Assets', 'Asset Collection — ' + changeData.employeeName, JSON.stringify(assetItems), assetRecipients[0]);
+        // Primary: old manager; CC requester if different
+        const assetPrimary = mgrOldEmail || changeData.requesterEmail;
+        const assetTo = [assetPrimary];
+        if (changeData.requesterEmail && changeData.requesterEmail !== assetPrimary) assetTo.push(changeData.requesterEmail);
+        const assetTid = ActionItemService.createActionItem(workflowId, 'Assets', 'Asset Collection — ' + changeData.employeeName, JSON.stringify(assetItems), assetPrimary);
         tasksCreated++;
         approvalActionTeams.push('Asset Collection');
         sendFormEmail({
-          to: assetRecipients.join(','),
+          to: assetTo.join(','),
           subject: 'Asset Collection Required',
-          body: 'HR has approved a status change for <strong>' + changeData.employeeName + '</strong>. The following equipment must be collected: <strong>' + retList.join(', ') + '</strong>.',
+          body: 'HR has approved a status change for <strong>' + changeData.employeeName + '</strong>. The following equipment must be collected from them before the effective date: <strong>' + retList.join(', ') + '</strong>.',
           formUrl: buildFormUrl('action_item_view', { tid: assetTid }),
           contextData: changeContext
         });

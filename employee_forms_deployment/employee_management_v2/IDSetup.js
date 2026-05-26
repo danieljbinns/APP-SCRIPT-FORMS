@@ -146,6 +146,7 @@ function generateDssUsername(firstName, lastName) {
 
 function submitEmployeeIDSetup(formData) {
   try {
+    rawLog('submitEmployeeIDSetup', formData);
     const workflowId = formData.workflowId;
     const formId = generateFormId('ID_SETUP');
     

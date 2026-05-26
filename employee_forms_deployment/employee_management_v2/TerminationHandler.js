@@ -31,6 +31,7 @@ function serveTerminationRequest() {
 
 function submitTerminationRequest(formData) {
   try {
+    rawLog('submitTerminationRequest', formData);
     const workflowId = createWorkflow('TERM', 'End of Employment Request', formData.reqEmail || Session.getActiveUser().getEmail());
     const formId = generateFormId('TERM_REQ');
     
@@ -186,7 +187,7 @@ function getTerminationData(workflowId) {
     empID:          data[TR.EMPLOYEE_ID],
     empType:        data[TR.EMPLOYEE_TYPE],
     siteName:       data[TR.SITE],
-    termDate:       data[TR.TERM_DATE] ? Utilities.formatDate(new Date(data[TR.TERM_DATE]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+    termDate:       data[TR.TERM_DATE] ? (data[TR.TERM_DATE] instanceof Date ? Utilities.formatDate(data[TR.TERM_DATE], Session.getScriptTimeZone(), 'yyyy-MM-dd') : Utilities.formatDate(new Date(data[TR.TERM_DATE]), Session.getScriptTimeZone(), 'yyyy-MM-dd')) : '',
     reason:         data[TR.REASON],
     requesterEmail: data[TR.REQUESTER_EMAIL],
     managerName:    data[TR.MANAGER_NAME],
@@ -214,6 +215,7 @@ function getTerminationData(workflowId) {
  */
 function submitTerminationApproval(formData) {
   try {
+    rawLog('submitTerminationApproval', formData);
     const { workflowId, decision, notes } = formData;
     const formId = generateFormId('TERM_APP');
     
