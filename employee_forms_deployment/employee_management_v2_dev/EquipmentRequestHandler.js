@@ -261,8 +261,6 @@ function launchRemainingEquipmentTasks(workflowId, skipIT) {
         adp = true;
       } else if (sl.indexOf('jonas') !== -1) {
         jonas = true;
-      } else if (sl.indexOf('incident') !== -1 || sl.indexOf('net promoter') !== -1) {
-        hrSystems.push(s);
       } else if (!skipIT) {
         itSoftware.push(s); // IT software only when not already done in phase 1
       }

@@ -514,9 +514,10 @@
         let searchTerm = '';
         let activeCategoryFilter = null; // set by View Tasks button in My Tasks panel
 
-        // rolePayload stored here — NOT in sessionStorage (unreliable in GAS iframes).
+        // rolePayload and currentUser stored here — NOT in sessionStorage (unreliable in GAS iframes).
         // Set by displayData() before loadMyTasks() is called.
         let _rolePayload = {};
+        let _currentUser = '';
 
         // Pagination State
         const ITEMS_PER_PAGE = 25;
@@ -748,6 +749,7 @@
             // Store role context in module-level variable (reliable) AND sessionStorage
             // (best-effort, may be blocked in some iframe configurations).
             _rolePayload = response.rolePayload || {};
+            _currentUser = response.currentUser || '';
             if (response.rolePayload) {
                 try { sessionStorage.setItem('rolePayload', JSON.stringify(response.rolePayload)); } catch(e) {}
             }
@@ -1039,8 +1041,8 @@
             if (!rp.isAdmin && !rp.isHR && !rp.isIT) {
                 try { rp = JSON.parse(sessionStorage.getItem('rolePayload') || '{}'); } catch(e) {}
             }
-            var cu = '';
-            try { cu = sessionStorage.getItem('currentUser') || ''; } catch(e) {}
+            var cu = _currentUser || '';
+            try { if (!cu) cu = sessionStorage.getItem('currentUser') || ''; } catch(e) {}
             var wfRequester = String(details.requesterEmail || r['Requester Email'] || '').toLowerCase();
             var wfManager   = String(details.managerEmail   || r['Manager Email']   || '').toLowerCase();
             var cuLower     = cu.toLowerCase();

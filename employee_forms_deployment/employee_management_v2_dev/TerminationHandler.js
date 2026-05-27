@@ -292,15 +292,18 @@ function submitTerminationApproval(formData) {
       // HR Group (ADP) — CC Payroll since different locations handle this differently
       const hrItems = selectedSystems.filter(s => s === 'ADP Supervisor Access').map(s => 'Remove from ' + s);
       if (hrItems.length > 0) {
-        const hrAndPayroll = CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL;
         const hrDescItems = hrItems.slice();
         if (termData.hasReports === 'Yes') {
           const newMgr = (termData.reportsToNew && termData.reportsToNew !== 'N/A') ? termData.reportsToNew : 'TBD — confirm with HR';
           hrDescItems.push('Direct reports to be reassigned to: ' + newMgr);
           hrDescItems.push('Update ADP reporting structure to reflect direct report reassignment');
         }
-        const tid = ActionItemService.createActionItem(workflowId, 'HR', 'HR Systems Deactivation - ' + termData.employeeName, JSON.stringify(hrDescItems), hrAndPayroll);
-        sendActionItemEmail(hrAndPayroll, 'HR Action Required', tid, termData, hrItems);
+        const tid = ActionItemService.createActionItem(workflowId, 'HR', 'HR Systems Deactivation - ' + termData.employeeName, JSON.stringify(hrDescItems), CONFIG.EMAILS.HR);
+        sendActionItemEmail(CONFIG.EMAILS.HR, 'HR Action Required', tid, termData, hrItems);
+        tasksCreated++;
+        const adpItems = ['Remove ADP Supervisor Access for ' + termData.employeeName];
+        const tidPayroll = ActionItemService.createActionItem(workflowId, 'Payroll', 'ADP Deactivation - ' + termData.employeeName, JSON.stringify(adpItems), CONFIG.EMAILS.PAYROLL);
+        sendActionItemEmail(CONFIG.EMAILS.PAYROLL, 'Payroll Action Required', tidPayroll, termData, adpItems);
         tasksCreated++;
       }
 
@@ -322,7 +325,7 @@ function submitTerminationApproval(formData) {
 
       // Employee Deactivation Group (SiteDocs, DSS, BOSS WIS) - Always Mandatory
       const deactItems = ['Remove from SiteDocs', 'Remove DSS User', 'Remove from BOSS WIS Module'];
-      const tidDeact = ActionItemService.createActionItem(workflowId, 'Deactivation', `Employee Deactivation - ${termData.employeeName}`, JSON.stringify(deactItems), CONFIG.EMAILS.IDSETUP);
+      const tidDeact = ActionItemService.createActionItem(workflowId, 'WIS User', `Employee Deactivation - ${termData.employeeName}`, JSON.stringify(deactItems), CONFIG.EMAILS.IDSETUP);
       sendActionItemEmail(CONFIG.EMAILS.IDSETUP, 'Employee Deactivation Required', tidDeact, termData, deactItems);
       tasksCreated++;
 

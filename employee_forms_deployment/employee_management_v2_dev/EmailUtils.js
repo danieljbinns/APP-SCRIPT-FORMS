@@ -189,12 +189,13 @@ function getWorkflowContext(workflowId) {
           currentTitle: changeData.currentTitle || '',
           currentManagerName: changeData.currentManagerName || '',
           currentManagerEmail: changeData.currentManagerEmail || '',
-          creditCardUSA:            changeData.creditCardUSA || '',
-          creditCardLimitUSA:       changeData.creditCardLimitUSA || '',
-          creditCardCanada:         changeData.creditCardCanada || '',
-          creditCardLimitCanada:    changeData.creditCardLimitCanada || '',
-          creditCardHomeDepot:      changeData.creditCardHomeDepot || '',
-          creditCardLimitHomeDepot: changeData.creditCardLimitHomeDepot || ''
+          creditCardUSA:            changeData.ccUSA || '',
+          creditCardLimitUSA:       changeData.ccLimitUSA || '',
+          creditCardCanada:         changeData.ccCAN || '',
+          creditCardLimitCanada:    changeData.ccLimitCAN || '',
+          creditCardHomeDepot:      changeData.ccHD || '',
+          creditCardLimitHomeDepot: changeData.ccLimitHD || '',
+          requestDate:              changeData.dateRequested || changeData.effDate || ''
         };
       }
     }

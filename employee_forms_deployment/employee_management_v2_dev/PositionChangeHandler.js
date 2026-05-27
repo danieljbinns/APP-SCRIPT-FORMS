@@ -173,7 +173,7 @@ function _sendPositionChangeSubmitEmails(workflowId) {
     siteName:        pcData.siteName,
     jobTitle:        pcData.titleChange || '',
     hireDate:        pcData.effDate,
-    requestDate:     new Date().toLocaleDateString(),
+    requestDate:     pcData.dateRequested || '',
     requesterEmail:  pcData.requesterEmail,
     changeTypes:     pcData.changes,
     siteTransfer:    pcData.siteTransfer,
@@ -373,7 +373,7 @@ function submitPositionChangeApproval(formData) {
         jobTitle: effectiveTitle,
         siteName: changeData.siteName,
         hireDate: changeData.effDate,
-        requestDate: changeData.effDate,
+        requestDate: changeData.dateRequested || '',
         requesterEmail: changeData.requesterEmail,
         changeTypes: changeData.changes,
         siteTransfer: changeData.siteTransfer,
@@ -700,11 +700,11 @@ function submitPositionChangeApproval(formData) {
           'Remove SiteDocs supervisor access for ' + changeData.employeeName,
           'Confirm access has been removed and account is deactivated'
         ]);
-        const sdRemTid = ActionItemService.createActionItem(workflowId, 'Safety', 'SiteDocs Access Removal', sdRemDesc, CONFIG.EMAILS.SAFETY, 'safety_change');
+        const sdRemTid = ActionItemService.createActionItem(workflowId, 'WIS User', 'SiteDocs Access Removal', sdRemDesc, CONFIG.EMAILS.IDSETUP, 'safety_change');
         tasksCreated++;
-        approvalActionTeams.push('Safety (SiteDocs Removal)');
+        approvalActionTeams.push('ID Setup (SiteDocs Removal)');
         sendFormEmail({
-          to: CONFIG.EMAILS.SAFETY,
+          to: CONFIG.EMAILS.IDSETUP,
           subject: 'SiteDocs Access Removal Required',
           body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please remove their SiteDocs supervisor access.',
           formUrl: buildFormUrl('action_item_view', { tid: sdRemTid }),
@@ -712,27 +712,41 @@ function submitPositionChangeApproval(formData) {
         });
       }
 
-      // 3. ID Setup — update BOSS WIS records only
-      // Also handles new SiteDocs account if requested (SiteDocs in systems)
-      var idDescItems = ['Update BOSS WIS records to reflect the new position/site for ' + changeData.employeeName + '.'];
-      if (allSystems.includes('SiteDocs')) {
-        idDescItems.push('Create new SiteDocs supervisor account as requested.');
-      }
-      const idTid = ActionItemService.createActionItem(
-        workflowId, 'ID Setup', 'BOSS WIS Records Update',
-        JSON.stringify(idDescItems), CONFIG.EMAILS.IDSETUP
+      // 3a. Manager — update BOSS WIS module assignments for new position/site
+      const wisAssignTid = ActionItemService.createActionItem(
+        workflowId, 'WIS Assignment', 'BOSS WIS Records Update',
+        JSON.stringify(['Update BOSS WIS module assignments for ' + changeData.employeeName + ' to reflect the new position/site.']),
+        changeData.mgrNewEmail || changeData.currentManagerEmail
       );
       tasksCreated++;
-      approvalActionTeams.push('ID Setup');
+      approvalActionTeams.push('Manager (WIS Assignment)');
+      sendFormEmail({
+        to: changeData.mgrNewEmail || changeData.currentManagerEmail,
+        subject: 'BOSS WIS Update Required',
+        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update their BOSS WIS module assignments to reflect the new position and/or site.',
+        formUrl: buildFormUrl('action_item_view', { tid: wisAssignTid }),
+        displayName: 'TEAM Group - Employee Management',
+        contextData: changeContext
+      });
+
+      // 3b. ID Setup — create new SiteDocs supervisor account if requested
+      if (allSystems.includes('SiteDocs')) {
+      const idTid = ActionItemService.createActionItem(
+        workflowId, 'WIS User', 'SiteDocs Account Setup',
+        JSON.stringify(['Create new SiteDocs supervisor account for ' + changeData.employeeName + ' at new site.']),
+        CONFIG.EMAILS.IDSETUP
+      );
+      tasksCreated++;
+      approvalActionTeams.push('ID Setup (SiteDocs Account)');
       sendFormEmail({
         to: CONFIG.EMAILS.IDSETUP,
-        subject: 'BOSS WIS Update Required',
-        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update BOSS WIS records to reflect the new position and/or site.' +
-              (allSystems.includes('SiteDocs') ? ' A new SiteDocs supervisor account has also been requested.' : ''),
+        subject: 'SiteDocs Account Setup Required',
+        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. A new SiteDocs supervisor account has been requested for their new site.',
         formUrl: buildFormUrl('action_item_view', { tid: idTid }),
         displayName: 'TEAM Group - Employee Management',
         contextData: changeContext
       });
+      }
 
       // 4. Safety — update DSS site/learning path and SiteDocs site (not a new account)
       var safDescItems = [

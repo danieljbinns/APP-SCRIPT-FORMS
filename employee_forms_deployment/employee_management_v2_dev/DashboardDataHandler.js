@@ -217,20 +217,21 @@ function getMyTaskCounts() {
 
     // ── Source 1: Action Items sheet ──────────────────────────────────────────
     const aiCounts = {
-      'Safety':             0,
-      'Fleetio':            0,
-      'Business Cards':     0,
-      'Jonas':              0,
-      'Credit Card':        0,
-      '30/60/90 Review':    0,
-      'Central Purchasing': 0,
-      'SiteDocs':           0,
-      'Assets':             0,
-      'IT':                 0,
-      'HR':                 0,
-      'Fleet':              0,
-      'Finance':            0,
-      'Deactivation':       0
+      'Safety':           0,
+      'Fleet':            0,
+      'Business Cards':   0,
+      'Purchasing':       0,
+      'Credit Card':      0,
+      '30/60/90 Review':  0,
+      'Assets':           0,
+      'IT':               0,
+      'IT Confirmation':  0,
+      'HR':               0,
+      'Payroll':          0,
+      'EOE':              0,
+      'Manager':          0,
+      'WIS User':         0,
+      'WIS Assignment':   0
     };
 
     const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);

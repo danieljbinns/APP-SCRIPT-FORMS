@@ -411,6 +411,7 @@ var ActionItemService = (function() {
         <br><br><b>Closure Audit Log:</b><br>${logHtml}`;
 
       const context = getWorkflowContext(workflowId) || { employeeName: workflow['Employee Name'] };
+      if (workflowId.startsWith('TERM_')) context.hrDecision = 'Approved';
 
       // showPasswords: true for all closure emails — all parties receive full credential summary
       const closureEmailOpts = { showPasswords: true };

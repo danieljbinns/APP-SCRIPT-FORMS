@@ -271,6 +271,7 @@ function submitHRVerification(formData) {
       if (hasBOSSAccess) {
         updateWorkflow(workflowId, 'In Progress', 'IT Confirmation Needed', verifiedName, actingUser);
         syncWorkflowState(workflowId);
+        ActionItemService.createActionItem(workflowId, 'IT Confirmation', 'IT Confirmation Required - ' + verifiedName, JSON.stringify(['Review and confirm access configuration before IT proceeds with provisioning']), 'davelangohr@team-group.com');
         const itConfirmationUrl = buildFormUrl('it_confirmation', { wf: workflowId });
         sendFormEmail({
           to: 'davelangohr@team-group.com',
