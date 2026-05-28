@@ -942,9 +942,9 @@ function runSuperDebugEOE() {
       'Notes':     'SUPERDEBUG EOE APPROVAL'
     });
 
-    // Verify AIs created: IT, HR, Fleet, Finance, Deactivation, Assets + Safety/SiteDocs
+    // Verify AIs created: IT, HR, Payroll, Fleet, Finance, WIS User, EOE, Assets
     _sdLog('INFO', 'Phase 3', 'Verifying Action Items created by approval...');
-    _sdVerifyAI(wfId, ['IT', 'HR', 'Fleet', 'Finance', 'Deactivation', 'EOE', 'Assets']);
+    _sdVerifyAI(wfId, ['IT', 'HR', 'Payroll', 'Fleet', 'Finance', 'WIS User', 'EOE', 'Assets']);
 
     _sdVerifyWorkflow(wfId, 'In Progress', null);
 

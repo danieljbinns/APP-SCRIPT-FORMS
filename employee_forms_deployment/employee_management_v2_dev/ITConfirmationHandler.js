@@ -158,8 +158,7 @@ function submitITConfirmation(formData) {
       Session.getActiveUser().getEmail()
     ]);
 
-    const context = getWorkflowContext(workflowId);
-    if (!context) return { success: false, message: 'Could not load workflow context.' };
+    const context = getWorkflowContext(workflowId) || { employeeName: workflowId };
 
     // ── Change detection ────────────────────────────────────────────────────
     if (origData) {

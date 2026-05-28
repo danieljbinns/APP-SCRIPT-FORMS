@@ -712,7 +712,24 @@ function submitPositionChangeApproval(formData) {
         });
       }
 
-      // 3a. Manager — update BOSS WIS module assignments for new position/site
+      // 3a. ID Setup — update BOSS WIS user account for new position/site
+      const idTid = ActionItemService.createActionItem(
+        workflowId, 'ID Setup', 'BOSS WIS User Account Update',
+        JSON.stringify(['Update BOSS WIS user account for ' + changeData.employeeName + ' to reflect the new position/site.']),
+        CONFIG.EMAILS.IDSETUP
+      );
+      tasksCreated++;
+      approvalActionTeams.push('ID Setup');
+      sendFormEmail({
+        to: CONFIG.EMAILS.IDSETUP,
+        subject: 'BOSS WIS Account Update Required',
+        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update their BOSS WIS user account to reflect the new position and/or site.',
+        formUrl: buildFormUrl('action_item_view', { tid: idTid }),
+        displayName: 'TEAM Group - Employee Management',
+        contextData: changeContext
+      });
+
+      // 3b. Manager — update BOSS WIS module assignments for new position/site
       const wisAssignTid = ActionItemService.createActionItem(
         workflowId, 'WIS Assignment', 'BOSS WIS Records Update',
         JSON.stringify(['Update BOSS WIS module assignments for ' + changeData.employeeName + ' to reflect the new position/site.']),

@@ -151,8 +151,12 @@ function _sendBumpEmail(workflowId, targetStep) {
       recipient = CONFIG.EMAILS.IT;
       formType  = 'IT Setup';
       break;
+    case 'it_confirmation':
+      recipient = 'davelangohr@team-group.com';
+      formType  = 'IT Confirmation';
+      break;
 
-    // Specialist + EOE + Status Change action-item steps
+    // Specialist + EOE + Status Change + Equipment action-item steps
     case 'creditcard': case 'businesscards': case 'fleetio': case 'jonas':
     case 'centralpurchasing': case 'sitedocs': case 'review_306090':
     case 'safety_onboarding': case 'safety_term':
@@ -162,9 +166,13 @@ function _sendBumpEmail(workflowId, targetStep) {
     case 'change_manager': case 'change_it': case 'change_purchasing':
     case 'change_idsetup': case 'change_safety': case 'change_businesscards':
     case 'change_creditcard': case 'change_fleetio': case 'change_jonas':
+    case 'hr_systems': case 'adp_setup': case 'wis':
       return _sendActionItemBump(workflowId, targetStep);
 
     default:
+      // Try action item lookup as fallback before giving up
+      var fallback = _sendActionItemBump(workflowId, targetStep);
+      if (fallback && fallback.success) return fallback;
       recipient = '';
       formType  = 'General';
   }
@@ -202,12 +210,13 @@ function _sendActionItemBump(workflowId, targetStep) {
     'creditcard': 'Credit Card', 'businesscards': 'Business Cards',
     'fleetio': 'Fleetio', 'jonas': 'Jonas', 'centralpurchasing': 'Central Purchasing',
     'sitedocs': 'SiteDocs', 'review_306090': '30/60/90 Review',
-    'safety_onboarding': 'Safety', 'safety_term': 'Safety'
+    'safety_onboarding': 'Safety', 'safety_term': 'Safety',
+    'hr_systems': 'HR', 'adp_setup': 'Payroll', 'wis': 'WIS Assignment'
   };
   var eoeCatMap = {
     'asset_collection': 'Assets', 'systems_deactivation': 'IT',
     'systems_deactivation_hr': 'HR', 'systems_deactivation_fleet': 'Fleet',
-    'systems_deactivation_finance': 'Finance', 'systems_deactivation_deact': 'Deactivation'
+    'systems_deactivation_finance': 'Finance', 'systems_deactivation_deact': 'WIS User'
   };
   var changeCatMap = {
     'change_manager': 'Manager', 'change_it': 'IT', 'change_purchasing': 'Purchasing',
