@@ -1383,7 +1383,7 @@ var SD_EQUIP_REQUEST = {
   position:       'SD Equip Position',
   managerName:    'SD Equip Manager',
   managerEmail:   SD_EMAIL,
-  systems:        ['BOSS', 'Jonas'],
+  systems:        ['BOSS', 'Jonas', 'SiteDocs'],
   equipment:      ['Laptop', 'Business Cards'],
   department:     'IT',
   comments:       'SUPERDEBUG EQUIPMENT REQUEST — DELETE',
@@ -1416,7 +1416,7 @@ var SD_EQUIP_ITCONF = function(wfId) { return {
   reportingManagerName:  'SD Equip Manager',
   reportingManagerEmail: SD_EMAIL,
   systemAccess:          'Yes',
-  systems:               ['BOSS', 'Jonas'],
+  systems:               ['BOSS', 'Jonas', 'SiteDocs'],
   equipment:             ['Laptop', 'Business Cards'],
   googleEmail:           '',
   googleDomain:          '',
@@ -1435,8 +1435,34 @@ var SD_EQUIP_ITCONF = function(wfId) { return {
   notes:                 'SUPERDEBUG — Equipment IT Confirmation'
 }; };
 
+// ER-1: IT Setup payload for Equipment (same PascalCase field names as New Hire — submitITSetup reads PascalCase)
+var SD_EQUIP_ITSETUP = function(wfId) { return {
+  workflowId:                wfId,
+  Email_Created:             'No',
+  Email_Username:            '',
+  Email_Domain:              '',
+  Email_Temp_Password:       '',
+  Computer_Assigned:         'Yes',
+  Computer_Serial:           'SD-SERIAL-EQUIP',
+  Computer_Model:            'SD Test Model',
+  Computer_Type:             'Laptop',
+  Phone_Assigned:            'No',
+  Phone_Carrier:             '',
+  Phone_Model:               '',
+  Phone_Number:              '',
+  Phone_VM_Password:         '',
+  BOSS_Access:               'Yes',
+  Incidents_Access:          'Yes',
+  CAA_Access:                'No',
+  Delivery_App_Access:       'No',
+  Net_Promoter_Score_Access: 'Yes',
+  IT_Notes:                  'SUPERDEBUG — Equipment IT Setup'
+}; };
+
 /**
  * Full Equipment Request trace — 8 phases.
+ * Updated for ER-1: Equipment now routes through submitITSetup (same as New Hire).
+ * Old checklist path (launchEquipmentActionItems) is commented out in EquipmentRequestHandler.js.
  */
 function runSuperDebugEquipment() {
   _SD_RESULTS = [];
@@ -1480,8 +1506,8 @@ function runSuperDebugEquipment() {
 
     Utilities.sleep(300);
 
-    // ── Phase 3: IT Confirmation → launchEquipmentActionItems ────────────────
-    _sdSection(3, 'submitITConfirmation → launchEquipmentActionItems');
+    // ── Phase 3: IT Confirmation → IT Setup Needed (ER-1: no checklist AIs) ──
+    _sdSection(3, 'submitITConfirmation → step=IT Setup Needed (ER-1 path)');
     _sdEmailCapture();
     var itcResult = submitITConfirmation(SD_EQUIP_ITCONF(wfId));
     SpreadsheetApp.flush();
@@ -1490,52 +1516,102 @@ function runSuperDebugEquipment() {
     if (!itcResult || !itcResult.success) _sdLog('FAIL', 'Phase 3', 'submitITConfirmation: ' + (itcResult && itcResult.message));
     else _sdLog('PASS', 'Phase 3', 'submitITConfirmation succeeded ✓');
 
-    // First AI created: IT Email Setup (triggers launchEquipmentActionItems)
-    _sdLog('INFO', 'Phase 3', 'Checking for initial Equipment IT action item...');
-    _sdVerifyAI(wfId, ['IT']);
-    _sdVerifyWorkflow(wfId, 'In Progress', null);
+    // ER-1: step must be 'IT Setup Needed', NOT 'Email Setup Needed'
+    _sdVerifyWorkflow(wfId, 'In Progress', 'IT Setup Needed');
+
+    // ER-1: No checklist AIs should exist at this point — IT gets the it_setup form URL by email
+    var aiSheet3 = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    var rawAI3 = aiSheet3 ? aiSheet3.getDataRange().getValues() : [];
+    var aiCount3 = 0;
+    for (var r3 = 1; r3 < rawAI3.length; r3++) {
+      if (rawAI3[r3].join('|').indexOf(wfId) !== -1) aiCount3++;
+    }
+    if (aiCount3 === 0) {
+      _sdLog('PASS', 'Phase 3', 'No checklist AIs created after IT Confirmation (correct — ER-1) ✓');
+    } else {
+      _sdLog('FAIL', 'Phase 3', 'Expected 0 AIs after IT Confirmation but found ' + aiCount3 + ' — old checklist path still active?');
+    }
 
     Utilities.sleep(500);
 
-    // ── Phase 4: Close ALL IT tasks → triggers launchRemainingEquipmentTasks
-    // Phase 1 now creates multiple IT tasks (Google Account + Hardware + Software).
-    // launchRemainingEquipmentTasks only fires when ALL phase-1 IT tasks are closed.
-    _sdSection(4, 'Close all IT AIs → triggers remaining equipment tasks');
-    var pending4 = ActionItemService.getPendingTasks(wfId);
-    _sdLog('INFO', 'Phase 4', pending4.length + ' open IT AI(s) to close');
-
+    // ── Phase 4: submitITSetup → writes IT_Results, triggers specialists ───────
+    _sdSection(4, 'submitITSetup → IT_Results written + triggerSpecialists');
     _sdEmailCapture();
-    var closedIT = 0;
-    pending4.forEach(function(task) {
-      var closeR = ActionItemService.closeActionItem(
-        task[SCHEMA.ACTION_ITEMS.TASK_ID],
-        'SUPERDEBUG close IT task',
-        SD_EMAIL, null, null
-      );
-      SpreadsheetApp.flush();
-      if (closeR && closeR.success !== false) {
-        closedIT++;
-      } else {
-        _sdLog('WARN', 'Phase 4', 'Close returned: ' + JSON.stringify(closeR));
-      }
-      Utilities.sleep(300);
+    var itsResult = submitITSetup(SD_EQUIP_ITSETUP(wfId));
+    SpreadsheetApp.flush();
+    _sdEmailExtract('Phase 4 Equip ITSetup');
+
+    if (!itsResult || !itsResult.success) _sdLog('FAIL', 'Phase 4', 'submitITSetup: ' + (itsResult && itsResult.message));
+    else _sdLog('PASS', 'Phase 4', 'submitITSetup succeeded ✓');
+
+    // Verify IT_Results row written
+    _sdVerifyRow('Phase 4 IT Results', CONFIG.SHEETS.IT_RESULTS, wfId, {
+      'Computer Assigned': 'Yes',
+      'Computer Type':     'Laptop'
     });
-    _sdLog(closedIT === pending4.length ? 'PASS' : 'WARN', 'Phase 4', 'Closed ' + closedIT + '/' + pending4.length + ' IT AI(s) ✓');
-    _sdEmailExtract('Phase 4 IT close');
-    Utilities.sleep(500);
 
-    // ── Phase 5: Dump all remaining AIs ──────────────────────────────────────
-    _sdSection(5, 'Dump all remaining AIs after launchRemainingEquipmentTasks');
-    // Equipment handler creates Jonas tasks under category 'Finance', not 'Jonas'
-    _sdVerifyAI(wfId, ['IT', 'Finance', 'Business Cards']);
+    // Verify step advanced
+    _sdVerifyWorkflow(wfId, 'In Progress', 'Specialist Forms Needed');
 
-    // ── Phase 6: Close remaining AIs ─────────────────────────────────────────
-    _sdSection(6, 'Close remaining Action Items');
+    // ── Phase 5: Check specialist AIs (raw scan — avoids GAS sheet cache issue) ─
+    _sdSection(5, 'Verify specialist AIs from triggerSpecialists');
+    // Equipment with BOSS+Jonas+BusinessCards — expect: Business Cards, Jonas/Purchasing, WIS Assignment (via manager)
+    // ER-2 will gate WIS on !EQUIP_REQ_ — until then WIS may still appear; note it
+    SpreadsheetApp.flush();
+    var aiSheet5 = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    var rawAI5 = aiSheet5 ? aiSheet5.getDataRange().getValues() : [];
+    var specialistCategories = [];
+    for (var r5 = 1; r5 < rawAI5.length; r5++) {
+      if (rawAI5[r5].join('|').indexOf(wfId) !== -1) {
+        var cat5 = rawAI5[r5][SCHEMA.ACTION_ITEMS.CATEGORY] || rawAI5[r5][2] || '';
+        if (cat5) specialistCategories.push(cat5);
+      }
+    }
+    _sdLog('INFO', 'Phase 5', 'Specialist AIs found: [' + specialistCategories.join(', ') + ']');
+
+    // Business Cards — must exist (equipment includes 'Business Cards')
+    if (specialistCategories.indexOf('Business Cards') !== -1) {
+      _sdLog('PASS', 'Phase 5', 'Business Cards AI present ✓');
+    } else {
+      _sdLog('FAIL', 'Phase 5', 'Business Cards AI missing — expected from equipment list');
+    }
+
+    // Jonas (or Purchasing after Fix 5 rename) — must exist (Jonas job numbers set)
+    var hasJonas = specialistCategories.indexOf('Jonas') !== -1 || specialistCategories.indexOf('Purchasing') !== -1;
+    if (hasJonas) {
+      _sdLog('PASS', 'Phase 5', 'Jonas/Purchasing AI present ✓');
+    } else {
+      _sdLog('FAIL', 'Phase 5', 'Jonas/Purchasing AI missing — expected (jonasJobNumbers set)');
+    }
+
+    // ER-4: SiteDocs must route to WIS User (ID Setup team), not IT
+    if (specialistCategories.indexOf('WIS User') !== -1) {
+      _sdLog('PASS', 'Phase 5', 'SiteDocs → WIS User AI created for ID Setup team ✓ (ER-4)');
+    } else {
+      _sdLog('FAIL', 'Phase 5', 'WIS User AI missing — SiteDocs in systems but no ID Setup action item');
+    }
+
+    // ER-2: WIS Assignment must NOT fire for Equipment Requests
+    if (specialistCategories.indexOf('WIS Assignment') !== -1 || specialistCategories.indexOf('WIS') !== -1) {
+      _sdLog('FAIL', 'Phase 5', 'WIS Assignment AI present for Equipment — ER-2 gate not working');
+    } else {
+      _sdLog('PASS', 'Phase 5', 'WIS Assignment correctly absent for Equipment ✓ (ER-2)');
+    }
+
+    // ER-3: 30/60/90 Review must NOT fire for Equipment Requests
+    if (specialistCategories.indexOf('30/60/90 Review') !== -1) {
+      _sdLog('FAIL', 'Phase 5', '30/60/90 Review AI present for Equipment — ER-3 gate not working');
+    } else {
+      _sdLog('PASS', 'Phase 5', '30/60/90 Review correctly absent for Equipment ✓ (ER-3)');
+    }
+
+    // ── Phase 6: Close all specialist AIs ────────────────────────────────────
+    _sdSection(6, 'Close all specialist Action Items');
     _sdEmailCapture();
     var closedCount = _sdCloseAllAI(wfId, 'Phase 6 Equip');
     SpreadsheetApp.flush();
     _sdEmailExtract('Phase 6 Equip final');
-    _sdLog('INFO', 'Phase 6', 'Closed ' + closedCount + ' total AI(s) in this pass');
+    _sdLog('INFO', 'Phase 6', 'Closed ' + closedCount + ' total AI(s)');
 
     Utilities.sleep(800);
 
@@ -1550,6 +1626,7 @@ function runSuperDebugEquipment() {
     // ── Phase 8: Final sheet audit ────────────────────────────────────────────
     _sdSection(8, 'Final sheet audit');
     _sdDumpRow('Phase 8 Final', CONFIG.SHEETS.INITIAL_REQUESTS, wfId);
+    _sdDumpRow('Phase 8 Final', CONFIG.SHEETS.IT_RESULTS,       wfId);
     _sdDumpRow('Phase 8 Final', CONFIG.SHEETS.WORKFLOWS,        wfId);
     _sdDumpRow('Phase 8 Final', CONFIG.SHEETS.DASHBOARD_VIEW,   wfId);
 

@@ -153,12 +153,17 @@ function _sendEquipmentRequestSubmitEmails(workflowId) {
 }
 
 /**
+ * ER-1 FIX: launchEquipmentActionItems is no longer called — Equipment now uses
+ * the same it_setup → submitITSetup → triggerSpecialists path as New Hire.
+ * Commented out (not deleted) for easy revert if needed.
+ *
  * Called by ITConfirmationHandler.submitITConfirmation after IT Confirmation is approved.
  * Phase 1: all IT tasks (Google Account, hardware, software) launch together.
  * Phase 2: non-IT tasks (HR, Finance, Credit Card, Business Cards, Vehicle) launch once
  *   IT closes all their tasks — triggered by ActionItemService.checkWorkflowCompletion.
  * @param {string} workflowId
  */
+/* ER-1 COMMENTED OUT — revert by uncommenting
 function launchEquipmentActionItems(workflowId) {
   try {
     const context = getWorkflowContext(workflowId);
@@ -222,8 +227,13 @@ function launchEquipmentActionItems(workflowId) {
     Logger.log('[ERROR] launchEquipmentActionItems: ' + e.message);
   }
 }
+ER-1 COMMENTED OUT END */
 
 /**
+ * ER-1 FIX: launchRemainingEquipmentTasks is no longer called — Equipment now uses
+ * triggerSpecialists() via the shared submitITSetup path.
+ * Commented out (not deleted) for easy revert if needed.
+ *
  * Creates non-IT (and optionally IT) action items for an equipment request.
  * - Called by launchEquipmentActionItems directly when no Google Account needed (skipIT=false) → creates everything.
  * - Called by ActionItemService.checkWorkflowCompletion after IT closes phase-1 tasks (skipIT=true) → non-IT only.
@@ -358,6 +368,7 @@ function launchRemainingEquipmentTasks(workflowId, skipIT) {
     Logger.log('[ERROR] launchRemainingEquipmentTasks: ' + e.message);
   }
 }
+/* ER-1 COMMENTED OUT END */
 
 /**
  * Sends a task notification email to the assigned team with a link to the action item form.

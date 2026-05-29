@@ -221,6 +221,10 @@ var ActionItemService = (function() {
     const workflow = getWorkflow(workflowId);
     const currentStep = workflow ? String(workflow['Current Step'] || '') : '';
 
+    // ER-1 FIX: Equipment now routes through submitITSetup → triggerSpecialists.
+    // 'Email Setup Needed' step and launchRemainingEquipmentTasks no longer used.
+    // Commented out for easy revert.
+    /* ER-1 COMMENTED OUT
     if (currentStep === 'Email Setup Needed') {
       // Equipment request: only IT email task(s) pending — when closed, launch remaining tasks
       const pending = getPendingTasks(workflowId);
@@ -232,6 +236,7 @@ var ActionItemService = (function() {
       }
       return;
     }
+    ER-1 COMMENTED OUT END */
 
     const ALLOWED_STEPS = ['Specialist Forms Needed', 'Action Items Pending'];
     if (!ALLOWED_STEPS.includes(currentStep)) {

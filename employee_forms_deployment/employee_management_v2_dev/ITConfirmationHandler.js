@@ -241,26 +241,21 @@ function submitITConfirmation(formData) {
     }
     // ── End change detection ────────────────────────────────────────────────
 
-    if (isEquipment) {
-      // Equipment Request: launch action items (no IT Setup step)
-      launchEquipmentActionItems(workflowId);
-      Logger.log('[ITConfirmation] IT Confirmation submitted. Equipment action items launched for: ' + workflowId);
-    } else {
-      // New Hire: trigger IT Setup
-      updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed');
-      syncWorkflowState(workflowId);
+    // ER-1 FIX: Equipment now uses the same it_setup path as New Hire.
+    // Both workflows advance to 'IT Setup Needed' and send the IT Setup form link.
+    updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed');
+    syncWorkflowState(workflowId);
 
-      const itUrl = buildFormUrl('it_setup', { wf: workflowId });
-      sendFormEmail({
-        to: CONFIG.EMAILS.IT,
-        subject: 'IT Setup Required — ' + (context.employeeName || workflowId),
-        body: 'IT Confirmation has been completed by Dave Langohr.\n\nPlease complete the IT setup form using the button below.',
-        formUrl: itUrl,
-        displayName: 'TEAM Group — Employee Onboarding',
-        contextData: context
-      });
-      Logger.log('[ITConfirmation] IT Confirmation submitted. IT Setup triggered for: ' + workflowId);
-    }
+    const itUrl = buildFormUrl('it_setup', { wf: workflowId });
+    sendFormEmail({
+      to: CONFIG.EMAILS.IT,
+      subject: 'IT Setup Required — ' + (context.employeeName || workflowId),
+      body: 'IT Confirmation has been completed by Dave Langohr.\n\nPlease complete the IT setup form using the button below.',
+      formUrl: itUrl,
+      displayName: 'TEAM Group — Employee Onboarding',
+      contextData: context
+    });
+    Logger.log('[ITConfirmation] IT Setup triggered for: ' + workflowId);
 
     return { success: true, scriptUrl: ScriptApp.getService().getUrl() };
 

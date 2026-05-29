@@ -75,6 +75,8 @@ function getITContextData(workflowId) {
           bossTripReports: mainData[i][IR.BOSS_TRIP],
           bossGrievances: mainData[i][IR.BOSS_GRIEVANCES],
           jonasJobNumbers: mainData[i][IR.JONAS_JOB_NUMBERS],
+          plan306090: mainData[i][IR.PLAN_306090],
+          bossTrainingOnly: mainData[i][IR.BOSS_TRAINING_ONLY] || 'No',
           // Misc
           creditCardUSA: mainData[i][IR.CC_USA],
           creditCardLimitUSA: mainData[i][IR.CC_LIMIT_USA],
@@ -347,8 +349,8 @@ function triggerSpecialists(workflowId, itData) {
     });
   }
 
-  // 4. 30/60/90 Review — salary/non-hourly employees only
-  if (context.employmentType !== 'Hourly') {
+  // 4. 30/60/90 Review — salary employees with plan306090 checked, and never for Equipment Requests (ER-3)
+  if (context.plan306090 && !workflowId.startsWith('EQUIP_REQ_')) {
     specialists.push({
       email: CONFIG.EMAILS.REVIEW_306090_JR,
       category: '30/60/90 Review',
@@ -393,13 +395,29 @@ function triggerSpecialists(workflowId, itData) {
     });
   }
 
-  // WIS Assignment — always required for new hires; assigned to manager
-  if (context.managerEmail) {
+  // 6. SiteDocs Account Setup — routed to ID Setup team (not IT) (ER-4)
+  const hasSiteDocs = Array.isArray(context.systems) && context.systems.some(function(s) { return String(s).trim().toLowerCase() === 'sitedocs'; });
+  if (hasSiteDocs) {
+    specialists.push({
+      email: CONFIG.EMAILS.IDSETUP,
+      category: 'WIS User',
+      name: 'SiteDocs Account Setup — ' + context.employeeName,
+      description: JSON.stringify(['Create SiteDocs user account', 'Assign to correct site and supervisor']),
+      formType: 'wis_user'
+    });
+  }
+
+  // WIS Assignment — required for new hires assigned to manager; not for Equipment Requests (ER-2)
+  if (context.managerEmail && !workflowId.startsWith('EQUIP_REQ_')) {
+    // ER-5: Training users get training modules only; full hires get full WIS assignment
+    const wisDescription = context.bossTrainingOnly === 'Yes'
+      ? JSON.stringify(['Assign BOSS training modules only — do NOT assign committees, cost sheets, trip reports, or grievances'])
+      : JSON.stringify(['Assign BOSS job site committee access', 'Assign cost sheet / trip reports / grievances as applicable', 'Assign Work Instructions & Safety (WIS) module(s) in BOSS for this employee']);
     specialists.push({
       email: context.managerEmail,
       category: 'WIS',
       name: 'WIS Assignment — ' + context.employeeName,
-      description: JSON.stringify(['Assign Work Instructions & Safety (WIS) module(s) in BOSS for this employee']),
+      description: wisDescription,
       formType: 'wis'
     });
   }

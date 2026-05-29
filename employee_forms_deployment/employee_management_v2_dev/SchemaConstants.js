@@ -108,7 +108,8 @@ const SCHEMA = {
     DEPARTMENT:            50,  // string   — Department
     PURCHASING_SITES:      51,  // csv      — Purchasing Sites
     STATUS:                52,  // string   — Status
-    ADP_SALARY_ACCESS:     53   // boolean  — ADP Salary Access
+    ADP_SALARY_ACCESS:     53,  // boolean  — ADP Salary Access
+    BOSS_TRAINING_ONLY:    54   // string   — BOSS Training User Only (Yes/No)
   },
 
   // ─────────────────────────────────────────────
