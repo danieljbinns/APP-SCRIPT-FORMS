@@ -393,6 +393,64 @@ function sdFixPositionChangesHeaders() {
   return { fixed: headers.length, cleared: Math.max(0, lastCol - headers.length) };
 }
 
+/**
+ * Audit Initial Requests sheet headers vs SchemaConstants.
+ * Returns full header list, column count, and any schema mismatches.
+ * Also fixes missing BOSS_TRAINING_ONLY header at col 55 (index 54) if absent.
+ */
+function sdAuditInitialRequestsHeaders() {
+  var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
+  if (!sheet) return { error: 'Initial Requests sheet not found' };
+
+  var lastCol  = sheet.getLastColumn();
+  var headers  = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+
+  // Expected headers in order (index = schema index)
+  var expected = [
+    'Workflow ID', 'Form ID', 'Timestamp', 'Date Requested', 'Requester Name',
+    'Requester Email', 'Hire Date', 'New Hire/Rehire', 'Employee Type', 'Employment Type',
+    'First Name', 'Middle Name', 'Last Name', 'Preferred Name', 'Position Title',
+    'Site Name', 'Job Site #', 'Manager Email', 'Manager Name', 'System Access',
+    'Systems', 'Equipment', 'Google Email', 'Google Domain', 'Computer Req',
+    'Computer Type', 'Prev User (computer)', 'Prev Type', 'Serial #', 'Office 365',
+    'CC USA', 'Limit USA', 'CC CAN', 'Limit CAN', 'CC HD', 'Limit HD',
+    'Phone Req', 'Prev User (phone)', 'Prev Number', 'BOSS Sites', 'BOSS Cost Sheet',
+    'BOSS Jobs', 'BOSS Trip', 'BOSS Grievances', 'Jonas Job #s', 'JR Req',
+    'JR Assign', '30/60/90', 'Comments', 'ADP Sites', 'Department',
+    'Purchasing Sites', 'Status', 'ADP Salary Access', 'BOSS Training User Only'
+  ];
+
+  var mismatches = [];
+  for (var i = 0; i < expected.length; i++) {
+    var actual = headers[i] || '(missing)';
+    if (String(actual).trim() !== expected[i]) {
+      mismatches.push({ col: i + 1, index: i, expected: expected[i], actual: actual });
+    }
+  }
+
+  // Fix: add BOSS Training User Only header at col 55 if missing
+  var fixed = false;
+  var bossTrainingIdx = headers.indexOf('BOSS Training User Only');
+  if (bossTrainingIdx === -1) {
+    // Col 55 = index 54
+    sheet.getRange(1, 55).setValue('BOSS Training User Only');
+    sheet.getRange(1, 55).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
+    SpreadsheetApp.flush();
+    fixed = true;
+  }
+
+  return {
+    sheetColumnCount: lastCol,
+    schemaColumnCount: expected.length,
+    headers: headers,
+    expected: expected,
+    mismatches: mismatches,
+    bossTrainingHeaderFixed: fixed,
+    bossTrainingWasAtIndex: bossTrainingIdx
+  };
+}
+
 function sdFixITResultsHeader() {
   var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   var sheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
@@ -534,7 +592,7 @@ var SD_NH_INITIAL = {
   jonasJobNumbers:       'SD-9999',
   jrRequired:            'No',
   jrAssignment:          '',
-  plan306090:            'No',
+  plan306090:            'Yes',  // ER-3: gate is now === 'Yes'; 'No' must not fire 30/60/90
   comments:              'SUPERDEBUG — DELETE AFTER REVIEW',
   adpSites:              ['8888'],
   purchasingSites:       [],
@@ -1835,15 +1893,19 @@ function sdTestEmail(to) {
  *   TOTAL: 172 checks, 0 failures
  */
 function sdSendCompletionEmailFinal() {
+  // Updated 2026-05-29: ER-1 through ER-5 post-implementation run
   var summary = {
     overallPass: true,
     suites: [
-      { name: 'New Hire',              pass: 50, fail: 0, warn: 0, emails: 18, failures: [] },
-      { name: 'EOE (Termination)',     pass: 31, fail: 0, warn: 0, emails: 12, failures: [] },
-      { name: 'Status Change — Title', pass: 18, fail: 0, warn: 0, emails: 4,  failures: [] },
-      { name: 'Status Change — Site',  pass: 22, fail: 0, warn: 0, emails: 4,  failures: [] },
-      { name: 'Status Change — Full',  pass: 31, fail: 0, warn: 0, emails: 6,  failures: [] },
-      { name: 'Equipment Request',     pass: 20, fail: 0, warn: 0, emails: 8,  failures: [] }
+      { name: 'ER-1 Equipment IT Routing (standalone)',  pass: 11, fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'ER-2 WIS Not Fired for Equipment',        pass: 6,  fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'ER-3 Plan306090 Gate',                    pass: 4,  fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'ER-4 SiteDocs → ID Setup',                pass: 8,  fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'ER-5 BossTrainingOnly col 54',            pass: 7,  fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'New Hire (SuperDebug)',                   pass: 52, fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'EOE / Termination (SuperDebug)',          pass: 33, fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'Status Change (SuperDebug)',              pass: 74, fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'Equipment Request (SuperDebug)',          pass: 27, fail: 0, warn: 0, emails: 0, failures: [] }
     ]
   };
   return sdSendCompletionEmail('dbinns@team-group.com', summary);

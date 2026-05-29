@@ -349,8 +349,8 @@ function triggerSpecialists(workflowId, itData) {
     });
   }
 
-  // 4. 30/60/90 Review — salary employees with plan306090 checked, and never for Equipment Requests (ER-3)
-  if (context.plan306090 && !workflowId.startsWith('EQUIP_REQ_')) {
+  // 4. 30/60/90 Review — only when plan306090 === 'Yes' (not just any truthy value) AND not Equipment (ER-3)
+  if (context.plan306090 === 'Yes' && !workflowId.startsWith('EQUIP_REQ_')) {
     specialists.push({
       email: CONFIG.EMAILS.REVIEW_306090_JR,
       category: '30/60/90 Review',
