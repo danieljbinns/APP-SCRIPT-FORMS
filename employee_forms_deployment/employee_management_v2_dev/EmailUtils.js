@@ -270,7 +270,14 @@ function getWorkflowContext(workflowId) {
       bossTripReports:  row[headers.indexOf('BOSS Trip Reports')]       || row[headers.indexOf('Trip Reports')] || '',
       bossGrievances:   row[headers.indexOf('BOSS Grievances')]         || row[headers.indexOf('Grievances')] || '',
       vehicleRequested: row[headers.indexOf('Vehicle Requested')]       || row[headers.indexOf('Company Vehicle')] || '',
-      fleetioAccess:    row[headers.indexOf('Fleetio Access')]          || ''
+      fleetioAccess:    row[headers.indexOf('Fleetio Access')]          || '',
+      // Specialist-task fields — read via schema index since header names vary
+      creditCardUSA:    String(row[SCHEMA.INITIAL_REQUESTS.CC_USA]           || ''),
+      creditCardCanada: String(row[SCHEMA.INITIAL_REQUESTS.CC_CAN]           || ''),
+      creditCardHomeDepot: String(row[SCHEMA.INITIAL_REQUESTS.CC_HD]         || ''),
+      jonasJobNumbers:  String(row[SCHEMA.INITIAL_REQUESTS.JONAS_JOB_NUMBERS]|| ''),
+      plan306090:       String(row[SCHEMA.INITIAL_REQUESTS.PLAN_306090]      || ''),
+      businessCards:    String(row[SCHEMA.INITIAL_REQUESTS.EQUIPMENT]        || '').toLowerCase().indexOf('business card') !== -1 ? 'Yes' : 'No'
     };
     
     // PHASE 4 FIX: Check HR Verification Results for verified titles and ADP ID

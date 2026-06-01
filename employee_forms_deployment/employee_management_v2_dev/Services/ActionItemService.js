@@ -195,7 +195,7 @@ var ActionItemService = (function() {
       if (row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('Fleetio'))                     cats.add('Fleetio');
       if (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('Business Cards'))           cats.add('Business Cards');
       if ((row[IR.SYSTEMS]   && String(row[IR.SYSTEMS]).includes('SiteDocs')) ||
-          (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('SiteDocs Tablet')))        cats.add('SiteDocs');
+          (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('SiteDocs Tablet')))        cats.add('WIS User'); // ER-4: SiteDocs AI uses category 'WIS User' (ID Setup team)
       if (row[IR.PLAN_306090] === 'Yes') cats.add('30/60/90 Review');
       cats.add('Safety'); // always required for onboarding
       return cats;

@@ -86,9 +86,27 @@ function buildNewHireContextBlock(context, opts) {
   var specSt     = specReady ? 'active' : 'queued';
 
   // ── Systems: IT vs Specialists ────────────────────────────
-  var systems     = Array.isArray(context.systems) ? context.systems : [];
-  var itSystems   = systems.filter(function(s) { return !_isSpecialist(s); });
-  var specialists = systems.filter(function(s) { return  _isSpecialist(s); });
+  var systems   = Array.isArray(context.systems) ? context.systems : [];
+  var itSystems = systems.filter(function(s) { return !_isSpecialist(s) && s.toLowerCase() !== 'sitedocs'; });
+
+  // Build specialist list from all sources (systems, equipment, credit card fields, jonas, plan306090)
+  var specialists = [];
+  // From systems array — standard specialist systems (Fleetio etc.)
+  systems.forEach(function(s) { if (_isSpecialist(s)) specialists.push(s); });
+  // SiteDocs → routed to ID Setup team (WIS User) — not in SPECIALIST_SYSTEMS but IS a specialist task
+  if (systems.some(function(s) { return s.toLowerCase() === 'sitedocs'; })) specialists.push('SiteDocs Account Setup');
+  // Equipment: Business Cards, Vehicle
+  var equipStr = String(context.equipmentRaw || '').toLowerCase();
+  if (equipStr.indexOf('business card') !== -1) specialists.push('Business Cards');
+  if (equipStr.indexOf('vehicle') !== -1) specialists.push('Vehicle');
+  // Credit Card (from separate CC fields)
+  if (context.creditCardUSA === 'Yes' || context.creditCardCanada === 'Yes' || context.creditCardHomeDepot === 'Yes') specialists.push('Credit Card');
+  // Jonas / Central Purchasing
+  if (context.jonasJobNumbers && String(context.jonasJobNumbers).trim()) specialists.push('Central Purchasing/Jonas');
+  // 30/60/90 Review
+  if (context.plan306090 === 'Yes') specialists.push('30/60/90 Review');
+  // Safety — always required for salaried New Hire onboarding
+  if (needsIt) specialists.push('Safety Onboarding');
 
   // ── Hire date — human-readable ────────────────────────────
   var hireDisplay = '';
