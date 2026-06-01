@@ -332,6 +332,7 @@ function submitPositionChangeApproval(formData) {
       workflowId, formId, new Date(), decision, notes,
       confirmedTitle || '', confirmedNewManager || '', Session.getActiveUser().getEmail()
     ]);
+    SpreadsheetApp.flush(); // ensure approval row is visible to getWorkflowContext() in same execution
 
     if (decision === 'Approved') {
       const changeData = getPositionChangeData(workflowId);

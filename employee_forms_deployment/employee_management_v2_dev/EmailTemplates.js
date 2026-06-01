@@ -659,9 +659,10 @@ function buildStatusChangeContextBlock(context, opts) {
   var effDateDisp = _fmtDisp(context.hireDate);
 
   // ── HR decision flags ─────────────────────────────────────────
-  var hrDecision = context.hrDecision || '';
-  var hrApproved = hrDecision === 'Approved';
-  var hrRejected = hrDecision === 'Rejected';
+  var hrDecision  = context.hrDecision || '';
+  var hrApproved  = hrDecision === 'Approved';
+  var hrRejected  = hrDecision === 'Rejected';
+  var allComplete = opts.allComplete === true; // true when notifyWorkflowClosure fires (all AIs closed)
 
   // ── Systems & Equipment (normalise to arrays) ─────────────────
   var systems = Array.isArray(context.systems)
@@ -793,13 +794,13 @@ function buildStatusChangeContextBlock(context, opts) {
   // ============================================================
   var accessSection = '';
   if (allItems.length > 0) {
-    var acStatus = hrApproved ? 'active' : 'queued';
-    var acBadge  = hrApproved ? '⏳ In Progress' : '— Queued';
-    var acActor  = hrApproved ? 'Notifications sent to respective teams' : '';
+    var acStatus = allComplete ? 'complete' : (hrApproved ? 'active' : 'queued');
+    var acBadge  = allComplete ? '✓ All Complete' : (hrApproved ? '⏳ In Progress' : '— Queued');
+    var acActor  = allComplete ? 'All teams confirmed complete' : (hrApproved ? 'Notifications sent to respective teams' : '');
     var acRows   = allItems.map(function(s) {
-      return esRow(s, hrApproved
-        ? esVal('In Progress', 'pending')
-        : esVal('— Queued', 'queued'));
+      return esRow(s, allComplete
+        ? esVal('✓ Complete', 'complete')
+        : (hrApproved ? esVal('In Progress', 'pending') : esVal('— Queued', 'queued')));
     }).join('');
     accessSection = esSection('Access & Equipment Changes', acStatus, acBadge, acActor, acRows);
   }
@@ -811,10 +812,14 @@ function buildStatusChangeContextBlock(context, opts) {
   var actionSection = '';
   if (hrApproved && context.actionTeams && context.actionTeams.length > 0) {
     var atRows = context.actionTeams.map(function(team) {
-      return esRow(team, esVal('Action item assigned & emailed', 'pending'));
+      return esRow(team, allComplete
+        ? esVal('✓ Complete', 'complete')
+        : esVal('Action item assigned & emailed', 'pending'));
     }).join('');
+    var atBadge = allComplete ? '✓ All Complete' : '⏳ In Progress';
+    var atSt    = allComplete ? 'complete' : 'active';
     actionSection = esSection(
-      'Action Items Assigned', 'active', '⏳ In Progress',
+      'Action Items Assigned', atSt, atBadge,
       'Each team received a checklist link via email', atRows
     );
   }

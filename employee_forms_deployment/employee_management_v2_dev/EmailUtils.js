@@ -212,6 +212,23 @@ function getWorkflowContext(workflowId) {
           creditCardLimitHomeDepot: changeData.ccLimitHD || '',
           requestDate:              changeData.dateRequested || changeData.effDate || ''
         };
+        // Enrich with HR approval data from Position Change Approval Results sheet
+        const pcaSheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
+        if (pcaSheet) {
+          const pcaData = pcaSheet.getDataRange().getValues();
+          const pcaRow = pcaData.find(function(r) { return r[0] === workflowId; });
+          if (pcaRow) {
+            if (pcaRow[3]) changeContext.hrDecision      = String(pcaRow[3]);
+            if (pcaRow[4]) changeContext.hrNotes         = String(pcaRow[4]);
+            if (pcaRow[5]) changeContext.confirmedTitle  = String(pcaRow[5]);
+            if (pcaRow[6]) changeContext.confirmedNewManager = String(pcaRow[6]);
+            if (pcaRow[7]) changeContext.hrSubmittedBy   = String(pcaRow[7]);
+            if (pcaRow[2]) changeContext.hrTimestamp     = pcaRow[2] instanceof Date
+              ? Utilities.formatDate(pcaRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a')
+              : String(pcaRow[2]);
+          }
+        }
+        return changeContext;
       }
     }
 

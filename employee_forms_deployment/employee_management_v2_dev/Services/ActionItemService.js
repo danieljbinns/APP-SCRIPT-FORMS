@@ -452,7 +452,32 @@ var ActionItemService = (function() {
         <br><br><b>Closure Audit Log:</b><br>${logHtml}`;
 
       const context = getWorkflowContext(workflowId) || { employeeName: workflow['Employee Name'] };
-      if (workflowId.startsWith('TERM_')) context.hrDecision = 'Approved';
+      if (workflowId.startsWith('TERM_'))    context.hrDecision = 'Approved';
+      if (workflowId.startsWith('CHANGE_') && !context.hrDecision) context.hrDecision = 'Approved';
+      // Status Change: read HR approval details directly from POSITION_CHANGE_APPROVALS (same ss object,
+      // already flushed in submitPositionChangeApproval) — bypasses getPositionChangeData chain
+      if (workflowId.startsWith('CHANGE_') && !context.hrNotes) {
+        try {
+          const pcaSheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
+          Logger.log('[notifyWorkflowClosure] CHANGE_ pcaSheet found=' + !!pcaSheet + ' sheetName=' + CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
+          if (pcaSheet) {
+            const pcaData = pcaSheet.getDataRange().getValues();
+            Logger.log('[notifyWorkflowClosure] CHANGE_ pcaData rows=' + pcaData.length + ' workflowId=' + workflowId);
+            const pcaRow = pcaData.find(function(r) { return r[0] === workflowId; });
+            Logger.log('[notifyWorkflowClosure] CHANGE_ pcaRow found=' + !!pcaRow + (pcaRow ? ' notes=' + pcaRow[4] : ''));
+            if (pcaRow) {
+              if (pcaRow[3] && !context.hrDecision) context.hrDecision    = String(pcaRow[3]);
+              if (pcaRow[4]) context.hrNotes         = String(pcaRow[4]);
+              if (pcaRow[5]) context.confirmedTitle  = String(pcaRow[5]);
+              if (pcaRow[6]) context.confirmedNewManager = String(pcaRow[6]);
+              if (pcaRow[7]) context.hrSubmittedBy   = String(pcaRow[7]);
+              if (pcaRow[2]) context.hrTimestamp     = pcaRow[2] instanceof Date
+                ? Utilities.formatDate(pcaRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a')
+                : String(pcaRow[2]);
+            }
+          }
+        } catch(e) { Logger.log('[notifyWorkflowClosure] CHANGE_ approval read: ' + e.message); }
+      }
 
       // Equipment: extract SiteDocs credentials from WIS User action item formData (already flushed
       // and present in wfTasks) rather than re-reading ID_SETUP_RESULTS which may be cached
