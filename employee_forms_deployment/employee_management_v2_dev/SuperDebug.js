@@ -1501,10 +1501,10 @@ var SD_EQUIP_ITCONF = function(wfId) { return {
 // ER-1: IT Setup payload for Equipment (same PascalCase field names as New Hire — submitITSetup reads PascalCase)
 var SD_EQUIP_ITSETUP = function(wfId) { return {
   workflowId:                wfId,
-  Email_Created:             'No',   // Equipment typically no new email
-  Email_Username:            '',
-  Email_Domain:              '',
-  Email_Temp_Password:       '',
+  Email_Created:             'Yes',
+  Email_Username:            'sdequip.sdequiplast',
+  Email_Domain:              '@sd-test.com',
+  Email_Temp_Password:       'EquipPass123!',
   Computer_Assigned:         'Yes',
   Computer_Serial:           'SD-SERIAL-EQUIP',
   Computer_Model:            'SD Test Equip MacBook Pro',
