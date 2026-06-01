@@ -65,36 +65,65 @@ function _isSpecialist(sys) {
  * @param {Object} context  — from getWorkflowContext()
  * @param {Object} [opts]   — { showPasswords: boolean }
  */
+/**
+ * Unified context block for New Hire and Equipment Request emails.
+ *
+ * Both workflows share identical IT Setup rendering, BOSS details, specialists logic,
+ * and allComplete handling. The isEquipment flag controls three structural differences:
+ *
+ *   WHERE THEY DIFFER (isEquipment):
+ *   ┌─────────────────────┬──────────────────────────┬──────────────────────────┐
+ *   │ Section             │ New Hire                 │ Equipment Request        │
+ *   ├─────────────────────┼──────────────────────────┼──────────────────────────┤
+ *   │ ID Setup            │ Shown (internalEmployeeId│ SKIPPED — no step exists │
+ *   │ HR Verification     │ Shown (adpAssociateId)   │ SKIPPED — no step exists │
+ *   │ IT step gate        │ Requires hasHr first     │ Unlocks directly         │
+ *   │ Request Details     │ Type + Start Date        │ Position + Request Date  │
+ *   │ Specialists         │ + Safety Onboarding      │ + SiteDocs Account Setup │
+ *   └─────────────────────┴──────────────────────────┴──────────────────────────┘
+ *
+ *   WHERE THEY ARE IDENTICAL (shared code below):
+ *   - IT Setup section: assigned email, temp password, computer, phone,
+ *     BOSS ✓ Granted, BOSS details (committee/cost sheet/trip/grievances),
+ *     Incidents/CAA/Delivery App/NPS, itSystems provisioned, notes
+ *   - Specialists list: systems filter, equipment, credit card, jonas, 30/60/90
+ *   - allComplete: opts.allComplete=true flips all specialists to ✓ Complete
+ */
 function buildNewHireContextBlock(context, opts) {
   opts = opts || {};
-  var showPw     = opts.showPasswords === true;
+  var showPw      = opts.showPasswords === true;
   var isEquipment = context.workflowType === 'Equipment Request';
 
-  // ── Step completion flags ─────────────────────────────────
-  var hasId   = !isEquipment && !!(context.internalEmployeeId); // Equipment has no ID Setup step
-  var hasHr   = !isEquipment && !!(context.adpAssociateId);     // Equipment has no HR Verification step
-  var hasIt   = !!(context.itTimestamp || context.assignedEmail); // itTimestamp written whenever IT submits
-  // Hourly employees with no system access skip IT entirely (not applicable to Equipment)
+  // ── DIFFERS: completion flags ─────────────────────────────
+  // Equipment skips ID Setup and HR Verification entirely — those steps don't exist
+  var hasId = !isEquipment && !!(context.internalEmployeeId);
+  var hasHr = !isEquipment && !!(context.adpAssociateId);
+  // SHARED: IT complete when itTimestamp exists (written on every submitITSetup call)
+  var hasIt = !!(context.itTimestamp || context.assignedEmail);
+  // SHARED: NH Hourly/no-access skips IT; not applicable to Equipment (needsIt always true)
   var needsIt = !(context.employmentType === 'Hourly' && String(context.systemAccess || '') === 'No');
 
-  // ── Step statuses ─────────────────────────────────────────
-  var idSt  = hasId ? 'complete' : 'active';
-  var hrSt  = hasHr ? 'complete' : (hasId  ? 'active' : 'queued');
-  // Equipment: IT unlocks directly (no HR gate); NH: IT gates on HR
-  var itSt  = !needsIt ? 'na' : (hasIt ? 'complete' : (isEquipment || hasHr ? 'active' : 'queued'));
+  // ── DIFFERS: step statuses ────────────────────────────────
+  var idSt = hasId ? 'complete' : 'active';
+  var hrSt = hasHr ? 'complete' : (hasId ? 'active' : 'queued');
+  // NH: IT queued until HR done. Equipment: IT unlocks directly (no HR gate).
+  var itSt = !needsIt ? 'na' : (hasIt ? 'complete' : (isEquipment || hasHr ? 'active' : 'queued'));
 
-  // Specialists unlock after HR (hourly/Equipment) or IT (salary NH)
+  // ── SHARED: specialists unlock after IT (or after HR for hourly NH) ───
   var specReady = needsIt ? hasIt : hasHr;
   var specSt    = specReady ? 'active' : 'queued';
 
-  // ── Systems: IT vs Specialists ────────────────────────────
+  // ── SHARED: systems split — IT-provisioned vs specialist-routed ───────
   var systems   = Array.isArray(context.systems) ? context.systems : [];
+  // SiteDocs excluded from itSystems (it's a specialist task for Equipment, ID Setup for NH)
   var itSystems = systems.filter(function(s) { return !_isSpecialist(s) && s.toLowerCase() !== 'sitedocs'; });
 
-  // Build specialist list from all sources — same logic for NH and Equipment
+  // ── SHARED: build specialist list from all context fields ─────────────
   var specialists = [];
   systems.forEach(function(s) { if (_isSpecialist(s)) specialists.push(s); });
-  // SiteDocs: Equipment → specialist action item (WIS User to ID Setup); NH → handled in ID Setup section
+  // DIFFERS: SiteDocs handling
+  //   Equipment → WIS User action item sent to ID Setup team (no ID Setup step in workflow)
+  //   New Hire  → SiteDocs credentials recorded in ID Setup section (not a separate specialist)
   if (isEquipment && systems.some(function(s) { return s.toLowerCase() === 'sitedocs'; })) {
     specialists.push('SiteDocs Account Setup');
   }
@@ -104,7 +133,7 @@ function buildNewHireContextBlock(context, opts) {
   if (context.creditCardUSA === 'Yes' || context.creditCardCanada === 'Yes' || context.creditCardHomeDepot === 'Yes') specialists.push('Credit Card');
   if (context.jonasJobNumbers && String(context.jonasJobNumbers).trim()) specialists.push('Central Purchasing/Jonas');
   if (context.plan306090 === 'Yes') specialists.push('30/60/90 Review');
-  // Safety — NH onboarding only, not Equipment
+  // DIFFERS: Safety Onboarding — NH onboarding only; Equipment doesn't trigger Safety
   if (!isEquipment && needsIt) specialists.push('Safety Onboarding');
 
   // ── Hire date — human-readable ────────────────────────────
@@ -131,8 +160,9 @@ function buildNewHireContextBlock(context, opts) {
   }
 
   // ============================================================
-  // SECTION 1 — Request Details
-  // Always complete — the request was submitted to start the workflow.
+  // SECTION 1 — Request Details          ★ DIFFERS by workflow type ★
+  //   NH:   Employee | Type | Job Title | Site | Dept | Start Date | Manager | Requested By
+  //   EQUIP: Employee |       Position  | Site | Dept | Request Date | Manager | Requested By
   // ============================================================
 
   var empName = (context.firstName && context.lastName)
@@ -165,7 +195,9 @@ function buildNewHireContextBlock(context, opts) {
   );
 
   // ============================================================
-  // SECTION 2 — ID Setup  (New Hire only — Equipment has no ID Setup step)
+  // SECTION 2 — ID Setup                 ★ NEW HIRE ONLY ★
+  //   Equipment: idSection = '' (no ID Setup step in workflow)
+  //   NH:        internalEmployeeId, siteDocsWorkerId, credentials, BOSS WIS
   // ============================================================
 
   var idRows = '';
@@ -196,7 +228,9 @@ function buildNewHireContextBlock(context, opts) {
   var idSection = isEquipment ? '' : esSection('ID Setup', idSt, idBadge, idActor, idRows);
 
   // ============================================================
-  // SECTION 3 — HR Verification  (New Hire only — Equipment has no HR Verification step)
+  // SECTION 3 — HR Verification           ★ NEW HIRE ONLY ★
+  //   Equipment: hrSection = '' (no HR Verification step in workflow)
+  //   NH:        adpAssociateId, HR job title, JR title
   // ============================================================
 
   var hrRows = '';
@@ -220,7 +254,12 @@ function buildNewHireContextBlock(context, opts) {
   var hrSection = isEquipment ? '' : esSection('HR Verification', hrSt, hrBadge, hrActor, hrRows);
 
   // ============================================================
-  // SECTION 4 — IT Setup
+  // SECTION 4 — IT Setup                 ★ SHARED (NH + Equipment) ★
+  //   Complete state (hasIt=true): assigned email, temp password, computer,
+  //   phone, BOSS ✓ + BOSS details (committee/cost sheet/trip/grievances),
+  //   Incidents/CAA/Delivery App/NPS access, itSystems provisioned, notes
+  //   Pending state: lists requested items as "Pending provisioning"
+  //   N/A state: Hourly NH with no system access (not applicable to Equipment)
   // ============================================================
 
   var itSection = '';
@@ -312,9 +351,11 @@ function buildNewHireContextBlock(context, opts) {
   }
 
   // ============================================================
-  // SECTION 5 — Specialists (only rendered if any were requested)
-  // Individual completion tracking requires Action Items data —
-  // for now shows In Progress / Queued at the section level.
+  // SECTION 5 — Specialists              ★ SHARED (NH + Equipment) ★
+  //   Both: Fleetio, Business Cards, Vehicle, Credit Card, Jonas, 30/60/90
+  //   NH only:   Safety Onboarding
+  //   EQUIP only: SiteDocs Account Setup (ID Setup team, WIS User action item)
+  //   opts.allComplete=true → each row shows ✓ Complete (Workflow Completed email)
   // ============================================================
 
   var specSection = '';
