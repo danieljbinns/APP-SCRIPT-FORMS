@@ -525,23 +525,8 @@ function _sdCloseAllAI(workflowId, phaseLabel) {
     pending.forEach(function(row) {
       var taskId   = row[SCHEMA.ACTION_ITEMS.TASK_ID];
       var taskName = row[SCHEMA.ACTION_ITEMS.TASK_NAME];
-      var category = String(row[SCHEMA.ACTION_ITEMS.CATEGORY] || '');
       _sdLog('INFO', phaseLabel, 'Closing AI: [' + taskId + '] ' + taskName);
-
-      // WIS User on Equipment: pass test SiteDocs/DSS credentials so they write to
-      // ID_SETUP_RESULTS and appear in emails — same pattern as SD_EQUIP_ITSETUP
-      // passing Email_Created='Yes' to make email credentials show in IT Setup section
-      var formDataJSON = null;
-      if (category === 'WIS User' && workflowId.startsWith('EQUIP_REQ_')) {
-        formDataJSON = JSON.stringify({
-          siteDocsUsername: 'sdequip.sdequiplast@sitedocs.test',
-          siteDocsPassword: 'SdSiteDocsPass123!',
-          dssUsername:      'sdequip.sdequiplast',
-          dssPassword:      'SdDssPass123!'
-        });
-      }
-
-      var r = ActionItemService.closeActionItem(taskId, 'SUPERDEBUG AUTO-CLOSE', SD_EMAIL, null, formDataJSON);
+      var r = ActionItemService.closeActionItem(taskId, 'SUPERDEBUG AUTO-CLOSE', SD_EMAIL, null, null);
       if (r && r.success === false) {
         _sdLog('WARN', phaseLabel, 'closeActionItem returned success:false for ' + taskId);
       } else {
