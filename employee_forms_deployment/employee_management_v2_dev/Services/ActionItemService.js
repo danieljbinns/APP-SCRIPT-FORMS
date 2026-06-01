@@ -94,9 +94,46 @@ var ActionItemService = (function() {
         sheet.getRange(rowIndex, AI.FORM_DATA + 1).setValue(formDataJSON);
       }
 
+      // WIS User + Equipment Request: write SiteDocs/DSS credentials to ID_SETUP_RESULTS
+      // so they appear in the ID Setup section of completion emails (same as New Hire)
+      const taskCategory = data[rowIndex - 1][AI.CATEGORY] || '';
+      if (taskCategory === 'WIS User' && workflowId.startsWith('EQUIP_REQ_') && formDataJSON) {
+        try {
+          const creds = JSON.parse(formDataJSON);
+          if (creds.siteDocsUsername || creds.dssUsername) {
+            const idSheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
+            if (idSheet) {
+              const ID = SCHEMA.ID_SETUP_RESULTS;
+              // Check if a row already exists for this workflow
+              const idData = idSheet.getDataRange().getValues();
+              let idRowIndex = -1;
+              for (let j = SCHEMA.ROW.FIRST_DATA; j < idData.length; j++) {
+                if (String(idData[j][ID.WORKFLOW_ID]) === workflowId) { idRowIndex = j + 1; break; }
+              }
+              const idRow = new Array(Math.max(ID.SUBMITTED_BY, ID.SUBMISSION_TS) + 2).fill('');
+              idRow[ID.WORKFLOW_ID]      = workflowId;
+              idRow[ID.SUBMISSION_TS]    = new Date();
+              idRow[ID.SITEDOCS_USERNAME]= creds.siteDocsUsername || '';
+              idRow[ID.SITEDOCS_PASSWORD]= creds.siteDocsPassword || '';
+              idRow[ID.DSS_USERNAME]     = creds.dssUsername      || '';
+              idRow[ID.DSS_PASSWORD]     = creds.dssPassword      || '';
+              idRow[ID.SUBMITTED_BY]     = closedBy;
+              if (idRowIndex !== -1) {
+                idSheet.getRange(idRowIndex, 1, 1, idRow.length).setValues([idRow]);
+              } else {
+                idSheet.appendRow(idRow);
+              }
+              Logger.log('[ActionItemService] WIS User credentials written to ID_SETUP_RESULTS for ' + workflowId);
+            }
+          }
+        } catch (credErr) {
+          Logger.log('[ActionItemService] WIS User credential write failed: ' + credErr.message);
+        }
+      }
+
       // Ensure data is written before notifyTaskClosure reads it
       SpreadsheetApp.flush();
-      
+
       Logger.log(`[ActionItemService] Closed Task ${taskId}`);
       
       // Notify responsible parties that THIS item is closed

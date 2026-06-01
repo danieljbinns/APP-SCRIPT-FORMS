@@ -87,6 +87,36 @@
         </div>
       </div>
 
+      <!-- WIS User credential capture — Equipment Requests only -->
+      <? if (task.FormType === 'wis_user' && task.WorkflowID && task.WorkflowID.indexOf('EQUIP_REQ_') === 0) { ?>
+      <div class="form-section" id="wisUserCredSection">
+        <h2>SiteDocs &amp; DSS Credentials</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+          Record the credentials created for this employee. These will appear in the completion email.
+        </p>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label>SiteDocs Username</label>
+            <input type="text" id="wis_siteDocsUsername" name="wis_siteDocsUsername" placeholder="firstname.lastname@sitedocs.com">
+          </div>
+          <div class="form-field">
+            <label>SiteDocs Password</label>
+            <input type="text" id="wis_siteDocsPassword" name="wis_siteDocsPassword" placeholder="Initial password">
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label>DSS Username</label>
+            <input type="text" id="wis_dssUsername" name="wis_dssUsername" placeholder="firstname.lastname">
+          </div>
+          <div class="form-field">
+            <label>DSS Password</label>
+            <input type="text" id="wis_dssPassword" name="wis_dssPassword" placeholder="Initial password">
+          </div>
+        </div>
+      </div>
+      <? } ?>
+
       <div id="statusMessage"></div>
 
       <? if (task.Status === 'Open') { ?>
@@ -456,7 +486,24 @@
       el.style.display = 'block';
     }
 
-    function collectFormData() { return null; }
+    function collectFormData() {
+      // WIS User Equipment: collect SiteDocs/DSS credentials if entered
+      if (formType === 'wis_user' && typeof taskId === 'string' && taskId.length > 0) {
+        var su = document.getElementById('wis_siteDocsUsername');
+        var sp = document.getElementById('wis_siteDocsPassword');
+        var du = document.getElementById('wis_dssUsername');
+        var dp = document.getElementById('wis_dssPassword');
+        if (su || sp || du || dp) {
+          return JSON.stringify({
+            siteDocsUsername: su ? su.value.trim() : '',
+            siteDocsPassword: sp ? sp.value.trim() : '',
+            dssUsername:      du ? du.value.trim() : '',
+            dssPassword:      dp ? dp.value.trim() : ''
+          });
+        }
+      }
+      return null;
+    }
 
     window.onload = function() {
       initChecklist();

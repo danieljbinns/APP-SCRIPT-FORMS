@@ -95,9 +95,10 @@ function buildNewHireContextBlock(context, opts) {
   var isEquipment = context.workflowType === 'Equipment Request';
 
   // ── DIFFERS: completion flags ─────────────────────────────
-  // Equipment skips ID Setup and HR Verification entirely — those steps don't exist
-  var hasId = !isEquipment && !!(context.internalEmployeeId);
-  var hasHr = !isEquipment && !!(context.adpAssociateId);
+  // NH: ID Setup done when internalEmployeeId exists (full ID Setup form)
+  // Equipment: ID Setup equivalent done when siteDocsUsername exists (WIS User AI credential capture)
+  var hasId = isEquipment ? !!(context.siteDocsUsername) : !!(context.internalEmployeeId);
+  var hasHr = !isEquipment && !!(context.adpAssociateId); // Equipment has no HR Verification step
   // SHARED: IT complete when itTimestamp exists (written on every submitITSetup call)
   var hasIt = !!(context.itTimestamp || context.assignedEmail);
   // SHARED: NH Hourly/no-access skips IT; not applicable to Equipment (needsIt always true)
@@ -195,9 +196,11 @@ function buildNewHireContextBlock(context, opts) {
   );
 
   // ============================================================
-  // SECTION 2 — ID Setup                 ★ NEW HIRE ONLY ★
-  //   Equipment: idSection = '' (no ID Setup step in workflow)
-  //   NH:        internalEmployeeId, siteDocsWorkerId, credentials, BOSS WIS
+  // SECTION 2 — ID Setup / SiteDocs Setup ★ DIFFERS by workflow ★
+  //   NH:        Full ID Setup — internalEmployeeId, Worker ID, Job Code,
+  //              SiteDocs/DSS credentials, BOSS WIS (gated on internalEmployeeId)
+  //   Equipment: SiteDocs/DSS credentials only — captured when ID Setup team
+  //              completes the WIS User action item (gated on siteDocsUsername)
   // ============================================================
 
   var idRows = '';
@@ -215,9 +218,11 @@ function buildNewHireContextBlock(context, opts) {
       + (context.bossWisCreated        ? esRow('BOSS WIS',             esVal(context.bossWisCreated))           : '')
       + (context.siteDocsBadgeCreated  ? esRow('SiteDocs Badge Link',  esVal(context.siteDocsBadgeCreated))    : '');
   } else if (idSt === 'active') {
-    idRows = pRow('ID Setup', 'In progress — awaiting ID Setup team');
+    idRows = isEquipment
+      ? pRow('SiteDocs Setup', 'In progress — awaiting ID Setup team')
+      : pRow('ID Setup', 'In progress — awaiting ID Setup team');
   } else {
-    idRows = qRow('ID Setup');
+    idRows = isEquipment ? qRow('SiteDocs Setup') : qRow('ID Setup');
   }
 
   var idActor = idSt === 'complete' && context.idSubmittedBy
@@ -225,7 +230,9 @@ function buildNewHireContextBlock(context, opts) {
     : (idSt === 'active' ? 'Assigned to ID Setup team' : '');
   var idBadge = idSt === 'complete' ? '✓ Complete' : (idSt === 'active' ? '⏳ In Progress' : '— Queued');
 
-  var idSection = isEquipment ? '' : esSection('ID Setup', idSt, idBadge, idActor, idRows);
+  // Section title: Equipment shows "SiteDocs Setup", NH shows "ID Setup"
+  var idSectionTitle = isEquipment ? 'SiteDocs Setup' : 'ID Setup';
+  var idSection = esSection(idSectionTitle, idSt, idBadge, idActor, idRows);
 
   // ============================================================
   // SECTION 3 — HR Verification           ★ NEW HIRE ONLY ★
