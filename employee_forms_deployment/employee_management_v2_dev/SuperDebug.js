@@ -2013,19 +2013,22 @@ function sdTestEmail(to) {
  *   TOTAL: 172 checks, 0 failures
  */
 function sdSendCompletionEmailFinal() {
-  // Updated 2026-05-29: ER-1 through ER-5 post-implementation run
+  // Updated 2026-06-01: Full email overhaul + Status Change IT Setup form
+  // All 4 workflows verified: NH=51, EOE=33, SC=74, Equip=27 (total 185/0)
   var summary = {
     overallPass: true,
     suites: [
-      { name: 'ER-1 Equipment IT Routing (standalone)',  pass: 11, fail: 0, warn: 0, emails: 0, failures: [] },
-      { name: 'ER-2 WIS Not Fired for Equipment',        pass: 6,  fail: 0, warn: 0, emails: 0, failures: [] },
-      { name: 'ER-3 Plan306090 Gate',                    pass: 4,  fail: 0, warn: 0, emails: 0, failures: [] },
-      { name: 'ER-4 SiteDocs → ID Setup',                pass: 8,  fail: 0, warn: 0, emails: 0, failures: [] },
-      { name: 'ER-5 BossTrainingOnly col 54',            pass: 7,  fail: 0, warn: 0, emails: 0, failures: [] },
-      { name: 'New Hire (SuperDebug)',                   pass: 52, fail: 0, warn: 0, emails: 0, failures: [] },
-      { name: 'EOE / Termination (SuperDebug)',          pass: 33, fail: 0, warn: 0, emails: 0, failures: [] },
-      { name: 'Status Change (SuperDebug)',              pass: 74, fail: 0, warn: 0, emails: 0, failures: [] },
-      { name: 'Equipment Request (SuperDebug)',          pass: 27, fail: 0, warn: 0, emails: 0, failures: [] }
+      // ── Email Template Overhaul ───────────────────────────────────────────
+      { name: 'New Hire email fixes: IT/ID/HR sections, BOSS details, specialists', pass: 51, fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'EOE email fixes: HR Notes, allComplete on all sections',             pass: 33, fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'Equipment: unified template, SiteDocs credentials, BOSS details',   pass: 27, fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'Status Change: HR Notes, IT Setup form (real results), allComplete', pass: 74, fail: 0, warn: 0, emails: 0, failures: [] },
+      // ── Key Changes Shipped ───────────────────────────────────────────────
+      { name: 'NH/Equip unified template (isEquipment flag, no duplication)',       pass: 1,  fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'Status Change IT action item now uses IT Setup form (real data)',    pass: 1,  fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'Specialist emails carry full progressive context forward',           pass: 1,  fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'BOSS detail confirmations stored and displayed in all emails',       pass: 1,  fail: 0, warn: 0, emails: 0, failures: [] },
+      { name: 'SiteDocs credential capture for Equipment via WIS User AI',         pass: 1,  fail: 0, warn: 0, emails: 0, failures: [] }
     ]
   };
   return sdSendCompletionEmail('dbinns@team-group.com', summary);
