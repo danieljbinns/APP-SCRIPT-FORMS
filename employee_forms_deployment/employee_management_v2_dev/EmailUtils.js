@@ -129,7 +129,7 @@ function getWorkflowContext(workflowId) {
       const termData = typeof getTerminationData === 'function' ? getTerminationData(workflowId) : null;
       if (termData) {
         const g = termData.googleOffboarding || {};
-        return {
+        const termContext = {
           workflowType:    'Termination',
           employeeName:    termData.employeeName,
           employmentType:  termData.empType || '',
@@ -153,6 +153,21 @@ function getWorkflowContext(workflowId) {
           googleVacation:  g.vacation || '',
           originalComments: termData.originalComments || ''
         };
+        // Enrich with HR approval data (decision, notes, approver, timestamp)
+        const taSheet = ss.getSheetByName(CONFIG.SHEETS.TERMINATION_APPROVALS);
+        if (taSheet) {
+          const taData = taSheet.getDataRange().getValues();
+          const taRow = taData.find(function(r) { return r[0] === workflowId; });
+          if (taRow) {
+            if (taRow[3]) termContext.hrDecision    = String(taRow[3]);
+            if (taRow[4]) termContext.hrNotes       = String(taRow[4]);
+            if (taRow[6]) termContext.hrSubmittedBy = String(taRow[6]);
+            if (taRow[2]) termContext.hrTimestamp   = taRow[2] instanceof Date
+              ? Utilities.formatDate(taRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a')
+              : String(taRow[2]);
+          }
+        }
+        return termContext;
       }
     }
 
@@ -360,7 +375,7 @@ function getWorkflowContext(workflowId) {
     }
     
     return context;
-    
+
   } catch (error) {
     Logger.log('Error getting workflow context: ' + error.toString());
     return null;

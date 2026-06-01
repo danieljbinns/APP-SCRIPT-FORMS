@@ -408,6 +408,7 @@ function buildNewHireContextBlock(context, opts) {
  */
 function buildTerminationContextBlock(context, opts) {
   opts = opts || {};
+  var allComplete = opts.allComplete === true;  // true only in Workflow Completed email
 
   var empName = context.employeeName || '';
 
@@ -519,8 +520,8 @@ function buildTerminationContextBlock(context, opts) {
   // ============================================================
   var googleSection = '';
   if (hasGoogleAccount) {
-    var gStatus = hrApproved ? 'active' : 'queued';
-    var gBadge  = hrApproved ? '⏳ In Progress' : '— Queued';
+    var gStatus = allComplete ? 'complete' : (hrApproved ? 'active' : 'queued');
+    var gBadge  = allComplete ? '✓ Complete'   : (hrApproved ? '⏳ In Progress' : '— Queued');
 
     var gRows = '';
     if (gForward  && gForward  !== 'N/A') gRows += esRow('Email Forwarding',   esVal(gForward));
@@ -559,15 +560,15 @@ function buildTerminationContextBlock(context, opts) {
     return selectedSys.indexOf(m) === -1;
   }));
 
-  var sysStatus = hrApproved ? 'active' : 'queued';
-  var sysBadge  = hrApproved ? '⏳ In Progress' : '— Queued';
+  var sysStatus = allComplete ? 'complete' : (hrApproved ? 'active' : 'queued');
+  var sysBadge  = allComplete ? '✓ Complete'  : (hrApproved ? '⏳ In Progress' : '— Queued');
   var sysActor  = hrApproved ? 'Notifications sent to respective teams' : '';
   var sysRows   = allDeact.map(function(s) {
     var isMandatory = mandatorySys.indexOf(s) !== -1 && selectedSys.indexOf(s) === -1;
     var label = s + (isMandatory ? ' ✦' : '');
-    return esRow(label, hrApproved
-      ? esVal('Deactivation in progress', 'pending')
-      : esVal('— Queued', 'queued'));
+    return esRow(label, allComplete
+      ? esVal('✓ Deactivated')
+      : (hrApproved ? esVal('Deactivation in progress', 'pending') : esVal('— Queued', 'queued')));
   }).join('');
   if (hrApproved) {
     sysRows += esDivider()
@@ -581,12 +582,12 @@ function buildTerminationContextBlock(context, opts) {
   // ============================================================
   var eqSection = '';
   if (eqList.length > 0) {
-    var eqStatus = hrApproved ? 'active' : 'queued';
-    var eqBadge  = hrApproved ? '⏳ Pending Collection' : '— Queued';
+    var eqStatus = allComplete ? 'complete' : (hrApproved ? 'active' : 'queued');
+    var eqBadge  = allComplete ? '✓ Collected' : (hrApproved ? '⏳ Pending Collection' : '— Queued');
     var eqRows   = eqList.map(function(item) {
-      return esRow(item, hrApproved
-        ? esVal('Pending Return', 'pending')
-        : esVal('— Queued', 'queued'));
+      return esRow(item, allComplete
+        ? esVal('✓ Returned')
+        : (hrApproved ? esVal('Pending Return', 'pending') : esVal('— Queued', 'queued')));
     }).join('');
     eqSection = esSection(
       'Equipment to Return', eqStatus, eqBadge,
@@ -606,8 +607,8 @@ function buildTerminationContextBlock(context, opts) {
     } else {
       rrRows += esRow('Reassignment', esVal('Confirm with HR', 'pending'));
     }
-    var rrStatus = hrApproved ? 'active' : 'queued';
-    var rrBadge  = hrApproved ? '⏳ Action Required' : '— Queued';
+    var rrStatus = allComplete ? 'complete' : (hrApproved ? 'active' : 'queued');
+    var rrBadge  = allComplete ? '✓ Complete'    : (hrApproved ? '⏳ Action Required' : '— Queued');
     reportsSection = esSection('Direct Reports', rrStatus, rrBadge, '', rrRows);
   }
 
