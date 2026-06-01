@@ -351,6 +351,10 @@ function getWorkflowContext(workflowId) {
             context.itNotes            = itRow[IT.IT_NOTES]            || '';
             if (itRow[IT.SUBMISSION_TS]) context.itTimestamp   = itRow[IT.SUBMISSION_TS] instanceof Date ? Utilities.formatDate(itRow[IT.SUBMISSION_TS], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(itRow[IT.SUBMISSION_TS]);
             if (itRow[IT.SUBMITTED_BY])  context.itSubmittedBy = String(itRow[IT.SUBMITTED_BY]);
+            // BOSS detail confirmations — committees, cost sheets, trip reports, grievances
+            if (itRow[IT.BOSS_DETAILS]) {
+              try { context.bossDetails = JSON.parse(String(itRow[IT.BOSS_DETAILS])); } catch(e) {}
+            }
         }
     }
     

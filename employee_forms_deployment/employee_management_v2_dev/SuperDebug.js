@@ -677,6 +677,10 @@ var SD_NH_ITSETUP = function(wfId) { return {
   Phone_Number:              '555-0199',
   Phone_VM_Password:         '9999',
   BOSS_Access:               'Yes',
+  BOSS_Cmte_SD_Site_A:       'Confirmed',   // BOSS committee — SD Site A
+  BOSS_CostSheet_SD_Job_001: 'Confirmed',   // BOSS cost sheet — SD Job 001
+  BOSS_TripReports:          'Confirmed',   // BOSS trip reports
+  BOSS_Grievances:           'Confirmed',   // BOSS grievances
   Incidents_Access:          'Yes',
   CAA_Access:                'Yes',
   Delivery_App_Access:       'Yes',

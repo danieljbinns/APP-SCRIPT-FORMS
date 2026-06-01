@@ -252,6 +252,18 @@ function buildNewHireContextBlock(context, opts) {
       // ── System Access ──────────────────────────────────────────
       var sysRows = '';
       if (context.bossAccess         === 'Yes') sysRows += esRow('BOSS',            esVal('✓ Granted'));
+      // BOSS detail confirmations — committees, cost sheets, trip reports, grievances
+      if (context.bossDetails) {
+        var bd = context.bossDetails;
+        if (Array.isArray(bd.committees) && bd.committees.length > 0) {
+          bd.committees.forEach(function(site) { sysRows += esRow('Committee', esVal('✓ ' + site)); });
+        }
+        if (Array.isArray(bd.costSheets) && bd.costSheets.length > 0) {
+          bd.costSheets.forEach(function(job) { sysRows += esRow('Cost Sheet', esVal('✓ ' + job)); });
+        }
+        if (bd.tripReports === 'Yes') sysRows += esRow('Trip Reports', esVal('✓ Granted'));
+        if (bd.grievances  === 'Yes') sysRows += esRow('Grievances',   esVal('✓ Granted'));
+      }
       if (context.incidentsAccess    === 'Yes') sysRows += esRow('Incidents',       esVal('✓ Granted'));
       if (context.caaAccess          === 'Yes') sysRows += esRow('CAA',             esVal('✓ Granted'));
       if (context.deliveryAppAccess  === 'Yes') sysRows += esRow('Delivery App',    esVal('✓ Granted'));

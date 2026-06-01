@@ -172,7 +172,8 @@ const SCHEMA = {
     DELIVERY_APP_ACCESS:   18,  // boolean  — Delivery App Access
     NET_PROMOTER_ACCESS:   19,  // boolean  — Net Promoter Access
     IT_NOTES:              20,  // string   — IT Notes
-    SUBMITTED_BY:          21   // string   — Submitted By
+    SUBMITTED_BY:          21,  // string   — Submitted By
+    BOSS_DETAILS:          22   // json     — BOSS committee/cost sheet/trip/grievances confirmations
   },
 
   // ─────────────────────────────────────────────

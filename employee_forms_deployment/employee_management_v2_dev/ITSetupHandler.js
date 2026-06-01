@@ -190,9 +190,9 @@ function submitITSetup(formData) {
         'Computer Assigned', 'Computer Serial', 'Computer Model', 'Computer Type',
         'Phone Assigned', 'Phone Carrier', 'Phone Model', 'Phone Number', 'Phone VM Password',
         'BOSS Access', 'Incidents Access', 'CAA Access', 'Delivery App Access', 'Net Promoter Access',
-        'IT Notes', 'Submitted By'
+        'IT Notes', 'Submitted By', 'BOSS Details'
       ]);
-      itSheet.getRange(1, 1, 1, 22).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
+      itSheet.getRange(1, 1, 1, 23).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
     
     // Only build an email address when IT confirmed the account was actually created.
@@ -202,29 +202,43 @@ function submitITSetup(formData) {
       ? (String(formData.Email_Username).replace(/^"|"$/g, '') + (formData.Email_Domain || ''))
       : '';
     
+    // Collect BOSS detail confirmations — dynamic checkboxes per site/job from the IT Setup form
+    const bossDetails = { committees: [], costSheets: [], tripReports: '', grievances: '' };
+    Object.keys(formData).forEach(function(key) {
+      if (key.startsWith('BOSS_Cmte_') && formData[key] === 'Confirmed') {
+        bossDetails.committees.push(key.replace('BOSS_Cmte_', '').replace(/_/g, ' '));
+      }
+      if (key.startsWith('BOSS_CostSheet_') && formData[key] === 'Confirmed') {
+        bossDetails.costSheets.push(key.replace('BOSS_CostSheet_', '').replace(/_/g, ' '));
+      }
+    });
+    if (formData.BOSS_TripReports === 'Confirmed') bossDetails.tripReports = 'Yes';
+    if (formData.BOSS_Grievances  === 'Confirmed') bossDetails.grievances  = 'Yes';
+
     const rowData = [
-      workflowId, 
-      formId, 
-      new Date(), 
-      formData.Email_Created, 
-      assignedEmail, 
+      workflowId,
+      formId,
+      new Date(),
+      formData.Email_Created,
+      assignedEmail,
       formData.Email_Temp_Password || 'N/A',
-      formData.Computer_Assigned, 
-      formData.Computer_Serial || 'N/A', 
-      formData.Computer_Model || 'N/A', 
+      formData.Computer_Assigned,
+      formData.Computer_Serial || 'N/A',
+      formData.Computer_Model || 'N/A',
       formData.Computer_Type || 'N/A',
-      formData.Phone_Assigned, 
-      formData.Phone_Carrier || 'N/A', 
-      formData.Phone_Model || 'N/A', 
-      formData.Phone_Number || 'N/A', 
+      formData.Phone_Assigned,
+      formData.Phone_Carrier || 'N/A',
+      formData.Phone_Model || 'N/A',
+      formData.Phone_Number || 'N/A',
       formData.Phone_VM_Password || 'N/A',
-      formData.BOSS_Access, 
-      formData.Incidents_Access, 
-      formData.CAA_Access, 
-      formData.Delivery_App_Access, 
+      formData.BOSS_Access,
+      formData.Incidents_Access,
+      formData.CAA_Access,
+      formData.Delivery_App_Access,
       formData.Net_Promoter_Score_Access,
-      formData.IT_Notes || '', 
-      Session.getActiveUser().getEmail()
+      formData.IT_Notes || '',
+      Session.getActiveUser().getEmail(),
+      JSON.stringify(bossDetails)   // col 22 — BOSS committee/cost sheet/trip/grievances
     ];
     
     const actingUser = Session.getActiveUser().getEmail();
