@@ -662,26 +662,26 @@ var SD_NH_ITCONF = function(wfId) { return {
 }; };
 
 var SD_NH_ITSETUP = function(wfId) { return {
-  workflowId:             wfId,
-  Email_Created:          'No',
-  Email_Username:         '',
-  Email_Domain:           '',
-  Email_Temp_Password:    '',
-  Computer_Assigned:      'Yes',
-  Computer_Serial:        'SD-SERIAL-001',
-  Computer_Model:         'SD Test Mac',
-  Computer_Type:          'Laptop',
-  Phone_Assigned:         'No',
-  Phone_Carrier:          '',
-  Phone_Model:            '',
-  Phone_Number:           '',
-  Phone_VM_Password:      '',
-  BOSS_Access:            'Yes',
-  Incidents_Access:       'No',
-  CAA_Access:             'No',
-  Delivery_App_Access:    'No',
-  Net_Promoter_Score_Access: 'No',
-  IT_Notes:               'SUPERDEBUG IT SETUP'
+  workflowId:                wfId,
+  Email_Created:             'Yes',
+  Email_Username:            'sdfirst.sdlast',
+  Email_Domain:              '@sd-test.com',
+  Email_Temp_Password:       'TempPass123!',
+  Computer_Assigned:         'Yes',
+  Computer_Serial:           'SD-SERIAL-001',
+  Computer_Model:            'SD Test MacBook Pro',
+  Computer_Type:             'Laptop',
+  Phone_Assigned:            'Yes',
+  Phone_Carrier:             'SD Mobile',
+  Phone_Model:               'SD Phone Pro',
+  Phone_Number:              '555-0199',
+  Phone_VM_Password:         '9999',
+  BOSS_Access:               'Yes',
+  Incidents_Access:          'Yes',
+  CAA_Access:                'Yes',
+  Delivery_App_Access:       'Yes',
+  Net_Promoter_Score_Access: 'Yes',
+  IT_Notes:                  'SUPERDEBUG IT SETUP — all fields populated for email verification'
 }; };
 
 /**

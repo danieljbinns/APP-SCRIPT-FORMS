@@ -244,9 +244,11 @@ function submitITSetup(formData) {
 
     // Notify Requester + Manager
     try {
-      const context = getITContextData(workflowId);
-      if (context.success) {
-        // Inject IT result data so the context block shows assigned email and credentials
+      // Use getWorkflowContext so ID Setup and HR Verification sections are fully populated.
+      // getITContextData only reads Initial_Requests — it has no internalEmployeeId or adpAssociateId.
+      const context = getWorkflowContext(workflowId);
+      if (context && context.requesterEmail) {
+        // Inject IT result data on top of the full context
         context.assignedEmail     = assignedEmail;
         context.emailTempPassword = formData.Email_Temp_Password || '';
 

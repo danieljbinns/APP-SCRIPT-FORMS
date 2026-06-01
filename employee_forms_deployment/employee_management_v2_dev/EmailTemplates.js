@@ -72,7 +72,7 @@ function buildNewHireContextBlock(context, opts) {
   // ── Step completion flags ─────────────────────────────────
   var hasId   = !!(context.internalEmployeeId);
   var hasHr   = !!(context.adpAssociateId);
-  var hasIt   = !!(context.assignedEmail);
+  var hasIt   = !!(context.itTimestamp || context.assignedEmail);  // itTimestamp written whenever IT submits, even without email
   // Hourly employees with no system access skip IT entirely
   var needsIt = !(context.employmentType === 'Hourly' && String(context.systemAccess || '') === 'No');
 
