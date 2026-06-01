@@ -1501,25 +1501,29 @@ var SD_EQUIP_ITCONF = function(wfId) { return {
 // ER-1: IT Setup payload for Equipment (same PascalCase field names as New Hire — submitITSetup reads PascalCase)
 var SD_EQUIP_ITSETUP = function(wfId) { return {
   workflowId:                wfId,
-  Email_Created:             'No',
+  Email_Created:             'No',   // Equipment typically no new email
   Email_Username:            '',
   Email_Domain:              '',
   Email_Temp_Password:       '',
   Computer_Assigned:         'Yes',
   Computer_Serial:           'SD-SERIAL-EQUIP',
-  Computer_Model:            'SD Test Model',
+  Computer_Model:            'SD Test Equip MacBook Pro',
   Computer_Type:             'Laptop',
-  Phone_Assigned:            'No',
-  Phone_Carrier:             '',
-  Phone_Model:               '',
-  Phone_Number:              '',
-  Phone_VM_Password:         '',
+  Phone_Assigned:            'Yes',
+  Phone_Carrier:             'SD Mobile',
+  Phone_Model:               'SD Phone Pro',
+  Phone_Number:              '555-0200',
+  Phone_VM_Password:         '8888',
   BOSS_Access:               'Yes',
+  BOSS_Cmte_SD_Equip_Site:   'Confirmed',   // BOSS committee
+  BOSS_CostSheet_SD_Job_002: 'Confirmed',   // BOSS cost sheet
+  BOSS_TripReports:          'Confirmed',
+  BOSS_Grievances:           'Confirmed',
   Incidents_Access:          'Yes',
-  CAA_Access:                'No',
-  Delivery_App_Access:       'No',
+  CAA_Access:                'Yes',
+  Delivery_App_Access:       'Yes',
   Net_Promoter_Score_Access: 'Yes',
-  IT_Notes:                  'SUPERDEBUG — Equipment IT Setup'
+  IT_Notes:                  'SUPERDEBUG — Equipment IT Setup — all fields populated'
 }; };
 
 /**

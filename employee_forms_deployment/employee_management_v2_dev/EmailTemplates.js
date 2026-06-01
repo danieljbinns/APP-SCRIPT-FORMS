@@ -396,10 +396,14 @@ function buildEquipmentContextBlock(context, opts) {
 
   var allItItems     = googleSystems.concat(itHardware).concat(itSoftware);
   var allSpecialists = specialistSystems.concat(specialistEquip);
+  // SiteDocs Account Setup — specialist task for Equipment (routed to ID Setup team via WIS User AI)
+  if (systemsList.some(function(s) { return s.toLowerCase() === 'sitedocs'; })) {
+    allSpecialists.push('SiteDocs Account Setup');
+  }
 
   // ── Completion flags ─────────────────────────────────────────
-  // assignedEmail is present once Google Account / IT Setup is done
-  var hasIt = !!(context.assignedEmail);
+  // itTimestamp written whenever IT submits the form, even when no Google email created
+  var hasIt = !!(context.itTimestamp || context.assignedEmail);
   var itSt  = hasIt ? 'complete' : 'active';
 
   // ── Employee name ────────────────────────────────────────────
@@ -452,10 +456,31 @@ function buildEquipmentContextBlock(context, opts) {
         itRows += esDivider();
         itRows += itHardware.map(function(e) { return esRow(e, esVal('✓ Provisioned')); }).join('');
       }
+      // BOSS access + detail confirmations
+      if (context.bossAccess === 'Yes') {
+        itRows += esDivider();
+        itRows += esRow('BOSS', esVal('✓ Granted'));
+        if (context.bossDetails) {
+          var bd = context.bossDetails;
+          if (Array.isArray(bd.committees) && bd.committees.length > 0) {
+            bd.committees.forEach(function(site) { itRows += esRow('Committee', esVal('✓ ' + site)); });
+          }
+          if (Array.isArray(bd.costSheets) && bd.costSheets.length > 0) {
+            bd.costSheets.forEach(function(job) { itRows += esRow('Cost Sheet', esVal('✓ ' + job)); });
+          }
+          if (bd.tripReports === 'Yes') itRows += esRow('Trip Reports', esVal('✓ Granted'));
+          if (bd.grievances  === 'Yes') itRows += esRow('Grievances',   esVal('✓ Granted'));
+        }
+        if (context.incidentsAccess   === 'Yes') itRows += esRow('Incidents',    esVal('✓ Granted'));
+        if (context.caaAccess         === 'Yes') itRows += esRow('CAA',          esVal('✓ Granted'));
+        if (context.deliveryAppAccess === 'Yes') itRows += esRow('Delivery App', esVal('✓ Granted'));
+        if (context.netPromoterAccess === 'Yes') itRows += esRow('Net Promoter', esVal('✓ Granted'));
+      }
       if (itSoftware.length > 0) {
         itRows += esDivider();
         itRows += itSoftware.map(function(s) { return esRow(s, esVal('✓ Provisioned')); }).join('');
       }
+      if (context.itNotes) { itRows += esDivider(); itRows += esRow('Notes', esVal(context.itNotes)); }
       if (!showPw && context.emailTempPassword) {
         itRows += '<tr><td colspan="2" style="padding:6px 0 0;">'
           + '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:4px;'
@@ -496,12 +521,16 @@ function buildEquipmentContextBlock(context, opts) {
   // ============================================================
   var specSection = '';
   if (allSpecialists.length > 0) {
+    var allComplete = opts.allComplete === true;
     var specRows = allSpecialists.map(function(s) {
+      if (allComplete) return esRow(s, esVal('✓ Complete', 'complete'));
       return esRow(s, esVal('In Progress', 'pending'));
     }).join('');
 
+    var specBadge = allComplete ? '✓ All Complete' : '⏳ In Progress';
+    var specSt    = allComplete ? 'complete' : 'active';
     specSection = esSection(
-      'Specialists', 'active', '⏳ In Progress',
+      'Specialists', specSt, specBadge,
       'Parallel notifications sent · individual completion tracked separately',
       specRows
     );
