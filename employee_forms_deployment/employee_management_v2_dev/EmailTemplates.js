@@ -53,41 +53,56 @@ function _isSpecialist(sys) {
 // ================================================================
 
 /**
- * Builds the full progressive context block for New Hire emails.
+ * Builds the full progressive context block for New Hire and Equipment Request emails.
+ * Both workflow types share the same function; the `isEquipment` flag suppresses sections
+ * that do not exist in the Equipment Request workflow.
  *
- * Five sections — each shows current completion state from context:
- *   1. Request Details  — always Complete
- *   2. ID Setup         — Complete / Active / Queued
- *   3. HR Verification  — Complete / Active / Queued
- *   4. IT Setup         — Complete / Active / Queued / N/A
- *   5. Specialists      — Active (in progress) / Queued  [no individual completion yet]
+ * Called by: createContextBlockV2() in EmailUtils.js for workflowType 'New Hire'
+ *            or 'Equipment Request'.
  *
- * @param {Object} context  — from getWorkflowContext()
- * @param {Object} [opts]   — { showPasswords: boolean }
- */
-/**
- * Unified context block for New Hire and Equipment Request emails.
+ * WHERE THEY DIFFER (isEquipment=true vs false)
+ * ──────────────────────────────────────────────
+ * ┌─────────────────────┬──────────────────────────────┬───────────────────────────────┐
+ * │ Section             │ New Hire                     │ Equipment Request             │
+ * ├─────────────────────┼──────────────────────────────┼───────────────────────────────┤
+ * │ ID Setup (§2)       │ Shown — internalEmployeeId,  │ SKIPPED — no ID Setup step    │
+ * │                     │ siteDocsWorkerId, credentials│ in the Equipment workflow      │
+ * ├─────────────────────┼──────────────────────────────┼───────────────────────────────┤
+ * │ HR Verification (§3)│ Shown — adpAssociateId,      │ SKIPPED — no HR Verification  │
+ * │                     │ verified title, JR title     │ step in Equipment workflow     │
+ * ├─────────────────────┼──────────────────────────────┼───────────────────────────────┤
+ * │ IT gate             │ IT queued until HR done      │ IT unlocks directly (no gate) │
+ * │                     │ (itSt = hasHr ? active : q)  │ (itSt = hasIt ? complete : a) │
+ * ├─────────────────────┼──────────────────────────────┼───────────────────────────────┤
+ * │ Request Details (§1)│ Type (Employment) + Start    │ Position + Request Date       │
+ * │                     │ Date                         │ (no Employment Type row)      │
+ * ├─────────────────────┼──────────────────────────────┼───────────────────────────────┤
+ * │ Specialists (§5)    │ + Safety Onboarding          │ + SiteDocs Account Setup      │
+ * │                     │   (always required)          │   (if SiteDocs in systems)    │
+ * └─────────────────────┴──────────────────────────────┴───────────────────────────────┘
  *
- * Both workflows share identical IT Setup rendering, BOSS details, specialists logic,
- * and allComplete handling. The isEquipment flag controls three structural differences:
+ * WHERE THEY ARE IDENTICAL (shared rendering code)
+ * ─────────────────────────────────────────────────
+ * § IT Setup — assigned email, temp password, computer (type/model/serial), phone
+ *   (carrier/model/number/VM PIN), BOSS ✓ Granted + BOSS sub-details (committees,
+ *   cost sheets, trip reports, grievances), Incidents/CAA/Delivery App/NPS access,
+ *   itSystems provisioned list, IT notes, password-masked notice.
+ * § Specialists — systems filter (_isSpecialist), equipment string parsing (business cards,
+ *   vehicle), credit card, Jonas, 30/60/90.
+ * § allComplete — opts.allComplete=true flips all specialist rows to '✓ Complete'.
+ *   Used exclusively by notifyWorkflowClosure() (ActionItemService.js) for the final email.
  *
- *   WHERE THEY DIFFER (isEquipment):
- *   ┌─────────────────────┬──────────────────────────┬──────────────────────────┐
- *   │ Section             │ New Hire                 │ Equipment Request        │
- *   ├─────────────────────┼──────────────────────────┼──────────────────────────┤
- *   │ ID Setup            │ Shown (internalEmployeeId│ SKIPPED — no step exists │
- *   │ HR Verification     │ Shown (adpAssociateId)   │ SKIPPED — no step exists │
- *   │ IT step gate        │ Requires hasHr first     │ Unlocks directly         │
- *   │ Request Details     │ Type + Start Date        │ Position + Request Date  │
- *   │ Specialists         │ + Safety Onboarding      │ + SiteDocs Account Setup │
- *   └─────────────────────┴──────────────────────────┴──────────────────────────┘
+ * SECTION STATUS DERIVATION
+ * ─────────────────────────
+ * hasId = internalEmployeeId present (written by ID Setup step)
+ * hasHr = adpAssociateId present (written by HR Verification step)
+ * hasIt = itTimestamp or assignedEmail present (written by submitITSetup())
+ * needsIt = false only for Hourly NH with systemAccess==='No' (never false for Equipment)
  *
- *   WHERE THEY ARE IDENTICAL (shared code below):
- *   - IT Setup section: assigned email, temp password, computer, phone,
- *     BOSS ✓ Granted, BOSS details (committee/cost sheet/trip/grievances),
- *     Incidents/CAA/Delivery App/NPS, itSystems provisioned, notes
- *   - Specialists list: systems filter, equipment, credit card, jonas, 30/60/90
- *   - allComplete: opts.allComplete=true flips all specialists to ✓ Complete
+ * @param {Object} context  - From getWorkflowContext() (EmailUtils.js)
+ * @param {Object} [opts]   - { showPasswords: boolean, allComplete: boolean }
+ *                            showPasswords: reveals email temp password and SiteDocs password
+ *                            allComplete: from notifyWorkflowClosure — all sections ✓ Complete
  */
 function buildNewHireContextBlock(context, opts) {
   opts = opts || {};
@@ -255,11 +270,31 @@ function buildNewHireContextBlock(context, opts) {
 
   // ============================================================
   // SECTION 4 — IT Setup                 ★ SHARED (NH + Equipment) ★
-  //   Complete state (hasIt=true): assigned email, temp password, computer,
-  //   phone, BOSS ✓ + BOSS details (committee/cost sheet/trip/grievances),
-  //   Incidents/CAA/Delivery App/NPS access, itSystems provisioned, notes
-  //   Pending state: lists requested items as "Pending provisioning"
-  //   N/A state: Hourly NH with no system access (not applicable to Equipment)
+  //
+  //   N/A state (itSt='na'):
+  //     Only applies to New Hire when employmentType='Hourly' and systemAccess='No'.
+  //     Equipment workflows always need IT (needsIt is always true for Equipment).
+  //
+  //   Queued state (itSt='queued'):
+  //     New Hire: IT is waiting for HR Verification to complete first (hasHr is false).
+  //     Equipment: never queued — IT unlocks directly.
+  //
+  //   Active state (itSt='active'):
+  //     IT Setup form link sent; IT has not yet submitted. Shows requested items as
+  //     "Pending provisioning".
+  //
+  //   Complete state (itSt='complete', hasIt=true):
+  //     IT has submitted. Renders all recorded values:
+  //     - Google Account: assignedEmail + emailTempPassword (masked unless showPasswords)
+  //     - Computer: computerType · computerModel + computerSerial
+  //     - Phone: phoneCarrier · phoneModel + phoneNumber + phoneVMPassword
+  //     - BOSS: bossAccess + bossDetails sub-rows (committees, costSheets, tripReports, grievances)
+  //     - System access: incidentsAccess, caaAccess, deliveryAppAccess, netPromoterAccess
+  //     - Equipment-only: siteDocsUsername + siteDocsPassword (context from ID_SETUP_RESULTS,
+  //       written by closeActionItem WIS User branch in ActionItemService.js)
+  //     - itSystems provisioned (non-specialist systems from original request)
+  //     - itNotes
+  //     - Password masked notice (shown when !showPasswords and emailTempPassword present)
   // ============================================================
 
   var itSection = '';
@@ -358,10 +393,22 @@ function buildNewHireContextBlock(context, opts) {
 
   // ============================================================
   // SECTION 5 — Specialists              ★ SHARED (NH + Equipment) ★
-  //   Both: Fleetio, Business Cards, Vehicle, Credit Card, Jonas, 30/60/90
-  //   NH only:   Safety Onboarding
-  //   EQUIP only: SiteDocs Account Setup (ID Setup team, WIS User action item)
-  //   opts.allComplete=true → each row shows ✓ Complete (Workflow Completed email)
+  //
+  //   The specialist list is built above from context fields. Entries:
+  //     Both workflows:   Fleetio, Business Cards, Vehicle, Credit Card,
+  //                       Central Purchasing/Jonas, 30/60/90 Review
+  //     New Hire only:    Safety Onboarding (always added when needsIt=true)
+  //     Equipment only:   SiteDocs Account Setup (WIS User action item, ID Setup team)
+  //
+  //   Status logic:
+  //     specReady=true  → 'In Progress' (parallel notifications sent, AIs open)
+  //     specReady=false → '— Queued' (waiting for IT or HR to complete first)
+  //     allComplete=true → each row shows '✓ Complete' and section shows '✓ All Complete'
+  //                        Used only in the Workflow Completed email sent by
+  //                        notifyWorkflowClosure() in ActionItemService.js.
+  //
+  //   Note: individual specialist completion is NOT tracked here — the section only
+  //   flips to ✓ All Complete when opts.allComplete=true (workflow-level completion).
   // ============================================================
 
   var specSection = '';
@@ -392,19 +439,44 @@ function buildNewHireContextBlock(context, opts) {
 /**
  * Full progressive context block for Termination (EOE) emails.
  *
- * Six sections — state driven by context.hrDecision:
- *   1. Employee — End of Employment  always Complete
- *   2. HR Approval                   Awaiting / Approved / Rejected
- *   3. Google Account Offboarding    only when Google Account in systems; Queued → In Progress
- *   4. System Deactivations          selected systems + mandatory (SiteDocs, DSS, BOSS WIS)
- *   5. Equipment to Return           Queued → Pending Collection
- *   6. Direct Reports                only when hasReports === 'Yes'
+ * Six sections — each shows current state driven by context.hrDecision:
  *
- * Handler sets context.hrDecision = 'Approved' on all post-approval emails so
- * sections 3–6 flip from Queued to In Progress.
+ *   §1 Employee — End of Employment   always 'complete' (section header only)
+ *   §2 HR Approval                    'active' (Awaiting) → 'complete' (Approved) / 'active' (Rejected)
+ *   §3 Google Account Offboarding     only rendered when 'Google Account' is in context.systems.
+ *                                     'queued' until approved; 'active' (In Progress) after.
+ *                                     Renders forward/files/delegate/vacation/duration settings.
+ *   §4 System Deactivations           selected systems (excl. Google Account, handled in §3)
+ *                                     plus always-required: SiteDocs, DSS, BOSS WIS (✦ marked).
+ *                                     'queued' until approved; 'active' after.
+ *   §5 Equipment to Return            only rendered when eqList is non-empty.
+ *                                     'queued' until approved; 'active' (Pending Collection) after.
+ *   §6 Direct Reports                 only rendered when context.hasReports === 'Yes'.
+ *                                     Shows reassignment target or "Confirm with HR" if absent.
  *
- * @param {Object} context   — from getWorkflowContext() / handler-built object
- * @param {Object} [opts]
+ * hrDecision STATE MACHINE
+ * ────────────────────────
+ * 'Awaiting' (default): sections 3–6 are Queued — nothing has happened yet.
+ * 'Approved':           set by notifyWorkflowClosure() (ActionItemService.js) before calling
+ *                       sendFormEmail, and also set inline in handler approval emails.
+ *                       Sections 3–6 flip to In Progress.
+ * 'Rejected':           HR Approval section shows as Rejected; sections 3–6 remain Queued.
+ *
+ * opts.allComplete STATE
+ * ──────────────────────
+ * opts.allComplete=true is passed only by notifyWorkflowClosure() (ActionItemService.js)
+ * when ALL blocking action items for the workflow are closed. It flips:
+ *   §3 Google Account Offboarding → '✓ Complete'
+ *   §4 System Deactivations       → '✓ Complete' for each system row
+ *   §5 Equipment to Return        → '✓ Collected' / each item '✓ Returned'
+ *   §6 Direct Reports             → '✓ Complete'
+ *
+ * @param {Object} context   - From getWorkflowContext() (TERM_ branch) or handler-built object.
+ *                             Key fields: hrDecision, systems (array), equipmentRaw (string),
+ *                             hasReports, reportsToNew, googleOffboarding (object)
+ * @param {Object} [opts]    - { allComplete: boolean }
+ *                             allComplete: from notifyWorkflowClosure — flips all active
+ *                             sections to '✓ Complete'
  */
 function buildTerminationContextBlock(context, opts) {
   opts = opts || {};
@@ -623,19 +695,54 @@ function buildTerminationContextBlock(context, opts) {
 /**
  * Full progressive context block for Status Change emails.
  *
- * Six sections — state driven by context.hrDecision:
- *   1. Employee                 always Complete (current state snapshot)
- *   2. Requested Changes        always Complete (captures the full change request)
- *   3. HR Review                Awaiting / Approved / Rejected
- *   4. HR Confirmed Details     only post-approval (confirmed title, JR title, new manager)
- *   5. Access & Equipment       Queued → In Progress (systems + equipment being provisioned)
- *   6. Action Items Assigned    only post-approval (teams notified)
+ * Seven sections — state driven by context.hrDecision and context.itTimestamp:
  *
- * Handler sets context.hrDecision = 'Approved' + confirmedTitle/confirmedJrTitle/
- * confirmedNewManager + actionTeams[] on all post-approval emails.
+ *   §1 Employee                  always 'complete' — snapshot of current classification,
+ *                                site, current title, and current manager.
+ *   §2 Requested Changes         always 'complete' — effective date, change types (site
+ *                                transfer, title, classification, manager), systems/equipment
+ *                                requested, department, purchasing sites.
+ *   §3 HR Review                 'active' (Awaiting) → 'complete' (Approved) / 'active' (Rejected)
+ *   §4 HR Confirmed Details      only rendered post-approval (hrApproved=true).
+ *                                Shows confirmedTitle, confirmedJrTitle, confirmedNewManager.
+ *   §4b IT Setup Results         only rendered when hasItChange=true (context.itTimestamp or
+ *                                context.assignedEmail is present). This means IT has submitted
+ *                                the IT Setup form for this CHANGE_ workflow. Same rendering as
+ *                                buildNewHireContextBlock §4 but always 'complete' status.
+ *                                Data source: context enriched from IT_RESULTS by
+ *                                getWorkflowContext(), or overlaid from wfTasks in-memory
+ *                                by notifyWorkflowClosure() (ActionItemService.js).
+ *   §5 Access & Equipment        'queued' until approved; 'active' (In Progress) after.
+ *                                Lists all systems + equipment from the change request.
+ *                                allComplete=true → '✓ All Complete'.
+ *   §6 Action Items Assigned     only rendered post-approval when context.actionTeams is set.
+ *                                context.actionTeams[] is built incrementally in
+ *                                submitPositionChangeApproval() (PositionChangeHandler.js)
+ *                                and passed in changeContext. allComplete=true → '✓ All Complete'.
  *
- * @param {Object} context   — from getWorkflowContext() / handler-built object
- * @param {Object} [opts]
+ * hrDecision STATE MACHINE
+ * ────────────────────────
+ * 'Awaiting' (default): §4 and §4b hidden; §5 and §6 are Queued.
+ * 'Approved':           set by submitPositionChangeApproval() on all post-approval emails
+ *                       and by notifyWorkflowClosure() before sending the final email.
+ *                       §3 → ✓ Approved; §4 rendered; §5/§6 → In Progress.
+ * 'Rejected':           §3 shown as Rejected; §4/§5/§6 remain Queued/hidden.
+ *
+ * opts.allComplete STATE
+ * ──────────────────────
+ * opts.allComplete=true is passed only by notifyWorkflowClosure() (ActionItemService.js)
+ * when ALL blocking action items for the CHANGE_ workflow are closed. It flips:
+ *   §5 Access & Equipment Changes → '✓ All Complete' for section and each row
+ *   §6 Action Items Assigned      → '✓ All Complete' for section and each row
+ *
+ * @param {Object} context   - From getWorkflowContext() (CHANGE_ branch) or handler-built
+ *                             object. Key fields: hrDecision, systems (string CSV),
+ *                             equipmentRaw (string CSV), itTimestamp, assignedEmail,
+ *                             bossAccess, bossDetails, confirmedTitle, confirmedNewManager,
+ *                             actionTeams (string[])
+ * @param {Object} [opts]    - { showPasswords: boolean, allComplete: boolean }
+ *                             showPasswords: reveals emailTempPassword to recipients
+ *                             allComplete: from notifyWorkflowClosure — §5/§6 → ✓ Complete
  */
 function buildStatusChangeContextBlock(context, opts) {
   opts = opts || {};
@@ -791,8 +898,25 @@ function buildStatusChangeContextBlock(context, opts) {
   }
 
   // ============================================================
-  // SECTION 4b — IT Setup Results  (shown when IT has submitted the setup form for this change)
-  // Uses same rendering as buildNewHireContextBlock IT section
+  // SECTION 4b — IT Setup Results         ★ STATUS CHANGE ONLY ★
+  //
+  //   Only rendered when hasItChange=true, meaning the IT team has submitted the IT Setup
+  //   form for this CHANGE_ workflow. The IT action item has formType='it_setup' and
+  //   formDataJSON is written to IT_RESULTS when it closes (via closeActionItem() in
+  //   ActionItemService.js, or via submitITSetup() in ITSetupHandler.js).
+  //
+  //   Data source: context.itTimestamp / context.assignedEmail and all context.computer*,
+  //   context.phone*, context.boss*, context.incidents*, etc. fields. These are populated by:
+  //     - getWorkflowContext() reading IT_RESULTS (if not the same execution as closeActionItem)
+  //     - notifyWorkflowClosure() overlaying from wfTasks in-memory snapshot (same execution)
+  //
+  //   Renders: assigned email, temp password (masked unless showPasswords), computer
+  //   (type/model/serial), phone (carrier/model/number/VM PIN), BOSS access + BOSS sub-rows
+  //   (committees, cost sheets, trip reports, grievances), Incidents/CAA/Delivery App/NPS,
+  //   IT notes. Actor line shows itSubmittedBy + itTimestamp.
+  //
+  //   Unlike the New Hire IT Setup section which has Queued/Active/Complete states,
+  //   this section is ONLY rendered when complete (itSt is always 'complete' here).
   // ============================================================
   var itSetupSection = '';
   var hasItChange = !!(context.itTimestamp || context.assignedEmail);

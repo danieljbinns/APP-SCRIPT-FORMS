@@ -1,20 +1,63 @@
 /**
  * ActionItemService.gs
- * 
- * Manages the lifecycle of granular tasks (Action Items) associated with workflows.
+ *
+ * Manages the full lifecycle of Action Items (granular tasks) attached to workflows.
+ *
+ * ACTION ITEM LIFECYCLE
+ * ─────────────────────
+ *   createActionItem()  ← called by triggerSpecialists() (ITSetupHandler.js),
+ *                          submitPositionChangeApproval() (PositionChangeHandler.js),
+ *                          submitTerminationApproval() (TerminationHandler.js),
+ *                          sendSafetyOnboardingEmail() (EmailUtils.js)
+ *   closeActionItem()   ← called via closeActionItemWithNotes() (global bridge below),
+ *                          which is invoked by google.script.run from ActionItemForm.html,
+ *                          and directly from submitITSetup() (ITSetupHandler.js) for
+ *                          the CHANGE_ IT action item.
+ *   checkWorkflowCompletion() ← called at the end of every closeActionItem() and by
+ *                               the admin re-check trigger (suppressNotify=true path).
+ *   notifyWorkflowClosure()   ← called by checkWorkflowCompletion() when all blocking
+ *                               tasks are closed.
+ *
+ * SHEET WRITES
+ * ────────────
+ *   ACTION_ITEMS sheet   — one row per task (status, notes, draft, formData)
+ *   IT_RESULTS sheet     — written by closeActionItem() when a CHANGE_ IT action item closes
+ *   ID_SETUP_RESULTS     — written by closeActionItem() when a EQUIP_REQ_ WIS User item closes
+ *
+ * KEY DESIGN DECISIONS
+ * ────────────────────
+ *   - SpreadsheetApp.flush() is called before notifyTaskClosure() / notifyWorkflowClosure()
+ *     so that subsequent getWorkflowContext() calls read the freshly-written data.
+ *   - WIS category tasks are non-blocking — they never prevent workflow completion.
+ *   - For onboarding ('Specialist Forms Needed'), only categories that were actually
+ *     requested in the Initial Request are blocking. Unrequested specialists don't stall
+ *     the workflow even if their action items are still open.
  */
 
 var ActionItemService = (function() {
 
   /**
-   * Creates a new Action Item (Ticket)
-   * @param {string} workflowId
-   * @param {string} category   - Display category (e.g. 'Credit Card', 'Safety')
-   * @param {string} name       - Task name
-   * @param {string} description - Checklist items as JSON array string
-   * @param {string} assignedTo  - Email of responsible party
-   * @param {string} [formType]  - Specialist form type key (e.g. 'creditcard', 'safety_onboarding')
-   * @returns {string|null} taskId
+   * Creates a new Action Item (Ticket) and records it in the ACTION_ITEMS sheet.
+   *
+   * Called by:
+   *   - triggerSpecialists()           in ITSetupHandler.js       (New Hire + Equipment)
+   *   - submitPositionChangeApproval() in PositionChangeHandler.js (Status Change)
+   *   - submitTerminationApproval()    in TerminationHandler.js    (Termination)
+   *   - sendSafetyOnboardingEmail()    in EmailUtils.js            (Safety step)
+   *
+   * On failure, notifyAdminActionItemFailure() is called so admins know to manually
+   * create the missed task — the workflow will not auto-complete without it.
+   *
+   * @param {string} workflowId   - e.g. 'NEW_EMP_XXXX', 'CHANGE_XXXX', 'EQUIP_REQ_XXXX'
+   * @param {string} category     - Display grouping shown in dashboard (e.g. 'IT', 'Safety', 'WIS User')
+   * @param {string} name         - Human-readable task name shown in the action item form
+   * @param {string} description  - JSON array string of checklist items shown in ActionItemForm.html
+   * @param {string} assignedTo   - Email address of the responsible party who receives the notification
+   * @param {string} [formType]   - Routes the ActionItemForm to the correct specialist view.
+   *                                Known values: 'it_setup', 'creditcard', 'businesscards',
+   *                                'fleetio', 'jonas', 'review_306090', 'safety_onboarding',
+   *                                'safety_change', 'wis', 'wis_user'
+   * @returns {string|null} taskId — generated 'TK-XXXXXXXX' identifier, or null on failure
    */
   function createActionItem(workflowId, category, name, description, assignedTo, formType) {
     try {
@@ -47,12 +90,46 @@ var ActionItemService = (function() {
   }
 
   /**
-   * Closes an Action Item
-   * @param {string} taskId
-   * @param {string} notes
-   * @param {string} closedBy
-   * @param {string} [draftJSON]    - Full checklist draft state JSON
-   * @param {string} [formDataJSON] - Specialist-specific structured form data JSON
+   * Closes an Action Item, optionally writing secondary sheet records, then triggers
+   * completion checking and task-closure notification emails.
+   *
+   * Called by:
+   *   - closeActionItemWithNotes() (global bridge below) — invoked from ActionItemForm.html
+   *     via google.script.run when any specialist submits their form.
+   *   - submitITSetup() in ITSetupHandler.js — directly closes the IT action item for
+   *     CHANGE_ workflows after writing IT_RESULTS.
+   *   - _sdCloseAllAI() in SuperDebug.js — auto-closes all open items during test runs.
+   *
+   * SECONDARY SHEET WRITES (two special cases handled here)
+   * ─────────────────────────────────────────────────────────
+   * 1. CHANGE_ + category='IT' + formType='it_setup':
+   *    Parses formDataJSON and appends a row to IT_RESULTS so that
+   *    getWorkflowContext() can read the IT Setup results in the same execution
+   *    (used by notifyWorkflowClosure to populate the IT Setup section of the email).
+   *    SpreadsheetApp.flush() is called immediately after so getWorkflowContext
+   *    reads fresh data when notifyWorkflowClosure fires next.
+   *
+   * 2. EQUIP_REQ_ + category='WIS User':
+   *    Parses formDataJSON for SiteDocs credentials and writes (or updates if already
+   *    present) a row in ID_SETUP_RESULTS. This mirrors what the ID Setup form writes
+   *    for New Hire workflows. SpreadsheetApp.flush() is called so notifyWorkflowClosure
+   *    can pull the credentials from ID_SETUP_RESULTS via getWorkflowContext(), or from
+   *    the wfTasks snapshot taken in notifyWorkflowClosure() itself.
+   *
+   * DOUBLE-SUBMIT GUARD
+   * ───────────────────
+   * The current status is re-read from the sheet before any write. If already 'Closed',
+   * the function returns early with success:false. This prevents a browser page-reload
+   * from duplicating the close action or sending duplicate emails.
+   *
+   * @param {string} taskId         - e.g. 'TK-A1B2C3D4'
+   * @param {string} notes          - Closure notes entered by the specialist
+   * @param {string} closedBy       - Email of the submitting user (Session.getActiveUser())
+   * @param {string} [draftJSON]    - Full checklist draft state (stringified JSON array)
+   * @param {string} [formDataJSON] - Specialist form data (stringified JSON object).
+   *                                  Required for IT action items (CHANGE_) and WIS User
+   *                                  action items (EQUIP_REQ_) to trigger secondary writes.
+   * @returns {{ success: boolean, message?: string }}
    */
   function closeActionItem(taskId, notes, closedBy, draftJSON, formDataJSON) {
     try {
@@ -64,9 +141,10 @@ var ActionItemService = (function() {
       let rowIndex = -1;
       let workflowId = '';
 
+      // Scan the ACTION_ITEMS sheet for this taskId (column AI.TASK_ID)
       for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
         if (data[i][AI.TASK_ID] === taskId) {
-          rowIndex = i + 1;
+          rowIndex = i + 1; // sheet rows are 1-based; data array is 0-based
           workflowId = data[i][AI.WORKFLOW_ID];
           break;
         }
@@ -74,27 +152,42 @@ var ActionItemService = (function() {
 
       if (rowIndex === -1) throw new Error('Task not found: ' + taskId);
 
-      // Guard against double-submit / page reload closing an already-closed task
+      // Guard against double-submit / page reload closing an already-closed task.
+      // Re-reading from the cached `data` array (not re-fetching) is intentional —
+      // the array was read at the top of this call and reflects the state at that point.
       const currentStatus = data[rowIndex - 1][AI.STATUS];
       if (currentStatus === 'Closed') {
         Logger.log(`[ActionItemService] Task ${taskId} already closed — ignoring duplicate submission`);
         return { success: false, message: 'This task has already been submitted.' };
       }
 
+      // Write core closure fields to the ACTION_ITEMS sheet row
       sheet.getRange(rowIndex, AI.STATUS + 1).setValue('Closed');
       sheet.getRange(rowIndex, AI.COMPLETED_DATE + 1).setValue(new Date());
       sheet.getRange(rowIndex, AI.NOTES + 1).setValue(notes);
       sheet.getRange(rowIndex, AI.CLOSED_BY + 1).setValue(closedBy);
 
+      // Persist draft checklist state (set by ActionItemForm.html's autosave)
       if (draftJSON) {
         sheet.getRange(rowIndex, AI.DRAFT + 1).setValue(draftJSON);
       }
 
+      // Persist specialist form data (IT Setup, WIS User credentials, etc.)
       if (formDataJSON) {
         sheet.getRange(rowIndex, AI.FORM_DATA + 1).setValue(formDataJSON);
       }
 
-      // Status Change IT Setup: write results to IT_RESULTS so getWorkflowContext can include them
+      // ── SPECIAL CASE 1: Status Change IT Setup ────────────────────────────────
+      // When a CHANGE_ workflow's IT action item (category='IT', formType='it_setup') is
+      // closed, its formDataJSON must also be written to IT_RESULTS so that
+      // getWorkflowContext() returns a fully-populated context for notifyWorkflowClosure().
+      //
+      // WHY here and not in submitITSetup()?
+      // For CHANGE_ workflows, IT submits via the standard ITSetup.html form, which calls
+      // submitITSetup() → which directly calls closeActionItem() passing formData as
+      // formDataJSON. The IT_RESULTS write is duplicated here so that _sdCloseAllAI()
+      // (SuperDebug) and any other caller that closes the action item directly also
+      // correctly populates IT_RESULTS without requiring submitITSetup() to be in the call chain.
       const taskCategory2 = data[rowIndex - 1][AI.CATEGORY] || '';
       const taskFormType2 = data[rowIndex - 1][AI.FORM_TYPE] || '';
       if (taskCategory2 === 'IT' && taskFormType2 === 'it_setup' && workflowId.startsWith('CHANGE_') && formDataJSON) {
@@ -103,9 +196,13 @@ var ActionItemService = (function() {
           const itSheet2 = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
           if (itSheet2) {
             const IT2 = SCHEMA.IT_RESULTS;
+            // Only build assignedEmail when IT confirmed the account was actually created.
+            // An empty string is falsy and will not appear in emails or recipient lists.
             const ae2 = (itd.Email_Created === 'Yes' && itd.Email_Username)
               ? (String(itd.Email_Username).replace(/^"|"$/g, '') + (itd.Email_Domain || '')) : '';
+            // bossDetails is a structured sub-object injected by submitITSetup() / _sdCloseAllAI()
             const bd2 = itd.bossDetails || { committees: [], costSheets: [], tripReports: '', grievances: '' };
+            // Build a 23-element array matching SCHEMA.IT_RESULTS column indices (0-based)
             const itRow2 = new Array(23).fill('');
             itRow2[IT2.WORKFLOW_ID]          = workflowId;
             itRow2[IT2.SUBMISSION_TS]        = new Date();
@@ -130,18 +227,34 @@ var ActionItemService = (function() {
             itRow2[IT2.SUBMITTED_BY]         = closedBy;
             itRow2[IT2.BOSS_DETAILS]         = JSON.stringify(bd2);
             itSheet2.appendRow(itRow2);
+            // Flush immediately: notifyWorkflowClosure() is called after the outer flush
+            // and its call to getWorkflowContext() reads IT_RESULTS. Without this flush,
+            // the freshly-appended row would not be visible in the same script execution.
             SpreadsheetApp.flush();
             Logger.log('[ActionItemService] CHANGE_ IT Setup written to IT_RESULTS for ' + workflowId);
           }
         } catch(e) { Logger.log('[ActionItemService] CHANGE_ IT write: ' + e.message); }
       }
 
-      // WIS User + Equipment: write SiteDocs credentials to ID_SETUP_RESULTS
-      // so getWorkflowContext() reads them and shows in IT Setup section of emails
+      // ── SPECIAL CASE 2: Equipment Request WIS User credentials ───────────────
+      // When the ID Setup team closes the 'WIS User' action item for an EQUIP_REQ_
+      // workflow, the SiteDocs credentials they entered (siteDocsUsername, siteDocsPassword,
+      // bossWisCreated) must be persisted to ID_SETUP_RESULTS.
+      //
+      // WHY ID_SETUP_RESULTS and not just formData on the action item?
+      // getWorkflowContext() reads ID_SETUP_RESULTS to populate context.siteDocsUsername
+      // and related fields (used in the IT Setup section of email templates for Equipment
+      // Request emails). notifyWorkflowClosure() also reads the creds directly from the
+      // wfTasks snapshot (faster, avoids re-reading a potentially-cached sheet).
+      //
+      // UPDATE vs INSERT: if a row for this workflowId already exists in ID_SETUP_RESULTS
+      // (e.g. from a re-submission), it is updated in-place rather than appended,
+      // preventing duplicate rows from appearing in the dashboard/emails.
       const taskCategory = data[rowIndex - 1][AI.CATEGORY] || '';
       if (taskCategory === 'WIS User' && workflowId.startsWith('EQUIP_REQ_') && formDataJSON) {
         try {
           const creds = JSON.parse(formDataJSON);
+          // Only write if meaningful data was provided — avoids creating empty rows
           if (creds.siteDocsUsername || creds.bossWisCreated) {
             const idSheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
             if (idSheet) {
@@ -151,6 +264,7 @@ var ActionItemService = (function() {
               for (let j = SCHEMA.ROW.FIRST_DATA; j < idData.length; j++) {
                 if (String(idData[j][ID.WORKFLOW_ID]) === workflowId) { idRowIndex = j + 1; break; }
               }
+              // Allocate array large enough to cover all used schema indices
               const idRow = new Array(Math.max(ID.SUBMITTED_BY, ID.SUBMISSION_TS) + 2).fill('');
               idRow[ID.WORKFLOW_ID]       = workflowId;
               idRow[ID.SUBMISSION_TS]     = new Date();
@@ -159,20 +273,24 @@ var ActionItemService = (function() {
               idRow[ID.BOSS_WIS_CREATED]  = creds.bossWisCreated   || '';
               idRow[ID.SUBMITTED_BY]      = closedBy;
               if (idRowIndex !== -1) {
+                // Overwrite existing row in-place (prevents duplicates on re-submission)
                 idSheet.getRange(idRowIndex, 1, 1, idRow.length).setValues([idRow]);
                 Logger.log('[ActionItemService] WIS User: updated existing ID_SETUP_RESULTS row ' + idRowIndex + ' for ' + workflowId);
               } else {
                 idSheet.appendRow(idRow);
                 Logger.log('[ActionItemService] WIS User: appended new ID_SETUP_RESULTS row for ' + workflowId);
               }
-              SpreadsheetApp.flush(); // flush again so getWorkflowContext reads fresh data
+              // Flush so that getWorkflowContext() (called from notifyWorkflowClosure below)
+              // reads the freshly-written credentials from ID_SETUP_RESULTS.
+              SpreadsheetApp.flush();
               Logger.log('[ActionItemService] WIS User: creds written — siteDocsUsername=' + (creds.siteDocsUsername || '(empty)') + ' bossWis=' + (creds.bossWisCreated || '(empty)'));
             }
           }
         } catch (e) { Logger.log('[ActionItemService] WIS User cred write ERROR: ' + e.message + ' stack: ' + e.stack); }
       }
 
-      // Ensure data is written before notifyTaskClosure reads it
+      // Ensure all writes above are committed before notifyTaskClosure / checkWorkflowCompletion
+      // read the sheet. GAS batches Spreadsheet API calls; flush() forces immediate commit.
       SpreadsheetApp.flush();
 
       Logger.log(`[ActionItemService] Closed Task ${taskId}`);
@@ -255,14 +373,53 @@ var ActionItemService = (function() {
   }
 
   /**
-   * Returns the Set of required specialist category names for an onboarding workflow.
-   * Reads the Initial Requests row and mirrors the reqInfo.items flags from StateSync.
-   * Returns null if the row can't be found (callers should treat null as "no filter").
+   * Builds a Set of specialist category names that are required (blocking) for a given
+   * New Hire (NEW_EMP_) workflow. Used by checkWorkflowCompletion() to decide which
+   * open action items actually prevent workflow completion.
+   *
+   * WHY THIS IS NEEDED
+   * ──────────────────
+   * triggerSpecialists() creates action items for every specialist requested at submit time.
+   * If, say, a Credit Card action item was created but the employee doesn't actually need it
+   * (e.g. the original form was corrected), we don't want that open item to permanently block
+   * workflow completion. This function re-reads the original request to derive the authoritative
+   * list of required categories.
+   *
+   * CATEGORIES ALWAYS ADDED
+   * ───────────────────────
+   *   'Safety' — always required for onboarding (Safety Onboarding action item always created).
+   *
+   * CATEGORIES CONDITIONALLY ADDED (mirrors triggerSpecialists() logic in ITSetupHandler.js)
+   * ──────────────────────────────────────────────────────────────────────────────────────────
+   *   'Jonas'          — JONAS_JOB_NUMBERS not empty
+   *   'Credit Card'    — CC_USA or CC_CAN or CC_HD === 'Yes'
+   *   'Fleetio'        — SYSTEMS contains 'Fleetio'
+   *   'Business Cards' — EQUIPMENT contains 'Business Cards'
+   *   '30/60/90 Review'— PLAN_306090 === 'Yes'
+   *
+   * CATEGORIES NEVER ADDED HERE
+   * ────────────────────────────
+   *   'WIS User' — SiteDocs WIS User action items are only created for EQUIP_REQ_ workflows,
+   *                not New Hire. For New Hire, SiteDocs is handled in ID Setup.
+   *   'WIS'      — WIS Assignment tasks are explicitly excluded from blocking in
+   *                checkWorkflowCompletion() (category uppercased check for 'WIS').
+   *
+   * FAIL-OPEN BEHAVIOUR
+   * ───────────────────
+   * Returns null if the Initial Requests row cannot be found or any error occurs.
+   * Callers must treat null as "no filter" — i.e. ALL open items are blocking.
+   *
+   * Called exclusively by checkWorkflowCompletion() for onboarding workflows.
+   *
+   * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - Already-opened spreadsheet instance
+   * @param {string} workflowId - NEW_EMP_ workflow ID
+   * @returns {Set<string>|null} Set of blocking category names, or null on lookup failure
    */
   function getRequiredSpecialistCats(ss, workflowId) {
     try {
       const reqSheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
       if (!reqSheet) return null;
+      // Use TextFinder for O(n) column-A scan — faster than getDataRange() on large sheets
       const found = reqSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext();
       if (!found) return null;
       const row = reqSheet.getRange(found.getRow(), 1, 1, reqSheet.getLastColumn()).getValues()[0];
@@ -272,28 +429,56 @@ var ActionItemService = (function() {
       if (row[IR.CC_USA] === 'Yes' || row[IR.CC_CAN] === 'Yes' || row[IR.CC_HD] === 'Yes')  cats.add('Credit Card');
       if (row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('Fleetio'))                     cats.add('Fleetio');
       if (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('Business Cards'))           cats.add('Business Cards');
-      // SiteDocs WIS User action item only created for EQUIP_REQ_ (not New Hire — ID Setup handles it there)
-      // This function is only called for NEW_EMP_ workflows, so WIS User is never required here
+      // SiteDocs WIS User action item only created for EQUIP_REQ_ (not New Hire — ID Setup handles it there).
+      // This function is only called for NEW_EMP_ workflows, so WIS User is never required here.
       if (row[IR.PLAN_306090] === 'Yes') cats.add('30/60/90 Review');
-      cats.add('Safety'); // always required for onboarding
+      cats.add('Safety'); // always required for onboarding — Safety Onboarding AI always created
       return cats;
     } catch (e) {
       Logger.log('[ActionItemService] getRequiredSpecialistCats error: ' + e.message);
-      return null; // fail-open: no filter applied
+      return null; // fail-open: no filter → treat all open items as blocking
     }
   }
 
   /**
-   * Checks if a workflow is complete (all non-background tasks closed).
+   * Checks whether all blocking Action Items for a workflow are closed and, if so,
+   * marks the workflow Complete and fires the closure notification email.
    *
-   * Step-based guards:
-   *   - 'Specialist Forms Needed'  → onboarding (IT done, specialists outstanding)
-   *   - 'Action Items Pending'     → term / position-change / equipment (tasks outstanding)
-   *   - 'Email Setup Needed'       → equipment request waiting on Google Account setup only
+   * Called automatically at the end of every closeActionItem() call. Can also be
+   * called manually from an admin trigger (pass suppressNotify=true to skip emails).
    *
-   * WIS tasks (Category === 'WIS') are background/post-hire — they never block completion.
-   * For onboarding 'Specialist Forms Needed', only categories required by the original request
-   * are treated as blocking — unrequested specialists never prevent completion.
+   * STEP-BASED GUARDS
+   * ─────────────────
+   * Only runs the completion check when 'Current Step' is one of:
+   *   'Specialist Forms Needed' — onboarding: IT is done, specialists are in progress
+   *   'Action Items Pending'    — termination, status change, or equipment: tasks in progress
+   *
+   * If the step is anything else (e.g. 'HR Approval Needed', 'IT Setup Needed',
+   * 'Complete', 'Rejected'), the check is skipped entirely.
+   *
+   * BLOCKING TASK FILTER
+   * ─────────────────────
+   * 1. WIS category (category.toUpperCase() === 'WIS') — always non-blocking.
+   *    WIS Assignment tasks are background/post-hire and should never stall completion.
+   *
+   * 2. Onboarding 'Specialist Forms Needed' — only categories required by the original
+   *    request (read via getRequiredSpecialistCats()) are blocking. An unrequested
+   *    specialist action item that was created by mistake does not prevent completion.
+   *    If getRequiredSpecialistCats() returns null (lookup failure), all open items
+   *    are treated as blocking (fail-safe).
+   *
+   * 3. All other steps — every non-WIS open item is blocking.
+   *
+   * ON COMPLETION
+   * ─────────────
+   * When nonWisPending.length === 0:
+   *   1. updateWorkflow() marks the Workflows sheet row as 'Complete'
+   *   2. syncWorkflowState() updates Dashboard_View
+   *   3. notifyWorkflowClosure() sends the summary email to HR + Initiator + Manager
+   *      (skipped when suppressNotify=true — used by admin re-check triggers)
+   *
+   * @param {string}  workflowId
+   * @param {boolean} [suppressNotify] - Pass true to skip the closure notification email
    */
   function checkWorkflowCompletion(workflowId, suppressNotify) {
     const workflow = getWorkflow(workflowId);
@@ -461,7 +646,50 @@ var ActionItemService = (function() {
   }
 
   /**
-   * Sends a summary email when all tasks are complete
+   * Sends a "Workflow Completed" summary email to HR, the Initiator, and the Manager.
+   * Called exclusively by checkWorkflowCompletion() after all blocking tasks close.
+   *
+   * CONTEXT ENRICHMENT (three workflow-type-specific blocks below)
+   * ──────────────────────────────────────────────────────────────
+   * getWorkflowContext() builds a base context from INITIAL_REQUESTS (or the
+   * TERM_/CHANGE_ specific sheets). This function then enriches that context with
+   * data that only exists at closure time:
+   *
+   * 1. TERM_ workflows — hrDecision forced to 'Approved' (workflow cannot reach
+   *    Complete without being approved). No further enrichment needed; TERMINATION_APPROVALS
+   *    data is already embedded by getWorkflowContext() for TERM_ workflows.
+   *
+   * 2. CHANGE_ workflows — HR approval data:
+   *    getWorkflowContext() returns early for CHANGE_ workflows (see the early-return
+   *    bug note in EmailUtils.js), so it never reaches the POSITION_CHANGE_APPROVALS read
+   *    in that function. This block compensates by reading POSITION_CHANGE_APPROVALS
+   *    directly from the same Spreadsheet instance (already flushed in
+   *    submitPositionChangeApproval()), extracting: hrDecision, hrNotes,
+   *    confirmedTitle, confirmedNewManager, hrSubmittedBy, hrTimestamp.
+   *
+   *    CHANGE_ IT Setup data:
+   *    For CHANGE_ workflows, getWorkflowContext() reads IT_RESULTS (written by the
+   *    closeActionItem() CHANGE_ branch above, already flushed). However, since GAS
+   *    may cache the sheet in the same execution, this block also reads the IT formData
+   *    directly from the wfTasks snapshot (in-memory, no round-trip) as a belt-and-suspenders
+   *    measure and overlays all IT fields onto context.
+   *
+   * 3. EQUIP_REQ_ workflows — SiteDocs credentials:
+   *    getWorkflowContext() reads ID_SETUP_RESULTS for Equipment workflows, which was
+   *    written and flushed by the closeActionItem() WIS User branch above. However, sheet
+   *    caching in the same GAS execution can cause stale reads. This block reads credentials
+   *    directly from the wfTasks in-memory snapshot (guaranteed fresh — same array that was
+   *    populated at the top of this function) as the primary source.
+   *
+   * EMAIL OPTIONS
+   * ─────────────
+   * Both HR and requester/manager emails are sent with:
+   *   showPasswords: true  — reveals Google temp password and credential passwords
+   *   allComplete: true    — tells buildNewHireContextBlock / buildStatusChangeContextBlock
+   *                          / buildTerminationContextBlock to flip all sections to
+   *                          '✓ Complete' status rather than 'In Progress'
+   *
+   * @param {string} workflowId
    */
   function notifyWorkflowClosure(workflowId) {
     try {
@@ -470,12 +698,15 @@ var ActionItemService = (function() {
       const AI = SCHEMA.ACTION_ITEMS;
       const data = sheet.getDataRange().getValues();
 
+      // Collect all action item rows for this workflow — used for the audit log table
+      // and to extract formData from specialist items (IT, WIS User) without re-reading sheets
       const wfTasks = data.filter((r, i) => i > SCHEMA.ROW.HEADER && r[AI.WORKFLOW_ID] === workflowId);
       if (wfTasks.length === 0) return;
 
       const workflow = getWorkflow(workflowId);
       if (!workflow) return;
 
+      // Build an HTML audit table of all tasks for the body of the closure email
       let logHtml = `<table border="1" cellpadding="5" style="border-collapse: collapse; width: 100%; color: #333;">
         <tr style="background: #f4f4f4;"><th>Task</th><th>Status</th><th>Completed By</th><th>Notes</th></tr>`;
 
@@ -493,11 +724,22 @@ var ActionItemService = (function() {
       const body = `All action items for <b>${workflow['Employee Name'] || workflow['Workflow Name']}</b> have been closed.
         <br><br><b>Closure Audit Log:</b><br>${logHtml}`;
 
+      // Base context: built from INITIAL_REQUESTS (New Hire / Equipment) or the
+      // workflow-specific sheet (TERM_ / CHANGE_) via getWorkflowContext()
       const context = getWorkflowContext(workflowId) || { employeeName: workflow['Employee Name'] };
+
+      // ── ENRICH 1: Termination — force hrDecision = 'Approved' ─────────────────
+      // Termination workflows cannot reach 'Complete' without HR approval, so this
+      // is always a safe assumption. The flag flips HR Approval section to '✓ Approved'
+      // and unlocks Sections 3-6 in buildTerminationContextBlock().
       if (workflowId.startsWith('TERM_'))    context.hrDecision = 'Approved';
+
+      // ── ENRICH 2: Status Change — HR approval details ──────────────────────────
+      // getWorkflowContext() for CHANGE_ returns early (see EmailUtils.js) and never
+      // reaches its POSITION_CHANGE_APPROVALS read block, so we must read it here.
+      // The same SpreadsheetApp instance (ss) is used — the approval row was already
+      // flushed by submitPositionChangeApproval() before action items were created.
       if (workflowId.startsWith('CHANGE_') && !context.hrDecision) context.hrDecision = 'Approved';
-      // Status Change: read HR approval details directly from POSITION_CHANGE_APPROVALS (same ss object,
-      // already flushed in submitPositionChangeApproval) — bypasses getPositionChangeData chain
       if (workflowId.startsWith('CHANGE_') && !context.hrNotes) {
         try {
           const pcaSheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
@@ -505,6 +747,8 @@ var ActionItemService = (function() {
           if (pcaSheet) {
             const pcaData = pcaSheet.getDataRange().getValues();
             Logger.log('[notifyWorkflowClosure] CHANGE_ pcaData rows=' + pcaData.length + ' workflowId=' + workflowId);
+            // POSITION_CHANGE_APPROVALS columns: [0] WorkflowId, [2] Timestamp, [3] Decision,
+            //   [4] Notes, [5] ConfirmedTitle, [6] ConfirmedNewManager, [7] SubmittedBy
             const pcaRow = pcaData.find(function(r) { return r[0] === workflowId; });
             Logger.log('[notifyWorkflowClosure] CHANGE_ pcaRow found=' + !!pcaRow + (pcaRow ? ' notes=' + pcaRow[4] : ''));
             if (pcaRow) {
@@ -521,16 +765,23 @@ var ActionItemService = (function() {
         } catch(e) { Logger.log('[notifyWorkflowClosure] CHANGE_ approval read: ' + e.message); }
       }
 
-      // Status Change: extract IT Setup results from IT action item formData
+      // ── ENRICH 2b: Status Change — IT Setup results ────────────────────────────
+      // For CHANGE_ workflows, the IT action item's formData contains all the IT Setup
+      // fields. Although closeActionItem() already wrote these to IT_RESULTS (and
+      // getWorkflowContext() reads IT_RESULTS), GAS may cache the sheet object and return
+      // stale values in the same execution. Reading from wfTasks directly is guaranteed
+      // to be fresh (in-memory, populated from the ACTION_ITEMS data read at the top).
       if (workflowId.startsWith('CHANGE_')) {
         const itTask = wfTasks.find(function(r) { return r[AI.CATEGORY] === 'IT' && r[AI.FORM_TYPE] === 'it_setup' && r[AI.FORM_DATA]; });
         if (itTask) {
           try {
             const itd = JSON.parse(itTask[AI.FORM_DATA]);
+            // Build assignedEmail only when the account was actually created
             const ae = (itd.Email_Created === 'Yes' && itd.Email_Username)
               ? (String(itd.Email_Username).replace(/^"|"$/g, '') + (itd.Email_Domain || '')) : '';
             if (ae)                   context.assignedEmail     = ae;
             if (itd.Email_Temp_Password) context.emailTempPassword = itd.Email_Temp_Password;
+            // Use current time as itTimestamp since IT_RESULTS was just written in this execution
             context.itTimestamp   = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a');
             context.itSubmittedBy = itTask[AI.CLOSED_BY] || '';
             context.computerAssigned = itd.Computer_Assigned || '';
@@ -553,8 +804,12 @@ var ActionItemService = (function() {
         }
       }
 
-      // Equipment: extract SiteDocs credentials from WIS User action item formData (already flushed
-      // and present in wfTasks) rather than re-reading ID_SETUP_RESULTS which may be cached
+      // ── ENRICH 3: Equipment — SiteDocs credentials from WIS User action item ──
+      // For EQUIP_REQ_ workflows, the WIS User action item's formData contains the
+      // SiteDocs credentials. closeActionItem() already flushed these to ID_SETUP_RESULTS,
+      // but reading from wfTasks (in-memory snapshot) avoids any sheet caching risk.
+      // These fields populate the SiteDocs Login / SiteDocs Pwd rows in the IT Setup
+      // section of buildNewHireContextBlock() when isEquipment=true.
       if (workflowId.startsWith('EQUIP_REQ_')) {
         Logger.log('[notifyWorkflowClosure] wfTasks count=' + wfTasks.length);
         wfTasks.forEach(function(r) {
@@ -574,7 +829,10 @@ var ActionItemService = (function() {
         }
       }
 
-      // showPasswords: true + allComplete: true — tells the template all specialists are done
+      // showPasswords: true — reveals Google temp password and credential passwords to recipients
+      // allComplete: true  — signals email template builders to render all sections as '✓ Complete'
+      //                      (used by buildNewHireContextBlock, buildTerminationContextBlock,
+      //                       buildStatusChangeContextBlock in EmailTemplates.js)
       const closureEmailOpts = { showPasswords: true, allComplete: true };
 
       // Notify HR
@@ -632,13 +890,40 @@ var ActionItemService = (function() {
 
 })();
 
+// ================================================================
+// GLOBAL BRIDGES
+// These top-level functions are required by google.script.run, which can only
+// call named top-level functions — it cannot invoke module methods directly.
+// ActionItemForm.html calls both of these via google.script.run.withSuccessHandler().
+// ================================================================
+
 /**
- * Global bridge for google.script.run
+ * Google Script Run bridge — closes an Action Item from the ActionItemForm.html client.
+ *
+ * The closedBy email is resolved server-side from the authenticated session, so the
+ * client cannot supply or spoof the closer identity.
+ *
+ * @param {string} taskId         - Task ID (e.g. 'TK-A1B2C3D4')
+ * @param {string} notes          - Closure notes from the specialist
+ * @param {string|null} draftJSON - Final checklist draft state (JSON string)
+ * @param {string|null} formDataJSON - Specialist form data (JSON string) — required for
+ *                                    IT (CHANGE_) and WIS User (EQUIP_REQ_) to trigger
+ *                                    secondary sheet writes in closeActionItem()
+ * @returns {{ success: boolean, message?: string }}
  */
 function closeActionItemWithNotes(taskId, notes, draftJSON, formDataJSON) {
   return ActionItemService.closeActionItem(taskId, notes, Session.getActiveUser().getEmail(), draftJSON, formDataJSON);
 }
 
+/**
+ * Google Script Run bridge — saves a draft (partial checklist + notes) without closing.
+ * Called on autosave timer and on explicit "Save Draft" button clicks in ActionItemForm.html.
+ *
+ * @param {string} taskId    - Task ID
+ * @param {string} notes     - Current notes text (may be empty)
+ * @param {string} draftJSON - JSON string of partial checklist state
+ * @returns {{ success: boolean, message?: string }}
+ */
 function saveActionItemDraft(taskId, notes, draftJSON) {
   return ActionItemService.saveActionItemDraft(taskId, notes, draftJSON);
 }

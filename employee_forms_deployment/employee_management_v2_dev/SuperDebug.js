@@ -508,9 +508,55 @@ function checkSuperDebugEmailSafety() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Close every open AI for workflowId in dependency order.
- * Iterates until no open items remain (handles items spawned by closing others).
- * Returns count of items closed.
+ * Closes every open Action Item for a given workflow in a multi-pass loop.
+ *
+ * This is the SuperDebug equivalent of a human completing every specialist form.
+ * It replaces the need to manually open each ActionItemForm.html URL during testing.
+ *
+ * MULTI-PASS LOOP
+ * ───────────────
+ * Closing some action items causes new ones to be spawned (e.g. closing the IT action
+ * item for a CHANGE_ workflow triggers checkWorkflowCompletion, which may trigger
+ * notifyWorkflowClosure — but it does NOT spawn new AIs in the current implementation).
+ * The loop retries up to maxPasses=15 times, re-fetching pending tasks each iteration
+ * until none remain. In practice, 1-2 passes are sufficient for all workflow types.
+ *
+ * FORMDATA INJECTION (two special cases)
+ * ───────────────────────────────────────
+ *
+ * 1. WIS User action item on EQUIP_REQ_ workflows:
+ *    When the ID Setup team closes the WIS User action item in production, they submit
+ *    SiteDocs credentials via the ActionItemForm specialist view. In SuperDebug, those
+ *    credentials are injected as formDataJSON so that closeActionItem() triggers the
+ *    WIS User secondary write to ID_SETUP_RESULTS (ActionItemService.js).
+ *    Without this injection, the Equipment workflow completion email would show empty
+ *    SiteDocs credential fields. The injected values match the EQUIP_REQ_ sentinel
+ *    employee (SdEquip SdEquipLast).
+ *    Fields: siteDocsUsername, siteDocsPassword, bossWisCreated
+ *
+ * 2. IT action item (category='IT', formType='it_setup') on CHANGE_ workflows:
+ *    In production, IT fills out the full IT Setup form (ITSetup.html) and submits via
+ *    submitITSetup(), which both appends to IT_RESULTS and closes the action item.
+ *    In SuperDebug, there is no form submission — _sdCloseAllAI() closes action items
+ *    directly via ActionItemService.closeActionItem(). For the IT action item, we must
+ *    pass formDataJSON so that:
+ *      (a) closeActionItem()'s CHANGE_ branch writes to IT_RESULTS
+ *      (b) notifyWorkflowClosure()'s CHANGE_ enrichment reads IT fields from wfTasks
+ *    The injected payload uses PascalCase field names matching submitITSetup() expectations.
+ *    It includes bossDetails pre-parsed (not as BOSS_Cmte_* keys) to match what
+ *    submitITSetup() builds in its bossDetails object and injects via Object.assign.
+ *    Fields: Email_Created, Email_Username, Email_Domain, Email_Temp_Password,
+ *    Computer_[field], Phone_[field], BOSS_Access, BOSS_Cmte_[site]/BOSS_TripReports (dynamic),
+ *    Incidents_Access, CAA_Access, Delivery_App_Access, Net_Promoter_Score_Access,
+ *    IT_Notes, bossDetails (pre-built object)
+ *
+ * SpreadsheetApp.flush() is called after each pass to ensure writes from one pass
+ * are visible to the next iteration's getPendingTasks() call.
+ * Utilities.sleep(500) gives the spreadsheet time to settle between passes.
+ *
+ * @param {string} workflowId   - Workflow ID to close all open AIs for
+ * @param {string} phaseLabel   - Label used in _sdLog entries (e.g. 'Phase 10', 'Phase 4 Equip')
+ * @returns {number} Total count of action items closed across all passes
  */
 function _sdCloseAllAI(workflowId, phaseLabel) {
   var closed = 0;
@@ -528,8 +574,14 @@ function _sdCloseAllAI(workflowId, phaseLabel) {
       var category = String(row[SCHEMA.ACTION_ITEMS.CATEGORY] || '');
       _sdLog('INFO', phaseLabel, 'Closing AI: [' + taskId + '] ' + taskName);
 
-      // WIS User on Equipment: pass SiteDocs credentials so they write to ID_SETUP_RESULTS
+      // Default: no specialist form data (generic checklist action items)
       var formDataJSON = null;
+
+      // ── INJECT 1: WIS User credentials for Equipment Request workflows ──────────
+      // Simulates the ID Setup team submitting SiteDocs credentials via the WIS User
+      // specialist form on ActionItemForm.html. closeActionItem() detects this combination
+      // and writes a row to ID_SETUP_RESULTS, making credentials available to
+      // notifyWorkflowClosure() via the wfTasks snapshot.
       if (category === 'WIS User' && workflowId.startsWith('EQUIP_REQ_')) {
         formDataJSON = JSON.stringify({
           siteDocsUsername: 'sdequip.sdequiplast@sitedocs.test',
@@ -537,7 +589,20 @@ function _sdCloseAllAI(workflowId, phaseLabel) {
           bossWisCreated:   'Yes'
         });
       }
-      // Status Change IT action item: pass full IT Setup data so it writes to IT_RESULTS
+
+      // ── INJECT 2: Full IT Setup data for Status Change IT action items ──────────
+      // Simulates IT submitting the IT Setup form for a CHANGE_ workflow.
+      // In production this happens via submitITSetup() → ActionItemService.closeActionItem().
+      // Here we bypass submitITSetup() and close the action item directly, so we must
+      // inject the full formDataJSON to trigger:
+      //   (a) closeActionItem()'s CHANGE_ branch → writes to IT_RESULTS
+      //   (b) notifyWorkflowClosure()'s CHANGE_ enrichment → overlays IT fields from wfTasks
+      //
+      // NOTE: BOSS_Cmte_SD_New_Site and BOSS_TripReports keys are the dynamic form-control
+      // names (matching the BOSS committees/trip-reports checkboxes in ITSetup.html).
+      // closeActionItem() does NOT parse these keys — they are only parsed by submitITSetup().
+      // Instead, the pre-built `bossDetails` object is what closeActionItem() and
+      // notifyWorkflowClosure() actually use for BOSS sub-row rendering.
       var formType = String(row[SCHEMA.ACTION_ITEMS.FORM_TYPE] || '');
       if (category === 'IT' && formType === 'it_setup' && workflowId.startsWith('CHANGE_')) {
         formDataJSON = JSON.stringify({
@@ -555,6 +620,8 @@ function _sdCloseAllAI(workflowId, phaseLabel) {
           Phone_Number:              '',
           Phone_VM_Password:         '',
           BOSS_Access:               'Yes',
+          // Dynamic BOSS committee/trip-report keys — only parsed by submitITSetup(),
+          // not by closeActionItem(). Included here for completeness/debugging.
           BOSS_Cmte_SD_New_Site:     'Confirmed',
           BOSS_TripReports:          'Confirmed',
           Incidents_Access:          'Yes',
@@ -562,6 +629,8 @@ function _sdCloseAllAI(workflowId, phaseLabel) {
           Delivery_App_Access:       'No',
           Net_Promoter_Score_Access: 'No',
           IT_Notes:                  'SUPERDEBUG — Status Change IT Setup — all fields populated',
+          // Pre-built bossDetails: used directly by closeActionItem() and notifyWorkflowClosure()
+          // to render BOSS sub-rows (committees, costSheets, tripReports, grievances).
           bossDetails: { committees: ['SD New Site'], costSheets: [], tripReports: 'Yes', grievances: '' }
         });
       }
@@ -574,8 +643,10 @@ function _sdCloseAllAI(workflowId, phaseLabel) {
       }
       closed++;
     });
+    // Flush so the next getPendingTasks() call reads fresh STATUS values from the sheet
     SpreadsheetApp.flush();
     _sdEmailExtract(phaseLabel + ' AI close pass ' + (pass + 1));
+    // Brief pause to let the spreadsheet batch writes settle before the next pass
     Utilities.sleep(500);
   }
   _sdLog('INFO', phaseLabel, 'Total AIs closed: ' + closed);

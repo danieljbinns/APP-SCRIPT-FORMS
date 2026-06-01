@@ -1,5 +1,34 @@
 /**
- * IT Setup Form - Handler Functions  
+ * IT Setup Form - Handler Functions
+ *
+ * Handles the IT Setup form submission for New Hire, Equipment Request, and
+ * Status Change workflows. Writes results to IT_RESULTS and triggers downstream
+ * notifications / specialist action items.
+ *
+ * ENTRY POINTS
+ * ────────────
+ *   serveITSetup(workflowId)     — serves ITSetup.html with pre-populated context
+ *   getITContextData(workflowId) — reads all context data needed to pre-populate the form
+ *   submitITSetup(formData)      — processes form submission (see below)
+ *   triggerSpecialists(workflowId, itData) — creates specialist action items post-IT-setup
+ *
+ * WORKFLOW ROUTING IN submitITSetup()
+ * ─────────────────────────────────────
+ *   New Hire / Equipment Request (default path):
+ *     Appends row to IT_RESULTS, advances workflow step to 'Specialist Forms Needed',
+ *     calls triggerSpecialists() to create all specialist action items.
+ *
+ *   Status Change (CHANGE_ prefix, NEW submission only):
+ *     Appends row to IT_RESULTS, then immediately closes the 'IT' action item
+ *     (category='IT', formType='it_setup') via ActionItemService.closeActionItem().
+ *     The close call passes formData as formDataJSON, which triggers the CHANGE_
+ *     secondary write in closeActionItem() (re-writing to IT_RESULTS from formDataJSON
+ *     to ensure getWorkflowContext() reads the right data). checkWorkflowCompletion()
+ *     is then invoked by closeActionItem(), which may fire notifyWorkflowClosure().
+ *
+ *   UPDATE (any workflow type, existing row):
+ *     Overwrites the existing IT_RESULTS row in-place. Does NOT re-trigger specialists,
+ *     advance workflow step, or close any action item. Only updates the sheet data.
  */
 
 function serveITSetup(workflowId) {
@@ -157,6 +186,22 @@ function getITContextData(workflowId) {
   }
 }
 
+/**
+ * Processes the IT Setup form submission.
+ *
+ * Called by: google.script.run from ITSetup.html (client-side form submit button).
+ * Also called directly from _sdCloseAllAI() in SuperDebug.js when testing via
+ * the SD_EQUIP_ITSETUP / SD_NH_ITSETUP payloads.
+ *
+ * @param {Object} formData - PascalCase field names matching ITSetup.html form controls:
+ *   workflowId / requestId, Email_Created, Email_Username, Email_Domain,
+ *   Email_Temp_Password, Computer_Assigned, Computer_Serial, Computer_Model,
+ *   Computer_Type, Phone_Assigned, Phone_Carrier, Phone_Model, Phone_Number,
+ *   Phone_VM_Password, BOSS_Access, BOSS_Cmte_<site> (dynamic), BOSS_CostSheet_<job>
+ *   (dynamic), BOSS_TripReports, BOSS_Grievances, Incidents_Access, CAA_Access,
+ *   Delivery_App_Access, Net_Promoter_Score_Access, IT_Notes
+ * @returns {{ success: boolean, message: string }}
+ */
 function submitITSetup(formData) {
   try {
     rawLog('submitITSetup', formData);
@@ -166,7 +211,9 @@ function submitITSetup(formData) {
 
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
 
-    // Detect existing submission for update-vs-insert
+    // Detect existing submission for update-vs-insert.
+    // An existing row means IT is re-submitting (correction). In that case we
+    // overwrite the row in-place and do NOT re-trigger specialists or close action items.
     let existingITRowIndex = -1;
     let existingITRowData = null;
     const itSheetCheck = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
@@ -244,20 +291,46 @@ function submitITSetup(formData) {
     const actingUser = Session.getActiveUser().getEmail();
 
     if (existingITRowIndex !== -1 && itSheet) {
-      // UPDATE existing row in-place — do NOT re-trigger specialists
+      // UPDATE path — overwrite existing row in-place.
+      // Do NOT re-trigger specialists, advance the workflow step, or close any action items.
+      // This handles IT re-submitting to correct an error without creating duplicate work.
+      // logFormEdit() records the before/after diff for audit purposes.
       itSheet.getRange(existingITRowIndex, 1, 1, rowData.length).setValues([rowData]);
       logFormEdit(workflowId, 'IT Setup', actingUser, existingITRowData, rowData);
       Logger.log('[IT Setup] Updated existing row for ' + workflowId + ' by ' + actingUser + ' — specialists NOT re-triggered');
     } else {
+      // INSERT path — first-time IT Setup submission.
       itSheet.appendRow(rowData);
       Logger.log('Appended row to IT Results: ' + JSON.stringify(rowData));
-      // Status Change: action items were already created when HR approved — don't trigger new ones
+
       if (!workflowId.startsWith('CHANGE_')) {
+        // ── New Hire / Equipment Request path ──────────────────────────────────────
+        // Advance workflow step and trigger all specialist action items.
+        // triggerSpecialists() reads from getWorkflowContext() (which now includes the
+        // IT_RESULTS row we just appended) to build specialist emails with full IT context.
         updateWorkflow(workflowId, 'In Progress', 'Specialist Forms Needed', '', actingUser);
         syncWorkflowState(workflowId);
         triggerSpecialists(workflowId, formData);
       } else {
-        // For Status Change: close the IT action item then let checkWorkflowCompletion handle it
+        // ── Status Change (CHANGE_) path ───────────────────────────────────────────
+        // For CHANGE_ workflows, all action items were created when HR approved
+        // (in submitPositionChangeApproval). IT's job here is to submit the IT Setup
+        // form which closes the IT action item (category='IT', formType='it_setup').
+        //
+        // We find the open IT action item for this workflow and close it via
+        // ActionItemService.closeActionItem(), passing the full formData as formDataJSON.
+        //
+        // WHY pass formDataJSON here?
+        //   closeActionItem() detects the CHANGE_ + IT + it_setup combination and writes
+        //   a row to IT_RESULTS from formDataJSON (belt-and-suspenders: we already wrote
+        //   the row above, but closeActionItem also writes it to handle the case where it
+        //   is called directly without submitITSetup being in the call chain, e.g. from
+        //   _sdCloseAllAI() in SuperDebug.js).
+        //
+        //   closeActionItem() then calls checkWorkflowCompletion(), which fires
+        //   notifyWorkflowClosure() if this was the last blocking action item.
+        //   notifyWorkflowClosure() reads IT context from the wfTasks snapshot (in-memory)
+        //   so the data is guaranteed to be present even if the sheet isn't flushed yet.
         Logger.log('[IT Setup] Status Change IT Setup submitted for ' + workflowId + ' — closing IT action item');
         const aiSheet2 = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
         if (aiSheet2) {
@@ -267,7 +340,7 @@ function submitITSetup(formData) {
             if (aiData2[i][AI2.WORKFLOW_ID] === workflowId &&
                 aiData2[i][AI2.CATEGORY] === 'IT' &&
                 aiData2[i][AI2.STATUS] === 'Open') {
-              // Store IT results as formDataJSON on the action item so notifyWorkflowClosure can read them
+              // Merge bossDetails into formData so notifyWorkflowClosure can render BOSS sub-rows
               const itFormData = JSON.stringify(Object.assign({}, formData, { bossDetails: bossDetails }));
               ActionItemService.closeActionItem(aiData2[i][AI2.TASK_ID], 'IT Setup submitted via form', actingUser, null, itFormData);
               break;
@@ -323,21 +396,65 @@ function submitITSetup(formData) {
   }
 }
 
+/**
+ * Creates specialist action items and sends consolidated email notifications after
+ * IT Setup is complete for a New Hire or Equipment Request workflow.
+ *
+ * Called exclusively by submitITSetup() for new (non-update) submissions where
+ * workflowId does NOT start with 'CHANGE_'. Status Change specialist action items are
+ * created in submitPositionChangeApproval() (PositionChangeHandler.js) at HR approval time.
+ *
+ * SPECIALIST GUARDS (isEquipment checks)
+ * ────────────────────────────────────────
+ * Several specialists are guarded to avoid incorrect action items for Equipment Requests:
+ *
+ *   30/60/90 Review — guarded by !workflowId.startsWith('EQUIP_REQ_') (ER-3).
+ *     Equipment requests do not trigger a 30/60/90 plan regardless of plan306090 value.
+ *     For New Hire, plan306090 must equal exactly 'Yes' (not just truthy).
+ *
+ *   WIS User / SiteDocs Account Setup — guarded by workflowId.startsWith('EQUIP_REQ_').
+ *     For Equipment: triggers a 'WIS User' action item assigned to CONFIG.EMAILS.IDSETUP.
+ *     For New Hire: SiteDocs account is created during the ID Setup step — no separate AI.
+ *
+ *   WIS Assignment — guarded by !workflowId.startsWith('EQUIP_REQ_') (ER-2).
+ *     WIS Assignment (BOSS module assignments by manager) is meaningless for Equipment
+ *     requests because there is no new employment relationship.
+ *
+ * CONTEXT STRIP
+ * ─────────────
+ * A specContext copy is sent to all specialist emails with credentials removed.
+ * Specialist teams (Credit Card, Fleetio, etc.) do not need passwords; those are
+ * only revealed to the manager/requester in the IT Setup completion email.
+ *
+ * EMAIL CONSOLIDATION
+ * ────────────────────
+ * Multiple action items assigned to the same email address are batched into a single
+ * email with all action item buttons listed. This reduces inbox noise for teams that
+ * receive more than one task (e.g. Fleetio for both access and vehicle assignment).
+ *
+ * @param {string} workflowId - Workflow ID
+ * @param {Object} itData     - The raw formData passed to submitITSetup() — used to
+ *                              derive assignedEmail (belt-and-suspenders overlay)
+ */
 function triggerSpecialists(workflowId, itData) {
-  // Same guard as submitITSetup: only set when actually created, empty otherwise.
-  // '[Pending]' was truthy and got pushed into specialist recipient lists as a literal address.
+  // Build assignedEmail only when IT confirmed the account was created.
+  // An empty string (falsy) prevents '[Pending]' or partial addresses from being
+  // added to specialist email context or recipient lists.
   const assignedEmail = (itData.Email_Created === 'Yes' && itData.Email_Username)
     ? (String(itData.Email_Username).replace(/^"|"$/g, '') + (itData.Email_Domain || ''))
     : '';
 
-  // Use getWorkflowContext so specialist emails carry forward the full completed state:
-  // IT_RESULTS is already written before triggerSpecialists is called, so all IT fields
-  // (Incidents, CAA, Delivery App, NPS, BOSS details, computer, phone, email) are available.
+  // Read the full workflow context AFTER IT_RESULTS is written (submitITSetup appended
+  // the row before calling this function). This means all IT fields (computer, phone,
+  // BOSS details, Incidents, CAA, Delivery App, NPS) are included in specialist emails
+  // and the email template renders IT Setup as '✓ Complete'.
   const context = getWorkflowContext(workflowId) || {};
-  // Belt-and-suspenders: overlay assignedEmail in case sheet hasn't flushed yet
+  // Belt-and-suspenders: overlay assignedEmail directly in case the IT_RESULTS row
+  // hasn't been flushed yet and getWorkflowContext() returned an empty value.
   if (assignedEmail) context.assignedEmail = assignedEmail;
 
-  // Strip credentials — specialist teams don't need passwords
+  // Create a credential-stripped copy of context for specialist emails.
+  // Passwords (email temp, SiteDocs, DSS) are visible only to the manager/requester.
   const specContext = Object.assign({}, context);
   delete specContext.emailTempPassword;
   delete specContext.dssPassword;

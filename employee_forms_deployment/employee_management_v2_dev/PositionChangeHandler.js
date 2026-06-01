@@ -320,7 +320,57 @@ function getPositionChangeData(workflowId) {
 }
 
 /**
- * Handle HR Approval for Position Change
+ * Processes HR approval or rejection of a Position Change / Status Change request.
+ *
+ * Called by: google.script.run from StatusChangeApproval.html (HR approval form).
+ *
+ * ON APPROVAL
+ * ────────────
+ * 1. Writes a row to POSITION_CHANGE_APPROVALS with decision, notes, confirmedTitle,
+ *    confirmedNewManager, and the HR submitter's email.
+ *
+ * 2. SpreadsheetApp.flush() is called immediately after the row write.
+ *    WHY: All subsequent operations in this function (sendFormEmail, ActionItemService
+ *    calls) may trigger calls to getWorkflowContext() indirectly. getWorkflowContext()
+ *    for CHANGE_ workflows does NOT read POSITION_CHANGE_APPROVALS (see dead-code note
+ *    in EmailUtils.js), but the direct reads in notifyWorkflowClosure() (ActionItemService.js)
+ *    DO read POSITION_CHANGE_APPROVALS from the same spreadsheet instance. The flush
+ *    ensures the row is committed before any of those reads occur.
+ *
+ * 3. Creates action items for each team based on the requested changes:
+ *    - Receiving Manager (all transfers / manager assignments)
+ *    - Business Cards, Credit Card, Fleetio (access + vehicle return + removal)
+ *    - Central Purchasing/Jonas
+ *    - IT (systems + equipment, excl. specialist-handled; formType='it_setup' so
+ *      ActionItemForm renders the full IT Setup form with email/computer/phone/BOSS fields)
+ *    - Assets (equipment returns — assigned to old manager)
+ *    - SiteDocs removal (WIS User category, routed to IDSETUP)
+ *    - ID Setup (BOSS WIS account update — always)
+ *    - WIS Assignment (manager BOSS module update — always)
+ *    - SiteDocs new account (WIS User category — only if SiteDocs in systems)
+ *    - Safety (DSS + SiteDocs site update — always)
+ *
+ * 4. IT action item uses formType='it_setup'.
+ *    This routes ActionItemForm.html to the full IT Setup form (same as New Hire/Equipment).
+ *    When IT closes this action item, submitITSetup() is NOT called — instead, IT uses
+ *    the standard IT Setup form at buildFormUrl('it_setup', {wf: workflowId}), which
+ *    calls submitITSetup() directly, which then closes the action item and fires
+ *    checkWorkflowCompletion(). Alternatively, _sdCloseAllAI() passes formDataJSON directly
+ *    to ActionItemService.closeActionItem() which handles the IT_RESULTS write itself.
+ *
+ * 5. approvalActionTeams[] is built incrementally and passed into changeContext.actionTeams.
+ *    Since changeContext holds a reference to the same array, emails sent after each team
+ *    is added automatically include the growing list in Section 6 of the email template.
+ *
+ * ON REJECTION
+ * ─────────────
+ * Marks the workflow 'Rejected' and sends a rejection email to the requester and current manager.
+ * No action items are created.
+ *
+ * @param {Object} formData - From StatusChangeApproval.html:
+ *   workflowId, decision ('Approved'|'Rejected'), notes, confirmedNewManager (email),
+ *   confirmedTitle, confirmedJrTitle
+ * @returns {{ success: boolean, message: string }}
  */
 function submitPositionChangeApproval(formData) {
   try {
@@ -328,11 +378,20 @@ function submitPositionChangeApproval(formData) {
     const { workflowId, decision, notes, confirmedNewManager, confirmedTitle, confirmedJrTitle } = formData;
     const formId = generateFormId('CHG_APP');
 
+    // Write the approval record to POSITION_CHANGE_APPROVALS.
+    // Columns: [0] WorkflowId, [1] FormId, [2] Timestamp, [3] Decision, [4] Notes,
+    //          [5] ConfirmedTitle, [6] ConfirmedNewManager, [7] SubmittedBy
     addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, [
       workflowId, formId, new Date(), decision, notes,
       confirmedTitle || '', confirmedNewManager || '', Session.getActiveUser().getEmail()
     ]);
-    SpreadsheetApp.flush(); // ensure approval row is visible to getWorkflowContext() in same execution
+
+    // Flush immediately after the approval row write.
+    // notifyWorkflowClosure() (called later via checkWorkflowCompletion → closeActionItem)
+    // reads POSITION_CHANGE_APPROVALS directly using the same spreadsheet object (ss).
+    // Without this flush, the row may not be visible within the same script execution,
+    // causing the closure email to show empty hrNotes / hrDecision / confirmedTitle.
+    SpreadsheetApp.flush();
 
     if (decision === 'Approved') {
       const changeData = getPositionChangeData(workflowId);
@@ -661,7 +720,13 @@ function submitPositionChangeApproval(formData) {
         // Computer/phone/tablet retrieval goes to old manager asset task, not IT
 
         if (itDescItems.length > 0) {
-          // formType='it_setup' routes ActionItemForm to show full IT Setup fields (email, computer, phone, BOSS, etc.)
+          // formType='it_setup' is the critical routing key here.
+          // When ActionItemForm.html loads this task, it detects formType='it_setup' and
+          // renders the full IT Setup form (email account, computer, phone, BOSS, system
+          // access checkboxes) instead of the generic checklist view.
+          // When IT submits that form, it calls submitITSetup() (ITSetupHandler.js) which
+          // writes to IT_RESULTS and then closes THIS action item via
+          // ActionItemService.closeActionItem(), which triggers checkWorkflowCompletion().
           ActionItemService.createActionItem(workflowId, 'IT', 'IT Access & Equipment Setup', JSON.stringify(itDescItems), CONFIG.EMAILS.IT, 'it_setup');
           tasksCreated++;
           approvalActionTeams.push('IT');
