@@ -308,14 +308,16 @@ function triggerSpecialists(workflowId, itData) {
     ? (String(itData.Email_Username).replace(/^"|"$/g, '') + (itData.Email_Domain || ''))
     : '';
 
-  const context = getITContextData(workflowId);
-  context.assignedEmail = assignedEmail;
-  context.computerAssigned = itData.Computer_Assigned;
-  context.computerType = itData.Computer_Type;
-  context.phoneAssigned = itData.Phone_Assigned;
-  context.phoneNumber = itData.Phone_Number;
+  // Use getWorkflowContext so specialist emails carry forward the full completed state:
+  // IT_RESULTS is already written before triggerSpecialists is called, so all IT fields
+  // (Incidents, CAA, Delivery App, NPS, BOSS details, computer, phone, email) are available.
+  const context = getWorkflowContext(workflowId) || {};
+  // Belt-and-suspenders: overlay assignedEmail in case sheet hasn't flushed yet
+  if (assignedEmail) context.assignedEmail = assignedEmail;
 
+  // Strip credentials — specialist teams don't need passwords
   const specContext = Object.assign({}, context);
+  delete specContext.emailTempPassword;
   delete specContext.dssPassword;
   delete specContext.siteDocsPassword;
   delete specContext.siteDocsUsername;

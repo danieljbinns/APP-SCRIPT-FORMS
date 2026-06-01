@@ -269,8 +269,9 @@ function getWorkflowContext(workflowId) {
       bossCostSheetJobs: row[headers.indexOf('BOSS Cost Sheet Jobs')]   || row[headers.indexOf('Cost Sheet Jobs')] || '',
       bossTripReports:  row[headers.indexOf('BOSS Trip Reports')]       || row[headers.indexOf('Trip Reports')] || '',
       bossGrievances:   row[headers.indexOf('BOSS Grievances')]         || row[headers.indexOf('Grievances')] || '',
-      vehicleRequested: row[headers.indexOf('Vehicle Requested')]       || row[headers.indexOf('Company Vehicle')] || '',
-      fleetioAccess:    row[headers.indexOf('Fleetio Access')]          || '',
+      // Derive from systems/equipment arrays (reliable) rather than column header lookup
+      vehicleRequested: (String(row[SCHEMA.INITIAL_REQUESTS.EQUIPMENT] || '').toLowerCase().indexOf('vehicle') !== -1) ? 'Yes' : (row[headers.indexOf('Vehicle Requested')] || row[headers.indexOf('Company Vehicle')] || ''),
+      fleetioAccess:    (systemsList.some(function(s){ return s.toLowerCase() === 'fleetio'; })) ? 'Yes' : (row[headers.indexOf('Fleetio Access')] || ''),
       // Specialist-task fields — read via schema index since header names vary
       creditCardUSA:    String(row[SCHEMA.INITIAL_REQUESTS.CC_USA]           || ''),
       creditCardCanada: String(row[SCHEMA.INITIAL_REQUESTS.CC_CAN]           || ''),
