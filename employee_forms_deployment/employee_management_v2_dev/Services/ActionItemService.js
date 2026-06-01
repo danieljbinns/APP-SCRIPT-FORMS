@@ -194,8 +194,8 @@ var ActionItemService = (function() {
       if (row[IR.CC_USA] === 'Yes' || row[IR.CC_CAN] === 'Yes' || row[IR.CC_HD] === 'Yes')  cats.add('Credit Card');
       if (row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('Fleetio'))                     cats.add('Fleetio');
       if (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('Business Cards'))           cats.add('Business Cards');
-      if ((row[IR.SYSTEMS]   && String(row[IR.SYSTEMS]).includes('SiteDocs')) ||
-          (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('SiteDocs Tablet')))        cats.add('WIS User'); // ER-4: SiteDocs AI uses category 'WIS User' (ID Setup team)
+      // SiteDocs WIS User action item only created for EQUIP_REQ_ (not New Hire — ID Setup handles it there)
+      // This function is only called for NEW_EMP_ workflows, so WIS User is never required here
       if (row[IR.PLAN_306090] === 'Yes') cats.add('30/60/90 Review');
       cats.add('Safety'); // always required for onboarding
       return cats;

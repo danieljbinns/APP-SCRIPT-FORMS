@@ -413,9 +413,10 @@ function triggerSpecialists(workflowId, itData) {
     });
   }
 
-  // 6. SiteDocs Account Setup — routed to ID Setup team (not IT) (ER-4)
+  // 6. SiteDocs Account Setup — only for Equipment Requests (EQUIP_REQ_).
+  // For New Hire, SiteDocs account is created during ID Setup (credentials shown in that section).
   const hasSiteDocs = Array.isArray(context.systems) && context.systems.some(function(s) { return String(s).trim().toLowerCase() === 'sitedocs'; });
-  if (hasSiteDocs) {
+  if (hasSiteDocs && workflowId.startsWith('EQUIP_REQ_')) {
     specialists.push({
       email: CONFIG.EMAILS.IDSETUP,
       category: 'WIS User',
@@ -427,10 +428,10 @@ function triggerSpecialists(workflowId, itData) {
 
   // WIS Assignment — required for new hires assigned to manager; not for Equipment Requests (ER-2)
   if (context.managerEmail && !workflowId.startsWith('EQUIP_REQ_')) {
-    // ER-5: Training users get training modules only; full hires get full WIS assignment
+    // WIS Assignment = assign WIS modules in BOSS. BOSS committee/cost sheet/trip/grievances are IT tasks.
     const wisDescription = context.bossTrainingOnly === 'Yes'
-      ? JSON.stringify(['Assign BOSS training modules only — do NOT assign committees, cost sheets, trip reports, or grievances'])
-      : JSON.stringify(['Assign BOSS job site committee access', 'Assign cost sheet / trip reports / grievances as applicable', 'Assign Work Instructions & Safety (WIS) module(s) in BOSS for this employee']);
+      ? JSON.stringify(['Assign BOSS training modules only (training user — do NOT assign committee, cost sheet, trip reports, or grievances)'])
+      : JSON.stringify(['Assign Work Instructions & Safety (WIS) module(s) in BOSS for this employee']);
     specialists.push({
       email: context.managerEmail,
       category: 'WIS',

@@ -860,8 +860,9 @@ function runSuperDebugNewHire() {
     });
 
     // Verify all expected AIs created by triggerSpecialists
-    // Safety already exists; new ones: Credit Card, Business Cards, Fleetio, 30/60/90 Review, Jonas, WIS Assignment, WIS User (SiteDocs→ID Setup)
-    _sdVerifyAI(wfId, ['Safety', 'Credit Card', 'Business Cards', 'Fleetio', '30/60/90 Review', 'Jonas', 'WIS', 'WIS User']);
+    // Safety already exists; new ones: Credit Card, Business Cards, Fleetio, 30/60/90 Review, Jonas, WIS Assignment
+    // WIS User (SiteDocs Account Setup) is NOT created for New Hire — ID Setup handles SiteDocs there
+    _sdVerifyAI(wfId, ['Safety', 'Credit Card', 'Business Cards', 'Fleetio', '30/60/90 Review', 'Jonas', 'WIS']);
     _sdVerifyWorkflow(wfId, 'In Progress', 'Specialist Forms Needed');
 
     Utilities.sleep(500);
