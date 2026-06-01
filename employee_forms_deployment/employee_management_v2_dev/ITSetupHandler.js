@@ -36,7 +36,7 @@ function getITContextData(workflowId) {
         const systemsRaw     = mainData[i][IR.SYSTEMS] || '';
         context = {
           success: true,
-          workflowType: 'New Hire',
+          workflowType: workflowId.startsWith('EQUIP_REQ_') ? 'Equipment Request' : 'New Hire',
           employeeName: mainData[i][IR.FIRST_NAME] + ' ' + mainData[i][IR.LAST_NAME],
           firstName: mainData[i][IR.FIRST_NAME],
           lastName: mainData[i][IR.LAST_NAME],
