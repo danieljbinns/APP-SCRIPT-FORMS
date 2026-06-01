@@ -639,6 +639,7 @@ function buildTerminationContextBlock(context, opts) {
  */
 function buildStatusChangeContextBlock(context, opts) {
   opts = opts || {};
+  var showPw = opts.showPasswords === true;
 
   var empName = context.employeeName || '';
 
@@ -790,6 +791,51 @@ function buildStatusChangeContextBlock(context, opts) {
   }
 
   // ============================================================
+  // SECTION 4b — IT Setup Results  (shown when IT has submitted the setup form for this change)
+  // Uses same rendering as buildNewHireContextBlock IT section
+  // ============================================================
+  var itSetupSection = '';
+  var hasItChange = !!(context.itTimestamp || context.assignedEmail);
+  if (hasItChange) {
+    var itChgRows = '';
+    if (context.assignedEmail) itChgRows += esRow('Assigned Email', esVal(context.assignedEmail, 'mono'));
+    if (context.emailTempPassword) itChgRows += esRow('Temp Password', showPw ? esVal(context.emailTempPassword, 'mono') : esVal('●●●●●●●●', 'masked'));
+    if (context.computerAssigned === 'Yes') {
+      itChgRows += esDivider();
+      var cd = [context.computerType, context.computerModel].filter(Boolean).join(' · ');
+      if (cd) itChgRows += esRow('Computer', esVal(cd));
+      if (context.computerSerial) itChgRows += esRow('Serial #', esVal(context.computerSerial, 'mono'));
+    }
+    if (context.phoneAssigned === 'Yes') {
+      itChgRows += esDivider();
+      var pd = [context.phoneCarrier, context.phoneModel].filter(Boolean).join(' · ');
+      if (pd) itChgRows += esRow('Phone', esVal(pd));
+      if (context.phoneNumber)    itChgRows += esRow('Number', esVal(context.phoneNumber, 'mono'));
+      if (context.phoneVMPassword) itChgRows += esRow('VM PIN', esVal(context.phoneVMPassword, 'mono'));
+    }
+    if (context.bossAccess === 'Yes') {
+      itChgRows += esDivider();
+      itChgRows += esRow('BOSS', esVal('✓ Granted'));
+      if (context.bossDetails) {
+        var itbd = context.bossDetails;
+        if (Array.isArray(itbd.committees)) itbd.committees.forEach(function(s) { itChgRows += esRow('Committee', esVal('✓ ' + s)); });
+        if (Array.isArray(itbd.costSheets)) itbd.costSheets.forEach(function(j) { itChgRows += esRow('Cost Sheet', esVal('✓ ' + j)); });
+        if (itbd.tripReports === 'Yes') itChgRows += esRow('Trip Reports', esVal('✓ Granted'));
+        if (itbd.grievances  === 'Yes') itChgRows += esRow('Grievances',   esVal('✓ Granted'));
+      }
+      if (context.incidentsAccess    === 'Yes') itChgRows += esRow('Incidents',    esVal('✓ Granted'));
+      if (context.caaAccess          === 'Yes') itChgRows += esRow('CAA',          esVal('✓ Granted'));
+      if (context.deliveryAppAccess  === 'Yes') itChgRows += esRow('Delivery App', esVal('✓ Granted'));
+      if (context.netPromoterAccess  === 'Yes') itChgRows += esRow('Net Promoter', esVal('✓ Granted'));
+    }
+    if (context.itNotes) { itChgRows += esDivider(); itChgRows += esRow('Notes', esVal(context.itNotes)); }
+    var itChgActor = context.itSubmittedBy
+      ? 'Completed by ' + context.itSubmittedBy + (context.itTimestamp ? ' · ' + context.itTimestamp : '')
+      : 'Assigned to IT team';
+    itSetupSection = esSection('IT Setup', 'complete', '✓ Complete', itChgActor, itChgRows);
+  }
+
+  // ============================================================
   // SECTION 5 — Access & Equipment Changes  (Queued → In Progress)
   // ============================================================
   var accessSection = '';
@@ -824,5 +870,5 @@ function buildStatusChangeContextBlock(context, opts) {
     );
   }
 
-  return empSection + changeSection + hrSection + confirmedSection + accessSection + actionSection;
+  return empSection + changeSection + hrSection + confirmedSection + itSetupSection + accessSection + actionSection;
 }

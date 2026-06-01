@@ -661,14 +661,15 @@ function submitPositionChangeApproval(formData) {
         // Computer/phone/tablet retrieval goes to old manager asset task, not IT
 
         if (itDescItems.length > 0) {
-          const itTid = ActionItemService.createActionItem(workflowId, 'IT', 'IT Access & Equipment Setup', JSON.stringify(itDescItems), CONFIG.EMAILS.IT);
+          // formType='it_setup' routes ActionItemForm to show full IT Setup fields (email, computer, phone, BOSS, etc.)
+          ActionItemService.createActionItem(workflowId, 'IT', 'IT Access & Equipment Setup', JSON.stringify(itDescItems), CONFIG.EMAILS.IT, 'it_setup');
           tasksCreated++;
           approvalActionTeams.push('IT');
           sendFormEmail({
             to: CONFIG.EMAILS.IT,
             subject: 'IT Action Required',
-            body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please complete the IT tasks listed in the action item.',
-            formUrl: buildFormUrl('action_item_view', { tid: itTid }),
+            body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please complete the IT setup using the form below. Record all access and equipment details.',
+            formUrl: buildFormUrl('it_setup', { wf: workflowId }),
             contextData: changeContext
           });
         }

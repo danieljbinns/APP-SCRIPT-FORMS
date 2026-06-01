@@ -537,6 +537,34 @@ function _sdCloseAllAI(workflowId, phaseLabel) {
           bossWisCreated:   'Yes'
         });
       }
+      // Status Change IT action item: pass full IT Setup data so it writes to IT_RESULTS
+      var formType = String(row[SCHEMA.ACTION_ITEMS.FORM_TYPE] || '');
+      if (category === 'IT' && formType === 'it_setup' && workflowId.startsWith('CHANGE_')) {
+        formDataJSON = JSON.stringify({
+          Email_Created:             'Yes',
+          Email_Username:            'sdchange.sdchangelast',
+          Email_Domain:              '@sd-test.com',
+          Email_Temp_Password:       'ChangePass123!',
+          Computer_Assigned:         'Yes',
+          Computer_Serial:           'SD-SERIAL-CHANGE',
+          Computer_Model:            'SD Change MacBook Pro',
+          Computer_Type:             'Laptop',
+          Phone_Assigned:            'No',
+          Phone_Carrier:             '',
+          Phone_Model:               '',
+          Phone_Number:              '',
+          Phone_VM_Password:         '',
+          BOSS_Access:               'Yes',
+          BOSS_Cmte_SD_New_Site:     'Confirmed',
+          BOSS_TripReports:          'Confirmed',
+          Incidents_Access:          'Yes',
+          CAA_Access:                'No',
+          Delivery_App_Access:       'No',
+          Net_Promoter_Score_Access: 'No',
+          IT_Notes:                  'SUPERDEBUG — Status Change IT Setup — all fields populated',
+          bossDetails: { committees: ['SD New Site'], costSheets: [], tripReports: 'Yes', grievances: '' }
+        });
+      }
 
       var r = ActionItemService.closeActionItem(taskId, 'SUPERDEBUG AUTO-CLOSE', SD_EMAIL, null, formDataJSON);
       if (r && r.success === false) {

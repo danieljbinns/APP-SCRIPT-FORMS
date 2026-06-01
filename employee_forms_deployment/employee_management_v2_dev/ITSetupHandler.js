@@ -251,9 +251,31 @@ function submitITSetup(formData) {
     } else {
       itSheet.appendRow(rowData);
       Logger.log('Appended row to IT Results: ' + JSON.stringify(rowData));
-      updateWorkflow(workflowId, 'In Progress', 'Specialist Forms Needed', '', actingUser);
-      syncWorkflowState(workflowId);
-      triggerSpecialists(workflowId, formData);
+      // Status Change: action items were already created when HR approved — don't trigger new ones
+      if (!workflowId.startsWith('CHANGE_')) {
+        updateWorkflow(workflowId, 'In Progress', 'Specialist Forms Needed', '', actingUser);
+        syncWorkflowState(workflowId);
+        triggerSpecialists(workflowId, formData);
+      } else {
+        // For Status Change: close the IT action item then let checkWorkflowCompletion handle it
+        Logger.log('[IT Setup] Status Change IT Setup submitted for ' + workflowId + ' — closing IT action item');
+        const aiSheet2 = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+        if (aiSheet2) {
+          const aiData2 = aiSheet2.getDataRange().getValues();
+          const AI2 = SCHEMA.ACTION_ITEMS;
+          for (let i = SCHEMA.ROW.FIRST_DATA; i < aiData2.length; i++) {
+            if (aiData2[i][AI2.WORKFLOW_ID] === workflowId &&
+                aiData2[i][AI2.CATEGORY] === 'IT' &&
+                aiData2[i][AI2.STATUS] === 'Open') {
+              // Store IT results as formDataJSON on the action item so notifyWorkflowClosure can read them
+              const itFormData = JSON.stringify(Object.assign({}, formData, { bossDetails: bossDetails }));
+              ActionItemService.closeActionItem(aiData2[i][AI2.TASK_ID], 'IT Setup submitted via form', actingUser, null, itFormData);
+              break;
+            }
+          }
+        }
+        syncWorkflowState(workflowId);
+      }
     }
 
     // Notify Requester + Manager

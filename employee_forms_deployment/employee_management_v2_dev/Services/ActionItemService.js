@@ -94,6 +94,48 @@ var ActionItemService = (function() {
         sheet.getRange(rowIndex, AI.FORM_DATA + 1).setValue(formDataJSON);
       }
 
+      // Status Change IT Setup: write results to IT_RESULTS so getWorkflowContext can include them
+      const taskCategory2 = data[rowIndex - 1][AI.CATEGORY] || '';
+      const taskFormType2 = data[rowIndex - 1][AI.FORM_TYPE] || '';
+      if (taskCategory2 === 'IT' && taskFormType2 === 'it_setup' && workflowId.startsWith('CHANGE_') && formDataJSON) {
+        try {
+          const itd = JSON.parse(formDataJSON);
+          const itSheet2 = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
+          if (itSheet2) {
+            const IT2 = SCHEMA.IT_RESULTS;
+            const ae2 = (itd.Email_Created === 'Yes' && itd.Email_Username)
+              ? (String(itd.Email_Username).replace(/^"|"$/g, '') + (itd.Email_Domain || '')) : '';
+            const bd2 = itd.bossDetails || { committees: [], costSheets: [], tripReports: '', grievances: '' };
+            const itRow2 = new Array(23).fill('');
+            itRow2[IT2.WORKFLOW_ID]          = workflowId;
+            itRow2[IT2.SUBMISSION_TS]        = new Date();
+            itRow2[IT2.EMAIL_CREATED]        = itd.Email_Created || 'No';
+            itRow2[IT2.ASSIGNED_EMAIL]       = ae2;
+            itRow2[IT2.EMAIL_PASSWORD]       = itd.Email_Temp_Password || '';
+            itRow2[IT2.COMPUTER_ASSIGNED]    = itd.Computer_Assigned || 'No';
+            itRow2[IT2.COMPUTER_SERIAL]      = itd.Computer_Serial || '';
+            itRow2[IT2.COMPUTER_MODEL]       = itd.Computer_Model || '';
+            itRow2[IT2.COMPUTER_TYPE]        = itd.Computer_Type || '';
+            itRow2[IT2.PHONE_ASSIGNED]       = itd.Phone_Assigned || 'No';
+            itRow2[IT2.PHONE_CARRIER]        = itd.Phone_Carrier || '';
+            itRow2[IT2.PHONE_MODEL]          = itd.Phone_Model || '';
+            itRow2[IT2.PHONE_NUMBER]         = itd.Phone_Number || '';
+            itRow2[IT2.PHONE_VM_PASSWORD]    = itd.Phone_VM_Password || '';
+            itRow2[IT2.BOSS_ACCESS]          = itd.BOSS_Access || 'No';
+            itRow2[IT2.INCIDENTS_ACCESS]     = itd.Incidents_Access || 'No';
+            itRow2[IT2.CAA_ACCESS]           = itd.CAA_Access || 'No';
+            itRow2[IT2.DELIVERY_APP_ACCESS]  = itd.Delivery_App_Access || 'No';
+            itRow2[IT2.NET_PROMOTER_ACCESS]  = itd.Net_Promoter_Score_Access || 'No';
+            itRow2[IT2.IT_NOTES]             = itd.IT_Notes || '';
+            itRow2[IT2.SUBMITTED_BY]         = closedBy;
+            itRow2[IT2.BOSS_DETAILS]         = JSON.stringify(bd2);
+            itSheet2.appendRow(itRow2);
+            SpreadsheetApp.flush();
+            Logger.log('[ActionItemService] CHANGE_ IT Setup written to IT_RESULTS for ' + workflowId);
+          }
+        } catch(e) { Logger.log('[ActionItemService] CHANGE_ IT write: ' + e.message); }
+      }
+
       // WIS User + Equipment: write SiteDocs credentials to ID_SETUP_RESULTS
       // so getWorkflowContext() reads them and shows in IT Setup section of emails
       const taskCategory = data[rowIndex - 1][AI.CATEGORY] || '';
@@ -477,6 +519,38 @@ var ActionItemService = (function() {
             }
           }
         } catch(e) { Logger.log('[notifyWorkflowClosure] CHANGE_ approval read: ' + e.message); }
+      }
+
+      // Status Change: extract IT Setup results from IT action item formData
+      if (workflowId.startsWith('CHANGE_')) {
+        const itTask = wfTasks.find(function(r) { return r[AI.CATEGORY] === 'IT' && r[AI.FORM_TYPE] === 'it_setup' && r[AI.FORM_DATA]; });
+        if (itTask) {
+          try {
+            const itd = JSON.parse(itTask[AI.FORM_DATA]);
+            const ae = (itd.Email_Created === 'Yes' && itd.Email_Username)
+              ? (String(itd.Email_Username).replace(/^"|"$/g, '') + (itd.Email_Domain || '')) : '';
+            if (ae)                   context.assignedEmail     = ae;
+            if (itd.Email_Temp_Password) context.emailTempPassword = itd.Email_Temp_Password;
+            context.itTimestamp   = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a');
+            context.itSubmittedBy = itTask[AI.CLOSED_BY] || '';
+            context.computerAssigned = itd.Computer_Assigned || '';
+            context.computerModel    = itd.Computer_Model    || '';
+            context.computerType     = itd.Computer_Type     || '';
+            context.computerSerial   = itd.Computer_Serial   || '';
+            context.phoneAssigned    = itd.Phone_Assigned    || '';
+            context.phoneCarrier     = itd.Phone_Carrier     || '';
+            context.phoneModel       = itd.Phone_Model       || '';
+            context.phoneNumber      = itd.Phone_Number      || '';
+            context.phoneVMPassword  = itd.Phone_VM_Password || '';
+            context.bossAccess       = itd.BOSS_Access       || '';
+            context.incidentsAccess  = itd.Incidents_Access  || '';
+            context.caaAccess        = itd.CAA_Access        || '';
+            context.deliveryAppAccess= itd.Delivery_App_Access || '';
+            context.netPromoterAccess= itd.Net_Promoter_Score_Access || '';
+            context.itNotes          = itd.IT_Notes          || '';
+            if (itd.bossDetails) context.bossDetails = itd.bossDetails;
+          } catch(e) { Logger.log('[notifyWorkflowClosure] CHANGE_ IT parse: ' + e.message); }
+        }
       }
 
       // Equipment: extract SiteDocs credentials from WIS User action item formData (already flushed
