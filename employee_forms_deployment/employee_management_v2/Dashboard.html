@@ -890,7 +890,9 @@
             var statusCounts = {};
             allWorkflows.forEach(function(wf) {
                 var t = wf.type === 'Onboarding' ? 'ONBOARDING' : wf.type === 'End of Employment' ? 'EOE' : wf.type === 'Status Change' ? 'CHANGE' : wf.type === 'Equipment' ? 'EQUIP' : null;
-                if (t) typeCounts[t] = (typeCounts[t] || 0) + 1;
+                // Only count non-complete workflows in type badges (badge = open/in-progress count, not total)
+                var isComplete = wf.status === 'Complete' || wf.status === 'Completed';
+                if (t && !isComplete) typeCounts[t] = (typeCounts[t] || 0) + 1;
                 var s = (wf.status === 'Completed' || wf.status === 'Complete') ? 'COMPLETED' : wf.status === 'Cancelled' ? 'CANCELLED' : 'PENDING';
                 statusCounts[s] = (statusCounts[s] || 0) + 1;
             });
