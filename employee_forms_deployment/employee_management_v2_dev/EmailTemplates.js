@@ -93,8 +93,7 @@ function buildNewHireContextBlock(context, opts) {
   var specialists = [];
   // From systems array — standard specialist systems (Fleetio etc.)
   systems.forEach(function(s) { if (_isSpecialist(s)) specialists.push(s); });
-  // SiteDocs → routed to ID Setup team (WIS User) — not in SPECIALIST_SYSTEMS but IS a specialist task
-  if (systems.some(function(s) { return s.toLowerCase() === 'sitedocs'; })) specialists.push('SiteDocs Account Setup');
+  // SiteDocs credentials are shown in the ID Setup section — do not duplicate in Specialists
   // Equipment: Business Cards, Vehicle
   var equipStr = String(context.equipmentRaw || '').toLowerCase();
   if (equipStr.indexOf('business card') !== -1) specialists.push('Business Cards');
@@ -305,13 +304,16 @@ function buildNewHireContextBlock(context, opts) {
 
   var specSection = '';
   if (specialists.length > 0) {
+    var allComplete = opts.allComplete === true;
     var specRows = specialists.map(function(s) {
+      if (allComplete) return esRow(s, esVal('✓ Complete', 'complete'));
       return esRow(s, specReady ? esVal('In Progress', 'pending') : esVal('— Queued', 'queued'));
     }).join('');
 
-    var specBadge = specReady ? '⏳ In Progress' : '— Queued';
+    var specBadge = allComplete ? '✓ All Complete' : (specReady ? '⏳ In Progress' : '— Queued');
+    var specFinalSt = allComplete ? 'complete' : specSt;
     specSection = esSection(
-      'Specialists', specSt, specBadge,
+      'Specialists', specFinalSt, specBadge,
       'Parallel notifications sent · individual completion tracked separately',
       specRows
     );

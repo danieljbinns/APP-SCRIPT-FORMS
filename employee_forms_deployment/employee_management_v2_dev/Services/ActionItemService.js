@@ -418,8 +418,8 @@ var ActionItemService = (function() {
       const context = getWorkflowContext(workflowId) || { employeeName: workflow['Employee Name'] };
       if (workflowId.startsWith('TERM_')) context.hrDecision = 'Approved';
 
-      // showPasswords: true for all closure emails — all parties receive full credential summary
-      const closureEmailOpts = { showPasswords: true };
+      // showPasswords: true + allComplete: true — tells the template all specialists are done
+      const closureEmailOpts = { showPasswords: true, allComplete: true };
 
       // Notify HR
       sendFormEmail({
