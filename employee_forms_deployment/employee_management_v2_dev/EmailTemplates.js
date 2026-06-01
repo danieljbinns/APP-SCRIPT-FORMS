@@ -67,45 +67,45 @@ function _isSpecialist(sys) {
  */
 function buildNewHireContextBlock(context, opts) {
   opts = opts || {};
-  var showPw = opts.showPasswords === true;
+  var showPw     = opts.showPasswords === true;
+  var isEquipment = context.workflowType === 'Equipment Request';
 
   // ── Step completion flags ─────────────────────────────────
-  var hasId   = !!(context.internalEmployeeId);
-  var hasHr   = !!(context.adpAssociateId);
-  var hasIt   = !!(context.itTimestamp || context.assignedEmail);  // itTimestamp written whenever IT submits, even without email
-  // Hourly employees with no system access skip IT entirely
+  var hasId   = !isEquipment && !!(context.internalEmployeeId); // Equipment has no ID Setup step
+  var hasHr   = !isEquipment && !!(context.adpAssociateId);     // Equipment has no HR Verification step
+  var hasIt   = !!(context.itTimestamp || context.assignedEmail); // itTimestamp written whenever IT submits
+  // Hourly employees with no system access skip IT entirely (not applicable to Equipment)
   var needsIt = !(context.employmentType === 'Hourly' && String(context.systemAccess || '') === 'No');
 
   // ── Step statuses ─────────────────────────────────────────
   var idSt  = hasId ? 'complete' : 'active';
   var hrSt  = hasHr ? 'complete' : (hasId  ? 'active' : 'queued');
-  var itSt  = !needsIt ? 'na'   : (hasIt  ? 'complete' : (hasHr ? 'active' : 'queued'));
+  // Equipment: IT unlocks directly (no HR gate); NH: IT gates on HR
+  var itSt  = !needsIt ? 'na' : (hasIt ? 'complete' : (isEquipment || hasHr ? 'active' : 'queued'));
 
-  // Specialists unlock after HR (hourly) or IT (salary)
-  var specReady  = needsIt ? hasIt : hasHr;
-  var specSt     = specReady ? 'active' : 'queued';
+  // Specialists unlock after HR (hourly/Equipment) or IT (salary NH)
+  var specReady = needsIt ? hasIt : hasHr;
+  var specSt    = specReady ? 'active' : 'queued';
 
   // ── Systems: IT vs Specialists ────────────────────────────
   var systems   = Array.isArray(context.systems) ? context.systems : [];
   var itSystems = systems.filter(function(s) { return !_isSpecialist(s) && s.toLowerCase() !== 'sitedocs'; });
 
-  // Build specialist list from all sources (systems, equipment, credit card fields, jonas, plan306090)
+  // Build specialist list from all sources — same logic for NH and Equipment
   var specialists = [];
-  // From systems array — standard specialist systems (Fleetio etc.)
   systems.forEach(function(s) { if (_isSpecialist(s)) specialists.push(s); });
-  // SiteDocs credentials are shown in the ID Setup section — do not duplicate in Specialists
-  // Equipment: Business Cards, Vehicle
+  // SiteDocs: Equipment → specialist action item (WIS User to ID Setup); NH → handled in ID Setup section
+  if (isEquipment && systems.some(function(s) { return s.toLowerCase() === 'sitedocs'; })) {
+    specialists.push('SiteDocs Account Setup');
+  }
   var equipStr = String(context.equipmentRaw || '').toLowerCase();
   if (equipStr.indexOf('business card') !== -1) specialists.push('Business Cards');
   if (equipStr.indexOf('vehicle') !== -1) specialists.push('Vehicle');
-  // Credit Card (from separate CC fields)
   if (context.creditCardUSA === 'Yes' || context.creditCardCanada === 'Yes' || context.creditCardHomeDepot === 'Yes') specialists.push('Credit Card');
-  // Jonas / Central Purchasing
   if (context.jonasJobNumbers && String(context.jonasJobNumbers).trim()) specialists.push('Central Purchasing/Jonas');
-  // 30/60/90 Review
   if (context.plan306090 === 'Yes') specialists.push('30/60/90 Review');
-  // Safety — always required for salaried New Hire onboarding
-  if (needsIt) specialists.push('Safety Onboarding');
+  // Safety — NH onboarding only, not Equipment
+  if (!isEquipment && needsIt) specialists.push('Safety Onboarding');
 
   // ── Hire date — human-readable ────────────────────────────
   var hireDisplay = '';
@@ -141,14 +141,17 @@ function buildNewHireContextBlock(context, opts) {
   if (context.preferredName) empName += ' (' + context.preferredName + ')';
 
   var reqRows = ''
-    + esRow('Employee',    esVal(empName.trim()))
-    + (context.employmentType
+    + esRow('Employee', esVal(empName.trim()))
+    // Type only for New Hire (Employment Type · Employee Type)
+    + (!isEquipment && context.employmentType
         ? esRow('Type', esVal(context.employmentType + (context.employeeType ? ' · ' + context.employeeType : '')))
         : '')
-    + (context.jobTitle    ? esRow('Job Title',    esVal(context.jobTitle))    : '')
-    + (context.siteName    ? esRow('Site',         esVal(context.siteName))    : '')
-    + (context.department  ? esRow('Department',   esVal(context.department))  : '')
-    + (hireDisplay         ? esRow('Start Date',   esVal(hireDisplay))         : '')
+    + (context.jobTitle   ? esRow(isEquipment ? 'Position' : 'Job Title', esVal(context.jobTitle)) : '')
+    + (context.siteName   ? esRow('Site',       esVal(context.siteName))   : '')
+    + (context.department ? esRow('Department', esVal(context.department)) : '')
+    // New Hire: Start Date from hireDate. Equipment: Request Date from requestDate.
+    + (!isEquipment && hireDisplay       ? esRow('Start Date',    esVal(hireDisplay))           : '')
+    + (isEquipment && context.requestDate ? esRow('Request Date', esVal(context.requestDate))   : '')
     + esDivider()
     + (context.managerName
         ? esRow('Manager', esVal(context.managerName + (context.managerEmail ? ' · ' + context.managerEmail : '')))
@@ -162,7 +165,7 @@ function buildNewHireContextBlock(context, opts) {
   );
 
   // ============================================================
-  // SECTION 2 — ID Setup
+  // SECTION 2 — ID Setup  (New Hire only — Equipment has no ID Setup step)
   // ============================================================
 
   var idRows = '';
@@ -190,10 +193,10 @@ function buildNewHireContextBlock(context, opts) {
     : (idSt === 'active' ? 'Assigned to ID Setup team' : '');
   var idBadge = idSt === 'complete' ? '✓ Complete' : (idSt === 'active' ? '⏳ In Progress' : '— Queued');
 
-  var idSection = esSection('ID Setup', idSt, idBadge, idActor, idRows);
+  var idSection = isEquipment ? '' : esSection('ID Setup', idSt, idBadge, idActor, idRows);
 
   // ============================================================
-  // SECTION 3 — HR Verification
+  // SECTION 3 — HR Verification  (New Hire only — Equipment has no HR Verification step)
   // ============================================================
 
   var hrRows = '';
@@ -214,7 +217,7 @@ function buildNewHireContextBlock(context, opts) {
     : (hrSt === 'active' ? 'Assigned to HR team' : '');
   var hrBadge = hrSt === 'complete' ? '✓ Complete' : (hrSt === 'active' ? '⏳ Awaiting HR' : '— Queued');
 
-  var hrSection = esSection('HR Verification', hrSt, hrBadge, hrActor, hrRows);
+  var hrSection = isEquipment ? '' : esSection('HR Verification', hrSt, hrBadge, hrActor, hrRows);
 
   // ============================================================
   // SECTION 4 — IT Setup

@@ -790,10 +790,11 @@ function esBtnRow(formUrl, opts) {
 function createContextBlockV2(context, opts) {
   if (!context) return '';
   var type = context.workflowType || 'New Hire';
-  if (type === 'New Hire')           return buildNewHireContextBlock(context, opts);
-  if (type === 'Termination')        return buildTerminationContextBlock(context, opts);
-  if (type === 'Status Change')      return buildStatusChangeContextBlock(context, opts);
-  if (type === 'Equipment Request')  return buildEquipmentContextBlock(context, opts);
+  // Equipment Request uses the same unified block as New Hire — isEquipment flag
+  // inside buildNewHireContextBlock suppresses ID Setup and HR Verification sections
+  if (type === 'New Hire' || type === 'Equipment Request') return buildNewHireContextBlock(context, opts);
+  if (type === 'Termination')   return buildTerminationContextBlock(context, opts);
+  if (type === 'Status Change') return buildStatusChangeContextBlock(context, opts);
   return buildNewHireContextBlock(context, opts); // safe fallback
 }
 
