@@ -525,8 +525,20 @@ function _sdCloseAllAI(workflowId, phaseLabel) {
     pending.forEach(function(row) {
       var taskId   = row[SCHEMA.ACTION_ITEMS.TASK_ID];
       var taskName = row[SCHEMA.ACTION_ITEMS.TASK_NAME];
+      var category = String(row[SCHEMA.ACTION_ITEMS.CATEGORY] || '');
       _sdLog('INFO', phaseLabel, 'Closing AI: [' + taskId + '] ' + taskName);
-      var r = ActionItemService.closeActionItem(taskId, 'SUPERDEBUG AUTO-CLOSE', SD_EMAIL, null, null);
+
+      // WIS User on Equipment: pass SiteDocs credentials so they write to ID_SETUP_RESULTS
+      var formDataJSON = null;
+      if (category === 'WIS User' && workflowId.startsWith('EQUIP_REQ_')) {
+        formDataJSON = JSON.stringify({
+          siteDocsUsername: 'sdequip.sdequiplast@sitedocs.test',
+          siteDocsPassword: 'SdSiteDocsPass123!',
+          bossWisCreated:   'Yes'
+        });
+      }
+
+      var r = ActionItemService.closeActionItem(taskId, 'SUPERDEBUG AUTO-CLOSE', SD_EMAIL, null, formDataJSON);
       if (r && r.success === false) {
         _sdLog('WARN', phaseLabel, 'closeActionItem returned success:false for ' + taskId);
       } else {

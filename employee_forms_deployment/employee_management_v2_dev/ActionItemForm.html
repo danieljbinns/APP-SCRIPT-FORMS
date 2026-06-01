@@ -87,6 +87,35 @@
         </div>
       </div>
 
+      <!-- SiteDocs credential capture — Equipment Request WIS User action item only -->
+      <? if (task.FormType === 'wis_user' && task.WorkflowID && task.WorkflowID.indexOf('EQUIP_REQ_') === 0) { ?>
+      <div class="form-section">
+        <h2>SiteDocs Account</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+          Record the SiteDocs credentials created for this employee.
+        </p>
+        <div class="form-row-2">
+          <div class="form-field">
+            <label>SiteDocs Username</label>
+            <input type="text" id="wis_siteDocsUsername" placeholder="firstname.lastname@sitedocs.com"
+              value="<?= (task.FormData && JSON.parse(task.FormData || '{}').siteDocsUsername) || '' ?>">
+          </div>
+          <div class="form-field">
+            <label>SiteDocs Password</label>
+            <input type="text" id="wis_siteDocsPassword" placeholder="Initial password"
+              value="<?= (task.FormData && JSON.parse(task.FormData || '{}').siteDocsPassword) || '' ?>">
+          </div>
+        </div>
+        <div class="form-field">
+          <label>BOSS WIS Created</label>
+          <div class="radio-group">
+            <label><input type="radio" name="wis_bossWis" value="Yes"> <span class="radio-button">Yes</span></label>
+            <label><input type="radio" name="wis_bossWis" value="No" checked> <span class="radio-button">No</span></label>
+          </div>
+        </div>
+      </div>
+      <? } ?>
+
       <div id="statusMessage"></div>
 
       <? if (task.Status === 'Open') { ?>
@@ -456,7 +485,19 @@
       el.style.display = 'block';
     }
 
-    function collectFormData() { return null; }
+    function collectFormData() {
+      var su = document.getElementById('wis_siteDocsUsername');
+      var sp = document.getElementById('wis_siteDocsPassword');
+      var bw = document.querySelector('input[name="wis_bossWis"]:checked');
+      if (su || sp || bw) {
+        return JSON.stringify({
+          siteDocsUsername: su ? su.value.trim() : '',
+          siteDocsPassword: sp ? sp.value.trim() : '',
+          bossWisCreated:   bw ? bw.value : 'No'
+        });
+      }
+      return null;
+    }
 
     window.onload = function() {
       initChecklist();

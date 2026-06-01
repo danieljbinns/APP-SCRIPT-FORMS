@@ -310,6 +310,12 @@ function buildNewHireContextBlock(context, opts) {
       if (context.caaAccess          === 'Yes') sysRows += esRow('CAA',             esVal('✓ Granted'));
       if (context.deliveryAppAccess  === 'Yes') sysRows += esRow('Delivery App',    esVal('✓ Granted'));
       if (context.netPromoterAccess  === 'Yes') sysRows += esRow('Net Promoter',    esVal('✓ Granted'));
+      // Equipment only: SiteDocs credentials captured when ID Setup team closes WIS User action item
+      if (isEquipment && context.siteDocsUsername) {
+        sysRows += esRow('SiteDocs Login', esVal(context.siteDocsUsername, 'mono'));
+        if (context.siteDocsPassword) sysRows += esRow('SiteDocs Pwd', showPw ? esVal(context.siteDocsPassword, 'mono') : esVal('●●●●●●●●', 'masked'));
+        if (context.bossWisCreated)   sysRows += esRow('BOSS WIS',     esVal(context.bossWisCreated));
+      }
       // Software/system list from the original request
       if (itSystems.length > 0) {
         sysRows += itSystems.map(function(s) { return esRow(s, esVal('✓ Provisioned')); }).join('');

@@ -94,9 +94,45 @@ var ActionItemService = (function() {
         sheet.getRange(rowIndex, AI.FORM_DATA + 1).setValue(formDataJSON);
       }
 
+      // WIS User + Equipment: write SiteDocs credentials to ID_SETUP_RESULTS
+      // so getWorkflowContext() reads them and shows in IT Setup section of emails
+      const taskCategory = data[rowIndex - 1][AI.CATEGORY] || '';
+      if (taskCategory === 'WIS User' && workflowId.startsWith('EQUIP_REQ_') && formDataJSON) {
+        try {
+          const creds = JSON.parse(formDataJSON);
+          if (creds.siteDocsUsername || creds.bossWisCreated) {
+            const idSheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
+            if (idSheet) {
+              const ID = SCHEMA.ID_SETUP_RESULTS;
+              const idData = idSheet.getDataRange().getValues();
+              let idRowIndex = -1;
+              for (let j = SCHEMA.ROW.FIRST_DATA; j < idData.length; j++) {
+                if (String(idData[j][ID.WORKFLOW_ID]) === workflowId) { idRowIndex = j + 1; break; }
+              }
+              const idRow = new Array(Math.max(ID.SUBMITTED_BY, ID.SUBMISSION_TS) + 2).fill('');
+              idRow[ID.WORKFLOW_ID]       = workflowId;
+              idRow[ID.SUBMISSION_TS]     = new Date();
+              idRow[ID.SITEDOCS_USERNAME] = creds.siteDocsUsername || '';
+              idRow[ID.SITEDOCS_PASSWORD] = creds.siteDocsPassword || '';
+              idRow[ID.BOSS_WIS_CREATED]  = creds.bossWisCreated   || '';
+              idRow[ID.SUBMITTED_BY]      = closedBy;
+              if (idRowIndex !== -1) {
+                idSheet.getRange(idRowIndex, 1, 1, idRow.length).setValues([idRow]);
+                Logger.log('[ActionItemService] WIS User: updated existing ID_SETUP_RESULTS row ' + idRowIndex + ' for ' + workflowId);
+              } else {
+                idSheet.appendRow(idRow);
+                Logger.log('[ActionItemService] WIS User: appended new ID_SETUP_RESULTS row for ' + workflowId);
+              }
+              SpreadsheetApp.flush(); // flush again so getWorkflowContext reads fresh data
+              Logger.log('[ActionItemService] WIS User: creds written — siteDocsUsername=' + (creds.siteDocsUsername || '(empty)') + ' bossWis=' + (creds.bossWisCreated || '(empty)'));
+            }
+          }
+        } catch (e) { Logger.log('[ActionItemService] WIS User cred write ERROR: ' + e.message + ' stack: ' + e.stack); }
+      }
+
       // Ensure data is written before notifyTaskClosure reads it
       SpreadsheetApp.flush();
-      
+
       Logger.log(`[ActionItemService] Closed Task ${taskId}`);
       
       // Notify responsible parties that THIS item is closed
@@ -417,6 +453,27 @@ var ActionItemService = (function() {
 
       const context = getWorkflowContext(workflowId) || { employeeName: workflow['Employee Name'] };
       if (workflowId.startsWith('TERM_')) context.hrDecision = 'Approved';
+
+      // Equipment: extract SiteDocs credentials from WIS User action item formData (already flushed
+      // and present in wfTasks) rather than re-reading ID_SETUP_RESULTS which may be cached
+      if (workflowId.startsWith('EQUIP_REQ_')) {
+        Logger.log('[notifyWorkflowClosure] wfTasks count=' + wfTasks.length);
+        wfTasks.forEach(function(r) {
+          Logger.log('[notifyWorkflowClosure] task category=' + r[AI.CATEGORY] + ' formData=' + String(r[AI.FORM_DATA] || '').substring(0, 60));
+        });
+        const wisTask = wfTasks.find(function(r) { return r[AI.CATEGORY] === 'WIS User' && r[AI.FORM_DATA]; });
+        Logger.log('[notifyWorkflowClosure] wisTask found=' + !!wisTask);
+        if (wisTask) {
+          try {
+            const creds = JSON.parse(wisTask[AI.FORM_DATA]);
+            Logger.log('[notifyWorkflowClosure] creds.siteDocsUsername=' + creds.siteDocsUsername);
+            if (creds.siteDocsUsername) context.siteDocsUsername = creds.siteDocsUsername;
+            if (creds.siteDocsPassword) context.siteDocsPassword = creds.siteDocsPassword;
+            if (creds.bossWisCreated)   context.bossWisCreated   = creds.bossWisCreated;
+            Logger.log('[notifyWorkflowClosure] context.siteDocsUsername set to: ' + context.siteDocsUsername);
+          } catch(e) { Logger.log('[notifyWorkflowClosure] WIS User cred parse: ' + e.message); }
+        }
+      }
 
       // showPasswords: true + allComplete: true — tells the template all specialists are done
       const closureEmailOpts = { showPasswords: true, allComplete: true };
