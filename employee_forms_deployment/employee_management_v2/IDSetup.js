@@ -268,17 +268,9 @@ function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
     // 2. CONTINUE TO HR VERIFICATION (Do not mark complete yet)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
     const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be skipped for this hourly/no-access employee.';
+    // Single email to both HR and Payroll — same content, same form link
     sendFormEmail({
-      to: CONFIG.EMAILS.HR,
-      subject: 'HR Verification Required',
-      body: hrBody,
-      formUrl: hrUrl,
-      displayName: 'TEAM Group - Employee Onboarding',
-      contextData: context
-    });
-    // Notify payroll at same time as HR — same email and form access
-    sendFormEmail({
-      to: CONFIG.EMAILS.PAYROLL,
+      to: CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL,
       subject: 'HR Verification Required',
       body: hrBody,
       formUrl: hrUrl,
@@ -294,17 +286,9 @@ function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
     // Standard Path (Salary OR System Access)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
     const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be triggered after HR verification.';
+    // Single email to both HR and Payroll — same content, same form link
     sendFormEmail({
-      to: CONFIG.EMAILS.HR,
-      subject: 'HR Verification Required',
-      body: hrBody,
-      formUrl: hrUrl,
-      displayName: 'TEAM Group - Employee Onboarding',
-      contextData: context
-    });
-    // Notify payroll at same time as HR — same email and form access
-    sendFormEmail({
-      to: CONFIG.EMAILS.PAYROLL,
+      to: CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL,
       subject: 'HR Verification Required',
       body: hrBody,
       formUrl: hrUrl,
