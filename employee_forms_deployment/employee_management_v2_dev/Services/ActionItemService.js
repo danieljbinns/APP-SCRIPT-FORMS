@@ -251,7 +251,7 @@ var ActionItemService = (function() {
       // (e.g. from a re-submission), it is updated in-place rather than appended,
       // preventing duplicate rows from appearing in the dashboard/emails.
       const taskCategory = data[rowIndex - 1][AI.CATEGORY] || '';
-      if (taskCategory === 'WIS User' && workflowId.startsWith('EQUIP_REQ_') && formDataJSON) {
+      if (taskCategory === 'ID Setup' && workflowId.startsWith('EQUIP_REQ_') && formDataJSON) {
         try {
           const creds = JSON.parse(formDataJSON);
           // Only write if meaningful data was provided — avoids creating empty rows
@@ -425,9 +425,9 @@ var ActionItemService = (function() {
       const row = reqSheet.getRange(found.getRow(), 1, 1, reqSheet.getLastColumn()).getValues()[0];
       const IR = SCHEMA.INITIAL_REQUESTS;
       const cats = new Set();
-      if (row[IR.JONAS_JOB_NUMBERS] && String(row[IR.JONAS_JOB_NUMBERS]).length > 0) cats.add('Jonas');
-      if (row[IR.CC_USA] === 'Yes' || row[IR.CC_CAN] === 'Yes' || row[IR.CC_HD] === 'Yes')  cats.add('Credit Card');
-      if (row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('Fleetio'))                     cats.add('Fleetio');
+      if (row[IR.JONAS_JOB_NUMBERS] && String(row[IR.JONAS_JOB_NUMBERS]).length > 0) cats.add('Purchasing');
+      if (row[IR.CC_USA] === 'Yes' || row[IR.CC_CAN] === 'Yes' || row[IR.CC_HD] === 'Yes')  cats.add('Finance');
+      if (row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('Fleetio'))                     cats.add('Fleet');
       if (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('Business Cards'))           cats.add('Business Cards');
       // SiteDocs WIS User action item only created for EQUIP_REQ_ (not New Hire — ID Setup handles it there).
       // This function is only called for NEW_EMP_ workflows, so WIS User is never required here.
@@ -523,7 +523,8 @@ var ActionItemService = (function() {
       if (i <= SCHEMA.ROW.HEADER)                                   return false;
       if (row[AI.WORKFLOW_ID] !== workflowId)                       return false;
       if (row[AI.STATUS]      !== 'Open')                           return false;
-      if (String(row[AI.CATEGORY] || '').toUpperCase() === 'WIS')  return false;
+      const catUpper = String(row[AI.CATEGORY] || '').toUpperCase();
+      if (catUpper === 'WIS' || catUpper === 'MANAGER')            return false;
       // For onboarding: unrequired specialist categories are non-blocking
       if (requiredCats !== null) {
         const cat = String(row[AI.CATEGORY] || '');
@@ -815,7 +816,7 @@ var ActionItemService = (function() {
         wfTasks.forEach(function(r) {
           Logger.log('[notifyWorkflowClosure] task category=' + r[AI.CATEGORY] + ' formData=' + String(r[AI.FORM_DATA] || '').substring(0, 60));
         });
-        const wisTask = wfTasks.find(function(r) { return r[AI.CATEGORY] === 'WIS User' && r[AI.FORM_DATA]; });
+        const wisTask = wfTasks.find(function(r) { return r[AI.CATEGORY] === 'ID Setup' && r[AI.FORM_DATA]; });
         Logger.log('[notifyWorkflowClosure] wisTask found=' + !!wisTask);
         if (wisTask) {
           try {

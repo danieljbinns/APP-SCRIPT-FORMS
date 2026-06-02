@@ -475,7 +475,7 @@ function triggerSpecialists(workflowId, itData) {
     if (context.creditCardHomeDepot === 'Yes') ccItems.push('Apply for Home Depot card — Requested limit: ' + (context.creditCardLimitHomeDepot || 'Standard'));
     specialists.push({
       email: CONFIG.EMAILS.CREDIT_CARD,
-      category: 'Credit Card',
+      category: 'Finance',
       name: 'Credit Card Setup — ' + context.employeeName,
       description: JSON.stringify(ccItems),
       formType: 'creditcard'
@@ -499,7 +499,7 @@ function triggerSpecialists(workflowId, itData) {
     if (context.vehicleRequested === 'Yes') fleetioItems.push('Assign company vehicle');
     specialists.push({
       email: CONFIG.EMAILS.FLEETIO,
-      category: 'Fleetio',
+      category: 'Fleet',
       name: 'Fleetio Access — ' + context.employeeName,
       description: JSON.stringify(fleetioItems),
       formType: 'fleetio'
@@ -545,7 +545,7 @@ function triggerSpecialists(workflowId, itData) {
     }
     specialists.push({
       email: CONFIG.EMAILS.JONAS,
-      category: 'Jonas',
+      category: 'Purchasing',
       name: 'Central Purchasing/Jonas Setup — ' + context.employeeName,
       description: JSON.stringify(combinedItems),
       formType: 'jonas'
@@ -558,7 +558,7 @@ function triggerSpecialists(workflowId, itData) {
   if (hasSiteDocs && workflowId.startsWith('EQUIP_REQ_')) {
     specialists.push({
       email: CONFIG.EMAILS.IDSETUP,
-      category: 'WIS User',
+      category: 'ID Setup',
       name: 'SiteDocs Account Setup — ' + context.employeeName,
       description: JSON.stringify(['Create SiteDocs user account', 'Assign to correct site and supervisor']),
       formType: 'wis_user'

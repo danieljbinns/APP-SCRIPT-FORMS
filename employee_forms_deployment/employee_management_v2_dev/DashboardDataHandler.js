@@ -218,20 +218,21 @@ function getMyTaskCounts() {
     // ── Source 1: Action Items sheet ──────────────────────────────────────────
     const aiCounts = {
       'Safety':           0,
-      'Fleet':            0,
+      'Fleet':            0,   // renamed from Fleetio
       'Business Cards':   0,
-      'Purchasing':       0,
-      'Credit Card':      0,
+      'Purchasing':       0,   // renamed from Jonas
+      'Finance':          0,   // renamed from Credit Card
       '30/60/90 Review':  0,
       'Assets':           0,
-      'IT':               0,
-      'IT Confirmation':  0,
-      'HR':               0,
-      'Payroll':          0,
+      'IT':               0,   // IT SETUP button (action items)
+      'IT Confirmation':  0,   // IT CONF button
+      'HR':               0,   // ADP/HR button (part 1 — HR Systems Deactivation)
+      'Payroll':          0,   // ADP/HR button (part 2 — ADP Deactivation)
       'EOE':              0,
       'Manager':          0,
-      'WIS User':         0,
-      'WIS Assignment':   0
+      'WIS':              0,   // WIS button (WIS Assignment + BOSS WIS Records Update)
+      'ID Setup':         0,   // ID SETUP button (Equipment SiteDocs + SC SiteDocs + SC BOSS WIS Account)
+      'Deactivation':     0,   // DEACTIVATION button (EOE Employee Deactivation)
     };
 
     const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
@@ -242,7 +243,7 @@ function getMyTaskCounts() {
       const statusIdx = aiHeaders.indexOf('Status');
       for (let i = 1; i < aiData.length; i++) {
         const status = String(aiData[i][statusIdx] || '');
-        if (status === 'Closed') continue;
+        if (status !== 'Open') continue;
         const cat = String(aiData[i][catIdx] || '');
         if (aiCounts.hasOwnProperty(cat)) {
           aiCounts[cat]++;

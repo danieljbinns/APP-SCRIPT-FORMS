@@ -318,14 +318,14 @@ function submitTerminationApproval(formData) {
       // Central Purchasing/Jonas Group
       if (selectedSystems.includes('Central Purchasing/Jonas')) {
         const financeItems = ['Remove from Central Purchasing/Jonas'];
-        const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Central Purchasing/Jonas Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
+        const tid = ActionItemService.createActionItem(workflowId, 'Purchasing', `Central Purchasing/Jonas Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
         sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Finance Action Required', tid, termData, financeItems);
         tasksCreated++;
       }
 
       // Employee Deactivation Group (SiteDocs, DSS, BOSS WIS) - Always Mandatory
       const deactItems = ['Remove from SiteDocs', 'Remove DSS User', 'Remove from BOSS WIS Module'];
-      const tidDeact = ActionItemService.createActionItem(workflowId, 'WIS User', `Employee Deactivation - ${termData.employeeName}`, JSON.stringify(deactItems), CONFIG.EMAILS.IDSETUP);
+      const tidDeact = ActionItemService.createActionItem(workflowId, 'Deactivation', `Employee Deactivation - ${termData.employeeName}`, JSON.stringify(deactItems), CONFIG.EMAILS.IDSETUP);
       sendActionItemEmail(CONFIG.EMAILS.IDSETUP, 'Employee Deactivation Required', tidDeact, termData, deactItems);
       tasksCreated++;
 

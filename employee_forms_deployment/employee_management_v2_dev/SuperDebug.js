@@ -582,7 +582,7 @@ function _sdCloseAllAI(workflowId, phaseLabel) {
       // specialist form on ActionItemForm.html. closeActionItem() detects this combination
       // and writes a row to ID_SETUP_RESULTS, making credentials available to
       // notifyWorkflowClosure() via the wfTasks snapshot.
-      if (category === 'WIS User' && workflowId.startsWith('EQUIP_REQ_')) {
+      if (category === 'ID Setup' && workflowId.startsWith('EQUIP_REQ_')) {
         formDataJSON = JSON.stringify({
           siteDocsUsername: 'sdequip.sdequiplast@sitedocs.test',
           siteDocsPassword: 'SdSiteDocsPass123!',
@@ -971,9 +971,9 @@ function runSuperDebugNewHire() {
     });
 
     // Verify all expected AIs created by triggerSpecialists
-    // Safety already exists; new ones: Credit Card, Business Cards, Fleetio, 30/60/90 Review, Jonas, WIS Assignment
-    // WIS User (SiteDocs Account Setup) is NOT created for New Hire — ID Setup handles SiteDocs there
-    _sdVerifyAI(wfId, ['Safety', 'Credit Card', 'Business Cards', 'Fleetio', '30/60/90 Review', 'Jonas', 'WIS']);
+    // Safety always exists; new ones: Finance, Business Cards, Fleet, 30/60/90 Review, Purchasing, WIS
+    // ID Setup (SiteDocs Account Setup) is NOT created for New Hire — ID Setup form handles SiteDocs there
+    _sdVerifyAI(wfId, ['Safety', 'Finance', 'Business Cards', 'Fleet', '30/60/90 Review', 'Purchasing', 'WIS']);
     _sdVerifyWorkflow(wfId, 'In Progress', 'Specialist Forms Needed');
 
     Utilities.sleep(500);
@@ -1116,9 +1116,9 @@ function runSuperDebugEOE() {
       'Notes':     'SUPERDEBUG EOE APPROVAL'
     });
 
-    // Verify AIs created: IT, HR, Payroll, Fleet, Finance, WIS User, EOE, Assets
+    // Verify AIs created: IT, HR, Payroll, Fleet, Purchasing, Deactivation, EOE, Assets
     _sdLog('INFO', 'Phase 3', 'Verifying Action Items created by approval...');
-    _sdVerifyAI(wfId, ['IT', 'HR', 'Payroll', 'Fleet', 'Finance', 'WIS User', 'EOE', 'Assets']);
+    _sdVerifyAI(wfId, ['IT', 'HR', 'Payroll', 'Fleet', 'Purchasing', 'Deactivation', 'EOE', 'Assets']);
 
     _sdVerifyWorkflow(wfId, 'In Progress', null);
 
@@ -1397,7 +1397,7 @@ function runSuperDebugStatusChange_Site() {
 
     // Manager (receivingManagerEmail set), Fleetio access + Fleetio vehicle return,
     // IT (BOSS in sys), Assets (Vehicle in equipRem), ID Setup + Safety (always).
-    _sdVerifyAI(wfId, ['Manager', 'Fleetio', 'IT', 'Assets', 'ID Setup', 'Safety']);
+    _sdVerifyAI(wfId, ['Manager', 'Fleet', 'IT', 'Assets', 'ID Setup', 'Safety']);
 
     Utilities.sleep(500);
 
@@ -1505,7 +1505,7 @@ function runSuperDebugStatusChange_Full() {
     // Fleetio (sys + vehicle return), Jonas (Central Purchasing/Jonas in sys),
     // Credit Card (Credit Card in equip), Assets (Vehicle+Computer in equipRem),
     // Safety (SiteDocs removal + always), ID Setup (always).
-    _sdVerifyAI(wfId, ['Manager', 'IT', 'Fleetio', 'Jonas', 'Credit Card', 'Assets', 'ID Setup', 'Safety']);
+    _sdVerifyAI(wfId, ['Manager', 'IT', 'Fleet', 'Purchasing', 'Finance', 'Assets', 'ID Setup', 'Safety']);
 
     Utilities.sleep(500);
 
@@ -1762,11 +1762,11 @@ function runSuperDebugEquipment() {
       _sdLog('FAIL', 'Phase 5', 'Jonas/Purchasing AI missing — expected (jonasJobNumbers set)');
     }
 
-    // ER-4: SiteDocs must route to WIS User (ID Setup team), not IT
-    if (specialistCategories.indexOf('WIS User') !== -1) {
-      _sdLog('PASS', 'Phase 5', 'SiteDocs → WIS User AI created for ID Setup team ✓ (ER-4)');
+    // ER-4: SiteDocs must route to ID Setup team (formerly category 'WIS User', now renamed 'ID Setup')
+    if (specialistCategories.indexOf('ID Setup') !== -1) {
+      _sdLog('PASS', 'Phase 5', 'SiteDocs → ID Setup AI created for ID Setup team ✓ (ER-4)');
     } else {
-      _sdLog('FAIL', 'Phase 5', 'WIS User AI missing — SiteDocs in systems but no ID Setup action item');
+      _sdLog('FAIL', 'Phase 5', 'ID Setup AI missing — SiteDocs in systems but no ID Setup action item (category was renamed from WIS User)');
     }
 
     // ER-2: WIS Assignment must NOT fire for Equipment Requests

@@ -568,7 +568,7 @@ function submitPositionChangeApproval(formData) {
         if (!ccItems.length) ccItems.push('Verify card type(s) required for new role (USA / Canada / Home Depot) with requester');
         ccItems.push('Submit credit card application for ' + changeData.employeeName);
         ccItems.push('Confirm application submitted and card delivery timeline');
-        const ccTid = ActionItemService.createActionItem(workflowId, 'Credit Card', 'Credit Card Order', JSON.stringify(ccItems), CONFIG.EMAILS.CREDIT_CARD, 'creditcard');
+        const ccTid = ActionItemService.createActionItem(workflowId, 'Finance', 'Credit Card Order', JSON.stringify(ccItems), CONFIG.EMAILS.CREDIT_CARD, 'creditcard');
         tasksCreated++;
         approvalActionTeams.push('Credit Card');
         sendFormEmail({
@@ -588,7 +588,7 @@ function submitPositionChangeApproval(formData) {
           'Remove access to vehicles no longer required',
           'Confirm employee has correct vehicle access and account is active'
         ]);
-        const flTid = ActionItemService.createActionItem(workflowId, 'Fleetio', 'Fleetio Access Update', flDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
+        const flTid = ActionItemService.createActionItem(workflowId, 'Fleet', 'Fleetio Access Update', flDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
         tasksCreated++;
         approvalActionTeams.push('Fleetio');
         sendFormEmail({
@@ -607,7 +607,7 @@ function submitPositionChangeApproval(formData) {
           'Update vehicle record in Fleetio — unassign from employee',
           'Confirm vehicle condition and log any issues'
         ]);
-        const flRetTid = ActionItemService.createActionItem(workflowId, 'Fleetio', 'Vehicle Return', flRetDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
+        const flRetTid = ActionItemService.createActionItem(workflowId, 'Assets', 'Vehicle Return', flRetDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
         tasksCreated++;
         approvalActionTeams.push('Fleetio (Vehicle Return)');
         sendFormEmail({
@@ -626,7 +626,7 @@ function submitPositionChangeApproval(formData) {
           'Unassign all vehicles from employee account',
           'Confirm access has been removed'
         ]);
-        const flRemTid = ActionItemService.createActionItem(workflowId, 'Fleetio', 'Fleetio Access Removal', flRemDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
+        const flRemTid = ActionItemService.createActionItem(workflowId, 'Fleet', 'Fleetio Access Removal', flRemDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
         tasksCreated++;
         approvalActionTeams.push('Fleetio (Removal)');
         sendFormEmail({
@@ -647,7 +647,7 @@ function submitPositionChangeApproval(formData) {
           'Remove access for old sites/job numbers no longer required',
           'Confirm all purchasing sites and job numbers are configured and active'
         ]);
-        const cpjTid = ActionItemService.createActionItem(workflowId, 'Jonas', 'Central Purchasing/Jonas Update', cpjDesc, CONFIG.EMAILS.JONAS, 'jonas');
+        const cpjTid = ActionItemService.createActionItem(workflowId, 'Purchasing', 'Central Purchasing/Jonas Update', cpjDesc, CONFIG.EMAILS.JONAS, 'jonas');
         tasksCreated++;
         approvalActionTeams.push('Central Purchasing/Jonas');
         sendFormEmail({
@@ -767,7 +767,7 @@ function submitPositionChangeApproval(formData) {
           'Remove SiteDocs supervisor access for ' + changeData.employeeName,
           'Confirm access has been removed and account is deactivated'
         ]);
-        const sdRemTid = ActionItemService.createActionItem(workflowId, 'WIS User', 'SiteDocs Access Removal', sdRemDesc, CONFIG.EMAILS.IDSETUP, 'safety_change');
+        const sdRemTid = ActionItemService.createActionItem(workflowId, 'ID Setup', 'SiteDocs Access Removal', sdRemDesc, CONFIG.EMAILS.IDSETUP, 'safety_change');
         tasksCreated++;
         approvalActionTeams.push('ID Setup (SiteDocs Removal)');
         sendFormEmail({
@@ -798,7 +798,7 @@ function submitPositionChangeApproval(formData) {
 
       // 3b. Manager — update BOSS WIS module assignments for new position/site
       const wisAssignTid = ActionItemService.createActionItem(
-        workflowId, 'WIS Assignment', 'BOSS WIS Records Update',
+        workflowId, 'WIS', 'BOSS WIS Records Update',
         JSON.stringify(['Update BOSS WIS module assignments for ' + changeData.employeeName + ' to reflect the new position/site.']),
         changeData.mgrNewEmail || changeData.currentManagerEmail
       );
@@ -816,7 +816,7 @@ function submitPositionChangeApproval(formData) {
       // 3b. ID Setup — create new SiteDocs supervisor account if requested
       if (allSystems.includes('SiteDocs')) {
       const idTid = ActionItemService.createActionItem(
-        workflowId, 'WIS User', 'SiteDocs Account Setup',
+        workflowId, 'ID Setup', 'SiteDocs Account Setup',
         JSON.stringify(['Create new SiteDocs supervisor account for ' + changeData.employeeName + ' at new site.']),
         CONFIG.EMAILS.IDSETUP
       );
