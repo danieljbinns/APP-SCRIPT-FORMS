@@ -534,127 +534,100 @@
                 .withSuccessHandler(function(res) {
                     if (!res || !res.success) return;
                     var counts = res.counts || {};
-
-                    // Use module-level _rolePayload — set by displayData() before this call.
-                    // Never use sessionStorage here: it is unreliable inside GAS iframes
-                    // (browsers may block cross-origin storage) and will silently return {}
-                    // causing all canAccess values to be false and all buttons to be disabled.
                     var rp = _rolePayload;
                     var sg = rp.specialistGroups || [];
                     function inSg(key) { return sg.indexOf(key) >= 0; }
 
-                    // Which categories this user's role can act on (View Tasks button enabled)
-                    var accessMap = {
-                        'Safety':             rp.isAdmin || rp.isHR || rp.isIT || inSg('SAFETY'),
-                        'Fleetio':            rp.isAdmin || rp.isHR || rp.isIT || inSg('FLEETIO'),
-                        'Business Cards':     rp.isAdmin || rp.isHR || rp.isIT || inSg('BUSINESS_CARDS'),
-                        'Jonas':              rp.isAdmin || rp.isHR || rp.isIT || inSg('JONAS'),
-                        'Credit Card':        rp.isAdmin || rp.isHR || rp.isIT || inSg('CREDIT_CARD'),
-                        '30/60/90 Review':    rp.isAdmin || rp.isHR || rp.isIT || inSg('REVIEW_306090_JR'),
-                        'Central Purchasing': rp.isAdmin || rp.isHR || rp.isIT || inSg('JONAS'),
-                        'SiteDocs':           rp.isAdmin || rp.isHR || rp.isIT,
-                        'Assets':             rp.isAdmin || rp.isHR || rp.isIT,
-                        'IT':                 rp.isAdmin || rp.isIT,
-                        'HR':                 rp.isAdmin || rp.isHR,
-                        'Fleet':              rp.isAdmin || rp.isHR || rp.isIT || inSg('FLEETIO'),
-                        'Finance':            rp.isAdmin || rp.isHR,
-                        'Deactivation':       rp.isAdmin || rp.isIT,
-                        'IT Setup':           rp.isAdmin || rp.isIT,
-                        'ID Setup':           rp.isAdmin || rp.isHR || rp.isIT
-                    };
+                    // ADP/HR is a combined button covering both HR and Payroll action items
+                    var adpHrCount = (counts['HR'] || 0) + (counts['Payroll'] || 0);
 
-                    var catColors = {
-                        'Safety':'#ff5722','Fleetio':'#00bcd4','Business Cards':'#9c27b0',
-                        'Jonas':'#3f51b5','Credit Card':'#ff9800','30/60/90 Review':'#8bc34a',
-                        'Central Purchasing':'#795548','SiteDocs':'#607d8b',
-                        'Assets':'#ff9800','IT':'#2196f3','HR':'#9c27b0','Fleet':'#00bcd4',
-                        'Finance':'#4caf50','Deactivation':'#607d8b',
-                        'IT Setup':'#2196f3','ID Setup':'#00acc1'
-                    };
+                    // All filter buttons — always visible to all authenticated users, no role gating.
+                    // Each button filters the workflow list to show workflows with open items in that category.
+                    // Clicking a button with 0 count is a no-op (button styled dim).
+                    var allButtons = [
+                        { label: 'SAFETY',         cat: 'Safety',          count: counts['Safety'] || 0,           color: '#ff5722' },
+                        { label: 'FLEET',          cat: 'Fleet',           count: counts['Fleet'] || 0,            color: '#00bcd4' },
+                        { label: 'BUSINESS CARDS', cat: 'Business Cards',  count: counts['Business Cards'] || 0,   color: '#9c27b0' },
+                        { label: 'PURCHASING',     cat: 'Purchasing',      count: counts['Purchasing'] || 0,       color: '#3f51b5' },
+                        { label: 'FINANCE',        cat: 'Finance',         count: counts['Finance'] || 0,          color: '#ff9800' },
+                        { label: '30/60/90',       cat: '30/60/90 Review', count: counts['30/60/90 Review'] || 0,  color: '#8bc34a' },
+                        { label: 'ASSETS',         cat: 'Assets',          count: counts['Assets'] || 0,           color: '#f57c00' },
+                        { label: 'IT SETUP',       cat: 'IT',              count: (counts['IT'] || 0) + (counts['IT Setup'] || 0), color: '#2196f3' },
+                        { label: 'IT CONF',        cat: 'IT Confirmation', count: counts['IT Confirmation'] || 0,  color: '#42a5f5' },
+                        { label: 'ADP/HR',         cat: '__ADPHR__',       count: adpHrCount,                      color: '#9c27b0' },
+                        { label: 'DEACTIVATION',   cat: 'Deactivation',    count: counts['Deactivation'] || 0,    color: '#607d8b' },
+                        { label: 'ID SETUP',       cat: 'ID Setup',        count: counts['ID Setup'] || 0,         color: '#00acc1' },
+                        { label: 'WIS',            cat: 'WIS',             count: counts['WIS'] || 0,              color: '#26c6da' }
+                    ];
 
-                    // Split categories: mine (can act on) vs others (read-only context)
-                    var myCats    = Object.keys(counts).filter(function(c) { return !!accessMap[c]; });
-                    var otherCats = Object.keys(counts).filter(function(c) { return !accessMap[c]; });
-
-                    var myTotal    = myCats.reduce(function(s, c)    { return s + (counts[c] || 0); }, 0);
-                    var otherTotal = otherCats.reduce(function(s, c) { return s + (counts[c] || 0); }, 0);
-                    var totalOpen  = myTotal + otherTotal;
+                    // My Pending Tasks = personal sum: categories where user's email belongs to the assigned group.
+                    // This is separate from the global filter counts above.
+                    // Example: if you're in the 30/60/90 group AND the Deactivation group,
+                    // your pending = 30/60/90 open count + Deactivation open count.
+                    var myPending = 0;
+                    if (inSg('SAFETY'))         myPending += (counts['Safety'] || 0);
+                    if (inSg('FLEETIO'))        myPending += (counts['Fleet'] || 0);
+                    if (inSg('BUSINESS_CARDS')) myPending += (counts['Business Cards'] || 0);
+                    if (inSg('JONAS'))          myPending += (counts['Purchasing'] || 0);
+                    if (inSg('CREDIT_CARD'))    myPending += (counts['Finance'] || 0);
+                    if (inSg('REVIEW_306090_JR')) myPending += (counts['30/60/90 Review'] || 0);
+                    if (inSg('FLEETIO'))        myPending += (counts['Assets'] || 0); // fleet returns go to fleetio
+                    if (rp.isIT || rp.isAdmin)  myPending += (counts['IT'] || 0) + (counts['IT Setup'] || 0) + (counts['IT Confirmation'] || 0);
+                    if (rp.isHR || rp.isAdmin)  myPending += (counts['HR'] || 0) + (counts['EOE'] || 0);
+                    if (rp.isHR || rp.isAdmin || inSg('IDSETUP')) myPending += (counts['Deactivation'] || 0) + (counts['ID Setup'] || 0);
+                    // Payroll group gets Payroll action items
+                    // (Payroll is not in specialistGroups currently — HR sees both via ADP/HR)
+                    if (rp.isAdmin)             myPending += (counts['WIS'] || 0) + (counts['Purchasing'] || 0);
 
                     var panel   = document.getElementById('myTasksPanel');
                     var list    = document.getElementById('myTasksList');
                     var countEl = document.getElementById('myTasksCount');
-
                     panel.style.display = 'block';
-                    if (countEl) countEl.textContent = totalOpen + ' open';
+                    if (countEl) countEl.textContent = myPending + ' pending';
 
-                    // ── Section 1: My Tasks (categories the user can act on) ──────────
-                    var mySection = '';
-                    if (myCats.length > 0) {
-                        mySection += '<div style="width:100%; margin-bottom:4px;">' +
-                            '<span style="font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:0.5px;">My Tasks</span>' +
-                            '<span style="font-size:10px; color:#aaa; margin-left:6px;">(' + myTotal + ' open)</span>' +
+                    // Render all filter buttons — everyone sees all, counts are global
+                    var html = '<div style="width:100%; margin-bottom:8px;">' +
+                        '<span style="font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:0.5px;">Filter by Category</span>' +
+                        '<span style="font-size:10px; color:#aaa; margin-left:6px;">(click to filter list)</span>' +
+                        '</div>';
+
+                    html += allButtons.map(function(btn) {
+                        var n = btn.count;
+                        var hasItems = n > 0;
+                        var safeC = btn.cat.replace(/'/g, "\\'");
+                        return '<div style="background:var(--card-bg); border:1px solid var(--border-color); border-left:3px solid ' + btn.color + '; border-radius:6px; padding:6px 10px; min-width:110px; opacity:' + (hasItems ? '1' : '0.45') + ';">' +
+                            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">' +
+                            '<span style="font-size:10px; color:' + btn.color + '; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">' + btn.label + '</span>' +
+                            '<span style="font-size:18px; font-weight:700; color:' + (hasItems ? '#fff' : '#555') + ';">' + n + '</span>' +
+                            '</div>' +
+                            '<button class="action-btn" style="background:' + (hasItems ? 'var(--brand-red)' : '#2a2a2a') + '; color:' + (hasItems ? 'white' : '#555') + '; width:100%; font-size:11px; padding:4px 8px; cursor:' + (hasItems ? 'pointer' : 'default') + ';" ' +
+                            (hasItems ? 'onclick="filterByCategory(\'' + safeC + '\')"' : '') + '>' +
+                            (hasItems ? 'Filter' : 'None') + '</button>' +
                             '</div>';
-                        mySection += myCats.map(function(cat) {
-                            var n     = counts[cat] || 0;
-                            var color = catColors[cat] || '#555';
-                            var safeC = cat.replace(/'/g, "\\'");
-                            return '<div style="background:var(--card-bg); border:1px solid var(--border-color); border-left:3px solid ' + color + '; border-radius:6px; padding:6px 10px; min-width:130px;">' +
-                                '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">' +
-                                '<span style="font-size:11px; color:' + color + '; font-weight:700; text-transform:uppercase; margin-right:6px;">' + escapeHtml(cat) + '</span>' +
-                                '<span style="font-size:18px; font-weight:700;">' + n + '</span>' +
-                                '</div>' +
-                                '<button class="action-btn" style="background:var(--brand-red); color:white; width:100%; font-size:11px; padding:4px 8px;" ' +
-                                'onclick="filterByCategory(\'' + safeC + '\')">' +
-                                'View Tasks</button>' +
-                                '</div>';
-                        }).join('');
-                    } else {
-                        mySection = '<div style="color:var(--text-muted); font-size:12px; padding:6px 0;">No task groups assigned to your role.</div>';
-                    }
+                    }).join('');
 
-                    // ── Section 2: Other Open (context only — no buttons) ─────────────
-                    var otherSection = '';
-                    if (otherCats.length > 0 && otherTotal > 0) {
-                        // Only show other-group categories if they have open tasks
-                        var nonZeroOther = otherCats.filter(function(c) { return (counts[c] || 0) > 0; });
-                        if (nonZeroOther.length > 0) {
-                            otherSection += '<div style="width:100%; margin-top:10px; margin-bottom:4px; border-top:1px solid var(--border-color); padding-top:8px;">' +
-                                '<span style="font-size:10px; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:0.5px;">Other Open</span>' +
-                                '<span style="font-size:10px; color:#666; margin-left:6px;">(' + otherTotal + ' open — other groups)</span>' +
-                                '</div>';
-                            otherSection += nonZeroOther.map(function(cat) {
-                                var n     = counts[cat] || 0;
-                                var color = catColors[cat] || '#555';
-                                return '<div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-left:3px solid ' + color + '; border-radius:6px; padding:4px 10px; min-width:110px; opacity:0.6;">' +
-                                    '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-                                    '<span style="font-size:10px; color:' + color + '; font-weight:700; text-transform:uppercase; margin-right:6px;">' + escapeHtml(cat) + '</span>' +
-                                    '<span style="font-size:16px; font-weight:700; color:var(--text-muted);">' + n + '</span>' +
-                                    '</div>' +
-                                    '</div>';
-                            }).join('');
-                        }
-                    }
-
-                    list.innerHTML = mySection + otherSection;
+                    list.innerHTML = html;
                 })
                 .withFailureHandler(function() { /* silently fail */ })
                 .getMyTaskCounts();
         }
 
         // Step-based categories: match against granularStatus from Dashboard_View.
-        // StateSync writes 'Pending: HR Verification', 'Pending: IT Setup', etc.
-        // HR key also covers HR Verification step so one button handles both.
+        // IT SETUP maps to both the step ('pending: it setup') and IT action items.
+        // ID SETUP maps to the step ('pending: id setup') and ID Setup action items.
+        // ADP/HR is a combined filter covering both 'HR' and 'Payroll' action item categories.
         const STEP_CATEGORY_TERMS = {
-            'IT Setup': ['pending: it setup'],
-            'ID Setup': ['pending: id setup'],
-            'HR':       ['pending: hr verification']
+            'IT':              ['pending: it setup'],   // IT SETUP button — step-based part
+            'ID Setup':        ['pending: id setup'],   // ID SETUP button — step-based part
+            'IT Confirmation': ['it confirmation'],     // IT CONF button — step label
         };
 
         function filterByCategory(cat) {
             activeCategoryFilter = cat;
             // Show chip so user can clear the filter
             var chip = document.getElementById('activeCategoryChip');
-            chip.textContent = '✕ ' + cat;
+            var label = cat === '__ADPHR__' ? 'ADP/HR' : cat;
+            chip.textContent = '✕ ' + label;
             chip.style.display = 'inline-flex';
             // Make sure "Action Required" status is active so filtered rows are visible
             if (!activeStatusFilters.has('PENDING')) {
@@ -954,10 +927,26 @@
                     if (!matchesAny) return false;
                 }
 
-                // Category filter — set by View Tasks button in My Pending Tasks panel
+                // Category filter — set by filter buttons in the task panel
                 if (activeCategoryFilter) {
-                    if (STEP_CATEGORY_TERMS[activeCategoryFilter]) {
-                        // Step-based: filter by workflow step string
+                    if (activeCategoryFilter === '__ADPHR__') {
+                        // ADP/HR combined: show workflows with HR or Payroll open items
+                        if (!wf.openCategories ||
+                            (!wf.openCategories.includes('HR') && !wf.openCategories.includes('Payroll'))) return false;
+                    } else if (activeCategoryFilter === 'IT') {
+                        // IT SETUP button: matches IT action items OR 'pending: it setup' step
+                        var hasItAI   = wf.openCategories && wf.openCategories.includes('IT');
+                        var hasItStep = (wf.step || '').toLowerCase().includes('pending: it setup') ||
+                                        (wf.step || '').toLowerCase().includes('it setup needed');
+                        if (!hasItAI && !hasItStep) return false;
+                    } else if (activeCategoryFilter === 'ID Setup') {
+                        // ID SETUP button: matches ID Setup action items OR 'pending: id setup' step
+                        var hasIdAI   = wf.openCategories && wf.openCategories.includes('ID Setup');
+                        var hasIdStep = (wf.step || '').toLowerCase().includes('pending: id setup') ||
+                                        (wf.step || '').toLowerCase().includes('id setup needed');
+                        if (!hasIdAI && !hasIdStep) return false;
+                    } else if (STEP_CATEGORY_TERMS[activeCategoryFilter]) {
+                        // Other step-based filters
                         const terms = STEP_CATEGORY_TERMS[activeCategoryFilter];
                         const stepLower = (wf.step || '').toLowerCase();
                         if (!terms.some(t => stepLower.includes(t))) return false;

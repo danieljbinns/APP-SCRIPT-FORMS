@@ -273,7 +273,14 @@ function getMyTaskCounts() {
       }
     }
 
-    return { success: true, counts: Object.assign({}, aiCounts, stepCounts) };
+    // Additive merge: step counts add to action-item counts (don't overwrite).
+    // 'ID Setup' exists in both aiCounts (action items) and stepCounts (workflow step) —
+    // Object.assign would overwrite; additive merge keeps both totals visible.
+    const merged = Object.assign({}, aiCounts);
+    Object.keys(stepCounts).forEach(function(key) {
+      merged[key] = (merged[key] || 0) + (stepCounts[key] || 0);
+    });
+    return { success: true, counts: merged };
 
   } catch (e) {
     Logger.log('[getMyTaskCounts] Error: ' + e.message);
