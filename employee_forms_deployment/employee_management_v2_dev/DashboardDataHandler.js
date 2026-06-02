@@ -83,7 +83,9 @@ function getDashboardData() {
       const aiCatIdx     = aiMapHeaders.indexOf('Category');
       const aiStatIdx    = aiMapHeaders.indexOf('Status');
       for (let i = 1; i < aiMapData.length; i++) {
-        if (String(aiMapData[i][aiStatIdx] || '') === 'Closed') continue;
+        // Skip anything that is not Open — Closed, Cancelled, N/A all excluded.
+        // Matches getMyTaskCounts() logic: only Open items count as "open categories".
+        if (String(aiMapData[i][aiStatIdx] || '') !== 'Open') continue;
         const wfId = String(aiMapData[i][aiWfIdx] || '');
         const cat  = String(aiMapData[i][aiCatIdx] || '');
         if (!wfId || !cat) continue;

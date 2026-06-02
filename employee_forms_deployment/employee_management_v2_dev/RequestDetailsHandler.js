@@ -212,6 +212,10 @@ function getRequestDetails(workflowId) {
     context.currentUser  = _currentUser;
     context.checklist    = checklist;
     context.type         = 'Onboarding';
+    // Top-level aliases so RequestDetails.html isOwner check can resolve cancel/bump permission
+    // without having to dig into requestData column-header keys.
+    context.requesterEmail = r['Requester Email'] || '';
+    context.managerEmail   = r['Manager Email']   || '';
     return context;
 
   } catch (e) {
@@ -504,6 +508,9 @@ function getTerminationDetails(workflowId) {
     context.status      = termWf ? String(termWf['Status'] || '') : '';
     context.checklist   = checklist;
     context.type        = 'End of Employment';
+    // Top-level aliases — RequestDetails.html isOwner check reads these directly
+    context.requesterEmail = r['Requester Email'] || '';
+    context.managerEmail   = r['Manager Email']   || '';
     return context;
   } catch (e) {
     Logger.log('getTerminationDetails Error: ' + e.toString());
@@ -597,7 +604,10 @@ function getEquipmentRequestDetails(workflowId) {
       checklist:   [],
       isAdmin:     AccessControlService.isAdmin(_cu3),
       rolePayload: AccessControlService.getUserRolePayload(_cu3),
-      currentUser: _cu3
+      currentUser: _cu3,
+      // Top-level aliases — RequestDetails.html isOwner check reads these directly
+      requesterEmail: requestData['Requester Email'] || '',
+      managerEmail:   requestData['Manager Email']   || ''
     };
 
     context.checklist.push({
@@ -787,6 +797,10 @@ function getChangeDetails(workflowId) {
     context.rolePayload = AccessControlService.getUserRolePayload(_cu4);
     context.currentUser = _cu4;
     context.checklist   = checklist;
+    // Top-level aliases — RequestDetails.html isOwner check reads these directly.
+    // Status Change: 'Current Manager Email' is the manager at time of submission; no plain 'Manager Email' column.
+    context.requesterEmail = r['Requester Email']      || '';
+    context.managerEmail   = r['Manager Email']         || r['Current Manager Email'] || '';
     return context;
   } catch (e) {
     Logger.log('getChangeDetails Error: ' + e.toString());

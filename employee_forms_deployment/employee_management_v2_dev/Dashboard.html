@@ -1036,8 +1036,10 @@
             var wfManager   = String(details.managerEmail   || r['Manager Email']   || '').toLowerCase();
             var cuLower     = cu.toLowerCase();
             var isOwner     = cuLower && (cuLower === wfRequester || cuLower === wfManager);
-            var canBump     = rp.canBumpAll   || isOwner;
-            var canCancel   = rp.canCancelAll || isOwner;
+            // Block cancel/bump on terminal workflows — server would reject anyway, but show disabled for UX.
+            var isTerminal  = (details.status === 'Cancelled' || details.status === 'Complete' || details.status === 'Completed');
+            var canBump     = !isTerminal && (rp.canBumpAll   || isOwner);
+            var canCancel   = !isTerminal && (rp.canCancelAll || isOwner);
             var canViewData = rp.canViewAllStepData || isOwner;
             var _dis = function(allowed) { return allowed ? '' : ' disabled title="Insufficient permissions" style="opacity:0.45; pointer-events:none; cursor:not-allowed;"'; };
 
