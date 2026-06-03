@@ -856,24 +856,92 @@ function submitPositionChangeApproval(formData) {
         contextData: changeContext
       });
 
-      updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Change Processed');
-      syncWorkflowState(workflowId);
+      // ── ADP Update — HR + Payroll action item ─────────────────────────────────
+      // Always created on Status Change approval. HR and Payroll share one action item
+      // (one form, one close) — whoever processes ADP updates submits the form.
+      // Category 'HR' → counts toward ADP/HR dashboard button (HR + Payroll combined).
+      // The full change context is visible in the email and on the form.
+      //
+      // Checklist is built dynamically from what actually changed so the recipient
+      // only sees items relevant to this specific status change.
+      var adpItems = [];
 
-      // Notify payroll
-      approvalActionTeams.push('Payroll');
-      var payrollBody = 'HR has approved a status change for <strong>' + changeData.employeeName + '</strong>.';
-      if (changeData.newReportsFrom && changeData.newReportsFrom !== 'N/A') {
-        payrollBody += '<br><br><strong>Direct Report Reassignment:</strong> ' + changeData.employeeName + '\'s direct reports are being reassigned to <strong>' + changeData.newReportsFrom + '</strong>. Please update ADP reporting structure accordingly.';
-      } else if (changeData.oldReportsTo && changeData.oldReportsTo !== 'N/A') {
-        payrollBody += '<br><br><strong>Direct Reports:</strong> ' + changeData.employeeName + ' currently has direct reports (' + changeData.oldReportsTo + '). Please confirm reassignment with HR and update ADP reporting structure.';
+      // Effective date — always
+      adpItems.push('Confirm effective date is set correctly in ADP: ' + changeData.effDate);
+
+      // Title change
+      if (changeData.titleChange && changeData.titleChange.indexOf('N/A') === -1 && changeData.titleChange.indexOf('->') !== -1) {
+        adpItems.push('Update job title in ADP: ' + changeData.titleChange);
+      } else if (effectiveTitle) {
+        adpItems.push('Confirm job title in ADP: ' + effectiveTitle);
       }
-      if (notes) payrollBody += '<br><br><em>HR Notes: ' + notes + '</em>';
+
+      // Classification change (Hourly ↔ Salary)
+      if (changeData.classChange && changeData.classChange !== 'N/A' && changeData.classChange !== '') {
+        adpItems.push('Update employment classification in ADP: ' + changeData.classChange);
+      }
+
+      // Site transfer — update work location
+      if (changeData.siteTransfer && changeData.siteTransfer.indexOf('->') !== -1 && changeData.siteTransfer.indexOf('N/A') === -1) {
+        adpItems.push('Update work location in ADP: ' + changeData.siteTransfer);
+      }
+
+      // Reporting manager change
+      if (mgrNewEmail && mgrOldEmail && mgrNewEmail !== mgrOldEmail) {
+        adpItems.push('Update reporting manager in ADP — New manager: ' + mgrNewEmail);
+      }
+
+      // Delegation — direct reports being reassigned (user leaving a manager role)
+      if (changeData.oldReportsTo && changeData.oldReportsTo !== 'N/A' && changeData.oldReportsTo !== '') {
+        adpItems.push('Confirm direct report reassignment in ADP — ' + changeData.employeeName + ' currently manages: ' + changeData.oldReportsTo);
+      }
+
+      // Delegation — incoming direct reports (user taking on a manager role)
+      if (changeData.newReportsFrom && changeData.newReportsFrom !== 'N/A' && changeData.newReportsFrom !== '') {
+        adpItems.push('Update ADP reporting structure — ' + changeData.employeeName + ' will now manage: ' + changeData.newReportsFrom);
+      }
+
+      // ADP site assignments (set on the original request form)
+      if (changeData.adpSites && changeData.adpSites !== '') {
+        adpItems.push('Update ADP site assignments: ' + changeData.adpSites);
+      }
+
+      // Salary access flag change
+      if (changeData.adpSalaryAccess && changeData.adpSalaryAccess !== '' && changeData.adpSalaryAccess !== 'No') {
+        adpItems.push('Update ADP salary access — Access requested: ' + changeData.adpSalaryAccess);
+      }
+
+      // HR notes carry through if present
+      if (notes) {
+        adpItems.push('HR Notes: ' + notes);
+      }
+
+      // Final confirmation — always last
+      adpItems.push('Confirm all changes are reflected correctly in ADP');
+
+      const adpTid = ActionItemService.createActionItem(
+        workflowId,
+        'HR',                                                        // category — HR counts toward ADP/HR button
+        'ADP Update Required — ' + changeData.employeeName,
+        JSON.stringify(adpItems),
+        CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL,             // both receive the same action item
+        'adp_update'
+      );
+      tasksCreated++;
+      approvalActionTeams.push('HR + Payroll (ADP Update)');
       sendFormEmail({
-        to: CONFIG.EMAILS.PAYROLL,
-        subject: 'Status Change Approved',
-        body: payrollBody,
+        to:          CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL,
+        subject:     'ADP Update Required — ' + changeData.employeeName,
+        body:        'HR has approved a status change for <strong>' + changeData.employeeName + '</strong>. ' +
+                     'Please review the change details below and update ADP accordingly. ' +
+                     'Use the form link to confirm completion once done.',
+        formUrl:     buildFormUrl('action_item_view', { tid: adpTid }),
+        displayName: 'TEAM Group - Employee Management',
         contextData: changeContext
       });
+
+      updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Change Processed');
+      syncWorkflowState(workflowId);
 
       // Notify requester
       const scRecipients = [changeData.requesterEmail];
