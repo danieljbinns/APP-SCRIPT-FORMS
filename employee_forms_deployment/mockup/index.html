@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>NH Stepper Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0c0c0c; color: #fff; padding: 20px; }
+  h2 { color: #a0a0a0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 30px 0 12px; }
+  .label { color: #666; font-size: 11px; margin-bottom: 4px; }
+
+  /* ── DASHBOARD MODAL STEPPER ────────────────────────── */
+  .modal { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 24px; margin-bottom: 40px; }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; color: #fff; }
+  .stepper { display: flex; align-items: flex-start; position: relative; padding: 0 8px; overflow-x: auto; gap: 0; }
+  .stepper::before { content: ''; position: absolute; top: 11px; left: 24px; right: 24px; height: 2px; background: #333; z-index: 0; }
+  .step { z-index: 1; text-align: center; flex: 1; min-width: 56px; padding: 0 3px; }
+  .dot { width: 24px; height: 24px; border-radius: 50%; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #000; }
+  .dot.complete { background: #00c853; }
+  .dot.active   { background: #ffab00; }
+  .dot.future   { background: #333; color: #555; }
+  .step-label { font-size: 9px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 64px; margin: 0 auto; }
+  .step-label.complete { color: #fff; }
+  .step-label.active   { color: #fff; }
+  .step-label.future   { color: #555; }
+
+  /* ── REQUEST DETAILS FLOW ──────────────────────────── */
+  .rd-page { background: #111; border: 1px solid #333; border-radius: 8px; padding: 24px; }
+  .rd-title { font-size: 14px; color: #a0a0a0; margin-bottom: 20px; }
+  .flow { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .flow-card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 14px 18px; width: 220px; text-align: center; position: relative; margin-bottom: 0; }
+  .flow-card.complete { border-color: #00c853; }
+  .flow-card.active   { border-color: #ffab00; }
+  .flow-card.future   { border-color: #333; opacity: 0.5; }
+  .flow-card h3 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .flow-card.complete h3 { color: #00c853; }
+  .flow-card.active   h3 { color: #ffab00; }
+  .flow-card.future   h3 { color: #555; }
+  .flow-card p  { font-size: 10px; color: #666; margin-bottom: 8px; }
+  .status-pill { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; }
+  .status-pill.complete { background: rgba(0,200,83,0.15); color: #00c853; border: 1px solid rgba(0,200,83,0.3); }
+  .status-pill.active   { background: rgba(255,171,0,0.15); color: #ffab00; border: 1px solid rgba(255,171,0,0.3); }
+  .status-pill.future   { background: #222; color: #555; border: 1px solid #333; }
+  .connector { width: 2px; height: 24px; background: #333; margin: 0 auto; }
+  .branch-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 0; position: relative; }
+  .branch-row::before { content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 24px; background: #333; transform: translateX(-50%); }
+  .branch-card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px 14px; width: 120px; text-align: center; }
+  .branch-card.complete { border-color: #00c853; }
+  .branch-card.active   { border-color: #ffab00; }
+  .branch-card.future   { border-color: #333; opacity: 0.5; }
+  .branch-card h3 { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+  .branch-card.complete h3 { color: #00c853; }
+  .branch-card.active   h3 { color: #ffab00; }
+  .branch-card.future   h3 { color: #555; }
+  .branch-card p  { font-size: 9px; color: #666; margin-bottom: 6px; }
+  .btn-row { display: flex; gap: 4px; margin-top: 6px; justify-content: center; }
+  .btn { font-size: 9px; padding: 2px 6px; border-radius: 3px; border: none; cursor: pointer; font-weight: 600; }
+  .btn.remind  { background: #ffab00; color: #000; }
+  .btn.form    { background: #EB1C2D; color: #fff; }
+  .btn.data    { background: transparent; border: 1px solid #444; color: #aaa; }
+  .section-divider { width: 100%; border: none; border-top: 1px solid #222; margin: 30px 0; }
+</style>
+</head>
+<body>
+
+<h2>Dashboard Modal — NH Stepper (after today's changes)</h2>
+<p class="label" style="margin-bottom:16px;">All 12 steps shown as individual badge-label dots. IT CONF conditional. All roles see all dots.</p>
+
+<div class="modal">
+  <div class="modal-title">Request Details: NEW_EMP_20260101_001</div>
+  <div class="stepper">
+    <div class="step"><div class="dot complete">1</div><div class="step-label complete">Initial Request</div></div>
+    <div class="step"><div class="dot complete">2</div><div class="step-label complete">ID SETUP</div></div>
+    <div class="step"><div class="dot complete">3</div><div class="step-label complete">HR Verification</div></div>
+    <div class="step"><div class="dot complete">4</div><div class="step-label complete">IT CONF</div></div>
+    <div class="step"><div class="dot complete">5</div><div class="step-label complete">IT SETUP</div></div>
+    <div class="step"><div class="dot complete">6</div><div class="step-label complete">SAFETY</div></div>
+    <div class="step"><div class="dot active">7</div><div class="step-label active">FINANCE</div></div>
+    <div class="step"><div class="dot future">8</div><div class="step-label future">BUSINESS CARDS</div></div>
+    <div class="step"><div class="dot future">9</div><div class="step-label future">FLEET</div></div>
+    <div class="step"><div class="dot future">10</div><div class="step-label future">30/60/90</div></div>
+    <div class="step"><div class="dot future">11</div><div class="step-label future">PURCHASING</div></div>
+    <div class="step"><div class="dot future">12</div><div class="step-label future">WIS</div></div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<h2>RequestDetails Page — NH Flow (CURRENT — static HTML, old labels)</h2>
+<p class="label" style="margin-bottom:16px;">Missing: IT CONF, SAFETY, WIS. Wrong labels: ID Setup, IT Setup, Credit Card, Fleetio, Jonas. Dead node: SiteDocs.</p>
+
+<div class="rd-page" style="margin-bottom:40px;">
+  <div class="rd-title">Live Request Flow — Current</div>
+  <div class="flow">
+    <div class="flow-card complete"><h3>Initial Request</h3><p>Submitted</p><span class="status-pill complete">Complete</span></div>
+    <div class="connector"></div>
+    <div style="display:flex;gap:16px;margin-bottom:0;">
+      <div class="flow-card complete"><h3>ID Setup <span style="color:#666;font-size:9px;">🔧</span></h3><p>IT System Generation</p><span class="status-pill complete">Complete</span><div class="btn-row"><button class="btn data">View Data</button></div></div>
+      <div class="flow-card complete"><h3>HR Verification</h3><p>Core Data Review</p><span class="status-pill complete">Complete</span><div class="btn-row"><button class="btn data">View Data</button></div></div>
+    </div>
+    <div class="connector"></div>
+    <div class="flow-card complete"><h3>IT Setup <span style="color:#666;font-size:9px;">🔧</span></h3><p>Equipment & Access</p><span class="status-pill complete">Complete</span><div class="btn-row"><button class="btn data">View Data</button></div></div>
+    <div class="connector" style="height:36px;"></div>
+    <div class="branch-row" style="padding-top:24px;">
+      <div class="branch-card active"><h3>Credit Card <span style="color:#666;font-size:9px;">🔧</span></h3><p>Finance Approval</p><span class="status-pill active">Pending</span><div class="btn-row"><button class="btn remind">Remind</button><button class="btn form">View Form</button></div></div>
+      <div class="branch-card future"><h3>Business Cards</h3><p>Order</p><span class="status-pill future">Pending</span></div>
+      <div class="branch-card future"><h3>Fleetio <span style="color:#666;font-size:9px;">🔧</span></h3><p>Vehicle</p><span class="status-pill future">Pending</span></div>
+      <div class="branch-card future"><h3>Jonas <span style="color:#666;font-size:9px;">🔧</span></h3><p>Job Numbers</p><span class="status-pill future">Pending</span></div>
+      <div class="branch-card future"><h3>30/60/90</h3><p>Reviews</p><span class="status-pill future">Pending</span></div>
+      <div class="branch-card future" style="opacity:0.25;"><h3>SiteDocs ❌</h3><p>dead node</p><span class="status-pill future">—</span></div>
+    </div>
+    <div style="margin-top:16px;padding:10px;background:#1a0000;border:1px solid #500;border-radius:6px;font-size:10px;color:#f66;text-align:center;">
+      ❌ Missing: IT CONF · SAFETY · WIS
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<h2>RequestDetails Page — NH Flow (PROPOSED — dynamic, badge labels)</h2>
+<p class="label" style="margin-bottom:16px;">All 12 steps. Badge label names. Dynamic so conditional items (IT CONF) only appear when they exist.</p>
+
+<div class="rd-page">
+  <div class="rd-title">Live Request Flow — Proposed</div>
+  <div class="flow">
+    <div class="flow-card complete"><h3>Initial Request</h3><p>Submitted</p><span class="status-pill complete">Complete</span><div class="btn-row"><button class="btn data">View Data</button></div></div>
+    <div class="connector"></div>
+    <div style="display:flex;gap:16px;">
+      <div class="flow-card complete"><h3>ID SETUP</h3><p>grp.forms.idsetup@</p><span class="status-pill complete">Complete</span><div class="btn-row"><button class="btn data">View Data</button></div></div>
+      <div class="flow-card complete"><h3>HR Verification</h3><p>hr@ + payroll@</p><span class="status-pill complete">Complete</span><div class="btn-row"><button class="btn data">View Data</button></div></div>
+    </div>
+    <div class="connector"></div>
+    <div class="flow-card complete"><h3>IT CONF</h3><p>davelangohr@</p><span class="status-pill complete">Complete</span><div class="btn-row"><button class="btn data">View Data</button></div></div>
+    <div class="connector"></div>
+    <div class="flow-card complete"><h3>IT SETUP</h3><p>grp.forms.it@</p><span class="status-pill complete">Complete</span><div class="btn-row"><button class="btn data">View Data</button></div></div>
+    <div class="connector" style="height:36px;"></div>
+    <div class="branch-row" style="padding-top:24px;">
+      <div class="branch-card complete"><h3>SAFETY</h3><p>grp.forms.safety@</p><span class="status-pill complete">Complete</span><div class="btn-row"><button class="btn data">View Data</button><button class="btn form">View Form</button></div></div>
+      <div class="branch-card active"><h3>FINANCE</h3><p>grp.forms.creditcard@</p><span class="status-pill active">Pending</span><div class="btn-row"><button class="btn remind">Remind</button><button class="btn form">View Form</button></div></div>
+      <div class="branch-card future"><h3>BUSINESS CARDS</h3><p>davelangohr@</p><span class="status-pill future">Pending</span></div>
+      <div class="branch-card future"><h3>FLEET</h3><p>grp.forms.fleetio@</p><span class="status-pill future">Pending</span></div>
+      <div class="branch-card future"><h3>30/60/90</h3><p>grp.forms.review306090@</p><span class="status-pill future">Pending</span></div>
+      <div class="branch-card future"><h3>PURCHASING</h3><p>grp.forms.jonas@</p><span class="status-pill future">Pending</span></div>
+      <div class="branch-card future"><h3>WIS</h3><p>Manager email</p><span class="status-pill future">Pending</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

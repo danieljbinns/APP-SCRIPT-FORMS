@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>NH Stepper & Flow — Mockup v2</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0c0c0c; color: #fff; padding: 30px; }
+h1 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #555; margin-bottom: 6px; }
+.note { font-size: 11px; color: #666; margin-bottom: 20px; line-height: 1.6; }
+hr { border: none; border-top: 1px solid #1e1e1e; margin: 40px 0; }
+.key { display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
+.key-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #888; }
+.swatch { width: 14px; height: 14px; border-radius: 50%; }
+.sw-ok { background: #00c853; }
+.sw-act { background: #ffab00; }
+.sw-q { background: #2a2a2a; border: 1px solid #333; }
+
+/* MODAL */
+.modal { background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; padding: 24px 28px; max-width: 960px; margin-bottom: 10px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+.modal-title { font-size: 15px; font-weight: 600; }
+
+/* STEPPER */
+.stepper-wrap { position: relative; display: flex; align-items: flex-start; padding: 4px 0 18px; overflow-x: auto; }
+.stepper-line { position: absolute; top: 20px; left: 8px; right: 8px; height: 2px; background: #1e1e1e; }
+.step { position: relative; z-index: 1; flex: 1; min-width: 52px; text-align: center; padding: 0 2px; }
+.dot { width: 32px; height: 32px; border-radius: 50%; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #000; }
+.dot.ok { background: #00c853; }
+.dot.act { background: #ffab00; }
+.dot.q { background: #1a1a1a; color: #3a3a3a; border: 1px solid #2a2a2a; }
+.step-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60px; margin: 0 auto; }
+.lbl-ok { color: #ccc; }
+.lbl-act { color: #ffab00; }
+.lbl-q { color: #333; }
+
+/* CHECKLIST */
+.section-hdr { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #444; margin: 20px 0 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; padding: 8px 10px; color: #444; font-size: 11px; border-bottom: 1px solid #1a1a1a; }
+td { padding: 10px; border-bottom: 1px solid #161616; vertical-align: middle; }
+.s-ok { color: #00c853; font-weight: 600; }
+.s-act { color: #ffab00; font-weight: 600; }
+.s-q { color: #3a3a3a; }
+.btn { display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 4px; border: none; cursor: pointer; margin-right: 4px; }
+.btn-data { background: transparent; border: 1px solid #2a2a2a; color: #666; }
+.btn-form { background: #EB1C2D; color: #fff; }
+.btn-remind { background: #ffab00; color: #000; }
+
+/* FLOW DIAGRAM */
+.two-col { display: flex; gap: 30px; align-items: flex-start; max-width: 1200px; }
+.col { flex: 1; min-width: 0; }
+.col-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 14px; border-bottom: 1px solid #1a1a1a; padding-bottom: 8px; }
+.rd { background: #0e0e0e; border: 1px solid #1e1e1e; border-radius: 10px; padding: 24px 20px; }
+.rd-title { font-size: 12px; color: #444; margin-bottom: 20px; }
+.flow { display: flex; flex-direction: column; align-items: center; }
+.conn { width: 2px; height: 20px; background: #1e1e1e; margin: 0 auto; }
+.fcard { background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px 14px; width: 190px; text-align: center; }
+.fcard.ok { border-color: #00c853; }
+.fcard.act { border-color: #ffab00; }
+.fcard.q { opacity: 0.5; }
+.fcard.dead { border-color: #500; opacity: 0.3; }
+.fcard h3 { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+.fcard.ok h3 { color: #00c853; }
+.fcard.act h3 { color: #ffab00; }
+.fcard.q h3 { color: #444; }
+.fcard.dead h3 { color: #f44; text-decoration: line-through; }
+.fcard p { font-size: 9px; color: #555; margin-bottom: 8px; }
+.fcard .brow { display: flex; gap: 4px; justify-content: center; margin-top: 8px; }
+.badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; }
+.badge.ok { background: rgba(0,200,83,.1); color: #00c853; border: 1px solid rgba(0,200,83,.2); }
+.badge.act { background: rgba(255,171,0,.1); color: #ffab00; border: 1px solid rgba(255,171,0,.2); }
+.badge.q { background: #1a1a1a; color: #3a3a3a; border: 1px solid #222; }
+.branch { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; position: relative; padding-top: 20px; }
+.branch::before { content:''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 2px; height: 20px; background: #1e1e1e; }
+.bcard { background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 10px; width: 108px; text-align: center; }
+.bcard.ok { border-color: #00c853; }
+.bcard.act { border-color: #ffab00; }
+.bcard.q { opacity: 0.45; }
+.bcard.dead { border-color: #500; opacity: 0.25; }
+.bcard h3 { font-size: 11px; font-weight: 700; margin-bottom: 3px; }
+.bcard.ok h3 { color: #00c853; }
+.bcard.act h3 { color: #ffab00; }
+.bcard.q h3 { color: #444; }
+.bcard.dead h3 { color: #f44; text-decoration: line-through; }
+.bcard p { font-size: 9px; color: #555; margin-bottom: 5px; }
+.bcard .brow { display: flex; gap: 3px; justify-content: center; margin-top: 5px; }
+.missing { margin-top: 14px; padding: 9px 14px; background: #180000; border: 1px solid #500; border-radius: 6px; font-size: 10px; color: #f55; text-align: center; }
+.warn-label { font-size: 9px; color: #f55; text-align: center; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<h1>Dashboard Modal — New Hire Stepper</h1>
+<p class="note">
+  Phases 1–5 sequential. Phase 6 = all specialists parallel — share the same number to show they fire at once.<br>
+  N/A steps not rendered. IT CONF only appears on BOSS path. All roles see all dots; only buttons are role-gated.
+</p>
+
+<div class="key">
+  <div class="key-item"><div class="swatch sw-ok"></div>Complete</div>
+  <div class="key-item"><div class="swatch sw-act"></div>Active / Open</div>
+  <div class="key-item"><div class="swatch sw-q"></div>Not started</div>
+  <div class="key-item" style="color:#444;font-style:italic;">N/A — not shown at all</div>
+</div>
+
+<div class="modal">
+  <div class="modal-header">
+    <div class="modal-title">Request Details: NEW_EMP_20260601_001</div>
+    <div style="color:#555">✕</div>
+  </div>
+
+  <div class="stepper-wrap">
+    <div class="stepper-line"></div>
+    <div class="step"><div class="dot ok">1</div><div class="step-lbl lbl-ok">Initial Request</div></div>
+    <div class="step"><div class="dot ok">2</div><div class="step-lbl lbl-ok">ID SETUP</div></div>
+    <div class="step"><div class="dot ok">3</div><div class="step-lbl lbl-ok">HR Verification</div></div>
+    <div class="step"><div class="dot ok">4</div><div class="step-lbl lbl-ok">IT CONF</div></div>
+    <div class="step"><div class="dot ok">5</div><div class="step-lbl lbl-ok">IT SETUP</div></div>
+    <!-- Phase 6 — all specialists, all share number 6 -->
+    <div class="step" style="min-width:44px;"><div class="dot ok">6</div><div class="step-lbl lbl-ok">SAFETY</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">6</div><div class="step-lbl lbl-act">FINANCE</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">6</div><div class="step-lbl lbl-act">BUS. CARDS</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">6</div><div class="step-lbl lbl-act">FLEET</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">6</div><div class="step-lbl lbl-act">30/60/90</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">6</div><div class="step-lbl lbl-act">PURCHASING</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">6</div><div class="step-lbl lbl-act">WIS</div></div>
+  </div>
+
+  <div class="section-hdr">Status Checklist</div>
+  <table>
+    <thead><tr><th>Step / Form</th><th>Status</th><th>Actor</th><th>Timestamp</th><th style="text-align:right">Action</th></tr></thead>
+    <tbody>
+      <tr><td>Initial Request</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">cdicks@robinsonsolutions.com</td><td style="color:#555">6/1/2026</td><td style="text-align:right"><button class="btn btn-data">View Data</button></td></tr>
+      <tr><td>ID SETUP</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">grp.forms.idsetup@</td><td style="color:#555">6/1/2026 9:02 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>HR Verification</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">grp.forms.hr@</td><td style="color:#555">6/1/2026 10:14 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>IT CONF</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">davelangohr@</td><td style="color:#555">6/1/2026 11:30 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>IT SETUP</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">grp.forms.it@</td><td style="color:#555">6/2/2026 8:45 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>SAFETY</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">grp.forms.safety@</td><td style="color:#555">6/2/2026 9:05 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>FINANCE</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.creditcard@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>BUSINESS CARDS</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">davelangohr@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>FLEET</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.fleetio@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>30/60/90</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.review306090@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>PURCHASING</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.jonas@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>WIS</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">Manager email</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<hr>
+
+<h1>RequestDetails Page — Live Request Flow</h1>
+<p class="note">Sequential flow corrected: ID SETUP then HR Verification (not side by side). Specialists all parallel from IT SETUP.</p>
+
+<div class="two-col">
+
+  <div class="col">
+    <div class="col-title">Current — static HTML, broken</div>
+    <div class="rd">
+      <div class="rd-title">Live Request Flow</div>
+      <div class="flow">
+        <div class="fcard ok"><h3>Initial Request</h3><p>Submitted</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button></div></div>
+        <div class="conn"></div>
+        <div class="warn-label">⚠ shown as parallel — actually sequential</div>
+        <div style="display:flex;gap:10px;">
+          <div class="fcard ok" style="width:150px;"><h3>ID Setup ⚠️</h3><p>wrong label</p><span class="badge ok">Complete</span></div>
+          <div class="fcard ok" style="width:150px;"><h3>HR Verification</h3><span class="badge ok">Complete</span></div>
+        </div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>IT Setup ⚠️</h3><p>wrong label</p><span class="badge ok">Complete</span></div>
+        <div class="branch">
+          <div class="bcard act"><h3>Credit Card ⚠️</h3><span class="badge act">Pending</span></div>
+          <div class="bcard act"><h3>Business Cards</h3><span class="badge act">Pending</span></div>
+          <div class="bcard act"><h3>Fleetio ⚠️</h3><span class="badge act">Pending</span></div>
+          <div class="bcard act"><h3>Jonas ⚠️</h3><span class="badge act">Pending</span></div>
+          <div class="bcard act"><h3>30/60/90</h3><span class="badge act">Pending</span></div>
+          <div class="bcard dead"><h3>SiteDocs</h3><p>dead node</p><span class="badge q">—</span></div>
+        </div>
+        <div class="missing">❌ Missing: IT CONF · SAFETY · WIS</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="col-title">Proposed — dynamic, correct order, badge labels</div>
+    <div class="rd">
+      <div class="rd-title">Live Request Flow</div>
+      <div class="flow">
+        <div class="fcard ok"><h3>Initial Request</h3><p>Submitted</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button></div></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>ID SETUP</h3><p>grp.forms.idsetup@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>HR Verification</h3><p>hr@ + payroll@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>IT CONF</h3><p>davelangohr@ · BOSS path only</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>IT SETUP</h3><p>grp.forms.it@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+        <div class="branch">
+          <div class="bcard ok"><h3>SAFETY</h3><p>grp.forms.safety@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>FINANCE</h3><p>creditcard@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>BUSINESS CARDS</h3><p>davelangohr@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>FLEET</h3><p>fleetio@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>30/60/90</h3><p>review306090@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>PURCHASING</h3><p>jonas@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>WIS</h3><p>Manager email</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

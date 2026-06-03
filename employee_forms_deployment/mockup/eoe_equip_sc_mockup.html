@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>EOE · Equipment · Status Change — Stepper & Flow Mockup</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0c0c0c; color: #fff; padding: 30px; }
+h1 { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.subtitle { font-size: 11px; color: #555; margin-bottom: 20px; line-height: 1.6; }
+.wf-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #EB1C2D; margin-bottom: 8px; font-weight: 700; }
+hr { border: none; border-top: 1px solid #1a1a1a; margin: 50px 0; }
+.key { display: flex; gap: 18px; margin-bottom: 20px; flex-wrap: wrap; }
+.key-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #777; }
+.sw { width: 12px; height: 12px; border-radius: 50%; }
+.sw-ok { background: #00c853; }
+.sw-act { background: #ffab00; }
+.sw-q { background: #1a1a1a; border: 1px solid #2a2a2a; }
+
+/* MODAL */
+.modal { background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; padding: 22px 26px; max-width: 1000px; margin-bottom: 10px; }
+.modal-title { font-size: 14px; font-weight: 600; margin-bottom: 18px; color: #fff; }
+
+/* STEPPER */
+.stepper-wrap { position: relative; display: flex; align-items: flex-start; padding: 4px 0 16px; overflow-x: auto; gap: 0; }
+.stepper-line { position: absolute; top: 18px; left: 8px; right: 8px; height: 2px; background: #1e1e1e; }
+.step { position: relative; z-index: 1; flex: 1; min-width: 50px; text-align: center; padding: 0 2px; }
+.dot { width: 30px; height: 30px; border-radius: 50%; margin: 0 auto 5px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #000; }
+.dot.ok  { background: #00c853; }
+.dot.act { background: #ffab00; }
+.dot.q   { background: #1a1a1a; color: #333; border: 1px solid #2a2a2a; }
+.step-lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 58px; margin: 0 auto; }
+.lbl-ok  { color: #bbb; }
+.lbl-act { color: #ffab00; }
+.lbl-q   { color: #2e2e2e; }
+
+/* NOTE BOX */
+.no-stepper-note { background: #1a0e00; border: 1px solid #554400; border-radius: 6px; padding: 10px 14px; font-size: 11px; color: #aa7700; margin-bottom: 16px; }
+.bug-note { background: #180808; border: 1px solid #500; border-radius: 6px; padding: 8px 12px; font-size: 10px; color: #f55; margin-top: 10px; }
+
+/* CHECKLIST */
+.section-hdr { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #444; margin: 18px 0 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+th { text-align: left; padding: 7px 10px; color: #444; font-size: 10px; border-bottom: 1px solid #1a1a1a; }
+td { padding: 9px 10px; border-bottom: 1px solid #141414; vertical-align: middle; }
+.s-ok  { color: #00c853; font-weight: 600; }
+.s-act { color: #ffab00; font-weight: 600; }
+.s-q   { color: #333; }
+.btn { display: inline-block; font-size: 9px; font-weight: 600; padding: 2px 8px; border-radius: 3px; border: none; cursor: pointer; margin-right: 3px; }
+.btn-data   { background: transparent; border: 1px solid #2a2a2a; color: #666; }
+.btn-form   { background: #EB1C2D; color: #fff; }
+.btn-remind { background: #ffab00; color: #000; }
+
+/* FLOW DIAGRAM */
+.two-col { display: flex; gap: 24px; align-items: flex-start; max-width: 1100px; margin-top: 30px; }
+.col { flex: 1; min-width: 0; }
+.col-title { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 12px; border-bottom: 1px solid #1a1a1a; padding-bottom: 6px; }
+.rd { background: #0e0e0e; border: 1px solid #1a1a1a; border-radius: 10px; padding: 20px 16px; }
+.rd-title { font-size: 11px; color: #444; margin-bottom: 16px; }
+.flow { display: flex; flex-direction: column; align-items: center; }
+.conn { width: 2px; height: 18px; background: #1a1a1a; margin: 0 auto; }
+.fcard { background: #141414; border: 1px solid #2a2a2a; border-radius: 7px; padding: 10px 12px; width: 180px; text-align: center; }
+.fcard.ok  { border-color: #00c853; }
+.fcard.act { border-color: #ffab00; }
+.fcard.q   { opacity: 0.45; }
+.fcard.dead { border-color: #500; opacity: 0.25; }
+.fcard h3 { font-size: 11px; font-weight: 700; margin-bottom: 2px; }
+.fcard.ok   h3 { color: #00c853; }
+.fcard.act  h3 { color: #ffab00; }
+.fcard.q    h3 { color: #444; }
+.fcard.dead h3 { color: #f44; text-decoration: line-through; }
+.fcard p { font-size: 9px; color: #555; margin-bottom: 6px; }
+.fcard .brow { display: flex; gap: 3px; justify-content: center; margin-top: 6px; }
+.badge { display: inline-block; font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 8px; }
+.badge.ok  { background: rgba(0,200,83,.1); color: #00c853; border: 1px solid rgba(0,200,83,.2); }
+.badge.act { background: rgba(255,171,0,.1); color: #ffab00; border: 1px solid rgba(255,171,0,.2); }
+.badge.q   { background: #1a1a1a; color: #333; border: 1px solid #222; }
+.branch { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; margin-top: 16px; position: relative; padding-top: 18px; }
+.branch::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:2px; height:18px; background:#1a1a1a; }
+.bcard { background: #141414; border: 1px solid #2a2a2a; border-radius: 7px; padding: 9px 8px; width: 100px; text-align: center; }
+.bcard.ok  { border-color: #00c853; }
+.bcard.act { border-color: #ffab00; }
+.bcard.q   { opacity: 0.45; }
+.bcard.dead { border-color: #500; opacity: 0.25; }
+.bcard h3 { font-size: 10px; font-weight: 700; margin-bottom: 2px; }
+.bcard.ok  h3 { color: #00c853; }
+.bcard.act h3 { color: #ffab00; }
+.bcard.q   h3 { color: #444; }
+.bcard.dead h3 { color: #f44; text-decoration: line-through; }
+.bcard p { font-size: 8px; color: #555; margin-bottom: 4px; }
+.bcard .brow { display: flex; gap: 2px; justify-content: center; margin-top: 4px; }
+.missing { margin-top: 12px; padding: 8px 12px; background: #180000; border: 1px solid #500; border-radius: 5px; font-size: 9px; color: #f55; text-align: center; }
+.decision { margin-top: 10px; padding: 8px 12px; background: #0a0a1a; border: 1px solid #224; border-radius: 5px; font-size: 9px; color: #669; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     EQUIPMENT REQUEST
+     ═══════════════════════════════════════════════ -->
+<div class="wf-label">Equipment Request</div>
+<h1>Stepper + Flow</h1>
+<p class="subtitle">
+  No ID Setup / HR Verification steps. Goes direct: Initial Request → IT CONF → IT SETUP → specialists (parallel).<br>
+  Two wrong category names in handler: Jonas uses <code>Finance</code> (should be <code>Purchasing</code>), Credit Card uses <code>Credit Card</code> (should be <code>Finance</code>).
+</p>
+
+<div class="key">
+  <div class="key-item"><div class="sw sw-ok"></div>Complete</div>
+  <div class="key-item"><div class="sw sw-act"></div>Active / Open</div>
+  <div class="key-item"><div class="sw sw-q"></div>Not started</div>
+  <div class="key-item" style="color:#aa7700;">⚠ = wrong category name in handler</div>
+</div>
+
+<div class="no-stepper-note">⚠ Equipment currently has NO stepper — type is "Equipment", not "Onboarding" or "EOE". Proposed: add stepper with same badge-label approach.</div>
+
+<div class="modal">
+  <div class="modal-title">Request Details: EQUIP_REQ_20260601_001</div>
+
+  <div style="margin-bottom:6px;font-size:10px;color:#555;">Proposed stepper — phases 1–3 sequential, phase 4 parallel specialists</div>
+  <div class="stepper-wrap">
+    <div class="stepper-line"></div>
+    <div class="step"><div class="dot ok">1</div><div class="step-lbl lbl-ok">Initial Request</div></div>
+    <div class="step"><div class="dot ok">2</div><div class="step-lbl lbl-ok">IT CONF</div></div>
+    <div class="step"><div class="dot ok">3</div><div class="step-lbl lbl-ok">IT SETUP</div></div>
+    <!-- Phase 4 parallel -->
+    <div class="step" style="min-width:44px;"><div class="dot ok">4</div><div class="step-lbl lbl-ok">ADP/HR</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot ok">4</div><div class="step-lbl lbl-ok">ADP/HR</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">4</div><div class="step-lbl lbl-act">FINANCE ⚠</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">4</div><div class="step-lbl lbl-act">PURCHASING ⚠</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">4</div><div class="step-lbl lbl-act">BUS. CARDS</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">4</div><div class="step-lbl lbl-act">FLEET</div></div>
+  </div>
+
+  <div class="section-hdr">Status Checklist</div>
+  <table>
+    <thead><tr><th>Step / Form</th><th>Status</th><th>Actor</th><th>Timestamp</th><th style="text-align:right">Action</th></tr></thead>
+    <tbody>
+      <tr><td>Initial Request</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">requester@</td><td style="color:#555">6/1/2026</td><td style="text-align:right"><button class="btn btn-data">View Data</button></td></tr>
+      <tr><td>IT CONF</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">davelangohr@</td><td style="color:#555">6/1/2026 10:00 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>IT SETUP</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">grp.forms.it@</td><td style="color:#555">6/2/2026 9:00 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>ADP/HR — HR Systems</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">grp.forms.hr@</td><td style="color:#555">6/2/2026 11:00 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>ADP/HR — Payroll</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">payroll@</td><td style="color:#555">6/2/2026 11:30 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>FINANCE <span style="color:#f55;font-size:9px;">⚠ category is <code>Credit Card</code></span></td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.creditcard@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>PURCHASING <span style="color:#f55;font-size:9px;">⚠ category is <code>Finance</code></span></td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.jonas@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>BUSINESS CARDS</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">davelangohr@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>FLEET</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.fleetio@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="two-col">
+  <div class="col">
+    <div class="col-title">Current — dynamic but node label = task name</div>
+    <div class="rd">
+      <div class="rd-title">Live Request Flow — Equipment Request</div>
+      <div class="flow">
+        <div class="fcard ok"><h3>Equipment Request</h3><p>Submitted</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button></div></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>IT Confirmation</h3><p>davelangohr@</p><span class="badge ok">Complete</span></div>
+        <div class="branch">
+          <div class="bcard ok"><h3>IT Setup — John Smith</h3><p style="color:#f55;font-size:8px;">task name not badge</p><span class="badge ok">Complete</span></div>
+          <div class="bcard ok"><h3>HR Systems Access — John Smith</h3><p style="color:#f55;font-size:8px;">task name not badge</p><span class="badge ok">Complete</span></div>
+          <div class="bcard ok"><h3>ADP Access Setup — John Smith</h3><p style="color:#f55;font-size:8px;">task name</p><span class="badge ok">Complete</span></div>
+          <div class="bcard act"><h3>Credit Card Setup — John Smith</h3><p style="color:#f55;font-size:8px;">wrong category</p><span class="badge act">Pending</span></div>
+          <div class="bcard act"><h3>Central Purchasing/Jonas Setup — John Smith</h3><p style="color:#f55;font-size:8px;">wrong category</p><span class="badge act">Pending</span></div>
+          <div class="bcard act"><h3>Business Cards Order — John Smith</h3><p style="color:#f55;font-size:8px;">task name</p><span class="badge act">Pending</span></div>
+          <div class="bcard act"><h3>Vehicle Setup — John Smith</h3><p style="color:#f55;font-size:8px;">task name</p><span class="badge act">Pending</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="col-title">Proposed — sequential then parallel, badge labels</div>
+    <div class="rd">
+      <div class="rd-title">Live Request Flow — Equipment Request</div>
+      <div class="flow">
+        <div class="fcard ok"><h3>Initial Request</h3><p>Submitted</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button></div></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>IT CONF</h3><p>davelangohr@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>IT SETUP</h3><p>grp.forms.it@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+        <div class="branch">
+          <div class="bcard ok"><h3>ADP/HR</h3><p>hr@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard ok"><h3>ADP/HR</h3><p>payroll@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>FINANCE</h3><p>creditcard@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>PURCHASING</h3><p>jonas@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>BUSINESS CARDS</h3><p>davelangohr@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>FLEET</h3><p>fleetio@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- ═══════════════════════════════════════════════
+     EOE / TERMINATION
+     ═══════════════════════════════════════════════ -->
+<div class="wf-label">EOE / Termination</div>
+<h1>Stepper + Flow</h1>
+<p class="subtitle">
+  Phase 1–2 sequential (Initial Request → HR Approval). Phase 3 = all action items fire simultaneously after approval.<br>
+  Assets is conditional (only if equipment to return). EOE category has no dashboard badge — decision needed.
+</p>
+
+<div class="modal">
+  <div class="modal-title">Request Details: TERM_20260601_001</div>
+
+  <div style="margin-bottom:6px;font-size:10px;color:#555;">Proposed stepper — phases 1–2 sequential, phase 3 parallel action items</div>
+  <div class="stepper-wrap">
+    <div class="stepper-line"></div>
+    <div class="step"><div class="dot ok">1</div><div class="step-lbl lbl-ok">Initial Request</div></div>
+    <div class="step"><div class="dot ok">2</div><div class="step-lbl lbl-ok">Approval</div></div>
+    <!-- Phase 3 parallel -->
+    <div class="step" style="min-width:46px;"><div class="dot ok">3</div><div class="step-lbl lbl-ok">IT SETUP</div></div>
+    <div class="step" style="min-width:46px;"><div class="dot ok">3</div><div class="step-lbl lbl-ok">ADP/HR</div></div>
+    <div class="step" style="min-width:46px;"><div class="dot ok">3</div><div class="step-lbl lbl-ok">ADP/HR</div></div>
+    <div class="step" style="min-width:46px;"><div class="dot act">3</div><div class="step-lbl lbl-act">FLEET</div></div>
+    <div class="step" style="min-width:46px;"><div class="dot act">3</div><div class="step-lbl lbl-act">PURCHASING</div></div>
+    <div class="step" style="min-width:46px;"><div class="dot act">3</div><div class="step-lbl lbl-act">DEACTIVATION</div></div>
+    <div class="step" style="min-width:46px;"><div class="dot act">3</div><div class="step-lbl lbl-act" style="color:#669;">EOE ?</div></div>
+    <div class="step" style="min-width:46px;"><div class="dot act">3</div><div class="step-lbl lbl-act">ASSETS</div></div>
+  </div>
+  <div class="decision">❓ EOE category — needs decision: fold into ADP/HR badge or create its own EOE badge?</div>
+
+  <div class="section-hdr">Status Checklist</div>
+  <table>
+    <thead><tr><th>Step / Form</th><th>Status</th><th>Actor</th><th>Timestamp</th><th style="text-align:right">Action</th></tr></thead>
+    <tbody>
+      <tr><td>Initial Request</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">requester@</td><td style="color:#555">6/1/2026</td><td style="text-align:right"><button class="btn btn-data">View Data</button></td></tr>
+      <tr><td>Approval</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">grp.forms.hr@</td><td style="color:#555">6/1/2026 2:00 PM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>IT SETUP</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">grp.forms.it@</td><td style="color:#555">6/2/2026 9:00 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>ADP/HR — HR Systems</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">grp.forms.hr@</td><td style="color:#555">6/2/2026 10:00 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>ADP/HR — Payroll</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">payroll@</td><td style="color:#555">6/2/2026 10:30 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>FLEET</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.fleetio@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>PURCHASING</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.jonas@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>DEACTIVATION</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.idsetup@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>EOE <span style="color:#669;font-size:9px;">no badge yet</span></td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.hr@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>ASSETS <span style="color:#555;font-size:9px;">conditional</span></td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">requester / manager</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="two-col">
+  <div class="col">
+    <div class="col-title">Current — collapses all into "Systems" dot</div>
+    <div class="rd">
+      <div class="rd-title">Live Request Flow — End of Employment</div>
+      <div class="flow">
+        <div class="fcard ok"><h3>Initial Request</h3><span class="badge ok">Complete</span></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>Approval</h3><span class="badge ok">Complete</span></div>
+        <div class="conn"></div>
+        <div class="fcard ok" style="width:180px;"><h3>Assets</h3><p style="color:#666;font-size:9px;">conditional</p><span class="badge ok">Complete</span></div>
+        <div class="conn"></div>
+        <div class="fcard act" style="width:180px;"><h3>Systems</h3><p style="color:#f55;font-size:9px;">IT + HR + Payroll + Fleet + Purchasing + Deactivation + EOE all collapsed here</p><span class="badge act">Pending</span></div>
+        <div class="missing">🔧 Individual items invisible — collapsed into one dot</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="col-title">Proposed — each action item its own card</div>
+    <div class="rd">
+      <div class="rd-title">Live Request Flow — End of Employment</div>
+      <div class="flow">
+        <div class="fcard ok"><h3>Initial Request</h3><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button></div></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>Approval</h3><p>grp.forms.hr@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+        <div class="branch">
+          <div class="bcard ok"><h3>IT SETUP</h3><p>it@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard ok"><h3>ADP/HR</h3><p>hr@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard ok"><h3>ADP/HR</h3><p>payroll@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>FLEET</h3><p>fleetio@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>PURCHASING</h3><p>jonas@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>DEACTIVATION</h3><p>idsetup@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act" style="border-color:#446;"><h3>EOE</h3><p>hr@ · <span style="color:#669;">no badge?</span></p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>ASSETS</h3><p>manager</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- ═══════════════════════════════════════════════
+     STATUS CHANGE
+     ═══════════════════════════════════════════════ -->
+<div class="wf-label">Status Change</div>
+<h1>Stepper + Flow</h1>
+<p class="subtitle">
+  Most complex workflow. Phase 3 fires simultaneously on HR approval. IT CONF → IT SETUP sequential (conditional). WIS is sequenced — fires only after ID SETUP closes (not at approval time). MANAGER only on transfer.
+</p>
+
+<div class="modal">
+  <div class="modal-title">Request Details: CHANGE_20260601_001 — Site Transfer + Title + BOSS</div>
+
+  <div style="margin-bottom:6px;font-size:10px;color:#555;">Proposed stepper — sequential phases then parallel action items. WIS shown separate (post ID SETUP).</div>
+  <div class="stepper-wrap">
+    <div class="stepper-line"></div>
+    <div class="step"><div class="dot ok">1</div><div class="step-lbl lbl-ok">Initial Request</div></div>
+    <div class="step"><div class="dot ok">2</div><div class="step-lbl lbl-ok">Approval</div></div>
+    <div class="step"><div class="dot ok">3</div><div class="step-lbl lbl-ok">IT CONF</div></div>
+    <div class="step"><div class="dot ok">4</div><div class="step-lbl lbl-ok">IT SETUP</div></div>
+    <!-- Phase 5 parallel — fires on approval simultaneously -->
+    <div class="step" style="min-width:44px;"><div class="dot act">5</div><div class="step-lbl lbl-act">ID SETUP</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">5</div><div class="step-lbl lbl-act">SAFETY</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">5</div><div class="step-lbl lbl-act">ADP/HR</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot act">5</div><div class="step-lbl lbl-act">MANAGER</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot q">5</div><div class="step-lbl lbl-q">FINANCE</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot q">5</div><div class="step-lbl lbl-q">FLEET</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot q">5</div><div class="step-lbl lbl-q">PURCHASING</div></div>
+    <div class="step" style="min-width:44px;"><div class="dot q">5</div><div class="step-lbl lbl-q">ASSETS</div></div>
+    <!-- Phase 6 — WIS fires after ID SETUP closes -->
+    <div class="step" style="min-width:44px;"><div class="dot q">6</div><div class="step-lbl lbl-q">WIS</div></div>
+  </div>
+  <div class="decision">❓ MANAGER category (transfer only) — needs decision: add MANAGER badge or stay invisible?<br>WIS shown as phase 6 (sequential after ID SETUP) — only appears after ID SETUP submits.</div>
+
+  <div class="section-hdr">Status Checklist</div>
+  <table>
+    <thead><tr><th>Step / Form</th><th>Status</th><th>Actor</th><th>Timestamp</th><th style="text-align:right">Action</th></tr></thead>
+    <tbody>
+      <tr><td>Initial Request</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">requester@</td><td style="color:#555">6/1/2026</td><td style="text-align:right"><button class="btn btn-data">View Data</button></td></tr>
+      <tr><td>Approval</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">grp.forms.hr@</td><td style="color:#555">6/1/2026 1:00 PM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>IT CONF <span style="color:#555;font-size:9px;">BOSS path</span></td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">davelangohr@</td><td style="color:#555">6/2/2026 9:00 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>IT SETUP</td><td><span class="s-ok">✓ Complete</span></td><td style="color:#555">grp.forms.it@</td><td style="color:#555">6/2/2026 11:00 AM</td><td style="text-align:right"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>ID SETUP — BOSS WIS Account</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.idsetup@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>SAFETY</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">grp.forms.safety@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>ADP/HR — ADP Update</td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">hr@ + payroll@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>MANAGER — Transfer Setup <span style="color:#669;font-size:9px;">no badge yet</span></td><td><span class="s-act">⏳ Pending</span></td><td style="color:#555">receiving manager</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>FINANCE — Credit Card <span style="color:#555;font-size:9px;">conditional</span></td><td><span class="s-q">⏳ Pending</span></td><td style="color:#555">creditcard@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>FLEET <span style="color:#555;font-size:9px;">conditional</span></td><td><span class="s-q">⏳ Pending</span></td><td style="color:#555">fleetio@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>PURCHASING <span style="color:#555;font-size:9px;">conditional</span></td><td><span class="s-q">⏳ Pending</span></td><td style="color:#555">jonas@</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr><td>ASSETS <span style="color:#555;font-size:9px;">conditional</span></td><td><span class="s-q">⏳ Pending</span></td><td style="color:#555">old manager</td><td style="color:#555">—</td><td style="text-align:right"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></td></tr>
+      <tr style="opacity:0.5;"><td>WIS <span style="color:#555;font-size:9px;">fires after ID SETUP closes</span></td><td><span class="s-q">— not created yet</span></td><td style="color:#555">Manager email</td><td style="color:#555">—</td><td style="text-align:right" style="color:#444">awaiting ID SETUP</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="two-col">
+  <div class="col">
+    <div class="col-title">Current — no stepper, dynamic but labels = task names</div>
+    <div class="rd">
+      <div class="rd-title">Live Request Flow — Status Change</div>
+      <div class="flow">
+        <div class="fcard ok"><h3>Change Request</h3><span class="badge ok">Complete</span></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>HR Approval</h3><span class="badge ok">Complete</span></div>
+        <div class="branch">
+          <div class="bcard ok"><h3>IT Access & Equipment Setup — John Smith</h3><p style="color:#f55;font-size:8px;">task name</p><span class="badge ok">Complete</span></div>
+          <div class="bcard act"><h3>BOSS WIS User Account Update — John Smith</h3><p style="color:#f55;font-size:8px;">task name</p><span class="badge act">Pending</span></div>
+          <div class="bcard act"><h3>Safety System Updates — John Smith</h3><p style="color:#f55;font-size:8px;">task name</p><span class="badge act">Pending</span></div>
+          <div class="bcard act"><h3>ADP Update Required — John Smith</h3><p style="color:#f55;font-size:8px;">task name</p><span class="badge act">Pending</span></div>
+          <div class="bcard act"><h3>Incoming Transfer Setup — John Smith</h3><p style="color:#f55;font-size:8px;">task name</p><span class="badge act">Pending</span></div>
+        </div>
+        <div class="missing">IT CONF not shown · WIS only appears after ID SETUP · No stepper at all</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="col-title">Proposed — stepper + correct sequential/parallel flow</div>
+    <div class="rd">
+      <div class="rd-title">Live Request Flow — Status Change</div>
+      <div class="flow">
+        <div class="fcard ok"><h3>Initial Request</h3><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button></div></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>Approval</h3><p>hr@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>IT CONF</h3><p>davelangohr@ · BOSS</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+        <div class="conn"></div>
+        <div class="fcard ok"><h3>IT SETUP</h3><p>it@</p><span class="badge ok">Complete</span><div class="brow"><button class="btn btn-data">View Data</button><button class="btn btn-form">View Form</button></div></div>
+        <div class="branch">
+          <div class="bcard act"><h3>ID SETUP</h3><p>idsetup@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>SAFETY</h3><p>safety@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act"><h3>ADP/HR</h3><p>hr@+payroll@</p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard act" style="border-color:#446;"><h3>MANAGER</h3><p>receiving mgr · <span style="color:#669;">no badge?</span></p><span class="badge act">Pending</span><div class="brow"><button class="btn btn-remind">Remind</button><button class="btn btn-form">View Form</button></div></div>
+          <div class="bcard q"><h3>FINANCE</h3><p>creditcard@</p><span class="badge q">Pending</span></div>
+          <div class="bcard q"><h3>FLEET</h3><p>fleetio@</p><span class="badge q">Pending</span></div>
+          <div class="bcard q"><h3>PURCHASING</h3><p>jonas@</p><span class="badge q">Pending</span></div>
+          <div class="bcard q"><h3>ASSETS</h3><p>manager</p><span class="badge q">Pending</span></div>
+        </div>
+        <div class="conn" style="margin-top:16px;"></div>
+        <div class="fcard q" style="width:180px;opacity:0.6;margin-top:0;"><h3>WIS</h3><p>Manager — fires when ID SETUP closes</p><span class="badge q">— not yet</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
