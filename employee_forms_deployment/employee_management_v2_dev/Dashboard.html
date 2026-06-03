@@ -1048,120 +1048,189 @@
             var canViewFormBtn = rp.isAdmin || rp.isIT || isOwner || rp.isSpecialist;
             var _dis = function(allowed) { return allowed ? '' : ' disabled title="Insufficient permissions" style="opacity:0.45; pointer-events:none; cursor:not-allowed;"'; };
 
-            // --- Stepper Logic ---
+            // ── Stepper Logic ─────────────────────────────────────────────────────
+            // All 4 workflow types get a stepper. Steps are built dynamically from
+            // the checklist using BADGE_LABEL (maps category/name → dashboard button label).
+            //
+            // Phase numbering: sequential steps get unique numbers (1, 2, 3...).
+            // Parallel steps (specialists, action items that fire simultaneously) share
+            // the same phase number so the dot label communicates "these happen at once."
+            // phaseMap: step label → phase number shown in the dot.
+            //
+            // N/A steps are absent (not rendered). Manager category (SC transfer) is null
+            // in BADGE_LABEL — intentionally invisible, no stepper dot, no badge.
+            // ─────────────────────────────────────────────────────────────────────────
             const isOnboarding = details.type === 'Onboarding';
-            const isEOE = details.type === 'End of Employment';
+            const isEOE        = details.type === 'End of Employment';
+            const isEquipment  = details.type === 'Equipment';
+            const isChange     = details.type === 'Status Change';
             let stepperHtml = '';
 
-            if (isOnboarding || isEOE) {
-                let steps = [];
-                let statusMap = {};
+            if (isOnboarding || isEOE || isEquipment || isChange) {
+                let steps     = [];   // ordered badge labels to render
+                let statusMap = {};   // label → status (worst-status-wins for parallel)
+                let phaseMap  = {};   // label → phase number shown in dot
 
-                if (isOnboarding) {
-                    // Maps checklist item name → dashboard badge label.
-                    // Each specialist step shows as its own named dot matching the
-                    // filter button label — so users can directly connect what they see
-                    // in the stepper to the button they'd click to filter.
-                    // Legacy names (pre-rename) map to the same badge so old workflows render correctly.
-                    const BADGE_LABEL = {
-                        'ID Setup':        'ID SETUP',
-                        'IT Confirmation': 'IT CONF',
-                        'IT Setup':        'IT SETUP',
-                        'Safety':          'SAFETY',
-                        'Finance':         'FINANCE',
-                        'Business Cards':  'BUSINESS CARDS',
-                        'Fleet':           'FLEET',
-                        '30/60/90 Review': '30/60/90',
-                        'Purchasing':      'PURCHASING',
-                        'WIS':             'WIS',
-                        // Legacy category names — pre-rename workflows already in the sheet
-                        'Credit Card':     'FINANCE',
-                        'Fleetio':         'FLEET',
-                        'Jonas':           'PURCHASING',
-                        'SiteDocs':        'ID SETUP'
-                    };
+                // ── Shared BADGE_LABEL — all 4 workflows ────────────────────────────
+                // Keys: checklist item name or category.  Values: badge label (null = no dot).
+                // Legacy names kept so pre-rename workflows still render correctly.
+                const BADGE_LABEL = {
+                    // Fixed step names
+                    'Initial Request':  'Initial Request',
+                    'IT Confirmation':  'IT CONF',
+                    'IT Setup':         'IT SETUP',
+                    'HR Verification':  'HR Verification',
+                    'Approval':         'Approval',
+                    'HR Approval':      'Approval',
+                    // Action item categories
+                    'IT':               'IT SETUP',
+                    'HR':               'ADP/HR',
+                    'Payroll':          'ADP/HR',
+                    'EOE':              'ADP/HR',   // folds into ADP/HR per decision
+                    'Safety':           'SAFETY',
+                    'Finance':          'FINANCE',
+                    'Business Cards':   'BUSINESS CARDS',
+                    'Fleet':            'FLEET',
+                    '30/60/90 Review':  '30/60/90',
+                    'Purchasing':       'PURCHASING',
+                    'ID Setup':         'ID SETUP',
+                    'WIS':              'WIS',
+                    'Deactivation':     'DEACTIVATION',
+                    'Assets':           'ASSETS',
+                    'Manager':          null,       // no badge — transfer coordination, invisible
+                    // Legacy category names (pre-rename)
+                    'Credit Card':      'FINANCE',
+                    'Fleetio':          'FLEET',
+                    'Jonas':            'PURCHASING',
+                    'SiteDocs':         null,       // dead for NH; part of ID SETUP for Equipment
+                };
 
-                    // Core steps always present (HR Verification badge is ADP/HR but step name
-                    // stays descriptive since it's a workflow stage, not an action item category)
-                    steps = ['Initial Request', 'ID SETUP', 'HR Verification', 'IT SETUP'];
-
-                    // IT CONF is conditional — only on BOSS path when action item exists
-                    const hasITConf = checklist.some(c => c.name === 'IT Confirmation');
-                    if (hasITConf) steps.splice(3, 0, 'IT CONF'); // insert before IT SETUP
-
-                    // Add each specialist as its own step in checklist order, deduped
-                    const coreSet = new Set(steps);
-                    checklist.forEach(c => {
-                        const label = BADGE_LABEL[c.name];
-                        if (label && !coreSet.has(label)) {
-                            steps.push(label);
-                            coreSet.add(label);
-                        }
-                    });
-
-                    // Build statusMap — worst status wins (Pending overrides Complete for same step)
-                    checklist.forEach(c => {
-                        const key = BADGE_LABEL[c.name] || c.name;
-                        if (!statusMap[key] || (c.status !== 'Complete' && statusMap[key] === 'Complete')) {
-                            statusMap[key] = c.status;
-                        }
-                    });
-                } else if (isEOE) {
-                    steps = ["Initial Request", "Approval", "Assets", "Systems"];
-                    
-                    // Pre-fill N/A for conditionally generated items so they don't default to pending
-                    statusMap["Assets"] = "N/A";
-                    statusMap["Systems"] = "N/A";
-                    
-                    checklist.forEach(c => {
-                        let key = c.name;
-                        // Map asset categories
-                        if (key === "Asset Collection" || key === "Assets") {
-                            if (statusMap["Assets"] === "N/A" || statusMap["Assets"] === "Complete") {
-                                statusMap["Assets"] = c.status; // Pending overwrites N/A or Complete
-                            }
-                        }
-                        
-                        // Map all deactivation action items to "Systems"
-                        else if (['IT', 'HR', 'Fleet', 'Finance', 'Deactivation', 'IT Systems Deactivation'].includes(key)) {
-                            // If ANY systems item is pending, the stepper shows Pending
-                            if (c.status === "Pending") {
-                                statusMap["Systems"] = "Pending";
-                            } else if (statusMap["Systems"] === "N/A") {
-                                statusMap["Systems"] = c.status; // e.g. Complete
-                            }
-                        } else {
-                            // Fallback for Initial Request and Approval
-                            if (!statusMap[key]) statusMap[key] = c.status;
-                        }
+                // ── Helpers ─────────────────────────────────────────────────────────
+                // Worst-status-wins: Pending always beats Complete for the same dot.
+                function applyStatus(key, status) {
+                    if (!statusMap[key] || (status !== 'Complete' && statusMap[key] === 'Complete')) {
+                        statusMap[key] = status;
+                    }
+                }
+                // Assign phase numbers: coreSteps get 1, 2, 3...; all others share parallelPhase.
+                function buildPhaseMap(coreSteps, allSteps, overrides) {
+                    var pm = {};
+                    coreSteps.forEach(function(s, i) { pm[s] = i + 1; });
+                    var pp = coreSteps.length + 1;
+                    allSteps.forEach(function(s) { if (!pm[s]) pm[s] = pp; });
+                    if (overrides) Object.keys(overrides).forEach(function(k) { pm[k] = overrides[k]; });
+                    return pm;
+                }
+                // True if ALL steps in a given phase are Complete (used for active-dot logic).
+                function phaseAllComplete(targetPhase) {
+                    return steps.every(function(s) {
+                        return phaseMap[s] !== targetPhase || statusMap[s] === 'Complete';
                     });
                 }
 
+                // ── NEW HIRE ─────────────────────────────────────────────────────────
+                if (isOnboarding) {
+                    var nhCore = ['Initial Request', 'ID SETUP', 'HR Verification'];
+                    if (checklist.some(function(c) { return c.name === 'IT Confirmation'; })) nhCore.push('IT CONF');
+                    nhCore.push('IT SETUP');
+                    steps = nhCore.slice();
+                    var nhSet = new Set(steps);
+                    checklist.forEach(function(c) {
+                        var label = BADGE_LABEL[c.name];
+                        if (label && !nhSet.has(label)) { steps.push(label); nhSet.add(label); }
+                        var key = BADGE_LABEL[c.name] || c.name;
+                        applyStatus(key, c.status);
+                    });
+                    phaseMap = buildPhaseMap(nhCore, steps);
+
+                // ── EQUIPMENT REQUEST ─────────────────────────────────────────────────
+                } else if (isEquipment) {
+                    var eqCore = ['Initial Request'];
+                    if (checklist.some(function(c) { return c.name === 'IT Confirmation'; })) eqCore.push('IT CONF');
+                    eqCore.push('IT SETUP');
+                    steps = eqCore.slice();
+                    var eqSet = new Set(steps);
+                    checklist.forEach(function(c) {
+                        // Equipment checklist items have c.category (action item category)
+                        // and c.name (task name). Use category for badge lookup; fall back to name.
+                        var catKey = c.category || c.name;
+                        var label  = BADGE_LABEL[catKey] !== undefined ? BADGE_LABEL[catKey] : BADGE_LABEL[c.name];
+                        if (label === null) return; // intentionally no dot
+                        if (label && !eqSet.has(label)) { steps.push(label); eqSet.add(label); }
+                        // Status: map to badge label for the correct dot
+                        var statusKey = label || catKey;
+                        applyStatus(statusKey, c.status);
+                    });
+                    // Core step statuses from fixed checklist items
+                    var eqInit   = checklist.find(function(c) { return c.name === 'Initial Request'; });
+                    var eqITConf = checklist.find(function(c) { return c.name === 'IT Confirmation'; });
+                    if (eqInit)   statusMap['Initial Request'] = eqInit.status;
+                    if (eqITConf) statusMap['IT CONF']         = eqITConf.status;
+                    phaseMap = buildPhaseMap(eqCore, steps);
+
+                // ── STATUS CHANGE ─────────────────────────────────────────────────────
+                } else if (isChange) {
+                    var scCore = ['Initial Request', 'Approval'];
+                    // IT CONF and IT SETUP are sequential when present (BOSS path)
+                    if (checklist.some(function(c) { return c.name === 'IT Confirmation'; })) scCore.push('IT CONF');
+                    if (checklist.some(function(c) { return c.name === 'IT'; }))              scCore.push('IT SETUP');
+                    steps = scCore.slice();
+                    var scSet = new Set(steps);
+                    var scParallelPhase = scCore.length + 1;
+                    checklist.forEach(function(c) {
+                        var label = BADGE_LABEL[c.name];
+                        if (label === null) return; // Manager — no dot
+                        if (label && !scSet.has(label)) { steps.push(label); scSet.add(label); }
+                        if (label) applyStatus(label, c.status);
+                    });
+                    // Core step statuses
+                    var scInit   = checklist.find(function(c) { return c.name === 'Initial Request'; });
+                    var scAppr   = checklist.find(function(c) { return c.name === 'HR Approval' || c.name === 'Approval'; });
+                    var scITConf = checklist.find(function(c) { return c.name === 'IT Confirmation'; });
+                    var scIT     = checklist.find(function(c) { return c.name === 'IT'; });
+                    if (scInit)   statusMap['Initial Request'] = scInit.status;
+                    if (scAppr)   statusMap['Approval']        = scAppr.status;
+                    if (scITConf) statusMap['IT CONF']         = scITConf.status;
+                    if (scIT)     statusMap['IT SETUP']        = scIT.status;
+                    // WIS is sequenced — fires after ID SETUP closes, so gets its own phase
+                    phaseMap = buildPhaseMap(scCore, steps, { 'WIS': scParallelPhase + 1 });
+
+                // ── EOE / TERMINATION ─────────────────────────────────────────────────
+                } else if (isEOE) {
+                    var eoeCore = ['Initial Request', 'Approval'];
+                    steps = eoeCore.slice();
+                    var eoeSet = new Set(steps);
+                    checklist.forEach(function(c) {
+                        var label = BADGE_LABEL[c.name];
+                        if (label === null) return;
+                        if (c.name === 'Initial Request') { statusMap['Initial Request'] = c.status; return; }
+                        if (c.name === 'Approval' || c.name === 'HR Approval') { statusMap['Approval'] = c.status; return; }
+                        if (label && !eoeSet.has(label)) { steps.push(label); eoeSet.add(label); }
+                        if (label) applyStatus(label, c.status);
+                    });
+                    phaseMap = buildPhaseMap(eoeCore, steps);
+                }
+
+                // ── Render ──────────────────────────────────────────────────────────
                 stepperHtml = '<div class="stepper-container" style="display:flex; justify-content:space-between; margin-bottom: 30px; position:relative; padding: 0 10px;">';
                 stepperHtml += '<div style="position:absolute; top:12px; left:20px; right:20px; height:2px; background:#333; z-index:0;"></div>';
 
-                steps.forEach((step, idx) => {
-                    let status = statusMap[step] || 'Pending';
-                    // N/A steps don't apply to this workflow — skip entirely rather than show as grey
-                    if (status === 'N/A' || status === 'Skipped') return;
-                    let color = '#333';
-                    let textColor = '#666';
-
+                steps.forEach(function(step, idx) {
+                    var status = statusMap[step] || 'Pending';
+                    if (status === 'N/A' || status === 'Skipped') return; // absent for this workflow
+                    var myPhase = phaseMap[step] || (idx + 1);
+                    var color = '#333', textColor = '#666';
                     if (status === 'Complete') {
-                        color = 'var(--success)';
-                        textColor = '#fff';
+                        color = 'var(--success)'; textColor = '#fff';
                     } else if (status === 'Pending') {
-                        // Mark as active if previous is complete
-                        const prevStep = idx > 0 ? steps[idx - 1] : null;
-                        if (!prevStep || statusMap[prevStep] === 'Complete') {
-                            color = 'var(--warning)';
-                            textColor = '#fff';
-                        }
+                        // Active (amber) when the previous phase is fully complete
+                        var prevPhase = myPhase - 1;
+                        var prevDone  = prevPhase < 1 || phaseAllComplete(prevPhase);
+                        if (prevDone) { color = 'var(--warning)'; textColor = '#fff'; }
                     }
-
                     stepperHtml +=
                         '<div style="z-index:1; text-align:center; background:var(--card-bg); padding:0 5px; flex: 1;">' +
-                        '<div style="width:24px; height:24px; background:' + color + '; border-radius:50%; margin:0 auto 5px; line-height:24px; font-size:12px; font-weight:bold; color:black;">' + (idx + 1) + '</div>' +
+                        '<div style="width:24px; height:24px; background:' + color + '; border-radius:50%; margin:0 auto 5px; line-height:24px; font-size:12px; font-weight:bold; color:black;">' + myPhase + '</div>' +
                         '<div style="font-size:11px; color:' + textColor + '; font-weight:500; white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">' + step + '</div>' +
                         '</div>';
                 });

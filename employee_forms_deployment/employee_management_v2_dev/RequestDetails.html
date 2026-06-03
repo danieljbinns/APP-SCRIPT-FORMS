@@ -626,13 +626,35 @@
                 var eoeTitle = document.querySelector('#eoeFlowSection h2');
                 if (eoeTitle) eoeTitle.textContent = workflowId.startsWith('CHANGE_') ? 'Live Request Flow \u2014 Status Change' : workflowId.startsWith('EQUIP_REQ_') ? 'Live Request Flow \u2014 Equipment Request' : 'Live Request Flow \u2014 End of Employment';
 
-                // Dynamically build action item category cards in the EOE/CHANGE diagram
+                // Dynamically build action item category cards in the EOE/CHANGE/Equipment diagram.
+                // Card titles use BADGE_LABEL (matches dashboard filter button labels) instead of
+                // raw task names which include the employee name suffix and are not meaningful to readers.
+                // Items with null badge (Manager category) are skipped — no card, no visibility.
+                const RD_BADGE_LABEL = {
+                    'IT':               'IT SETUP',   'IT Confirmation': 'IT CONF',
+                    'HR':               'ADP/HR',     'Payroll':         'ADP/HR',
+                    'EOE':              'ADP/HR',     'Safety':          'SAFETY',
+                    'Finance':          'FINANCE',    'Business Cards':  'BUSINESS CARDS',
+                    'Fleet':            'FLEET',      '30/60/90 Review': '30/60/90',
+                    'Purchasing':       'PURCHASING', 'ID Setup':        'ID SETUP',
+                    'WIS':              'WIS',        'Deactivation':    'DEACTIVATION',
+                    'Assets':           'ASSETS',     'Manager':         null,
+                    // Legacy
+                    'Credit Card':      'FINANCE',    'Fleetio':         'FLEET',
+                    'Jonas':            'PURCHASING', 'SiteDocs':        null,
+                };
+
                 const aiContainer = document.getElementById('eoeActionItemNodes');
                 // Keep the branch-stem div, remove old cards
                 aiContainer.innerHTML = '<div class="branch-stem"></div>';
 
                 list.forEach(item => {
                     if (item.name === 'Initial Request' || item.name === 'Approval' || item.name === 'HR Approval') return;
+                    // Use category (Equipment) or name (EOE/SC) for badge lookup
+                    var catKey    = item.category || item.name;
+                    var badgeLabel = RD_BADGE_LABEL.hasOwnProperty(catKey) ? RD_BADGE_LABEL[catKey] : catKey;
+                    if (badgeLabel === null) return; // Manager etc — intentionally no card
+                    var cardTitle = badgeLabel || item.name; // badge label as card title
                     const isComplete = item.status === 'Complete';
                     const slug = item.target || item.name.toLowerCase().replace(/\s+/g,'_');
                     const card = document.createElement('div');
@@ -640,7 +662,7 @@
                     card.id = 'eoe_node_' + slug;
                     if (item.target) card.addEventListener('click', function() { viewStepData(item.target); });
                     const h3 = document.createElement('h3');
-                    h3.textContent = item.name;
+                    h3.textContent = cardTitle; // badge label (e.g. "IT SETUP") not task name
                     const p = document.createElement('p');
                     p.textContent = item.by || 'Pending';
                     const badge = document.createElement('div');

@@ -681,12 +681,13 @@ function getEquipmentRequestDetails(workflowId) {
         // Derive target: prefer Form Type (matches action item form routes), then category map, then slugify
         const target = ftVal || EQUIP_CAT_TARGET[catVal] || catVal.toLowerCase().replace(/[\s\/]+/g, '');
         context.checklist.push({
-          name:   String(aiData[i][nmCol] || catVal || ''),
-          status: st === 'Closed' ? 'Complete' : st,
-          target: target,
-          by:     String(aiData[i][byCol] || ''),
-          time:   tDate instanceof Date ? Utilities.formatDate(tDate, _tz, 'M/d/yyyy h:mm a') : String(tDate || ''),
-          tid:    String(aiData[i][tidCol] || '')
+          name:     String(aiData[i][nmCol] || catVal || ''),
+          category: catVal,   // exposed so Dashboard stepper BADGE_LABEL can key by category not task name
+          status:   st === 'Closed' ? 'Complete' : st,
+          target:   target,
+          by:       String(aiData[i][byCol] || ''),
+          time:     tDate instanceof Date ? Utilities.formatDate(tDate, _tz, 'M/d/yyyy h:mm a') : String(tDate || ''),
+          tid:      String(aiData[i][tidCol] || '')
         });
       }
     }
