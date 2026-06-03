@@ -21,7 +21,7 @@ const CONFIG = {
   get CHANGE_FOLDER_ID()        { return ConfigurationService.getSetting('CHANGE_ATTACHMENTS_FOLDER_ID'); },
   get DEPLOYMENT_URL()          { return ConfigurationService.getSetting('DEPLOYMENT_URL'); },
   ALLOWED_DOMAINS: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com'],
-  ADMIN_EMAILS: ['dbinns@team-group.com', 'dbinns@robinsonsolutions.com', 'no-reply@team-group.com', 'davelangohr@team-group.com'],
+  ADMIN_EMAILS: ['dbinns@team-group.com', 'dbinns@robinsonsolutions.com', 'no-reply@team-group.com', 'davelangohr@team-group.com', 'jaynepalmer@team-group.com'],
 
   // Suppress emails in prod by setting SUPPRESS_EMAILS_OVERRIDE='true' in Script Properties.
   // ProdSmokeTest sets this automatically — no manual Config change needed.
