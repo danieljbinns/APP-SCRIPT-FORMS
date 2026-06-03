@@ -831,6 +831,20 @@ function buildStatusChangeContextBlock(context, opts) {
   if (tcChange) changeRows += esRow('Title Change',     esVal(tcChange));
   if (ccChange) changeRows += esRow('Classification',   esVal(ccChange));
   if (mcChange) changeRows += esRow('Manager Change',   esVal(mcChange));
+
+  // Direct report delegation — shown whenever present in the request.
+  // oldReportsTo  = employee is losing direct reports → reassign them to this person/team.
+  // newReportsFrom = employee is gaining direct reports from this person/team.
+  // Both fields render in the Requested Changes section so every recipient
+  // (HR, Payroll, manager, requester) and the ADP action item form all show them.
+  var hasOldReports = context.oldReportsTo  && context.oldReportsTo  !== 'N/A' && context.oldReportsTo  !== '';
+  var hasNewReports = context.newReportsFrom && context.newReportsFrom !== 'N/A' && context.newReportsFrom !== '';
+  if (hasOldReports || hasNewReports) {
+    changeRows += esDivider();
+    if (hasOldReports)  changeRows += esRow('Reports Out', esVal(context.oldReportsTo,  'mono'));
+    if (hasNewReports)  changeRows += esRow('Reports In',  esVal(context.newReportsFrom, 'mono'));
+  }
+
   if (allItems.length > 0) {
     changeRows += esDivider();
     allItems.forEach(function(s) { changeRows += esRow(s, esVal('Requested')); });

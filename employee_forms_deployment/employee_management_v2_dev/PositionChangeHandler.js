@@ -860,60 +860,25 @@ function submitPositionChangeApproval(formData) {
       //
       // Checklist is built dynamically from what actually changed so the recipient
       // only sees items relevant to this specific status change.
+      // ADP checklist — concise, action-oriented.
+      // Reports fields (oldReportsTo / newReportsFrom) are intentionally omitted from
+      // the checklist because they are already visible in the email context block and
+      // on the form header (rendered by buildStatusChangeContextBlock Section 2).
+      // Seeing them in both the header AND as checklist items would be redundant.
       var adpItems = [];
 
-      // Effective date — always
-      adpItems.push('Confirm effective date is set correctly in ADP: ' + changeData.effDate);
+      // Always: update the employee record
+      adpItems.push('Update ' + changeData.employeeName + ' in ADP');
 
-      // Title change
-      if (changeData.titleChange && changeData.titleChange.indexOf('N/A') === -1 && changeData.titleChange.indexOf('->') !== -1) {
-        adpItems.push('Update job title in ADP: ' + changeData.titleChange);
-      } else if (effectiveTitle) {
-        adpItems.push('Confirm job title in ADP: ' + effectiveTitle);
-      }
-
-      // Classification change (Hourly ↔ Salary)
-      if (changeData.classChange && changeData.classChange !== 'N/A' && changeData.classChange !== '') {
-        adpItems.push('Update employment classification in ADP: ' + changeData.classChange);
-      }
-
-      // Site transfer — update work location
-      if (changeData.siteTransfer && changeData.siteTransfer.indexOf('->') !== -1 && changeData.siteTransfer.indexOf('N/A') === -1) {
-        adpItems.push('Update work location in ADP: ' + changeData.siteTransfer);
-      }
-
-      // Reporting manager change
-      if (mgrNewEmail && mgrOldEmail && mgrNewEmail !== mgrOldEmail) {
-        adpItems.push('Update reporting manager in ADP — New manager: ' + mgrNewEmail);
-      }
-
-      // Delegation — direct reports being reassigned (user leaving a manager role)
+      // Delegation — employee is losing their direct reports
       if (changeData.oldReportsTo && changeData.oldReportsTo !== 'N/A' && changeData.oldReportsTo !== '') {
-        adpItems.push('Confirm direct report reassignment in ADP — ' + changeData.employeeName + ' currently manages: ' + changeData.oldReportsTo);
+        adpItems.push('Reassign reports from ' + changeData.employeeName + ' to: ' + changeData.oldReportsTo);
       }
 
-      // Delegation — incoming direct reports (user taking on a manager role)
+      // Delegation — employee is gaining direct reports from someone else
       if (changeData.newReportsFrom && changeData.newReportsFrom !== 'N/A' && changeData.newReportsFrom !== '') {
-        adpItems.push('Update ADP reporting structure — ' + changeData.employeeName + ' will now manage: ' + changeData.newReportsFrom);
+        adpItems.push('Reassign reports to ' + changeData.employeeName + ' from: ' + changeData.newReportsFrom);
       }
-
-      // ADP site assignments (set on the original request form)
-      if (changeData.adpSites && changeData.adpSites !== '') {
-        adpItems.push('Update ADP site assignments: ' + changeData.adpSites);
-      }
-
-      // Salary access flag change
-      if (changeData.adpSalaryAccess && changeData.adpSalaryAccess !== '' && changeData.adpSalaryAccess !== 'No') {
-        adpItems.push('Update ADP salary access — Access requested: ' + changeData.adpSalaryAccess);
-      }
-
-      // HR notes carry through if present
-      if (notes) {
-        adpItems.push('HR Notes: ' + notes);
-      }
-
-      // Final confirmation — always last
-      adpItems.push('Confirm all changes are reflected correctly in ADP');
 
       const adpTid = ActionItemService.createActionItem(
         workflowId,
