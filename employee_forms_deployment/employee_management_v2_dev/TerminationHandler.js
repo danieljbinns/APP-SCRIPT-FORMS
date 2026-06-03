@@ -319,7 +319,7 @@ function submitTerminationApproval(formData) {
       if (selectedSystems.includes('Central Purchasing/Jonas')) {
         const financeItems = ['Remove from Central Purchasing/Jonas'];
         const tid = ActionItemService.createActionItem(workflowId, 'Purchasing', `Central Purchasing/Jonas Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
-        sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Finance Action Required', tid, termData, financeItems);
+        sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Purchasing Action Required', tid, termData, financeItems);
         tasksCreated++;
       }
 

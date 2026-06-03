@@ -487,6 +487,20 @@ function sdDiagnose() {
  * Verify email suppression is active before any test run.
  * Aborts (throws) if neither SUPPRESS_EMAILS nor EMAIL_REDIRECT_ALL is set.
  */
+/** Set SUPPRESS_EMAILS_OVERRIDE=true so no emails are sent during test runs. */
+function sdSuppressEmails() {
+  PropertiesService.getScriptProperties().setProperty('SUPPRESS_EMAILS_OVERRIDE', 'true');
+  Logger.log('[SD] SUPPRESS_EMAILS_OVERRIDE → true (no emails will fire)');
+  return { success: true, suppressed: true };
+}
+
+/** Clear SUPPRESS_EMAILS_OVERRIDE so emails flow normally again. */
+function sdUnsuppressEmails() {
+  PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE');
+  Logger.log('[SD] SUPPRESS_EMAILS_OVERRIDE cleared');
+  return { success: true, suppressed: false };
+}
+
 function checkSuperDebugEmailSafety() {
   var suppressed = (typeof CONFIG !== 'undefined' && CONFIG.SUPPRESS_EMAILS === true);
   var redirect   = PropertiesService.getScriptProperties().getProperty('EMAIL_REDIRECT_ALL') || '';
