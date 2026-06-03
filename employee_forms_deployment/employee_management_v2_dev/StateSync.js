@@ -238,12 +238,23 @@ function syncWorkflowState(workflowId) {
           const wfCol = aiHdrs.indexOf('Workflow ID');
           const catCol = aiHdrs.indexOf('Category');
           const stCol  = aiHdrs.indexOf('Status');
-          const SPECIALIST_CATS = new Set(['Credit Card','Business Cards','Fleetio','Jonas','SiteDocs','30/60/90 Review','Safety']);
+          // Current category names + legacy (pre-rename) names for old workflows still in sheet.
+          const SPECIALIST_CATS = new Set([
+            // Current names
+            'Finance', 'Fleet', 'Purchasing', 'Business Cards', '30/60/90 Review', 'Safety',
+            'IT Confirmation', 'WIS', 'ID Setup',
+            // Legacy names (pre-rename)
+            'Credit Card', 'Fleetio', 'Jonas', 'SiteDocs'
+          ]);
           // Map category → reqInfo.items key so we can skip unrequired specialists
           const CAT_ITEMS_KEY = {
+            // Current names
+            'Finance': 'creditCard', 'Fleet': 'fleetio', 'Purchasing': 'jonas',
+            'Business Cards': 'businessCards', 'ID Setup': 'siteDocs',
+            '30/60/90 Review': 'review', 'Safety': 'safety',
+            // Legacy names
             'Jonas': 'jonas', 'Credit Card': 'creditCard', 'Fleetio': 'fleetio',
-            'Business Cards': 'businessCards', 'SiteDocs': 'siteDocs',
-            '30/60/90 Review': 'review', 'Safety': 'safety'
+            'SiteDocs': 'siteDocs',
           };
           for (let i = 1; i < aiData.length; i++) {
             if (String(aiData[i][wfCol]) !== workflowId) continue;

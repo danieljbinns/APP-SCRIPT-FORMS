@@ -298,14 +298,29 @@ function getStepResultData(workflowId, stepTarget) {
       case 'hr_verification':   return readAllFromSheet(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
       case 'it_setup':          return readAllFromSheet(CONFIG.SHEETS.IT_RESULTS);
 
+      // Post-rename: try current category first, fall back to legacy for old workflows.
+      // Finance = Credit Card team; Fleet = Fleetio; Purchasing = Jonas/Central Purchasing.
       case 'creditcard':
-      case 'credit_card':       return readActionItems('Credit Card');
+      case 'credit_card':
+      case 'finance': { const _r = readActionItems('Finance'); return Object.keys(_r).length > 0 ? _r : readActionItems('Credit Card'); }
+      case 'fleetio':
+      case 'fleet':   { const _r = readActionItems('Fleet');   return Object.keys(_r).length > 0 ? _r : readActionItems('Fleetio'); }
+      case 'jonas':
+      case 'purchasing': { const _r = readActionItems('Purchasing'); return Object.keys(_r).length > 0 ? _r : readActionItems('Jonas'); }
       case 'businesscards':
       case 'business_cards':    return readActionItems('Business Cards');
-      case 'fleetio':           return readActionItems('Fleetio');
-      case 'jonas':             return readActionItems('Jonas');
       case 'centralpurchasing':
-      case 'central_purchasing':return readActionItems('Central Purchasing');
+      case 'central_purchasing': { const _r = readActionItems('Purchasing'); return Object.keys(_r).length > 0 ? _r : readActionItems('Central Purchasing'); }
+      // Other action item categories
+      case 'wis':
+      case 'wis_assignment':    return readActionItems('WIS');
+      case 'wis_user': { const _r = readActionItems('ID Setup'); return Object.keys(_r).length > 0 ? _r : readActionItems('WIS User'); }
+      case 'hr':
+      case 'hr_systems':        return readActionItems('HR');
+      case 'payroll':
+      case 'adp_setup':         return readActionItems('Payroll');
+      case 'assets':            return readActionItems('Assets');
+      case 'deactivation':      return readActionItems('Deactivation');
       case 'review_306090':
       case 'review':            return readActionItems('30/60/90 Review');
       case 'safety_onboarding':
@@ -340,12 +355,15 @@ function getStepResultData(workflowId, stepTarget) {
           appr
         );
       }
-      case 'asset_collection':           return readActionItems('Assets');
-      case 'systems_deactivation':       return readActionItems('IT');
-      case 'systems_deactivation_hr':    return readActionItems('HR');
-      case 'systems_deactivation_fleet': return readActionItems('Fleet');
-      case 'systems_deactivation_finance': return readActionItems('Finance');
-      case 'systems_deactivation_deact': return readActionItems('Deactivation');
+      case 'asset_collection':                return readActionItems('Assets');
+      case 'systems_deactivation':           return readActionItems('IT');
+      case 'systems_deactivation_hr':        return readActionItems('HR');
+      case 'systems_deactivation_fleet':     return readActionItems('Fleet');
+      case 'systems_deactivation_purchasing':{ const _r = readActionItems('Purchasing'); return Object.keys(_r).length > 0 ? _r : readActionItems('Jonas'); }
+      case 'systems_deactivation_finance':  { const _r = readActionItems('Finance'); return Object.keys(_r).length > 0 ? _r : readActionItems('Credit Card'); }
+      case 'systems_deactivation_payroll':   return readActionItems('Payroll');
+      case 'systems_deactivation_deact':     return readActionItems('Deactivation');
+      case 'eoe_process':                    return readActionItems('EOE');
 
       // ── Status Change ───────────────────────────────────────────────────────
       case 'change_request':          return readAllFromSheet(CONFIG.SHEETS.POSITION_CHANGES);
@@ -362,18 +380,22 @@ function getStepResultData(workflowId, stepTarget) {
           appr
         );
       }
-      case 'change_manager':      return readActionItems('Manager');
-      case 'change_it':           return readActionItems('IT');
-      case 'change_purchasing':   return readActionItems('Purchasing');
-      case 'change_idsetup':      return readActionItems('ID Setup');
-      case 'change_safety':       return readActionItems('Safety');
-      case 'change_businesscards':return readActionItems('Business Cards');
-      case 'change_creditcard':   return readActionItems('Credit Card');
-      case 'change_fleetio':      return readActionItems('Fleetio');
-      case 'change_jonas':        return readActionItems('Jonas');
+      case 'change_manager':       return readActionItems('Manager');
+      case 'change_it':            return readActionItems('IT');
+      case 'change_hr':            return readActionItems('HR');
+      case 'change_wis':           return readActionItems('WIS');
+      case 'change_assets':        return readActionItems('Assets');
+      case 'change_purchasing':    return readActionItems('Purchasing');
+      case 'change_idsetup':       return readActionItems('ID Setup');
+      case 'change_safety':        return readActionItems('Safety');
+      case 'change_businesscards': return readActionItems('Business Cards');
+      case 'change_creditcard':   { const _r = readActionItems('Finance'); return Object.keys(_r).length > 0 ? _r : readActionItems('Credit Card'); }
+      case 'change_fleetio':      { const _r = readActionItems('Fleet');   return Object.keys(_r).length > 0 ? _r : readActionItems('Fleetio'); }
+      case 'change_jonas':        { const _r = readActionItems('Purchasing'); return Object.keys(_r).length > 0 ? _r : readActionItems('Jonas'); }
 
       // ── Equipment Request ───────────────────────────────────────────────────
       case 'equipment_request':   return readAllFromSheet(CONFIG.SHEETS.INITIAL_REQUESTS);
+      case 'itconfirmation': // NH action item target (no underscore — derived from category string)
       case 'it_confirmation': {
         const ss2    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
         const icSh   = ss2.getSheetByName('IT Confirmation Results');
@@ -494,9 +516,16 @@ function getTerminationDetails(workflowId) {
       }
 
       const catTargetMap = {
-        'Assets':'asset_collection','IT':'systems_deactivation','HR':'systems_deactivation_hr',
-        'Fleet':'systems_deactivation_fleet','Finance':'systems_deactivation_finance',
-        'Deactivation':'systems_deactivation_deact','Safety':'safety_term'
+        'Assets':      'asset_collection',
+        'IT':          'systems_deactivation',
+        'HR':          'systems_deactivation_hr',
+        'Fleet':       'systems_deactivation_fleet',
+        'Purchasing':  'systems_deactivation_purchasing', // post-rename (was Jonas/Finance)
+        'Finance':     'systems_deactivation_finance',    // legacy
+        'Payroll':     'systems_deactivation_payroll',    // ADP deactivation
+        'Deactivation':'systems_deactivation_deact',
+        'Safety':      'safety_term',
+        'EOE':         'eoe_process',                     // Complete EOE Process action item
       };
       for (const cat in cats) {
         const c = cats[cat];
@@ -795,9 +824,21 @@ function getChangeDetails(workflowId) {
       }
 
       const catTargetMap = {
-        'Manager':'change_manager','IT':'change_it','Purchasing':'change_purchasing',
-        'ID Setup':'change_idsetup','Safety':'change_safety','Business Cards':'change_businesscards',
-        'Credit Card':'change_creditcard','Fleetio':'change_fleetio','Jonas':'change_jonas'
+        'Manager':       'change_manager',
+        'IT':            'change_it',
+        'HR':            'change_hr',            // ADP Update action item
+        'WIS':           'change_wis',           // WIS Assignment (fires post-ID Setup)
+        'Purchasing':    'change_purchasing',
+        'ID Setup':      'change_idsetup',
+        'Safety':        'change_safety',
+        'Business Cards':'change_businesscards',
+        'Finance':       'change_creditcard',    // post-rename: Finance = credit card team
+        'Fleet':         'change_fleetio',       // post-rename: Fleet = Fleetio
+        'Assets':        'change_assets',
+        // Legacy category names (pre-rename workflows)
+        'Credit Card':   'change_creditcard',
+        'Fleetio':       'change_fleetio',
+        'Jonas':         'change_jonas'
       };
       for (const cat in cats) {
         const c       = cats[cat];

@@ -207,22 +207,39 @@ function _sendBumpEmail(workflowId, targetStep) {
 function _sendActionItemBump(workflowId, targetStep) {
   // Category lookup maps
   var specialistCatMap = {
-    'creditcard': 'Credit Card', 'businesscards': 'Business Cards',
-    'fleetio': 'Fleetio', 'jonas': 'Jonas', 'centralpurchasing': 'Central Purchasing',
-    'sitedocs': 'SiteDocs', 'review_306090': '30/60/90 Review',
-    'safety_onboarding': 'Safety', 'safety_term': 'Safety',
-    'hr_systems': 'HR', 'adp_setup': 'Payroll', 'wis': 'WIS Assignment'
+    // Current category names
+    'creditcard': 'Finance', 'credit_card': 'Finance',
+    'fleetio': 'Fleet', 'fleet': 'Fleet',
+    'jonas': 'Purchasing', 'purchasing': 'Purchasing',
+    'businesscards': 'Business Cards', 'business_cards': 'Business Cards',
+    'centralpurchasing': 'Purchasing', 'central_purchasing': 'Purchasing',
+    'sitedocs': 'ID Setup', 'wis_user': 'ID Setup',
+    'review_306090': '30/60/90 Review', 'review': '30/60/90 Review',
+    'safety_onboarding': 'Safety', 'safety': 'Safety', 'safety_term': 'Safety',
+    'hr_systems': 'HR', 'hr': 'HR',
+    'adp_setup': 'Payroll', 'payroll': 'Payroll',
+    'wis': 'WIS', 'wis_assignment': 'WIS',
+    'id_setup': 'ID Setup', 'itconfirmation': 'IT Confirmation', 'it_confirmation': 'IT Confirmation',
   };
   var eoeCatMap = {
-    'asset_collection': 'Assets', 'systems_deactivation': 'IT',
-    'systems_deactivation_hr': 'HR', 'systems_deactivation_fleet': 'Fleet',
-    'systems_deactivation_finance': 'Finance', 'systems_deactivation_deact': 'WIS User'
+    'asset_collection': 'Assets', 'assets': 'Assets',
+    'systems_deactivation': 'IT',
+    'systems_deactivation_hr': 'HR',
+    'systems_deactivation_fleet': 'Fleet',
+    'systems_deactivation_purchasing': 'Purchasing',
+    'systems_deactivation_finance': 'Finance',   // legacy
+    'systems_deactivation_payroll': 'Payroll',
+    'systems_deactivation_deact': 'Deactivation',
+    'eoe_process': 'EOE',
   };
   var changeCatMap = {
-    'change_manager': 'Manager', 'change_it': 'IT', 'change_purchasing': 'Purchasing',
-    'change_idsetup': 'ID Setup', 'change_safety': 'Safety',
-    'change_businesscards': 'Business Cards', 'change_creditcard': 'Credit Card',
-    'change_fleetio': 'Fleetio', 'change_jonas': 'Jonas'
+    'change_manager': 'Manager', 'change_it': 'IT',
+    'change_hr': 'HR', 'change_wis': 'WIS',
+    'change_purchasing': 'Purchasing', 'change_idsetup': 'ID Setup',
+    'change_safety': 'Safety', 'change_businesscards': 'Business Cards',
+    'change_creditcard': 'Finance', 'change_fleetio': 'Fleet',
+    'change_jonas': 'Purchasing',  // legacy
+    'change_assets': 'Assets',
   };
 
   var cat = specialistCatMap[targetStep] || eoeCatMap[targetStep] || changeCatMap[targetStep];
