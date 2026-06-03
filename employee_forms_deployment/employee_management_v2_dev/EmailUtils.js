@@ -278,7 +278,14 @@ function getWorkflowContext(workflowId) {
           creditCardLimitCanada:    changeData.ccLimitCAN || '',
           creditCardHomeDepot:      changeData.ccHD || '',
           creditCardLimitHomeDepot: changeData.ccLimitHD || '',
-          requestDate:              changeData.dateRequested || changeData.effDate || ''
+          requestDate:              changeData.dateRequested || changeData.effDate || '',
+          // Delegation — direct report reassignment.
+          // oldReportsTo:  employee is LOSING reports → reassign them to this person/team.
+          // newReportsFrom: employee is GAINING reports from this person/team.
+          // Required here so getWorkflowContext() consumers (form header via RequestHeader.html,
+          // notifyWorkflowClosure, any future CHANGE_ email) can render these fields.
+          oldReportsTo:  changeData.oldReportsTo  || '',
+          newReportsFrom: changeData.newReportsFrom || ''
         };
         // ── DEAD CODE — POSITION_CHANGE_APPROVALS enrichment ─────────────────────
         // This block is unreachable: the `return { ... }` statement above returns before
