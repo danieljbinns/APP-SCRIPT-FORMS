@@ -289,6 +289,36 @@ var ActionItemService = (function() {
         } catch (e) { Logger.log('[ActionItemService] WIS User cred write ERROR: ' + e.message + ' stack: ' + e.stack); }
       }
 
+      // ── SPECIAL CASE 3: Status Change WIS sequencing ─────────────────────────
+      // When the ID Setup "BOSS WIS User Account Update" item closes on a CHANGE_
+      // workflow, fire the manager's WIS module assignment item.
+      //
+      // WHY here and not at approval time?
+      // The manager cannot assign correct WIS modules until ID Setup has updated
+      // the employee's BOSS account to the new site. Creating both simultaneously
+      // (as was done previously) allowed the manager to proceed before the account
+      // was ready. This post-close hook enforces the correct order.
+      //
+      // The trigger key is formType='boss_wis_update' (set in PositionChangeHandler.js
+      // when the ID Setup item is created). Using formType instead of task name string
+      // matching avoids false positives from other 'ID Setup' category items
+      // (e.g. SiteDocs Account Setup, SiteDocs Access Removal).
+      //
+      // launchWisAssignment() is defined in PositionChangeHandler.js — legal cross-file
+      // call in GAS global scope.
+      const taskFormType3 = data[rowIndex - 1][AI.FORM_TYPE] || '';
+      const taskCat3      = data[rowIndex - 1][AI.CATEGORY]  || '';
+      if (workflowId.startsWith('CHANGE_') && taskCat3 === 'ID Setup' && taskFormType3 === 'boss_wis_update') {
+        try {
+          if (typeof launchWisAssignment === 'function') {
+            launchWisAssignment(workflowId);
+            Logger.log('[ActionItemService] CHANGE_ WIS sequencing: launchWisAssignment called for ' + workflowId);
+          } else {
+            Logger.log('[ActionItemService] CHANGE_ WIS sequencing: launchWisAssignment not available — skipped');
+          }
+        } catch (e) { Logger.log('[ActionItemService] WIS sequencing ERROR: ' + e.message); }
+      }
+
       // Ensure all writes above are committed before notifyTaskClosure / checkWorkflowCompletion
       // read the sheet. GAS batches Spreadsheet API calls; flush() forces immediate commit.
       SpreadsheetApp.flush();

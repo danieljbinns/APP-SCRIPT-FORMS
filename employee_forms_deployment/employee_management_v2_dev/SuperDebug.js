@@ -1309,8 +1309,10 @@ function runSuperDebugStatusChange_Title() {
     _sdVerifyRow('Phase 3 ChangeAppr', CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, wfId, {
       'Decision': 'Approved'
     });
-    // Always created: ID Setup, Safety. BOSS in sys → IT.
-    _sdVerifyAI(wfId, ['IT', 'ID Setup', 'Safety']);
+    // Always created: ID Setup, Safety, HR (ADP Update). BOSS in sys → IT.
+    // WIS (manager assignment) is NOT verified here — created post-close by
+    // boss_wis_update hook, not at approval time. _sdCloseAllAI() picks it up.
+    _sdVerifyAI(wfId, ['IT', 'ID Setup', 'Safety', 'HR']);
 
     Utilities.sleep(500);
 
@@ -1396,8 +1398,9 @@ function runSuperDebugStatusChange_Site() {
     else _sdLog('PASS', 'Phase 3', 'submitPositionChangeApproval succeeded ✓');
 
     // Manager (receivingManagerEmail set), Fleetio access + Fleetio vehicle return,
-    // IT (BOSS in sys), Assets (Vehicle in equipRem), ID Setup + Safety (always).
-    _sdVerifyAI(wfId, ['Manager', 'Fleet', 'IT', 'Assets', 'ID Setup', 'Safety']);
+    // IT (BOSS in sys), Assets (Vehicle in equipRem), ID Setup + Safety + HR (always).
+    // WIS (manager assignment) NOT here — fires post-close via boss_wis_update hook.
+    _sdVerifyAI(wfId, ['Manager', 'Fleet', 'IT', 'Assets', 'ID Setup', 'Safety', 'HR']);
 
     Utilities.sleep(500);
 
@@ -1502,10 +1505,10 @@ function runSuperDebugStatusChange_Full() {
     else _sdLog('PASS', 'Phase 3', 'submitPositionChangeApproval succeeded ✓');
 
     // Manager (receivingManagerEmail), IT (BOSS in sys + Computer in equip/ret),
-    // Fleetio (sys + vehicle return), Jonas (Central Purchasing/Jonas in sys),
-    // Credit Card (Credit Card in equip), Assets (Vehicle+Computer in equipRem),
-    // Safety (SiteDocs removal + always), ID Setup (always).
-    _sdVerifyAI(wfId, ['Manager', 'IT', 'Fleet', 'Purchasing', 'Finance', 'Assets', 'ID Setup', 'Safety']);
+    // Fleet (sys + vehicle return), Purchasing (Jonas in sys), Finance (CC in equip),
+    // Assets (Vehicle+Computer in equipRem), Safety (SiteDocs removal + always),
+    // ID Setup + HR (always). WIS NOT here — fires post-close via boss_wis_update hook.
+    _sdVerifyAI(wfId, ['Manager', 'IT', 'Fleet', 'Purchasing', 'Finance', 'Assets', 'ID Setup', 'Safety', 'HR']);
 
     Utilities.sleep(500);
 

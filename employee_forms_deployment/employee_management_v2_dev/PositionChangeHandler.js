@@ -779,36 +779,32 @@ function submitPositionChangeApproval(formData) {
         });
       }
 
-      // 3a. ID Setup — update BOSS WIS user account for new position/site
+      // 3a. ID Setup — update BOSS WIS user account for new position/site.
+      //
+      // SEQUENCING: The manager's WIS module assignment (step 3b) must happen AFTER
+      // ID Setup updates the account — the manager can't assign correct WIS modules
+      // until the employee exists on the right site in BOSS.
+      //
+      // The manager WIS item is NOT created here. Instead, closing THIS item triggers
+      // launchWisAssignment() via a post-close hook in ActionItemService.closeActionItem()
+      // (Special Case 3). That function creates the manager WIS item and sends the email.
+      //
+      // formType 'boss_wis_update' is the hook's trigger key — do not rename without
+      // updating the matching condition in ActionItemService.js Special Case 3.
       const idTid = ActionItemService.createActionItem(
         workflowId, 'ID Setup', 'BOSS WIS User Account Update',
         JSON.stringify(['Update BOSS WIS user account for ' + changeData.employeeName + ' to reflect the new position/site.']),
-        CONFIG.EMAILS.IDSETUP
+        CONFIG.EMAILS.IDSETUP,
+        'boss_wis_update'                                   // hook trigger key — see ActionItemService Special Case 3
       );
       tasksCreated++;
-      approvalActionTeams.push('ID Setup');
+      approvalActionTeams.push('ID Setup (BOSS WIS — manager WIS assignment fires after this closes)');
       sendFormEmail({
         to: CONFIG.EMAILS.IDSETUP,
         subject: 'BOSS WIS Account Update Required',
-        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update their BOSS WIS user account to reflect the new position and/or site.',
+        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update their BOSS WIS user account to reflect the new position and/or site. ' +
+              '<br><br><em>Note: Once you submit this form, the manager will automatically receive a WIS module assignment task.</em>',
         formUrl: buildFormUrl('action_item_view', { tid: idTid }),
-        displayName: 'TEAM Group - Employee Management',
-        contextData: changeContext
-      });
-
-      // 3b. Manager — update BOSS WIS module assignments for new position/site
-      const wisAssignTid = ActionItemService.createActionItem(
-        workflowId, 'WIS', 'BOSS WIS Records Update',
-        JSON.stringify(['Update BOSS WIS module assignments for ' + changeData.employeeName + ' to reflect the new position/site.']),
-        changeData.mgrNewEmail || changeData.currentManagerEmail
-      );
-      tasksCreated++;
-      approvalActionTeams.push('Manager (WIS Assignment)');
-      sendFormEmail({
-        to: changeData.mgrNewEmail || changeData.currentManagerEmail,
-        subject: 'BOSS WIS Update Required',
-        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update their BOSS WIS module assignments to reflect the new position and/or site.',
-        formUrl: buildFormUrl('action_item_view', { tid: wisAssignTid }),
         displayName: 'TEAM Group - Employee Management',
         contextData: changeContext
       });
@@ -998,5 +994,98 @@ function submitPositionChangeApproval(formData) {
     }
   } catch (e) {
     return { success: false, message: e.message };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// launchWisAssignment
+//
+// Called by ActionItemService.closeActionItem() (Special Case 3) when the
+// ID Setup "BOSS WIS User Account Update" item (formType='boss_wis_update')
+// is closed on a CHANGE_ workflow.
+//
+// WHY post-close and not at approval time?
+// The manager can only assign the correct WIS modules AFTER ID Setup has
+// updated the employee's account in BOSS to the new site. Creating both items
+// simultaneously would let the manager proceed before the account exists on
+// the right site. This sequencing matches New Hire, where the WIS assignment
+// goes to the manager only after ID Setup completes.
+//
+// This function is intentionally defined in PositionChangeHandler.js (not
+// ActionItemService.js) so all Status Change email/form building logic stays
+// in one place. ActionItemService calls it by name — GAS global scope makes
+// this cross-file call legal without any imports.
+//
+// @param {string} workflowId  — CHANGE_ workflow ID
+// ─────────────────────────────────────────────────────────────────────────────
+function launchWisAssignment(workflowId) {
+  try {
+    const changeData = getPositionChangeData(workflowId);
+    if (!changeData) {
+      Logger.log('[launchWisAssignment] No changeData found for ' + workflowId + ' — WIS assignment skipped');
+      return;
+    }
+
+    // Resolve the manager who receives the WIS assignment:
+    // prefer the confirmed new/receiving manager; fall back to current manager.
+    const managerEmail = changeData.receivingManagerEmail
+      || changeData.mgrNewEmail
+      || changeData.currentManagerEmail
+      || '';
+
+    if (!managerEmail) {
+      Logger.log('[launchWisAssignment] No manager email found for ' + workflowId + ' — WIS assignment skipped');
+      return;
+    }
+
+    // Build a minimal changeContext for the email template — enough for the
+    // Status Change context block to render correctly in the manager's email.
+    const wisContext = {
+      workflowId:          workflowId,
+      workflowType:        'Status Change',
+      employeeName:        changeData.employeeName || '',
+      jobTitle:            changeData.jobTitle     || changeData.currentTitle || '',
+      siteName:            changeData.siteName     || '',
+      hireDate:            changeData.effDate      || '',
+      requestDate:         changeData.dateRequested || '',
+      requesterEmail:      changeData.requesterEmail || '',
+      changeTypes:         changeData.changes       || '',
+      siteTransfer:        changeData.siteTransfer  || '',
+      titleChange:         changeData.titleChange   || '',
+      classChange:         changeData.classChange   || '',
+      managerChange:       changeData.managerChange || '',
+      managerEmail:        managerEmail,
+      currentManagerName:  changeData.currentManagerName || '',
+      systems:             changeData.systems        || ''
+    };
+
+    // Create the WIS assignment action item assigned to the manager.
+    // Category 'WIS' is non-blocking in checkWorkflowCompletion() — this task
+    // will not hold up workflow completion if the manager is slow to respond.
+    const wisTid = ActionItemService.createActionItem(
+      workflowId,
+      'WIS',
+      'BOSS WIS Module Assignment — ' + changeData.employeeName,
+      JSON.stringify([
+        'Assign the correct BOSS WIS (Work Instructions & Safety) modules to ' + changeData.employeeName + ' for their new position/site.',
+        'Note: ID Setup has updated the BOSS account — the employee is now on the correct site.'
+      ]),
+      managerEmail,
+      'wis_assignment'
+    );
+
+    sendFormEmail({
+      to:          managerEmail,
+      subject:     'BOSS WIS Assignment Required — ' + changeData.employeeName,
+      body:        'The ID Setup team has updated <strong>' + changeData.employeeName + '\'s</strong> BOSS WIS account for their new position/site. ' +
+                   'Please assign the appropriate WIS modules for their new role.',
+      formUrl:     buildFormUrl('action_item_view', { tid: wisTid }),
+      displayName: 'TEAM Group - Employee Management',
+      contextData: wisContext
+    });
+
+    Logger.log('[launchWisAssignment] WIS assignment item ' + wisTid + ' created for manager ' + managerEmail + ' on ' + workflowId);
+  } catch (e) {
+    Logger.log('[launchWisAssignment] Error: ' + e.message);
   }
 }
