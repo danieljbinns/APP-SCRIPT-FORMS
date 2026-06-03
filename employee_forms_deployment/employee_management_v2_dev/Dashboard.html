@@ -538,8 +538,9 @@
                     var sg = rp.specialistGroups || [];
                     function inSg(key) { return sg.indexOf(key) >= 0; }
 
-                    // ADP/HR is a combined button covering both HR and Payroll action items
-                    var adpHrCount = (counts['HR'] || 0) + (counts['Payroll'] || 0);
+                    // ADP/HR combines HR action items, Payroll action items, and HR Verification
+                    // workflow step (step fires when a workflow is waiting for HR to verify).
+                    var adpHrCount = (counts['HR'] || 0) + (counts['Payroll'] || 0) + (counts['HR Verification'] || 0);
 
                     // All filter buttons — always visible to all authenticated users, no role gating.
                     // Each button filters the workflow list to show workflows with open items in that category.
@@ -573,7 +574,7 @@
                     if (inSg('REVIEW_306090_JR')) myPending += (counts['30/60/90 Review'] || 0);
                     if (inSg('FLEETIO'))        myPending += (counts['Assets'] || 0); // fleet returns go to fleetio
                     if (rp.isIT || rp.isAdmin)  myPending += (counts['IT'] || 0) + (counts['IT Setup'] || 0) + (counts['IT Confirmation'] || 0);
-                    if (rp.isHR || rp.isAdmin)  myPending += (counts['HR'] || 0) + (counts['EOE'] || 0);
+                    if (rp.isHR || rp.isAdmin)  myPending += (counts['HR'] || 0) + (counts['EOE'] || 0) + (counts['HR Verification'] || 0);
                     if (rp.isHR || rp.isAdmin || inSg('IDSETUP')) myPending += (counts['Deactivation'] || 0) + (counts['ID Setup'] || 0);
                     // Payroll group gets Payroll action items
                     // (Payroll is not in specialistGroups currently — HR sees both via ADP/HR)
@@ -1038,9 +1039,13 @@
             var isOwner     = cuLower && (cuLower === wfRequester || cuLower === wfManager);
             // Block cancel/bump on terminal workflows — server would reject anyway, but show disabled for UX.
             var isTerminal  = (details.status === 'Cancelled' || details.status === 'Complete' || details.status === 'Completed');
-            var canBump     = !isTerminal && (rp.canBumpAll   || isOwner);
-            var canCancel   = !isTerminal && (rp.canCancelAll || isOwner);
-            var canViewData = rp.canViewAllStepData || isOwner;
+            var canBump        = !isTerminal && (rp.canBumpAll   || isOwner);
+            var canCancel      = !isTerminal && (rp.canCancelAll || isOwner);
+            var canViewData    = rp.canViewAllStepData || isOwner;
+            // View Form: Admin / IT / requester / manager / any specialist group member.
+            // Tighter than canViewData (excludes HR-only and Payroll-only users from opening
+            // forms that belong to other teams — they can still see the data via View Data).
+            var canViewFormBtn = rp.isAdmin || rp.isIT || isOwner || rp.isSpecialist;
             var _dis = function(allowed) { return allowed ? '' : ' disabled title="Insufficient permissions" style="opacity:0.45; pointer-events:none; cursor:not-allowed;"'; };
 
             // --- Stepper Logic ---
@@ -1053,15 +1058,53 @@
                 let statusMap = {};
 
                 if (isOnboarding) {
-                    steps = ["Initial Request", "ID Setup", "HR Verification", "IT Setup"];
-                    const hasSpecialists = checklist.some(c => !steps.includes(c.name));
-                    if (hasSpecialists) steps.push("Specialists");
+                    // Maps checklist item name → dashboard badge label.
+                    // Each specialist step shows as its own named dot matching the
+                    // filter button label — so users can directly connect what they see
+                    // in the stepper to the button they'd click to filter.
+                    // Legacy names (pre-rename) map to the same badge so old workflows render correctly.
+                    const BADGE_LABEL = {
+                        'ID Setup':        'ID SETUP',
+                        'IT Confirmation': 'IT CONF',
+                        'IT Setup':        'IT SETUP',
+                        'Safety':          'SAFETY',
+                        'Finance':         'FINANCE',
+                        'Business Cards':  'BUSINESS CARDS',
+                        'Fleet':           'FLEET',
+                        '30/60/90 Review': '30/60/90',
+                        'Purchasing':      'PURCHASING',
+                        'WIS':             'WIS',
+                        // Legacy category names — pre-rename workflows already in the sheet
+                        'Credit Card':     'FINANCE',
+                        'Fleetio':         'FLEET',
+                        'Jonas':           'PURCHASING',
+                        'SiteDocs':        'ID SETUP'
+                    };
 
+                    // Core steps always present (HR Verification badge is ADP/HR but step name
+                    // stays descriptive since it's a workflow stage, not an action item category)
+                    steps = ['Initial Request', 'ID SETUP', 'HR Verification', 'IT SETUP'];
+
+                    // IT CONF is conditional — only on BOSS path when action item exists
+                    const hasITConf = checklist.some(c => c.name === 'IT Confirmation');
+                    if (hasITConf) steps.splice(3, 0, 'IT CONF'); // insert before IT SETUP
+
+                    // Add each specialist as its own step in checklist order, deduped
+                    const coreSet = new Set(steps);
                     checklist.forEach(c => {
-                        let key = c.name;
-                        if (key.includes("Jonas") || key.includes("Credit") || key.includes("Fleet") || key.includes("SiteDocs") || key.includes("Business") || key.includes("30") || key.includes("Central")) key = "Specialists";
-                        if (!statusMap[key]) statusMap[key] = c.status;
-                        if (key === "Specialists" && c.status !== "Complete") statusMap[key] = "Pending";
+                        const label = BADGE_LABEL[c.name];
+                        if (label && !coreSet.has(label)) {
+                            steps.push(label);
+                            coreSet.add(label);
+                        }
+                    });
+
+                    // Build statusMap — worst status wins (Pending overrides Complete for same step)
+                    checklist.forEach(c => {
+                        const key = BADGE_LABEL[c.name] || c.name;
+                        if (!statusMap[key] || (c.status !== 'Complete' && statusMap[key] === 'Complete')) {
+                            statusMap[key] = c.status;
+                        }
                     });
                 } else if (isEOE) {
                     steps = ["Initial Request", "Approval", "Assets", "Systems"];
@@ -1151,23 +1194,24 @@
                     var actionBtn = '-';
 
                     if (!isComplete && !isNA && item.target) {
+                        actionBtn = '<button class="action-btn" style="background:#444;"' + _dis(canBump) + ' onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
                         if (item.tid) {
-                            // EOE Action Item — route to the specific Action Item form via tid
-                            actionBtn = '<button class="action-btn" style="background: #444;"' + _dis(canBump) + ' onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
-                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                            // Action item — open via tid
+                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;"' + _dis(canViewFormBtn) + ' onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
                         } else {
-                            actionBtn = '<button class="action-btn" style="background: #444;"' + _dis(canBump) + ' onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
-                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="openFormForWorkflow(\'' + item.target + '\', \'' + details.id + '\')">View Form</button>';
-                        }
-                    } else if (isComplete && item.target) {
-                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;"' + _dis(canViewData) + ' onclick="openStepDataView(\'' + item.target + '\')">View Data</button>';
-                        if (item.tid) {
-                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                            // Step form (ID Setup, HR Verification, IT Setup etc) — open via target URL
+                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;"' + _dis(canViewFormBtn) + ' onclick="openFormForWorkflow(\'' + item.target + '\', \'' + details.id + '\')">View Form</button>';
                         }
                     } else if (isComplete && item.name === 'Initial Request') {
                         var targetForm = details.type === 'End of Employment' ? 'termination_request' : 'initial_request';
-                        // Initial request data is open to all — no role gate
+                        // Initial request data open to all — no role gate
                         actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + targetForm + '\')">View Data</button>';
+                    } else if (isComplete && item.target) {
+                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;"' + _dis(canViewData) + ' onclick="openStepDataView(\'' + item.target + '\')">View Data</button>';
+                        if (item.tid) {
+                            // Completed action items also offer View Form (read-only after close)
+                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;"' + _dis(canViewFormBtn) + ' onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                        }
                     }
 
                     html +=

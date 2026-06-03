@@ -147,7 +147,13 @@ function getRequestDetails(workflowId) {
         const aiCreatedCol= aiHdrs.indexOf('Created Date');
         const aiFtCol     = aiHdrs.indexOf('Form Type');
 
-        const SPECIALIST_CATS = new Set(['Credit Card','Business Cards','Fleetio','Jonas','SiteDocs','30/60/90 Review','Safety']);
+        const SPECIALIST_CATS = new Set([
+          // Current category names (post-rename)
+          'Safety', 'Finance', 'Business Cards', 'Fleet', '30/60/90 Review',
+          'Purchasing', 'IT Confirmation', 'WIS',
+          // Legacy category names — pre-rename workflows already written to the sheet
+          'Credit Card', 'Fleetio', 'Jonas', 'SiteDocs'
+        ]);
         const NODE_MAP = {
           'creditcard':'credit_card','businesscards':'business_cards',
           'review_306090':'review','centralpurchasing':'central_purchasing',
