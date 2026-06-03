@@ -231,7 +231,10 @@
     wfId = wfId || '';
     var _di = function(label, val) {
       if (val == null || val === '' || val === 'N/A') return '';
-      return '<div class="detail-item"><label>' + escapeHtml(label) + '</label><div>' + escapeHtml(val) + '</div></div>';
+      // Guard: GAS Java array objects toString as '[Ljava.lang.Object;@...' — suppress display
+      var s = String(val);
+      if (s.indexOf('[L') === 0) return '';
+      return '<div class="detail-item"><label>' + escapeHtml(label) + '</label><div>' + escapeHtml(s) + '</div></div>';
     };
     var _diRaw = function(label, html) {
       if (!html) return '';

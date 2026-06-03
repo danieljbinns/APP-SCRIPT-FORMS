@@ -430,7 +430,13 @@ function getTerminationDetails(workflowId) {
     const reqRow     = reqSheet.getRange(foundReq.getRow(), 1, 1, reqLastCol).getValues()[0];
 
     const r = {};
-    const _sv = function(v) { return v instanceof Date ? v.toString() : String(v === null || v === undefined ? '' : v); };
+    // Same [L guard as getChangeDetails — GAS Java array objects from sheet dropdowns
+    const _sv = function(v) {
+      if (v === null || v === undefined) return '';
+      if (v instanceof Date) return v.toLocaleString();
+      var s = String(v);
+      return s.indexOf('[L') === 0 ? '' : s;
+    };
     reqHeaders.forEach(function(h, i) {
       if (!h) return;
       r[h] = _sv(reqRow[i]);
@@ -710,11 +716,19 @@ function getChangeDetails(workflowId) {
     const reqRow     = reqSheet.getRange(foundReq.getRow(), 1, 1, reqLastCol).getValues()[0];
 
     const _tz = Session.getScriptTimeZone();
+    // _sv: safe value stringifier — guards against GAS Java array objects (e.g. from sheet
+    // data-validation dropdowns) that String() converts to '[Ljava.lang.Object;@hash'.
+    // Detected by the leading '[L' prefix on the toString result; returned as empty string.
+    const _sv = function(v) {
+      if (v === null || v === undefined) return '';
+      if (v instanceof Date) return Utilities.formatDate(v, _tz, 'M/d/yyyy');
+      var s = String(v);
+      return s.indexOf('[L') === 0 ? '' : s;
+    };
     const r = {};
     reqHeaders.forEach(function(h, i) {
       if (!h) return;
-      const val = reqRow[i];
-      r[h] = val instanceof Date ? Utilities.formatDate(val, _tz, 'M/d/yyyy') : (val === undefined || val === null ? '' : String(val));
+      r[h] = _sv(reqRow[i]);
     });
     const _fmt = function(v) { return v instanceof Date ? Utilities.formatDate(v, _tz, 'M/d/yyyy') : String(v || ''); };
     const PCN  = SCHEMA.POSITION_CHANGES;
