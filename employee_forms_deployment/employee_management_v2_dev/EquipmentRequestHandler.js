@@ -322,7 +322,7 @@ function launchRemainingEquipmentTasks(workflowId, skipIT) {
 
     if (jonas) {
       const tid = ActionItemService.createActionItem(
-        workflowId, 'Finance', 'Central Purchasing/Jonas Setup',
+        workflowId, 'Purchasing', 'Central Purchasing/Jonas Setup',
         JSON.stringify(['Set up Central Purchasing/Jonas access for ' + employeeName]),
         CONFIG.EMAILS.JONAS, 'jonas'
       );
@@ -332,7 +332,7 @@ function launchRemainingEquipmentTasks(workflowId, skipIT) {
 
     if (creditCard) {
       const tid = ActionItemService.createActionItem(
-        workflowId, 'Credit Card', 'Credit Card Setup',
+        workflowId, 'Finance', 'Credit Card Setup',
         JSON.stringify(['Set up company credit card for ' + employeeName]),
         CONFIG.EMAILS.CREDIT_CARD, 'creditcard'
       );

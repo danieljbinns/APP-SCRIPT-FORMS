@@ -595,9 +595,11 @@
             var canBumpWf   = rp.canBumpAll   || isOwner;
             var canCancelWf = rp.canCancelAll || isOwner;
             var canEditDate = rp.canEditDates;
-            var canViewData = rp.canViewAllStepData || isOwner;
+            var canViewData    = rp.canViewAllStepData || isOwner;
+            // View Form: Admin / IT / requester / manager / any specialist — tighter than canViewData
+            var canViewFormBtn = rp.isAdmin || rp.isIT || isOwner || rp.isSpecialist;
             // Store on window for use by dynamic checklist rendering
-            window._rdRoleCtx = { canBumpWf, canCancelWf, canEditDate, canViewData };
+            window._rdRoleCtx = { canBumpWf, canCancelWf, canEditDate, canViewData, canViewFormBtn };
 
             // Status badge + Edit Start Date button
             var statusEl = document.getElementById('statusBadge');
@@ -784,10 +786,10 @@
                 if (!isComplete && !isNA && item.target) {
                     actions = '<button class="btn" style="background:var(--warning); color:black;"' + _rdDis(ctx.canBumpWf) + ' onclick="bump(\'' + item.target + '\')">Remind</button>';
                     if (item.tid) {
-                        actions += ' <button class="btn" style="background:var(--brand-red); color:white;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                        actions += ' <button class="btn" style="background:var(--brand-red); color:white;"' + _rdDis(ctx.canViewFormBtn) + ' onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                    } else {
+                        actions += ' <button class="btn" style="background:var(--brand-red); color:white;"' + _rdDis(ctx.canViewFormBtn) + ' onclick="window.open(SERVER_BASE_URL + \'?form=' + item.target + '&id=' + workflowId + '&wf=' + workflowId + '\', \'_blank\')">View Form</button>';
                     }
-                } else if (isComplete && item.target) {
-                    actions = '<button class="btn view-data-btn"' + _rdDis(ctx.canViewData) + ' onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
                 } else if (isComplete && item.name === 'Initial Request') {
                     // Initial request data open to all — no role gate
                     var targetData = workflowId.startsWith('TERM_')      ? 'termination_request'
@@ -795,6 +797,11 @@
                                    : workflowId.startsWith('EQUIP_REQ_') ? 'equipment_request'
                                    : 'initial_request';
                     actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + targetData + '\')">View Data</button>';
+                } else if (isComplete && item.target) {
+                    actions = '<button class="btn view-data-btn"' + _rdDis(ctx.canViewData) + ' onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
+                    if (item.tid) {
+                        actions += ' <button class="btn" style="background:var(--brand-red); color:white;"' + _rdDis(ctx.canViewFormBtn) + ' onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                    }
                 }
 
                 rows += '<tr>' +

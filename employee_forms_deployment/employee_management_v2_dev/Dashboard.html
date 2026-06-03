@@ -538,9 +538,9 @@
                     var sg = rp.specialistGroups || [];
                     function inSg(key) { return sg.indexOf(key) >= 0; }
 
-                    // ADP/HR combines HR action items, Payroll action items, and HR Verification
-                    // workflow step (step fires when a workflow is waiting for HR to verify).
-                    var adpHrCount = (counts['HR'] || 0) + (counts['Payroll'] || 0) + (counts['HR Verification'] || 0);
+                    // ADP/HR combines: HR action items, Payroll action items, HR Verification
+                    // workflow step, and EOE process action items (assigned to HR, same team).
+                    var adpHrCount = (counts['HR'] || 0) + (counts['Payroll'] || 0) + (counts['HR Verification'] || 0) + (counts['EOE'] || 0);
 
                     // All filter buttons — always visible to all authenticated users, no role gating.
                     // Each button filters the workflow list to show workflows with open items in that category.
@@ -574,7 +574,7 @@
                     if (inSg('REVIEW_306090_JR')) myPending += (counts['30/60/90 Review'] || 0);
                     if (inSg('FLEETIO'))        myPending += (counts['Assets'] || 0); // fleet returns go to fleetio
                     if (rp.isIT || rp.isAdmin)  myPending += (counts['IT'] || 0) + (counts['IT Setup'] || 0) + (counts['IT Confirmation'] || 0);
-                    if (rp.isHR || rp.isAdmin)  myPending += (counts['HR'] || 0) + (counts['EOE'] || 0) + (counts['HR Verification'] || 0);
+                    if (rp.isHR || rp.isAdmin)  myPending += (counts['HR'] || 0) + (counts['EOE'] || 0) + (counts['HR Verification'] || 0) + (counts['Payroll'] || 0);
                     if (rp.isHR || rp.isAdmin || inSg('IDSETUP')) myPending += (counts['Deactivation'] || 0) + (counts['ID Setup'] || 0);
                     // Payroll group gets Payroll action items
                     // (Payroll is not in specialistGroups currently — HR sees both via ADP/HR)
@@ -1142,6 +1142,8 @@
 
                 steps.forEach((step, idx) => {
                     let status = statusMap[step] || 'Pending';
+                    // N/A steps don't apply to this workflow — skip entirely rather than show as grey
+                    if (status === 'N/A' || status === 'Skipped') return;
                     let color = '#333';
                     let textColor = '#666';
 
