@@ -573,3 +573,105 @@ function migrateEquipmentRequestsToInitialRequests() {
   Logger.log('[migrateEquip] Done — migrated: ' + migrated + ', skipped (already existed): ' + skipped);
   return { migrated: migrated, skipped: skipped };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// migrateActionItemCategories (dryRun=true to preview, false to apply)
+//
+// One-time migration: renames old action item category strings to the new
+// names introduced in the category-rename refactor. Targets OPEN items only
+// (closed items are historical record and don't affect dashboard counts).
+//
+// Mapping (old → new):
+//   'Credit Card'  → 'Finance'       (all workflows)
+//   'Fleetio'      → 'Fleet'         (all workflows)
+//   'Jonas'        → 'Purchasing'    (all workflows)
+//   'WIS User'     → 'Deactivation'  (TERM_ workflows — Employee Deactivation)
+//   'WIS User'     → 'ID Setup'      (EQUIP_REQ_ / CHANGE_ — SiteDocs account)
+//   'Finance'      → 'Purchasing'    (TERM_ only — old EOE Jonas used 'Finance')
+//
+// Run dryRun=true first to see what would change without writing anything.
+// Run dryRun=false to apply. Returns summary of changes made/found.
+// ─────────────────────────────────────────────────────────────────────────────
+function migrateActionItemCategories(dryRun) {
+  if (dryRun === undefined) dryRun = true; // safe default — always preview first
+  var ss      = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var sheet   = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+  if (!sheet) { Logger.log('[migrate] Action Items sheet not found'); return { error: 'sheet not found' }; }
+
+  var data    = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var catIdx  = headers.indexOf('Category');
+  var wfIdx   = headers.indexOf('Workflow ID');
+  var stIdx   = headers.indexOf('Status');
+  var nmIdx   = headers.indexOf('Task Name');
+
+  if (catIdx < 0 || wfIdx < 0 || stIdx < 0) {
+    Logger.log('[migrate] Required columns not found'); return { error: 'missing columns' };
+  }
+
+  var changes = [];
+  var skipped = 0;
+
+  for (var i = 1; i < data.length; i++) {
+    var status   = String(data[i][stIdx] || '');
+    var category = String(data[i][catIdx] || '');
+    var wfId     = String(data[i][wfIdx]  || '');
+    var taskName = String(data[i][nmIdx]  || '');
+
+    // Only migrate open items — closed rows are historical record
+    if (status !== 'Open') { skipped++; continue; }
+    if (!category || !wfId) { skipped++; continue; }
+
+    var newCat = null;
+
+    if (category === 'Credit Card')  newCat = 'Finance';
+    else if (category === 'Fleetio') newCat = 'Fleet';
+    else if (category === 'Jonas')   newCat = 'Purchasing';
+    else if (category === 'WIS User') {
+      // TERM_ = Employee Deactivation (SiteDocs/DSS/BOSS WIS bundle)
+      // EQUIP_REQ_ / CHANGE_ = SiteDocs Account Setup
+      newCat = wfId.startsWith('TERM_') ? 'Deactivation' : 'ID Setup';
+    }
+    else if (category === 'Finance' && wfId.startsWith('TERM_')) {
+      // Old EOE code used 'Finance' for Jonas/Purchasing deactivation.
+      // In new code 'Finance' = Credit Card team — do NOT rename non-TERM_ Finance.
+      newCat = 'Purchasing';
+    }
+
+    if (!newCat) { skipped++; continue; }
+
+    changes.push({
+      row:      i + 1,         // 1-based sheet row
+      wfId:     wfId,
+      taskName: taskName,
+      oldCat:   category,
+      newCat:   newCat
+    });
+
+    if (!dryRun) {
+      sheet.getRange(i + 1, catIdx + 1).setValue(newCat);
+    }
+  }
+
+  // Summary log
+  Logger.log('[migrate] mode=' + (dryRun ? 'DRY RUN' : 'APPLIED') +
+             ' | changes=' + changes.length + ' | skipped=' + skipped);
+  changes.forEach(function(c) {
+    Logger.log('[migrate]  ' + (dryRun ? 'WOULD' : 'DID') + ' rename row ' + c.row +
+               ' | wf=' + c.wfId + ' | "' + c.oldCat + '" → "' + c.newCat + '"' +
+               ' | task=' + c.taskName.substring(0, 50));
+  });
+
+  return {
+    mode:    dryRun ? 'dry_run' : 'applied',
+    changes: changes.length,
+    skipped: skipped,
+    detail:  changes
+  };
+}
+
+/**
+ * Convenience wrappers callable from gas_runner.py
+ */
+function migrateActionItemCategoriesDryRun()  { return migrateActionItemCategories(true);  }
+function migrateActionItemCategoriesApply()    { return migrateActionItemCategories(false); }
