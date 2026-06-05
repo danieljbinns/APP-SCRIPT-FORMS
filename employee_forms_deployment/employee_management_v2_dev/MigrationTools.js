@@ -654,6 +654,68 @@ function migrateFromProdFull() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// syncDashboardViewBatch
+//
+// Rebuilds Dashboard_View in batches of 80 workflows per call.
+// manuallySyncAllWorkflows() times out via gas_runner.py for large datasets.
+// Call this repeatedly (offset 0, 80, 160, ...) until done is true.
+//
+// Returns { done, processed, total, nextOffset }
+// ─────────────────────────────────────────────────────────────────────────────
+function syncDashboardViewBatch(offset, batchSize) {
+  offset    = offset    || 0;
+  batchSize = batchSize || 80;
+
+  var ss      = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var wfSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+  if (!wfSheet) return { error: 'Workflows sheet not found' };
+
+  var data = wfSheet.getDataRange().getValues();
+  var total = data.length - 1; // minus header
+  var end   = Math.min(offset + batchSize, total);
+
+  for (var i = offset; i < end; i++) {
+    var wfId     = String(data[i + 1][0] || '');
+    var wfStatus = String(data[i + 1][SCHEMA.WORKFLOWS.STATUS] || '');
+    if (wfId && wfStatus !== 'Inactive') {
+      try { syncWorkflowState(wfId); } catch(e) { Logger.log('syncFail: ' + wfId + ' — ' + e.message); }
+    }
+  }
+
+  var done       = end >= total;
+  var nextOffset = done ? total : end;
+  Logger.log('[syncBatch] offset=' + offset + ' end=' + end + ' total=' + total + ' done=' + done);
+  return { done: done, processed: end - offset, total: total, nextOffset: nextOffset };
+}
+
+/**
+ * Stateful batch sync — reads/writes offset from Script Properties so
+ * calling this repeatedly always advances to the next batch.
+ * Call syncDashboardViewReset() first to start from the beginning.
+ */
+function syncDashboardViewNext() {
+  var props  = PropertiesService.getScriptProperties();
+  var offset = parseInt(props.getProperty('DASH_SYNC_OFFSET') || '0');
+  var result = syncDashboardViewBatch(offset, 80);
+  props.setProperty('DASH_SYNC_OFFSET', String(result.nextOffset));
+  if (result.done) props.deleteProperty('DASH_SYNC_OFFSET');
+  return result;
+}
+
+function syncDashboardViewReset() {
+  PropertiesService.getScriptProperties().deleteProperty('DASH_SYNC_OFFSET');
+  return { reset: true, message: 'Call syncDashboardViewNext repeatedly until done=true' };
+}
+
+/** Check how many rows Dashboard_View currently has */
+function getDashboardViewRowCount() {
+  var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.DASHBOARD_VIEW);
+  if (!sheet) return { rows: 0, error: 'sheet not found' };
+  return { rows: Math.max(0, sheet.getLastRow() - 1) }; // minus header
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // migrateActionItemCategories (dryRun=true to preview, false to apply)
 //
 // One-time migration: renames old action item category strings to the new
