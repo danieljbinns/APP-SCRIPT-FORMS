@@ -675,3 +675,79 @@ function migrateActionItemCategories(dryRun) {
  */
 function migrateActionItemCategoriesDryRun()  { return migrateActionItemCategories(true);  }
 function migrateActionItemCategoriesApply()    { return migrateActionItemCategories(false); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// migrateAddMissingHeaders
+//
+// Adds column headers that were introduced in this release but not yet present
+// in the live sheet (they auto-created when first written but have blank headers):
+//
+//   Initial Requests col 55 (index 54) — 'BOSS Training User Only'
+//     Added in ER-5: controls whether IT Setup form hides full BOSS fields.
+//
+//   IT Results col 23 (index 22) — 'BOSS Details'
+//     Stores JSON of BOSS committee/cost-sheet/trip-reports/grievances confirmations.
+//     Already written correctly; header was just never set.
+//
+// Safe to run multiple times — only writes if the header cell is blank.
+// ─────────────────────────────────────────────────────────────────────────────
+function migrateAddMissingHeaders() {
+  var ss  = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var log = [];
+
+  function ensureHeader(sheetName, colIndex, expectedHeader) {
+    var sheet = ss.getSheetByName(sheetName);
+    if (!sheet) { log.push('SKIP — sheet not found: ' + sheetName); return; }
+    var lastCol  = sheet.getLastColumn();
+    var colNum   = colIndex + 1; // 1-based for getRange
+    // If the column doesn't exist yet, extend the sheet first
+    if (colNum > lastCol) {
+      sheet.getRange(1, colNum).setValue(expectedHeader);
+      log.push('ADDED col ' + colNum + ' header "' + expectedHeader + '" to ' + sheetName + ' (extended sheet)');
+      return;
+    }
+    var current = sheet.getRange(1, colNum).getValue();
+    if (current === '' || current === null || current === undefined) {
+      sheet.getRange(1, colNum).setValue(expectedHeader);
+      log.push('SET header "' + expectedHeader + '" at col ' + colNum + ' in ' + sheetName);
+    } else if (current === expectedHeader) {
+      log.push('OK — "' + expectedHeader + '" already set at col ' + colNum + ' in ' + sheetName);
+    } else {
+      log.push('WARN — col ' + colNum + ' in ' + sheetName + ' has unexpected value "' + current + '" — not overwriting');
+    }
+  }
+
+  ensureHeader(CONFIG.SHEETS.INITIAL_REQUESTS, SCHEMA.INITIAL_REQUESTS.BOSS_TRAINING_ONLY, 'BOSS Training User Only');
+  ensureHeader(CONFIG.SHEETS.IT_RESULTS,       SCHEMA.IT_RESULTS.BOSS_DETAILS,             'BOSS Details');
+
+  log.forEach(function(l) { Logger.log('[migrateHeaders] ' + l); });
+  return { ok: true, log: log };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// migrateProdDeploy  (DRY RUN)
+// migrateProdDeployApply  (APPLY)
+//
+// One-step migration for prod deployment. Runs everything in order:
+//   1. migrateAddMissingHeaders  — add blank column headers
+//   2. migrateActionItemCategories — rename old AI category strings
+//
+// Always run the dry-run version first to preview what will change.
+// ─────────────────────────────────────────────────────────────────────────────
+function migrateProdDeploy() {
+  Logger.log('[migrateProdDeploy] === DRY RUN — no writes ===');
+  var headers  = { ok: true, log: ['(headers check — no actual write in dry run)'] };
+  var cats     = migrateActionItemCategories(true);
+  Logger.log('[migrateProdDeploy] Headers: ' + JSON.stringify(headers.log));
+  Logger.log('[migrateProdDeploy] Category renames (would apply): ' + cats.changes);
+  return { dryRun: true, headers: headers, categoryRenames: cats };
+}
+
+function migrateProdDeployApply() {
+  Logger.log('[migrateProdDeployApply] === APPLYING — writing to sheet ===');
+  var headers  = migrateAddMissingHeaders();
+  var cats     = migrateActionItemCategories(false);
+  Logger.log('[migrateProdDeployApply] DONE — headers: ' + JSON.stringify(headers.log));
+  Logger.log('[migrateProdDeployApply] DONE — category renames applied: ' + cats.changes);
+  return { applied: true, headers: headers, categoryRenames: cats };
+}
