@@ -4,3 +4,7 @@ CREDENTIALS.md
 NEW_EMPLOYEE_WORKFLOW_SUMMARY.html
 html_audit.md
 ENV_TOOLS.md
+
+tools/__pycache__/
+**/__pycache__/
+*.pyc
