@@ -575,6 +575,85 @@ function migrateEquipmentRequestsToInitialRequests() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// migrateFromProdFull
+//
+// Copies ALL data sheets from prod into dev exactly as-is.
+// Run AFTER wipeDevSheets() so dev is already blank.
+//
+// Strategy: generic column-safe copy — reads prod column count dynamically.
+// If dev has MORE columns than prod (e.g. BOSS_TRAINING_ONLY, BOSS_DETAILS),
+// the extra dev columns are left blank. Prod data is never truncated.
+// If prod has MORE columns than dev (shouldn't happen, but handled), only
+// the dev column count is written.
+//
+// Sheets copied:
+//   Workflows, Initial Requests, ID Setup Results, HR Verification Results,
+//   IT Results, Action Items, Terminations, Position Changes,
+//   Termination Approval Results, Position Change Approval Result,
+//   IT Confirmation Results, Equipment_Requests
+//
+// Dashboard_View is intentionally skipped — it is a materialized cache
+// rebuilt by syncWorkflowState, not a source-of-truth sheet.
+// ─────────────────────────────────────────────────────────────────────────────
+function migrateFromProdFull() {
+  var prod = SpreadsheetApp.openById(PROD_SPREADSHEET_ID);
+  var dev  = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+
+  var SHEETS = [
+    'Workflows',
+    'Initial Requests',
+    'ID Setup Results',
+    'HR Verification Results',
+    'IT Results',
+    'Action Items',
+    'Terminations',
+    'Position Changes',
+    'Termination Approval Results',
+    'Position Change Approval Result',
+    'IT Confirmation Results',
+    'Equipment_Requests'
+  ];
+
+  var results = [];
+
+  SHEETS.forEach(function(name) {
+    var src = prod.getSheetByName(name);
+    var dst = dev.getSheetByName(name);
+
+    if (!src) { results.push('[SKIP] ' + name + ' — not found in prod'); return; }
+    if (!dst) { results.push('[SKIP] ' + name + ' — not found in dev');  return; }
+
+    var srcLastRow = src.getLastRow();
+    if (srcLastRow <= 1) { results.push('[EMPTY] ' + name + ' — no data in prod'); return; }
+
+    var prodCols = src.getLastColumn();
+    var devCols  = dst.getLastColumn();
+    var writeCols = Math.max(prodCols, devCols); // ensure we cover all dev columns
+
+    // Read prod data (all prod columns)
+    var rows = src.getRange(2, 1, srcLastRow - 1, prodCols).getDisplayValues();
+
+    // If dev has more columns than prod, pad each row with blanks
+    if (devCols > prodCols) {
+      var pad = devCols - prodCols;
+      rows = rows.map(function(row) {
+        var extra = [];
+        for (var i = 0; i < pad; i++) extra.push('');
+        return row.concat(extra);
+      });
+      writeCols = devCols;
+    }
+
+    dst.getRange(2, 1, rows.length, writeCols).setValues(rows);
+    results.push('[OK] ' + name + ' — ' + rows.length + ' rows (prod=' + prodCols + ' cols, dev=' + devCols + ' cols)');
+  });
+
+  Logger.log('=== migrateFromProdFull complete ===');
+  results.forEach(function(r) { Logger.log(r); });
+  return { ok: true, results: results };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // migrateActionItemCategories (dryRun=true to preview, false to apply)
 //
 // One-time migration: renames old action item category strings to the new
