@@ -181,8 +181,7 @@ var AccessControlService = (function() {
     if (p.canCancelAll) return true;
     if (!workflow) return false;
     var e = userEmail.toLowerCase();
-    return e === (workflow['Requester Email'] || workflow.requesterEmail || '').toLowerCase() ||
-           e === (workflow['Manager Email']   || workflow.managerEmail   || '').toLowerCase();
+    return e === (workflow['Initiator Email'] || '').toLowerCase();
   }
 
   // ───────────────────────────────────────────────────────────────────
@@ -195,8 +194,7 @@ var AccessControlService = (function() {
     if (p.canBumpAll) return true;
     if (!workflow) return false;
     var e = userEmail.toLowerCase();
-    return e === (workflow['Requester Email'] || workflow.requesterEmail || '').toLowerCase() ||
-           e === (workflow['Manager Email']   || workflow.managerEmail   || '').toLowerCase();
+    return e === (workflow['Initiator Email'] || '').toLowerCase();
   }
 
   // ───────────────────────────────────────────────────────────────────
