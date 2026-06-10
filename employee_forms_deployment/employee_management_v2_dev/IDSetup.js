@@ -158,7 +158,7 @@ function submitEmployeeIDSetup(formData) {
     
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     let resultsSheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
-    
+
     if (!resultsSheet) {
       resultsSheet = ss.insertSheet(CONFIG.SHEETS.ID_SETUP_RESULTS);
       resultsSheet.appendRow([
@@ -169,9 +169,40 @@ function submitEmployeeIDSetup(formData) {
       ]);
       resultsSheet.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
-    
+
+    // Acquire lock and validate/recompute employee ID to prevent duplicates
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
+    let finalEmployeeId = formData.internalEmployeeId;
+    try {
+      const existingData = resultsSheet.getDataRange().getValues();
+      let idExists = false;
+      for (let i = 1; i < existingData.length; i++) {
+        if (existingData[i][3] === finalEmployeeId) {
+          idExists = true;
+          break;
+        }
+      }
+      // If submitted ID already exists, recompute the next available ID
+      if (idExists) {
+        let maxId = 29999;
+        for (let i = 1; i < existingData.length; i++) {
+          const id = existingData[i][3];
+          if (id && !isNaN(id)) {
+            const numId = parseInt(id);
+            if (numId > maxId) {
+              maxId = numId;
+            }
+          }
+        }
+        finalEmployeeId = String(maxId + 1);
+      }
+    } finally {
+      lock.releaseLock();
+    }
+
     resultsSheet.appendRow([
-      workflowId, formId, new Date(), formData.internalEmployeeId,
+      workflowId, formId, new Date(), finalEmployeeId,
       formData.siteDocsWorkerId, formData.siteDocsJobCode,
       formData.siteDocsUsername || 'N/A', formData.siteDocsPassword || 'N/A',
       formData.dssUsername, formData.dssPassword,
