@@ -218,7 +218,23 @@ function submitTerminationApproval(formData) {
     rawLog('submitTerminationApproval', formData);
     const { workflowId, decision, notes } = formData;
     const formId = generateFormId('TERM_APP');
-    
+
+    // Acquire lock and check for duplicate submission
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
+    try {
+      const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+      const appSheet = ss.getSheetByName(CONFIG.SHEETS.TERMINATION_APPROVALS);
+      const appData = appSheet.getDataRange().getValues();
+      for (let i = 1; i < appData.length; i++) {
+        if (appData[i][0] === workflowId) {
+          return { success: true, message: 'Approval already processed for this workflow.' };
+        }
+      }
+    } finally {
+      lock.releaseLock();
+    }
+
     // Record approval
     addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATION_APPROVALS, [
       workflowId, formId, new Date(), decision, notes, 'YES', Session.getActiveUser().getEmail()
