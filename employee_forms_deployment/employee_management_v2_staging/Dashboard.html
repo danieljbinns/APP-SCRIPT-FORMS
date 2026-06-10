@@ -363,7 +363,7 @@
             </div>
             <div
                 style="font-size: 11px; color: var(--warning); border: 1px solid var(--warning); padding: 5px; border-radius: 4px; margin-right: auto; margin-left: 20px;">
-                <strong>Source:</strong>
+                <strong><?= environment ?>:</strong>
                 <?= spreadsheetId ?>
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -406,15 +406,25 @@
 
             <button class="refresh-btn" onclick="loadData()">Refresh</button>
             <button id="btnDeleteSelected" onclick="openDeleteConfirm()">🚫 Hide Selected (<span id="selCount">0</span>)</button>
+            <span id="activeCategoryChip" onclick="clearCategoryFilter()" style="display:none; cursor:pointer; background:var(--brand-red); color:white; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:700;" title="Click to clear category filter"></span>
         </div>
 
-        <!-- My Tasks Panel — shown only when current user has pending action items -->
-        <div id="myTasksPanel" style="display:none; background:rgba(235,28,45,0.06); border:1px solid rgba(235,28,45,0.3); border-radius:8px; padding:16px; margin-bottom:20px;">
+        <!-- My Tasks Panel — open task counts per category, role-gated click -->
+        <div id="myTasksPanel" style="display:none; background:rgba(235,28,45,0.06); border:1px solid rgba(235,28,45,0.3); border-radius:8px; padding:16px; margin-bottom:12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <strong style="color:var(--brand-red); font-size:14px;">⚡ My Pending Tasks</strong>
                 <span id="myTasksCount" style="background:var(--brand-red); color:white; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;"></span>
             </div>
             <div id="myTasksList" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+        </div>
+
+        <!-- My Open Requests Panel — workflows where current user is requester or manager -->
+        <div id="myRequestsPanel" style="display:none; background:rgba(33,150,243,0.06); border:1px solid rgba(33,150,243,0.3); border-radius:8px; padding:16px; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <strong style="color:#2196f3; font-size:14px;">📋 My Open Requests</strong>
+                <span id="myRequestsCount" style="background:#2196f3; color:white; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;"></span>
+            </div>
+            <div id="myRequestsList" style="display:flex; flex-direction:column; gap:4px;"></div>
         </div>
 
         <div class="table-container">
@@ -481,10 +491,7 @@
     </div>
 
     <script>
-        function escapeHtml(s) {
-            if (s == null) return '';
-            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-        }
+        // escapeHtml() provided by SharedComponents.html (included at bottom of page)
 
         // Use server-injected Base URL
         var SERVER_BASE_URL = "<?= baseUrl ?>";
@@ -493,7 +500,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
-            loadMyTasks();
+            // loadMyTasks() is called inside displayData() once _rolePayload is set
         });
         let allWorkflows = [];
         let filteredWorkflows = []; // For search + pagination combo
@@ -505,6 +512,12 @@
         let activeTypeFilters = new Set();
         let activeStatusFilters = new Set();
         let searchTerm = '';
+        let activeCategoryFilter = null; // set by View Tasks button in My Tasks panel
+
+        // rolePayload and currentUser stored here — NOT in sessionStorage (unreliable in GAS iframes).
+        // Set by displayData() before loadMyTasks() is called.
+        let _rolePayload = {};
+        let _currentUser = '';
 
         // Pagination State
         const ITEMS_PER_PAGE = 25;
@@ -519,30 +532,179 @@
         function loadMyTasks() {
             google.script.run
                 .withSuccessHandler(function(res) {
-                    const tasks = res.tasks || [];
-                    const panel = document.getElementById('myTasksPanel');
-                    const list  = document.getElementById('myTasksList');
-                    const count = document.getElementById('myTasksCount');
-                    if (tasks.length === 0) { panel.style.display = 'none'; return; }
+                    if (!res || !res.success) return;
+                    var counts = res.counts || {};
+                    var rp = _rolePayload;
+                    var sg = rp.specialistGroups || [];
+                    function inSg(key) { return sg.indexOf(key) >= 0; }
+
+                    // ADP/HR combines: HR action items, Payroll action items, HR Verification
+                    // workflow step, and EOE process action items (assigned to HR, same team).
+                    var adpHrCount = (counts['HR'] || 0) + (counts['Payroll'] || 0) + (counts['HR Verification'] || 0) + (counts['EOE'] || 0);
+
+                    // All filter buttons — always visible to all authenticated users, no role gating.
+                    // Each button filters the workflow list to show workflows with open items in that category.
+                    // Clicking a button with 0 count is a no-op (button styled dim).
+                    var allButtons = [
+                        { label: 'SAFETY',         cat: 'Safety',          count: counts['Safety'] || 0,           color: '#ff5722' },
+                        { label: 'FLEET',          cat: 'Fleet',           count: counts['Fleet'] || 0,            color: '#00bcd4' },
+                        { label: 'BUSINESS CARDS', cat: 'Business Cards',  count: counts['Business Cards'] || 0,   color: '#9c27b0' },
+                        { label: 'PURCHASING',     cat: 'Purchasing',      count: counts['Purchasing'] || 0,       color: '#3f51b5' },
+                        { label: 'FINANCE',        cat: 'Finance',         count: counts['Finance'] || 0,          color: '#ff9800' },
+                        { label: '30/60/90',       cat: '30/60/90 Review', count: counts['30/60/90 Review'] || 0,  color: '#8bc34a' },
+                        { label: 'ASSETS',         cat: 'Assets',          count: counts['Assets'] || 0,           color: '#f57c00' },
+                        { label: 'IT SETUP',       cat: 'IT',              count: (counts['IT'] || 0) + (counts['IT Setup'] || 0), color: '#2196f3' },
+                        { label: 'IT CONF',        cat: 'IT Confirmation', count: counts['IT Confirmation'] || 0,  color: '#42a5f5' },
+                        { label: 'ADP/HR',         cat: '__ADPHR__',       count: adpHrCount,                      color: '#9c27b0' },
+                        { label: 'DEACTIVATION',   cat: 'Deactivation',    count: counts['Deactivation'] || 0,    color: '#607d8b' },
+                        { label: 'ID SETUP',       cat: 'ID Setup',        count: counts['ID Setup'] || 0,         color: '#00acc1' },
+                        { label: 'WIS',            cat: 'WIS',             count: counts['WIS'] || 0,              color: '#26c6da' }
+                    ];
+
+                    // My Pending Tasks = personal sum: categories where user's email belongs to the assigned group.
+                    // This is separate from the global filter counts above.
+                    // Example: if you're in the 30/60/90 group AND the Deactivation group,
+                    // your pending = 30/60/90 open count + Deactivation open count.
+                    var myPending = 0;
+                    if (inSg('SAFETY'))         myPending += (counts['Safety'] || 0);
+                    if (inSg('FLEETIO'))        myPending += (counts['Fleet'] || 0);
+                    if (inSg('BUSINESS_CARDS')) myPending += (counts['Business Cards'] || 0);
+                    if (inSg('JONAS'))          myPending += (counts['Purchasing'] || 0);
+                    if (inSg('CREDIT_CARD'))    myPending += (counts['Finance'] || 0);
+                    if (inSg('REVIEW_306090_JR')) myPending += (counts['30/60/90 Review'] || 0);
+                    if (inSg('FLEETIO'))        myPending += (counts['Assets'] || 0); // fleet returns go to fleetio
+                    if (rp.isIT || rp.isAdmin)  myPending += (counts['IT'] || 0) + (counts['IT Setup'] || 0) + (counts['IT Confirmation'] || 0);
+                    if (rp.isHR || rp.isAdmin)  myPending += (counts['HR'] || 0) + (counts['EOE'] || 0) + (counts['HR Verification'] || 0) + (counts['Payroll'] || 0);
+                    if (rp.isHR || rp.isAdmin || inSg('IDSETUP')) myPending += (counts['Deactivation'] || 0) + (counts['ID Setup'] || 0);
+                    // Payroll group gets Payroll action items
+                    // (Payroll is not in specialistGroups currently — HR sees both via ADP/HR)
+                    if (rp.isAdmin)             myPending += (counts['WIS'] || 0) + (counts['Purchasing'] || 0);
+
+                    var panel   = document.getElementById('myTasksPanel');
+                    var list    = document.getElementById('myTasksList');
+                    var countEl = document.getElementById('myTasksCount');
                     panel.style.display = 'block';
-                    count.textContent = tasks.length + ' open';
-                    list.innerHTML = tasks.map(function(t) {
-                        var catColors = {
-                            'Assets':'#ff9800','IT':'#2196f3','HR':'#9c27b0','Fleet':'#00bcd4',
-                            'Finance':'#4caf50','Deactivation':'#607d8b','Safety':'#ff5722'
-                        };
-                        var catColor = catColors[t.category] || '#555';
-                        return '<div style="background:var(--card-bg); border:1px solid var(--border-color); border-left:3px solid ' + catColor + '; border-radius:6px; padding:12px 14px; min-width:220px; max-width:300px;">' +
-                            '<div style="font-size:11px; color:' + catColor + '; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">' + escapeHtml(t.category) + '</div>' +
-                            '<div style="font-size:13px; font-weight:600; margin:4px 0;">' + escapeHtml(t.employeeName || t.workflowId) + '</div>' +
-                            '<div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">' + escapeHtml(t.created) + '</div>' +
-                            '<button class="action-btn" style="background:var(--brand-red); color:white; width:100%; font-size:12px;" ' +
-                            'onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + escapeHtml(t.tid) + '\', \'_blank\')">Open Task</button>' +
+                    if (countEl) countEl.textContent = myPending + ' pending';
+
+                    // Render all filter buttons — everyone sees all, counts are global
+                    var html = '<div style="width:100%; margin-bottom:8px;">' +
+                        '<span style="font-size:10px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:0.5px;">Filter by Category</span>' +
+                        '<span style="font-size:10px; color:#aaa; margin-left:6px;">(click to filter list)</span>' +
+                        '</div>';
+
+                    html += allButtons.map(function(btn) {
+                        var n = btn.count;
+                        var hasItems = n > 0;
+                        var safeC = btn.cat.replace(/'/g, "\\'");
+                        return '<div style="background:var(--card-bg); border:1px solid var(--border-color); border-left:3px solid ' + btn.color + '; border-radius:6px; padding:6px 10px; min-width:110px; opacity:' + (hasItems ? '1' : '0.45') + ';">' +
+                            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">' +
+                            '<span style="font-size:10px; color:' + btn.color + '; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">' + btn.label + '</span>' +
+                            '<span style="font-size:18px; font-weight:700; color:' + (hasItems ? '#fff' : '#555') + ';">' + n + '</span>' +
+                            '</div>' +
+                            '<button class="action-btn" style="background:' + (hasItems ? 'var(--brand-red)' : '#2a2a2a') + '; color:' + (hasItems ? 'white' : '#555') + '; width:100%; font-size:11px; padding:4px 8px; cursor:' + (hasItems ? 'pointer' : 'default') + ';" ' +
+                            (hasItems ? 'onclick="filterByCategory(\'' + safeC + '\')"' : '') + '>' +
+                            (hasItems ? 'Filter' : 'None') + '</button>' +
                             '</div>';
                     }).join('');
+
+                    list.innerHTML = html;
                 })
                 .withFailureHandler(function() { /* silently fail */ })
-                .getMyPendingTasks();
+                .getMyTaskCounts();
+        }
+
+        // Step-based categories: match against granularStatus from Dashboard_View.
+        // IT SETUP maps to both the step ('pending: it setup') and IT action items.
+        // ID SETUP maps to the step ('pending: id setup') and ID Setup action items.
+        // ADP/HR is a combined filter covering both 'HR' and 'Payroll' action item categories.
+        const STEP_CATEGORY_TERMS = {
+            'IT':              ['pending: it setup'],   // IT SETUP button — step-based part
+            'ID Setup':        ['pending: id setup'],   // ID SETUP button — step-based part
+            'IT Confirmation': ['it confirmation'],     // IT CONF button — step label
+        };
+
+        function filterByCategory(cat) {
+            activeCategoryFilter = cat;
+            // Show chip so user can clear the filter
+            var chip = document.getElementById('activeCategoryChip');
+            var label = cat === '__ADPHR__' ? 'ADP/HR' : cat;
+            chip.textContent = '✕ ' + label;
+            chip.style.display = 'inline-flex';
+            // Make sure "Action Required" status is active so filtered rows are visible
+            if (!activeStatusFilters.has('PENDING')) {
+                activeStatusFilters.add('PENDING');
+                var pendingBtn = document.querySelector('.filter-btn[data-value="PENDING"]');
+                if (pendingBtn) pendingBtn.classList.add('active');
+            }
+            applyFiltersAndSort();
+            // Scroll down to the table
+            var tbl = document.getElementById('dashboardTable') || document.querySelector('table');
+            if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function clearCategoryFilter() {
+            activeCategoryFilter = null;
+            document.getElementById('activeCategoryChip').style.display = 'none';
+            applyFiltersAndSort();
+        }
+
+        /**
+         * Filter the main table to show workflows for a given employee name.
+         * Called when clicking a row in the My Open Requests panel.
+         */
+        function filterToEmployee(name) {
+            if (!name) return;
+            var input = document.getElementById('searchInput');
+            input.value = name;
+            searchTerm = name.toLowerCase();
+            // Ensure completed/cancelled are also visible so nothing hides
+            activeStatusFilters.clear();
+            document.querySelectorAll('.filter-btn[data-filter="status"]').forEach(function(b) { b.classList.remove('active'); });
+            applyFiltersAndSort();
+            var tbl = document.querySelector('.table-container');
+            if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        /**
+         * Renders the My Open Requests panel — client-side filter of already-loaded
+         * workflows where the current user is the requester or manager.
+         */
+        function renderMyRequests(workflows, currentUser) {
+            var panel   = document.getElementById('myRequestsPanel');
+            var list    = document.getElementById('myRequestsList');
+            var countEl = document.getElementById('myRequestsCount');
+            if (!panel || !list || !currentUser) return;
+
+            var cu = currentUser.toLowerCase();
+            var myWfs = (workflows || []).filter(function(wf) {
+                var s = (wf.status || '').toLowerCase();
+                if (s === 'cancelled' || s === 'completed' || s === 'complete') return false;
+                return (wf.requesterEmail || '').toLowerCase() === cu ||
+                       (wf.managerEmail   || '').toLowerCase() === cu;
+            });
+
+            if (myWfs.length === 0) return; // hide panel if nothing
+            panel.style.display = 'block';
+            if (countEl) countEl.textContent = myWfs.length;
+
+            var sColors = { 'Completed':'var(--success)', 'Complete':'var(--success)', 'Cancelled':'#888' };
+            list.innerHTML = myWfs.map(function(wf) {
+                var sCol = sColors[wf.status] || 'var(--warning)';
+                var name = escapeHtml(wf.employee || wf.id);
+                var type = escapeHtml(wf.type || '');
+                var step = escapeHtml(wf.step || wf.status || '');
+                var safeId   = escapeHtml(wf.id);
+                var safeType = escapeHtml(wf.type || '');
+                var safeName = escapeHtml(wf.employee || '');
+                return '<div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-color); cursor:pointer;" ' +
+                    'data-filter-employee="' + safeName + '" onclick="filterToEmployee(this.dataset.filterEmployee)" title="Filter dashboard to ' + name + '">' +
+                    '<span style="flex:1; font-size:13px; font-weight:600;">' + name + '</span>' +
+                    '<span style="font-size:11px; color:var(--text-muted);">' + type + '</span>' +
+                    '<span style="font-size:11px; color:var(--text-muted);">' + step + '</span>' +
+                    '<span style="background:' + sCol + '; color:#000; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;">' + escapeHtml(wf.status || '') + '</span>' +
+                    '<span style="color:#2196f3; font-size:12px; white-space:nowrap;">Filter ↓</span>' +
+                    '</div>';
+            }).join('');
         }
 
         function displayData(responseStr) {
@@ -558,25 +720,35 @@
                 return;
             }
             allWorkflows = response.workflows;
+            // Store role context in module-level variable (reliable) AND sessionStorage
+            // (best-effort, may be blocked in some iframe configurations).
+            _rolePayload = response.rolePayload || {};
+            _currentUser = response.currentUser || '';
+            if (response.rolePayload) {
+                try { sessionStorage.setItem('rolePayload', JSON.stringify(response.rolePayload)); } catch(e) {}
+            }
+            if (response.currentUser) {
+                try { sessionStorage.setItem('currentUser', response.currentUser); } catch(e) {}
+            }
             if (response.isAdmin) {
                 isAdmin = true;
                 document.body.classList.add('is-admin');
             }
+            // Apply role body classes for CSS-based static button gating
+            var rp = response.rolePayload || {};
+            if (rp.isHR)       document.body.classList.add('is-hr');
+            if (rp.isIT)       document.body.classList.add('is-it');
+            if (rp.isPayroll)  document.body.classList.add('is-payroll');
+            if (rp.isSpecialist) document.body.classList.add('is-specialist');
             applyFiltersAndSort(); // Triggers sorting and initially setting filteredWorkflows
+
+            // Load task counts now that _rolePayload is set (avoids race condition)
+            loadMyTasks();
+            // Render My Open Requests panel — client-side filter of already-loaded workflows
+            renderMyRequests(allWorkflows, response.currentUser);
         }
 
-        // Helper to safely format dates
-        function formatDate(dateStr) {
-            if (!dateStr) return '-';
-            // Already yyyy/MM/dd — return as-is if it matches
-            if (/^\d{4}\/\d{2}\/\d{2}/.test(dateStr)) return dateStr;
-            const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr;
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return y + '/' + m + '/' + day;
-        }
+        // formatDate() provided by SharedComponents.html (included at bottom of page)
 
         function renderTable() {
             const tbody = document.getElementById('tableBody');
@@ -756,6 +928,35 @@
                     if (!matchesAny) return false;
                 }
 
+                // Category filter — set by filter buttons in the task panel
+                if (activeCategoryFilter) {
+                    if (activeCategoryFilter === '__ADPHR__') {
+                        // ADP/HR combined: show workflows with HR or Payroll open items
+                        if (!wf.openCategories ||
+                            (!wf.openCategories.includes('HR') && !wf.openCategories.includes('Payroll'))) return false;
+                    } else if (activeCategoryFilter === 'IT') {
+                        // IT SETUP button: matches IT action items OR 'pending: it setup' step
+                        var hasItAI   = wf.openCategories && wf.openCategories.includes('IT');
+                        var hasItStep = (wf.step || '').toLowerCase().includes('pending: it setup') ||
+                                        (wf.step || '').toLowerCase().includes('it setup needed');
+                        if (!hasItAI && !hasItStep) return false;
+                    } else if (activeCategoryFilter === 'ID Setup') {
+                        // ID SETUP button: matches ID Setup action items OR 'pending: id setup' step
+                        var hasIdAI   = wf.openCategories && wf.openCategories.includes('ID Setup');
+                        var hasIdStep = (wf.step || '').toLowerCase().includes('pending: id setup') ||
+                                        (wf.step || '').toLowerCase().includes('id setup needed');
+                        if (!hasIdAI && !hasIdStep) return false;
+                    } else if (STEP_CATEGORY_TERMS[activeCategoryFilter]) {
+                        // Other step-based filters
+                        const terms = STEP_CATEGORY_TERMS[activeCategoryFilter];
+                        const stepLower = (wf.step || '').toLowerCase();
+                        if (!terms.some(t => stepLower.includes(t))) return false;
+                    } else {
+                        // Action-item-based: filter by openCategories array on workflow object
+                        if (!wf.openCategories || !wf.openCategories.includes(activeCategoryFilter)) return false;
+                    }
+                }
+
                 return true;
             });
 
@@ -796,6 +997,13 @@
                         document.getElementById('modalContent').innerHTML = '<div style="color:red; padding:20px;">Error loading details: ' + err.message + '</div>';
                     })
                     .getTerminationDetails(id);
+            } else if (type === 'Equipment' || id.startsWith('EQUIP_REQ_')) {
+                google.script.run
+                    .withSuccessHandler(renderModalDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('modalContent').innerHTML = '<div style="color:red; padding:20px;">Error loading details: ' + err.message + '</div>';
+                    })
+                    .getEquipmentRequestDetails(id);
             } else {
                 google.script.run
                     .withSuccessHandler(renderModalDetails)
@@ -816,99 +1024,221 @@
             const r = details.requestData || {};
             const checklist = details.checklist || [];
 
-            // --- Stepper Logic ---
+            // Role payload for button gating — use module-level _rolePayload (reliable).
+            // sessionStorage is also tried as fallback in case the modal fires before
+            // displayData() completes (very unlikely but defensive).
+            var rp = _rolePayload && (_rolePayload.isAdmin !== undefined) ? _rolePayload : {};
+            if (!rp.isAdmin && !rp.isHR && !rp.isIT) {
+                try { rp = JSON.parse(sessionStorage.getItem('rolePayload') || '{}'); } catch(e) {}
+            }
+            var cu = _currentUser || '';
+            try { if (!cu) cu = sessionStorage.getItem('currentUser') || ''; } catch(e) {}
+            var wfRequester = String(details.requesterEmail || r['Requester Email'] || '').toLowerCase();
+            var wfManager   = String(details.managerEmail   || r['Manager Email']   || '').toLowerCase();
+            var cuLower     = cu.toLowerCase();
+            var isOwner     = cuLower && (cuLower === wfRequester || cuLower === wfManager);
+            // Block cancel/bump on terminal workflows — server would reject anyway, but show disabled for UX.
+            var isTerminal  = (details.status === 'Cancelled' || details.status === 'Complete' || details.status === 'Completed');
+            var canBump        = !isTerminal && (rp.canBumpAll   || isOwner);
+            var canCancel      = !isTerminal && (rp.canCancelAll || isOwner);
+            var canViewData    = rp.canViewAllStepData || isOwner;
+            // View Form: Admin / IT / requester / manager / any specialist group member.
+            // Tighter than canViewData (excludes HR-only and Payroll-only users from opening
+            // forms that belong to other teams — they can still see the data via View Data).
+            var canViewFormBtn = rp.isAdmin || rp.isIT || isOwner || rp.isSpecialist;
+            var _dis = function(allowed) { return allowed ? '' : ' disabled title="Insufficient permissions" style="opacity:0.45; pointer-events:none; cursor:not-allowed;"'; };
+
+            // ── Stepper Logic ─────────────────────────────────────────────────────
+            // All 4 workflow types get a stepper. Steps are built dynamically from
+            // the checklist using BADGE_LABEL (maps category/name → dashboard button label).
+            //
+            // Phase numbering: sequential steps get unique numbers (1, 2, 3...).
+            // Parallel steps (specialists, action items that fire simultaneously) share
+            // the same phase number so the dot label communicates "these happen at once."
+            // phaseMap: step label → phase number shown in the dot.
+            //
+            // N/A steps are absent (not rendered). Manager category (SC transfer) is null
+            // in BADGE_LABEL — intentionally invisible, no stepper dot, no badge.
+            // ─────────────────────────────────────────────────────────────────────────
             const isOnboarding = details.type === 'Onboarding';
-            const isEOE = details.type === 'End of Employment';
+            const isEOE        = details.type === 'End of Employment';
+            const isEquipment  = details.type === 'Equipment';
+            const isChange     = details.type === 'Status Change';
             let stepperHtml = '';
 
-            if (isOnboarding || isEOE) {
-                let steps = [];
-                let statusMap = {};
+            if (isOnboarding || isEOE || isEquipment || isChange) {
+                let steps     = [];   // ordered badge labels to render
+                let statusMap = {};   // label → status (worst-status-wins for parallel)
+                let phaseMap  = {};   // label → phase number shown in dot
 
-                if (isOnboarding) {
-                    steps = ["Initial Request", "ID Setup", "HR Verification", "IT Setup"];
-                    const hasSpecialists = checklist.some(c => !steps.includes(c.name));
-                    if (hasSpecialists) steps.push("Specialists");
+                // ── Shared BADGE_LABEL — all 4 workflows ────────────────────────────
+                // Keys: checklist item name or category.  Values: badge label (null = no dot).
+                // Legacy names kept so pre-rename workflows still render correctly.
+                const BADGE_LABEL = {
+                    // Fixed step names
+                    'Initial Request':  'Initial Request',
+                    'IT Confirmation':  'IT CONF',
+                    'IT Setup':         'IT SETUP',
+                    'HR Verification':  'HR Verification',
+                    'Approval':         'Approval',
+                    'HR Approval':      'Approval',
+                    // Action item categories
+                    'IT':               'IT SETUP',
+                    'HR':               'ADP/HR',
+                    'Payroll':          'ADP/HR',
+                    'EOE':              'ADP/HR',   // folds into ADP/HR per decision
+                    'Safety':           'SAFETY',
+                    'Finance':          'FINANCE',
+                    'Business Cards':   'BUSINESS CARDS',
+                    'Fleet':            'FLEET',
+                    '30/60/90 Review':  '30/60/90',
+                    'Purchasing':       'PURCHASING',
+                    'ID Setup':         'ID SETUP',
+                    'WIS':              'WIS',
+                    'Deactivation':     'DEACTIVATION',
+                    'Assets':           'ASSETS',
+                    'Manager':          null,       // no badge — transfer coordination, invisible
+                    // Legacy category names (pre-rename)
+                    'Credit Card':      'FINANCE',
+                    'Fleetio':          'FLEET',
+                    'Jonas':            'PURCHASING',
+                    'SiteDocs':         null,       // dead for NH; part of ID SETUP for Equipment
+                };
 
-                    checklist.forEach(c => {
-                        let key = c.name;
-                        if (key.includes("Jonas") || key.includes("Credit") || key.includes("Fleet") || key.includes("SiteDocs") || key.includes("Business") || key.includes("30") || key.includes("Central")) key = "Specialists";
-                        if (!statusMap[key]) statusMap[key] = c.status;
-                        if (key === "Specialists" && c.status !== "Complete") statusMap[key] = "Pending";
-                    });
-                } else if (isEOE) {
-                    steps = ["Initial Request", "Approval", "Assets", "Systems"];
-                    
-                    // Pre-fill N/A for conditionally generated items so they don't default to pending
-                    statusMap["Assets"] = "N/A";
-                    statusMap["Systems"] = "N/A";
-                    
-                    checklist.forEach(c => {
-                        let key = c.name;
-                        // Map asset categories
-                        if (key === "Asset Collection" || key === "Assets") {
-                            if (statusMap["Assets"] === "N/A" || statusMap["Assets"] === "Complete") {
-                                statusMap["Assets"] = c.status; // Pending overwrites N/A or Complete
-                            }
-                        }
-                        
-                        // Map all deactivation action items to "Systems"
-                        else if (['IT', 'HR', 'Fleet', 'Finance', 'Deactivation', 'IT Systems Deactivation'].includes(key)) {
-                            // If ANY systems item is pending, the stepper shows Pending
-                            if (c.status === "Pending") {
-                                statusMap["Systems"] = "Pending";
-                            } else if (statusMap["Systems"] === "N/A") {
-                                statusMap["Systems"] = c.status; // e.g. Complete
-                            }
-                        } else {
-                            // Fallback for Initial Request and Approval
-                            if (!statusMap[key]) statusMap[key] = c.status;
-                        }
+                // ── Helpers ─────────────────────────────────────────────────────────
+                // Worst-status-wins: Pending always beats Complete for the same dot.
+                function applyStatus(key, status) {
+                    if (!statusMap[key] || (status !== 'Complete' && statusMap[key] === 'Complete')) {
+                        statusMap[key] = status;
+                    }
+                }
+                // Assign phase numbers: coreSteps get 1, 2, 3...; all others share parallelPhase.
+                function buildPhaseMap(coreSteps, allSteps, overrides) {
+                    var pm = {};
+                    coreSteps.forEach(function(s, i) { pm[s] = i + 1; });
+                    var pp = coreSteps.length + 1;
+                    allSteps.forEach(function(s) { if (!pm[s]) pm[s] = pp; });
+                    if (overrides) Object.keys(overrides).forEach(function(k) { pm[k] = overrides[k]; });
+                    return pm;
+                }
+                // True if ALL steps in a given phase are Complete (used for active-dot logic).
+                function phaseAllComplete(targetPhase) {
+                    return steps.every(function(s) {
+                        return phaseMap[s] !== targetPhase || statusMap[s] === 'Complete';
                     });
                 }
 
+                // ── NEW HIRE ─────────────────────────────────────────────────────────
+                if (isOnboarding) {
+                    var nhCore = ['Initial Request', 'ID SETUP', 'HR Verification'];
+                    if (checklist.some(function(c) { return c.name === 'IT Confirmation'; })) nhCore.push('IT CONF');
+                    nhCore.push('IT SETUP');
+                    steps = nhCore.slice();
+                    var nhSet = new Set(steps);
+                    checklist.forEach(function(c) {
+                        var label = BADGE_LABEL[c.name];
+                        if (label && !nhSet.has(label)) { steps.push(label); nhSet.add(label); }
+                        var key = BADGE_LABEL[c.name] || c.name;
+                        applyStatus(key, c.status);
+                    });
+                    phaseMap = buildPhaseMap(nhCore, steps);
+
+                // ── EQUIPMENT REQUEST ─────────────────────────────────────────────────
+                } else if (isEquipment) {
+                    var eqCore = ['Initial Request'];
+                    if (checklist.some(function(c) { return c.name === 'IT Confirmation'; })) eqCore.push('IT CONF');
+                    eqCore.push('IT SETUP');
+                    steps = eqCore.slice();
+                    var eqSet = new Set(steps);
+                    checklist.forEach(function(c) {
+                        // Equipment checklist items have c.category (action item category)
+                        // and c.name (task name). Use category for badge lookup; fall back to name.
+                        var catKey = c.category || c.name;
+                        var label  = BADGE_LABEL[catKey] !== undefined ? BADGE_LABEL[catKey] : BADGE_LABEL[c.name];
+                        if (label === null) return; // intentionally no dot
+                        if (label && !eqSet.has(label)) { steps.push(label); eqSet.add(label); }
+                        // Status: map to badge label for the correct dot
+                        var statusKey = label || catKey;
+                        applyStatus(statusKey, c.status);
+                    });
+                    // Core step statuses from fixed checklist items
+                    var eqInit   = checklist.find(function(c) { return c.name === 'Initial Request'; });
+                    var eqITConf = checklist.find(function(c) { return c.name === 'IT Confirmation'; });
+                    if (eqInit)   statusMap['Initial Request'] = eqInit.status;
+                    if (eqITConf) statusMap['IT CONF']         = eqITConf.status;
+                    phaseMap = buildPhaseMap(eqCore, steps);
+
+                // ── STATUS CHANGE ─────────────────────────────────────────────────────
+                } else if (isChange) {
+                    var scCore = ['Initial Request', 'Approval'];
+                    // IT CONF and IT SETUP are sequential when present (BOSS path)
+                    if (checklist.some(function(c) { return c.name === 'IT Confirmation'; })) scCore.push('IT CONF');
+                    if (checklist.some(function(c) { return c.name === 'IT'; }))              scCore.push('IT SETUP');
+                    steps = scCore.slice();
+                    var scSet = new Set(steps);
+                    var scParallelPhase = scCore.length + 1;
+                    checklist.forEach(function(c) {
+                        var label = BADGE_LABEL[c.name];
+                        if (label === null) return; // Manager — no dot
+                        if (label && !scSet.has(label)) { steps.push(label); scSet.add(label); }
+                        if (label) applyStatus(label, c.status);
+                    });
+                    // Core step statuses
+                    var scInit   = checklist.find(function(c) { return c.name === 'Initial Request'; });
+                    var scAppr   = checklist.find(function(c) { return c.name === 'HR Approval' || c.name === 'Approval'; });
+                    var scITConf = checklist.find(function(c) { return c.name === 'IT Confirmation'; });
+                    var scIT     = checklist.find(function(c) { return c.name === 'IT'; });
+                    if (scInit)   statusMap['Initial Request'] = scInit.status;
+                    if (scAppr)   statusMap['Approval']        = scAppr.status;
+                    if (scITConf) statusMap['IT CONF']         = scITConf.status;
+                    if (scIT)     statusMap['IT SETUP']        = scIT.status;
+                    // WIS is sequenced — fires after ID SETUP closes, so gets its own phase
+                    phaseMap = buildPhaseMap(scCore, steps, { 'WIS': scParallelPhase + 1 });
+
+                // ── EOE / TERMINATION ─────────────────────────────────────────────────
+                } else if (isEOE) {
+                    var eoeCore = ['Initial Request', 'Approval'];
+                    steps = eoeCore.slice();
+                    var eoeSet = new Set(steps);
+                    checklist.forEach(function(c) {
+                        var label = BADGE_LABEL[c.name];
+                        if (label === null) return;
+                        if (c.name === 'Initial Request') { statusMap['Initial Request'] = c.status; return; }
+                        if (c.name === 'Approval' || c.name === 'HR Approval') { statusMap['Approval'] = c.status; return; }
+                        if (label && !eoeSet.has(label)) { steps.push(label); eoeSet.add(label); }
+                        if (label) applyStatus(label, c.status);
+                    });
+                    phaseMap = buildPhaseMap(eoeCore, steps);
+                }
+
+                // ── Render ──────────────────────────────────────────────────────────
                 stepperHtml = '<div class="stepper-container" style="display:flex; justify-content:space-between; margin-bottom: 30px; position:relative; padding: 0 10px;">';
                 stepperHtml += '<div style="position:absolute; top:12px; left:20px; right:20px; height:2px; background:#333; z-index:0;"></div>';
 
-                steps.forEach((step, idx) => {
-                    let status = statusMap[step] || 'Pending';
-                    let color = '#333';
-                    let textColor = '#666';
-
+                steps.forEach(function(step, idx) {
+                    var status = statusMap[step] || 'Pending';
+                    if (status === 'N/A' || status === 'Skipped') return; // absent for this workflow
+                    var myPhase = phaseMap[step] || (idx + 1);
+                    var color = '#333', textColor = '#666';
                     if (status === 'Complete') {
-                        color = 'var(--success)';
-                        textColor = '#fff';
+                        color = 'var(--success)'; textColor = '#fff';
                     } else if (status === 'Pending') {
-                        // Mark as active if previous is complete
-                        const prevStep = idx > 0 ? steps[idx - 1] : null;
-                        if (!prevStep || statusMap[prevStep] === 'Complete') {
-                            color = 'var(--warning)';
-                            textColor = '#fff';
-                        }
+                        // Active (amber) when the previous phase is fully complete
+                        var prevPhase = myPhase - 1;
+                        var prevDone  = prevPhase < 1 || phaseAllComplete(prevPhase);
+                        if (prevDone) { color = 'var(--warning)'; textColor = '#fff'; }
                     }
-
                     stepperHtml +=
                         '<div style="z-index:1; text-align:center; background:var(--card-bg); padding:0 5px; flex: 1;">' +
-                        '<div style="width:24px; height:24px; background:' + color + '; border-radius:50%; margin:0 auto 5px; line-height:24px; font-size:12px; font-weight:bold; color:black;">' + (idx + 1) + '</div>' +
+                        '<div style="width:24px; height:24px; background:' + color + '; border-radius:50%; margin:0 auto 5px; line-height:24px; font-size:12px; font-weight:bold; color:black;">' + myPhase + '</div>' +
                         '<div style="font-size:11px; color:' + textColor + '; font-weight:500; white-space: nowrap; overflow:hidden; text-overflow:ellipsis;">' + step + '</div>' +
                         '</div>';
                 });
                 stepperHtml += '</div>';
             }
 
-            var _dateLabel = isEOE ? 'Term Date' : 'Start Date';
-            var _dateVal = isEOE
-                ? (r['Term Date'] || r['Termination Date'] || '-')
-                : (r['Hire Date'] || r['Hire/Start Date'] || r['Start Date'] || '-');
             var html = stepperHtml +
-                '<div class="detail-grid">' +
-                '<div class="detail-item"><label>Employee Name</label><div>' + escapeHtml(r['Employee Name'] || ((r['First Name'] || '') + ' ' + (r['Last Name'] || '')).trim() || '-') + '</div></div>' +
-                '<div class="detail-item"><label>Job Title</label><div>' + escapeHtml(r['Position Title'] || r['HR Verified Title'] || r['Position/JR Title'] || r['Job Title'] || '-') + '</div></div>' +
-                '<div class="detail-item"><label>Site</label><div>' + escapeHtml(r['Site/Office Location'] || r['Site Name'] || r['Site'] || '-') + '</div></div>' +
-                '<div class="detail-item"><label>' + _dateLabel + '</label><div>' + escapeHtml(_dateVal) + '</div></div>' +
-                '<div class="detail-item"><label>Date Requested</label><div>' + escapeHtml(r['Date Requested'] || r['Timestamp'] || '-') + '</div></div>' +
-                '<div class="detail-item"><label>Employment Type</label><div>' + escapeHtml(r['Employment Type'] || '-') + '</div></div>' +
-                '</div>' +
+                renderWorkflowFields(r, details.id) +
                 '<h3 class="section-header">Status Checklist</h3>' +
                 '<table style="width:100%; border-collapse: collapse; margin-top: 10px;">' +
                 '<thead>' +
@@ -935,30 +1265,32 @@
                     var actionBtn = '-';
 
                     if (!isComplete && !isNA && item.target) {
+                        actionBtn = '<button class="action-btn" style="background:#444;"' + _dis(canBump) + ' onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
                         if (item.tid) {
-                            // EOE Action Item — route to the specific Action Item form via tid
-                            actionBtn = '<button class="action-btn" style="background: #444;" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
-                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                            // Action item — open via tid
+                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;"' + _dis(canViewFormBtn) + ' onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
                         } else {
-                            actionBtn = '<button class="action-btn" style="background: #444;" onclick="bumpSpecific(\'' + item.target + '\')">Remind</button>';
-                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="openFormForWorkflow(\'' + item.target + '\', \'' + details.id + '\')">View Form</button>';
-                        }
-                    } else if (isComplete && item.target) {
-                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + item.target + '\')">View Data</button>';
-                        if (item.tid) {
-                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                            // Step form (ID Setup, HR Verification, IT Setup etc) — open via target URL
+                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;"' + _dis(canViewFormBtn) + ' onclick="openFormForWorkflow(\'' + item.target + '\', \'' + details.id + '\')">View Form</button>';
                         }
                     } else if (isComplete && item.name === 'Initial Request') {
                         var targetForm = details.type === 'End of Employment' ? 'termination_request' : 'initial_request';
+                        // Initial request data open to all — no role gate
                         actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;" onclick="openStepDataView(\'' + targetForm + '\')">View Data</button>';
+                    } else if (isComplete && item.target) {
+                        actionBtn = '<button class="action-btn" style="background:transparent; border:1px solid #444;"' + _dis(canViewData) + ' onclick="openStepDataView(\'' + item.target + '\')">View Data</button>';
+                        if (item.tid) {
+                            // Completed action items also offer View Form (read-only after close)
+                            actionBtn += '&nbsp;<button class="action-btn" style="background:#555;"' + _dis(canViewFormBtn) + ' onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                        }
                     }
 
                     html +=
                         '<tr style="border-bottom: 1px solid #333; background-color: ' + (item.status === 'Cancelled' ? '#ffffff; color: #000' : 'transparent') + '">' +
-                        '<td style="padding: 12px 10px;">' + item.name + '</td>' +
+                        '<td style="padding: 12px 10px;">' + escapeHtml(item.name || '') + '</td>' +
                         '<td style="padding: 12px 10px;">' + badge + '</td>' +
-                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#ccc') + ';">' + (item.by || '-') + '</td>' +
-                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#888') + ';">' + (!item.time || item.time === 'undefined' ? '-' : item.time) + '</td>' +
+                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#ccc') + ';">' + escapeHtml(item.by || '-') + '</td>' +
+                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#888') + ';">' + escapeHtml(!item.time || item.time === 'undefined' ? '-' : item.time) + '</td>' +
                         '<td style="padding: 12px 10px; text-align: right;">' + actionBtn + '</td>' +
                         '</tr>';
                 });
@@ -973,6 +1305,22 @@
 
 
             document.getElementById('modalContent').innerHTML = html;
+
+            // Gate the Cancel button in the modal footer
+            var btnCancel = document.getElementById('btnCancel');
+            if (btnCancel) {
+                if (canCancel) {
+                    btnCancel.removeAttribute('disabled');
+                    btnCancel.style.opacity = '';
+                    btnCancel.style.pointerEvents = '';
+                    btnCancel.title = '';
+                } else {
+                    btnCancel.setAttribute('disabled', 'disabled');
+                    btnCancel.style.opacity = '0.4';
+                    btnCancel.style.pointerEvents = 'none';
+                    btnCancel.title = 'Insufficient permissions';
+                }
+            }
         }
 
         function closeModal() {
@@ -998,8 +1346,9 @@
         });
 
         function openStepDataView(target) {
+            // Opens RequestDetails page. ?vd= auto-open removed — user navigates normally.
             if (currentWorkflowId) {
-                window.open(SERVER_BASE_URL + '?form=request_details&id=' + currentWorkflowId + '&vd=' + target, '_blank');
+                window.open(SERVER_BASE_URL + '?form=request_details&id=' + currentWorkflowId, '_blank');
             }
         }
 
@@ -1126,8 +1475,7 @@
         </div>
     </div>
 
-  <?!= safeInclude('SharedComponents') ?>
-
+  <?!= include('SharedComponents') ?>
 </body>
 
 </html>

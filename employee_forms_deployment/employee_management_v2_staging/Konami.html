@@ -12,7 +12,7 @@
                    FESTIVUS → Seinfeld  |  PIVOT → Friends  |  DARKSIDE → Star Wars
                    DOUGHNUT → The Simpsons  |  NISHRUBBERY → Monty Python
      localStorage: tg_eg_v1
-     Stats fn:     google.script.run.getStarTrekStats()
+     Stats fn:     google.script.run.getKonamiStats()
      DEV ONLY — do not migrate to staging or prod -->
 <style>
 /* ── FONT SCALE ──────────────────────────────────────────────── */
@@ -303,7 +303,7 @@ body.eg.t-matrix #st-alert{border-color:var(--st-green);color:var(--st-green);an
 body.eg.t-office #st-alert{border-color:var(--st-mid);color:var(--st-mid);animation:office-blink 2s infinite;background:rgba(245,240,230,.95)}
 body.eg.t-who #st-alert{border-color:var(--st-cyan);color:var(--st-cyan)}
 .st-blink{animation:st-blink .5s infinite}
-#st-ctrl{position:fixed;top:68px;right:0;z-index:9993;background:var(--st-panel2,#0E0700);border-left:1px solid var(--st-faint,#3A2200);border-bottom:1px solid var(--st-faint,#3A2200);padding:6px 4px;display:flex;flex-direction:column;align-items:stretch;gap:3px;max-height:calc(100vh - 80px);overflow-y:auto;width:68px}
+#st-ctrl{position:fixed;top:68px;left:0;right:0;z-index:9993;background:var(--st-panel2,#0E0700);border-bottom:1px solid var(--st-faint,#3A2200);padding:5px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;height:36px}
 body.eg.t-office #st-ctrl{background:#fff;border-bottom:2px solid var(--st-faint)}
 .st-cg{display:flex;align-items:center;gap:5px}
 .st-cl{font-size:var(--fs-2xs,10px);color:var(--st-dim,#886600);letter-spacing:3px;text-transform:uppercase;font-family:var(--st-fb,'Courier New',monospace);white-space:nowrap;margin-right:3px}
@@ -943,7 +943,7 @@ function fetchStats(){
       if(document.body.classList.contains('t-geo')){renderGeoStats({error:'Server error'});}
       else{var el=document.getElementById('st-sload');if(el){el.textContent='TRANSMISSION FAILED';el.style.animation='none';}}
     })
-    .getStarTrekStats();
+    .getKonamiStats();
 }
 
 function renderTrekStats(data,d){

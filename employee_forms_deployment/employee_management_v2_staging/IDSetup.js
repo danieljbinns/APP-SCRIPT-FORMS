@@ -146,6 +146,7 @@ function generateDssUsername(firstName, lastName) {
 
 function submitEmployeeIDSetup(formData) {
   try {
+    rawLog('submitEmployeeIDSetup', formData);
     const workflowId = formData.workflowId;
     const formId = generateFormId('ID_SETUP');
     
@@ -157,7 +158,7 @@ function submitEmployeeIDSetup(formData) {
     
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     let resultsSheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
-    
+
     if (!resultsSheet) {
       resultsSheet = ss.insertSheet(CONFIG.SHEETS.ID_SETUP_RESULTS);
       resultsSheet.appendRow([
@@ -168,9 +169,40 @@ function submitEmployeeIDSetup(formData) {
       ]);
       resultsSheet.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
-    
+
+    // Acquire lock and validate/recompute employee ID to prevent duplicates
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
+    let finalEmployeeId = formData.internalEmployeeId;
+    try {
+      const existingData = resultsSheet.getDataRange().getValues();
+      let idExists = false;
+      for (let i = 1; i < existingData.length; i++) {
+        if (existingData[i][3] === finalEmployeeId) {
+          idExists = true;
+          break;
+        }
+      }
+      // If submitted ID already exists, recompute the next available ID
+      if (idExists) {
+        let maxId = 29999;
+        for (let i = 1; i < existingData.length; i++) {
+          const id = existingData[i][3];
+          if (id && !isNaN(id)) {
+            const numId = parseInt(id);
+            if (numId > maxId) {
+              maxId = numId;
+            }
+          }
+        }
+        finalEmployeeId = String(maxId + 1);
+      }
+    } finally {
+      lock.releaseLock();
+    }
+
     resultsSheet.appendRow([
-      workflowId, formId, new Date(), formData.internalEmployeeId,
+      workflowId, formId, new Date(), finalEmployeeId,
       formData.siteDocsWorkerId, formData.siteDocsJobCode,
       formData.siteDocsUsername || 'N/A', formData.siteDocsPassword || 'N/A',
       formData.dssUsername, formData.dssPassword,
@@ -179,7 +211,10 @@ function submitEmployeeIDSetup(formData) {
     ]);
     
     const actingUser = Session.getActiveUser().getEmail();
-    updateWorkflow(workflowId, 'In Progress', 'ID Setup Complete', '', actingUser);
+    // Advance directly to HR Verification — no intermediate 'ID Setup Complete' step.
+    // triggerNextStepFromIDSetup sends the HR Verification email; step must already
+    // reflect what is actually pending so Dashboard_View and task counts are correct.
+    updateWorkflow(workflowId, 'In Progress', 'HR Verification Needed', '', actingUser);
     syncWorkflowState(workflowId);
 
     triggerNextStepFromIDSetup(workflowId, formData, requestData);
@@ -198,56 +233,7 @@ function submitEmployeeIDSetup(formData) {
   }
 }
 
-function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
-  try {
-    const siteDocsJobCode = (setupData && setupData.siteDocsJobCode) || (function() {
-      try {
-        var sh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
-        if (!sh) return '';
-        var rows = sh.getDataRange().getValues();
-        var row = rows.find(function(r) { return r[SCHEMA.ID_SETUP_RESULTS.WORKFLOW_ID] === workflowId; });
-        return row ? String(row[SCHEMA.ID_SETUP_RESULTS.SITEDOCS_JOB_CODE] || '') : '';
-      } catch(e) { return ''; }
-    })();
-
-    // Use full workflow context so all Request Details fields are populated in the email
-    var contextData = (typeof getWorkflowContext === 'function' ? getWorkflowContext(workflowId) : null) || {};
-    contextData.workflowType = 'New Hire';
-    // Supplement with any extra fields from requestData that may not yet be in the sheet
-    if (!contextData.employeeName && requestData.employeeName) contextData.employeeName = requestData.employeeName;
-    if (!contextData.jobTitle    && requestData.position)      contextData.jobTitle     = requestData.position;
-    if (!contextData.siteName    && requestData.siteName)      contextData.siteName     = requestData.siteName;
-    if (!contextData.hireDate    && requestData.hireDate)      contextData.hireDate     = requestData.hireDate;
-    if (siteDocsJobCode) contextData.siteDocsJobCode = siteDocsJobCode;
-
-    const description = JSON.stringify([
-      'Assign SiteDocs locations for employee',
-      'Assign DSS learning paths'
-    ]);
-
-    const tid = ActionItemService.createActionItem(
-      workflowId,
-      'Safety',
-      'Safety Onboarding — ' + requestData.employeeName,
-      description,
-      CONFIG.EMAILS.SAFETY,
-      'safety_onboarding'
-    );
-
-    sendFormEmail({
-      to: CONFIG.EMAILS.SAFETY,
-      subject: 'Safety Onboarding Required — ' + requestData.employeeName,
-      body: 'Please assign SiteDocs locations and DSS learning paths for this employee. Complete the action item using the button below.',
-      formUrl: buildFormUrl('action_item_view', { tid: tid }),
-      displayName: 'TEAM Group - Employee Onboarding',
-      contextData: contextData
-    });
-
-    Logger.log('[SUCCESS] Safety Onboarding Action Item created (' + tid + ') for ' + workflowId);
-  } catch (safeErr) {
-    Logger.log('[ERROR] Failed to create Safety Onboarding Action Item: ' + safeErr.toString());
-  }
-}
+// sendSafetyOnboardingEmail() moved to EmailUtils.js (2026-05-14)
 
 function buildStartDateCalendarLink_(requestData) {
   try {
@@ -313,17 +299,9 @@ function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
     // 2. CONTINUE TO HR VERIFICATION (Do not mark complete yet)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
     const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be skipped for this hourly/no-access employee.';
+    // Single email to both HR and Payroll — same content, same form link
     sendFormEmail({
-      to: CONFIG.EMAILS.HR,
-      subject: 'HR Verification Required',
-      body: hrBody,
-      formUrl: hrUrl,
-      displayName: 'TEAM Group - Employee Onboarding',
-      contextData: context
-    });
-    // Notify payroll at same time as HR — same email and form access
-    sendFormEmail({
-      to: CONFIG.EMAILS.PAYROLL,
+      to: CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL,
       subject: 'HR Verification Required',
       body: hrBody,
       formUrl: hrUrl,
@@ -339,17 +317,9 @@ function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
     // Standard Path (Salary OR System Access)
     const hrUrl = buildFormUrl('hr_verification', { wf: workflowId });
     const hrBody = 'Employee ID setup has been completed.\n\nPlease verify employee information and assign ADP Associate ID using the button below. IT setup will be triggered after HR verification.';
+    // Single email to both HR and Payroll — same content, same form link
     sendFormEmail({
-      to: CONFIG.EMAILS.HR,
-      subject: 'HR Verification Required',
-      body: hrBody,
-      formUrl: hrUrl,
-      displayName: 'TEAM Group - Employee Onboarding',
-      contextData: context
-    });
-    // Notify payroll at same time as HR — same email and form access
-    sendFormEmail({
-      to: CONFIG.EMAILS.PAYROLL,
+      to: CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL,
       subject: 'HR Verification Required',
       body: hrBody,
       formUrl: hrUrl,

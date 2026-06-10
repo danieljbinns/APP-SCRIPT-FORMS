@@ -115,21 +115,77 @@ function buildEmailSubject(action, contextData, opts) {
 }
 
 /**
- * Helper function to build context data from workflow
- * Fetches initial request data to include in subsequent emails
- * @param {string} workflowId - Workflow ID
- * @returns {Object} Context data for emails
+ * Builds the canonical email context object for a given workflow.
+ *
+ * This is the single source of truth for all data that appears in email templates.
+ * Every sendFormEmail() call ultimately uses the object returned here (via contextData)
+ * to populate createContextBlockV2() → the per-workflow template builders in EmailTemplates.js.
+ *
+ * WORKFLOW ROUTING (early-return branches)
+ * ─────────────────────────────────────────
+ * The function routes by workflowId prefix:
+ *
+ *   TERM_   → getTerminationData() (TerminationHandler.js) provides the base object.
+ *             Enriched with TERMINATION_APPROVALS (hrDecision, hrNotes, hrSubmittedBy,
+ *             hrTimestamp). Returns immediately after enrichment.
+ *
+ *   CHANGE_ → getPositionChangeData() (PositionChangeHandler.js) provides the base object.
+ *             Returns immediately after building the context literal.
+ *             NOTE: The POSITION_CHANGE_APPROVALS enrichment block that follows the
+ *             return statement is DEAD CODE — it is never executed. Enrichment for
+ *             CHANGE_ workflows is handled in notifyWorkflowClosure() (ActionItemService.js).
+ *
+ *   EQUIP_REQ_ / NEW_EMP_ → Falls through to the shared INITIAL_REQUESTS read below.
+ *
+ * SHARED READ PATH (New Hire + Equipment Request)
+ * ─────────────────────────────────────────────────
+ * After the early-return branches, the function reads the INITIAL_REQUESTS sheet,
+ * locates the matching row by header name lookup, and builds a `context` object.
+ * Three additional sheet reads augment the base object:
+ *
+ *   HR_VERIFICATION_RESULTS — ADP Associate ID, verified job title / JR title,
+ *                             HR-verified manager name & email, hrTimestamp, hrSubmittedBy.
+ *                             Only populated after HR Verification is complete.
+ *
+ *   ID_SETUP_RESULTS        — internalEmployeeId, siteDocsWorkerId, siteDocsJobCode,
+ *                             siteDocsUsername, siteDocsPassword, dssUsername, dssPassword,
+ *                             bossWisCreated, idTimestamp, idSubmittedBy.
+ *                             For New Hire: populated after ID Setup step.
+ *                             For Equipment Request: populated after WIS User action item
+ *                             closes (written by closeActionItem() in ActionItemService.js).
+ *
+ *   IT_RESULTS              — All IT Setup fields: assignedEmail, emailTempPassword,
+ *                             computer*, phone*, bossAccess, incidentsAccess, caaAccess,
+ *                             deliveryAppAccess, netPromoterAccess, itNotes, itTimestamp,
+ *                             itSubmittedBy, bossDetails.
+ *                             For New Hire/Equipment: populated after submitITSetup().
+ *                             For CHANGE_: populated after closeActionItem() CHANGE_ branch.
+ *
+ * SHEET CACHING CAVEAT
+ * ─────────────────────
+ * GAS may cache Spreadsheet.getSheetByName() / getDataRange().getValues() results
+ * within a single script execution. When closeActionItem() and notifyWorkflowClosure()
+ * run in the same execution and need fresh data, they read from their in-memory
+ * wfTasks snapshot instead of relying on this function's sheet reads.
+ *
+ * @param {string} workflowId - Workflow ID (e.g. 'NEW_EMP_XXXX', 'TERM_XXXX',
+ *                              'CHANGE_XXXX', 'EQUIP_REQ_XXXX')
+ * @returns {Object|null} Populated context object, or null if workflow data not found
  */
 function getWorkflowContext(workflowId) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
 
-    // Support for Termination Workflows
+    // ── EARLY RETURN: Termination Workflows (TERM_) ───────────────────────────
+    // getTerminationData() reads the TERMINATIONS sheet and returns a structured object.
+    // This branch enriches it with HR approval data from TERMINATION_APPROVALS.
+    // TERMINATION_APPROVALS columns: [0] WorkflowId, [2] Timestamp, [3] Decision,
+    //   [4] Notes, [6] SubmittedBy
     if (workflowId && workflowId.startsWith('TERM')) {
       const termData = typeof getTerminationData === 'function' ? getTerminationData(workflowId) : null;
       if (termData) {
         const g = termData.googleOffboarding || {};
-        return {
+        const termContext = {
           workflowType:    'Termination',
           employeeName:    termData.employeeName,
           employmentType:  termData.empType || '',
@@ -153,14 +209,41 @@ function getWorkflowContext(workflowId) {
           googleVacation:  g.vacation || '',
           originalComments: termData.originalComments || ''
         };
+        // Enrich with HR approval data (decision, notes, approver, timestamp)
+        const taSheet = ss.getSheetByName(CONFIG.SHEETS.TERMINATION_APPROVALS);
+        if (taSheet) {
+          const taData = taSheet.getDataRange().getValues();
+          const taRow = taData.find(function(r) { return r[0] === workflowId; });
+          if (taRow) {
+            if (taRow[3]) termContext.hrDecision    = String(taRow[3]);
+            if (taRow[4]) termContext.hrNotes       = String(taRow[4]);
+            if (taRow[6]) termContext.hrSubmittedBy = String(taRow[6]);
+            if (taRow[2]) termContext.hrTimestamp   = taRow[2] instanceof Date
+              ? Utilities.formatDate(taRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a')
+              : String(taRow[2]);
+          }
+        }
+        return termContext;
       }
     }
 
-    // Support for Position Change / Status Change Workflows
+    // ── EARLY RETURN: Status Change Workflows (CHANGE_) ──────────────────────
+    // getPositionChangeData() reads the POSITION_CHANGES sheet row.
+    // Manager emails are parsed from the stored "Name (email) -> Name (email)" delta string
+    // rather than from separate columns, since POSITION_CHANGES stores the combined string.
+    //
+    // IMPORTANT: The POSITION_CHANGE_APPROVALS enrichment block below the `return` is
+    // dead code — it references `changeContext` which is not declared in this scope.
+    // HR approval enrichment for CHANGE_ workflows is performed in:
+    //   notifyWorkflowClosure() (ActionItemService.js) — for the Workflow Completed email
+    //   submitPositionChangeApproval() (PositionChangeHandler.js) — for all approval emails
+    // If CHANGE_ context ever needs HR approval data in a non-closure context, the
+    // POSITION_CHANGE_APPROVALS read must be moved before this `return` statement.
     if (workflowId && workflowId.startsWith('CHANGE_')) {
       const changeData = typeof getPositionChangeData === 'function' ? getPositionChangeData(workflowId) : null;
       if (changeData) {
-        // Parse manager emails from stored managerChange string "Name (email) -> Name (email)"
+        // Parse manager emails from stored managerChange string: "Name (email) -> Name (email)"
+        // Each parenthesised group is a full email address. First match = old manager, second = new.
         const mcStr = String(changeData.managerChange || '');
         const mcMatches = mcStr.match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
         const mgrOldEmail = changeData.currentManagerEmail || (mcMatches.length > 0 ? mcMatches[0].replace(/[()]/g, '') : '');
@@ -189,50 +272,54 @@ function getWorkflowContext(workflowId) {
           currentTitle: changeData.currentTitle || '',
           currentManagerName: changeData.currentManagerName || '',
           currentManagerEmail: changeData.currentManagerEmail || '',
-          creditCardUSA:            changeData.creditCardUSA || '',
-          creditCardLimitUSA:       changeData.creditCardLimitUSA || '',
-          creditCardCanada:         changeData.creditCardCanada || '',
-          creditCardLimitCanada:    changeData.creditCardLimitCanada || '',
-          creditCardHomeDepot:      changeData.creditCardHomeDepot || '',
-          creditCardLimitHomeDepot: changeData.creditCardLimitHomeDepot || ''
+          creditCardUSA:            changeData.ccUSA || '',
+          creditCardLimitUSA:       changeData.ccLimitUSA || '',
+          creditCardCanada:         changeData.ccCAN || '',
+          creditCardLimitCanada:    changeData.ccLimitCAN || '',
+          creditCardHomeDepot:      changeData.ccHD || '',
+          creditCardLimitHomeDepot: changeData.ccLimitHD || '',
+          requestDate:              changeData.dateRequested || changeData.effDate || '',
+          // Delegation — direct report reassignment.
+          // oldReportsTo:  employee is LOSING reports → reassign them to this person/team.
+          // newReportsFrom: employee is GAINING reports from this person/team.
+          // Required here so getWorkflowContext() consumers (form header via RequestHeader.html,
+          // notifyWorkflowClosure, any future CHANGE_ email) can render these fields.
+          oldReportsTo:  changeData.oldReportsTo  || '',
+          newReportsFrom: changeData.newReportsFrom || ''
         };
+        // ── DEAD CODE — POSITION_CHANGE_APPROVALS enrichment ─────────────────────
+        // This block is unreachable: the `return { ... }` statement above returns before
+        // execution can reach here. Additionally, `changeContext` is not declared in this
+        // scope (it would need to be assigned from the return value above).
+        //
+        // HR approval data for CHANGE_ workflows is enriched in:
+        //   notifyWorkflowClosure() in ActionItemService.js (for the Workflow Completed email)
+        //   submitPositionChangeApproval() in PositionChangeHandler.js (for approval emails)
+        //
+        // If you need this data in other CHANGE_ emails, extract the return value above
+        // into a `changeContext` variable, perform enrichment, then return changeContext.
+        const pcaSheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
+        if (pcaSheet) {
+          const pcaData = pcaSheet.getDataRange().getValues();
+          const pcaRow = pcaData.find(function(r) { return r[0] === workflowId; });
+          if (pcaRow) {
+            if (pcaRow[3]) changeContext.hrDecision      = String(pcaRow[3]);
+            if (pcaRow[4]) changeContext.hrNotes         = String(pcaRow[4]);
+            if (pcaRow[5]) changeContext.confirmedTitle  = String(pcaRow[5]);
+            if (pcaRow[6]) changeContext.confirmedNewManager = String(pcaRow[6]);
+            if (pcaRow[7]) changeContext.hrSubmittedBy   = String(pcaRow[7]);
+            if (pcaRow[2]) changeContext.hrTimestamp     = pcaRow[2] instanceof Date
+              ? Utilities.formatDate(pcaRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a')
+              : String(pcaRow[2]);
+          }
+        }
+        return changeContext;
       }
     }
 
-    // Support for Equipment Request Workflows
-    if (workflowId && workflowId.startsWith('EQUIP_REQ_')) {
-      const eqSheet = ss.getSheetByName(CONFIG.SHEETS.EQUIPMENT_REQUESTS);
-      if (eqSheet) {
-        const eqData = eqSheet.getDataRange().getValues();
-        const EQ = SCHEMA.EQUIPMENT_REQUESTS;
-        const eqRow = eqData.find(function(r, i) { return i > 0 && r[EQ.WORKFLOW_ID] === workflowId; });
-        if (eqRow) {
-          const systems   = eqRow[EQ.SYSTEMS_REQUESTED]    ? String(eqRow[EQ.SYSTEMS_REQUESTED]).split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
-          const equipment = eqRow[EQ.EQUIPMENT_REQUESTED]  ? String(eqRow[EQ.EQUIPMENT_REQUESTED]).split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
-          return {
-            workflowType:   'Equipment Request',
-            workflowId:     workflowId,
-            employeeName:   ((eqRow[EQ.EMPLOYEE_FIRST_NAME] || '') + ' ' + (eqRow[EQ.EMPLOYEE_LAST_NAME] || '')).trim(),
-            firstName:      eqRow[EQ.EMPLOYEE_FIRST_NAME]  || '',
-            lastName:       eqRow[EQ.EMPLOYEE_LAST_NAME]   || '',
-            siteName:       eqRow[EQ.SITE_NAME]            || '',
-            jobTitle:       eqRow[EQ.JOB_TITLE]            || '',
-            managerName:    eqRow[EQ.MANAGER_NAME]         || '',
-            managerEmail:   eqRow[EQ.MANAGER_EMAIL]        || '',
-            requesterEmail: eqRow[EQ.REQUESTER_EMAIL]      || '',
-            requesterName:  eqRow[EQ.REQUESTER_NAME]       || '',
-            systems:        systems,
-            equipmentRaw:   eqRow[EQ.EQUIPMENT_REQUESTED]  || '',
-            equipment:      equipment,
-            comments:       eqRow[EQ.COMMENTS]             || '',
-            requestDate:    eqRow[EQ.TIMESTAMP] instanceof Date
-              ? Utilities.formatDate(eqRow[EQ.TIMESTAMP], Session.getScriptTimeZone(), 'yyyy-MM-dd')
-              : String(eqRow[EQ.TIMESTAMP] || '').substring(0, 10)
-          };
-        }
-      }
-      return null;
-    }
+    // Equipment requests are stored in INITIAL_REQUESTS (same sheet as New Hire) —
+    // falls through to the shared read below. The workflowType is derived from
+    // workflowId prefix: 'EQUIP_REQ_' → 'Equipment Request', else 'New Hire'.
 
     const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
 
@@ -263,7 +350,9 @@ function getWorkflowContext(workflowId) {
     // Default Context from Initial Request
     const context = {
       workflowId:    workflowId,
-      workflowType:  (workflowId && workflowId.indexOf('CHANGE_') === 0) ? 'Status Change' : 'New Hire',
+      workflowType:  workflowId.startsWith('EQUIP_REQ_') ? 'Equipment Request'
+                   : workflowId.startsWith('CHANGE_')   ? 'Status Change'
+                   : 'New Hire',
       firstName:     firstName,
       lastName:      lastName,
       middleName:    row[headers.indexOf('Middle Name')]    || '',
@@ -291,31 +380,49 @@ function getWorkflowContext(workflowId) {
       phoneRequestType:    row[headers.indexOf('Mobile Phone Request Type')] || row[SCHEMA.INITIAL_REQUESTS.PHONE_REQ],
       googleEmail:   row[headers.indexOf('Google Email')]  || '',
       googleDomain:  row[headers.indexOf('Google Domain')] || '',
-      adpSites:      row[headers.indexOf('ADP Sites')]     || '',
-      purchasingSites: row[headers.indexOf('Purchasing Sites')] || '',
+      adpSites:      String(row[headers.indexOf('ADP Sites')]        || ''),
+      purchasingSites: String(row[headers.indexOf('Purchasing Sites')] || ''),
       // BOSS & Review Config fields
       bossJobSites:     row[headers.indexOf('BOSS Job Sites')]          || row[headers.indexOf('Boss Job Sites')] || '',
       bossCostSheet:    row[headers.indexOf('BOSS Cost Sheet Access')]  || row[headers.indexOf('Cost Sheet Access')] || '',
       bossCostSheetJobs: row[headers.indexOf('BOSS Cost Sheet Jobs')]   || row[headers.indexOf('Cost Sheet Jobs')] || '',
       bossTripReports:  row[headers.indexOf('BOSS Trip Reports')]       || row[headers.indexOf('Trip Reports')] || '',
       bossGrievances:   row[headers.indexOf('BOSS Grievances')]         || row[headers.indexOf('Grievances')] || '',
-      vehicleRequested: row[headers.indexOf('Vehicle Requested')]       || row[headers.indexOf('Company Vehicle')] || '',
-      fleetioAccess:    row[headers.indexOf('Fleetio Access')]          || ''
+      // Derive from systems/equipment arrays (reliable) rather than column header lookup
+      vehicleRequested: (String(row[SCHEMA.INITIAL_REQUESTS.EQUIPMENT] || '').toLowerCase().indexOf('vehicle') !== -1) ? 'Yes' : (row[headers.indexOf('Vehicle Requested')] || row[headers.indexOf('Company Vehicle')] || ''),
+      fleetioAccess:    (systemsList.some(function(s){ return s.toLowerCase() === 'fleetio'; })) ? 'Yes' : (row[headers.indexOf('Fleetio Access')] || ''),
+      // Specialist-task fields — read via schema index since header names vary
+      creditCardUSA:    String(row[SCHEMA.INITIAL_REQUESTS.CC_USA]           || ''),
+      creditCardCanada: String(row[SCHEMA.INITIAL_REQUESTS.CC_CAN]           || ''),
+      creditCardHomeDepot: String(row[SCHEMA.INITIAL_REQUESTS.CC_HD]         || ''),
+      jonasJobNumbers:  String(row[SCHEMA.INITIAL_REQUESTS.JONAS_JOB_NUMBERS]|| ''),
+      plan306090:       String(row[SCHEMA.INITIAL_REQUESTS.PLAN_306090]      || ''),
+      businessCards:    String(row[SCHEMA.INITIAL_REQUESTS.EQUIPMENT]        || '').toLowerCase().indexOf('business card') !== -1 ? 'Yes' : 'No'
     };
     
-    // PHASE 4 FIX: Check HR Verification Results for verified titles and ADP ID
-    // This ensures downstream forms/emails use the HR-approved data
+    // ── AUGMENT 1: HR Verification Results ───────────────────────────────────────
+    // HR Verification is the step after ID Setup in the New Hire workflow. Once HR
+    // submits via HRVerificationHandler.js, a row is written to HR_VERIFICATION_RESULTS.
+    // This read overlays the HR-approved title, JR title, manager, ADP ID, and
+    // hrSubmittedBy/hrTimestamp onto the context built from INITIAL_REQUESTS above.
+    //
+    // VERIFIED_JR_TITLE stores "Job Title / JR Title" when a JR title is assigned.
+    // The ' / ' separator is used to split them into context.jobTitle and context.jrTitle.
+    //
+    // Presence of context.adpAssociateId is used by buildNewHireContextBlock() to
+    // determine hasHr=true, which unlocks the IT Setup section gate.
     const hrSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
     if (hrSheet) {
         const hrData = hrSheet.getDataRange().getValues();
-        // Workflow ID is Col A (0), ADP ID is Col D (3), Verified Title is Col H (7)
         const HR = SCHEMA.HR_VERIFICATION_RESULTS;
+        // Col A (index 0) = Workflow ID
         const hrRow = hrData.find(r => r[0] === workflowId);
         if (hrRow) {
              if (hrRow[HR.ADP_ASSOCIATE_ID]) context.adpAssociateId = hrRow[HR.ADP_ASSOCIATE_ID];
              if (hrRow[HR.VERIFIED_NAME])    context.verifiedName   = String(hrRow[HR.VERIFIED_NAME]);
              if (hrRow[HR.VERIFIED_MANAGER])       context.verifiedManagerName  = String(hrRow[HR.VERIFIED_MANAGER]);
              if (hrRow[HR.VERIFIED_MANAGER_EMAIL]) context.verifiedManagerEmail = String(hrRow[HR.VERIFIED_MANAGER_EMAIL]);
+             // VERIFIED_JR_TITLE = "Job Title / JR Title" — split on ' / ' to separate
              const verifiedTitles = hrRow[HR.VERIFIED_JR_TITLE];
              if (verifiedTitles && String(verifiedTitles).includes(' / ')) {
                  const parts = String(verifiedTitles).split(' / ');
@@ -327,11 +434,24 @@ function getWorkflowContext(workflowId) {
         }
     }
 
-    // PHASE 5 FIX: Fetch ID Setup Credentials (DSS/SiteDocs) for emails
+    // ── AUGMENT 2: ID Setup Results ───────────────────────────────────────────────
+    // For New Hire: written by submitEmployeeIDSetup() (IDSetup.js) after the ID Setup
+    //   team completes their form. Provides internal IDs and SiteDocs/DSS credentials.
+    // For Equipment Request: written by closeActionItem() (ActionItemService.js) when
+    //   the 'WIS User' action item closes. Provides SiteDocs credentials only
+    //   (no internalEmployeeId/siteDocsWorkerId for Equipment workflows).
+    //
+    // Presence of context.internalEmployeeId is used by buildNewHireContextBlock()
+    // to determine hasId=true (unlocks HR Verification section for New Hire).
+    // For Equipment Request, these fields populate the SiteDocs rows in the IT Setup
+    // section of the email template (isEquipment=true path in buildNewHireContextBlock).
     const idSheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
     if (idSheet) {
         const idData = idSheet.getDataRange().getValues();
-        // Workflow ID is Col A, Headers: WFID, FormID, Time, EmpID, WorkerID, JobCode, SD User, SD Pass, DSS User, DSS Pass
+        // SCHEMA.ID_SETUP_RESULTS columns: WORKFLOW_ID, FORM_ID, SUBMISSION_TS,
+        //   INTERNAL_EMP_ID, SITEDOCS_WORKER_ID, SITEDOCS_JOB_CODE,
+        //   SITEDOCS_USERNAME, SITEDOCS_PASSWORD, DSS_USERNAME, DSS_PASSWORD,
+        //   BOSS_WIS_CREATED, SUBMITTED_BY
         const ID = SCHEMA.ID_SETUP_RESULTS;
         const idRow = idData.find(r => r[0] === workflowId);
         if (idRow) {
@@ -348,7 +468,26 @@ function getWorkflowContext(workflowId) {
         }
     }
 
-    // Fetch all IT Results fields
+    // ── AUGMENT 3: IT Results ─────────────────────────────────────────────────────
+    // Written by submitITSetup() (ITSetupHandler.js) for New Hire and Equipment Request.
+    // For CHANGE_ workflows, written by closeActionItem() when the IT action item closes.
+    //
+    // 'N/A' values are stored as-is in the sheet but must be suppressed in emails —
+    // they appear when IT did not assign that item (e.g. no phone). Each field filters
+    // 'N/A' to empty string so the email template only renders rows with real data.
+    //
+    // context.computerType: overrides the request-time value from INITIAL_REQUESTS because
+    // IT may assign a different type than originally requested.
+    //
+    // context.bossDetails: parsed from JSON string stored in BOSS_DETAILS column.
+    //   Shape: { committees: string[], costSheets: string[], tripReports: 'Yes'|'',
+    //            grievances: 'Yes'|'' }
+    //   Used by buildNewHireContextBlock and buildStatusChangeContextBlock to render
+    //   per-committee/cost-sheet BOSS access rows.
+    //
+    // Presence of context.itTimestamp (or context.assignedEmail) is used by
+    // buildNewHireContextBlock / buildStatusChangeContextBlock to determine hasIt=true
+    // (flips IT Setup section from 'Active' to 'Complete').
     const IT = SCHEMA.IT_RESULTS;
     const itSheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
     if (itSheet) {
@@ -356,11 +495,13 @@ function getWorkflowContext(workflowId) {
         const itRow = itData.find(r => r[0] === workflowId);
         if (itRow) {
             context.assignedEmail      = itRow[IT.ASSIGNED_EMAIL]      || '';
+            // Suppress 'N/A' — means IT did not create / did not assign
             context.emailTempPassword  = (itRow[IT.EMAIL_PASSWORD]     && itRow[IT.EMAIL_PASSWORD]     !== 'N/A') ? String(itRow[IT.EMAIL_PASSWORD])     : '';
             context.computerAssigned   = itRow[IT.COMPUTER_ASSIGNED]   || '';
-            context.computerSerial     = (itRow[IT.COMPUTER_MAKE]      && itRow[IT.COMPUTER_MAKE]      !== 'N/A') ? String(itRow[IT.COMPUTER_MAKE])      : '';
+            context.computerSerial     = (itRow[IT.COMPUTER_SERIAL]    && itRow[IT.COMPUTER_SERIAL]    !== 'N/A') ? String(itRow[IT.COMPUTER_SERIAL])    : '';
             context.computerModel      = (itRow[IT.COMPUTER_MODEL]     && itRow[IT.COMPUTER_MODEL]     !== 'N/A') ? String(itRow[IT.COMPUTER_MODEL])     : '';
-            if (itRow[IT.COMPUTER_TYPE] && itRow[IT.COMPUTER_TYPE] !== 'N/A') context.computerType = String(itRow[IT.COMPUTER_TYPE]);  // overrides request-time value
+            // IT-confirmed type overrides the requested type from INITIAL_REQUESTS
+            if (itRow[IT.COMPUTER_TYPE] && itRow[IT.COMPUTER_TYPE] !== 'N/A') context.computerType = String(itRow[IT.COMPUTER_TYPE]);
             context.phoneAssigned      = itRow[IT.PHONE_ASSIGNED]      || '';
             context.phoneCarrier       = (itRow[IT.PHONE_CARRIER]      && itRow[IT.PHONE_CARRIER]      !== 'N/A') ? String(itRow[IT.PHONE_CARRIER])      : '';
             context.phoneModel         = (itRow[IT.PHONE_MODEL]        && itRow[IT.PHONE_MODEL]        !== 'N/A') ? String(itRow[IT.PHONE_MODEL])        : '';
@@ -374,11 +515,15 @@ function getWorkflowContext(workflowId) {
             context.itNotes            = itRow[IT.IT_NOTES]            || '';
             if (itRow[IT.SUBMISSION_TS]) context.itTimestamp   = itRow[IT.SUBMISSION_TS] instanceof Date ? Utilities.formatDate(itRow[IT.SUBMISSION_TS], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(itRow[IT.SUBMISSION_TS]);
             if (itRow[IT.SUBMITTED_BY])  context.itSubmittedBy = String(itRow[IT.SUBMITTED_BY]);
+            // BOSS sub-object: committees[], costSheets[], tripReports, grievances
+            if (itRow[IT.BOSS_DETAILS]) {
+              try { context.bossDetails = JSON.parse(String(itRow[IT.BOSS_DETAILS])); } catch(e) {}
+            }
         }
     }
-    
+
     return context;
-    
+
   } catch (error) {
     Logger.log('Error getting workflow context: ' + error.toString());
     return null;
@@ -402,6 +547,12 @@ function sendFormEmail(options) {
     return false;
   }
 
+  // DEV: suppress all emails when CONFIG.SUPPRESS_EMAILS is true
+  if (CONFIG.SUPPRESS_EMAILS) {
+    Logger.log('[EMAIL SUPPRESSED] To: ' + to + ' | Subject: ' + subject);
+    return true;
+  }
+
   try {
     // E1: Build standardized subject — canonical format defined in buildEmailSubject()
     var enrichedSubject = buildEmailSubject(subject, contextData, subjectOpts);
@@ -416,16 +567,8 @@ function sendFormEmail(options) {
       finalBody = `[DEVELOPMENT MODE - REDIRECTED FROM: ${to}]\n\n` + body;
     }
 
-    // V2 template for all supported workflow types
-    const useV2 = contextData && (
-      contextData.workflowType === 'New Hire'          ||
-      contextData.workflowType === 'Equipment Request' ||
-      contextData.workflowType === 'Termination'       ||
-      contextData.workflowType === 'Status Change'
-    );
-    const htmlBody = useV2
-      ? createEmailTemplateV2(finalSubject, finalBody, formUrl, contextData, emailOpts || {})
-      : createEmailTemplate(finalSubject, finalBody, formUrl, contextData);
+    // Always use V2 template — createContextBlockV2 defaults to 'New Hire' if workflowType absent
+    const htmlBody = createEmailTemplateV2(finalSubject, finalBody, formUrl, contextData || {}, emailOpts || {});
     
     const emailOptions = {
       to: finalTo,
@@ -453,195 +596,10 @@ function sendFormEmail(options) {
   }
 }
 
-function createEmailTemplate(subject, body, formUrl, contextData) {
-  const contextHtml = contextData ? createContextBlock(contextData) : '';
-  
-  const htmlBody = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    <body style="margin: 0; padding: 20px; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <!-- Header -->
-        <tr>
-          <td style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); padding: 30px; text-align: center; border-bottom: 3px solid #EB1C2D;">
-            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">${subject}</h1>
-          </td>
-        </tr>
-        
-        <!-- Context Panel (if provided) -->
-        ${contextHtml}
-        
-        <!-- Body -->
-        <tr>
-          <td style="padding: 30px;">
-            <div style="color: #333333; font-size: 16px; line-height: 1.6;">
-              ${(body.includes('<table') || body.includes('<div')) ? body : body.replace(/\n/g, '<br>')}
-            </div>
-            
-            ${formUrl ? `
-            <div style="margin-top: 30px; text-align: center;">
-              <a href="${formUrl}" style="background: linear-gradient(135deg, #EB1C2D 0%, #c41828 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(235, 28, 45, 0.3);">
-                Open Form →
-              </a>
-            </div>
-            ` : ''}
-          </td>
-        </tr>
-        
-        <!-- Footer -->
-        <tr>
-          <td style="background-color: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
-            <p style="margin: 0; color: #666666; font-size: 12px;">
-              TEAM Group - Employee Management System
-            </p>
-            <p style="margin: 8px 0 0 0; color: #999999; font-size: 11px;">
-              This is an automated notification. Please do not reply to this email.
-            </p>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-  `;
-  
-  return htmlBody;
-}
 
-/**
- * Create context information block for emails
- * @param {Object} context - Request context data
- * @returns {string} HTML for context block
- */
-function createContextBlock(context) {
-  if (!context) return '';
+// createContextBlock (V1) deleted 2026-05-14 — sendFormEmail now always uses createEmailTemplateV2
+// which calls createContextBlockV2 (delegates to per-workflow builders in EmailTemplates.js).
 
-  var workflowType = context.workflowType || '';
-
-  // System access summary
-  var systemAccessText = 'None';
-  if (context.systems) {
-    systemAccessText = Array.isArray(context.systems)
-      ? (context.systems.length > 0 ? context.systems.join(', ') : 'None')
-      : (String(context.systems) || 'None');
-  }
-
-  // Dynamic date label based on workflow type
-  var dateLabel = 'Date';
-  if (workflowType === 'New Hire')           dateLabel = 'Start Date';
-  else if (workflowType === 'Termination')   dateLabel = 'Termination Date';
-  else if (workflowType === 'Status Change') dateLabel = 'Effective Date';
-
-  // Employment type with fallback for termination (termData uses empType field)
-  var employmentType = context.employmentType || context.empType || '';
-
-  // Format hireDate for display
-  var hireDateDisplay = '';
-  if (context.hireDate) {
-    try {
-      var hd = context.hireDate instanceof Date ? context.hireDate : new Date(String(context.hireDate).replace(/^(\d{4}-\d{2}-\d{2})$/, '$1T12:00:00'));
-      hireDateDisplay = !isNaN(hd.getTime())
-        ? Utilities.formatDate(hd, Session.getScriptTimeZone(), 'yyyy-MM-dd')
-        : String(context.hireDate).substring(0, 10);
-    } catch (e) { hireDateDisplay = String(context.hireDate).substring(0, 10); }
-  }
-
-  // Termination-specific rows (highlighted in red)
-  var termRows = '';
-  if (workflowType === 'Termination') {
-    termRows =
-      (context.lastDayWorked ? '<tr><td style="padding:4px 0;font-weight:600;width:160px;color:#c00;">Last Day Worked:</td><td style="padding:4px 0;">' + context.lastDayWorked + '</td></tr>' : '') +
-      (context.hasReports ? '<tr><td style="padding:4px 0;font-weight:600;color:#c00;">Has Direct Reports:</td><td style="padding:4px 0;">' + context.hasReports + '</td></tr>' : '') +
-      (context.reportsToNew && context.reportsToNew !== 'N/A' ? '<tr><td style="padding:4px 0;font-weight:600;color:#c00;">Reports Reassigned To:</td><td style="padding:4px 0;">' + context.reportsToNew + '</td></tr>' : '');
-  }
-
-  // Status Change-specific rows
-  var changeRows = '';
-  if (workflowType === 'Status Change') {
-    // Normalize change field display: identical sides or N/A -> N/A shows "Unchanged"
-    var nc = function(val) {
-      if (val === undefined || val === null) return null;
-      var v = String(val).trim();
-      if (!v || v === 'N/A -> N/A' || v === 'N/A (N/A) -> N/A (N/A)') return 'Unchanged';
-      var idx = v.indexOf(' -> ');
-      if (idx !== -1 && v.substring(0, idx).trim() === v.substring(idx + 4).trim()) return 'Unchanged';
-      return v;
-    };
-    var stVal = nc(context.siteTransfer);
-    var tcVal = nc(context.titleChange);
-    var ccVal = nc(context.classChange);
-    changeRows =
-      (context.changeTypes ? '<tr><td style="padding:4px 0;font-weight:600;width:160px;">Changes:</td><td style="padding:4px 0;">' + context.changeTypes + '</td></tr>' : '') +
-      (stVal !== null ? '<tr><td style="padding:4px 0;font-weight:600;">Site Transfer:</td><td style="padding:4px 0;">' + stVal + '</td></tr>' : '') +
-      (tcVal !== null ? '<tr><td style="padding:4px 0;font-weight:600;">Title Change:</td><td style="padding:4px 0;">' + tcVal + '</td></tr>' : '') +
-      (ccVal !== null ? '<tr><td style="padding:4px 0;font-weight:600;">Classification:</td><td style="padding:4px 0;">' + ccVal + '</td></tr>' : '') +
-      (context.managerChange ? '<tr><td style="padding:4px 0;font-weight:600;">Manager Change:</td><td style="padding:4px 0;">' + context.managerChange + '</td></tr>' : '');
-  }
-
-  // Checklist items section
-  var checklistRows = '';
-  if (context.checklistItems) {
-    try {
-      var items = Array.isArray(context.checklistItems) ? context.checklistItems : JSON.parse(String(context.checklistItems));
-      if (items && items.length > 0) {
-        var itemsHtml = items.map(function(item) { return '<li style="padding:2px 0;">' + item + '</li>'; }).join('');
-        checklistRows = '<tr><td colspan="2" style="padding:12px 0 4px 0;">' +
-          '<div style="font-weight:600;color:#EB1C2D;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Action Items</div>' +
-          '<ul style="margin:0;padding-left:20px;color:#333;">' + itemsHtml + '</ul></td></tr>';
-      }
-    } catch (e) { /* ignore parse errors */ }
-  }
-
-  // Credentials section (shown when any credential field or a credentialNote is present)
-  var credRows = '';
-  if (context.dssUsername || context.siteDocsUsername || context.assignedEmail || context.internalEmployeeId || context.credentialNote) {
-    credRows = '<tr><td colspan="2" style="padding:12px 0 4px 0;">' +
-      '<div style="font-weight:600;color:#EB1C2D;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Credentials</div>' +
-      '<table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#333;">' +
-      (context.internalEmployeeId ? '<tr><td style="padding:3px 0;font-weight:600;width:160px;">Employee ID:</td><td style="padding:3px 0;">' + context.internalEmployeeId + '</td></tr>' : '') +
-      (context.adpAssociateId ? '<tr><td style="padding:3px 0;font-weight:600;">ADP Associate ID:</td><td style="padding:3px 0;">' + context.adpAssociateId + '</td></tr>' : '') +
-      (context.assignedEmail ? '<tr><td style="padding:3px 0;font-weight:600;">Assigned Email:</td><td style="padding:3px 0;">' + context.assignedEmail + '</td></tr>' : '') +
-      (context.dssUsername ? '<tr><td style="padding:3px 0;font-weight:600;">DSS:</td><td style="padding:3px 0;">' + context.dssUsername + ' / Pwd: ' + (context.dssPassword || 'N/A') + '</td></tr>' : '') +
-      (context.siteDocsUsername ? '<tr><td style="padding:3px 0;font-weight:600;">SiteDocs:</td><td style="padding:3px 0;">' + context.siteDocsUsername + ' / Pwd: ' + (context.siteDocsPassword || 'N/A') + '</td></tr>' : '') +
-      (context.siteDocsWorkerId  ? '<tr><td style="padding:3px 0;font-weight:600;">SiteDocs Worker ID:</td><td style="padding:3px 0;">' + context.siteDocsWorkerId  + '</td></tr>' : '') +
-      (context.siteDocsJobCode   ? '<tr><td style="padding:3px 0;font-weight:600;">SiteDocs Job Code:</td><td style="padding:3px 0;">'  + context.siteDocsJobCode   + '</td></tr>' : '') +
-      (context.credentialNote ? '<tr><td colspan="2" style="padding:4px 0;color:#666;font-style:italic;">' + context.credentialNote + '</td></tr>' : '') +
-      '</table></td></tr>';
-  }
-
-  return `
-    <tr>
-      <td style="padding: 20px 30px; background-color: #f8f9fa; border-bottom: 1px solid #e0e0e0;">
-        <h3 style="margin: 0 0 15px 0; color: #EB1C2D; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Request Details</h3>
-        <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #333;">
-          ${context.employeeName ? `<tr><td style="padding:6px 0;font-weight:600;width:160px;">Employee:</td><td style="padding:6px 0;">${context.employeeName}</td></tr>` : ''}
-          ${context.jobTitle ? `<tr><td style="padding:6px 0;font-weight:600;">Job Title:</td><td style="padding:6px 0;">${context.jobTitle}</td></tr>` : ''}
-          ${context.jrTitle ? `<tr><td style="padding:6px 0;font-weight:600;">JR Title:</td><td style="padding:6px 0;">${context.jrTitle}</td></tr>` : ''}
-          ${context.department ? `<tr><td style="padding:6px 0;font-weight:600;">Department:</td><td style="padding:6px 0;">${context.department}</td></tr>` : ''}
-          ${context.siteName ? `<tr><td style="padding:6px 0;font-weight:600;">Site:</td><td style="padding:6px 0;">${context.siteName}</td></tr>` : ''}
-          ${hireDateDisplay ? `<tr><td style="padding:6px 0;font-weight:600;">${dateLabel}:</td><td style="padding:6px 0;">${hireDateDisplay}</td></tr>` : ''}
-          ${employmentType ? `<tr><td style="padding:6px 0;font-weight:600;">Employment Type:</td><td style="padding:6px 0;">${employmentType}</td></tr>` : ''}
-          ${context.employeeType ? `<tr><td style="padding:6px 0;font-weight:600;">Employee Type:</td><td style="padding:6px 0;">${context.employeeType}</td></tr>` : ''}
-          ${context.newHireOrRehire ? `<tr><td style="padding:6px 0;font-weight:600;">Status:</td><td style="padding:6px 0;">${context.newHireOrRehire}</td></tr>` : ''}
-          ${context.reason ? `<tr><td style="padding:6px 0;font-weight:600;">Reason:</td><td style="padding:6px 0;">${context.reason}</td></tr>` : ''}
-          ${context.managerName ? `<tr><td style="padding:6px 0;font-weight:600;">Manager:</td><td style="padding:6px 0;">${context.managerName}${context.managerEmail ? ' (' + context.managerEmail + ')' : ''}</td></tr>` : ''}
-          ${context.systemAccess !== 'No' && context.systems ? `<tr><td style="padding:6px 0;font-weight:600;">System Access:</td><td style="padding:6px 0;">${systemAccessText}</td></tr>` : ''}
-          ${context.equipmentRaw ? `<tr><td style="padding:6px 0;font-weight:600;">Equipment:</td><td style="padding:6px 0;">${context.equipmentRaw}${context.computerType ? '<br><span style="font-size:12px;color:#666">Computer: ' + context.computerType + (context.computerRequestType ? ' (' + context.computerRequestType + ')' : '') + '</span>' : ''}${context.phoneRequestType ? '<br><span style="font-size:12px;color:#666">Phone: ' + context.phoneRequestType + ' Request</span>' : ''}</td></tr>` : ''}
-          ${context.jobSiteNumber ? `<tr><td style="padding:6px 0;font-weight:600;">Job Site #:</td><td style="padding:6px 0;">${context.jobSiteNumber}</td></tr>` : ''}
-          ${context.requesterEmail ? `<tr><td style="padding:6px 0;font-weight:600;">Requested By:</td><td style="padding:6px 0;">${context.requesterEmail}</td></tr>` : ''}
-          ${context.requestDate ? `<tr><td style="padding:6px 0;font-weight:600;">Request Date:</td><td style="padding:6px 0;">${context.requestDate}</td></tr>` : ''}
-          ${termRows}
-          ${changeRows}
-          ${checklistRows}
-          ${credRows}
-        </table>
-      </td>
-    </tr>
-  `;
-}
 
 /**
  * Send multiple emails (batch)
@@ -708,7 +666,7 @@ function sendInitialRequestEmails(config) {
   };
   
   try {
-    // 1. Email to SITEDOCS team for Employee ID Setup
+    // 1. Email to ID Setup team for Employee ID Setup
     sendFormEmail({
       to: siteDocsEmail,
       subject: 'ID Setup Required',
@@ -718,7 +676,7 @@ function sendInitialRequestEmails(config) {
       contextData: contextData
     });
     
-    Logger.log('✓ Email sent to SITEDOCS: ' + siteDocsEmail);
+    Logger.log('✓ Email sent to ID Setup: ' + siteDocsEmail);
     
     // 2. Confirmation to requester
     sendFormEmail({
@@ -741,9 +699,9 @@ function sendInitialRequestEmails(config) {
 
 
 // ================================================================
-// ▼▼▼  V2 EMAIL TEMPLATE SYSTEM  ▼▼▼
-// All originals above are preserved unchanged.
-// Wire into sendFormEmail via opts.useNewTemplate when ready.
+// V2 EMAIL TEMPLATE SYSTEM
+// sendFormEmail() always calls createEmailTemplateV2() as of 2026-05-14.
+// V1 (createEmailTemplate + createContextBlock) deleted.
 // ================================================================
 
 // ================================================================
@@ -995,18 +953,17 @@ function esBtnRow(formUrl, opts) {
 function createContextBlockV2(context, opts) {
   if (!context) return '';
   var type = context.workflowType || 'New Hire';
-  if (type === 'New Hire')           return buildNewHireContextBlock(context, opts);
-  if (type === 'Termination')        return buildTerminationContextBlock(context, opts);
-  if (type === 'Status Change')      return buildStatusChangeContextBlock(context, opts);
-  if (type === 'Equipment Request')  return buildEquipmentContextBlock(context, opts);
+  // Equipment Request uses the same unified block as New Hire — isEquipment flag
+  // inside buildNewHireContextBlock suppresses ID Setup and HR Verification sections
+  if (type === 'New Hire' || type === 'Equipment Request') return buildNewHireContextBlock(context, opts);
+  if (type === 'Termination')   return buildTerminationContextBlock(context, opts);
+  if (type === 'Status Change') return buildStatusChangeContextBlock(context, opts);
   return buildNewHireContextBlock(context, opts); // safe fallback
 }
 
 
 // ================================================================
-// EMAIL TEMPLATE SHELL — V2
-// Drop-in replacement for createEmailTemplate(). Not wired into
-// sendFormEmail yet — call directly or pass opts.useNewTemplate.
+// EMAIL TEMPLATE — V2
 // ================================================================
 
 /**
@@ -1084,4 +1041,108 @@ function createEmailTemplateV2(subject, body, formUrl, contextData, opts) {
     + '</td></tr>'
 
     + '</table></td></tr></table></body></html>';
+}
+
+// ── Safety onboarding email ───────────────────────────────────────────────────
+// Moved from IDSetup.js (2026-05-14) — email-sending logic belongs in EmailUtils,
+// not in a form handler. Called from: IDSetup.js (triggerNextStepFromIDSetup)
+// and HRVerificationHandler.js (submitHRVerification).
+
+/**
+ * Create Safety Onboarding action item and send notification email to Safety group.
+ * @param {string} workflowId
+ * @param {Object} requestData  - Must include: employeeName, position, siteName, hireDate
+ * @param {Object} [setupData]  - Optional; may include siteDocsJobCode
+ */
+function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
+  try {
+    const siteDocsJobCode = (setupData && setupData.siteDocsJobCode) || (function() {
+      try {
+        var sh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
+        if (!sh) return '';
+        var rows = sh.getDataRange().getValues();
+        var row = rows.find(function(r) { return r[SCHEMA.ID_SETUP_RESULTS.WORKFLOW_ID] === workflowId; });
+        return row ? String(row[SCHEMA.ID_SETUP_RESULTS.SITEDOCS_JOB_CODE] || '') : '';
+      } catch(e) { return ''; }
+    })();
+
+    // Use full workflow context so all Request Details fields are populated in the email
+    var contextData = (typeof getWorkflowContext === 'function' ? getWorkflowContext(workflowId) : null) || {};
+    contextData.workflowType = 'New Hire';
+    // Supplement with any extra fields from requestData that may not yet be in the sheet
+    if (!contextData.employeeName && requestData.employeeName) contextData.employeeName = requestData.employeeName;
+    if (!contextData.jobTitle    && requestData.position)      contextData.jobTitle     = requestData.position;
+    if (!contextData.siteName    && requestData.siteName)      contextData.siteName     = requestData.siteName;
+    if (!contextData.hireDate    && requestData.hireDate)      contextData.hireDate     = requestData.hireDate;
+    if (siteDocsJobCode) contextData.siteDocsJobCode = siteDocsJobCode;
+
+    const description = JSON.stringify([
+      'Assign SiteDocs locations for employee',
+      'Assign DSS learning paths'
+    ]);
+
+    const tid = ActionItemService.createActionItem(
+      workflowId,
+      'Safety',
+      'Safety Onboarding — ' + requestData.employeeName,
+      description,
+      CONFIG.EMAILS.SAFETY,
+      'safety_onboarding'
+    );
+
+    sendFormEmail({
+      to: CONFIG.EMAILS.SAFETY,
+      subject: 'Safety Onboarding Required — ' + requestData.employeeName,
+      body: 'Please assign SiteDocs locations and DSS learning paths for this employee. Complete the action item using the button below.',
+      formUrl: buildFormUrl('action_item_view', { tid: tid }),
+      displayName: 'TEAM Group - Employee Onboarding',
+      contextData: contextData
+    });
+
+    Logger.log('[SUCCESS] Safety Onboarding Action Item created (' + tid + ') for ' + workflowId);
+  } catch (safeErr) {
+    Logger.log('[ERROR] Failed to create Safety Onboarding Action Item: ' + safeErr.toString());
+  }
+}
+
+/**
+ * Sends an admin alert when ActionItemService.createActionItem fails.
+ * Called centrally from the createActionItem catch block — do not call from handlers.
+ *
+ * @param {string} workflowId
+ * @param {string} category   - e.g. 'IT', 'HR', 'Safety'
+ * @param {string} taskName
+ * @param {string} assignedTo - email that was supposed to receive the task
+ * @param {string} errorMsg
+ */
+function notifyAdminActionItemFailure(workflowId, category, taskName, assignedTo, errorMsg) {
+  try {
+    const subject = '[ACTION REQUIRED] Action item creation failed — ' + workflowId;
+    const body =
+      'An action item could not be created. The assigned team was <b>NOT notified</b> and this task ' +
+      'will <b>not appear</b> in the workflow checklist. Manual intervention is required.<br><br>' +
+      '<b>Workflow ID:</b> ' + workflowId + '<br>' +
+      '<b>Category:</b> ' + category + '<br>' +
+      '<b>Task:</b> ' + taskName + '<br>' +
+      '<b>Was to be assigned to:</b> ' + assignedTo + '<br>' +
+      '<b>Error:</b> ' + errorMsg + '<br><br>' +
+      'To resolve: open the GAS script editor, locate the workflow in the Action Items sheet, ' +
+      'and manually trigger the relevant handler function or re-create the task.';
+
+    const adminEmails = CONFIG.ADMIN_EMAILS;
+    if (!adminEmails || !adminEmails.length) {
+      Logger.log('[notifyAdminActionItemFailure] No ADMIN_EMAILS configured — alert not sent.');
+      return;
+    }
+
+    MailApp.sendEmail({
+      to: adminEmails.join(','),
+      subject: subject,
+      htmlBody: body
+    });
+
+    Logger.log('[notifyAdminActionItemFailure] Alert sent for ' + workflowId + ' / ' + category);
+  } catch (e) {
+    Logger.log('[ERROR] notifyAdminActionItemFailure failed: ' + e.message);
+  }
 }

@@ -196,6 +196,9 @@
       <? if (showCc) { ?><div class="rh-f"><span class="rh-l">Classification</span>       <span class="rh-v"><?= rd.classChange ?></span></div><? } ?>
       <? var mcVal = String(rd.managerChange || ''); var showMc = mcVal && mcVal.indexOf('N/A (N/A)') === -1 && mcVal.indexOf('N/A -> N/A') === -1 && mcVal.indexOf(' -> ') !== -1; var mcParts = mcVal.split(' -> '); var showMcFinal = showMc && (mcParts.length < 2 || mcParts[0].trim() !== mcParts[1].trim()); ?>
       <? if (showMcFinal) { ?><div class="rh-f"><span class="rh-l">Manager Change</span>  <span class="rh-v"><?= rd.managerChange ?></span></div><? } ?>
+      <? /* Direct report delegation — shown when present on any Status Change */ ?>
+      <? if (rd.oldReportsTo  && rd.oldReportsTo  !== 'N/A' && rd.oldReportsTo  !== '') { ?><div class="rh-f"><span class="rh-l">Reports Out</span><span class="rh-v mono"><?= rd.oldReportsTo  ?></span></div><? } ?>
+      <? if (rd.newReportsFrom && rd.newReportsFrom !== 'N/A' && rd.newReportsFrom !== '') { ?><div class="rh-f"><span class="rh-l">Reports In</span> <span class="rh-v mono"><?= rd.newReportsFrom ?></span></div><? } ?>
       <? } /* end isChange */ ?>
     </div>
   </div>

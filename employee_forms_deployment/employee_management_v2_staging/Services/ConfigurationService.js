@@ -27,7 +27,10 @@ var ConfigurationService = (function() {
     'SPREADSHEET_ID': '1o2KulGLhpClbvbkYG-VqsaOJNQfAcpVZgRtc-FKpuAw',
     'MAIN_FOLDER_ID': '1vBZVuzXmSatnLGiqhU7QoS0zBK2NGDQE',
     'SHARED_DRIVE_ID': '0AOOOWlqzpUNVUk9PVA',
-    'DEPLOYMENT_URL': 'https://script.google.com/a/macros/robinsonsolutions.com/s/AKfycbzBuUzj2DOW9ZcRPsfSoE9zVO-eMVWGj8dCaEW1i-X2rcdMBcWWBrHLoX5dn0Zf05Sm3w/exec'
+    // Attachment folders — dev IDs hardcoded, override via Script Properties for staging/prod
+    'TERM_ATTACHMENTS_FOLDER_ID':   '1yD1j82KTJ2EksLnN_fJ02zQWEUAlSRBW', // attachments/dev/Termination
+    'CHANGE_ATTACHMENTS_FOLDER_ID': '1gRjQiw34JTvyqwqfnBlJYs6JdmeYjzr1', // attachments/dev/Position Change
+    'DEPLOYMENT_URL': 'https://script.google.com/a/macros/robinsonsolutions.com/s/AKfycbyKdavUuqgt2zRFxxbRgwSbqru_3HLxk5oEYUauBukRL2CZ28bwZtYUZhubs3d3NoMnUQ/exec'
   };
 
   /**
@@ -53,10 +56,19 @@ var ConfigurationService = (function() {
 
   /**
    * Gets a single setting value.
+   * Special keys:
+   *   SPREADSHEET_ID      — TEST_SPREADSHEET_ID script property takes precedence (smoke test redirect)
+   *   SUPPRESS_EMAILS_OVERRIDE — checked by Config.SUPPRESS_EMAILS; 'true'/'false' or '' (use default)
    */
   function getSetting(key) {
     try {
-      var val = PropertiesService.getScriptProperties().getProperty(key);
+      var props = PropertiesService.getScriptProperties();
+      // Smoke test redirect: TEST_SPREADSHEET_ID overrides SPREADSHEET_ID
+      if (key === 'SPREADSHEET_ID') {
+        var testId = props.getProperty('TEST_SPREADSHEET_ID');
+        if (testId) return testId;
+      }
+      var val = props.getProperty(key);
       return val || DEFAULTS[key];
     } catch (e) {
       return DEFAULTS[key];

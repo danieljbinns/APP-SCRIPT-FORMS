@@ -16,6 +16,7 @@ function serveInitialRequest() {
 
 function submitInitialRequest(formData) {
   try {
+    rawLog('submitInitialRequest', formData);
     // Create workflow first
     const workflowId = createWorkflow('NEW_EMP', 'New Employee Onboarding', formData.requesterEmail);
     const formId = generateFormId('INIT_REQ');
@@ -193,8 +194,9 @@ function formatInitialRequestData(data) {
     Array.isArray(data.adpSites) ? data.adpSites.join(', ') : (data.adpSites || ''),
     data.department || '',
     Array.isArray(data.purchasingSites) ? data.purchasingSites.join(', ') : (data.purchasingSites || ''),
-    '',                        // col 52 — Status (written later by BOSSReviewHandler)
-    data.adpSalaryAccess || 'No'  // col 53 — ADP Salary Access
+    '',                           // col 52 — Status (written later by ITConfirmationHandler)
+    data.adpSalaryAccess || 'No', // col 53 — ADP Salary Access
+    data.bossTrainingOnly || 'No' // col 54 — BOSS Training User Only (ER-5)
   ];
 }
 

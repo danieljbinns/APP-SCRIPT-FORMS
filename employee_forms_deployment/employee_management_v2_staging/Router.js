@@ -5,6 +5,19 @@
 
 function doGet(e) {
   try {
+    // Maintenance mode — serve splash page for all requests when MAINTENANCE_MODE='true' in Script Properties.
+    // MAINTENANCE_BYPASS_EMAILS Script Property (comma-separated) allows specific users through.
+    if (CONFIG.MAINTENANCE_MODE) {
+      var _userEmail = Session.getActiveUser().getEmail().toLowerCase();
+      var _bypass = (PropertiesService.getScriptProperties().getProperty('MAINTENANCE_BYPASS_EMAILS') || '')
+        .split(',').map(function(e) { return e.trim().toLowerCase(); }).filter(Boolean);
+      if (_bypass.indexOf(_userEmail) === -1) {
+        return HtmlService.createTemplateFromFile('MaintenancePage').evaluate()
+          .setTitle('Down for Maintenance')
+          .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      }
+    }
+
     const userEmail = Session.getActiveUser().getEmail();
     const form = e.parameter.form;
     const workflowId = e.parameter.wf || e.parameter.id || '';
@@ -36,42 +49,53 @@ function doGet(e) {
         return serveRequestDetails(workflowId);
 
       case 'id_setup':
-        // Allow domain users - typically accessed via email link
-        // Access check removed as requested
+        // ID Setup group + Admin only
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.IDSETUP)) return serveAccessDenied();
         return serveIDSetup(workflowId);
-        
+
       case 'hr_verification':
-        // Allow domain users - typically accessed via email link
-        // Access check removed as requested
+        // HR group + Admin only
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.HR)) return serveAccessDenied();
         return serveHRVerification(workflowId);
-        
+
       case 'it_setup':
-        // Allow domain users - typically accessed via email link
-        // Access check removed as requested
+        // IT group + Admin only
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.IT)) return serveAccessDenied();
         return serveITSetup(workflowId);
-        
+
       case 'specialist':
-        // Specialist queue
-        // Access check removed as requested
+        // Domain check — dept/tid-level auth enforced inside serveSpecialist / ActionItemService
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         const dept = e.parameter.dept || '';
         return serveSpecialist(workflowId, dept);
-        
+
       case 'termination_request':
         return serveTerminationRequest();
 
       case 'position_site_change':
         return servePositionSiteChange();
-        
+
       case 'termination_approval':
+        // HR group + Payroll + Admin
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.HR) &&
+            !AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.PAYROLL)) return serveAccessDenied();
         return serveTerminationApproval(workflowId);
-        
+
       case 'position_change_approval':
+        // HR group + Payroll + Admin
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.HR) &&
+            !AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.PAYROLL)) return serveAccessDenied();
         return servePositionChangeApproval(workflowId);
-        
+
       case 'it_confirmation':
+        // Dave Langohr (BUSINESS_CARDS personal email) + IT group + Admin
+        if (!AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.BUSINESS_CARDS) &&
+            !AccessControlService.canViewForm(userEmail, CONFIG.EMAILS.IT)) return serveAccessDenied();
         return serveITConfirmation(workflowId);
 
       case 'action_item_view':
+        // Domain check — tid-level auth enforced inside ActionItemService.serveActionItem
+        if (!AccessControlService.canAccessDashboard(userEmail)) return serveAccessDenied();
         return ActionItemService.serveActionItem(e.parameter.tid);
 
       // ── Reference guides ──────────────────────────────────────────────────
@@ -100,11 +124,15 @@ function doGet(e) {
  * Get the base URL for this web app (for form links)
  */
 function getBaseUrl() {
-  // Prefer dynamic URL to avoid hardcoding issues, fall back to config if needed (e.g. simple triggers)
+  // Prefer configured DEPLOYMENT_URL Script Property so functions run from the editor
+  // (e.g. ReplayService, triggers) always use the correct /exec URL rather than the
+  // /dev test URL that ScriptApp.getService().getUrl() returns in editor context.
+  var configured = CONFIG.DEPLOYMENT_URL;
+  if (configured) return configured;
   try {
     return ScriptApp.getService().getUrl();
   } catch (e) {
-    return CONFIG.DEPLOYMENT_URL;
+    return '';
   }
 }
 

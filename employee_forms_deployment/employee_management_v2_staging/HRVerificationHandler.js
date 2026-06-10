@@ -44,6 +44,7 @@ function getHRVerificationData(workflowId) {
         ...result,
         ...context,
         success: true,
+        message: '',
         position: context.jobTitle,
         jrRequired: jrRequired
       };
@@ -91,6 +92,7 @@ function getHRVerificationData(workflowId) {
 
 function submitHRVerification(formData) {
   try {
+    rawLog('submitHRVerification', formData);
     const workflowId = formData.workflowId;
     const formId = generateFormId('HR_VERIF');
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -186,7 +188,7 @@ function submitHRVerification(formData) {
       workflowId, formId, new Date(), formData.adpAssociateId,
       formData.firstName + ' ' + formData.lastName,
       formData.managerName, formData.managerEmail,
-      formData.jobTitle + ' / ' + formData.jrTitle,
+      formData.jrTitle ? formData.jobTitle + ' / ' + formData.jrTitle : formData.jobTitle,
       verificationNotes, actingUser
     ];
 
@@ -269,6 +271,7 @@ function submitHRVerification(formData) {
       if (hasBOSSAccess) {
         updateWorkflow(workflowId, 'In Progress', 'IT Confirmation Needed', verifiedName, actingUser);
         syncWorkflowState(workflowId);
+        ActionItemService.createActionItem(workflowId, 'IT Confirmation', 'IT Confirmation Required - ' + verifiedName, JSON.stringify(['Review and confirm access configuration before IT proceeds with provisioning']), 'davelangohr@team-group.com');
         const itConfirmationUrl = buildFormUrl('it_confirmation', { wf: workflowId });
         sendFormEmail({
           to: 'davelangohr@team-group.com',

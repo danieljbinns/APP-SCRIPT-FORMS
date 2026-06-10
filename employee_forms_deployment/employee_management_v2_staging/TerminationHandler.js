@@ -31,6 +31,7 @@ function serveTerminationRequest() {
 
 function submitTerminationRequest(formData) {
   try {
+    rawLog('submitTerminationRequest', formData);
     const workflowId = createWorkflow('TERM', 'End of Employment Request', formData.reqEmail || Session.getActiveUser().getEmail());
     const formId = generateFormId('TERM_REQ');
     
@@ -52,7 +53,7 @@ function submitTerminationRequest(formData) {
         attachmentBlob = Utilities.newBlob(bytes, formData.attachmentMimeType || 'application/octet-stream', formData.attachmentName);
         const safeName = 'TERM_' + String(formData.empName || workflowId).replace(/\s/g, '_') + '_' + formData.attachmentName;
         attachmentBlob.setName(safeName);
-        const mainFolder = DriveApp.getFolderById(CONFIG.MAIN_FOLDER_ID);
+        const mainFolder = DriveApp.getFolderById(CONFIG.TERM_FOLDER_ID);
         const driveFile = mainFolder.createFile(attachmentBlob);
         attachmentUrl = driveFile.getUrl();
         Logger.log('[TerminationHandler] Attachment saved to Drive: ' + attachmentUrl);
@@ -186,7 +187,7 @@ function getTerminationData(workflowId) {
     empID:          data[TR.EMPLOYEE_ID],
     empType:        data[TR.EMPLOYEE_TYPE],
     siteName:       data[TR.SITE],
-    termDate:       data[TR.TERM_DATE] ? Utilities.formatDate(new Date(data[TR.TERM_DATE]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+    termDate:       data[TR.TERM_DATE] ? (data[TR.TERM_DATE] instanceof Date ? Utilities.formatDate(data[TR.TERM_DATE], Session.getScriptTimeZone(), 'yyyy-MM-dd') : Utilities.formatDate(new Date(data[TR.TERM_DATE]), Session.getScriptTimeZone(), 'yyyy-MM-dd')) : '',
     reason:         data[TR.REASON],
     requesterEmail: data[TR.REQUESTER_EMAIL],
     managerName:    data[TR.MANAGER_NAME],
@@ -214,9 +215,26 @@ function getTerminationData(workflowId) {
  */
 function submitTerminationApproval(formData) {
   try {
+    rawLog('submitTerminationApproval', formData);
     const { workflowId, decision, notes } = formData;
     const formId = generateFormId('TERM_APP');
-    
+
+    // Acquire lock and check for duplicate submission
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
+    try {
+      const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+      const appSheet = ss.getSheetByName(CONFIG.SHEETS.TERMINATION_APPROVALS);
+      const appData = appSheet.getDataRange().getValues();
+      for (let i = 1; i < appData.length; i++) {
+        if (appData[i][0] === workflowId) {
+          return { success: true, message: 'Approval already processed for this workflow.' };
+        }
+      }
+    } finally {
+      lock.releaseLock();
+    }
+
     // Record approval
     addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATION_APPROVALS, [
       workflowId, formId, new Date(), decision, notes, 'YES', Session.getActiveUser().getEmail()
@@ -290,15 +308,18 @@ function submitTerminationApproval(formData) {
       // HR Group (ADP) — CC Payroll since different locations handle this differently
       const hrItems = selectedSystems.filter(s => s === 'ADP Supervisor Access').map(s => 'Remove from ' + s);
       if (hrItems.length > 0) {
-        const hrAndPayroll = CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL;
         const hrDescItems = hrItems.slice();
         if (termData.hasReports === 'Yes') {
           const newMgr = (termData.reportsToNew && termData.reportsToNew !== 'N/A') ? termData.reportsToNew : 'TBD — confirm with HR';
           hrDescItems.push('Direct reports to be reassigned to: ' + newMgr);
           hrDescItems.push('Update ADP reporting structure to reflect direct report reassignment');
         }
-        const tid = ActionItemService.createActionItem(workflowId, 'HR', 'HR Systems Deactivation - ' + termData.employeeName, JSON.stringify(hrDescItems), hrAndPayroll);
-        sendActionItemEmail(hrAndPayroll, 'HR Action Required', tid, termData, hrItems);
+        const tid = ActionItemService.createActionItem(workflowId, 'HR', 'HR Systems Deactivation - ' + termData.employeeName, JSON.stringify(hrDescItems), CONFIG.EMAILS.HR);
+        sendActionItemEmail(CONFIG.EMAILS.HR, 'HR Action Required', tid, termData, hrItems);
+        tasksCreated++;
+        const adpItems = ['Remove ADP Supervisor Access for ' + termData.employeeName];
+        const tidPayroll = ActionItemService.createActionItem(workflowId, 'Payroll', 'ADP Deactivation - ' + termData.employeeName, JSON.stringify(adpItems), CONFIG.EMAILS.PAYROLL);
+        sendActionItemEmail(CONFIG.EMAILS.PAYROLL, 'Payroll Action Required', tidPayroll, termData, adpItems);
         tasksCreated++;
       }
 
@@ -313,8 +334,8 @@ function submitTerminationApproval(formData) {
       // Central Purchasing/Jonas Group
       if (selectedSystems.includes('Central Purchasing/Jonas')) {
         const financeItems = ['Remove from Central Purchasing/Jonas'];
-        const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Central Purchasing/Jonas Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
-        sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Finance Action Required', tid, termData, financeItems);
+        const tid = ActionItemService.createActionItem(workflowId, 'Purchasing', `Central Purchasing/Jonas Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
+        sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Purchasing Action Required', tid, termData, financeItems);
         tasksCreated++;
       }
 
