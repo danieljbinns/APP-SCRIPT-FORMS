@@ -1841,7 +1841,10 @@ function runSuperDebugEquipment() {
  * Run all 4 suites in sequence.
  * Final combined report printed at end.
  */
-function runSuperDebugAll() {
+function runSuperDebugAll(autoCleanup) {
+  // autoCleanup=true → delete all test workflows after run completes (default: false for safety)
+  const shouldCleanup = autoCleanup === true;
+
   Logger.log('[SD] ════════════ SUPERDEBUG ALL SUITES ════════════');
   var results = {};
 
@@ -1872,6 +1875,16 @@ function runSuperDebugAll() {
   Logger.log('[SD]  TOTAL:        PASS ' + totalPass + '  FAIL ' + totalFail +
              (totalFail === 0 ? '  ✓ ALL SUITES PASS' : '  ✗ FAILURES — see individual suite logs'));
   Logger.log('[SD] ════════════════════════════════════════════════');
+
+  // Auto-cleanup if requested and all tests passed
+  if (shouldCleanup && totalFail === 0) {
+    Logger.log('[SD] Cleanup requested and all tests passed — deleting test workflows...');
+    cleanupSuperDebugAll();
+    Logger.log('[SD] Cleanup complete.');
+  } else if (shouldCleanup && totalFail > 0) {
+    Logger.log('[SD] ✗ Tests failed — skipping cleanup to preserve debug data. Run cleanupSuperDebugAll() manually when ready.');
+  }
+
   return results;
 }
 
