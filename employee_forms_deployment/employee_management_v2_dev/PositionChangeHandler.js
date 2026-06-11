@@ -378,6 +378,22 @@ function submitPositionChangeApproval(formData) {
     const { workflowId, decision, notes, confirmedNewManager, confirmedTitle, confirmedJrTitle } = formData;
     const formId = generateFormId('CHG_APP');
 
+    // Acquire lock and check for duplicate submission
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
+    try {
+      const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+      const appSheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
+      const appData = appSheet.getDataRange().getValues();
+      for (let i = 1; i < appData.length; i++) {
+        if (appData[i][0] === workflowId) {
+          return { success: true, message: 'Approval already processed for this workflow.' };
+        }
+      }
+    } finally {
+      lock.releaseLock();
+    }
+
     // Write the approval record to POSITION_CHANGE_APPROVALS.
     // Columns: [0] WorkflowId, [1] FormId, [2] Timestamp, [3] Decision, [4] Notes,
     //          [5] ConfirmedTitle, [6] ConfirmedNewManager, [7] SubmittedBy

@@ -102,8 +102,7 @@ function syncWorkflowState(workflowId) {
     const isEquip  = workflowId.startsWith('EQUIP_REQ_');
     const lookupSheetName = isTerm   ? CONFIG.SHEETS.TERMINATIONS
                           : isChange ? CONFIG.SHEETS.POSITION_CHANGES
-                          : isEquip  ? CONFIG.SHEETS.EQUIPMENT_REQUESTS
-                          :            CONFIG.SHEETS.INITIAL_REQUESTS;
+                          :            CONFIG.SHEETS.INITIAL_REQUESTS; // equipment + new hire both use Initial_Requests
     const lookupSheet = ss.getSheetByName(lookupSheetName);
 
     const tz = Session.getScriptTimeZone();
@@ -119,46 +118,83 @@ function syncWorkflowState(workflowId) {
       const row = lookupSheet.getRange(foundReq.getRow(), 1, 1, lastCol).getValues()[0];
       if (isTerm) {
         const TR = SCHEMA.TERMINATIONS;
+        const termSystems = String(row[TR.SYSTEMS_TO_DEACTIVATE] || '');
+        const termEquip   = String(row[TR.EQUIPMENT_TO_RETURN]   || '');
         reqInfo = {
-          requesterName:  row[TR.REQUESTER_NAME]  || 'Unknown',
-          requesterEmail: row[TR.REQUESTER_EMAIL]  || '',
-          managerEmail:   row[TR.MANAGER_EMAIL]    || '',
+          requesterName:  String(row[TR.REQUESTER_NAME]   || 'Unknown'),
+          requesterEmail: String(row[TR.REQUESTER_EMAIL]  || ''),
+          managerEmail:   String(row[TR.MANAGER_EMAIL]    || ''),
           dateRequested:  fmtDate(row[TR.TIMESTAMP]),
-          hireDate:       fmtDate(row[TR.TERM_DATE]), // Term Date → shown in Effective Date column
-          site:           String(row[TR.SITE]      || ''),
-          empType:        String(row[TR.EMPLOYEE_TYPE] || ''),
-          items: { isTerm: true }
+          hireDate:       fmtDate(row[TR.TERM_DATE]),
+          site:           String(row[TR.SITE]             || ''),
+          empType:        String(row[TR.EMPLOYEE_TYPE]    || ''),
+          items: {
+            isTerm:        true,
+            hasEquipReturn:!!(termEquip  && termEquip.trim()   && termEquip  !== 'N/A'),
+            hasSystems:    !!(termSystems && termSystems.trim() && termSystems !== 'N/A'),
+            hasReports:    !!(row[TR.HAS_REPORTS] && String(row[TR.HAS_REPORTS]).trim() === 'Yes'),
+            fleetio:       termSystems.includes('Fleetio'),
+            siteDocs:      termSystems.includes('SiteDocs'),
+            hasGoogleOffboarding: !!(row[TR.EMAIL_FORWARDING] && String(row[TR.EMAIL_FORWARDING]).trim() && String(row[TR.EMAIL_FORWARDING]).trim() !== 'N/A')
+          }
         };
       } else if (isChange) {
         const PC = SCHEMA.POSITION_CHANGES;
-        const classChange = String(row[PC.CLASSIFICATION] || '');
-        const classOld = classChange.includes(' -> ') ? classChange.split(' -> ')[0].trim() : '';
+        // Use classNew (right side of "old -> new") for empType — shows what employee is becoming
+        const classChange  = String(row[PC.CLASSIFICATION] || '');
+        const classNew     = classChange.includes(' -> ') ? classChange.split(' -> ')[1].trim() : '';
         const currentClass = String(row[PC.CURRENT_CLASS] || '');
-        const empTypeFromClass = (classOld && classOld !== 'N/A') ? classOld : (currentClass || '');
+        // Fall back chain: classNew > currentClass > classOld
+        const classOld     = classChange.includes(' -> ') ? classChange.split(' -> ')[0].trim() : '';
+        const empTypeFromClass = (classNew && classNew !== 'N/A') ? classNew
+                               : (currentClass || (classOld && classOld !== 'N/A' ? classOld : ''));
+        // Receiving/new manager email — prefer RECEIVING_MANAGER_EMAIL, fall back to CURRENT_MANAGER_EMAIL
+        const pcManagerEmail = String(row[PC.RECEIVING_MANAGER_EMAIL] || row[PC.CURRENT_MANAGER_EMAIL] || '');
         reqInfo = {
-          requesterName:  row[PC.REQUESTER_NAME]   || 'Unknown',
-          requesterEmail: row[PC.REQUESTER_EMAIL]   || '',
-          managerEmail:   String(row[PC.CURRENT_MANAGER_EMAIL] || ''),
-          dateRequested:  fmtDate(row[PC.TIMESTAMP]),
-          hireDate:       fmtDate(row[PC.EFFECTIVE_DATE]), // Effective Date → shown in Effective Date column
-          site:           String(row[PC.CURRENT_SITE] || ''),
+          requesterName:  String(row[PC.REQUESTER_NAME]   || 'Unknown'),
+          requesterEmail: String(row[PC.REQUESTER_EMAIL]  || ''),
+          managerEmail:   pcManagerEmail,
+          dateRequested:  fmtDate(row[PC.DATE_REQUESTED] || row[PC.TIMESTAMP]), // prefer reqDate, fall back to server timestamp
+          hireDate:       fmtDate(row[PC.EFFECTIVE_DATE]),
+          site:           String(row[PC.CURRENT_SITE]     || ''),
           empType:        empTypeFromClass,
-          items: {}
+          items: {
+            // Position change action item indicators for dashboard
+            hasEquipment:    !!(row[PC.EQUIPMENT]      && String(row[PC.EQUIPMENT]).trim()),
+            hasSystems:      !!(row[PC.SYSTEMS_ADDED]  && String(row[PC.SYSTEMS_ADDED]).trim()),
+            hasReturn:       !!(row[PC.EQUIPMENT_RETURN] && String(row[PC.EQUIPMENT_RETURN]).trim()),
+            hasRemoval:      !!(row[PC.REMOVED_ACCESS] && String(row[PC.REMOVED_ACCESS]).trim()),
+            creditCard:      (String(row[PC.CC_USA] || '') === 'Yes' || String(row[PC.CC_CAN] || '') === 'Yes' || String(row[PC.CC_HD] || '') === 'Yes'),
+            jonas:           !!(row[PC.JONAS_JOB_NUMBERS] && String(row[PC.JONAS_JOB_NUMBERS]).trim()),
+            fleetio:         !!(row[PC.SYSTEMS_ADDED] && String(row[PC.SYSTEMS_ADDED]).includes('Fleetio')),
+            businessCards:   !!(row[PC.EQUIPMENT] && String(row[PC.EQUIPMENT]).includes('Business Cards')),
+            siteDocs:        !!(row[PC.SYSTEMS_ADDED] && String(row[PC.SYSTEMS_ADDED]).includes('SiteDocs')),
+            review:          (String(row[PC.PLAN_306090] || '') === 'Yes'),
+            isChange:        true
+          }
         };
       } else if (isEquip) {
-        // Equipment_Requests: WorkflowID[0] | FormID[1] | Timestamp[2] | ReqName[3] | ReqEmail[4]
-        //   | FirstName[5] | LastName[6] | Site[7] | Position[8] | ManagerName[9] | ManagerEmail[10]
-        //   | Equipment[11] | Systems[12] | Comments[13] | Department[14]
-        const EQ = SCHEMA.EQUIPMENT_REQUESTS;
+        // Equipment requests now stored in Initial_Requests — use IR schema
+        const IR = SCHEMA.INITIAL_REQUESTS;
         reqInfo = {
-          requesterName:  row[EQ.REQUESTER_NAME]        || 'Unknown',
-          requesterEmail: row[EQ.REQUESTER_EMAIL]        || '',
-          managerEmail:   row[EQ.MANAGER_EMAIL]          || '',
-          dateRequested:  fmtDate(row[EQ.TIMESTAMP]),    // Timestamp as request date
-          hireDate:       '',                            // No start date for equipment requests
-          site:           String(row[EQ.SITE_NAME]      || ''),
+          requesterName:  String(row[IR.REQUESTER_NAME]  || 'Unknown'),
+          requesterEmail: String(row[IR.REQUESTER_EMAIL] || ''),
+          managerEmail:   String(row[IR.MANAGER_EMAIL]   || ''),
+          dateRequested:  fmtDate(row[IR.DATE_REQUESTED]),
+          hireDate:       '',
+          site:           String(row[IR.SITE_NAME]       || ''),
           empType:        '',
-          items:          { isEquip: true }
+          items: {
+            // Full item detail — same logic as new hire, equipment reads same IR schema
+            jonas:         !!(row[IR.JONAS_JOB_NUMBERS] && String(row[IR.JONAS_JOB_NUMBERS]).trim().length > 0),
+            creditCard:    (row[IR.CC_USA] === 'Yes' || row[IR.CC_CAN] === 'Yes' || row[IR.CC_HD] === 'Yes'),
+            fleetio:       !!(row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('Fleetio')),
+            businessCards: !!(row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('Business Cards')),
+            siteDocs:      !!((row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('SiteDocs')) || (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('SiteDocs Tablet'))),
+            review:        false,
+            safety:        false,
+            isEquip:       true
+          }
         };
       } else {
         const IR = SCHEMA.INITIAL_REQUESTS;
@@ -187,11 +223,11 @@ function syncWorkflowState(workflowId) {
     }
     
     // 2. Determine Pre-Calculated Status String
-    const baseStatus  = wfRow[SCHEMA.WORKFLOWS.STATUS];        // 'Pending', 'In Progress', 'Completed', 'Cancelled'
+    const baseStatus  = wfRow[SCHEMA.WORKFLOWS.STATUS];        // 'Pending', 'In Progress', 'Complete', 'Cancelled'
     const currentStep = wfRow[SCHEMA.WORKFLOWS.CURRENT_STEP];
     let granularStatus = currentStep;
-    
-    if (baseStatus !== 'Cancelled' && baseStatus !== 'Completed') {
+
+    if (baseStatus !== 'Cancelled' && baseStatus !== 'Complete') {
       if (currentStep === 'Specialist Forms Needed') {
         // Check Action Items sheet for open specialist tasks
         const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
@@ -202,12 +238,23 @@ function syncWorkflowState(workflowId) {
           const wfCol = aiHdrs.indexOf('Workflow ID');
           const catCol = aiHdrs.indexOf('Category');
           const stCol  = aiHdrs.indexOf('Status');
-          const SPECIALIST_CATS = new Set(['Credit Card','Business Cards','Fleetio','Jonas','SiteDocs','30/60/90 Review','Safety']);
+          // Current category names + legacy (pre-rename) names for old workflows still in sheet.
+          const SPECIALIST_CATS = new Set([
+            // Current names
+            'Finance', 'Fleet', 'Purchasing', 'Business Cards', '30/60/90 Review', 'Safety',
+            'IT Confirmation', 'WIS', 'ID Setup',
+            // Legacy names (pre-rename)
+            'Credit Card', 'Fleetio', 'Jonas', 'SiteDocs'
+          ]);
           // Map category → reqInfo.items key so we can skip unrequired specialists
           const CAT_ITEMS_KEY = {
+            // Current names
+            'Finance': 'creditCard', 'Fleet': 'fleetio', 'Purchasing': 'jonas',
+            'Business Cards': 'businessCards', 'ID Setup': 'siteDocs',
+            '30/60/90 Review': 'review', 'Safety': 'safety',
+            // Legacy names
             'Jonas': 'jonas', 'Credit Card': 'creditCard', 'Fleetio': 'fleetio',
-            'Business Cards': 'businessCards', 'SiteDocs': 'siteDocs',
-            '30/60/90 Review': 'review', 'Safety': 'safety'
+            'SiteDocs': 'siteDocs',
           };
           for (let i = 1; i < aiData.length; i++) {
             if (String(aiData[i][wfCol]) !== workflowId) continue;
@@ -230,8 +277,14 @@ function syncWorkflowState(workflowId) {
         const sheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
         const done = sheet && sheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() !== null;
         if (!done) granularStatus = 'Pending: IT Setup';
+      } else if (currentStep === 'HR Verification Needed') {
+        granularStatus = 'Pending: HR Verification';
       } else if (currentStep === 'ID Setup Needed') {
         granularStatus = 'Pending: ID Setup';
+      } else if (currentStep === 'ID Setup Complete') {
+        // Legacy step value — IDSetup.js used to leave this instead of advancing
+        // to 'HR Verification Needed'. Treat as HR Verification pending in the view.
+        granularStatus = 'Pending: HR Verification';
       }
     }
     

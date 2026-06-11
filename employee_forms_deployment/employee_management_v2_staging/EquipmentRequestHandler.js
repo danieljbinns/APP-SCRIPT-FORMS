@@ -2,10 +2,11 @@
  * System & Equipment Access Form - Backend Handler
  *
  * Flow:
- *   1. submitEquipmentRequest → status "BOSS Verification Needed"
+ *   1. submitEquipmentRequest → status "IT Confirmation Needed"
+ *        → writes to Initial_Requests sheet (same as new hire, different workflowId prefix)
  *        → confirmation email to requester
  *        → IT Confirmation form link to Dave Langohr
- *   2. submitITConfirmation (in BOSSReviewHandler.js) → calls launchEquipmentActionItems()
+ *   2. submitITConfirmation (in ITConfirmationHandler.js) → calls launchEquipmentActionItems()
  *   3. launchEquipmentActionItems:
  *        a. Google Account in systems → create IT email task only, status "Email Setup Needed"
  *        b. Otherwise → launchRemainingEquipmentTasks() immediately
@@ -29,6 +30,7 @@ function serveEquipmentRequest() {
 
 function submitEquipmentRequest(formData) {
   try {
+    rawLog('submitEquipmentRequest', formData);
     // 1. Create Workflow Record
     const workflowId = createWorkflow('EQUIP_REQ', 'System & Equipment Request', formData.reqEmail || formData.requesterEmail);
     const formId = generateFormId('EQUIP');
@@ -44,13 +46,22 @@ function submitEquipmentRequest(formData) {
 
     const employeeName = formData.firstName + ' ' + formData.lastName;
 
-    // 3. Set status — awaiting IT Confirmation (BOSS review)
+    // 3. Set status — awaiting IT Confirmation
     updateWorkflow(workflowId, 'In Progress', 'IT Confirmation Needed', employeeName);
 
-    // 4. Write row to Equipment_Requests sheet
-    const rowData = formatEquipmentRequestData(formData);
-    const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.EQUIPMENT_REQUESTS, rowData);
-    if (!sheetSuccess) throw new Error('Failed to write request to Equipment Requests database');
+    // 4. Normalize field aliases from equipment form to standard InitialRequest format
+    //    (client submits both aliased names AND standard names; prefer standard, fall back to alias)
+    formData.requesterName         = formData.requesterName         || formData.reqName   || '';
+    formData.requesterEmail        = formData.requesterEmail        || formData.reqEmail  || '';
+    formData.positionTitle         = formData.positionTitle         || formData.position  || '';
+    formData.reportingManagerEmail = formData.reportingManagerEmail || formData.managerEmail || '';
+    formData.reportingManagerName  = formData.reportingManagerName  || formData.managerName  || '';
+    formData.systemAccess          = 'Yes'; // equipment requests always involve system/equipment access
+
+    // 5. Write row to Initial_Requests sheet (same sheet as new hire — shares all columns)
+    const rowData = formatInitialRequestData(formData);
+    const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.INITIAL_REQUESTS, rowData);
+    if (!sheetSuccess) throw new Error('Failed to write request to Initial Requests database');
 
     // 5 & 6. Send confirmation and IT notification — extracted helper so ReplayService can refire missed emails
     _sendEquipmentRequestSubmitEmails(workflowId);
@@ -66,32 +77,28 @@ function submitEquipmentRequest(formData) {
 }
 
 /**
- * Read an Equipment Request row from the sheet by workflow ID.
- * Returns a structured object mirroring the form fields, or null if not found.
+ * Read an Equipment Request row from Initial_Requests by workflow ID.
+ * Delegates to getFullNewHireData (same sheet/schema) and maps to the standard shape
+ * used by _sendEquipmentRequestSubmitEmails and launchEquipmentActionItems.
  */
 function getEquipmentRequestData(workflowId) {
-  const data = getRowByRequestId(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.EQUIPMENT_REQUESTS, workflowId);
-  if (!data) return null;
-  const ER = SCHEMA.EQUIPMENT_REQUESTS;
-  const firstName    = String(data[ER.EMPLOYEE_FIRST_NAME] || '');
-  const lastName     = String(data[ER.EMPLOYEE_LAST_NAME]  || '');
-  const systemsStr   = String(data[ER.SYSTEMS_REQUESTED]   || '');
-  const equipmentStr = String(data[ER.EQUIPMENT_REQUESTED] || '');
+  const d = getFullNewHireData(workflowId);
+  if (!d) return null;
   return {
-    workflowId:     String(data[ER.WORKFLOW_ID]    || ''),
-    requesterName:  String(data[ER.REQUESTER_NAME]  || ''),
-    requesterEmail: String(data[ER.REQUESTER_EMAIL] || ''),
-    employeeName:   (firstName + ' ' + lastName).trim(),
-    firstName:      firstName,
-    lastName:       lastName,
-    siteName:       String(data[ER.SITE_NAME]     || ''),
-    jobTitle:       String(data[ER.JOB_TITLE]     || ''),
-    managerName:    String(data[ER.MANAGER_NAME]  || ''),
-    managerEmail:   String(data[ER.MANAGER_EMAIL] || ''),
-    systems:        systemsStr   ? systemsStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean)   : [],
-    equipment:      equipmentStr ? equipmentStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [],
-    comments:       String(data[ER.COMMENTS]   || ''),
-    department:     String(data[ER.DEPARTMENT] || '')
+    workflowId:     d.workflowId,
+    requesterName:  d.requesterName,
+    requesterEmail: d.requesterEmail,
+    employeeName:   (d.firstName + ' ' + d.lastName).trim(),
+    firstName:      d.firstName,
+    lastName:       d.lastName,
+    siteName:       d.siteName,
+    jobTitle:       d.positionTitle,
+    managerName:    d.managerName,
+    managerEmail:   d.managerEmail,
+    systems:        Array.isArray(d.systems)   ? d.systems   : [],
+    equipment:      Array.isArray(d.equipment) ? d.equipment : [],
+    comments:       d.comments,
+    department:     d.department
   };
 }
 
@@ -146,11 +153,17 @@ function _sendEquipmentRequestSubmitEmails(workflowId) {
 }
 
 /**
- * Called by BOSSReviewHandler.submitBOSSReview after IT Confirmation is approved.
- * If Google Account is in the systems list, creates only the IT email task first.
- * Otherwise, launches all action items at once.
+ * ER-1 FIX: launchEquipmentActionItems is no longer called — Equipment now uses
+ * the same it_setup → submitITSetup → triggerSpecialists path as New Hire.
+ * Commented out (not deleted) for easy revert if needed.
+ *
+ * Called by ITConfirmationHandler.submitITConfirmation after IT Confirmation is approved.
+ * Phase 1: all IT tasks (Google Account, hardware, software) launch together.
+ * Phase 2: non-IT tasks (HR, Finance, Credit Card, Business Cards, Vehicle) launch once
+ *   IT closes all their tasks — triggered by ActionItemService.checkWorkflowCompletion.
  * @param {string} workflowId
  */
+/* ER-1 COMMENTED OUT — revert by uncommenting
 function launchEquipmentActionItems(workflowId) {
   try {
     const context = getWorkflowContext(workflowId);
@@ -159,53 +172,76 @@ function launchEquipmentActionItems(workflowId) {
       return;
     }
 
-    const systems   = Array.isArray(context.systems)   ? context.systems   : [];
-    const needsEmail = systems.some(function(s) {
+    const employeeName = context.employeeName || workflowId;
+    const systems  = Array.isArray(context.systems)  ? context.systems  : [];
+    const equipment = Array.isArray(context.equipment) ? context.equipment
+      : (context.equipmentRaw ? context.equipmentRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : []);
+
+    // Build one combined IT task description (like new hire IT Setup)
+    const itDesc = [];
+
+    const needsGoogle = systems.some(function(s) {
       return s.toLowerCase().indexOf('google') !== -1 || s.toLowerCase().indexOf('email') !== -1;
     });
+    if (needsGoogle) itDesc.push('Create Google account and assign email address');
 
-    if (needsEmail) {
-      // Google Account must be provisioned first — create IT email task only
-      const itEmailTaskId = ActionItemService.createActionItem(
-        workflowId,
-        'IT',
-        'Google Account Setup',
-        JSON.stringify(['Create Google account and assign email address']),
-        CONFIG.EMAILS.IT,
-        'it_email_setup'
-      );
+    const itHardware = equipment.filter(function(eq) {
+      const eql = eq.toLowerCase();
+      return eql.indexOf('credit card') === -1 && eql.indexOf('business card') === -1 && eql.indexOf('vehicle') === -1;
+    });
+    itHardware.forEach(function(e) { itDesc.push('Provision: ' + e); });
 
-      updateWorkflow(workflowId, 'In Progress', 'Email Setup Needed');
-      syncWorkflowState(workflowId);
+    const itSoftware = systems.filter(function(s) {
+      const sl = s.toLowerCase();
+      return sl.indexOf('google') === -1 && sl.indexOf('email') === -1 &&
+             sl.indexOf('adp') === -1 && sl.indexOf('payroll') === -1 &&
+             sl.indexOf('jonas') === -1 &&
+             sl.indexOf('incident') === -1 && sl.indexOf('net promoter') === -1;
+    });
+    itSoftware.forEach(function(s) { itDesc.push('Grant access: ' + s); });
 
-      if (itEmailTaskId) {
-        const taskUrl = buildFormUrl('action_item_view', { tid: itEmailTaskId });
-        sendFormEmail({
-          to: CONFIG.EMAILS.IT,
-          subject: 'Google Account Setup Required',
-          body: 'An equipment request has been approved for <b>' + (context.employeeName || '') + '</b>. Please create their Google account first — remaining access will be set up after email is assigned.',
-          formUrl: taskUrl,
-          displayName: 'TEAM Group — Employee Onboarding',
-          contextData: context
-        });
-      }
-      Logger.log('[EquipReq] Email Setup step created for ' + workflowId);
-    } else {
-      // No Google Account needed — launch all tasks immediately
-      launchRemainingEquipmentTasks(workflowId);
+    if (itDesc.length === 0) {
+      // No IT work — launch all tasks (IT + non-IT) directly
+      launchRemainingEquipmentTasks(workflowId, false);
+      return;
     }
+
+    // Create one IT Setup action item and send one consolidated email
+    const tid = ActionItemService.createActionItem(workflowId, 'IT', 'IT Setup', JSON.stringify(itDesc), CONFIG.EMAILS.IT, 'it_setup');
+    const taskLink = tid ? '<li><a href="' + buildFormUrl('action_item_view', { tid: tid }) + '">IT Setup</a></li>' : '';
+
+    updateWorkflow(workflowId, 'In Progress', 'Email Setup Needed');
+    syncWorkflowState(workflowId);
+
+    sendFormEmail({
+      to: CONFIG.EMAILS.IT,
+      subject: 'IT Setup Required — ' + employeeName,
+      body: 'An equipment request has been approved for <b>' + employeeName + '</b>. Please complete IT setup — remaining team notifications will send once IT tasks are closed.<br><ul>' + taskLink + '</ul>',
+      formUrl: '',
+      displayName: 'TEAM Group — Employee Onboarding',
+      contextData: context
+    });
+
+    Logger.log('[EquipReq] ' + itTaskLinks.length + ' IT task(s) created for ' + workflowId);
   } catch (e) {
     Logger.log('[ERROR] launchEquipmentActionItems: ' + e.message);
   }
 }
+ER-1 COMMENTED OUT END */
 
 /**
- * Creates all remaining action items for an equipment request (excluding Google Account
- * which was handled separately if Email Setup Needed step was used).
+ * ER-1 FIX: launchRemainingEquipmentTasks is no longer called — Equipment now uses
+ * triggerSpecialists() via the shared submitITSetup path.
+ * Commented out (not deleted) for easy revert if needed.
+ *
+ * Creates non-IT (and optionally IT) action items for an equipment request.
+ * - Called by launchEquipmentActionItems directly when no Google Account needed (skipIT=false) → creates everything.
+ * - Called by ActionItemService.checkWorkflowCompletion after IT closes phase-1 tasks (skipIT=true) → non-IT only.
  * Sets workflow status to "Action Items Pending".
  * @param {string} workflowId
+ * @param {boolean} [skipIT=false] pass true when IT tasks were already created in phase 1
  */
-function launchRemainingEquipmentTasks(workflowId) {
+function launchRemainingEquipmentTasks(workflowId, skipIT) {
   try {
     const context = getWorkflowContext(workflowId);
     if (!context) {
@@ -218,31 +254,25 @@ function launchRemainingEquipmentTasks(workflowId) {
     const equipment = Array.isArray(context.equipment)  ? context.equipment
       : (context.equipmentRaw ? context.equipmentRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : []);
 
-    // Skip Google Account — already handled in Email Setup Needed step (if it was done)
-    const otherSystems = systems.filter(function(s) {
-      return s.toLowerCase().indexOf('google') === -1 && s.toLowerCase().indexOf('email') === -1;
-    });
-
-    // Group tasks by team
-    const itHardware    = [];
-    const itSoftware    = [];
-    const hrSystems     = [];
+    const itHardware  = [];
+    const itSoftware  = [];
+    const hrSystems   = [];
     let creditCard    = false;
     let businessCards = false;
     let vehicle       = false;
     let jonas         = false;
     let adp           = false;
 
-    otherSystems.forEach(function(s) {
+    systems.forEach(function(s) {
       const sl = s.toLowerCase();
-      if (sl.indexOf('adp') !== -1 || sl.indexOf('payroll') !== -1) {
+      if (sl.indexOf('google') !== -1 || sl.indexOf('email') !== -1) {
+        return; // always skip — Google Account handled in phase 1 or not requested
+      } else if (sl.indexOf('adp') !== -1 || sl.indexOf('payroll') !== -1) {
         adp = true;
       } else if (sl.indexOf('jonas') !== -1) {
         jonas = true;
-      } else if (sl.indexOf('incident') !== -1 || sl.indexOf('net promoter') !== -1) {
-        hrSystems.push(s);
-      } else {
-        itSoftware.push(s);
+      } else if (!skipIT) {
+        itSoftware.push(s); // IT software only when not already done in phase 1
       }
     });
 
@@ -254,31 +284,20 @@ function launchRemainingEquipmentTasks(workflowId) {
         businessCards = true;
       } else if (eql.indexOf('vehicle') !== -1) {
         vehicle = true;
-      } else {
-        // Computer, Mobile Phone, Tablet → IT hardware
-        itHardware.push(eq);
+      } else if (!skipIT) {
+        itHardware.push(eq); // IT hardware only when not already done in phase 1
       }
     });
 
     // Create action items and notify teams
-    if (itHardware.length > 0) {
-      const tid = ActionItemService.createActionItem(
-        workflowId, 'IT', 'Hardware Provisioning',
-        JSON.stringify(itHardware.map(function(e) { return 'Provision: ' + e; })),
-        CONFIG.EMAILS.IT, 'it_hardware'
-      );
-      _notifyEquipmentTask(workflowId, tid, 'IT', CONFIG.EMAILS.IT, context,
-        'Please provision the following hardware for <b>' + employeeName + '</b>:<br><ul><li>' + itHardware.join('</li><li>') + '</li></ul>');
-    }
-
-    if (itSoftware.length > 0) {
-      const tid = ActionItemService.createActionItem(
-        workflowId, 'IT', 'Software Access Setup',
-        JSON.stringify(itSoftware.map(function(s) { return 'Grant access: ' + s; })),
-        CONFIG.EMAILS.IT, 'it_software'
-      );
-      _notifyEquipmentTask(workflowId, tid, 'IT Software', CONFIG.EMAILS.IDSETUP, context,
-        'Please set up the following software access for <b>' + employeeName + '</b>:<br><ul><li>' + itSoftware.join('</li><li>') + '</li></ul>');
+    // IT hardware + software are always handled in phase 1 (launchEquipmentActionItems).
+    // launchRemainingEquipmentTasks only runs when skipIT=true (non-IT tasks after IT closes)
+    // or when skipIT=false and there was no IT work (itHardware/itSoftware irrelevant).
+    if (!skipIT && (itHardware.length > 0 || itSoftware.length > 0)) {
+      const itDesc2 = itHardware.map(function(e) { return 'Provision: ' + e; }).concat(itSoftware.map(function(s) { return 'Grant access: ' + s; }));
+      const tid2 = ActionItemService.createActionItem(workflowId, 'IT', 'IT Setup', JSON.stringify(itDesc2), CONFIG.EMAILS.IT, 'it_setup');
+      _notifyEquipmentTask(workflowId, tid2, 'IT', CONFIG.EMAILS.IT, context,
+        'Please complete IT setup for <b>' + employeeName + '</b>:<br><ul><li>' + itDesc2.join('</li><li>') + '</li></ul>');
     }
 
     if (hrSystems.length > 0) {
@@ -303,7 +322,7 @@ function launchRemainingEquipmentTasks(workflowId) {
 
     if (jonas) {
       const tid = ActionItemService.createActionItem(
-        workflowId, 'Finance', 'Central Purchasing/Jonas Setup',
+        workflowId, 'Purchasing', 'Central Purchasing/Jonas Setup',
         JSON.stringify(['Set up Central Purchasing/Jonas access for ' + employeeName]),
         CONFIG.EMAILS.JONAS, 'jonas'
       );
@@ -313,7 +332,7 @@ function launchRemainingEquipmentTasks(workflowId) {
 
     if (creditCard) {
       const tid = ActionItemService.createActionItem(
-        workflowId, 'Credit Card', 'Credit Card Setup',
+        workflowId, 'Finance', 'Credit Card Setup',
         JSON.stringify(['Set up company credit card for ' + employeeName]),
         CONFIG.EMAILS.CREDIT_CARD, 'creditcard'
       );
@@ -349,6 +368,7 @@ function launchRemainingEquipmentTasks(workflowId) {
     Logger.log('[ERROR] launchRemainingEquipmentTasks: ' + e.message);
   }
 }
+/* ER-1 COMMENTED OUT END */
 
 /**
  * Sends a task notification email to the assigned team with a link to the action item form.
@@ -380,25 +400,3 @@ function _notifyEquipmentTask(workflowId, taskId, teamLabel, assignedTo, context
   }
 }
 
-/**
- * Helper to flatten formData into a row array for Equipment_Requests sheet
- */
-function formatEquipmentRequestData(formData) {
-  return [
-    formData.workflowId || '',
-    formData.formId     || '',
-    new Date(),
-    formData.reqName    || '',
-    formData.reqEmail   || '',
-    formData.firstName  || '',
-    formData.lastName   || '',
-    formData.siteName   || '',
-    formData.position   || '',
-    formData.managerName  || '',
-    formData.managerEmail || '',
-    Array.isArray(formData.equipment) ? formData.equipment.join(', ') : (formData.equipment || ''),
-    Array.isArray(formData.systems)   ? formData.systems.join(', ')   : (formData.systems   || ''),
-    formData.comments    || '',
-    formData.department  || ''
-  ];
-}

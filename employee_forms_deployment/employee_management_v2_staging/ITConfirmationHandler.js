@@ -31,9 +31,7 @@ function serveITConfirmation(workflowId) {
   template.mode          = 'it_confirmation';
   template.baseMode      = baseMode;
   template.workflowId    = workflowId;
-  template.requestData   = JSON.stringify(
-    isEquipment ? getFullEquipmentRequestData(workflowId) : getFullNewHireData(workflowId)
-  );
+  template.requestData   = JSON.stringify(getFullNewHireData(workflowId)); // equipment now in Initial_Requests
   template.referenceData = JSON.stringify(getInitialFormData());
   template.itContext     = getWorkflowContext(workflowId);   // full context for RequestHeader
   return template.evaluate()
@@ -41,142 +39,7 @@ function serveITConfirmation(workflowId) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function getFullNewHireData(workflowId) {
-  try {
-    const ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
-    const data  = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0] !== workflowId) continue;
-      const r = data[i];
-      const fmtDate = function(d) {
-        return d instanceof Date
-          ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd')
-          : (d ? String(d).substring(0, 10) : '');
-      };
-      const splitCSV = function(v) {
-        return v ? String(v).split(', ').map(function(s) { return s.trim(); }).filter(Boolean) : [];
-      };
-      const IR = SCHEMA.INITIAL_REQUESTS;
-      return {
-        workflowId:               r[IR.WORKFLOW_ID],
-        dateRequested:            fmtDate(r[IR.DATE_REQUESTED]),
-        requesterName:            r[IR.REQUESTER_NAME]            || '',
-        requesterEmail:           r[IR.REQUESTER_EMAIL]           || '',
-        hireDate:                 fmtDate(r[IR.HIRE_DATE]),
-        hireType:                 r[IR.NEW_HIRE_OR_REHIRE]        || '',
-        employeeType:             r[IR.EMPLOYEE_TYPE]             || '',
-        employmentType:           r[IR.EMPLOYMENT_TYPE]           || '',
-        firstName:                r[IR.FIRST_NAME]                || '',
-        middleName:               r[IR.MIDDLE_NAME]               || '',
-        lastName:                 r[IR.LAST_NAME]                 || '',
-        preferredName:            r[IR.PREFERRED_NAME]            || '',
-        positionTitle:            r[IR.POSITION_TITLE]            || '',
-        siteName:                 r[IR.SITE_NAME]                 || '',
-        jobSiteNumber:            r[IR.JOB_SITE_NUMBER]           || '',
-        managerEmail:             r[IR.MANAGER_EMAIL]             || '',
-        managerName:              r[IR.MANAGER_NAME]              || '',
-        systemAccess:             r[IR.SYSTEM_ACCESS]             || '',
-        systems:                  splitCSV(r[IR.SYSTEMS]),
-        equipment:                splitCSV(r[IR.EQUIPMENT]),
-        googleEmail:              r[IR.GOOGLE_EMAIL]              || '',
-        googleDomain:             r[IR.GOOGLE_DOMAIN]             || '',
-        computerReq:              r[IR.COMPUTER_REQ]              || '',
-        computerType:             r[IR.COMPUTER_TYPE]             || '',
-        computerPrevUser:         r[IR.COMPUTER_PREV_USER]        || '',
-        computerPrevType:         r[IR.COMPUTER_PREV_TYPE]        || '',
-        computerSerial:           r[IR.COMPUTER_SERIAL]           || '',
-        office365Required:        r[IR.OFFICE_365]                || '',
-        creditCardUSA:            r[IR.CC_USA]                    || '',
-        creditCardLimitUSA:       r[IR.CC_LIMIT_USA]              || '',
-        creditCardCanada:         r[IR.CC_CAN]                    || '',
-        creditCardLimitCanada:    r[IR.CC_LIMIT_CAN]              || '',
-        creditCardHomeDepot:      r[IR.CC_HD]                     || '',
-        creditCardLimitHomeDepot: r[IR.CC_LIMIT_HD]               || '',
-        phoneReq:                 r[IR.PHONE_REQ]                 || '',
-        phonePrevUser:            r[IR.PHONE_PREV_USER]           || '',
-        phonePrevNumber:          r[IR.PHONE_PREV_NUMBER]         || '',
-        bossJobSites:             r[IR.BOSS_SITES]                || '',
-        bossCostSheet:            r[IR.BOSS_COST_SHEET]           || '',
-        bossCostSheetJobs:        r[IR.BOSS_JOBS]                  || '',
-        bossTripReports:          r[IR.BOSS_TRIP]                  || '',
-        bossGrievances:           r[IR.BOSS_GRIEVANCES]           || '',
-        jonasJobNumbers:          r[IR.JONAS_JOB_NUMBERS]         || '',
-        jrRequired:               r[IR.JR_REQUIRED]               || '',
-        jrAssignment:             r[IR.JR_ASSIGNMENT]             || '',
-        plan306090:               r[IR.PLAN_306090]               || '',
-        comments:                 r[IR.COMMENTS]                  || '',
-        adpSites:                 splitCSV(r[IR.ADP_SITES]),
-        department:               r[IR.DEPARTMENT]                || '',
-        purchasingSites:          splitCSV(r[IR.PURCHASING_SITES]),
-        adpSalaryAccess:          r[IR.ADP_SALARY_ACCESS]         || 'No'
-      };
-    }
-    return null;
-  } catch (e) {
-    Logger.log('[ITConfirmation] getFullNewHireData error: ' + e.message);
-    return null;
-  }
-}
-
-function getFullEquipmentRequestData(workflowId) {
-  // Equipment requests write to INITIAL_REQUESTS (same sheet/schema as new hire).
-  // Delegate to getFullNewHireData so InitialRequest.html gets the full prefill shape.
-  return getFullNewHireData(workflowId);
-}
-
-function getFullPositionChangeData(workflowId) {
-  try {
-    const ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGES);
-    const data  = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0] !== workflowId) continue;
-      const r = data[i];
-      const fmtDate = function(d) {
-        return d instanceof Date
-          ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd')
-          : (d ? String(d).substring(0, 10) : '');
-      };
-      const splitPair = function(s) {
-        var parts = s ? String(s).split(' -> ') : [];
-        return [
-          (parts[0] === 'N/A' ? '' : (parts[0] || '')),
-          (parts[1] === 'N/A' ? '' : (parts[1] || ''))
-        ];
-      };
-      const splitCSV = function(v) {
-        return v ? String(v).split(', ').filter(Boolean) : [];
-      };
-      const PC = SCHEMA.POSITION_CHANGES;
-      const site  = splitPair(r[PC.SITE_TRANSFER]);
-      const title = splitPair(r[PC.TITLE_CHANGE]);
-      const cls   = splitPair(r[PC.CLASSIFICATION]);
-      return {
-        workflowId:      r[PC.WORKFLOW_ID],
-        reqName:         r[PC.REQUESTER_NAME]   || '',
-        reqEmail:        r[PC.REQUESTER_EMAIL]  || '',
-        employeeName:    r[PC.EMPLOYEE_NAME]    || '',
-        effDate:         fmtDate(r[PC.EFFECTIVE_DATE]),
-        siteName:        r[PC.CURRENT_SITE]     || '',
-        changeType:      splitCSV(r[PC.CHANGE_TYPES]),
-        siteOld:         site[0],  siteNew:  site[1],
-        titleOld:        title[0], titleNew: title[1],
-        classOld:        cls[0],   classNew: cls[1],
-        systems:         splitCSV(r[PC.SYSTEMS_ADDED]),
-        equipment:       splitCSV(r[PC.EQUIPMENT]),
-        removal:         splitCSV(r[PC.REMOVED_ACCESS]),
-        comments:        r[PC.COMMENTS]         || '',
-        department:      r[PC.DEPARTMENT]       || '',
-        purchasingSites: splitCSV(r[PC.PURCHASING_SITES])
-      };
-    }
-    return null;
-  } catch (e) {
-    Logger.log('[ITConfirmation] getFullPositionChangeData error: ' + e.message);
-    return null;
-  }
-}
+// getFullNewHireData() and getFullPositionChangeData() moved to Services/ReferenceDataService.js (2026-05-14)
 
 function submitITConfirmation(formData) {
   try {
@@ -190,12 +53,12 @@ function submitITConfirmation(formData) {
     const csvOrStr   = function(v) { return Array.isArray(v) ? v.join(', ') : (v || ''); };
 
     // Capture original data BEFORE any writes — used for change detection below
-    const origData = isEquipment
-      ? getFullEquipmentRequestData(workflowId)
-      : (isChange ? getFullPositionChangeData(workflowId) : getFullNewHireData(workflowId));
+    // Equipment now reads from Initial_Requests via getFullNewHireData (same as new hire)
+    const origData = isChange ? getFullPositionChangeData(workflowId) : getFullNewHireData(workflowId);
 
     if (!isChange) {
-      // Equipment and new hire both write to INITIAL_REQUESTS (same sheet/schema)
+      // Write corrections back to Initial_Requests sheet in-place (new hire AND equipment)
+      // Equipment requests now share the Initial_Requests sheet — no separate write-back needed
       // Write corrections back to Initial Requests sheet in-place
       const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
       const rows  = sheet.getDataRange().getValues();
@@ -219,11 +82,11 @@ function submitITConfirmation(formData) {
           [IR.SYSTEM_ACCESS,       formData.systemAccess        || ''],
           [IR.SYSTEMS,             csvOrStr(formData.systems)],
           [IR.EQUIPMENT,           csvOrStr(formData.equipment)],
-          [IR.GOOGLE_EMAIL,        formData.googleEmail         || ''],
-          [IR.GOOGLE_DOMAIN,       formData.googleDomain        || ''],
-          [IR.COMPUTER_REQ,        formData.computerRequestType || ''],
-          [IR.COMPUTER_TYPE,       formData.computerType        || ''],
-          [IR.PHONE_REQ,           formData.phoneRequestType    || ''],
+          [IR.GOOGLE_EMAIL,        formData.googleEmail         || (origData && origData.googleEmail)         || ''],
+          [IR.GOOGLE_DOMAIN,       formData.googleDomain        || (origData && origData.googleDomain)        || ''],
+          [IR.COMPUTER_REQ,        formData.computerRequestType || (origData && origData.computerRequestType) || ''],
+          [IR.COMPUTER_TYPE,       formData.computerType        || (origData && origData.computerType)        || ''],
+          [IR.PHONE_REQ,           formData.phoneRequestType    || (origData && origData.phoneRequestType)    || ''],
           [IR.BOSS_SITES,          csvOrStr(formData.bossJobSites)],
           [IR.BOSS_COST_SHEET,     formData.bossCostSheet       || ''],
           [IR.BOSS_JOBS,           csvOrStr(formData.bossCostSheetJobs)],
@@ -295,12 +158,33 @@ function submitITConfirmation(formData) {
       Session.getActiveUser().getEmail()
     ]);
 
-    const context = getWorkflowContext(workflowId);
-    if (!context) return { success: false, message: 'Could not load workflow context.' };
+    const context = getWorkflowContext(workflowId) || { employeeName: workflowId };
 
     // ── Change detection ────────────────────────────────────────────────────
     if (origData) {
-      if (isChange) {
+      if (isEquipment) {
+        // Equipment: compare key identity + access fields
+        const eqSubmitted = {
+          firstName:     formData.firstName                                    || '',
+          lastName:      formData.lastName                                     || '',
+          siteName:      formData.siteName                                     || '',
+          positionTitle: formData.positionTitle || formData.position           || '',
+          managerName:   formData.reportingManagerName  || formData.managerName  || '',
+          managerEmail:  formData.reportingManagerEmail || formData.managerEmail || '',
+          systems:       Array.isArray(formData.systems)   ? formData.systems   : [],
+          equipment:     Array.isArray(formData.equipment) ? formData.equipment : []
+        };
+        const eqChanges = diffFormFields(origData, eqSubmitted, CHANGE_FIELDS_IT_EQUIPMENT);
+        if (eqChanges.length > 0) {
+          sendChangeNotifications(workflowId, 'IT Confirmation', eqChanges, context, {
+            requesterEmail: origData.requesterEmail || '',
+            managerEmail:   eqSubmitted.managerEmail || (context && context.managerEmail) || '',
+            notifySafety:   false,
+            notifyIdSetup:  false
+          });
+        }
+
+      } else if (isChange) {
         // Status change: compare new-side values and access lists
         // PositionSiteChangeRequest.html uses sys/equip/rem as checkbox names
         const chSubmitted = {
@@ -317,7 +201,7 @@ function submitITConfirmation(formData) {
         if (chChanges.length > 0) {
           const safetyTriggers = ['siteNew', 'titleNew'];
           sendChangeNotifications(workflowId, 'IT Confirmation', chChanges, context, {
-            requesterEmail: origData.reqEmail    || '',
+            requesterEmail: origData.reqEmail || origData.requesterEmail || '',
             managerEmail:   (context && context.managerEmail) || '',
             notifySafety:   chChanges.some(function(c) { return safetyTriggers.indexOf(c.field) !== -1; }),
             notifyIdSetup:  false
@@ -357,26 +241,21 @@ function submitITConfirmation(formData) {
     }
     // ── End change detection ────────────────────────────────────────────────
 
-    if (isEquipment) {
-      // Equipment Request: launch action items (no IT Setup step)
-      launchEquipmentActionItems(workflowId);
-      Logger.log('[ITConfirmation] IT Confirmation submitted. Equipment action items launched for: ' + workflowId);
-    } else {
-      // New Hire: trigger IT Setup
-      updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed');
-      syncWorkflowState(workflowId);
+    // ER-1 FIX: Equipment now uses the same it_setup path as New Hire.
+    // Both workflows advance to 'IT Setup Needed' and send the IT Setup form link.
+    updateWorkflow(workflowId, 'In Progress', 'IT Setup Needed');
+    syncWorkflowState(workflowId);
 
-      const itUrl = buildFormUrl('it_setup', { wf: workflowId });
-      sendFormEmail({
-        to: CONFIG.EMAILS.IT,
-        subject: 'IT Setup Required — ' + (context.employeeName || workflowId),
-        body: 'IT Confirmation has been completed by Dave Langohr.\n\nPlease complete the IT setup form using the button below.',
-        formUrl: itUrl,
-        displayName: 'TEAM Group — Employee Onboarding',
-        contextData: context
-      });
-      Logger.log('[ITConfirmation] IT Confirmation submitted. IT Setup triggered for: ' + workflowId);
-    }
+    const itUrl = buildFormUrl('it_setup', { wf: workflowId });
+    sendFormEmail({
+      to: CONFIG.EMAILS.IT,
+      subject: 'IT Setup Required — ' + (context.employeeName || workflowId),
+      body: 'IT Confirmation has been completed by Dave Langohr.\n\nPlease complete the IT setup form using the button below.',
+      formUrl: itUrl,
+      displayName: 'TEAM Group — Employee Onboarding',
+      contextData: context
+    });
+    Logger.log('[ITConfirmation] IT Setup triggered for: ' + workflowId);
 
     return { success: true, scriptUrl: ScriptApp.getService().getUrl() };
 

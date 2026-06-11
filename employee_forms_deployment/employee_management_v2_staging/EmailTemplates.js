@@ -53,42 +53,103 @@ function _isSpecialist(sys) {
 // ================================================================
 
 /**
- * Builds the full progressive context block for New Hire emails.
+ * Builds the full progressive context block for New Hire and Equipment Request emails.
+ * Both workflow types share the same function; the `isEquipment` flag suppresses sections
+ * that do not exist in the Equipment Request workflow.
  *
- * Five sections — each shows current completion state from context:
- *   1. Request Details  — always Complete
- *   2. ID Setup         — Complete / Active / Queued
- *   3. HR Verification  — Complete / Active / Queued
- *   4. IT Setup         — Complete / Active / Queued / N/A
- *   5. Specialists      — Active (in progress) / Queued  [no individual completion yet]
+ * Called by: createContextBlockV2() in EmailUtils.js for workflowType 'New Hire'
+ *            or 'Equipment Request'.
  *
- * @param {Object} context  — from getWorkflowContext()
- * @param {Object} [opts]   — { showPasswords: boolean }
+ * WHERE THEY DIFFER (isEquipment=true vs false)
+ * ──────────────────────────────────────────────
+ * ┌─────────────────────┬──────────────────────────────┬───────────────────────────────┐
+ * │ Section             │ New Hire                     │ Equipment Request             │
+ * ├─────────────────────┼──────────────────────────────┼───────────────────────────────┤
+ * │ ID Setup (§2)       │ Shown — internalEmployeeId,  │ SKIPPED — no ID Setup step    │
+ * │                     │ siteDocsWorkerId, credentials│ in the Equipment workflow      │
+ * ├─────────────────────┼──────────────────────────────┼───────────────────────────────┤
+ * │ HR Verification (§3)│ Shown — adpAssociateId,      │ SKIPPED — no HR Verification  │
+ * │                     │ verified title, JR title     │ step in Equipment workflow     │
+ * ├─────────────────────┼──────────────────────────────┼───────────────────────────────┤
+ * │ IT gate             │ IT queued until HR done      │ IT unlocks directly (no gate) │
+ * │                     │ (itSt = hasHr ? active : q)  │ (itSt = hasIt ? complete : a) │
+ * ├─────────────────────┼──────────────────────────────┼───────────────────────────────┤
+ * │ Request Details (§1)│ Type (Employment) + Start    │ Position + Request Date       │
+ * │                     │ Date                         │ (no Employment Type row)      │
+ * ├─────────────────────┼──────────────────────────────┼───────────────────────────────┤
+ * │ Specialists (§5)    │ + Safety Onboarding          │ + SiteDocs Account Setup      │
+ * │                     │   (always required)          │   (if SiteDocs in systems)    │
+ * └─────────────────────┴──────────────────────────────┴───────────────────────────────┘
+ *
+ * WHERE THEY ARE IDENTICAL (shared rendering code)
+ * ─────────────────────────────────────────────────
+ * § IT Setup — assigned email, temp password, computer (type/model/serial), phone
+ *   (carrier/model/number/VM PIN), BOSS ✓ Granted + BOSS sub-details (committees,
+ *   cost sheets, trip reports, grievances), Incidents/CAA/Delivery App/NPS access,
+ *   itSystems provisioned list, IT notes, password-masked notice.
+ * § Specialists — systems filter (_isSpecialist), equipment string parsing (business cards,
+ *   vehicle), credit card, Jonas, 30/60/90.
+ * § allComplete — opts.allComplete=true flips all specialist rows to '✓ Complete'.
+ *   Used exclusively by notifyWorkflowClosure() (ActionItemService.js) for the final email.
+ *
+ * SECTION STATUS DERIVATION
+ * ─────────────────────────
+ * hasId = internalEmployeeId present (written by ID Setup step)
+ * hasHr = adpAssociateId present (written by HR Verification step)
+ * hasIt = itTimestamp or assignedEmail present (written by submitITSetup())
+ * needsIt = false only for Hourly NH with systemAccess==='No' (never false for Equipment)
+ *
+ * @param {Object} context  - From getWorkflowContext() (EmailUtils.js)
+ * @param {Object} [opts]   - { showPasswords: boolean, allComplete: boolean }
+ *                            showPasswords: reveals email temp password and SiteDocs password
+ *                            allComplete: from notifyWorkflowClosure — all sections ✓ Complete
  */
 function buildNewHireContextBlock(context, opts) {
   opts = opts || {};
-  var showPw = opts.showPasswords === true;
+  var showPw      = opts.showPasswords === true;
+  var isEquipment = context.workflowType === 'Equipment Request';
 
-  // ── Step completion flags ─────────────────────────────────
-  var hasId   = !!(context.internalEmployeeId);
-  var hasHr   = !!(context.adpAssociateId);
-  var hasIt   = !!(context.assignedEmail);
-  // Hourly employees with no system access skip IT entirely
+  // ── DIFFERS: completion flags ─────────────────────────────
+  // Equipment skips ID Setup and HR Verification entirely — those steps don't exist
+  var hasId = !isEquipment && !!(context.internalEmployeeId);
+  var hasHr = !isEquipment && !!(context.adpAssociateId);
+  // SHARED: IT complete when itTimestamp exists (written on every submitITSetup call)
+  var hasIt = !!(context.itTimestamp || context.assignedEmail);
+  // SHARED: NH Hourly/no-access skips IT; not applicable to Equipment (needsIt always true)
   var needsIt = !(context.employmentType === 'Hourly' && String(context.systemAccess || '') === 'No');
 
-  // ── Step statuses ─────────────────────────────────────────
-  var idSt  = hasId ? 'complete' : 'active';
-  var hrSt  = hasHr ? 'complete' : (hasId  ? 'active' : 'queued');
-  var itSt  = !needsIt ? 'na'   : (hasIt  ? 'complete' : (hasHr ? 'active' : 'queued'));
+  // ── DIFFERS: step statuses ────────────────────────────────
+  var idSt = hasId ? 'complete' : 'active';
+  var hrSt = hasHr ? 'complete' : (hasId ? 'active' : 'queued');
+  // NH: IT queued until HR done. Equipment: IT unlocks directly (no HR gate).
+  var itSt = !needsIt ? 'na' : (hasIt ? 'complete' : (isEquipment || hasHr ? 'active' : 'queued'));
 
-  // Specialists unlock after HR (hourly) or IT (salary)
-  var specReady  = needsIt ? hasIt : hasHr;
-  var specSt     = specReady ? 'active' : 'queued';
+  // ── SHARED: specialists unlock after IT (or after HR for hourly NH) ───
+  var specReady = needsIt ? hasIt : hasHr;
+  var specSt    = specReady ? 'active' : 'queued';
 
-  // ── Systems: IT vs Specialists ────────────────────────────
-  var systems     = Array.isArray(context.systems) ? context.systems : [];
-  var itSystems   = systems.filter(function(s) { return !_isSpecialist(s); });
-  var specialists = systems.filter(function(s) { return  _isSpecialist(s); });
+  // ── SHARED: systems split — IT-provisioned vs specialist-routed ───────
+  var systems   = Array.isArray(context.systems) ? context.systems : [];
+  // SiteDocs excluded from itSystems (it's a specialist task for Equipment, ID Setup for NH)
+  var itSystems = systems.filter(function(s) { return !_isSpecialist(s) && s.toLowerCase() !== 'sitedocs'; });
+
+  // ── SHARED: build specialist list from all context fields ─────────────
+  var specialists = [];
+  systems.forEach(function(s) { if (_isSpecialist(s)) specialists.push(s); });
+  // DIFFERS: SiteDocs handling
+  //   Equipment → WIS User action item sent to ID Setup team (no ID Setup step in workflow)
+  //   New Hire  → SiteDocs credentials recorded in ID Setup section (not a separate specialist)
+  if (isEquipment && systems.some(function(s) { return s.toLowerCase() === 'sitedocs'; })) {
+    specialists.push('SiteDocs Account Setup');
+  }
+  var equipStr = String(context.equipmentRaw || '').toLowerCase();
+  if (equipStr.indexOf('business card') !== -1) specialists.push('Business Cards');
+  if (equipStr.indexOf('vehicle') !== -1) specialists.push('Vehicle');
+  if (context.creditCardUSA === 'Yes' || context.creditCardCanada === 'Yes' || context.creditCardHomeDepot === 'Yes') specialists.push('Credit Card');
+  if (context.jonasJobNumbers && String(context.jonasJobNumbers).trim()) specialists.push('Central Purchasing/Jonas');
+  if (context.plan306090 === 'Yes') specialists.push('30/60/90 Review');
+  // DIFFERS: Safety Onboarding — NH onboarding only; Equipment doesn't trigger Safety
+  if (!isEquipment && needsIt) specialists.push('Safety Onboarding');
 
   // ── Hire date — human-readable ────────────────────────────
   var hireDisplay = '';
@@ -114,8 +175,9 @@ function buildNewHireContextBlock(context, opts) {
   }
 
   // ============================================================
-  // SECTION 1 — Request Details
-  // Always complete — the request was submitted to start the workflow.
+  // SECTION 1 — Request Details          ★ DIFFERS by workflow type ★
+  //   NH:   Employee | Type | Job Title | Site | Dept | Start Date | Manager | Requested By
+  //   EQUIP: Employee |       Position  | Site | Dept | Request Date | Manager | Requested By
   // ============================================================
 
   var empName = (context.firstName && context.lastName)
@@ -124,14 +186,17 @@ function buildNewHireContextBlock(context, opts) {
   if (context.preferredName) empName += ' (' + context.preferredName + ')';
 
   var reqRows = ''
-    + esRow('Employee',    esVal(empName.trim()))
-    + (context.employmentType
+    + esRow('Employee', esVal(empName.trim()))
+    // Type only for New Hire (Employment Type · Employee Type)
+    + (!isEquipment && context.employmentType
         ? esRow('Type', esVal(context.employmentType + (context.employeeType ? ' · ' + context.employeeType : '')))
         : '')
-    + (context.jobTitle    ? esRow('Job Title',    esVal(context.jobTitle))    : '')
-    + (context.siteName    ? esRow('Site',         esVal(context.siteName))    : '')
-    + (context.department  ? esRow('Department',   esVal(context.department))  : '')
-    + (hireDisplay         ? esRow('Start Date',   esVal(hireDisplay))         : '')
+    + (context.jobTitle   ? esRow(isEquipment ? 'Position' : 'Job Title', esVal(context.jobTitle)) : '')
+    + (context.siteName   ? esRow('Site',       esVal(context.siteName))   : '')
+    + (context.department ? esRow('Department', esVal(context.department)) : '')
+    // New Hire: Start Date from hireDate. Equipment: Request Date from requestDate.
+    + (!isEquipment && hireDisplay       ? esRow('Start Date',    esVal(hireDisplay))           : '')
+    + (isEquipment && context.requestDate ? esRow('Request Date', esVal(context.requestDate))   : '')
     + esDivider()
     + (context.managerName
         ? esRow('Manager', esVal(context.managerName + (context.managerEmail ? ' · ' + context.managerEmail : '')))
@@ -145,7 +210,9 @@ function buildNewHireContextBlock(context, opts) {
   );
 
   // ============================================================
-  // SECTION 2 — ID Setup
+  // SECTION 2 — ID Setup                 ★ NEW HIRE ONLY ★
+  //   Equipment: idSection = '' (no ID Setup step in workflow)
+  //   NH:        internalEmployeeId, siteDocsWorkerId, credentials, BOSS WIS
   // ============================================================
 
   var idRows = '';
@@ -173,10 +240,12 @@ function buildNewHireContextBlock(context, opts) {
     : (idSt === 'active' ? 'Assigned to ID Setup team' : '');
   var idBadge = idSt === 'complete' ? '✓ Complete' : (idSt === 'active' ? '⏳ In Progress' : '— Queued');
 
-  var idSection = esSection('ID Setup', idSt, idBadge, idActor, idRows);
+  var idSection = isEquipment ? '' : esSection('ID Setup', idSt, idBadge, idActor, idRows);
 
   // ============================================================
-  // SECTION 3 — HR Verification
+  // SECTION 3 — HR Verification           ★ NEW HIRE ONLY ★
+  //   Equipment: hrSection = '' (no HR Verification step in workflow)
+  //   NH:        adpAssociateId, HR job title, JR title
   // ============================================================
 
   var hrRows = '';
@@ -197,10 +266,35 @@ function buildNewHireContextBlock(context, opts) {
     : (hrSt === 'active' ? 'Assigned to HR team' : '');
   var hrBadge = hrSt === 'complete' ? '✓ Complete' : (hrSt === 'active' ? '⏳ Awaiting HR' : '— Queued');
 
-  var hrSection = esSection('HR Verification', hrSt, hrBadge, hrActor, hrRows);
+  var hrSection = isEquipment ? '' : esSection('HR Verification', hrSt, hrBadge, hrActor, hrRows);
 
   // ============================================================
-  // SECTION 4 — IT Setup
+  // SECTION 4 — IT Setup                 ★ SHARED (NH + Equipment) ★
+  //
+  //   N/A state (itSt='na'):
+  //     Only applies to New Hire when employmentType='Hourly' and systemAccess='No'.
+  //     Equipment workflows always need IT (needsIt is always true for Equipment).
+  //
+  //   Queued state (itSt='queued'):
+  //     New Hire: IT is waiting for HR Verification to complete first (hasHr is false).
+  //     Equipment: never queued — IT unlocks directly.
+  //
+  //   Active state (itSt='active'):
+  //     IT Setup form link sent; IT has not yet submitted. Shows requested items as
+  //     "Pending provisioning".
+  //
+  //   Complete state (itSt='complete', hasIt=true):
+  //     IT has submitted. Renders all recorded values:
+  //     - Google Account: assignedEmail + emailTempPassword (masked unless showPasswords)
+  //     - Computer: computerType · computerModel + computerSerial
+  //     - Phone: phoneCarrier · phoneModel + phoneNumber + phoneVMPassword
+  //     - BOSS: bossAccess + bossDetails sub-rows (committees, costSheets, tripReports, grievances)
+  //     - System access: incidentsAccess, caaAccess, deliveryAppAccess, netPromoterAccess
+  //     - Equipment-only: siteDocsUsername + siteDocsPassword (context from ID_SETUP_RESULTS,
+  //       written by closeActionItem WIS User branch in ActionItemService.js)
+  //     - itSystems provisioned (non-specialist systems from original request)
+  //     - itNotes
+  //     - Password masked notice (shown when !showPasswords and emailTempPassword present)
   // ============================================================
 
   var itSection = '';
@@ -235,10 +329,28 @@ function buildNewHireContextBlock(context, opts) {
       // ── System Access ──────────────────────────────────────────
       var sysRows = '';
       if (context.bossAccess         === 'Yes') sysRows += esRow('BOSS',            esVal('✓ Granted'));
+      // BOSS detail confirmations — committees, cost sheets, trip reports, grievances
+      if (context.bossDetails) {
+        var bd = context.bossDetails;
+        if (Array.isArray(bd.committees) && bd.committees.length > 0) {
+          bd.committees.forEach(function(site) { sysRows += esRow('Committee', esVal('✓ ' + site)); });
+        }
+        if (Array.isArray(bd.costSheets) && bd.costSheets.length > 0) {
+          bd.costSheets.forEach(function(job) { sysRows += esRow('Cost Sheet', esVal('✓ ' + job)); });
+        }
+        if (bd.tripReports === 'Yes') sysRows += esRow('Trip Reports', esVal('✓ Granted'));
+        if (bd.grievances  === 'Yes') sysRows += esRow('Grievances',   esVal('✓ Granted'));
+      }
       if (context.incidentsAccess    === 'Yes') sysRows += esRow('Incidents',       esVal('✓ Granted'));
       if (context.caaAccess          === 'Yes') sysRows += esRow('CAA',             esVal('✓ Granted'));
       if (context.deliveryAppAccess  === 'Yes') sysRows += esRow('Delivery App',    esVal('✓ Granted'));
       if (context.netPromoterAccess  === 'Yes') sysRows += esRow('Net Promoter',    esVal('✓ Granted'));
+      // Equipment only: SiteDocs credentials captured when ID Setup team closes WIS User action item
+      if (isEquipment && context.siteDocsUsername) {
+        sysRows += esRow('SiteDocs Login', esVal(context.siteDocsUsername, 'mono'));
+        if (context.siteDocsPassword) sysRows += esRow('SiteDocs Pwd', showPw ? esVal(context.siteDocsPassword, 'mono') : esVal('●●●●●●●●', 'masked'));
+        if (context.bossWisCreated)   sysRows += esRow('BOSS WIS',     esVal(context.bossWisCreated));
+      }
       // Software/system list from the original request
       if (itSystems.length > 0) {
         sysRows += itSystems.map(function(s) { return esRow(s, esVal('✓ Provisioned')); }).join('');
@@ -280,20 +392,37 @@ function buildNewHireContextBlock(context, opts) {
   }
 
   // ============================================================
-  // SECTION 5 — Specialists (only rendered if any were requested)
-  // Individual completion tracking requires Action Items data —
-  // for now shows In Progress / Queued at the section level.
+  // SECTION 5 — Specialists              ★ SHARED (NH + Equipment) ★
+  //
+  //   The specialist list is built above from context fields. Entries:
+  //     Both workflows:   Fleetio, Business Cards, Vehicle, Credit Card,
+  //                       Central Purchasing/Jonas, 30/60/90 Review
+  //     New Hire only:    Safety Onboarding (always added when needsIt=true)
+  //     Equipment only:   SiteDocs Account Setup (WIS User action item, ID Setup team)
+  //
+  //   Status logic:
+  //     specReady=true  → 'In Progress' (parallel notifications sent, AIs open)
+  //     specReady=false → '— Queued' (waiting for IT or HR to complete first)
+  //     allComplete=true → each row shows '✓ Complete' and section shows '✓ All Complete'
+  //                        Used only in the Workflow Completed email sent by
+  //                        notifyWorkflowClosure() in ActionItemService.js.
+  //
+  //   Note: individual specialist completion is NOT tracked here — the section only
+  //   flips to ✓ All Complete when opts.allComplete=true (workflow-level completion).
   // ============================================================
 
   var specSection = '';
   if (specialists.length > 0) {
+    var allComplete = opts.allComplete === true;
     var specRows = specialists.map(function(s) {
+      if (allComplete) return esRow(s, esVal('✓ Complete', 'complete'));
       return esRow(s, specReady ? esVal('In Progress', 'pending') : esVal('— Queued', 'queued'));
     }).join('');
 
-    var specBadge = specReady ? '⏳ In Progress' : '— Queued';
+    var specBadge = allComplete ? '✓ All Complete' : (specReady ? '⏳ In Progress' : '— Queued');
+    var specFinalSt = allComplete ? 'complete' : specSt;
     specSection = esSection(
-      'Specialists', specSt, specBadge,
+      'Specialists', specFinalSt, specBadge,
       'Parallel notifications sent · individual completion tracked separately',
       specRows
     );
@@ -304,216 +433,54 @@ function buildNewHireContextBlock(context, opts) {
 
 
 // ================================================================
-// EQUIPMENT REQUEST
-// ================================================================
-
-/**
- * Context block for System & Equipment Access Request emails.
- *
- * Three sections (mirrors New Hire but without ID Setup / HR Verification):
- *   1. Request Details  — always Complete
- *   2. IT Setup         — Google Account + hardware + IT software
- *   3. Specialists      — Credit Card, Business Cards, Vehicle, Jonas, ADP (if requested)
- *
- * @param {Object} context  — from getWorkflowContext() for EQUIP_REQ_* workflows
- * @param {Object} [opts]   — { showPasswords: boolean }
- */
-function buildEquipmentContextBlock(context, opts) {
-  opts = opts || {};
-  var showPw = opts.showPasswords === true;
-
-  var systemsList = Array.isArray(context.systems)   ? context.systems   : [];
-  var equipList   = Array.isArray(context.equipment) ? context.equipment
-    : (context.equipmentRaw
-        ? context.equipmentRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean)
-        : []);
-
-  // ── Categorise systems ───────────────────────────────────────
-  var SPECIALIST_SYS_KEYS = ['credit card', 'business card', 'fleetio', 'vehicle', 'jonas', 'adp', 'payroll', '30-60-90', '30/60/90'];
-
-  var googleSystems = systemsList.filter(function(s) {
-    var sl = s.toLowerCase();
-    return sl.indexOf('google') !== -1 || sl.indexOf('email') !== -1;
-  });
-  var otherSystems = systemsList.filter(function(s) {
-    var sl = s.toLowerCase();
-    return sl.indexOf('google') === -1 && sl.indexOf('email') === -1;
-  });
-  var itSoftware = otherSystems.filter(function(s) {
-    var sl = s.toLowerCase();
-    return !SPECIALIST_SYS_KEYS.some(function(k) { return sl.indexOf(k) !== -1; });
-  });
-  var specialistSystems = otherSystems.filter(function(s) {
-    var sl = s.toLowerCase();
-    return SPECIALIST_SYS_KEYS.some(function(k) { return sl.indexOf(k) !== -1; });
-  });
-
-  // ── Categorise equipment ─────────────────────────────────────
-  var itHardware = equipList.filter(function(eq) {
-    var eql = eq.toLowerCase();
-    return eql.indexOf('credit card') === -1
-        && eql.indexOf('business card') === -1
-        && eql.indexOf('vehicle') === -1;
-  });
-  var specialistEquip = equipList.filter(function(eq) {
-    var eql = eq.toLowerCase();
-    return eql.indexOf('credit card') !== -1
-        || eql.indexOf('business card') !== -1
-        || eql.indexOf('vehicle') !== -1;
-  });
-
-  var allItItems     = googleSystems.concat(itHardware).concat(itSoftware);
-  var allSpecialists = specialistSystems.concat(specialistEquip);
-
-  // ── Completion flags ─────────────────────────────────────────
-  // assignedEmail is present once Google Account / IT Setup is done
-  var hasIt = !!(context.assignedEmail);
-  var itSt  = hasIt ? 'complete' : 'active';
-
-  // ── Employee name ────────────────────────────────────────────
-  var empName = (context.firstName && context.lastName)
-    ? (context.firstName + ' ' + context.lastName)
-    : (context.employeeName || '');
-
-  // ============================================================
-  // SECTION 1 — Request Details  (always complete)
-  // ============================================================
-  var reqRows = ''
-    + esRow('Employee', esVal(empName.trim()))
-    + (context.jobTitle  ? esRow('Position', esVal(context.jobTitle))  : '')
-    + (context.siteName  ? esRow('Site',     esVal(context.siteName))  : '')
-    + (context.managerName
-        ? esRow('Manager', esVal(context.managerName
-            + (context.managerEmail ? ' · ' + context.managerEmail : '')))
-        : '')
-    + esDivider()
-    + (context.requesterEmail
-        ? esRow('Requested By', esVal(context.requesterName
-            ? context.requesterName + ' · ' + context.requesterEmail
-            : context.requesterEmail))
-        : '')
-    + (context.requestDate ? esRow('Request Date', esVal(context.requestDate)) : '');
-
-  var reqSection = esSection(
-    'Request Details', 'complete', '✓ Submitted',
-    context.requestDate ? 'Submitted · ' + context.requestDate : '',
-    reqRows
-  );
-
-  // ============================================================
-  // SECTION 2 — IT Setup  (Google Account + hardware + IT software)
-  // ============================================================
-  var itSection = '';
-  if (allItItems.length > 0) {
-    var itRows = '';
-
-    if (hasIt) {
-      // ── Setup complete — show results ──────────────────────
-      if (context.assignedEmail) {
-        itRows += esRow('Assigned Email', esVal(context.assignedEmail, 'mono'));
-      }
-      if (context.emailTempPassword) {
-        itRows += esRow('Temp Password',
-          showPw ? esVal(context.emailTempPassword, 'mono') : esVal('●●●●●●●●', 'masked'));
-      }
-      if (itHardware.length > 0) {
-        itRows += esDivider();
-        itRows += itHardware.map(function(e) { return esRow(e, esVal('✓ Provisioned')); }).join('');
-      }
-      if (itSoftware.length > 0) {
-        itRows += esDivider();
-        itRows += itSoftware.map(function(s) { return esRow(s, esVal('✓ Provisioned')); }).join('');
-      }
-      if (!showPw && context.emailTempPassword) {
-        itRows += '<tr><td colspan="2" style="padding:6px 0 0;">'
-          + '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:4px;'
-          + 'padding:5px 10px;font-size:11px;color:#92400e;">'
-          + '🔒 Google temp password visible only to Manager and Requester</div></td></tr>';
-      }
-    } else {
-      // ── Pending — show what will be provisioned ────────────
-      if (googleSystems.length > 0) {
-        itRows += googleSystems.map(function(s) {
-          return esRow(s, esVal('Pending setup', 'pending'));
-        }).join('');
-      }
-      if (itHardware.length > 0) {
-        if (itRows) itRows += esDivider();
-        itRows += itHardware.map(function(e) {
-          return esRow(e, esVal('Pending provisioning', 'pending'));
-        }).join('');
-      }
-      if (itSoftware.length > 0) {
-        if (itRows) itRows += esDivider();
-        itRows += itSoftware.map(function(s) {
-          return esRow(s, esVal('Pending provisioning', 'pending'));
-        }).join('');
-      }
-    }
-
-    var itBadge = hasIt ? '✓ Complete' : '⏳ In Progress';
-    var itActor = hasIt && context.itSubmittedBy
-      ? 'Completed by ' + context.itSubmittedBy + (context.itTimestamp ? ' · ' + context.itTimestamp : '')
-      : 'Assigned to IT team';
-
-    itSection = esSection('IT Setup', itSt, itBadge, itActor, itRows);
-  }
-
-  // ============================================================
-  // SECTION 3 — Specialists  (Credit Card, Business Cards, Vehicle, Jonas, ADP…)
-  // ============================================================
-  var specSection = '';
-  if (allSpecialists.length > 0) {
-    var specRows = allSpecialists.map(function(s) {
-      return esRow(s, esVal('In Progress', 'pending'));
-    }).join('');
-
-    specSection = esSection(
-      'Specialists', 'active', '⏳ In Progress',
-      'Parallel notifications sent · individual completion tracked separately',
-      specRows
-    );
-  }
-
-  // ============================================================
-  // SECTION 4 — Comments  (if provided)
-  // ============================================================
-  var commentsSection = '';
-  if (context.comments) {
-    commentsSection = esSection(
-      'Notes', 'complete', '',
-      '',
-      esRow('Comments', esVal(context.comments))
-    );
-  }
-
-  return reqSection + itSection + specSection + commentsSection;
-}
-
-
-// ================================================================
 // TERMINATION
 // ================================================================
 
 /**
  * Full progressive context block for Termination (EOE) emails.
  *
- * Six sections — state driven by context.hrDecision:
- *   1. Employee — End of Employment  always Complete
- *   2. HR Approval                   Awaiting / Approved / Rejected
- *   3. Google Account Offboarding    only when Google Account in systems; Queued → In Progress
- *   4. System Deactivations          selected systems + mandatory (SiteDocs, DSS, BOSS WIS)
- *   5. Equipment to Return           Queued → Pending Collection
- *   6. Direct Reports                only when hasReports === 'Yes'
+ * Six sections — each shows current state driven by context.hrDecision:
  *
- * Handler sets context.hrDecision = 'Approved' on all post-approval emails so
- * sections 3–6 flip from Queued to In Progress.
+ *   §1 Employee — End of Employment   always 'complete' (section header only)
+ *   §2 HR Approval                    'active' (Awaiting) → 'complete' (Approved) / 'active' (Rejected)
+ *   §3 Google Account Offboarding     only rendered when 'Google Account' is in context.systems.
+ *                                     'queued' until approved; 'active' (In Progress) after.
+ *                                     Renders forward/files/delegate/vacation/duration settings.
+ *   §4 System Deactivations           selected systems (excl. Google Account, handled in §3)
+ *                                     plus always-required: SiteDocs, DSS, BOSS WIS (✦ marked).
+ *                                     'queued' until approved; 'active' after.
+ *   §5 Equipment to Return            only rendered when eqList is non-empty.
+ *                                     'queued' until approved; 'active' (Pending Collection) after.
+ *   §6 Direct Reports                 only rendered when context.hasReports === 'Yes'.
+ *                                     Shows reassignment target or "Confirm with HR" if absent.
  *
- * @param {Object} context   — from getWorkflowContext() / handler-built object
- * @param {Object} [opts]
+ * hrDecision STATE MACHINE
+ * ────────────────────────
+ * 'Awaiting' (default): sections 3–6 are Queued — nothing has happened yet.
+ * 'Approved':           set by notifyWorkflowClosure() (ActionItemService.js) before calling
+ *                       sendFormEmail, and also set inline in handler approval emails.
+ *                       Sections 3–6 flip to In Progress.
+ * 'Rejected':           HR Approval section shows as Rejected; sections 3–6 remain Queued.
+ *
+ * opts.allComplete STATE
+ * ──────────────────────
+ * opts.allComplete=true is passed only by notifyWorkflowClosure() (ActionItemService.js)
+ * when ALL blocking action items for the workflow are closed. It flips:
+ *   §3 Google Account Offboarding → '✓ Complete'
+ *   §4 System Deactivations       → '✓ Complete' for each system row
+ *   §5 Equipment to Return        → '✓ Collected' / each item '✓ Returned'
+ *   §6 Direct Reports             → '✓ Complete'
+ *
+ * @param {Object} context   - From getWorkflowContext() (TERM_ branch) or handler-built object.
+ *                             Key fields: hrDecision, systems (array), equipmentRaw (string),
+ *                             hasReports, reportsToNew, googleOffboarding (object)
+ * @param {Object} [opts]    - { allComplete: boolean }
+ *                             allComplete: from notifyWorkflowClosure — flips all active
+ *                             sections to '✓ Complete'
  */
 function buildTerminationContextBlock(context, opts) {
   opts = opts || {};
+  var allComplete = opts.allComplete === true;  // true only in Workflow Completed email
 
   var empName = context.employeeName || '';
 
@@ -625,8 +592,8 @@ function buildTerminationContextBlock(context, opts) {
   // ============================================================
   var googleSection = '';
   if (hasGoogleAccount) {
-    var gStatus = hrApproved ? 'active' : 'queued';
-    var gBadge  = hrApproved ? '⏳ In Progress' : '— Queued';
+    var gStatus = allComplete ? 'complete' : (hrApproved ? 'active' : 'queued');
+    var gBadge  = allComplete ? '✓ Complete'   : (hrApproved ? '⏳ In Progress' : '— Queued');
 
     var gRows = '';
     if (gForward  && gForward  !== 'N/A') gRows += esRow('Email Forwarding',   esVal(gForward));
@@ -665,15 +632,15 @@ function buildTerminationContextBlock(context, opts) {
     return selectedSys.indexOf(m) === -1;
   }));
 
-  var sysStatus = hrApproved ? 'active' : 'queued';
-  var sysBadge  = hrApproved ? '⏳ In Progress' : '— Queued';
+  var sysStatus = allComplete ? 'complete' : (hrApproved ? 'active' : 'queued');
+  var sysBadge  = allComplete ? '✓ Complete'  : (hrApproved ? '⏳ In Progress' : '— Queued');
   var sysActor  = hrApproved ? 'Notifications sent to respective teams' : '';
   var sysRows   = allDeact.map(function(s) {
     var isMandatory = mandatorySys.indexOf(s) !== -1 && selectedSys.indexOf(s) === -1;
     var label = s + (isMandatory ? ' ✦' : '');
-    return esRow(label, hrApproved
-      ? esVal('Deactivation in progress', 'pending')
-      : esVal('— Queued', 'queued'));
+    return esRow(label, allComplete
+      ? esVal('✓ Deactivated')
+      : (hrApproved ? esVal('Deactivation in progress', 'pending') : esVal('— Queued', 'queued')));
   }).join('');
   if (hrApproved) {
     sysRows += esDivider()
@@ -687,12 +654,12 @@ function buildTerminationContextBlock(context, opts) {
   // ============================================================
   var eqSection = '';
   if (eqList.length > 0) {
-    var eqStatus = hrApproved ? 'active' : 'queued';
-    var eqBadge  = hrApproved ? '⏳ Pending Collection' : '— Queued';
+    var eqStatus = allComplete ? 'complete' : (hrApproved ? 'active' : 'queued');
+    var eqBadge  = allComplete ? '✓ Collected' : (hrApproved ? '⏳ Pending Collection' : '— Queued');
     var eqRows   = eqList.map(function(item) {
-      return esRow(item, hrApproved
-        ? esVal('Pending Return', 'pending')
-        : esVal('— Queued', 'queued'));
+      return esRow(item, allComplete
+        ? esVal('✓ Returned')
+        : (hrApproved ? esVal('Pending Return', 'pending') : esVal('— Queued', 'queued')));
     }).join('');
     eqSection = esSection(
       'Equipment to Return', eqStatus, eqBadge,
@@ -712,8 +679,8 @@ function buildTerminationContextBlock(context, opts) {
     } else {
       rrRows += esRow('Reassignment', esVal('Confirm with HR', 'pending'));
     }
-    var rrStatus = hrApproved ? 'active' : 'queued';
-    var rrBadge  = hrApproved ? '⏳ Action Required' : '— Queued';
+    var rrStatus = allComplete ? 'complete' : (hrApproved ? 'active' : 'queued');
+    var rrBadge  = allComplete ? '✓ Complete'    : (hrApproved ? '⏳ Action Required' : '— Queued');
     reportsSection = esSection('Direct Reports', rrStatus, rrBadge, '', rrRows);
   }
 
@@ -728,22 +695,58 @@ function buildTerminationContextBlock(context, opts) {
 /**
  * Full progressive context block for Status Change emails.
  *
- * Six sections — state driven by context.hrDecision:
- *   1. Employee                 always Complete (current state snapshot)
- *   2. Requested Changes        always Complete (captures the full change request)
- *   3. HR Review                Awaiting / Approved / Rejected
- *   4. HR Confirmed Details     only post-approval (confirmed title, JR title, new manager)
- *   5. Access & Equipment       Queued → In Progress (systems + equipment being provisioned)
- *   6. Action Items Assigned    only post-approval (teams notified)
+ * Seven sections — state driven by context.hrDecision and context.itTimestamp:
  *
- * Handler sets context.hrDecision = 'Approved' + confirmedTitle/confirmedJrTitle/
- * confirmedNewManager + actionTeams[] on all post-approval emails.
+ *   §1 Employee                  always 'complete' — snapshot of current classification,
+ *                                site, current title, and current manager.
+ *   §2 Requested Changes         always 'complete' — effective date, change types (site
+ *                                transfer, title, classification, manager), systems/equipment
+ *                                requested, department, purchasing sites.
+ *   §3 HR Review                 'active' (Awaiting) → 'complete' (Approved) / 'active' (Rejected)
+ *   §4 HR Confirmed Details      only rendered post-approval (hrApproved=true).
+ *                                Shows confirmedTitle, confirmedJrTitle, confirmedNewManager.
+ *   §4b IT Setup Results         only rendered when hasItChange=true (context.itTimestamp or
+ *                                context.assignedEmail is present). This means IT has submitted
+ *                                the IT Setup form for this CHANGE_ workflow. Same rendering as
+ *                                buildNewHireContextBlock §4 but always 'complete' status.
+ *                                Data source: context enriched from IT_RESULTS by
+ *                                getWorkflowContext(), or overlaid from wfTasks in-memory
+ *                                by notifyWorkflowClosure() (ActionItemService.js).
+ *   §5 Access & Equipment        'queued' until approved; 'active' (In Progress) after.
+ *                                Lists all systems + equipment from the change request.
+ *                                allComplete=true → '✓ All Complete'.
+ *   §6 Action Items Assigned     only rendered post-approval when context.actionTeams is set.
+ *                                context.actionTeams[] is built incrementally in
+ *                                submitPositionChangeApproval() (PositionChangeHandler.js)
+ *                                and passed in changeContext. allComplete=true → '✓ All Complete'.
  *
- * @param {Object} context   — from getWorkflowContext() / handler-built object
- * @param {Object} [opts]
+ * hrDecision STATE MACHINE
+ * ────────────────────────
+ * 'Awaiting' (default): §4 and §4b hidden; §5 and §6 are Queued.
+ * 'Approved':           set by submitPositionChangeApproval() on all post-approval emails
+ *                       and by notifyWorkflowClosure() before sending the final email.
+ *                       §3 → ✓ Approved; §4 rendered; §5/§6 → In Progress.
+ * 'Rejected':           §3 shown as Rejected; §4/§5/§6 remain Queued/hidden.
+ *
+ * opts.allComplete STATE
+ * ──────────────────────
+ * opts.allComplete=true is passed only by notifyWorkflowClosure() (ActionItemService.js)
+ * when ALL blocking action items for the CHANGE_ workflow are closed. It flips:
+ *   §5 Access & Equipment Changes → '✓ All Complete' for section and each row
+ *   §6 Action Items Assigned      → '✓ All Complete' for section and each row
+ *
+ * @param {Object} context   - From getWorkflowContext() (CHANGE_ branch) or handler-built
+ *                             object. Key fields: hrDecision, systems (string CSV),
+ *                             equipmentRaw (string CSV), itTimestamp, assignedEmail,
+ *                             bossAccess, bossDetails, confirmedTitle, confirmedNewManager,
+ *                             actionTeams (string[])
+ * @param {Object} [opts]    - { showPasswords: boolean, allComplete: boolean }
+ *                             showPasswords: reveals emailTempPassword to recipients
+ *                             allComplete: from notifyWorkflowClosure — §5/§6 → ✓ Complete
  */
 function buildStatusChangeContextBlock(context, opts) {
   opts = opts || {};
+  var showPw = opts.showPasswords === true;
 
   var empName = context.employeeName || '';
 
@@ -764,9 +767,10 @@ function buildStatusChangeContextBlock(context, opts) {
   var effDateDisp = _fmtDisp(context.hireDate);
 
   // ── HR decision flags ─────────────────────────────────────────
-  var hrDecision = context.hrDecision || '';
-  var hrApproved = hrDecision === 'Approved';
-  var hrRejected = hrDecision === 'Rejected';
+  var hrDecision  = context.hrDecision || '';
+  var hrApproved  = hrDecision === 'Approved';
+  var hrRejected  = hrDecision === 'Rejected';
+  var allComplete = opts.allComplete === true; // true when notifyWorkflowClosure fires (all AIs closed)
 
   // ── Systems & Equipment (normalise to arrays) ─────────────────
   var systems = Array.isArray(context.systems)
@@ -827,6 +831,20 @@ function buildStatusChangeContextBlock(context, opts) {
   if (tcChange) changeRows += esRow('Title Change',     esVal(tcChange));
   if (ccChange) changeRows += esRow('Classification',   esVal(ccChange));
   if (mcChange) changeRows += esRow('Manager Change',   esVal(mcChange));
+
+  // Direct report delegation — shown whenever present in the request.
+  // oldReportsTo  = employee is losing direct reports → reassign them to this person/team.
+  // newReportsFrom = employee is gaining direct reports from this person/team.
+  // Both fields render in the Requested Changes section so every recipient
+  // (HR, Payroll, manager, requester) and the ADP action item form all show them.
+  var hasOldReports = context.oldReportsTo  && context.oldReportsTo  !== 'N/A' && context.oldReportsTo  !== '';
+  var hasNewReports = context.newReportsFrom && context.newReportsFrom !== 'N/A' && context.newReportsFrom !== '';
+  if (hasOldReports || hasNewReports) {
+    changeRows += esDivider();
+    if (hasOldReports)  changeRows += esRow('Reports Out', esVal(context.oldReportsTo,  'mono'));
+    if (hasNewReports)  changeRows += esRow('Reports In',  esVal(context.newReportsFrom, 'mono'));
+  }
+
   if (allItems.length > 0) {
     changeRows += esDivider();
     allItems.forEach(function(s) { changeRows += esRow(s, esVal('Requested')); });
@@ -894,17 +912,79 @@ function buildStatusChangeContextBlock(context, opts) {
   }
 
   // ============================================================
+  // SECTION 4b — IT Setup Results         ★ STATUS CHANGE ONLY ★
+  //
+  //   Only rendered when hasItChange=true, meaning the IT team has submitted the IT Setup
+  //   form for this CHANGE_ workflow. The IT action item has formType='it_setup' and
+  //   formDataJSON is written to IT_RESULTS when it closes (via closeActionItem() in
+  //   ActionItemService.js, or via submitITSetup() in ITSetupHandler.js).
+  //
+  //   Data source: context.itTimestamp / context.assignedEmail and all context.computer*,
+  //   context.phone*, context.boss*, context.incidents*, etc. fields. These are populated by:
+  //     - getWorkflowContext() reading IT_RESULTS (if not the same execution as closeActionItem)
+  //     - notifyWorkflowClosure() overlaying from wfTasks in-memory snapshot (same execution)
+  //
+  //   Renders: assigned email, temp password (masked unless showPasswords), computer
+  //   (type/model/serial), phone (carrier/model/number/VM PIN), BOSS access + BOSS sub-rows
+  //   (committees, cost sheets, trip reports, grievances), Incidents/CAA/Delivery App/NPS,
+  //   IT notes. Actor line shows itSubmittedBy + itTimestamp.
+  //
+  //   Unlike the New Hire IT Setup section which has Queued/Active/Complete states,
+  //   this section is ONLY rendered when complete (itSt is always 'complete' here).
+  // ============================================================
+  var itSetupSection = '';
+  var hasItChange = !!(context.itTimestamp || context.assignedEmail);
+  if (hasItChange) {
+    var itChgRows = '';
+    if (context.assignedEmail) itChgRows += esRow('Assigned Email', esVal(context.assignedEmail, 'mono'));
+    if (context.emailTempPassword) itChgRows += esRow('Temp Password', showPw ? esVal(context.emailTempPassword, 'mono') : esVal('●●●●●●●●', 'masked'));
+    if (context.computerAssigned === 'Yes') {
+      itChgRows += esDivider();
+      var cd = [context.computerType, context.computerModel].filter(Boolean).join(' · ');
+      if (cd) itChgRows += esRow('Computer', esVal(cd));
+      if (context.computerSerial) itChgRows += esRow('Serial #', esVal(context.computerSerial, 'mono'));
+    }
+    if (context.phoneAssigned === 'Yes') {
+      itChgRows += esDivider();
+      var pd = [context.phoneCarrier, context.phoneModel].filter(Boolean).join(' · ');
+      if (pd) itChgRows += esRow('Phone', esVal(pd));
+      if (context.phoneNumber)    itChgRows += esRow('Number', esVal(context.phoneNumber, 'mono'));
+      if (context.phoneVMPassword) itChgRows += esRow('VM PIN', esVal(context.phoneVMPassword, 'mono'));
+    }
+    if (context.bossAccess === 'Yes') {
+      itChgRows += esDivider();
+      itChgRows += esRow('BOSS', esVal('✓ Granted'));
+      if (context.bossDetails) {
+        var itbd = context.bossDetails;
+        if (Array.isArray(itbd.committees)) itbd.committees.forEach(function(s) { itChgRows += esRow('Committee', esVal('✓ ' + s)); });
+        if (Array.isArray(itbd.costSheets)) itbd.costSheets.forEach(function(j) { itChgRows += esRow('Cost Sheet', esVal('✓ ' + j)); });
+        if (itbd.tripReports === 'Yes') itChgRows += esRow('Trip Reports', esVal('✓ Granted'));
+        if (itbd.grievances  === 'Yes') itChgRows += esRow('Grievances',   esVal('✓ Granted'));
+      }
+      if (context.incidentsAccess    === 'Yes') itChgRows += esRow('Incidents',    esVal('✓ Granted'));
+      if (context.caaAccess          === 'Yes') itChgRows += esRow('CAA',          esVal('✓ Granted'));
+      if (context.deliveryAppAccess  === 'Yes') itChgRows += esRow('Delivery App', esVal('✓ Granted'));
+      if (context.netPromoterAccess  === 'Yes') itChgRows += esRow('Net Promoter', esVal('✓ Granted'));
+    }
+    if (context.itNotes) { itChgRows += esDivider(); itChgRows += esRow('Notes', esVal(context.itNotes)); }
+    var itChgActor = context.itSubmittedBy
+      ? 'Completed by ' + context.itSubmittedBy + (context.itTimestamp ? ' · ' + context.itTimestamp : '')
+      : 'Assigned to IT team';
+    itSetupSection = esSection('IT Setup', 'complete', '✓ Complete', itChgActor, itChgRows);
+  }
+
+  // ============================================================
   // SECTION 5 — Access & Equipment Changes  (Queued → In Progress)
   // ============================================================
   var accessSection = '';
   if (allItems.length > 0) {
-    var acStatus = hrApproved ? 'active' : 'queued';
-    var acBadge  = hrApproved ? '⏳ In Progress' : '— Queued';
-    var acActor  = hrApproved ? 'Notifications sent to respective teams' : '';
+    var acStatus = allComplete ? 'complete' : (hrApproved ? 'active' : 'queued');
+    var acBadge  = allComplete ? '✓ All Complete' : (hrApproved ? '⏳ In Progress' : '— Queued');
+    var acActor  = allComplete ? 'All teams confirmed complete' : (hrApproved ? 'Notifications sent to respective teams' : '');
     var acRows   = allItems.map(function(s) {
-      return esRow(s, hrApproved
-        ? esVal('In Progress', 'pending')
-        : esVal('— Queued', 'queued'));
+      return esRow(s, allComplete
+        ? esVal('✓ Complete', 'complete')
+        : (hrApproved ? esVal('In Progress', 'pending') : esVal('— Queued', 'queued')));
     }).join('');
     accessSection = esSection('Access & Equipment Changes', acStatus, acBadge, acActor, acRows);
   }
@@ -916,13 +996,17 @@ function buildStatusChangeContextBlock(context, opts) {
   var actionSection = '';
   if (hrApproved && context.actionTeams && context.actionTeams.length > 0) {
     var atRows = context.actionTeams.map(function(team) {
-      return esRow(team, esVal('Action item assigned & emailed', 'pending'));
+      return esRow(team, allComplete
+        ? esVal('✓ Complete', 'complete')
+        : esVal('Action item assigned & emailed', 'pending'));
     }).join('');
+    var atBadge = allComplete ? '✓ All Complete' : '⏳ In Progress';
+    var atSt    = allComplete ? 'complete' : 'active';
     actionSection = esSection(
-      'Action Items Assigned', 'active', '⏳ In Progress',
+      'Action Items Assigned', atSt, atBadge,
       'Each team received a checklist link via email', atRows
     );
   }
 
-  return empSection + changeSection + hrSection + confirmedSection + accessSection + actionSection;
+  return empSection + changeSection + hrSection + confirmedSection + itSetupSection + accessSection + actionSection;
 }

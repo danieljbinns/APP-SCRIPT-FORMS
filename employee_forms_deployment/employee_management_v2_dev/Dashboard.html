@@ -695,9 +695,9 @@
                 var step = escapeHtml(wf.step || wf.status || '');
                 var safeId   = escapeHtml(wf.id);
                 var safeType = escapeHtml(wf.type || '');
-                var safeName = (wf.employee || '').replace(/'/g, "\\'");
+                var safeName = escapeHtml(wf.employee || '');
                 return '<div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-color); cursor:pointer;" ' +
-                    'onclick="filterToEmployee(\'' + safeName + '\')" title="Filter dashboard to ' + name + '">' +
+                    'data-filter-employee="' + safeName + '" onclick="filterToEmployee(this.dataset.filterEmployee)" title="Filter dashboard to ' + name + '">' +
                     '<span style="flex:1; font-size:13px; font-weight:600;">' + name + '</span>' +
                     '<span style="font-size:11px; color:var(--text-muted);">' + type + '</span>' +
                     '<span style="font-size:11px; color:var(--text-muted);">' + step + '</span>' +
@@ -1287,10 +1287,10 @@
 
                     html +=
                         '<tr style="border-bottom: 1px solid #333; background-color: ' + (item.status === 'Cancelled' ? '#ffffff; color: #000' : 'transparent') + '">' +
-                        '<td style="padding: 12px 10px;">' + item.name + '</td>' +
+                        '<td style="padding: 12px 10px;">' + escapeHtml(item.name || '') + '</td>' +
                         '<td style="padding: 12px 10px;">' + badge + '</td>' +
-                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#ccc') + ';">' + (item.by || '-') + '</td>' +
-                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#888') + ';">' + (!item.time || item.time === 'undefined' ? '-' : item.time) + '</td>' +
+                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#ccc') + ';">' + escapeHtml(item.by || '-') + '</td>' +
+                        '<td style="padding: 12px 10px; font-size: 13px; color: ' + (item.status === 'Cancelled' ? '#000' : '#888') + ';">' + escapeHtml(!item.time || item.time === 'undefined' ? '-' : item.time) + '</td>' +
                         '<td style="padding: 12px 10px; text-align: right;">' + actionBtn + '</td>' +
                         '</tr>';
                 });

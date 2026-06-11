@@ -844,10 +844,10 @@
                 }
 
                 rows += '<tr>' +
-                    '<td>' + item.name + '</td>' +
-                    '<td class="' + statusClass + '"><strong>' + icon + ' ' + item.status + '</strong></td>' +
-                    '<td>' + (item.by || '-') + '</td>' +
-                    '<td>' + (item.time === 'undefined' ? '-' : (item.time || '-')) + '</td>' +
+                    '<td>' + escapeHtml(item.name || '') + '</td>' +
+                    '<td class="' + statusClass + '"><strong>' + icon + ' ' + escapeHtml(item.status || '') + '</strong></td>' +
+                    '<td>' + escapeHtml(item.by || '-') + '</td>' +
+                    '<td>' + escapeHtml(item.time === 'undefined' ? '-' : (item.time || '-')) + '</td>' +
                     '<td>' + actions + '</td>' +
                     '</tr>';
             });

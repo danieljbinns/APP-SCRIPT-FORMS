@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 
 <head>
@@ -279,7 +279,7 @@
         .flow-card h3 {
             margin: 0 0 5px 0;
             font-size: 14px;
-            color: #fff;
+            color: var(--text-main);
             border: none;
             text-transform: none;
         }
@@ -359,87 +359,72 @@
                 <div class="detail-grid" id="snapshotGrid"></div>
             </div>
 
-            <!-- Workflow Diagram Section — Onboarding -->
+            <!-- Workflow Diagram Section — Onboarding (New Hire)
+                 Sequential core nodes are static HTML with correct badge labels.
+                 IT CONF row is hidden by default — JS shows it only on BOSS path.
+                 Specialist branch (#nhBranchContainer) is populated dynamically by
+                 renderDetails() from the checklist so new categories appear automatically.
+                 Old static nodes removed: Jonas, Credit Card, Fleetio, SiteDocs (dead),
+                 and the incorrect side-by-side ID/HR layout. -->
             <div id="flowSection" class="flow-section" style="display:none;">
                 <h2 style="color:var(--text-muted); font-size:16px; margin-bottom:20px;">Live Request Flow</h2>
                 <div class="flow-container">
 
-                    <!-- 1. Initial Request -->
+                    <!-- 1. Initial Request — always present -->
                     <div class="step-row">
-                        <div class="flow-card" id="node_initial_request" onclick="viewStepData('initial_request')">
+                        <div class="flow-card future" id="node_initial_request" onclick="viewStepData('initial_request')">
                             <h3>Initial Request</h3>
-                            <p>Submitted by Manager</p>
-                            <div class="status-badge" id="badge_initial_request">-</div>
+                            <p>Submitted</p>
+                            <div class="status-badge" id="badge_initial_request">Pending</div>
                             <div class="connector-line"></div>
                         </div>
                     </div>
 
-                    <!-- 2. Processing (Abstracted ID/HR) -->
-                    <div style="display:flex; justify-content:center; gap:20px; margin-bottom:40px;">
-                        <div class="flow-card" id="node_id_setup" onclick="viewStepData('id_setup')">
-                            <h3>ID Setup</h3>
-                            <p>IT System Generation</p>
-                            <div class="status-badge" id="badge_id_setup">-</div>
-                            <!-- No arrow here, visual simplification -->
+                    <!-- 2. ID SETUP — sequential, always present -->
+                    <div class="step-row">
+                        <div class="flow-card future" id="node_id_setup" onclick="viewStepData('id_setup')">
+                            <h3>ID SETUP</h3>
+                            <p>grp.forms.idsetup@</p>
+                            <div class="status-badge" id="badge_id_setup">Pending</div>
+                            <div class="connector-line"></div>
                         </div>
-                        <div class="flow-card" id="node_hr_verification" onclick="viewStepData('hr_verification')">
+                    </div>
+
+                    <!-- 3. HR Verification — sequential after ID SETUP -->
+                    <div class="step-row">
+                        <div class="flow-card future" id="node_hr_verification" onclick="viewStepData('hr_verification')">
                             <h3>HR Verification</h3>
-                            <p>Core Data Review</p>
-                            <div class="status-badge" id="badge_hr_verification">-</div>
-                        </div>
-                        <!-- Implicit Flow to IT -->
-                    </div>
-
-                    <div class="step-row" style="margin-top:-20px;">
-                        <div class="connector-line" style="height:20px; top:-20px; bottom:auto;"></div>
-                        <!-- Visually connect somewhat -->
-                        <div class="flow-card" id="node_it_setup" onclick="viewStepData('it_setup')">
-                            <h3>IT Setup</h3>
-                            <p>Equipment &amp; Access</p>
-                            <div class="status-badge" id="badge_it_setup">-</div>
+                            <p>hr@ + payroll@</p>
+                            <div class="status-badge" id="badge_hr_verification">Pending</div>
                             <div class="connector-line"></div>
                         </div>
                     </div>
 
-                    <!-- Parallel Branches -->
-                    <div class="branch-container">
+                    <!-- 4. IT CONF — conditional, BOSS path only; hidden until JS reveals it -->
+                    <div class="step-row" id="nhITConfRow" style="display:none;">
+                        <div class="flow-card future" id="node_itconfirmation" onclick="viewStepData('it_confirmation')">
+                            <h3>IT CONF</h3>
+                            <p>davelangohr@ · BOSS path</p>
+                            <div class="status-badge" id="badge_itconfirmation">Pending</div>
+                            <div class="connector-line"></div>
+                        </div>
+                    </div>
+
+                    <!-- 5. IT SETUP — sequential, always present -->
+                    <div class="step-row">
+                        <div class="flow-card future" id="node_it_setup" onclick="viewStepData('it_setup')">
+                            <h3>IT SETUP</h3>
+                            <p>grp.forms.it@</p>
+                            <div class="status-badge" id="badge_it_setup">Pending</div>
+                            <div class="connector-line"></div>
+                        </div>
+                    </div>
+
+                    <!-- Specialist branch — cards built dynamically by renderDetails() -->
+                    <div class="branch-container" id="nhBranchContainer">
                         <div class="branch-stem"></div>
-
-                        <div class="flow-card" id="node_jonas" onclick="viewStepData('jonas')">
-                            <h3>Jonas</h3>
-                            <p>Job Numbers</p>
-                            <div class="status-badge" id="badge_jonas">-</div>
-                        </div>
-
-                        <div class="flow-card" id="node_credit_card" onclick="viewStepData('credit_card')">
-                            <h3>Credit Card</h3>
-                            <p>Finance Approval</p>
-                            <div class="status-badge" id="badge_credit_card">-</div>
-                        </div>
-
-                        <div class="flow-card" id="node_fleetio" onclick="viewStepData('fleetio')">
-                            <h3>Fleetio</h3>
-                            <p>Vehicle Access</p>
-                            <div class="status-badge" id="badge_fleetio">-</div>
-                        </div>
-
-                        <div class="flow-card" id="node_business_cards" onclick="viewStepData('business_cards')">
-                            <h3>Business Cards</h3>
-                            <p>Printing Order</p>
-                            <div class="status-badge" id="badge_business_cards">-</div>
-                        </div>
-
-                        <div class="flow-card" id="node_sitedocs" onclick="viewStepData('sitedocs')">
-                            <h3>SiteDocs</h3>
-                            <p>Safety Training</p>
-                            <div class="status-badge" id="badge_sitedocs">-</div>
-                        </div>
-
-                        <div class="flow-card" id="node_review" onclick="viewStepData('review')">
-                            <h3>30/60/90</h3>
-                            <p>Performance Reviews</p>
-                            <div class="status-badge" id="badge_review">-</div>
-                        </div>
+                        <!-- Safety, Finance, Business Cards, Fleet, 30/60/90, Purchasing, WIS
+                             appended here at render time from the checklist. -->
                     </div>
                 </div>
             </div>
@@ -536,42 +521,29 @@
             }
         };
 
-        function formatDate(dateStr) {
-            if (!dateStr) return '-';
-            const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr;
-            return d.toLocaleDateString();
-        }
+        // formatDate() provided by SharedComponents.html (included at bottom of page)
 
-        let viewDataTarget = null;
         function loadDetails() {
             document.getElementById('loading').style.display = 'block';
-            document.getElementById('content').style.display = 'none'; // Changed from workflowContent
+            document.getElementById('content').style.display = 'none';
             document.getElementById('flowSection').style.display = 'none';
-            
-            // Check for view data auto-open parameter first
-            google.script.url.getLocation(function(loc) {
-                if (loc && loc.parameter && loc.parameter.vd) {
-                    viewDataTarget = loc.parameter.vd;
-                }
-                
-                // Route appropriately based on ID
-                if (workflowId.startsWith('TERM_')) { 
-                    google.script.run
-                        .withSuccessHandler(renderDetails)
-                        .withFailureHandler(err => {
-                            document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
-                        })
-                        .getTerminationDetails(workflowId);
-                } else {
-                    google.script.run
-                        .withSuccessHandler(renderDetails)
-                        .withFailureHandler(err => {
-                            document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
-                        })
-                        .getRequestDetails(workflowId);
-                }
-            });
+
+            // Route appropriately based on ID
+            if (workflowId.startsWith('TERM_')) {
+                google.script.run
+                    .withSuccessHandler(renderDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
+                    })
+                    .getTerminationDetails(workflowId);
+            } else {
+                google.script.run
+                    .withSuccessHandler(renderDetails)
+                    .withFailureHandler(err => {
+                        document.getElementById('loading').innerHTML = '<span style="color:red">Error: ' + err.message + '</span>';
+                    })
+                    .getRequestDetails(workflowId);
+            }
         }
 
         function renderDetails(data) {
@@ -583,13 +555,47 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('content').style.display = 'block';
 
+            // Persist rolePayload + currentUser to sessionStorage for button gating
+            if (data.rolePayload) {
+                try { sessionStorage.setItem('rolePayload', JSON.stringify(data.rolePayload)); } catch(e) {}
+            }
+            if (data.currentUser) {
+                try { sessionStorage.setItem('currentUser', data.currentUser); } catch(e) {}
+            }
+
+            // Apply role body classes for CSS-based static button gating
+            var rp = data.rolePayload || {};
+            if (rp.isAdmin)     document.body.classList.add('is-admin');
+            if (rp.isHR)        document.body.classList.add('is-hr');
+            if (rp.isIT)        document.body.classList.add('is-it');
+            if (rp.isPayroll)   document.body.classList.add('is-payroll');
+            if (rp.isSpecialist) document.body.classList.add('is-specialist');
+
+            // Resolve per-workflow role context for this request
+            var cu          = data.currentUser || '';
+            var wfRequester = String(data.requesterEmail || '').toLowerCase();
+            var wfManager   = String(data.managerEmail   || '').toLowerCase();
+            var cuLower     = cu.toLowerCase();
+            var isOwner     = cuLower && (cuLower === wfRequester || cuLower === wfManager);
+            var canBumpWf   = rp.canBumpAll   || isOwner;
+            var canCancelWf = rp.canCancelAll || isOwner;
+            var canEditDate = rp.canEditDates;
+            var canViewData    = rp.canViewAllStepData || isOwner;
+            // View Form: Admin / IT / requester / manager / any specialist — tighter than canViewData
+            var canViewFormBtn = rp.isAdmin || rp.isIT || isOwner || rp.isSpecialist;
+            // Store on window for use by dynamic checklist rendering
+            window._rdRoleCtx = { canBumpWf, canCancelWf, canEditDate, canViewData, canViewFormBtn };
+
             // Status badge + Edit Start Date button
             var statusEl = document.getElementById('statusBadge');
             if (statusEl) {
                 var sColor = (data.status === 'Completed' || data.status === 'Complete') ? 'var(--success)' : data.status === 'Cancelled' ? '#aaa' : 'var(--warning)';
                 var sBadge = '<span style="background:' + sColor + '; color:#000; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700; display:inline-block;">' + escapeHtml(data.status || '') + '</span>';
-                if (!workflowId.startsWith('TERM_') && !workflowId.startsWith('CHANGE_') && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
+                if (canEditDate && !workflowId.startsWith('TERM_') && !workflowId.startsWith('CHANGE_') && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
                     sBadge += ' <button class="btn" style="margin-left:10px; background:#555; color:white; font-size:12px;" onclick="editStartDate()">Edit Start Date</button>';
+                }
+                if (canCancelWf && data.status !== 'Cancelled' && data.status !== 'Complete' && data.status !== 'Completed') {
+                    sBadge += ' <button class="btn" style="margin-left:6px; background:#c62828; color:white; font-size:12px;" onclick="cancelRequest()">Cancel Request</button>';
                 }
                 statusEl.innerHTML = sBadge;
             }
@@ -598,6 +604,22 @@
             const r = data.requestData || {};
             const list = data.checklist || [];
 
+            // RD_BADGE_LABEL: checklist item name/category → dashboard badge label.
+            // Shared by flowSection (New Hire) and eoeFlowSection (EOE/SC/Equipment).
+            // null = intentionally no card (Manager on transfer, dead SiteDocs).
+            const RD_BADGE_LABEL = {
+                'IT':               'IT SETUP',   'IT Confirmation': 'IT CONF',
+                'HR':               'ADP/HR',     'Payroll':         'ADP/HR',
+                'EOE':              'ADP/HR',     'Safety':          'SAFETY',
+                'Finance':          'FINANCE',    'Business Cards':  'BUSINESS CARDS',
+                'Fleet':            'FLEET',      '30/60/90 Review': '30/60/90',
+                'Purchasing':       'PURCHASING', 'ID Setup':        'ID SETUP',
+                'WIS':              'WIS',        'Deactivation':    'DEACTIVATION',
+                'Assets':           'ASSETS',     'Manager':         null,
+                'Credit Card':      'FINANCE',    'Fleetio':         'FLEET',
+                'Jonas':            'PURCHASING', 'SiteDocs':        null,
+            };
+
             if (workflowId.startsWith('TERM_') || workflowId.startsWith('CHANGE_') || workflowId.startsWith('EQUIP_REQ_')) {
                 document.getElementById('flowSection').style.display = 'none';
                 document.getElementById('eoeFlowSection').style.display = 'block';
@@ -605,13 +627,17 @@
                 var eoeTitle = document.querySelector('#eoeFlowSection h2');
                 if (eoeTitle) eoeTitle.textContent = workflowId.startsWith('CHANGE_') ? 'Live Request Flow \u2014 Status Change' : workflowId.startsWith('EQUIP_REQ_') ? 'Live Request Flow \u2014 Equipment Request' : 'Live Request Flow \u2014 End of Employment';
 
-                // Dynamically build action item category cards in the EOE/CHANGE diagram
                 const aiContainer = document.getElementById('eoeActionItemNodes');
                 // Keep the branch-stem div, remove old cards
                 aiContainer.innerHTML = '<div class="branch-stem"></div>';
 
                 list.forEach(item => {
                     if (item.name === 'Initial Request' || item.name === 'Approval' || item.name === 'HR Approval') return;
+                    // Use category (Equipment) or name (EOE/SC) for badge lookup
+                    var catKey    = item.category || item.name;
+                    var badgeLabel = RD_BADGE_LABEL.hasOwnProperty(catKey) ? RD_BADGE_LABEL[catKey] : catKey;
+                    if (badgeLabel === null) return; // Manager etc — intentionally no card
+                    var cardTitle = badgeLabel || item.name; // badge label as card title
                     const isComplete = item.status === 'Complete';
                     const slug = item.target || item.name.toLowerCase().replace(/\s+/g,'_');
                     const card = document.createElement('div');
@@ -619,7 +645,7 @@
                     card.id = 'eoe_node_' + slug;
                     if (item.target) card.addEventListener('click', function() { viewStepData(item.target); });
                     const h3 = document.createElement('h3');
-                    h3.textContent = item.name;
+                    h3.textContent = cardTitle; // badge label (e.g. "IT SETUP") not task name
                     const p = document.createElement('p');
                     p.textContent = item.by || 'Pending';
                     const badge = document.createElement('div');
@@ -666,13 +692,22 @@
                 const apprNode   = document.getElementById('eoe_node_approval');
 
                 // Relabel the Initial Request node based on workflow type
+                // AND fix onclick to match the correct step target (static HTML defaults to TERM_ targets)
                 if (reqNode) {
                     const h3el = reqNode.querySelector('h3');
                     if (h3el) {
-                        if (isChangeWf)  h3el.textContent = 'Change Request';
+                        if (isChangeWf)      h3el.textContent = 'Change Request';
                         else if (isEquipReq) h3el.textContent = 'Equipment Request';
                         // TERM_ already says "EOE Request" — leave as-is
                     }
+                    if (isChangeWf)      reqNode.onclick = function() { viewStepData('change_request'); };
+                    else if (isEquipReq) reqNode.onclick = function() { viewStepData('equipment_request'); };
+                    // else TERM_: 'termination_request' onclick is already correct
+                }
+                // Fix approval node onclick for Status Change
+                if (apprNode) {
+                    if (isChangeWf) apprNode.onclick = function() { viewStepData('position_change_approval'); };
+                    // TERM_: 'termination_approval' is already correct; EQUIP: node hidden below
                 }
                 // Hide the HR Approval node for equipment requests (no approval step)
                 if (apprNode && isEquipReq) apprNode.style.display = 'none';
@@ -691,80 +726,58 @@
                 }
 
             } else {
+                // New Hire — show flowSection, hide eoeFlowSection
                 document.getElementById('flowSection').style.display = 'block';
                 document.getElementById('eoeFlowSection').style.display = 'none';
 
-                // Reset all onboarding nodes to future state first
-                document.querySelectorAll('#flowSection .flow-card').forEach(el => {
+                // Build specialist branch dynamically from checklist.
+                // Core sequential nodes (Initial Request, ID SETUP, HR Verification, IT CONF, IT SETUP)
+                // are static HTML — they get status/button updates from the main list.forEach below.
+                // Everything else (Safety, Finance, Fleet, etc.) gets a dynamic card here so new
+                // categories appear automatically without any HTML changes.
+                var nhBranch = document.getElementById('nhBranchContainer');
+                if (nhBranch) {
+                    // Clear previous specialist cards; keep branch-stem (first child)
+                    while (nhBranch.children.length > 1) nhBranch.removeChild(nhBranch.lastChild);
+                    var nhCoreTargets = new Set(['initial_request', 'id_setup', 'hr_verification', 'it_setup', 'itconfirmation', 'it_confirmation']);
+                    list.forEach(function(nhItem) {
+                        if (!nhItem.target || nhCoreTargets.has(nhItem.target)) return;
+                        var catKey = nhItem.category || nhItem.name;
+                        var bLabel = RD_BADGE_LABEL.hasOwnProperty(catKey) ? RD_BADGE_LABEL[catKey] : catKey;
+                        if (bLabel === null) return; // no badge — intentionally invisible
+                        var nhCard = document.createElement('div');
+                        nhCard.className = 'flow-card future';
+                        nhCard.id = 'node_' + nhItem.target; // matches node_${target} lookup in main list.forEach
+                        (function(tgt) { nhCard.onclick = function() { viewStepData(tgt); }; })(nhItem.target);
+                        var nhH3 = document.createElement('h3'); nhH3.textContent = bLabel;
+                        var nhBadge = document.createElement('div');
+                        nhBadge.className = 'status-badge'; nhBadge.id = 'badge_' + nhItem.target; nhBadge.textContent = 'Pending';
+                        nhCard.appendChild(nhH3); nhCard.appendChild(nhBadge);
+                        nhBranch.appendChild(nhCard);
+                    });
+                }
+
+                // IT CONF row: hidden by default, only shown on BOSS path (when action item exists)
+                var hasNHITConf = list.some(function(i) { return i.target === 'itconfirmation' || i.target === 'it_confirmation'; });
+                var itConfRow = document.getElementById('nhITConfRow');
+                if (itConfRow) itConfRow.style.display = hasNHITConf ? '' : 'none';
+
+                // Reset all NH flow-card nodes to future state — main list.forEach updates them
+                document.querySelectorAll('#flowSection .flow-card').forEach(function(el) {
                     el.className = 'flow-card future';
-                    el.querySelector('.status-badge').innerText = 'Pending';
+                    var b = el.querySelector('.status-badge');
+                    if (b) b.innerText = 'Pending';
                 });
             }
 
-            // Snapshot - adapt fields for EOE / Status Change / Onboarding
-            if (workflowId.startsWith('CHANGE_')) {
-                document.getElementById('employeeName').innerText = r['Employee Name'] || data.id;
-                var _diC = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
-                document.getElementById('snapshotGrid').innerHTML =
-                    _diC('Workflow ID', data.id) +
-                    _diC('Employee', r['Employee Name']) +
-                    _diC('Classification', r['Current Classification']) +
-                    _diC('Current Title', r['Current Title']) +
-                    _diC('Effective Date', r['Effective Date']) +
-                    _diC('Site', r['Site Name']) +
-                    _diC('Changes', r['Change Type']) +
-                    _diC('Department', r['Department']) +
-                    _diC('Current Manager', (r['Current Manager Name'] || '') + (r['Current Manager Email'] ? ' \xb7 ' + r['Current Manager Email'] : '')) +
-                    _diC('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : ''));
-            } else if (workflowId.startsWith('TERM_')) {
-                document.getElementById('employeeName').innerText = r['Employee Name'] || data.id;
-                var termAttach = r['Attachment URL'] || r['Attachment Url'] || '';
-                document.getElementById('snapshotGrid').innerHTML =
-                    '<div class="detail-item"><label>Workflow ID</label><div>' + data.id + '</div></div>' +
-                    '<div class="detail-item"><label>Employee</label><div>' + (r['Employee Name'] || '-') + '</div></div>' +
-                    (r['Employee Type'] ? '<div class="detail-item"><label>Employee Type</label><div>' + escapeHtml(r['Employee Type']) + '</div></div>' : '') +
-                    '<div class="detail-item"><label>Site</label><div>' + (r['Site'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Term Date</label><div>' + (r['Term Date'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Reason</label><div>' + (r['Reason'] || '-') + '</div></div>' +
-                    '<div class="detail-item"><label>Requester</label><div>' + (r['Requester Email'] || '-') + '</div></div>' +
-                    (termAttach ? '<div class="detail-item"><label>Documentation</label><div><a href="' + termAttach + '" target="_blank" style="color:#EB1C2D;">View Attached File</a></div></div>' : '');
-            } else if (workflowId.startsWith('EQUIP_REQ_')) {
-                document.getElementById('employeeName').innerText = ((r['First Name'] || '') + ' ' + (r['Last Name'] || '')).trim() || data.id;
-                var _diEq = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
-                document.getElementById('snapshotGrid').innerHTML =
-                    _diEq('Workflow ID', data.id) +
-                    _diEq('Position', r['Position Title']) +
-                    _diEq('Site', r['Site Name']) +
-                    _diEq('Department', r['Department']) +
-                    _diEq('Equipment', r['Equipment']) +
-                    _diEq('Systems', r['Systems']) +
-                    _diEq('Date Requested', r['Date Requested']) +
-                    _diEq('Manager', (r['Manager Name'] || '') + (r['Manager Email'] ? ' \xb7 ' + r['Manager Email'] : '')) +
-                    _diEq('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : '')) +
-                    _diEq('Comments', r['Comments']);
-            } else {
-                document.getElementById('employeeName').innerText = (r['First Name'] || '') + ' ' + (r['Last Name'] || '');
-                var _di = function(label, val) { return val ? '<div class="detail-item"><label>' + label + '</label><div>' + escapeHtml(val) + '</div></div>' : ''; };
-                document.getElementById('snapshotGrid').innerHTML =
-                    _di('Workflow ID', data.id) +
-                    _di('Employment Type', r['Employment Type']) +
-                    _di('Employee Type', r['Employee Type']) +
-                    _di('Position Title', r['Position Title'] || r['HR Verified Title'] || r['Position/JR Title']) +
-                    _di('Department', r['Department']) +
-                    _di('Site', r['Site/Office Location'] || r['Site Name']) +
-                    _di('Job Site #', r['Job Site #']) +
-                    _di('Start Date', r['Hire Date'] || r['Hire/Start Date']) +
-                    _di('Manager', (r['Manager Name'] || '') + (r['Manager Email'] ? ' · ' + r['Manager Email'] : '')) +
-                    _di('Requester', (r['Requester Name'] || '') + (r['Requester Email'] ? ' · ' + r['Requester Email'] : '')) +
-                    _di('System Access', r['System Access']) +
-                    _di('Date Requested', r['Date Requested']);
-            }
-
-            // Auto-launch specific viewing modal if vd parameter provided via Dashboard
-            if (viewDataTarget) {
-                const capturedVD = viewDataTarget;
-                viewDataTarget = null;
-                setTimeout(() => viewStepData(capturedVD), 600);
+            // Snapshot — shared renderer from SharedComponents.html
+            {
+                var _empName = workflowId.startsWith('CHANGE_') ? (r['Employee Name'] || data.id) :
+                               workflowId.startsWith('TERM_')   ? (r['Employee Name'] || data.id) :
+                               workflowId.startsWith('EQUIP_REQ_') ? (((r['First Name'] || '') + ' ' + (r['Last Name'] || '')).trim() || data.id) :
+                               (r['First Name'] || '') + ' ' + (r['Last Name'] || '');
+                document.getElementById('employeeName').innerText = _empName.trim() || data.id;
+                document.getElementById('snapshotGrid').innerHTML = renderWorkflowFields(r, workflowId);
             }
 
             // Checklist & Flow Update
@@ -806,27 +819,35 @@
                 }
 
                 var isNA = item.status === 'N/A' || item.status === 'Skipped';
+                var ctx  = window._rdRoleCtx || {};
+                var _rdDis = function(ok) { return ok ? '' : ' disabled title="Insufficient permissions" style="opacity:0.45;pointer-events:none;cursor:not-allowed;"'; };
                 var actions = '-';
                 if (!isComplete && !isNA && item.target) {
-                    actions = '<button class="btn" style="background:var(--warning); color:black;" onclick="bump(\'' + item.target + '\')">Remind</button>';
+                    actions = '<button class="btn" style="background:var(--warning); color:black;"' + _rdDis(ctx.canBumpWf) + ' onclick="bump(\'' + item.target + '\')">Remind</button>';
                     if (item.tid) {
-                        actions += ' <button class="btn" style="background:var(--brand-red); color:white;" onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                        actions += ' <button class="btn" style="background:var(--brand-red); color:white;"' + _rdDis(ctx.canViewFormBtn) + ' onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                    } else {
+                        actions += ' <button class="btn" style="background:var(--brand-red); color:white;"' + _rdDis(ctx.canViewFormBtn) + ' onclick="window.open(SERVER_BASE_URL + \'?form=' + item.target + '&id=' + workflowId + '&wf=' + workflowId + '\', \'_blank\')">View Form</button>';
                     }
-                } else if (isComplete && item.target) {
-                    actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
                 } else if (isComplete && item.name === 'Initial Request') {
+                    // Initial request data open to all — no role gate
                     var targetData = workflowId.startsWith('TERM_')      ? 'termination_request'
                                    : workflowId.startsWith('CHANGE_')    ? 'change_request'
                                    : workflowId.startsWith('EQUIP_REQ_') ? 'equipment_request'
                                    : 'initial_request';
                     actions = '<button class="btn view-data-btn" onclick="viewStepData(\'' + targetData + '\')">View Data</button>';
+                } else if (isComplete && item.target) {
+                    actions = '<button class="btn view-data-btn"' + _rdDis(ctx.canViewData) + ' onclick="viewStepData(\'' + item.target + '\')">View Data</button>';
+                    if (item.tid) {
+                        actions += ' <button class="btn" style="background:var(--brand-red); color:white;"' + _rdDis(ctx.canViewFormBtn) + ' onclick="window.open(SERVER_BASE_URL + \'?form=action_item_view&tid=' + item.tid + '\', \'_blank\')">View Form</button>';
+                    }
                 }
 
                 rows += '<tr>' +
-                    '<td>' + item.name + '</td>' +
-                    '<td class="' + statusClass + '"><strong>' + icon + ' ' + item.status + '</strong></td>' +
-                    '<td>' + (item.by || '-') + '</td>' +
-                    '<td>' + (item.time === 'undefined' ? '-' : (item.time || '-')) + '</td>' +
+                    '<td>' + escapeHtml(item.name || '') + '</td>' +
+                    '<td class="' + statusClass + '"><strong>' + icon + ' ' + escapeHtml(item.status || '') + '</strong></td>' +
+                    '<td>' + escapeHtml(item.by || '-') + '</td>' +
+                    '<td>' + escapeHtml(item.time === 'undefined' ? '-' : (item.time || '-')) + '</td>' +
                     '<td>' + actions + '</td>' +
                     '</tr>';
             });
@@ -846,15 +867,75 @@
                 .updateHireDate(workflowId, newDate);
         }
 
+        function cancelRequest() {
+            if (!confirm('Are you sure you want to CANCEL this request? This cannot be undone.')) return;
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res.success) { alert('Request cancelled.'); loadDetails(); }
+                    else alert('Error: ' + res.message);
+                })
+                .withFailureHandler(function(err) { alert('Error: ' + err.message); })
+                .cancelRequest(workflowId);
+        }
+
         function bump(target) {
             if (!confirm('Send reminder email?')) return;
             google.script.run.withSuccessHandler(function(res) { alert(res.message || 'Done'); }).withFailureHandler(function(err) { alert('Error: ' + err.message); }).bumpRequest(workflowId, target);
         }
 
+        var STEP_DISPLAY_NAMES = {
+            // ── Onboarding ─────────────────────────────────────────────────────
+            'initial_request':          'Initial Request',
+            'id_setup':                 'ID Setup',
+            'hr_verification':          'HR Verification',
+            'it_setup':                 'IT Setup',
+            'it_confirmation':          'IT Confirmation',
+            'jonas':                    'Jonas',
+            'credit_card':              'Credit Card',     // NODE_MAP-remapped onboarding target
+            'creditcard':               'Credit Card',     // equipment / raw-slug target
+            'fleetio':                  'Fleetio',
+            'business_cards':           'Business Cards',  // NODE_MAP-remapped onboarding target
+            'businesscards':            'Business Cards',  // equipment / raw-slug target
+            'sitedocs':                 'SiteDocs',
+            'review':                   '30/60/90 Review', // NODE_MAP-remapped onboarding target
+            'review_306090':            '30/60/90 Review', // raw-slug alias
+            'safety':                   'Safety',          // NODE_MAP-remapped onboarding target
+            'safety_onboarding':        'Safety',
+            'centralpurchasing':        'Central Purchasing',
+            'central_purchasing':       'Central Purchasing',
+            'payroll':                  'Payroll',
+            'specialist':               'Specialist',
+            // ── End of Employment ──────────────────────────────────────────────
+            'termination_request':      'Initial Request (EOE)',
+            'termination_approval':     'HR Approval',
+            'safety_term':              'Safety',
+            'asset_collection':         'Asset Collection',
+            'systems_deactivation':     'IT Systems Deactivation',
+            'systems_deactivation_hr':  'HR Systems Deactivation',
+            'systems_deactivation_fleet':   'Fleet Deactivation',
+            'systems_deactivation_finance': 'Finance Deactivation',
+            'systems_deactivation_deact':   'Account Deactivation',
+            // ── Status Change ─────────────────────────────────────────────────
+            'change_request':               'Initial Request (Status Change)',
+            'position_change_approval':     'HR Approval',
+            'change_manager':               'Manager Notification',
+            'change_it':                    'IT Setup',
+            'change_idsetup':               'ID Setup',
+            'change_safety':                'Safety',
+            'change_businesscards':         'Business Cards',
+            'change_creditcard':            'Credit Card',
+            'change_fleetio':               'Fleetio',
+            'change_jonas':                 'Jonas',
+            'change_purchasing':            'Central Purchasing',
+            // ── Equipment ────────────────────────────────────────────────────
+            'equipment_request':            'Initial Request (Equipment)'
+        };
+
         function viewStepData(stepType) {
             document.getElementById('dataModal').style.display = 'flex';
             document.getElementById('stepDataBody').innerHTML = `<tr><td colspan="2" style="text-align:center;">Loading...</td></tr>`;
-            document.getElementById('stepDataTitle').innerText = 'Step Details: ' + stepType.toUpperCase().replace(/_/g, ' ');
+            var _stepLabel = STEP_DISPLAY_NAMES[stepType] || stepType.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+            document.getElementById('stepDataTitle').innerText = 'Step Details: ' + _stepLabel;
 
             google.script.run
                 .withSuccessHandler(renderStepData)
@@ -862,10 +943,7 @@
                 .getStepResultData(workflowId, stepType);
         }
 
-        function escapeHtml(s) {
-            if (s == null) return '';
-            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-        }
+        // escapeHtml() provided by SharedComponents.html (included at bottom of page)
 
         function renderStepData(data) {
             const tbody = document.getElementById('stepDataBody');
@@ -874,15 +952,64 @@
                 return;
             }
 
-            var html = '';
+            // Internal/metadata columns — never useful to display
+            var SKIP_KEYS = new Set(['Workflow ID', 'Form ID', 'Timestamp', 'Form Data', 'Draft', 'Form Type']);
+
+            var contextHtml = '';
+            var dataHtml = '';
+
             for (var key in data) {
-                if (data.hasOwnProperty(key)) {
-                    var val = data[key];
-                    if (key === 'Workflow ID' || key === 'Form ID' || val === '' || val === 'N/A') continue;
-                    html += '<tr><td>' + escapeHtml(key) + '</td><td>' + escapeHtml(val) + '</td></tr>';
+                if (!data.hasOwnProperty(key)) continue;
+                if (SKIP_KEYS.has(key)) continue;
+                var val = String(data[key] == null ? '' : data[key]);
+                if (val === '' || val === 'N/A') continue;
+
+                var isContext = key.charAt(0) === '_';
+                var displayKey = isContext ? key.slice(1) : key;
+
+                // Render value — detect JSON arrays (e.g. Description field on action items)
+                // and display as a bullet list instead of raw ["...","..."] string
+                var renderedVal;
+                if (val.charAt(0) === '[') {
+                    try {
+                        var parsed = JSON.parse(val);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            if (parsed.length === 1) {
+                                renderedVal = escapeHtml(parsed[0]);
+                            } else {
+                                renderedVal = '<ul style="margin:0; padding-left:18px;">' +
+                                    parsed.map(function(item) { return '<li>' + escapeHtml(String(item)) + '</li>'; }).join('') +
+                                    '</ul>';
+                            }
+                        } else {
+                            renderedVal = escapeHtml(val);
+                        }
+                    } catch(e) {
+                        renderedVal = escapeHtml(val);
+                    }
+                } else {
+                    renderedVal = escapeHtml(val);
+                }
+
+                if (isContext) {
+                    // Context rows (supplemental info): muted, italic, rendered before main data
+                    contextHtml += '<tr style="background:rgba(255,255,255,0.03);">' +
+                        '<td style="color:var(--text-muted); font-style:italic; font-size:13px;">' + escapeHtml(displayKey) + '</td>' +
+                        '<td style="color:var(--text-muted); font-size:13px;">' + renderedVal + '</td>' +
+                        '</tr>';
+                } else {
+                    dataHtml += '<tr><td>' + escapeHtml(displayKey) + '</td><td>' + renderedVal + '</td></tr>';
                 }
             }
-            tbody.innerHTML = html;
+
+            // Context section first, then a divider if both sections have content, then main data
+            var html = contextHtml;
+            if (contextHtml && dataHtml) {
+                html += '<tr><td colspan="2" style="padding:2px 0; border-bottom:1px solid var(--border-color);"></td></tr>';
+            }
+            html += dataHtml;
+
+            tbody.innerHTML = html || '<tr><td colspan="2" style="text-align:center;">No data found.</td></tr>';
         }
 
         function closeDataModal() {
@@ -906,8 +1033,8 @@
             }
         });
     </script>
-  <?!= safeInclude('SharedComponents') ?>
-
+  <?!= include('SharedComponents') ?>
+  <?!= safeInclude('Konami') ?>
 </body>
 
 </html>
