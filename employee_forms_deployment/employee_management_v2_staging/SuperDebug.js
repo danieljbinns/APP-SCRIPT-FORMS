@@ -343,17 +343,11 @@ function _sdVerifyDashboardView(workflowId, expectedMap) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * One-time migration: rename "Computer Make" → "Computer Serial" in IT Results header.
- * Safe to re-run — skips if header is already correct.
+ * Verify email safety before any SuperDebug run.
+ * Throws unless CONFIG.SUPPRESS_EMAILS is true or EMAIL_REDIRECT_ALL is set,
+ * guaranteeing no real emails reach recipients during tests.
  */
-
-/**
- * sdFixPositionChangesHeaders()
- * Writes all 61 correct Position Changes headers directly to row 1 at the right positions.
- * Needed when appendRow silently extended the sheet before migration, causing migration to
- * place new headers at wrong column positions (62+ instead of 29-60).
- * Safe to re-run — overwrites header row in place without touching data rows.
- */
+function checkSuperDebugEmailSafety() {
   var suppressed = (typeof CONFIG !== 'undefined' && CONFIG.SUPPRESS_EMAILS === true);
   var redirect   = PropertiesService.getScriptProperties().getProperty('EMAIL_REDIRECT_ALL') || '';
 
@@ -1831,19 +1825,6 @@ function cleanupSuperDebugWorkflow(wfId) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// sdSendCompletionEmail
-// Called by the autonomous runner after all suites pass to notify the developer.
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Send a plain-text completion email summarising all suite results.
- * @param {string}  to        Recipient email address
- * @param {Object}  summary   { suites: [{name,pass,fail,warn,emails,failures[]}], overallPass: bool }
- */
-  return { ok: true, email: email || '(cleared)' };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // runSuperDebugAggregation
 // Tests the aggregation / data-fetch layer that the sheet-read suites never call:
 //   getDashboardData()      — verifies SD_ new hire appears in the returned list
@@ -1991,13 +1972,3 @@ function runSuperDebugAggregation() {
   return _sdSummary('Aggregation Layer');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// runSuperDebugCleanup
-// gas_runner.py-friendly wrapper for cleanupSuperDebugAll().
-// Returns { pass, fail, deleted, gasLog } so the standard runner log parsing works.
-// ─────────────────────────────────────────────────────────────────────────────
-
-    sheets:  result ? result.sheets : {},
-    gasLog:  Logger.getLog()
-  };
-}
