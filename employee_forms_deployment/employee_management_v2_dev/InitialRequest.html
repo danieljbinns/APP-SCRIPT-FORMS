@@ -379,7 +379,7 @@
               <span>Net Promoter Score</span>
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" name="systems" value="SiteDocs" onchange="toggleSections()">
+              <input type="checkbox" name="systems" value="SiteDocs Supervisor" onchange="toggleSections()">
               <span>Sitedocs Supervisor<br><span class="warn-text">⚠️ Do not add to hourly employees</span></span>
             </label>
           </div>
@@ -916,6 +916,18 @@
         firstNameInput.addEventListener('input', updateEmailAddress);
         lastNameInput.addEventListener('input', updateEmailAddress);
       }
+
+      // M-12: Auto-select Google domain to match manager email domain
+      var _mgrEmailInput = document.getElementById('managerEmail');
+      if (_mgrEmailInput) {
+        _mgrEmailInput.addEventListener('change', function() {
+          var _domSel2 = document.getElementById('googleDomain');
+          if (!_domSel2 || _domSel2.style.display === 'none') return;
+          var _val = this.value || '';
+          var _domain = _val.indexOf('@') !== -1 ? _val.split('@')[1].trim() : '';
+          if (_domain) _domSel2.value = _domain;
+        });
+      }
     });
 
     function confirmGatekeeper() {
@@ -1008,6 +1020,12 @@
       const googleChecked = document.querySelector('[name="systems"][value="Google Account"]').checked;
       const googleDetails = document.getElementById('googleAccountDetailsSection');
       googleDetails.style.display = googleChecked ? 'block' : 'none';
+      if (googleChecked) {
+        var _mgrEmail = (document.getElementById('managerEmail') || {}).value || '';
+        var _mgrDomain = _mgrEmail.indexOf('@') !== -1 ? _mgrEmail.split('@')[1].trim() : '';
+        var _domSel = document.getElementById('googleDomain');
+        if (_domSel && _mgrDomain && !_domSel.value) { _domSel.value = _mgrDomain; }
+      }
     }
 
     // Toggle equipment detail sections based on checkboxes
@@ -1162,11 +1180,11 @@
         computerPreviousType: formData.get('computerPreviousType'),
         computerSerialNumber: formData.get('computerSerialNumber'),
         office365Required: formData.get('office365Required'),
-        creditCardUSA: formData.get('creditCardUSA') ? 'Yes' : '',
+        creditCardUSA: formData.get('creditCardUSA') ? 'Yes' : 'No',
         creditCardLimitUSA: formData.get('creditCardLimitUSA'),
-        creditCardCanada: formData.get('creditCardCanada') ? 'Yes' : '',
+        creditCardCanada: formData.get('creditCardCanada') ? 'Yes' : 'No',
         creditCardLimitCanada: formData.get('creditCardLimitCanada'),
-        creditCardHomeDepot: formData.get('creditCardHomeDepot') ? 'Yes' : '',
+        creditCardHomeDepot: formData.get('creditCardHomeDepot') ? 'Yes' : 'No',
         creditCardLimitHomeDepot: formData.get('creditCardLimitHomeDepot'),
         phoneRequestType: formData.get('phoneRequestType'),
         phonePreviousUser: formData.get('phonePreviousUser'),
@@ -1184,7 +1202,8 @@
         adpSites: formData.getAll('adpSites'),
         department: formData.get('department'),
         purchasingSites: formData.getAll('purchasingSites'),
-        adpSalaryAccess: formData.get('adpSalaryAccess') === 'Yes' ? 'Yes' : 'No'
+        adpSalaryAccess: formData.get('adpSalaryAccess') === 'Yes' ? 'Yes' : 'No',
+        bossTrainingOnly: formData.get('bossTrainingOnly') || 'No'
       };
 
       // Clear fields that belong to hidden sections so stale DOM defaults don't leak into the sheet.

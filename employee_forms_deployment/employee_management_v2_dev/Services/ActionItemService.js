@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ActionItemService.gs
  *
  * Manages the full lifecycle of Action Items (granular tasks) attached to workflows.
@@ -61,6 +61,27 @@ var ActionItemService = (function() {
    */
   function createActionItem(workflowId, category, name, description, assignedTo, formType) {
     try {
+      // Idempotency guard: return existing Open task if one already matches workflowId+category+formType
+      try {
+        const aiSheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+        if (aiSheet) {
+          const AI = SCHEMA.ACTION_ITEMS;
+          const existing = aiSheet.getDataRange().getValues();
+          for (let ei = SCHEMA.ROW.FIRST_DATA; ei < existing.length; ei++) {
+            const r = existing[ei];
+            if (r[AI.WORKFLOW_ID] === workflowId &&
+                String(r[AI.CATEGORY] || '') === String(category || '') &&
+                String(r[AI.FORM_TYPE] || '') === String(formType || '') &&
+                String(r[AI.STATUS] || '') === 'Open') {
+              Logger.log('[ActionItemService] Returning existing Open task ' + r[AI.TASK_ID] + ' for ' + workflowId + '/' + category);
+              return String(r[AI.TASK_ID]);
+            }
+          }
+        }
+      } catch (dupErr) {
+        Logger.log('[ActionItemService] Duplicate check failed (non-fatal): ' + dupErr.message);
+      }
+
       const taskId = "TK-" + Utilities.getUuid().substring(0, 8).toUpperCase();
       const rowData = [
         workflowId,
@@ -512,7 +533,13 @@ var ActionItemService = (function() {
    */
   function checkWorkflowCompletion(workflowId, suppressNotify) {
     const workflow = getWorkflow(workflowId);
-    const currentStep = workflow ? String(workflow['Current Step'] || '') : '';
+    if (!workflow) return;
+    const wfStatus = String(workflow['Status'] || '');
+    if (wfStatus === 'Cancelled' || wfStatus === 'Complete') {
+      Logger.log('[ActionItemService] Skipping completion check for ' + workflowId + ' — already ' + wfStatus);
+      return;
+    }
+    const currentStep = String(workflow['Current Step'] || '');
 
     // ER-1 FIX: Equipment now routes through submitITSetup → triggerSpecialists.
     // 'Email Setup Needed' step and launchRemainingEquipmentTasks no longer used.

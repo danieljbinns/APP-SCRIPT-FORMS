@@ -133,9 +133,9 @@ function submitITConfirmation(formData) {
     }
 
     // Audit log in IT Confirmation Results
-    let auditSheet = ss.getSheetByName('IT Confirmation Results');
+    let auditSheet = ss.getSheetByName(CONFIG.SHEETS.IT_CONFIRMATION_RESULTS);
     if (!auditSheet) {
-      auditSheet = ss.insertSheet('IT Confirmation Results');
+      auditSheet = ss.insertSheet(CONFIG.SHEETS.IT_CONFIRMATION_RESULTS);
       auditSheet.appendRow([
         'Workflow ID','Form ID','Timestamp',
         'Boss Job Sites','Boss Cost Sheet','Boss Cost Sheet Jobs',
@@ -272,7 +272,7 @@ function submitITConfirmation(formData) {
 function getITConfirmationData(workflowId) {
   try {
     const ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName('IT Confirmation Results');
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.IT_CONFIRMATION_RESULTS);
     if (!sheet) return null;
     const data = sheet.getDataRange().getValues();
     for (let i = data.length - 1; i >= 1; i--) {

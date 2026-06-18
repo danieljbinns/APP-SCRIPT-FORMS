@@ -126,9 +126,10 @@ const SCHEMA = {
     SITEDOCS_PASSWORD:   7,   // string   — SiteDocs Password
     DSS_USERNAME:        8,   // string   — DSS Username
     DSS_PASSWORD:        9,   // string   — DSS Password
-    SETUP_NOTES:         10,  // string   — Setup Notes
-    SUBMITTED_BY:        11,  // string   — Submitted By
-    BOSS_WIS_CREATED:    12   // boolean  — BOSS WIS Created
+    SETUP_NOTES:              10,  // string   — Setup Notes
+    SUBMITTED_BY:             11,  // string   — Submitted By
+    BOSS_WIS_CREATED:         12,  // boolean  — BOSS WIS Created
+    SITEDOCS_BADGE_CREATED:   13   // boolean  — SiteDocs Badge/Supervisor account created
   },
 
   // ─────────────────────────────────────────────
@@ -218,7 +219,7 @@ const SCHEMA = {
   },
 
   // ─────────────────────────────────────────────
-  // TERMINATIONS  (29 columns, 0–28)
+  // TERMINATIONS  (28 columns, 0–27)
   // ─────────────────────────────────────────────
   TERMINATIONS: {
     WORKFLOW_ID:            0,   // string   — Workflow ID
@@ -231,25 +232,24 @@ const SCHEMA = {
     EMPLOYEE_TYPE:          7,   // string   — Employee Type
     WORK_EMAIL:             8,   // string   — Work Email
     PHONE:                  9,   // string   — Phone
-    COMPUTER_SERIAL:        10,  // string   — Computer Serial
-    SITE:                   11,  // string   — Site
-    TERM_DATE:              12,  // date     — Term Date
-    REASON:                 13,  // string   — Reason
-    MANAGER_NAME:           14,  // string   — Manager Name
-    MANAGER_EMAIL:          15,  // string   — Manager Email
-    HR_APPROVED_STATUS:     16,  // string   — HR Approved Status
-    HAS_REPORTS:            17,  // boolean  — Has Reports
-    REASSIGN_REPORTS_TO:    18,  // string   — Reassign Reports To
-    SYSTEMS_TO_DEACTIVATE:  19,  // csv      — Systems to Deactivate
-    EMAIL_FORWARDING:       20,  // string   — Email Forwarding
-    DRIVE_FILES_TRANSFER:   21,  // string   — Drive Files Transfer
-    INBOX_DELEGATE:         22,  // string   — Inbox Delegate
-    ACCOUNT_DURATION:       23,  // string   — Account Duration
-    VACATION_RESPONDER:     24,  // string   — Vacation Responder Auto Reply
-    EQUIPMENT_TO_RETURN:    25,  // csv      — Equipment to Return
-    COMMENTS:               26,  // string   — Comments
-    LAST_DAY_WORKED:        27,  // date     — Last Day Worked
-    ATTACHMENT_URL:         28   // string   — Attachment URL (Drive link)
+    SITE:                   10,  // string   — Site
+    TERM_DATE:              11,  // date     — Term Date
+    REASON:                 12,  // string   — Reason
+    MANAGER_NAME:           13,  // string   — Manager Name
+    MANAGER_EMAIL:          14,  // string   — Manager Email
+    HR_APPROVED_STATUS:     15,  // string   — HR Approved Status
+    HAS_REPORTS:            16,  // boolean  — Has Reports
+    REASSIGN_REPORTS_TO:    17,  // string   — Reassign Reports To
+    SYSTEMS_TO_DEACTIVATE:  18,  // csv      — Systems to Deactivate
+    EMAIL_FORWARDING:       19,  // string   — Email Forwarding
+    DRIVE_FILES_TRANSFER:   20,  // string   — Drive Files Transfer
+    INBOX_DELEGATE:         21,  // string   — Inbox Delegate
+    ACCOUNT_DURATION:       22,  // string   — Account Duration
+    VACATION_RESPONDER:     23,  // string   — Vacation Responder Auto Reply
+    EQUIPMENT_TO_RETURN:    24,  // csv      — Equipment to Return
+    COMMENTS:               25,  // string   — Comments
+    LAST_DAY_WORKED:        26,  // date     — Last Day Worked
+    ATTACHMENT_URL:         27   // string   — Attachment URL (Drive link)
   },
 
   // ─────────────────────────────────────────────

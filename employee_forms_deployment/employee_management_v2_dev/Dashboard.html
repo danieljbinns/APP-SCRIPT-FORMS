@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 
 <head>
@@ -394,7 +394,7 @@
                 <span class="filter-group-label">Status</span>
                 <button class="filter-btn status-pending" data-filter="status" data-value="PENDING">Action Required</button>
                 <button class="filter-btn status-completed" data-filter="status" data-value="COMPLETED">Completed</button>
-                <button class="filter-btn status-cancelled" data-filter="status" data-value="CANCELLED">Cancelled</button>
+                <button class="filter-btn status-cancelled" data-filter="status" data-value="CANCELLED" title="Show cancelled/withdrawn requests (not actionable)">Cancelled</button>
             </div>
 
             <select id="sortSelect" class="search-box" style="width: 150px; cursor: pointer;">
@@ -513,6 +513,8 @@
         let activeStatusFilters = new Set();
         let searchTerm = '';
         let activeCategoryFilter = null; // set by View Tasks button in My Tasks panel
+        let _countsByType = {};          // category counts bucketed by workflow type (from getMyTaskCounts)
+        let _countsTotal  = {};          // grand-total category counts across all types
 
         // rolePayload and currentUser stored here — NOT in sessionStorage (unreliable in GAS iframes).
         // Set by displayData() before loadMyTasks() is called.
@@ -533,10 +535,35 @@
             google.script.run
                 .withSuccessHandler(function(res) {
                     if (!res || !res.success) return;
-                    var counts = res.counts || {};
-                    var rp = _rolePayload;
-                    var sg = rp.specialistGroups || [];
-                    function inSg(key) { return sg.indexOf(key) >= 0; }
+                    _countsByType = res.countsByType || {};
+                    _countsTotal  = res.counts || {};
+                    renderTaskCounts();
+                })
+                .withFailureHandler(function() { /* silently fail */ })
+                .getMyTaskCounts();
+        }
+
+        // Sum the per-type count buckets for the currently active Type filters.
+        // No active Type filter (or none loaded) → grand total. Preserves the
+        // "number of open items" semantics; just scoped to the selected workflow type(s).
+        function effectiveCounts() {
+            if (!activeTypeFilters || activeTypeFilters.size === 0) return _countsTotal || {};
+            var out = {};
+            activeTypeFilters.forEach(function(v) {
+                var bucket = (_countsByType || {})[TYPE_MAP[v]] || {};
+                Object.keys(bucket).forEach(function(k) { out[k] = (out[k] || 0) + bucket[k]; });
+            });
+            return out;
+        }
+
+        // Renders the "Filter by Category" count cards from the active-filter-scoped counts.
+        // Called once after counts load and again whenever the Type filter changes.
+        function renderTaskCounts() {
+            if (!_rolePayload) return;
+            var counts = effectiveCounts();
+            var rp = _rolePayload;
+            var sg = rp.specialistGroups || [];
+            function inSg(key) { return sg.indexOf(key) >= 0; }
 
                     // ADP/HR combines: HR action items, Payroll action items, HR Verification
                     // workflow step, and EOE process action items (assigned to HR, same team).
@@ -553,7 +580,7 @@
                         { label: 'FINANCE',        cat: 'Finance',         count: counts['Finance'] || 0,          color: '#ff9800' },
                         { label: '30/60/90',       cat: '30/60/90 Review', count: counts['30/60/90 Review'] || 0,  color: '#8bc34a' },
                         { label: 'ASSETS',         cat: 'Assets',          count: counts['Assets'] || 0,           color: '#f57c00' },
-                        { label: 'IT SETUP',       cat: 'IT',              count: (counts['IT'] || 0) + (counts['IT Setup'] || 0), color: '#2196f3' },
+                        { label: 'IT',             cat: 'IT',              count: counts['IT'] || 0, color: '#2196f3' },
                         { label: 'IT CONF',        cat: 'IT Confirmation', count: counts['IT Confirmation'] || 0,  color: '#42a5f5' },
                         { label: 'ADP/HR',         cat: '__ADPHR__',       count: adpHrCount,                      color: '#9c27b0' },
                         { label: 'DEACTIVATION',   cat: 'Deactivation',    count: counts['Deactivation'] || 0,    color: '#607d8b' },
@@ -573,7 +600,7 @@
                     if (inSg('CREDIT_CARD'))    myPending += (counts['Finance'] || 0);
                     if (inSg('REVIEW_306090_JR')) myPending += (counts['30/60/90 Review'] || 0);
                     if (inSg('FLEETIO'))        myPending += (counts['Assets'] || 0); // fleet returns go to fleetio
-                    if (rp.isIT || rp.isAdmin)  myPending += (counts['IT'] || 0) + (counts['IT Setup'] || 0) + (counts['IT Confirmation'] || 0);
+                    if (rp.isIT || rp.isAdmin)  myPending += (counts['IT'] || 0) + (counts['IT Confirmation'] || 0);
                     if (rp.isHR || rp.isAdmin)  myPending += (counts['HR'] || 0) + (counts['EOE'] || 0) + (counts['HR Verification'] || 0) + (counts['Payroll'] || 0);
                     if (rp.isHR || rp.isAdmin || inSg('IDSETUP')) myPending += (counts['Deactivation'] || 0) + (counts['ID Setup'] || 0);
                     // Payroll group gets Payroll action items
@@ -608,17 +635,15 @@
                     }).join('');
 
                     list.innerHTML = html;
-                })
-                .withFailureHandler(function() { /* silently fail */ })
-                .getMyTaskCounts();
         }
 
         // Step-based categories: match against granularStatus from Dashboard_View.
-        // IT SETUP maps to both the step ('pending: it setup') and IT action items.
+        // IT button is handled by its own branch above (exact 'pending: it' + IT action items);
+        // its entry here is unused but kept for reference.
         // ID SETUP maps to the step ('pending: id setup') and ID Setup action items.
         // ADP/HR is a combined filter covering both 'HR' and 'Payroll' action item categories.
         const STEP_CATEGORY_TERMS = {
-            'IT':              ['pending: it setup'],   // IT SETUP button — step-based part
+            'IT':              ['pending: it'],         // IT button — step-based part (handled above)
             'ID Setup':        ['pending: id setup'],   // ID SETUP button — step-based part
             'IT Confirmation': ['it confirmation'],     // IT CONF button — step label
         };
@@ -884,6 +909,8 @@
                     this.classList.add('active');
                 }
                 applyFiltersAndSort();
+                // Category count cards follow the Type filter (counts scoped to selected type[s]).
+                if (filter === 'type') renderTaskCounts();
             });
         });
 
@@ -933,12 +960,16 @@
                     if (activeCategoryFilter === '__ADPHR__') {
                         // ADP/HR combined: show workflows with HR or Payroll open items
                         if (!wf.openCategories ||
-                            (!wf.openCategories.includes('HR') && !wf.openCategories.includes('Payroll'))) return false;
+                            (!wf.openCategories.includes('HR') && !wf.openCategories.includes('Payroll') && !wf.openCategories.includes('EOE') && !wf.openCategories.includes('HR Verification'))) return false;
                     } else if (activeCategoryFilter === 'IT') {
                         // IT SETUP button: matches IT action items OR 'pending: it setup' step
                         var hasItAI   = wf.openCategories && wf.openCategories.includes('IT');
-                        var hasItStep = (wf.step || '').toLowerCase().includes('pending: it setup') ||
-                                        (wf.step || '').toLowerCase().includes('it setup needed');
+                        var itStepLower = (wf.step || '').toLowerCase();
+                        // Exact 'pending: it' (onboarding IT Setup step, renamed from 'Pending: IT Setup').
+                        // Itemized lists (e.g. 'Pending: IT Confirmation, Fleet') are matched via openCategories
+                        // above, so avoid a loose includes() that would false-match 'IT Confirmation'.
+                        var hasItStep = itStepLower === 'pending: it' ||
+                                        itStepLower.includes('it setup needed');
                         if (!hasItAI && !hasItStep) return false;
                     } else if (activeCategoryFilter === 'ID Setup') {
                         // ID SETUP button: matches ID Setup action items OR 'pending: id setup' step
@@ -1346,9 +1377,11 @@
         });
 
         function openStepDataView(target) {
-            // Opens RequestDetails page. ?vd= auto-open removed — user navigates normally.
+            // Opens RequestDetails page — passes target as &vd= deep-link for section auto-open.
             if (currentWorkflowId) {
-                window.open(SERVER_BASE_URL + '?form=request_details&id=' + currentWorkflowId, '_blank');
+                var _rdUrl = SERVER_BASE_URL + '?form=request_details&id=' + currentWorkflowId;
+                if (target) _rdUrl += '&vd=' + encodeURIComponent(target);
+                window.open(_rdUrl, '_blank');
             }
         }
 

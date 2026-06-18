@@ -1,4 +1,4 @@
-<style>
+﻿<style>
   /* RequestHeader component — all colours via Styles.html CSS vars.
      Requires Styles.html to be included in the host page's <head>. */
   .rh { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-subtle); width: 100%; overflow: visible; margin-bottom: 20px; }
@@ -166,7 +166,7 @@
 
       <!-- ── Termination: date + reason ── -->
       <? if (isTerm) { ?>
-      <div class="rh-f"><span class="rh-l">Termination Date</span><span class="rh-v"><?= rd.hireDate ? Utilities.formatDate(new Date(rd.hireDate + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') : '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">Termination Date</span><span class="rh-v"><?= (rd.termDate || rd.hireDate) ? Utilities.formatDate(new Date((rd.termDate || rd.hireDate) + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') : '—' ?></span></div>
       <? if (rd.lastDayWorked) { ?><div class="rh-f"><span class="rh-l">Last Day Worked</span><span class="rh-v"><?= Utilities.formatDate(new Date(rd.lastDayWorked + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') ?></span></div><? } ?>
       <? if (rd.employmentType) { ?><div class="rh-f"><span class="rh-l">Employee Type</span><span class="rh-v"><?= rd.employmentType ?></span></div><? } ?>
       <? if (rd.reason)   { ?><div class="rh-f"><span class="rh-l">Reason</span>         <span class="rh-v"><?= rd.reason   ?></span></div><? } ?>
@@ -186,7 +186,7 @@
 
       <!-- ── Status Change: effective date + change summary ── -->
       <? if (isChange) { ?>
-      <div class="rh-f"><span class="rh-l">Effective Date</span><span class="rh-v"><?= rd.hireDate ? Utilities.formatDate(new Date(rd.hireDate + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') : '—' ?></span></div>
+      <div class="rh-f"><span class="rh-l">Effective Date</span><span class="rh-v"><?= (rd.effectiveDate || rd.effDate || rd.hireDate) ? Utilities.formatDate(new Date((rd.effectiveDate || rd.effDate || rd.hireDate) + 'T12:00:00Z'), 'UTC', 'MMM d, yyyy') : '—' ?></span></div>
       <? if (rd.changeTypes) { ?><div class="rh-f"><span class="rh-l">Change Types</span><span class="rh-v"><?= rd.changeTypes ?></span></div><? } ?>
       <? var tcVal = String(rd.titleChange || ''); var tcParts = tcVal.split(' -> '); var showTc = tcVal && tcVal.indexOf('N/A') === -1 && (tcParts.length < 2 || tcParts[0].trim() !== tcParts[1].trim()); ?>
       <? if (showTc) { ?><div class="rh-f"><span class="rh-l">Title Change</span>         <span class="rh-v"><?= rd.titleChange ?></span></div><? } ?>

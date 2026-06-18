@@ -1,4 +1,4 @@
-/**
+﻿/**
  * IT Setup Form - Handler Functions
  *
  * Handles the IT Setup form submission for New Hire, Equipment Request, and
@@ -109,7 +109,8 @@ function getITContextData(workflowId) {
           // Misc
           creditCardUSA: mainData[i][IR.CC_USA],
           creditCardLimitUSA: mainData[i][IR.CC_LIMIT_USA],
-          creditCardLimitCanada: mainData[i][IR.CC_CAN],
+          creditCardCanada: mainData[i][IR.CC_CAN] || '',
+          creditCardLimitCanada: mainData[i][IR.CC_LIMIT_CAN],
           creditCardLimitHomeDepot: mainData[i][IR.CC_LIMIT_HD],
           businessCards: equipmentRaw.includes('Business Cards') ? 'Yes' : 'No',
           vehicleRequested: equipmentRaw.includes('Vehicle') ? 'Yes' : 'No',
@@ -203,6 +204,11 @@ function getITContextData(workflowId) {
  * @returns {{ success: boolean, message: string }}
  */
 function submitITSetup(formData) {
+  const caller = Session.getActiveUser().getEmail();
+  const callerRole = AccessControlService.getUserRolePayload(caller);
+  if (!callerRole.isIT && !callerRole.isAdmin) {
+    return { success: false, message: 'Access denied.' };
+  }
   try {
     rawLog('submitITSetup', formData);
     const workflowId = formData.workflowId || formData.requestId;
@@ -211,6 +217,8 @@ function submitITSetup(formData) {
 
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
 
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
     // Detect existing submission for update-vs-insert.
     // An existing row means IT is re-submitting (correction). In that case we
     // overwrite the row in-place and do NOT re-trigger specialists or close action items.
@@ -298,10 +306,12 @@ function submitITSetup(formData) {
       itSheet.getRange(existingITRowIndex, 1, 1, rowData.length).setValues([rowData]);
       logFormEdit(workflowId, 'IT Setup', actingUser, existingITRowData, rowData);
       Logger.log('[IT Setup] Updated existing row for ' + workflowId + ' by ' + actingUser + ' — specialists NOT re-triggered');
+      lock.releaseLock();
     } else {
       // INSERT path — first-time IT Setup submission.
       itSheet.appendRow(rowData);
       Logger.log('Appended row to IT Results: ' + JSON.stringify(rowData));
+      lock.releaseLock();
 
       if (!workflowId.startsWith('CHANGE_')) {
         // ── New Hire / Equipment Request path ──────────────────────────────────────

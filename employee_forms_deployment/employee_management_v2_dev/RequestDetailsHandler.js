@@ -218,6 +218,9 @@ function getRequestDetails(workflowId) {
     context.currentUser  = _currentUser;
     context.checklist    = checklist;
     context.type         = 'Onboarding';
+    // H-5: expose workflow status for the status badge in RequestDetails.html
+    const _wfDataOnb = getWorkflow(workflowId);
+    context.status = _wfDataOnb ? String(_wfDataOnb['Status'] || '') : '';
     // Top-level aliases so RequestDetails.html isOwner check can resolve cancel/bump permission
     // without having to dig into requestData column-header keys.
     context.requesterEmail = r['Requester Email'] || '';
@@ -769,10 +772,14 @@ function getChangeDetails(workflowId) {
     r['Site Name']              = r['Site Name']              || _fmt(reqRow[PCN.CURRENT_SITE]);
     r['Change Type']            = r['Change Type']            || _fmt(reqRow[PCN.CHANGE_TYPES]);
     r['Department']             = r['Department']             || _fmt(reqRow[PCN.DEPARTMENT]);
-    r['Current Title']          = r['Current Title']          || _fmt(reqRow[24]);
-    r['Current Manager Email']  = r['Current Manager Email']  || _fmt(reqRow[25]);
-    r['Current Manager Name']   = r['Current Manager Name']   || _fmt(reqRow[26]);
-    r['Current Classification'] = r['Current Classification'] || _fmt(reqRow[27]);
+    var _ctI  = reqHeaders.indexOf('Current Title');
+    var _cmeI = reqHeaders.indexOf('Current Manager Email');
+    var _cmnI = reqHeaders.indexOf('Current Manager Name');
+    var _ccI  = reqHeaders.indexOf('Current Classification');
+    r['Current Title']          = r['Current Title']          || _fmt(reqRow[_ctI  >= 0 ? _ctI  : 24]);
+    r['Current Manager Email']  = r['Current Manager Email']  || _fmt(reqRow[_cmeI >= 0 ? _cmeI : 25]);
+    r['Current Manager Name']   = r['Current Manager Name']   || _fmt(reqRow[_cmnI >= 0 ? _cmnI : 26]);
+    r['Current Classification'] = r['Current Classification'] || _fmt(reqRow[_ccI  >= 0 ? _ccI  : 27]);
     context.requestData = r;
 
     const wf = getWorkflow(workflowId);

@@ -373,12 +373,17 @@ function getPositionChangeData(workflowId) {
  * @returns {{ success: boolean, message: string }}
  */
 function submitPositionChangeApproval(formData) {
+  const caller = Session.getActiveUser().getEmail();
+  const callerRole = AccessControlService.getUserRolePayload(caller);
+  if (!callerRole.isHR && !callerRole.isAdmin) {
+    return { success: false, message: 'Access denied.' };
+  }
   try {
     rawLog('submitPositionChangeApproval', formData);
     const { workflowId, decision, notes, confirmedNewManager, confirmedTitle, confirmedJrTitle } = formData;
     const formId = generateFormId('CHG_APP');
 
-    // Acquire lock and check for duplicate submission
+    // Acquire lock — check and write must be atomic to prevent duplicate approvals
     const lock = LockService.getScriptLock();
     lock.waitLock(5000);
     try {
@@ -390,24 +395,18 @@ function submitPositionChangeApproval(formData) {
           return { success: true, message: 'Approval already processed for this workflow.' };
         }
       }
+      // Write inside lock — check and write are atomic
+      // Columns: [0] WorkflowId, [1] FormId, [2] Timestamp, [3] Decision, [4] Notes,
+      //          [5] ConfirmedTitle, [6] ConfirmedNewManager, [7] SubmittedBy
+      addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, [
+        workflowId, formId, new Date(), decision, notes,
+        confirmedTitle || '', confirmedNewManager || '', Session.getActiveUser().getEmail()
+      ]);
+      // Flush before lock release so row is visible to same-execution reads
+      SpreadsheetApp.flush();
     } finally {
       lock.releaseLock();
     }
-
-    // Write the approval record to POSITION_CHANGE_APPROVALS.
-    // Columns: [0] WorkflowId, [1] FormId, [2] Timestamp, [3] Decision, [4] Notes,
-    //          [5] ConfirmedTitle, [6] ConfirmedNewManager, [7] SubmittedBy
-    addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, [
-      workflowId, formId, new Date(), decision, notes,
-      confirmedTitle || '', confirmedNewManager || '', Session.getActiveUser().getEmail()
-    ]);
-
-    // Flush immediately after the approval row write.
-    // notifyWorkflowClosure() (called later via checkWorkflowCompletion → closeActionItem)
-    // reads POSITION_CHANGE_APPROVALS directly using the same spreadsheet object (ss).
-    // Without this flush, the row may not be visible within the same script execution,
-    // causing the closure email to show empty hrNotes / hrDecision / confirmedTitle.
-    SpreadsheetApp.flush();
 
     if (decision === 'Approved') {
       const changeData = getPositionChangeData(workflowId);
@@ -423,7 +422,10 @@ function submitPositionChangeApproval(formData) {
       // Current (old) manager email — from stored current manager or parsed managerChange
       const mgrMatches = (changeData.managerChange || '').match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
       const mgrOldEmail = changeData.currentManagerEmail || (mgrMatches.length > 0 ? mgrMatches[0].replace(/[()]/g, '') : '');
-      const mgrNewEmail = receivingManagerEmail || (mgrMatches.length > 1 ? mgrMatches[1].replace(/[()]/g, '') : mgrOldEmail);
+      // Only use a new manager email for routing if a Reporting Manager Change was explicitly requested
+      const mgrNewEmail = (changeData.changes && changeData.changes.includes('Reporting Manager Change'))
+        ? (receivingManagerEmail || (mgrMatches.length > 1 ? mgrMatches[1].replace(/[()]/g, '') : mgrOldEmail))
+        : mgrOldEmail;
 
       // Effective job title: HR's confirmed title > request's new title > current title
       const effectiveTitle = (confirmedTitle && confirmedTitle.trim()) ? confirmedTitle.trim() : (changeData.jobTitle || changeData.currentTitle || '');
@@ -827,7 +829,7 @@ function submitPositionChangeApproval(formData) {
 
       // 3b. ID Setup — create new SiteDocs supervisor account if requested
       if (allSystems.includes('SiteDocs')) {
-      const idTid = ActionItemService.createActionItem(
+      const sdIdTid = ActionItemService.createActionItem(
         workflowId, 'ID Setup', 'SiteDocs Account Setup',
         JSON.stringify(['Create new SiteDocs supervisor account for ' + changeData.employeeName + ' at new site.']),
         CONFIG.EMAILS.IDSETUP
@@ -838,7 +840,7 @@ function submitPositionChangeApproval(formData) {
         to: CONFIG.EMAILS.IDSETUP,
         subject: 'SiteDocs Account Setup Required',
         body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. A new SiteDocs supervisor account has been requested for their new site.',
-        formUrl: buildFormUrl('action_item_view', { tid: idTid }),
+        formUrl: buildFormUrl('action_item_view', { tid: sdIdTid }),
         displayName: 'TEAM Group - Employee Management',
         contextData: changeContext
       });
@@ -952,20 +954,27 @@ function submitPositionChangeApproval(formData) {
         contextData: {
           workflowType: 'Status Change',
           employeeName: changeDataRej.employeeName,
+          jobTitle: changeDataRej.jobTitle || changeDataRej.currentTitle || '',
           siteName: changeDataRej.siteName,
           hireDate: changeDataRej.effDate,
+          requestDate: changeDataRej.dateRequested || '',
           requesterEmail: changeDataRej.requesterEmail,
+          department: changeDataRej.department || '',
           changeTypes: changeDataRej.changes,
           siteTransfer: changeDataRej.siteTransfer,
           titleChange: changeDataRej.titleChange,
           classChange: changeDataRej.classChange,
           managerChange: changeDataRej.managerChange,
+          managerEmail: mgrOldEmailRej,
+          managerName: changeDataRej.currentManagerName || '',
           currentTitle: changeDataRej.currentTitle || '',
           currentManagerName: changeDataRej.currentManagerName || '',
           currentManagerEmail: mgrOldEmailRej,
           employmentType: changeDataRej.currentClass || '',
           systems: changeDataRej.systems,
           equipmentRaw: changeDataRej.equipment,
+          removalAccess: changeDataRej.removalAccess || '',
+          equipmentReturn: changeDataRej.equipmentReturn || '',
           hrDecision: 'Rejected',
           hrNotes: notes || ''
         }

@@ -217,76 +217,89 @@ function getMyTaskCounts() {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
 
-    // ── Source 1: Action Items sheet ──────────────────────────────────────────
-    const aiCounts = {
-      'Safety':           0,
-      'Fleet':            0,   // renamed from Fleetio
-      'Business Cards':   0,
-      'Purchasing':       0,   // renamed from Jonas
-      'Finance':          0,   // renamed from Credit Card
-      '30/60/90 Review':  0,
-      'Assets':           0,
-      'IT':               0,   // IT SETUP button (action items)
-      'IT Confirmation':  0,   // IT CONF button
-      'HR':               0,   // ADP/HR button (part 1 — HR Systems Deactivation)
-      'Payroll':          0,   // ADP/HR button (part 2 — ADP Deactivation)
-      'EOE':              0,
-      'Manager':          0,
-      'WIS':              0,   // WIS button (WIS Assignment + BOSS WIS Records Update)
-      'ID Setup':         0,   // ID SETUP button (Equipment SiteDocs + SC SiteDocs + SC BOSS WIS Account)
-      'Deactivation':     0,   // DEACTIVATION button (EOE Employee Deactivation)
-    };
+    // Workflow type derived from the ID prefix (same rule as getDashboardData / StateSync).
+    // Type labels match the client TYPE_MAP values so the dashboard can sum buckets per filter.
+    const TYPES = ['Onboarding', 'End of Employment', 'Status Change', 'Equipment'];
+    function typeOf(wfId) {
+      wfId = String(wfId || '');
+      if (wfId.startsWith('TERM_'))      return 'End of Employment';
+      if (wfId.startsWith('CHANGE_'))    return 'Status Change';
+      if (wfId.startsWith('EQUIP_REQ_')) return 'Equipment';
+      return 'Onboarding';
+    }
+    function blankCounts() {
+      return {
+        'Safety':           0,
+        'Fleet':            0,   // renamed from Fleetio
+        'Business Cards':   0,
+        'Purchasing':       0,   // renamed from Jonas
+        'Finance':          0,   // renamed from Credit Card
+        '30/60/90 Review':  0,
+        'Assets':           0,
+        'IT':               0,   // IT button (action items)
+        'IT Confirmation':  0,   // IT CONF button
+        'HR':               0,   // ADP/HR button (part 1 — HR Systems Deactivation)
+        'Payroll':          0,   // ADP/HR button (part 2 — ADP Deactivation)
+        'EOE':              0,
+        'Manager':          0,
+        'WIS':              0,   // WIS button (WIS Assignment + BOSS WIS Records Update)
+        'ID Setup':         0,   // ID SETUP button — action items + step (additive, same key)
+        'Deactivation':     0,   // DEACTIVATION button (EOE Employee Deactivation)
+        'HR Verification':  0,   // ADP/HR button — step-based part
+      };
+    }
 
+    // Grand total (back-compat `counts`) + per-type buckets (`countsByType`).
+    const total  = blankCounts();
+    const byType = {};
+    TYPES.forEach(function(t) { byType[t] = blankCounts(); });
+
+    function add(wfId, cat, n) {
+      if (total.hasOwnProperty(cat)) total[cat] += n;
+      const b = byType[typeOf(wfId)];
+      if (b.hasOwnProperty(cat)) b[cat] += n;
+    }
+
+    // ── Source 1: Action Items sheet (Open only) ──────────────────────────────
     const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
     if (aiSheet && aiSheet.getLastRow() > 1) {
       const aiData    = aiSheet.getDataRange().getValues();
       const aiHeaders = aiData[0];
+      const wfIdx     = aiHeaders.indexOf('Workflow ID');
       const catIdx    = aiHeaders.indexOf('Category');
       const statusIdx = aiHeaders.indexOf('Status');
       for (let i = 1; i < aiData.length; i++) {
-        const status = String(aiData[i][statusIdx] || '');
-        if (status !== 'Open') continue;
-        const cat = String(aiData[i][catIdx] || '');
-        if (aiCounts.hasOwnProperty(cat)) {
-          aiCounts[cat]++;
-        }
+        if (String(aiData[i][statusIdx] || '') !== 'Open') continue;
+        add(aiData[i][wfIdx], String(aiData[i][catIdx] || ''), 1);
       }
     }
 
     // ── Source 2: Workflows sheet — step-based counts ─────────────────────────
-    const stepCounts = { 'IT Setup': 0, 'HR Verification': 0, 'ID Setup': 0 };
-
     const wfSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
     if (wfSheet && wfSheet.getLastRow() > 1) {
       const wfData    = wfSheet.getDataRange().getValues();
       const wfHeaders = wfData[0];
+      const wfIdIdx   = wfHeaders.indexOf('Workflow ID');
       const statusIdx = wfHeaders.indexOf('Status');
       const stepIdx   = wfHeaders.indexOf('Current Step');
       for (let i = 1; i < wfData.length; i++) {
         const status = String(wfData[i][statusIdx] || '');
         if (status === 'Cancelled' || status === 'Complete' || status === 'Completed' || status === 'Inactive') continue;
         const step = String(wfData[i][stepIdx] || '').toLowerCase();
-        // Use exact step name matching — 'ID Setup Complete' must NOT count as ID Setup pending.
-        // Step strings set by handlers: 'IT Setup Needed', 'HR Verification Needed', 'ID Setup Needed'.
+        const wfId = wfData[i][wfIdIdx];
+        // Exact step name matching — 'ID Setup Complete' must NOT count as ID Setup pending.
         // Legacy 'ID Setup Complete' (pre-fix workflows) maps to HR Verification.
-        if      (step === 'it setup needed')                                         stepCounts['IT Setup']++;
-        else if (step === 'hr verification needed' || step === 'id setup complete')  stepCounts['HR Verification']++;
-        else if (step === 'id setup needed')                                         stepCounts['ID Setup']++;
+        if      (step === 'it setup needed')                                         add(wfId, 'IT', 1);
+        else if (step === 'hr verification needed' || step === 'id setup complete')  add(wfId, 'HR Verification', 1);
+        else if (step === 'id setup needed')                                         add(wfId, 'ID Setup', 1);
       }
     }
 
-    // Additive merge: step counts add to action-item counts (don't overwrite).
-    // 'ID Setup' exists in both aiCounts (action items) and stepCounts (workflow step) —
-    // Object.assign would overwrite; additive merge keeps both totals visible.
-    const merged = Object.assign({}, aiCounts);
-    Object.keys(stepCounts).forEach(function(key) {
-      merged[key] = (merged[key] || 0) + (stepCounts[key] || 0);
-    });
-    return { success: true, counts: merged };
+    return { success: true, counts: total, countsByType: byType };
 
   } catch (e) {
     Logger.log('[getMyTaskCounts] Error: ' + e.message);
-    return { success: false, counts: {} };
+    return { success: false, counts: {}, countsByType: {} };
   }
 }
 

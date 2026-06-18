@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Workflow Management Functions
  * Creates and manages workflow instances across forms
  */
@@ -88,6 +88,21 @@ function createWorkflow(workflowType, workflowName, initiatorEmail) {
       workflowsSheet.getRange(1, 1, 1, 9).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
     
+    // Idempotency guard: return existing ID if same type+initiator submitted within last 30 seconds
+    const _WF = SCHEMA.WORKFLOWS;
+    const _allWf = workflowsSheet.getDataRange().getValues();
+    const _cutoff = new Date(new Date().getTime() - 30000);
+    for (let _wi = SCHEMA.ROW.FIRST_DATA; _wi < _allWf.length; _wi++) {
+      if (String(_allWf[_wi][_WF.WORKFLOW_TYPE]) === workflowType &&
+          String(_allWf[_wi][_WF.INITIATOR_EMAIL]) === initiatorEmail) {
+        const _wfCreated = _allWf[_wi][_WF.CREATED_DATE];
+        if (_wfCreated instanceof Date && _wfCreated > _cutoff) {
+          Logger.log('[createWorkflow] Idempotency guard: returning existing ' + _allWf[_wi][_WF.WORKFLOW_ID]);
+          return String(_allWf[_wi][_WF.WORKFLOW_ID]);
+        }
+      }
+    }
+    
     workflowsSheet.appendRow([
       workflowId,
       workflowType,
@@ -112,13 +127,13 @@ function createWorkflow(workflowType, workflowName, initiatorEmail) {
 /**
  * Update workflow status and current step
  */
-function updateWorkflow(workflowId, status, currentStep, employeeName) {
+function updateWorkflow(workflowId, status, currentStep, employeeName, actingUser) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const workflowsSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
-    
+
     if (!workflowsSheet) return false;
-    
+
     const WF = SCHEMA.WORKFLOWS;
     const data = workflowsSheet.getDataRange().getValues();
 
@@ -128,7 +143,11 @@ function updateWorkflow(workflowId, status, currentStep, employeeName) {
         workflowsSheet.getRange(i + 1, WF.LAST_UPDATED + 1).setValue(new Date());
         if (currentStep) workflowsSheet.getRange(i + 1, WF.CURRENT_STEP + 1).setValue(currentStep);
         if (employeeName) workflowsSheet.getRange(i + 1, WF.EMPLOYEE_NAME + 1).setValue(employeeName);
-        
+        if (actingUser) {
+          const updatedByIdx = data[0].indexOf('Updated By');
+          if (updatedByIdx >= 0) workflowsSheet.getRange(i + 1, updatedByIdx + 1).setValue(actingUser);
+        }
+
         Logger.log('[SUCCESS] Updated workflow: ' + workflowId + ' -> ' + status);
     // Sync to Initial Requests sheet as well (if found)
     syncStatusToRequestSheet(ss, workflowId, status);

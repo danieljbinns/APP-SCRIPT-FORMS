@@ -27,6 +27,7 @@
         <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
       </div>
 
+<? var _pd = requestData.isEdit && requestData.previousData ? requestData.previousData : {}; ?>
       <form id="hrVerificationForm" autocomplete="off">
         <input type="hidden" name="workflowId" value="<?= workflowId ?>">
         <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
@@ -58,12 +59,12 @@
             </div>
             <div class="form-field">
               <label>Hire Date</label>
-              <input type="date" name="hireDate" value="<?= requestData.hireDate ? String(requestData.hireDate).substring(0, 10) : '' ?>">
+              <input type="date" name="hireDate" value="<?= (_pd.hireDate || requestData.hireDate) ? String(_pd.hireDate || requestData.hireDate).substring(0, 10) : '' ?>">
             </div>
           </div>
           <div class="form-field">
             <label>Department</label>
-            <input type="text" name="department" value="<?= requestData.department || '' ?>" placeholder="e.g. Operations, Finance">
+            <input type="text" name="department" value="<?= _pd.department || requestData.department || '' ?>" placeholder="e.g. Operations, Finance">
           </div>
         </div>
 
@@ -73,26 +74,26 @@
           <div class="form-row">
             <div class="form-field">
               <label>First Name <span class="required">*</span></label>
-              <input type="text" name="firstName" value="<?= requestData.firstName || '' ?>" required>
+              <input type="text" name="firstName" value="<?= _pd.firstName || requestData.firstName || '' ?>" required>
             </div>
             <div class="form-field">
               <label>Last Name <span class="required">*</span></label>
-              <input type="text" name="lastName" value="<?= requestData.lastName || '' ?>" required>
+              <input type="text" name="lastName" value="<?= _pd.lastName || requestData.lastName || '' ?>" required>
             </div>
           </div>
           <div class="form-row">
             <div class="form-field">
               <label>Reporting Manager Name <span class="required">*</span></label>
-              <input type="text" name="managerName" value="<?= requestData.managerName || '' ?>" required>
+              <input type="text" name="managerName" value="<?= _pd.managerName || requestData.managerName || '' ?>" required>
             </div>
             <div class="form-field">
               <label>Reporting Manager Email <span class="required">*</span></label>
-              <input type="email" name="managerEmail" value="<?= requestData.managerEmail || '' ?>" required>
+              <input type="email" name="managerEmail" value="<?= _pd.managerEmail || requestData.managerEmail || '' ?>" required>
             </div>
           </div>
           <div class="form-field">
             <label>Job Title (HR Title) <span class="required">*</span></label>
-            <input type="text" name="jobTitle" value="<?= requestData.position || requestData.jobTitle || '' ?>" required>
+            <input type="text" name="jobTitle" value="<?= _pd.jobTitle || requestData.position || requestData.jobTitle || '' ?>" required>
           </div>
           <? if (requestData.jrRequired === 'Yes') { ?>
           <div class="form-field">
@@ -111,7 +112,7 @@
           <h2>ADP Assignment</h2>
           <div class="form-field">
             <label>ADP Associate ID <span class="required">*</span></label>
-            <input type="text" name="adpAssociateId" value="<?= requestData.adpAssociateId || '' ?>" placeholder="e.g. 123456" required>
+            <input type="text" name="adpAssociateId" value="<?= _pd.adpAssociateId || requestData.adpAssociateId || '' ?>" placeholder="e.g. 123456" required>
           </div>
           <div class="form-field">
             <label>Internal HR Notes (Optional)</label>

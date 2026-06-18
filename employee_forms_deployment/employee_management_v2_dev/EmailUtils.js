@@ -194,6 +194,7 @@ function getWorkflowContext(workflowId) {
           managerEmail:    termData.managerEmail,
           requesterEmail:  termData.requesterEmail,
           hireDate:        termData.termDate,
+          termDate:        termData.termDate,
           lastDayWorked:   termData.lastDayWorked  || '',
           equipmentRaw:    termData.eqToReturn,
           systems:         termData.systems ? termData.systems.split(',').map(function(s){ return s.trim(); }) : [],
@@ -248,7 +249,7 @@ function getWorkflowContext(workflowId) {
         const mcMatches = mcStr.match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
         const mgrOldEmail = changeData.currentManagerEmail || (mcMatches.length > 0 ? mcMatches[0].replace(/[()]/g, '') : '');
         const mgrNewEmail = changeData.mgrNewEmail || (mcMatches.length > 1 ? mcMatches[1].replace(/[()]/g, '') : mgrOldEmail);
-        return {
+        const changeContext = {
           workflowType: 'Status Change',
           employeeName: changeData.employeeName || '',
           jobTitle: changeData.jobTitle || changeData.currentTitle || '',
@@ -279,36 +280,21 @@ function getWorkflowContext(workflowId) {
           creditCardHomeDepot:      changeData.ccHD || '',
           creditCardLimitHomeDepot: changeData.ccLimitHD || '',
           requestDate:              changeData.dateRequested || changeData.effDate || '',
-          // Delegation — direct report reassignment.
-          // oldReportsTo:  employee is LOSING reports → reassign them to this person/team.
-          // newReportsFrom: employee is GAINING reports from this person/team.
-          // Required here so getWorkflowContext() consumers (form header via RequestHeader.html,
-          // notifyWorkflowClosure, any future CHANGE_ email) can render these fields.
           oldReportsTo:  changeData.oldReportsTo  || '',
           newReportsFrom: changeData.newReportsFrom || ''
         };
-        // ── DEAD CODE — POSITION_CHANGE_APPROVALS enrichment ─────────────────────
-        // This block is unreachable: the `return { ... }` statement above returns before
-        // execution can reach here. Additionally, `changeContext` is not declared in this
-        // scope (it would need to be assigned from the return value above).
-        //
-        // HR approval data for CHANGE_ workflows is enriched in:
-        //   notifyWorkflowClosure() in ActionItemService.js (for the Workflow Completed email)
-        //   submitPositionChangeApproval() in PositionChangeHandler.js (for approval emails)
-        //
-        // If you need this data in other CHANGE_ emails, extract the return value above
-        // into a `changeContext` variable, perform enrichment, then return changeContext.
+        // Enrich with HR approval data if available
         const pcaSheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
         if (pcaSheet) {
           const pcaData = pcaSheet.getDataRange().getValues();
           const pcaRow = pcaData.find(function(r) { return r[0] === workflowId; });
           if (pcaRow) {
-            if (pcaRow[3]) changeContext.hrDecision      = String(pcaRow[3]);
-            if (pcaRow[4]) changeContext.hrNotes         = String(pcaRow[4]);
-            if (pcaRow[5]) changeContext.confirmedTitle  = String(pcaRow[5]);
+            if (pcaRow[3]) changeContext.hrDecision         = String(pcaRow[3]);
+            if (pcaRow[4]) changeContext.hrNotes            = String(pcaRow[4]);
+            if (pcaRow[5]) changeContext.confirmedTitle     = String(pcaRow[5]);
             if (pcaRow[6]) changeContext.confirmedNewManager = String(pcaRow[6]);
-            if (pcaRow[7]) changeContext.hrSubmittedBy   = String(pcaRow[7]);
-            if (pcaRow[2]) changeContext.hrTimestamp     = pcaRow[2] instanceof Date
+            if (pcaRow[7]) changeContext.hrSubmittedBy      = String(pcaRow[7]);
+            if (pcaRow[2]) changeContext.hrTimestamp        = pcaRow[2] instanceof Date
               ? Utilities.formatDate(pcaRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a')
               : String(pcaRow[2]);
           }
@@ -1135,10 +1121,10 @@ function notifyAdminActionItemFailure(workflowId, category, taskName, assignedTo
       return;
     }
 
-    MailApp.sendEmail({
+    sendFormEmail({
       to: adminEmails.join(','),
       subject: subject,
-      htmlBody: body
+      body: body
     });
 
     Logger.log('[notifyAdminActionItemFailure] Alert sent for ' + workflowId + ' / ' + category);

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * System & Equipment Access Form - Backend Handler
  *
  * Flow:
@@ -31,8 +31,14 @@ function serveEquipmentRequest() {
 function submitEquipmentRequest(formData) {
   try {
     rawLog('submitEquipmentRequest', formData);
+
+    // Lock prevents duplicate concurrent submissions — covers createWorkflow + addSheetRow
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
+    let workflowId, employeeName;
+    try {
     // 1. Create Workflow Record
-    const workflowId = createWorkflow('EQUIP_REQ', 'System & Equipment Request', formData.reqEmail || formData.requesterEmail);
+    workflowId = createWorkflow('EQUIP_REQ', 'System & Equipment Request', formData.reqEmail || formData.requesterEmail);
     const formId = generateFormId('EQUIP');
 
     formData.workflowId = workflowId;
@@ -44,7 +50,7 @@ function submitEquipmentRequest(formData) {
     const validation = validateRequiredFields(formData, requiredFields);
     if (!validation.valid) return { success: false, message: validation.message };
 
-    const employeeName = formData.firstName + ' ' + formData.lastName;
+    employeeName = formData.firstName + ' ' + formData.lastName;
 
     // 3. Set status — awaiting IT Confirmation
     updateWorkflow(workflowId, 'In Progress', 'IT Confirmation Needed', employeeName);
@@ -62,6 +68,10 @@ function submitEquipmentRequest(formData) {
     const rowData = formatInitialRequestData(formData);
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.INITIAL_REQUESTS, rowData);
     if (!sheetSuccess) throw new Error('Failed to write request to Initial Requests database');
+
+    } finally {
+      lock.releaseLock();
+    }
 
     // 5 & 6. Send confirmation and IT notification — extracted helper so ReplayService can refire missed emails
     _sendEquipmentRequestSubmitEmails(workflowId);
@@ -143,7 +153,7 @@ function _sendEquipmentRequestSubmitEmails(workflowId) {
   }
   const itConfirmationUrl = buildFormUrl('it_confirmation', { wf: workflowId });
   sendFormEmail({
-    to: 'davelangohr@team-group.com',
+    to: CONFIG.EMAILS.IT_CONFIRMATION,
     subject: 'IT Confirmation Required',
     body: 'A System & Equipment Access request has been submitted for <b>' + erData.employeeName + '</b> and requires your review and confirmation.\n\nPlease review the request details and confirm using the button below.',
     formUrl: itConfirmationUrl,

@@ -34,6 +34,26 @@ function cancelRequest(workflowId) {
     }
 
     updateWorkflow(workflowId, 'Cancelled', 'Request Cancelled', '');
+
+    // H-2: Cancel all Open action items so specialists don't act on a cancelled workflow
+    try {
+      var aiSheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+      if (aiSheet) {
+        var aiData  = aiSheet.getDataRange().getValues();
+        var aiH     = aiData[0];
+        var wfAiCol = aiH.indexOf('Workflow ID');
+        var stAiCol = aiH.indexOf('Status');
+        for (var ai = 1; ai < aiData.length; ai++) {
+          if (String(aiData[ai][wfAiCol]) !== workflowId) continue;
+          if (String(aiData[ai][stAiCol]) === 'Open') {
+            aiSheet.getRange(ai + 1, stAiCol + 1).setValue('Cancelled');
+          }
+        }
+      }
+    } catch (aiCancelErr) {
+      Logger.log('[cancelRequest] Action item cancel failed (non-fatal): ' + aiCancelErr.message);
+    }
+
     syncWorkflowState(workflowId);
 
     writeAuditLog(userEmail, 'CANCEL', workflowId, '', 'success');
@@ -152,7 +172,7 @@ function _sendBumpEmail(workflowId, targetStep) {
       formType  = 'IT Setup';
       break;
     case 'it_confirmation':
-      recipient = 'davelangohr@team-group.com';
+      recipient = CONFIG.EMAILS.IT_CONFIRMATION;
       formType  = 'IT Confirmation';
       break;
 
