@@ -1019,6 +1019,9 @@ function completeMyTask(taskId, comments) {
     }
     if (rowIndex === -1) return { success: false, message: 'Task not found: ' + taskId };
 
+    const taskFormType = String(data[rowIndex][AI.FORM_TYPE] || '');
+    if (taskFormType !== 'jr_title') return { success: false, message: 'completeMyTask is only available for JR Title tasks.' };
+
     const assignedTo = String(data[rowIndex][AI.ASSIGNED_TO] || '');
     if (assignedTo) {
       const directMatch = callerEmail.toLowerCase() === assignedTo.toLowerCase();
