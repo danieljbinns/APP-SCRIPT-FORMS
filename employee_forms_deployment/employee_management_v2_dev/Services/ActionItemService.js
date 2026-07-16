@@ -985,3 +985,68 @@ function closeActionItemWithNotes(taskId, notes, draftJSON, formDataJSON) {
 function saveActionItemDraft(taskId, notes, draftJSON) {
   return ActionItemService.saveActionItemDraft(taskId, notes, draftJSON);
 }
+
+/**
+ * External closure entry point — callable via Apps Script Execution API (N8N, automation).
+ *
+ * Designed for single-item tasks (e.g. JR Title assignment) where the caller owns
+ * exactly one checklist item and closing it always finalises the task. The caller's
+ * identity is resolved server-side from their OAuth session — nothing is trusted from
+ * the payload.
+ *
+ * The function reads the current task from the sheet, builds a complete draft marking
+ * every item Complete, then delegates to the standard closeActionItem path so all
+ * downstream effects fire (workflow completion check, notification emails, dashboard
+ * state update) identically to a browser button click.
+ *
+ * @param {string} taskId   - Task ID (e.g. 'TK-00A35A25')
+ * @param {string} comments - Completion comments from the caller
+ * @returns {{ success: boolean, message?: string }}
+ */
+function completeMyTask(taskId, comments) {
+  try {
+    const callerEmail = Session.getActiveUser().getEmail();
+    if (!callerEmail) return { success: false, message: 'Could not resolve caller identity.' };
+
+    const ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    const AI    = SCHEMA.ACTION_ITEMS;
+    const data  = sheet.getDataRange().getValues();
+
+    let rowIndex = -1;
+    for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+      if (data[i][AI.TASK_ID] === taskId) { rowIndex = i; break; }
+    }
+    if (rowIndex === -1) return { success: false, message: 'Task not found: ' + taskId };
+
+    const assignedTo = String(data[rowIndex][AI.ASSIGNED_TO] || '');
+    if (assignedTo) {
+      const directMatch = callerEmail.toLowerCase() === assignedTo.toLowerCase();
+      let groupMatch = false;
+      if (!directMatch) {
+        try { groupMatch = GroupsApp.getGroup(assignedTo).hasMember(callerEmail); } catch (e) { /* not a group or no access */ }
+      }
+      if (!directMatch && !groupMatch) return { success: false, message: 'Caller is not assigned to this task.' };
+    }
+
+    // Build a complete draft from the stored description — mark every item Complete
+    const descRaw  = String(data[rowIndex][AI.DESCRIPTION] || '[]');
+    const existing = String(data[rowIndex][AI.DRAFT]       || '{}');
+    let items = [];
+    try { items = JSON.parse(descRaw); } catch (e) { items = []; }
+    let draft = {};
+    try { draft = JSON.parse(existing); } catch (e) { draft = {}; }
+
+    const now = new Date().toISOString();
+    items.forEach(function(item) {
+      if (typeof item === 'string' && !item.startsWith('__')) {
+        draft[item] = { status: 'Complete', by: callerEmail, at: now, comments: comments || '' };
+      }
+    });
+
+    return ActionItemService.closeActionItem(taskId, comments || '', callerEmail, JSON.stringify(draft), null);
+  } catch (e) {
+    Logger.log('[completeMyTask] ERROR: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}

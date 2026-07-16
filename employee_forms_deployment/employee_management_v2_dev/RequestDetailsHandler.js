@@ -156,7 +156,7 @@ function getRequestDetails(workflowId) {
         ]);
         const NODE_MAP = {
           'creditcard':'credit_card','businesscards':'business_cards',
-          'review_306090':'review','centralpurchasing':'central_purchasing',
+          'review_306090':'review','jr_title':'jr_title','centralpurchasing':'central_purchasing',
           'safety_onboarding':'safety','safety_term':'safety_term'
         };
 
@@ -326,6 +326,7 @@ function getStepResultData(workflowId, stepTarget) {
       case 'deactivation':      return readActionItems('Deactivation');
       case 'review_306090':
       case 'review':            return readActionItems('30/60/90 Review');
+      case 'jr_title':          return readActionItems('JR Title');
       case 'safety_onboarding':
       case 'safety':            return readActionItems('Safety');
       case 'safety_term':       return readActionItems('Safety');
@@ -701,7 +702,8 @@ function getEquipmentRequestDetails(workflowId) {
         'IT':                'it_setup',
         'ID Setup':          'id_setup',
         'Central Purchasing':'centralpurchasing',
-        '30/60/90 Review':   'review_306090'
+        '30/60/90 Review':   'review_306090',
+        'JR Title':          'jr_title'
       };
 
       for (let i = 1; i < aiData.length; i++) {

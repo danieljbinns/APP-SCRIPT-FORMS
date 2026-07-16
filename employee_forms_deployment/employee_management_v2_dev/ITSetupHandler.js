@@ -521,13 +521,22 @@ function triggerSpecialists(workflowId, itData) {
     specialists.push({
       email: CONFIG.EMAILS.REVIEW_306090_JR,
       category: '30/60/90 Review',
-      name: '30/60/90 and JR Assignment — ' + context.employeeName,
+      name: '30/60/90 Review Plan — ' + context.employeeName,
       description: JSON.stringify([
         'Create 30/60/90 day review plan',
-        'Verify and assign JR title',
         'Schedule review meetings with manager'
       ]),
       formType: 'review_306090'
+    });
+    // JR Title assignment is a separate task — different assignee, standalone closure
+    specialists.push({
+      email: CONFIG.EMAILS.REVIEW_JR_TITLE,
+      category: 'JR Title',
+      name: 'JR Title Assignment — ' + context.employeeName,
+      description: JSON.stringify([
+        'Verify and assign JR title'
+      ]),
+      formType: 'jr_title'
     });
   }
 

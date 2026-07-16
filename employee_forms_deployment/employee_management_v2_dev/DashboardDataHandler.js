@@ -235,6 +235,7 @@ function getMyTaskCounts() {
         'Purchasing':       0,   // renamed from Jonas
         'Finance':          0,   // renamed from Credit Card
         '30/60/90 Review':  0,
+        'JR Title':         0,
         'Assets':           0,
         'IT':               0,   // IT button (action items)
         'IT Confirmation':  0,   // IT CONF button

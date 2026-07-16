@@ -88,6 +88,7 @@ const CONFIG = {
       CREDIT_CARD: ConfigurationService.getSetting('EMAIL_CREDIT_CARD') || 'grp.forms.creditcard@team-group.com',
       BUSINESS_CARDS: ConfigurationService.getSetting('EMAIL_BUSINESS_CARDS') || 'davelangohr@team-group.com',
       REVIEW_306090_JR: ConfigurationService.getSetting('EMAIL_REVIEW306090') || 'grp.forms.review306090@team-group.com',
+      REVIEW_JR_TITLE:  ConfigurationService.getSetting('EMAIL_REVIEW_JR_TITLE') || 'grp.forms.jrtitle@team-group.com',
       JONAS: ConfigurationService.getSetting('EMAIL_JONAS') || 'grp.forms.jonas@team-group.com',
       SAFETY: ConfigurationService.getSetting('EMAIL_SAFETY') || 'grp.forms.safety@team-group.com',
       PAYROLL: ConfigurationService.getSetting('EMAIL_PAYROLL') || 'payroll@team-group.com',

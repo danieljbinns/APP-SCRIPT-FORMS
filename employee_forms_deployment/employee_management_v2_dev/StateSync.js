@@ -170,6 +170,7 @@ function syncWorkflowState(workflowId) {
             businessCards:   !!(row[PC.EQUIPMENT] && String(row[PC.EQUIPMENT]).includes('Business Cards')),
             siteDocs:        !!(row[PC.SYSTEMS_ADDED] && String(row[PC.SYSTEMS_ADDED]).includes('SiteDocs')),
             review:          (String(row[PC.PLAN_306090] || '') === 'Yes'),
+            jrTitle:         (String(row[PC.PLAN_306090] || '') === 'Yes'),
             isChange:        true
           }
         };
@@ -192,6 +193,7 @@ function syncWorkflowState(workflowId) {
             businessCards: !!(row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('Business Cards')),
             siteDocs:      !!((row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('SiteDocs')) || (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('SiteDocs Tablet'))),
             review:        false,
+            jrTitle:       false,
             safety:        false,
             isEquip:       true
           }
@@ -216,6 +218,7 @@ function syncWorkflowState(workflowId) {
             businessCards: !!(row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('Business Cards')),
             siteDocs:      !!((row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('SiteDocs')) || (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('SiteDocs Tablet'))),
             review:        (row[IR.PLAN_306090] === 'Yes'),
+            jrTitle:       (row[IR.PLAN_306090] === 'Yes'),
             safety:        true
           }
         };

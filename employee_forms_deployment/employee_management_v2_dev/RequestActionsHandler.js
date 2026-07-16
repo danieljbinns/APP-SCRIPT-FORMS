@@ -178,7 +178,7 @@ function _sendBumpEmail(workflowId, targetStep) {
 
     // Specialist + EOE + Status Change + Equipment action-item steps
     case 'creditcard': case 'businesscards': case 'fleetio': case 'jonas':
-    case 'centralpurchasing': case 'sitedocs': case 'review_306090':
+    case 'centralpurchasing': case 'sitedocs': case 'review_306090': case 'jr_title':
     case 'safety_onboarding': case 'safety_term':
     case 'asset_collection': case 'systems_deactivation': case 'systems_deactivation_hr':
     case 'systems_deactivation_fleet': case 'systems_deactivation_finance':
@@ -235,6 +235,7 @@ function _sendActionItemBump(workflowId, targetStep) {
     'centralpurchasing': 'Purchasing', 'central_purchasing': 'Purchasing',
     'sitedocs': 'ID Setup', 'wis_user': 'ID Setup',
     'review_306090': '30/60/90 Review', 'review': '30/60/90 Review',
+    'jr_title': 'JR Title',
     'safety_onboarding': 'Safety', 'safety': 'Safety', 'safety_term': 'Safety',
     'hr_systems': 'HR', 'hr': 'HR',
     'adp_setup': 'Payroll', 'payroll': 'Payroll',

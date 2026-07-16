@@ -101,7 +101,8 @@ var AccessControlService = (function() {
       CREDIT_CARD:      emails.CREDIT_CARD,
       BUSINESS_CARDS:   emails.BUSINESS_CARDS,
       JONAS:            emails.JONAS,
-      REVIEW_306090_JR: emails.REVIEW_306090_JR
+      REVIEW_306090_JR: emails.REVIEW_306090_JR,
+      REVIEW_JR_TITLE:  emails.REVIEW_JR_TITLE
     };
   }
 

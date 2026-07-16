@@ -579,6 +579,7 @@
                         { label: 'PURCHASING',     cat: 'Purchasing',      count: counts['Purchasing'] || 0,       color: '#3f51b5' },
                         { label: 'FINANCE',        cat: 'Finance',         count: counts['Finance'] || 0,          color: '#ff9800' },
                         { label: '30/60/90',       cat: '30/60/90 Review', count: counts['30/60/90 Review'] || 0,  color: '#8bc34a' },
+                        { label: 'JR TITLE',       cat: 'JR Title',        count: counts['JR Title'] || 0,          color: '#4db6ac' },
                         { label: 'ASSETS',         cat: 'Assets',          count: counts['Assets'] || 0,           color: '#f57c00' },
                         { label: 'IT',             cat: 'IT',              count: counts['IT'] || 0, color: '#2196f3' },
                         { label: 'IT CONF',        cat: 'IT Confirmation', count: counts['IT Confirmation'] || 0,  color: '#42a5f5' },
@@ -599,6 +600,7 @@
                     if (inSg('JONAS'))          myPending += (counts['Purchasing'] || 0);
                     if (inSg('CREDIT_CARD'))    myPending += (counts['Finance'] || 0);
                     if (inSg('REVIEW_306090_JR')) myPending += (counts['30/60/90 Review'] || 0);
+                    if (inSg('REVIEW_JR_TITLE'))  myPending += (counts['JR Title'] || 0);
                     if (inSg('FLEETIO'))        myPending += (counts['Assets'] || 0); // fleet returns go to fleetio
                     if (rp.isIT || rp.isAdmin)  myPending += (counts['IT'] || 0) + (counts['IT Confirmation'] || 0);
                     if (rp.isHR || rp.isAdmin)  myPending += (counts['HR'] || 0) + (counts['EOE'] || 0) + (counts['HR Verification'] || 0) + (counts['Payroll'] || 0);
