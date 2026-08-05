@@ -884,9 +884,9 @@ function runSuperDebugNewHire() {
  * non-jr_title task. Returns a structured result (no cleanup — call
  * cleanupSuperDebugAll() afterward). Safe: email redirect confirmed before running.
  */
-function sdRunJrTitleE2E(byWorkflow) {
+function sdRunJrTitleE2E(byWorkflow, createOnly) {
   _SD_RESULTS = {}; _SD_EMAIL_COUNTS = {};
-  var out = { steps: [], closedVia: byWorkflow ? 'completeJrTitleForWorkflow' : 'completeMyTask' };
+  var out = { steps: [], closedVia: createOnly ? '(none — createOnly)' : (byWorkflow ? 'completeJrTitleForWorkflow' : 'completeMyTask') };
   try {
     checkSuperDebugEmailSafety(); // throws unless redirect/suppress active
 
@@ -921,6 +921,9 @@ function sdRunJrTitleE2E(byWorkflow) {
     out.jrAssignee    = jr     ? String(jr[AI.ASSIGNED_TO]) : null;
     out.jrDescription = jr     ? String(jr[AI.DESCRIPTION]) : null;
     if (!jr) throw new Error('JR Title action item was NOT created by triggerSpecialists');
+
+    // createOnly: leave the JR task OPEN (for external doPost smoke-testing) and return.
+    if (createOnly) { out.emailCounts = _SD_EMAIL_COUNTS; return out; }
 
     // Close the JR task via the N8N Execution-API entry point.
     // byWorkflow=true exercises completeJrTitleForWorkflow(wfId) — george's actual call path.

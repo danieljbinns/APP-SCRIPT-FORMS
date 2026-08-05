@@ -437,4 +437,7 @@ function suppressEmails()         { PropertiesService.getScriptProperties().setP
 // e.g. setJrTaskClosers('george.anthony@team-group.com') — add the service account here later.
 function setJrTaskClosers(csv)    { var v = csv || ''; PropertiesService.getScriptProperties().setProperty('JR_TASK_CLOSERS', v); Logger.log('JR_TASK_CLOSERS = ' + v); return { ok: true, value: v }; }
 function getJrTaskClosers()        { return { value: PropertiesService.getScriptProperties().getProperty('JR_TASK_CLOSERS') || '' }; }
+// Shared secret for the doPost portal-automation endpoint (n8n). Set once, keep out of source.
+function setPortalSecret(s)        { var v = s || ''; PropertiesService.getScriptProperties().setProperty('PORTAL_SHARED_SECRET', v); Logger.log('PORTAL_SHARED_SECRET set (len ' + v.length + ')'); return { ok: true, length: v.length }; }
+function getPortalSecretLen()      { return { length: (PropertiesService.getScriptProperties().getProperty('PORTAL_SHARED_SECRET') || '').length }; }
 function unsuppressEmails()       { PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE'); Logger.log('SUPPRESS_EMAILS_OVERRIDE cleared'); }

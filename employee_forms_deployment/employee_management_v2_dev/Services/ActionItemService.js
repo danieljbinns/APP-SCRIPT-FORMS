@@ -1111,3 +1111,53 @@ function completeJrTitleForWorkflow(workflowId, comments) {
     return { success: false, message: e.message };
   }
 }
+
+/**
+ * Secret-authorized JR Title closer for the doPost automation endpoint.
+ * The caller (doPost) has ALREADY validated PORTAL_SHARED_SECRET, so this performs NO
+ * per-user auth check (an anonymous web app has no Session user). It resolves the open
+ * jr_title task for the workflow, marks its checklist Complete, and closes it via the
+ * standard closeActionItem path (so workflow-completion checks, emails, and dashboard
+ * updates all fire). closedBy is recorded as the automation label.
+ *
+ * @param {string} workflowId
+ * @param {string} comments
+ * @returns {{ success: boolean, message?: string, taskId?: string }}
+ */
+function jrCompleteViaSecret(workflowId, comments) {
+  try {
+    if (!workflowId) return { success: false, message: 'workflowId is required' };
+    const CLOSED_BY = 'JR Automation (n8n)';
+    const ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    const AI    = SCHEMA.ACTION_ITEMS;
+    const data  = sheet.getDataRange().getValues();
+
+    let taskRow = null, taskId = null;
+    for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+      if (String(data[i][AI.WORKFLOW_ID]) === String(workflowId) &&
+          String(data[i][AI.FORM_TYPE])   === 'jr_title' &&
+          String(data[i][AI.STATUS])      === 'Open') {
+        taskRow = data[i]; taskId = String(data[i][AI.TASK_ID]); break;
+      }
+    }
+    if (!taskId) return { success: false, message: 'No open JR Title task found for workflow ' + workflowId };
+
+    let items = [];
+    try { items = JSON.parse(String(taskRow[AI.DESCRIPTION] || '[]')); } catch (e) { items = []; }
+    const draft = {};
+    const now = new Date().toISOString();
+    items.forEach(function (it) {
+      if (typeof it === 'string' && it.indexOf('__') !== 0) {
+        draft[it] = { status: 'Complete', by: CLOSED_BY, at: now, comments: comments || '' };
+      }
+    });
+
+    const res = ActionItemService.closeActionItem(taskId, comments || '', CLOSED_BY, JSON.stringify(draft), null);
+    if (res && res.success) res.taskId = taskId;
+    return res;
+  } catch (e) {
+    Logger.log('[jrCompleteViaSecret] ERROR: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
