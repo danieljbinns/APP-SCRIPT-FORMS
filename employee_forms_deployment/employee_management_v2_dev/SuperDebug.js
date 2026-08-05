@@ -884,21 +884,34 @@ function runSuperDebugNewHire() {
  * non-jr_title task. Returns a structured result (no cleanup — call
  * cleanupSuperDebugAll() afterward). Safe: email redirect confirmed before running.
  */
-function sdRunJrTitleE2E(byWorkflow, createOnly) {
+function sdRunJrTitleE2E(byWorkflow, createOnly, ov) {
   _SD_RESULTS = {}; _SD_EMAIL_COUNTS = {};
   var out = { steps: [], closedVia: createOnly ? '(none — createOnly)' : (byWorkflow ? 'completeJrTitleForWorkflow' : 'completeMyTask') };
   try {
     checkSuperDebugEmailSafety(); // throws unless redirect/suppress active
 
-    var initRes = submitInitialRequest(SD_NH_INITIAL);
+    // Optional overrides (ov) customize the employee for a realistic test. Applied to
+    // every payload carrying these fields so the value survives to the JR email
+    // (INITIAL → HRV → ITCONF each write name/title to the IR sheet before IT Setup fires).
+    ov = ov || {};
+    function _ov(base) {
+      var c = {}; for (var k in base) c[k] = base[k];
+      if (ov.firstName != null) c.firstName = ov.firstName;
+      if (ov.lastName  != null) c.lastName  = ov.lastName;
+      if (ov.title != null) { if ('positionTitle' in c) c.positionTitle = ov.title; if ('jobTitle' in c) c.jobTitle = ov.title; }
+      if (ov.managerEmail != null) { if ('reportingManagerEmail' in c) c.reportingManagerEmail = ov.managerEmail; if ('managerEmail' in c) c.managerEmail = ov.managerEmail; }
+      return c;
+    }
+
+    var initRes = submitInitialRequest(_ov(SD_NH_INITIAL));
     if (!initRes || !initRes.success) throw new Error('submitInitialRequest: ' + (initRes && initRes.message));
     var wfId = initRes.workflowId;
     out.workflowId = wfId; out.steps.push('initial:ok');
 
     out.steps.push('idsetup:' + (submitEmployeeIDSetup(SD_NH_IDSETUP(wfId)) || {}).success);
-    out.steps.push('hrverif:' + (submitHRVerification(SD_NH_HRVERIF(wfId)) || {}).success);
-    out.steps.push('itconf:'  + (submitITConfirmation(SD_NH_ITCONF(wfId)) || {}).success);
-    var itRes = submitITSetup(SD_NH_ITSETUP(wfId));
+    out.steps.push('hrverif:' + (submitHRVerification(_ov(SD_NH_HRVERIF(wfId))) || {}).success);
+    out.steps.push('itconf:'  + (submitITConfirmation(_ov(SD_NH_ITCONF(wfId))) || {}).success);
+    var itRes = submitITSetup(_ov(SD_NH_ITSETUP(wfId)));
     if (!itRes || !itRes.success) throw new Error('submitITSetup: ' + (itRes && itRes.message));
     out.steps.push('itsetup:ok');
     SpreadsheetApp.flush();
