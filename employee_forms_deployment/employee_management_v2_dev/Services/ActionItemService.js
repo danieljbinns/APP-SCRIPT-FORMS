@@ -1024,21 +1024,31 @@ function completeMyTask(taskId, comments) {
 
     const assignedTo = String(data[rowIndex][AI.ASSIGNED_TO] || '');
     if (assignedTo) {
-      const directMatch = callerEmail.toLowerCase() === assignedTo.toLowerCase();
+      // Authorization to close, cheapest checks first:
+      //  1. directMatch — caller IS the assignee (rare; assignee is normally a group)
+      //  2. adminMatch  — caller is an app admin (CONFIG.ADMIN_EMAILS)
+      //  3. allowMatch  — caller is in the JR_TASK_CLOSERS allowlist (Script Property, CSV).
+      //     This authorizes a NON-ADMIN automation user (e.g. george.anthony@team-group.com,
+      //     or a future service account) WITHOUT requiring directory read access.
+      //  4. groupMatch  — caller is a member of the assignee group per the Admin SDK.
+      //     Works for admins and for a service account with domain-wide delegation, but a
+      //     plain non-admin caller cannot read directory memberships — hence (3) exists.
+      const cl = callerEmail.toLowerCase();
+      const directMatch = cl === assignedTo.toLowerCase();
+      const adminMatch  = (CONFIG.ADMIN_EMAILS || []).some(function (e) { return String(e).toLowerCase() === cl; });
+      const closers = String(ConfigurationService.getSetting('JR_TASK_CLOSERS') || '')
+                        .split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
+      const allowMatch = closers.indexOf(cl) !== -1;
       let groupMatch = false;
-      if (!directMatch) {
-        // Assignee is normally a Google Group (e.g. grp.forms.jrtitle@team-group.com).
-        // Verify caller membership via the Admin SDK Directory API — GroupsApp is not
-        // available in this project, and hasMember resolves domain aliases (a caller
-        // may be dbinns@robinsonsolutions.com yet a member of a team-group.com group).
-        // NOTE: the caller must have directory group-member read access for this to
-        // resolve; an unreadable membership is treated as "not a member".
+      if (!directMatch && !adminMatch && !allowMatch) {
         try {
           const r = AdminDirectory.Members.hasMember(assignedTo, callerEmail);
           groupMatch = !!(r && r.isMember);
         } catch (e) { /* assignee not a group, or membership not readable by caller */ }
       }
-      if (!directMatch && !groupMatch) return { success: false, message: 'Caller is not assigned to this task.' };
+      if (!directMatch && !adminMatch && !allowMatch && !groupMatch) {
+        return { success: false, message: 'Caller is not assigned to this task.' };
+      }
     }
 
     // Build a complete draft from the stored description — mark every item Complete

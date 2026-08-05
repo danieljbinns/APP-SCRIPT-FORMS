@@ -433,4 +433,8 @@ function disableMaintenanceMode() { PropertiesService.getScriptProperties().dele
 function setMaintenanceBypass(emails) { var v = emails || 'dbinns@robinsonsolutions.com'; PropertiesService.getScriptProperties().setProperty('MAINTENANCE_BYPASS_EMAILS', v); Logger.log('MAINTENANCE_BYPASS_EMAILS = ' + v); return { ok: true, value: v }; }
 function clearMaintenanceBypass()     { PropertiesService.getScriptProperties().deleteProperty('MAINTENANCE_BYPASS_EMAILS'); Logger.log('MAINTENANCE_BYPASS_EMAILS cleared'); return { ok: true }; }
 function suppressEmails()         { PropertiesService.getScriptProperties().setProperty('SUPPRESS_EMAILS_OVERRIDE', 'true');  Logger.log('SUPPRESS_EMAILS_OVERRIDE = true'); }
+// Authorized non-admin closers for completeMyTask (JR Title tasks), comma-separated emails.
+// e.g. setJrTaskClosers('george.anthony@team-group.com') — add the service account here later.
+function setJrTaskClosers(csv)    { var v = csv || ''; PropertiesService.getScriptProperties().setProperty('JR_TASK_CLOSERS', v); Logger.log('JR_TASK_CLOSERS = ' + v); return { ok: true, value: v }; }
+function getJrTaskClosers()        { return { value: PropertiesService.getScriptProperties().getProperty('JR_TASK_CLOSERS') || '' }; }
 function unsuppressEmails()       { PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE'); Logger.log('SUPPRESS_EMAILS_OVERRIDE cleared'); }
