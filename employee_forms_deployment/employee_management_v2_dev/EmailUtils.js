@@ -543,7 +543,16 @@ function sendFormEmail(options) {
     // E1: Build standardized subject — canonical format defined in buildEmailSubject()
     var enrichedSubject = buildEmailSubject(subject, contextData, subjectOpts);
 
-    const redirectEmail = ConfigurationService.getSetting('EMAIL_REDIRECT_ALL');
+    // Non-prod fail-safe: DEV/STAGING must NEVER reach real recipients. If no explicit
+    // EMAIL_REDIRECT_ALL is configured, force a redirect to the admin address rather than
+    // sending to the real 'to'. Only PROD (ENVIRONMENT === 'PROD') may send to real
+    // recipients without a redirect. Fail-safe, not fail-open: an unset property in a
+    // non-prod environment redirects instead of leaking mail to managers/specialists.
+    let redirectEmail = ConfigurationService.getSetting('EMAIL_REDIRECT_ALL');
+    if (!redirectEmail && typeof ENVIRONMENT !== 'undefined' && ENVIRONMENT !== 'PROD') {
+      redirectEmail = 'dbinns@team-group.com';
+      Logger.log('⚠ [EMAIL SAFE-GUARD] Non-prod (' + ENVIRONMENT + ') with EMAIL_REDIRECT_ALL unset — forcing redirect to dbinns@team-group.com');
+    }
     const finalTo = redirectEmail ? redirectEmail : to;
     const finalSubject = redirectEmail ? '[TEST] ' + enrichedSubject : enrichedSubject;
     
