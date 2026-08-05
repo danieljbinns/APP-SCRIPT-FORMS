@@ -1124,10 +1124,14 @@ function completeJrTitleForWorkflow(workflowId, comments) {
  * @param {string} comments
  * @returns {{ success: boolean, message?: string, taskId?: string }}
  */
-function jrCompleteViaSecret(workflowId, comments) {
+function jrCompleteViaSecret(idOrWorkflow, comments) {
   try {
-    if (!workflowId) return { success: false, message: 'workflowId is required' };
+    if (!idOrWorkflow) return { success: false, message: 'A task id (TK-…) or workflowId is required' };
     const CLOSED_BY = 'JR Automation (n8n)';
+    // n8n's "portalTicketId" is the TASK id (TK-…) parsed from the JR-assignment email's
+    // ?tid=TK-… link — NOT the workflowId. Accept either: TK- prefix → match by TASK_ID,
+    // otherwise match by WORKFLOW_ID. In both cases require formType=jr_title and Open.
+    const byTask = String(idOrWorkflow).indexOf('TK-') === 0;
     const ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
     const AI    = SCHEMA.ACTION_ITEMS;
@@ -1135,13 +1139,13 @@ function jrCompleteViaSecret(workflowId, comments) {
 
     let taskRow = null, taskId = null;
     for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
-      if (String(data[i][AI.WORKFLOW_ID]) === String(workflowId) &&
-          String(data[i][AI.FORM_TYPE])   === 'jr_title' &&
-          String(data[i][AI.STATUS])      === 'Open') {
-        taskRow = data[i]; taskId = String(data[i][AI.TASK_ID]); break;
-      }
+      if (String(data[i][AI.FORM_TYPE]) !== 'jr_title' || String(data[i][AI.STATUS]) !== 'Open') continue;
+      const hit = byTask
+        ? String(data[i][AI.TASK_ID])     === String(idOrWorkflow)
+        : String(data[i][AI.WORKFLOW_ID]) === String(idOrWorkflow);
+      if (hit) { taskRow = data[i]; taskId = String(data[i][AI.TASK_ID]); break; }
     }
-    if (!taskId) return { success: false, message: 'No open JR Title task found for workflow ' + workflowId };
+    if (!taskId) return { success: false, message: 'No open JR Title task found for ' + (byTask ? 'task ' : 'workflow ') + idOrWorkflow };
 
     let items = [];
     try { items = JSON.parse(String(taskRow[AI.DESCRIPTION] || '[]')); } catch (e) { items = []; }
