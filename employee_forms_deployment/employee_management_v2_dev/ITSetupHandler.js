@@ -532,7 +532,7 @@ function triggerSpecialists(workflowId, itData) {
     specialists.push({
       email: CONFIG.EMAILS.REVIEW_JR_TITLE,
       category: 'JR Title',
-      name: 'JR Title Assignment — ' + context.employeeName,
+      name: 'JR Assignment — ' + context.employeeName,   // subject must contain "JR Assignment" to match george's Gmail trigger (subject:"JR Assignment")
       description: JSON.stringify([
         'Verify and assign JR title'
       ]),
