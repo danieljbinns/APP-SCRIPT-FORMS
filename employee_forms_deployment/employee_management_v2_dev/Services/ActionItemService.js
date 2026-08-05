@@ -1027,7 +1027,16 @@ function completeMyTask(taskId, comments) {
       const directMatch = callerEmail.toLowerCase() === assignedTo.toLowerCase();
       let groupMatch = false;
       if (!directMatch) {
-        try { groupMatch = GroupsApp.getGroup(assignedTo).hasMember(callerEmail); } catch (e) { /* not a group or no access */ }
+        // Assignee is normally a Google Group (e.g. grp.forms.jrtitle@team-group.com).
+        // Verify caller membership via the Admin SDK Directory API — GroupsApp is not
+        // available in this project, and hasMember resolves domain aliases (a caller
+        // may be dbinns@robinsonsolutions.com yet a member of a team-group.com group).
+        // NOTE: the caller must have directory group-member read access for this to
+        // resolve; an unreadable membership is treated as "not a member".
+        try {
+          const r = AdminDirectory.Members.hasMember(assignedTo, callerEmail);
+          groupMatch = !!(r && r.isMember);
+        } catch (e) { /* assignee not a group, or membership not readable by caller */ }
       }
       if (!directMatch && !groupMatch) return { success: false, message: 'Caller is not assigned to this task.' };
     }

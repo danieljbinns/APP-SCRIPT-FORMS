@@ -1243,8 +1243,8 @@ results.push(runScenario('JR TITLE SPLIT — separate task + completeMyTask clos
   }
 
   // ── completeMyTask (N8N Execution API entry point) ───────────────────────────
-  // Mock GroupsApp so the group-assignee membership check passes for the caller.
-  _ctx.GroupsApp = { getGroup: () => ({ hasMember: () => true }) };
+  // Mock the Admin SDK membership check so the group-assignee check passes for the caller.
+  _ctx.AdminDirectory = { Members: { hasMember: () => ({ isMember: true }) } };
 
   const jrTaskId     = jr     ? String(jr.values[1])     : 'TK-NONE';
   const reviewTaskId = review ? String(review.values[1]) : 'TK-NONE';

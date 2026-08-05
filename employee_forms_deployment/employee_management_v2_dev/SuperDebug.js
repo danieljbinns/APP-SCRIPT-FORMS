@@ -833,7 +833,7 @@ function runSuperDebugNewHire() {
     // Verify all expected AIs created by triggerSpecialists
     // Safety always exists; new ones: Finance, Business Cards, Fleet, 30/60/90 Review, Purchasing, WIS
     // ID Setup (SiteDocs Account Setup) is NOT created for New Hire — ID Setup form handles SiteDocs there
-    _sdVerifyAI(wfId, ['Safety', 'Finance', 'Business Cards', 'Fleet', '30/60/90 Review', 'Purchasing', 'WIS']);
+    _sdVerifyAI(wfId, ['Safety', 'Finance', 'Business Cards', 'Fleet', '30/60/90 Review', 'JR Title', 'Purchasing', 'WIS']);
     _sdVerifyWorkflow(wfId, 'In Progress', 'Specialist Forms Needed');
 
     Utilities.sleep(500);
@@ -872,6 +872,92 @@ function runSuperDebugNewHire() {
   }
 
   return _sdSummary('New Hire — ' + (wfId || '(no wfId)'));
+}
+
+/**
+ * Focused LIVE E2E for the JR Title split + completeMyTask (N8N entry point).
+ * Drives the real New Hire chain (plan306090=Yes) through submitITSetup so
+ * triggerSpecialists creates BOTH the 30/60/90 Review and the standalone JR Title
+ * action items, then closes ONLY the JR task via completeMyTask() — exercising the
+ * real group-membership auth path (caller must be a member of grp.forms.jrtitle).
+ * Verifies the 30/60/90 task stays Open, and that completeMyTask rejects a
+ * non-jr_title task. Returns a structured result (no cleanup — call
+ * cleanupSuperDebugAll() afterward). Safe: email redirect confirmed before running.
+ */
+function sdRunJrTitleE2E() {
+  _SD_RESULTS = {}; _SD_EMAIL_COUNTS = {};
+  var out = { steps: [] };
+  try {
+    checkSuperDebugEmailSafety(); // throws unless redirect/suppress active
+
+    var initRes = submitInitialRequest(SD_NH_INITIAL);
+    if (!initRes || !initRes.success) throw new Error('submitInitialRequest: ' + (initRes && initRes.message));
+    var wfId = initRes.workflowId;
+    out.workflowId = wfId; out.steps.push('initial:ok');
+
+    out.steps.push('idsetup:' + (submitEmployeeIDSetup(SD_NH_IDSETUP(wfId)) || {}).success);
+    out.steps.push('hrverif:' + (submitHRVerification(SD_NH_HRVERIF(wfId)) || {}).success);
+    out.steps.push('itconf:'  + (submitITConfirmation(SD_NH_ITCONF(wfId)) || {}).success);
+    var itRes = submitITSetup(SD_NH_ITSETUP(wfId));
+    if (!itRes || !itRes.success) throw new Error('submitITSetup: ' + (itRes && itRes.message));
+    out.steps.push('itsetup:ok');
+    SpreadsheetApp.flush();
+
+    // Locate the JR Title and 30/60/90 action items created by triggerSpecialists
+    var AI = SCHEMA.ACTION_ITEMS;
+    var aiSheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    var rows = aiSheet.getDataRange().getValues();
+    var jr = null, review = null;
+    for (var i = SCHEMA.ROW.FIRST_DATA; i < rows.length; i++) {
+      if (rows[i][AI.WORKFLOW_ID] !== wfId) continue;
+      if (String(rows[i][AI.FORM_TYPE]) === 'jr_title')      jr = rows[i];
+      if (String(rows[i][AI.FORM_TYPE]) === 'review_306090') review = rows[i];
+    }
+    out.jrCreated     = !!jr;
+    out.reviewCreated = !!review;
+    out.jrTaskId      = jr     ? String(jr[AI.TASK_ID])     : null;
+    out.reviewTaskId  = review ? String(review[AI.TASK_ID]) : null;
+    out.jrCategory    = jr     ? String(jr[AI.CATEGORY])    : null;
+    out.jrAssignee    = jr     ? String(jr[AI.ASSIGNED_TO]) : null;
+    out.jrDescription = jr     ? String(jr[AI.DESCRIPTION]) : null;
+    if (!jr) throw new Error('JR Title action item was NOT created by triggerSpecialists');
+
+    // Close the JR task via the N8N Execution-API entry point
+    out.completeMyTask = completeMyTask(out.jrTaskId, 'Live E2E: JR title verified & assigned');
+    SpreadsheetApp.flush();
+
+    // Re-read statuses to confirm independent closure
+    rows = aiSheet.getDataRange().getValues();
+    for (var j = SCHEMA.ROW.FIRST_DATA; j < rows.length; j++) {
+      if (String(rows[j][AI.TASK_ID]) === out.jrTaskId)     out.jrStatusAfter     = String(rows[j][AI.STATUS]);
+      if (String(rows[j][AI.TASK_ID]) === out.reviewTaskId) out.reviewStatusAfter = String(rows[j][AI.STATUS]);
+    }
+
+    // Negative: completeMyTask must REJECT a non-jr_title task
+    if (out.reviewTaskId) out.guardReject = completeMyTask(out.reviewTaskId, 'should be rejected');
+
+  } catch (e) {
+    out.error = e.message;
+  }
+  out.emailCounts = _SD_EMAIL_COUNTS;
+  return out;
+}
+
+/**
+ * Diagnostic: which group-membership API works under the current auth context?
+ * completeMyTask's assignee check failed on a group-assigned task; this tells us
+ * whether GroupsApp or AdminDirectory.Members.hasMember is the reliable path.
+ */
+function sdCheckGroupMembership() {
+  var caller = Session.getActiveUser().getEmail();
+  var eff    = Session.getEffectiveUser().getEmail();
+  var group  = 'grp.forms.jrtitle@team-group.com';
+  var out = { caller: caller, effective: eff, group: group };
+  try { out.groupsApp = GroupsApp.getGroup(group).hasMember(caller); }
+  catch (e) { out.groupsAppError = e.message; }
+  try { var r = AdminDirectory.Members.hasMember(group, caller); out.adminDir = r && r.isMember; }
+  catch (e) { out.adminDirError = e.message; }
+  return out;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
