@@ -149,7 +149,7 @@ function getRequestDetails(workflowId) {
 
         const SPECIALIST_CATS = new Set([
           // Current category names (post-rename)
-          'Safety', 'Finance', 'Business Cards', 'Fleet', '30/60/90 Review',
+          'Safety', 'Finance', 'Business Cards', 'Fleet', '30/60/90 Review', 'JR Title',
           'Purchasing', 'IT Confirmation', 'WIS',
           // Legacy category names — pre-rename workflows already written to the sheet
           'Credit Card', 'Fleetio', 'Jonas', 'SiteDocs'
