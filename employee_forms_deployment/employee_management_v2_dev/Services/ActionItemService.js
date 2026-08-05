@@ -1072,3 +1072,42 @@ function completeMyTask(taskId, comments) {
     return { success: false, message: e.message };
   }
 }
+
+/**
+ * External closure by WORKFLOW ID — the identifier automation (n8n) actually carries.
+ * Resolves the single open jr_title action item for the given workflow and closes it
+ * via completeMyTask (so all auth, formType, and downstream-effect logic is reused).
+ * This is the entry point george's n8n node calls: it already has the portal workflowId
+ * (its "portalTicketId"), not a taskId.
+ *
+ * @param {string} workflowId - Portal workflow ID (e.g. 'NEW_EMP_...')
+ * @param {string} comments   - Optional completion note
+ * @returns {{ success: boolean, message?: string, taskId?: string }}
+ */
+function completeJrTitleForWorkflow(workflowId, comments) {
+  try {
+    if (!workflowId) return { success: false, message: 'workflowId is required' };
+    const ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    const AI    = SCHEMA.ACTION_ITEMS;
+    const data  = sheet.getDataRange().getValues();
+
+    let taskId = null;
+    for (let i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+      if (String(data[i][AI.WORKFLOW_ID]) === String(workflowId) &&
+          String(data[i][AI.FORM_TYPE])   === 'jr_title' &&
+          String(data[i][AI.STATUS])      === 'Open') {
+        taskId = String(data[i][AI.TASK_ID]);
+        break;
+      }
+    }
+    if (!taskId) return { success: false, message: 'No open JR Title task found for workflow ' + workflowId };
+
+    const res = completeMyTask(taskId, comments || 'JR title verified & assigned (portal automation)');
+    if (res && res.success) res.taskId = taskId;
+    return res;
+  } catch (e) {
+    Logger.log('[completeJrTitleForWorkflow] ERROR: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}

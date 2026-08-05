@@ -884,9 +884,9 @@ function runSuperDebugNewHire() {
  * non-jr_title task. Returns a structured result (no cleanup — call
  * cleanupSuperDebugAll() afterward). Safe: email redirect confirmed before running.
  */
-function sdRunJrTitleE2E() {
+function sdRunJrTitleE2E(byWorkflow) {
   _SD_RESULTS = {}; _SD_EMAIL_COUNTS = {};
-  var out = { steps: [] };
+  var out = { steps: [], closedVia: byWorkflow ? 'completeJrTitleForWorkflow' : 'completeMyTask' };
   try {
     checkSuperDebugEmailSafety(); // throws unless redirect/suppress active
 
@@ -922,8 +922,11 @@ function sdRunJrTitleE2E() {
     out.jrDescription = jr     ? String(jr[AI.DESCRIPTION]) : null;
     if (!jr) throw new Error('JR Title action item was NOT created by triggerSpecialists');
 
-    // Close the JR task via the N8N Execution-API entry point
-    out.completeMyTask = completeMyTask(out.jrTaskId, 'Live E2E: JR title verified & assigned');
+    // Close the JR task via the N8N Execution-API entry point.
+    // byWorkflow=true exercises completeJrTitleForWorkflow(wfId) — george's actual call path.
+    out.completeMyTask = byWorkflow
+      ? completeJrTitleForWorkflow(wfId, 'Live E2E: JR title verified & assigned')
+      : completeMyTask(out.jrTaskId, 'Live E2E: JR title verified & assigned');
     SpreadsheetApp.flush();
 
     // Re-read statuses to confirm independent closure

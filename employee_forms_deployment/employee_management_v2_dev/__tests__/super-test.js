@@ -1249,10 +1249,13 @@ results.push(runScenario('JR TITLE SPLIT — separate task + completeMyTask clos
   const jrTaskId     = jr     ? String(jr.values[1])     : 'TK-NONE';
   const reviewTaskId = review ? String(review.values[1]) : 'TK-NONE';
 
-  // 1. Happy path — close the JR task via the N8N entry point
-  const closeRes = _ctx.completeMyTask(jrTaskId, 'JR title assigned via automation');
-  console.log('  completeMyTask(jr) → ' + JSON.stringify(closeRes));
-  truthy('completeMyTask(jr) returns success', closeRes && closeRes.success === true);
+  // 1. Happy path — close via completeJrTitleForWorkflow(workflowId), the entry point
+  //    george's n8n node uses (it has the workflowId, not a taskId). This exercises the
+  //    resolver AND delegates to completeMyTask, so both are covered.
+  const closeRes = _ctx.completeJrTitleForWorkflow(WF_ID, 'JR title assigned via automation');
+  console.log('  completeJrTitleForWorkflow(wf) → ' + JSON.stringify(closeRes));
+  truthy('completeJrTitleForWorkflow(wf) returns success', closeRes && closeRes.success === true);
+  eq('resolved the jr_title taskId', closeRes && closeRes.taskId, jrTaskId);
 
   // Re-read live Action Items rows to confirm independent status changes.
   // Run inside the vm context (CONFIG is a context-local const, not a _ctx property).
