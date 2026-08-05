@@ -1171,6 +1171,115 @@ results.push(runScenario('HR VERIFICATION — Hourly+No System Access (Complete 
 }));
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  SCENARIO: JR Title split — standalone action item + completeMyTask (N8N entry)
+// ─────────────────────────────────────────────────────────────────────────────
+results.push(runScenario('JR TITLE SPLIT — separate task + completeMyTask closure', () => {
+  seedReferenceSheets();
+
+  const WF_ID = 'NEW_EMP_20260616-140000_JR1';
+
+  _rt.captures.seedSheet('Workflows', [
+    makeWorkflowHeaderRow(),
+    makeWorkflowRow(WF_ID, 'NEW_EMP', 'New Employee Onboarding',
+                    'dbinns@team-group.com', 'In Progress', 'IT Setup Needed', 'Jamie Review')
+  ]);
+
+  // IR row with plan306090='Yes' (col 47) → triggerSpecialists must create BOTH the
+  // 30/60/90 Review task AND the standalone JR Title task.
+  const irRow = makeIRRow(WF_ID, 'INIT_JR1', 'Jamie', 'Review', '2026-08-01',
+                          'Ottawa Main', 'Bob Manager', 'mgr@team-group.com',
+                          'Direct Hire', 'Salary', '', 'Analyst', 'Yes');
+  irRow[47] = 'Yes'; // PLAN_306090
+  _rt.captures.seedSheet('Initial Requests', [ makeIRHeaderRow(), irRow ]);
+
+  _rt.captures.seedSheet('HR Verification Results', [
+    makeHRResultHeaderRow(),
+    [WF_ID, 'HR_JR1', new Date(), '300099', 'Jamie Review',
+     'Bob Manager', 'mgr@team-group.com', 'Analyst', '', 'hr@team-group.com']
+  ]);
+
+  const payload = {
+    workflowId: WF_ID,
+    Email_Created: 'Yes', Email_Username: 'jreview', Email_Domain: '@team-group.com',
+    Email_Temp_Password: 'Temp#2026!',
+    Computer_Assigned: 'No', Computer_Serial: '', Computer_Model: '', Computer_Type: '',
+    Phone_Assigned: 'No', Phone_Carrier: '', Phone_Model: '', Phone_Number: '', Phone_VM_Password: '',
+    BOSS_Access: 'No', Incidents_Access: 'No', CAA_Access: 'No',
+    Delivery_App_Access: 'No', Net_Promoter_Score_Access: 'No',
+    IT_Notes: 'JR split test'
+  };
+
+  const result = _ctx.submitITSetup(payload);
+  console.log('\n  RETURN: ' + JSON.stringify(result));
+  truthy('submitITSetup returns success', result && result.success);
+
+  // ── Action item split: 30/60/90 Review AND JR Title, distinct tasks ──────────
+  // Row layout (createActionItem): [0]wfId [1]taskId [2]category [3]name
+  //                                [4]description [5]assignedTo [6]status ... [12]formType
+  const aiAppends = _rt.captures.getAppendsFor('Action Items');
+  console.log('  Action items created: ' +
+    aiAppends.map(w => w.values[2] + '/' + w.values[12]).join(' | '));
+
+  const review = aiAppends.find(w => String(w.values[2]) === '30/60/90 Review');
+  const jr     = aiAppends.find(w => String(w.values[2]) === 'JR Title');
+
+  truthy('30/60/90 Review action item created', review !== undefined);
+  truthy('JR Title action item created (SEPARATE task)', jr !== undefined);
+
+  if (review) {
+    eq('30/60/90 formType = review_306090', String(review.values[12]), 'review_306090');
+    contains('30/60/90 has "Create 30/60/90" item', String(review.values[4]), 'Create 30/60/90');
+    contains('30/60/90 has "Schedule review" item', String(review.values[4]), 'Schedule review');
+    truthy('30/60/90 does NOT contain "Verify and assign JR title"',
+      !String(review.values[4]).includes('Verify and assign JR title'));
+  }
+  if (jr) {
+    eq('JR Title formType = jr_title', String(jr.values[12]), 'jr_title');
+    eq('JR Title assignee = grp.forms.jrtitle', String(jr.values[5]), 'grp.forms.jrtitle@team-group.com');
+    contains('JR Title checklist = "Verify and assign JR title"',
+      String(jr.values[4]), 'Verify and assign JR title');
+    truthy('JR Title does NOT contain the 30/60/90 plan item',
+      !String(jr.values[4]).includes('Create 30/60/90'));
+  }
+
+  // ── completeMyTask (N8N Execution API entry point) ───────────────────────────
+  // Mock GroupsApp so the group-assignee membership check passes for the caller.
+  _ctx.GroupsApp = { getGroup: () => ({ hasMember: () => true }) };
+
+  const jrTaskId     = jr     ? String(jr.values[1])     : 'TK-NONE';
+  const reviewTaskId = review ? String(review.values[1]) : 'TK-NONE';
+
+  // 1. Happy path — close the JR task via the N8N entry point
+  const closeRes = _ctx.completeMyTask(jrTaskId, 'JR title assigned via automation');
+  console.log('  completeMyTask(jr) → ' + JSON.stringify(closeRes));
+  truthy('completeMyTask(jr) returns success', closeRes && closeRes.success === true);
+
+  // Re-read live Action Items rows to confirm independent status changes.
+  // Run inside the vm context (CONFIG is a context-local const, not a _ctx property).
+  const aiRows = vm.runInContext(
+    'SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS).getDataRange().getValues()',
+    _ctx);
+  const jrLive     = aiRows.find(r => String(r[1]) === jrTaskId);
+  const reviewLive = aiRows.find(r => String(r[1]) === reviewTaskId);
+  eq('JR task now Closed', jrLive ? String(jrLive[6]) : '(missing)', 'Closed');
+  eq('30/60/90 task still Open (unaffected)', reviewLive ? String(reviewLive[6]) : '(missing)', 'Open');
+
+  // 2. formType guard — completeMyTask must REJECT a non-jr_title task
+  const guardRes = _ctx.completeMyTask(reviewTaskId, 'should be rejected');
+  console.log('  completeMyTask(review) → ' + JSON.stringify(guardRes));
+  truthy('completeMyTask(review_306090) is rejected', guardRes && guardRes.success === false);
+  truthy('rejection message names JR Title only',
+    guardRes && /jr\s*title/i.test(guardRes.message || ''));
+
+  // 3. not-found guard
+  const nfRes = _ctx.completeMyTask('TK-NONEXIST', 'x');
+  truthy('completeMyTask(missing id) → not-found failure',
+    nfRes && nfRes.success === false && /not found/i.test(nfRes.message || ''));
+
+  showEmails();
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  FINAL REPORT
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n' + '═'.repeat(72));
