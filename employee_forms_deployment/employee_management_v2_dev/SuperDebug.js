@@ -363,6 +363,33 @@ function checkSuperDebugEmailSafety() {
   return { suppressed: suppressed, redirect: redirect };
 }
 
+/**
+ * Diagnostic: locate an action item by task id in the ACTIVE dev spreadsheet and return
+ * its status/closedBy/etc. Also returns the active spreadsheet id (to resolve which sheet
+ * the SuperDebug runs actually write to). Read-only.
+ */
+function sdFindTask(taskId) {
+  var AI = SCHEMA.ACTION_ITEMS;
+  var ssId = CONFIG.SPREADSHEET_ID;
+  var out = { spreadsheetId: ssId, taskId: taskId, found: false };
+  var sheet = SpreadsheetApp.openById(ssId).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+  var data = sheet.getDataRange().getValues();
+  for (var i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+    if (String(data[i][AI.TASK_ID]) === String(taskId)) {
+      out.found      = true;
+      out.workflowId = String(data[i][AI.WORKFLOW_ID] || '');
+      out.category   = String(data[i][AI.CATEGORY]    || '');
+      out.formType   = String(data[i][AI.FORM_TYPE]   || '');
+      out.status     = String(data[i][AI.STATUS]      || '');
+      out.completed  = String(data[i][AI.COMPLETED_DATE] || '');
+      out.closedBy   = String(data[i][AI.CLOSED_BY]   || '');
+      out.notes      = String(data[i][AI.NOTES]       || '');
+      break;
+    }
+  }
+  return out;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CLOSE ALL ACTION ITEMS HELPER (logs each close)
 // ─────────────────────────────────────────────────────────────────────────────
