@@ -69,3 +69,19 @@ n8n workflow `yFfGBQFG7COFDOjk`, node **"Mark Portal JR Complete"**: swap `url` 
 
 ---
 **Validated pre-merge (dev):** 312/0 field-map, 159/0 super-test, 193/0 live SuperDebug (all 4 workflows), ProdSmokeTest 4/4, JR n8n loop end-to-end. Terminations schema hazard resolved. See [[jr-portal-automation-endpoint]], [[sheet-access-name-vs-index]] in memory.
+
+---
+
+## Post-deploy status — EXECUTED 2026-08-06
+
+**Deployed:** prod web-app **@74** (portal, `DOMAIN` — the bookmarked URL) + **@75** (`PROD JR portal automation endpoint (doPost anonymous)`). Rollback anchor = **@73**. (A HEAD deployment `AKfycbwIDtch…` also exists, auto.)
+
+**Went LIVE 2026-08-06 (~11:00 ET):** `MAINTENANCE_MODE` cleared (`disableMaintenanceMode`), `EMAIL_REDIRECT_ALL` cleared (`clearEmailRedirect`), suppression off → real portal + real emails. `ConfigurationService.getSetting` reads Script Properties fresh (no cache), so both flips took effect on the next request. Sanity check: `checkSuperDebugEmailSafety` now **throws** `[SD] EMAIL SAFETY FAIL — neither suppression nor redirect is active` — expected once live (that guard only passes while a test-guard is active, so its failure confirms we're live).
+
+**Automation endpoint (@75):** `https://script.google.com/macros/s/AKfycbzWms2wnt0Z6VsxE2S_iF2IpCguulhKGi7O-nl6c14WszXl3TwJAqluOe63wKNW3PR8sw/exec` — POST, **secret in the JSON body** (Apps Script `doPost` can't read custom headers). `PORTAL_SHARED_SECRET` set on prod (value NOT in repo). Verified live: bad secret → `{"success":false,"message":"Unauthorized"}`; good secret + bogus id → `No open JR Title task found`. ⚠️ **Do NOT "edit deployment → set latest version → Update" on @75** — HEAD manifest is `DOMAIN`, so re-versioning it would flip the endpoint to login-required and break the anonymous POST. It is stable as-is; updating a deployment keeps its URL, only a brand-new deployment mints a new one.
+
+**n8n (staging instance `n8n-staging.team-group.com`):** live JR closer = `BOSS JR Assignment (COPY - PROD portal)` (`J7RU99n01pq9Xk3D`), moved into the **Team Group** project (`kOteX9ImmtqV980I`), active on webhook `boss-assign`. It is a faithful copy of George's original `BOSS JR Assignment` (`FSX2QncvHA8MoMeu`, now **inactive**) with only the `Mark Portal JR Complete` node repointed to the @75 endpoint. Ingestion `JR Assignment Automation` (`4InJ9cdAr5YxVgoT`) active. **Handover brief for George → `HANDOVER_JR_CLONE.md`** (same folder).
+
+**Temp test aid reverted:** the `EmailUtils.js` JR-group passthrough used during George's offline test was reverted 2026-08-06 (prod HEAD re-synced via `clasp push`).
+
+**Known leftovers (intentional):** `MAINTENANCE_BYPASS_EMAILS=dbinns` left set (inert while live; handy for the next maintenance window). GA Videos test records kept in the prod sheet (`TK-8247F3AB` closed, `TK-6A093E83` open) per decision 2026-08-06 — clean later with `cleanupSuperDebugWorkflow('<wfid>')`.
