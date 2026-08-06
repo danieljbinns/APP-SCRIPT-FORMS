@@ -573,3 +573,322 @@ function migrateEquipmentRequestsToInitialRequests() {
   Logger.log('[migrateEquip] Done — migrated: ' + migrated + ', skipped (already existed): ' + skipped);
   return { migrated: migrated, skipped: skipped };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// migrateFromProdFull
+//
+// Copies ALL data sheets from prod into dev exactly as-is.
+// Run AFTER wipeDevSheets() so dev is already blank.
+//
+// Strategy: generic column-safe copy — reads prod column count dynamically.
+// If dev has MORE columns than prod (e.g. BOSS_TRAINING_ONLY, BOSS_DETAILS),
+// the extra dev columns are left blank. Prod data is never truncated.
+// If prod has MORE columns than dev (shouldn't happen, but handled), only
+// the dev column count is written.
+//
+// Sheets copied:
+//   Workflows, Initial Requests, ID Setup Results, HR Verification Results,
+//   IT Results, Action Items, Terminations, Position Changes,
+//   Termination Approval Results, Position Change Approval Result,
+//   IT Confirmation Results, Equipment_Requests
+//
+// Dashboard_View is intentionally skipped — it is a materialized cache
+// rebuilt by syncWorkflowState, not a source-of-truth sheet.
+// ─────────────────────────────────────────────────────────────────────────────
+function migrateFromProdFull() {
+  var prod = SpreadsheetApp.openById(PROD_SPREADSHEET_ID);
+  var dev  = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+
+  var SHEETS = [
+    'Workflows',
+    'Initial Requests',
+    'ID Setup Results',
+    'HR Verification Results',
+    'IT Results',
+    'Action Items',
+    'Terminations',
+    'Position Changes',
+    'Termination Approval Results',
+    'Position Change Approval Result',
+    'IT Confirmation Results',
+    'Equipment_Requests'
+  ];
+
+  var results = [];
+
+  SHEETS.forEach(function(name) {
+    var src = prod.getSheetByName(name);
+    var dst = dev.getSheetByName(name);
+
+    if (!src) { results.push('[SKIP] ' + name + ' — not found in prod'); return; }
+    if (!dst) { results.push('[SKIP] ' + name + ' — not found in dev');  return; }
+
+    var srcLastRow = src.getLastRow();
+    if (srcLastRow <= 1) { results.push('[EMPTY] ' + name + ' — no data in prod'); return; }
+
+    var prodCols = src.getLastColumn();
+    var devCols  = dst.getLastColumn();
+    var writeCols = Math.max(prodCols, devCols); // ensure we cover all dev columns
+
+    // Read prod data (all prod columns)
+    var rows = src.getRange(2, 1, srcLastRow - 1, prodCols).getDisplayValues();
+
+    // If dev has more columns than prod, pad each row with blanks
+    if (devCols > prodCols) {
+      var pad = devCols - prodCols;
+      rows = rows.map(function(row) {
+        var extra = [];
+        for (var i = 0; i < pad; i++) extra.push('');
+        return row.concat(extra);
+      });
+      writeCols = devCols;
+    }
+
+    dst.getRange(2, 1, rows.length, writeCols).setValues(rows);
+    results.push('[OK] ' + name + ' — ' + rows.length + ' rows (prod=' + prodCols + ' cols, dev=' + devCols + ' cols)');
+  });
+
+  Logger.log('=== migrateFromProdFull complete ===');
+  results.forEach(function(r) { Logger.log(r); });
+  return { ok: true, results: results };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// syncDashboardViewBatch
+//
+// Rebuilds Dashboard_View in batches of 80 workflows per call.
+// manuallySyncAllWorkflows() times out via gas_runner.py for large datasets.
+// Call this repeatedly (offset 0, 80, 160, ...) until done is true.
+//
+// Returns { done, processed, total, nextOffset }
+// ─────────────────────────────────────────────────────────────────────────────
+function syncDashboardViewBatch(offset, batchSize) {
+  offset    = offset    || 0;
+  batchSize = batchSize || 80;
+
+  var ss      = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var wfSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+  if (!wfSheet) return { error: 'Workflows sheet not found' };
+
+  var data = wfSheet.getDataRange().getValues();
+  var total = data.length - 1; // minus header
+  var end   = Math.min(offset + batchSize, total);
+
+  for (var i = offset; i < end; i++) {
+    var wfId     = String(data[i + 1][0] || '');
+    var wfStatus = String(data[i + 1][SCHEMA.WORKFLOWS.STATUS] || '');
+    if (wfId && wfStatus !== 'Inactive') {
+      try { syncWorkflowState(wfId); } catch(e) { Logger.log('syncFail: ' + wfId + ' — ' + e.message); }
+    }
+  }
+
+  var done       = end >= total;
+  var nextOffset = done ? total : end;
+  Logger.log('[syncBatch] offset=' + offset + ' end=' + end + ' total=' + total + ' done=' + done);
+  return { done: done, processed: end - offset, total: total, nextOffset: nextOffset };
+}
+
+/**
+ * Stateful batch sync — reads/writes offset from Script Properties so
+ * calling this repeatedly always advances to the next batch.
+ * Call syncDashboardViewReset() first to start from the beginning.
+ */
+function syncDashboardViewNext() {
+  var props  = PropertiesService.getScriptProperties();
+  var offset = parseInt(props.getProperty('DASH_SYNC_OFFSET') || '0');
+  var result = syncDashboardViewBatch(offset, 80);
+  props.setProperty('DASH_SYNC_OFFSET', String(result.nextOffset));
+  if (result.done) props.deleteProperty('DASH_SYNC_OFFSET');
+  return result;
+}
+
+function syncDashboardViewReset() {
+  PropertiesService.getScriptProperties().deleteProperty('DASH_SYNC_OFFSET');
+  return { reset: true, message: 'Call syncDashboardViewNext repeatedly until done=true' };
+}
+
+/** Check how many rows Dashboard_View currently has */
+function getDashboardViewRowCount() {
+  var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.DASHBOARD_VIEW);
+  if (!sheet) return { rows: 0, error: 'sheet not found' };
+  return { rows: Math.max(0, sheet.getLastRow() - 1) }; // minus header
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// migrateActionItemCategories (dryRun=true to preview, false to apply)
+//
+// One-time migration: renames old action item category strings to the new
+// names introduced in the category-rename refactor. Targets OPEN items only
+// (closed items are historical record and don't affect dashboard counts).
+//
+// Mapping (old → new):
+//   'Credit Card'  → 'Finance'       (all workflows)
+//   'Fleetio'      → 'Fleet'         (all workflows)
+//   'Jonas'        → 'Purchasing'    (all workflows)
+//   'WIS User'     → 'Deactivation'  (TERM_ workflows — Employee Deactivation)
+//   'WIS User'     → 'ID Setup'      (EQUIP_REQ_ / CHANGE_ — SiteDocs account)
+//   'Finance'      → 'Purchasing'    (TERM_ only — old EOE Jonas used 'Finance')
+//
+// Run dryRun=true first to see what would change without writing anything.
+// Run dryRun=false to apply. Returns summary of changes made/found.
+// ─────────────────────────────────────────────────────────────────────────────
+function migrateActionItemCategories(dryRun) {
+  if (dryRun === undefined) dryRun = true; // safe default — always preview first
+  var ss      = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var sheet   = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+  if (!sheet) { Logger.log('[migrate] Action Items sheet not found'); return { error: 'sheet not found' }; }
+
+  var data    = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var catIdx  = headers.indexOf('Category');
+  var wfIdx   = headers.indexOf('Workflow ID');
+  var stIdx   = headers.indexOf('Status');
+  var nmIdx   = headers.indexOf('Task Name');
+
+  if (catIdx < 0 || wfIdx < 0 || stIdx < 0) {
+    Logger.log('[migrate] Required columns not found'); return { error: 'missing columns' };
+  }
+
+  var changes = [];
+  var skipped = 0;
+
+  for (var i = 1; i < data.length; i++) {
+    var status   = String(data[i][stIdx] || '');
+    var category = String(data[i][catIdx] || '');
+    var wfId     = String(data[i][wfIdx]  || '');
+    var taskName = String(data[i][nmIdx]  || '');
+
+    // Only migrate open items — closed rows are historical record
+    if (status !== 'Open') { skipped++; continue; }
+    if (!category || !wfId) { skipped++; continue; }
+
+    var newCat = null;
+
+    if (category === 'Credit Card')  newCat = 'Finance';
+    else if (category === 'Fleetio') newCat = 'Fleet';
+    else if (category === 'Jonas')   newCat = 'Purchasing';
+    else if (category === 'WIS User') {
+      // TERM_ = Employee Deactivation (SiteDocs/DSS/BOSS WIS bundle)
+      // EQUIP_REQ_ / CHANGE_ = SiteDocs Account Setup
+      newCat = wfId.startsWith('TERM_') ? 'Deactivation' : 'ID Setup';
+    }
+    else if (category === 'Finance' && wfId.startsWith('TERM_')) {
+      // Old EOE code used 'Finance' for Jonas/Purchasing deactivation.
+      // In new code 'Finance' = Credit Card team — do NOT rename non-TERM_ Finance.
+      newCat = 'Purchasing';
+    }
+
+    if (!newCat) { skipped++; continue; }
+
+    changes.push({
+      row:      i + 1,         // 1-based sheet row
+      wfId:     wfId,
+      taskName: taskName,
+      oldCat:   category,
+      newCat:   newCat
+    });
+
+    if (!dryRun) {
+      sheet.getRange(i + 1, catIdx + 1).setValue(newCat);
+    }
+  }
+
+  // Summary log
+  Logger.log('[migrate] mode=' + (dryRun ? 'DRY RUN' : 'APPLIED') +
+             ' | changes=' + changes.length + ' | skipped=' + skipped);
+  changes.forEach(function(c) {
+    Logger.log('[migrate]  ' + (dryRun ? 'WOULD' : 'DID') + ' rename row ' + c.row +
+               ' | wf=' + c.wfId + ' | "' + c.oldCat + '" → "' + c.newCat + '"' +
+               ' | task=' + c.taskName.substring(0, 50));
+  });
+
+  return {
+    mode:    dryRun ? 'dry_run' : 'applied',
+    changes: changes.length,
+    skipped: skipped,
+    detail:  changes
+  };
+}
+
+/**
+ * Convenience wrappers callable from gas_runner.py
+ */
+function migrateActionItemCategoriesDryRun()  { return migrateActionItemCategories(true);  }
+function migrateActionItemCategoriesApply()    { return migrateActionItemCategories(false); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// migrateAddMissingHeaders
+//
+// Adds column headers that were introduced in this release but not yet present
+// in the live sheet (they auto-created when first written but have blank headers):
+//
+//   Initial Requests col 55 (index 54) — 'BOSS Training User Only'
+//     Added in ER-5: controls whether IT Setup form hides full BOSS fields.
+//
+//   IT Results col 23 (index 22) — 'BOSS Details'
+//     Stores JSON of BOSS committee/cost-sheet/trip-reports/grievances confirmations.
+//     Already written correctly; header was just never set.
+//
+// Safe to run multiple times — only writes if the header cell is blank.
+// ─────────────────────────────────────────────────────────────────────────────
+function migrateAddMissingHeaders() {
+  var ss  = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var log = [];
+
+  function ensureHeader(sheetName, colIndex, expectedHeader) {
+    var sheet = ss.getSheetByName(sheetName);
+    if (!sheet) { log.push('SKIP — sheet not found: ' + sheetName); return; }
+    var lastCol  = sheet.getLastColumn();
+    var colNum   = colIndex + 1; // 1-based for getRange
+    // If the column doesn't exist yet, extend the sheet first
+    if (colNum > lastCol) {
+      sheet.getRange(1, colNum).setValue(expectedHeader);
+      log.push('ADDED col ' + colNum + ' header "' + expectedHeader + '" to ' + sheetName + ' (extended sheet)');
+      return;
+    }
+    var current = sheet.getRange(1, colNum).getValue();
+    if (current === '' || current === null || current === undefined) {
+      sheet.getRange(1, colNum).setValue(expectedHeader);
+      log.push('SET header "' + expectedHeader + '" at col ' + colNum + ' in ' + sheetName);
+    } else if (current === expectedHeader) {
+      log.push('OK — "' + expectedHeader + '" already set at col ' + colNum + ' in ' + sheetName);
+    } else {
+      log.push('WARN — col ' + colNum + ' in ' + sheetName + ' has unexpected value "' + current + '" — not overwriting');
+    }
+  }
+
+  ensureHeader(CONFIG.SHEETS.INITIAL_REQUESTS, SCHEMA.INITIAL_REQUESTS.BOSS_TRAINING_ONLY, 'BOSS Training User Only');
+  ensureHeader(CONFIG.SHEETS.IT_RESULTS,       SCHEMA.IT_RESULTS.BOSS_DETAILS,             'BOSS Details');
+
+  log.forEach(function(l) { Logger.log('[migrateHeaders] ' + l); });
+  return { ok: true, log: log };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// migrateProdDeploy  (DRY RUN)
+// migrateProdDeployApply  (APPLY)
+//
+// One-step migration for prod deployment. Runs everything in order:
+//   1. migrateAddMissingHeaders  — add blank column headers
+//   2. migrateActionItemCategories — rename old AI category strings
+//
+// Always run the dry-run version first to preview what will change.
+// ─────────────────────────────────────────────────────────────────────────────
+function migrateProdDeploy() {
+  Logger.log('[migrateProdDeploy] === DRY RUN — no writes ===');
+  var headers  = { ok: true, log: ['(headers check — no actual write in dry run)'] };
+  var cats     = migrateActionItemCategories(true);
+  Logger.log('[migrateProdDeploy] Headers: ' + JSON.stringify(headers.log));
+  Logger.log('[migrateProdDeploy] Category renames (would apply): ' + cats.changes);
+  return { dryRun: true, headers: headers, categoryRenames: cats };
+}
+
+function migrateProdDeployApply() {
+  Logger.log('[migrateProdDeployApply] === APPLYING — writing to sheet ===');
+  var headers  = migrateAddMissingHeaders();
+  var cats     = migrateActionItemCategories(false);
+  Logger.log('[migrateProdDeployApply] DONE — headers: ' + JSON.stringify(headers.log));
+  Logger.log('[migrateProdDeployApply] DONE — category renames applied: ' + cats.changes);
+  return { applied: true, headers: headers, categoryRenames: cats };
+}

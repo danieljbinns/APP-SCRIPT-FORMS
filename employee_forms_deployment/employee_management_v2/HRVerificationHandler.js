@@ -1,4 +1,4 @@
-/**
+﻿/**
  * HR Verification Form - Handler Functions
  */
 
@@ -91,6 +91,11 @@ function getHRVerificationData(workflowId) {
 }
 
 function submitHRVerification(formData) {
+  const caller = Session.getActiveUser().getEmail();
+  const callerRole = AccessControlService.getUserRolePayload(caller);
+  if (!callerRole.isHR && !callerRole.isAdmin) {
+    return { success: false, message: 'Access denied.' };
+  }
   try {
     rawLog('submitHRVerification', formData);
     const workflowId = formData.workflowId;
@@ -102,6 +107,8 @@ function submitHRVerification(formData) {
     const IR = SCHEMA.INITIAL_REQUESTS;
     const HR = SCHEMA.HR_VERIFICATION_RESULTS;
 
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
     // Detect existing submission for update-vs-insert logic
     let existingHRRowIndex = -1;
     let existingHRRowData = null;
@@ -162,7 +169,11 @@ function submitHRVerification(formData) {
         break;
       }
     }
-    
+
+    if (!hrOriginal) {
+      return { success: false, message: 'Workflow not found: ' + workflowId };
+    }
+
     let resultsSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
     if (!resultsSheet) {
       resultsSheet = ss.insertSheet(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
@@ -198,12 +209,14 @@ function submitHRVerification(formData) {
       logFormEdit(workflowId, 'HR Verification', actingUser, existingHRRowData, hrResultRow);
       Logger.log('[HR Verification] Updated existing row for ' + workflowId + ' by ' + actingUser);
       SpreadsheetApp.flush();
+      lock.releaseLock();
       return {
         success: true,
         message: 'HR Verification updated successfully. No downstream emails re-sent.'
       };
     } else {
       resultsSheet.appendRow(hrResultRow);
+      lock.releaseLock();
     }
     
     // CRITICAL: Ensure sheet updates are committed before reading context/sending email
@@ -271,9 +284,10 @@ function submitHRVerification(formData) {
       if (hasBOSSAccess) {
         updateWorkflow(workflowId, 'In Progress', 'IT Confirmation Needed', verifiedName, actingUser);
         syncWorkflowState(workflowId);
+        ActionItemService.createActionItem(workflowId, 'IT Confirmation', 'IT Confirmation Required - ' + verifiedName, JSON.stringify(['Review and confirm access configuration before IT proceeds with provisioning']), CONFIG.EMAILS.IT_CONFIRMATION);
         const itConfirmationUrl = buildFormUrl('it_confirmation', { wf: workflowId });
         sendFormEmail({
-          to: 'davelangohr@team-group.com',
+          to: CONFIG.EMAILS.IT_CONFIRMATION,
           subject: 'IT Confirmation Required — ' + verifiedName,
           body: 'HR has verified ' + verifiedName + '. Please review and confirm the access configuration before IT proceeds with provisioning.',
           formUrl: itConfirmationUrl,

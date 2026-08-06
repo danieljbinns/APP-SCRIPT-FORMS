@@ -101,7 +101,8 @@ var AccessControlService = (function() {
       CREDIT_CARD:      emails.CREDIT_CARD,
       BUSINESS_CARDS:   emails.BUSINESS_CARDS,
       JONAS:            emails.JONAS,
-      REVIEW_306090_JR: emails.REVIEW_306090_JR
+      REVIEW_306090_JR: emails.REVIEW_306090_JR,
+      REVIEW_JR_TITLE:  emails.REVIEW_JR_TITLE
     };
   }
 
@@ -171,14 +172,18 @@ var AccessControlService = (function() {
   // HR / IT / Admin — any workflow.  Requester / Manager — own only.
   // Specialist — own only (treat same as requester/manager for cancel).
   // ───────────────────────────────────────────────────────────────────
+  function _wfEmail(workflow, field) {
+    return (workflow[field] || workflow[field.replace(/([A-Z])/g, ' $1').replace(/^ /, '')] || '').toLowerCase();
+  }
+
   function canCancel(userEmail, workflow) {
     if (!userEmail) return false;
     var p = getUserRolePayload(userEmail);
     if (p.canCancelAll) return true;
     if (!workflow) return false;
     var e = userEmail.toLowerCase();
-    return e === (workflow.requesterEmail || '').toLowerCase() ||
-           e === (workflow.managerEmail   || '').toLowerCase();
+    return e === (workflow['Initiator Email'] || '').toLowerCase()
+        || e === (workflow['Manager Email'] || '').toLowerCase();
   }
 
   // ───────────────────────────────────────────────────────────────────
@@ -191,8 +196,8 @@ var AccessControlService = (function() {
     if (p.canBumpAll) return true;
     if (!workflow) return false;
     var e = userEmail.toLowerCase();
-    return e === (workflow.requesterEmail || '').toLowerCase() ||
-           e === (workflow.managerEmail   || '').toLowerCase();
+    return e === (workflow['Initiator Email'] || '').toLowerCase()
+        || e === (workflow['Manager Email'] || '').toLowerCase();
   }
 
   // ───────────────────────────────────────────────────────────────────
@@ -207,8 +212,8 @@ var AccessControlService = (function() {
     if (p.canViewAllStepData) return true;
     if (!workflow) return false;
     var e = userEmail.toLowerCase();
-    return e === (workflow.requesterEmail || '').toLowerCase() ||
-           e === (workflow.managerEmail   || '').toLowerCase();
+    return e === (workflow['Requester Email'] || workflow.requesterEmail || '').toLowerCase() ||
+           e === (workflow['Manager Email']   || workflow.managerEmail   || '').toLowerCase();
   }
 
   // ───────────────────────────────────────────────────────────────────

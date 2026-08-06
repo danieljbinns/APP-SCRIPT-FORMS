@@ -199,6 +199,13 @@
             </div>
           </div>
 
+          <? if (requestData.bossTrainingOnly === 'Yes') { ?>
+          <!-- ER-5: Training User Only — hide full-access BOSS fields -->
+          <div class="form-field" style="background:#fff8e1; border-left:4px solid #f9a825; padding:12px 16px; border-radius:4px; margin-top:12px;">
+            <strong>Training User Only</strong><br>
+            This employee is flagged as a BOSS training user only. Do <strong>not</strong> assign committees, cost sheets, trip reports, or grievances. Assign training modules only.
+          </div>
+          <? } else { ?>
           <label class="form-label" style="margin: 20px 0 10px; display:block;">Confirm BOSS Access — check each item once assigned:</label>
 
           <? if (requestData.bossJobSites) { requestData.bossJobSites.split(',').forEach(function(site) { site = site.trim(); if (site) { var skey = site.replace(/[^a-zA-Z0-9]/g,'_'); ?>
@@ -240,6 +247,7 @@
             </label>
           </div>
           <? } ?>
+          <? } ?> <!-- end bossTrainingOnly check -->
 
           <label class="form-label" style="margin: 20px 0 10px; display:block;">Additional System Access — check each system that was granted:</label>
 

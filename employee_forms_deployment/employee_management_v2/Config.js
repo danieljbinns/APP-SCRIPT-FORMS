@@ -21,8 +21,21 @@ const CONFIG = {
   get CHANGE_FOLDER_ID()        { return ConfigurationService.getSetting('CHANGE_ATTACHMENTS_FOLDER_ID'); },
   get DEPLOYMENT_URL()          { return ConfigurationService.getSetting('DEPLOYMENT_URL'); },
   ALLOWED_DOMAINS: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com'],
-  ADMIN_EMAILS: ['dbinns@team-group.com', 'dbinns@robinsonsolutions.com', 'no-reply@team-group.com', 'davelangohr@team-group.com'],
+  ADMIN_EMAILS: ['dbinns@team-group.com', 'dbinns@robinsonsolutions.com', 'no-reply@team-group.com', 'davelangohr@team-group.com', 'jaynepalmer@team-group.com'],
 
+  // Suppress emails in prod by setting SUPPRESS_EMAILS_OVERRIDE='true' in Script Properties.
+  // ProdSmokeTest sets this automatically — no manual Config change needed.
+  get SUPPRESS_EMAILS() {
+    var ov = ConfigurationService.getSetting('SUPPRESS_EMAILS_OVERRIDE');
+    if (ov === 'true' || ov === 'false') return ov === 'true';
+    return false; // prod default: send real emails
+  },
+
+  // Set Script Property MAINTENANCE_MODE='true' to serve the maintenance splash page.
+  get MAINTENANCE_MODE() {
+    return ConfigurationService.getSetting('MAINTENANCE_MODE') === 'true';
+  },
+  
   // ==========================================================================
   // SHEET NAMES
   // ==========================================================================
@@ -49,6 +62,7 @@ const CONFIG = {
     REFERENCE_JRS: 'Reference_JRs',
     REFERENCE_JOBS_JONAS: 'Reference_JobsJonas',
     ACTION_ITEMS: 'Action Items',
+    IT_CONFIRMATION_RESULTS: 'IT Confirmation Results',
     // Safety Onboarding and Safety Termination removed — now Action Items with formType.
     FORM_EDIT_LOG: 'Form Edit Log',
     AUDIT_LOG: 'Audit Log'
@@ -74,9 +88,11 @@ const CONFIG = {
       CREDIT_CARD: ConfigurationService.getSetting('EMAIL_CREDIT_CARD') || 'grp.forms.creditcard@team-group.com',
       BUSINESS_CARDS: ConfigurationService.getSetting('EMAIL_BUSINESS_CARDS') || 'davelangohr@team-group.com',
       REVIEW_306090_JR: ConfigurationService.getSetting('EMAIL_REVIEW306090') || 'grp.forms.review306090@team-group.com',
+      REVIEW_JR_TITLE:  ConfigurationService.getSetting('EMAIL_REVIEW_JR_TITLE') || 'grp.forms.jrtitle@team-group.com',
       JONAS: ConfigurationService.getSetting('EMAIL_JONAS') || 'grp.forms.jonas@team-group.com',
       SAFETY: ConfigurationService.getSetting('EMAIL_SAFETY') || 'grp.forms.safety@team-group.com',
-      PAYROLL: ConfigurationService.getSetting('EMAIL_PAYROLL') || 'payroll@team-group.com'
+      PAYROLL: ConfigurationService.getSetting('EMAIL_PAYROLL') || 'payroll@team-group.com',
+      IT_CONFIRMATION: ConfigurationService.getSetting('EMAIL_IT_CONFIRMATION') || 'davelangohr@team-group.com'
     };
   }
   

@@ -34,6 +34,26 @@ function cancelRequest(workflowId) {
     }
 
     updateWorkflow(workflowId, 'Cancelled', 'Request Cancelled', '');
+
+    // H-2: Cancel all Open action items so specialists don't act on a cancelled workflow
+    try {
+      var aiSheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+      if (aiSheet) {
+        var aiData  = aiSheet.getDataRange().getValues();
+        var aiH     = aiData[0];
+        var wfAiCol = aiH.indexOf('Workflow ID');
+        var stAiCol = aiH.indexOf('Status');
+        for (var ai = 1; ai < aiData.length; ai++) {
+          if (String(aiData[ai][wfAiCol]) !== workflowId) continue;
+          if (String(aiData[ai][stAiCol]) === 'Open') {
+            aiSheet.getRange(ai + 1, stAiCol + 1).setValue('Cancelled');
+          }
+        }
+      }
+    } catch (aiCancelErr) {
+      Logger.log('[cancelRequest] Action item cancel failed (non-fatal): ' + aiCancelErr.message);
+    }
+
     syncWorkflowState(workflowId);
 
     writeAuditLog(userEmail, 'CANCEL', workflowId, '', 'success');
@@ -151,10 +171,14 @@ function _sendBumpEmail(workflowId, targetStep) {
       recipient = CONFIG.EMAILS.IT;
       formType  = 'IT Setup';
       break;
+    case 'it_confirmation':
+      recipient = CONFIG.EMAILS.IT_CONFIRMATION;
+      formType  = 'IT Confirmation';
+      break;
 
-    // Specialist + EOE + Status Change action-item steps
+    // Specialist + EOE + Status Change + Equipment action-item steps
     case 'creditcard': case 'businesscards': case 'fleetio': case 'jonas':
-    case 'centralpurchasing': case 'sitedocs': case 'review_306090':
+    case 'centralpurchasing': case 'sitedocs': case 'review_306090': case 'jr_title':
     case 'safety_onboarding': case 'safety_term':
     case 'asset_collection': case 'systems_deactivation': case 'systems_deactivation_hr':
     case 'systems_deactivation_fleet': case 'systems_deactivation_finance':
@@ -162,9 +186,13 @@ function _sendBumpEmail(workflowId, targetStep) {
     case 'change_manager': case 'change_it': case 'change_purchasing':
     case 'change_idsetup': case 'change_safety': case 'change_businesscards':
     case 'change_creditcard': case 'change_fleetio': case 'change_jonas':
+    case 'hr_systems': case 'adp_setup': case 'wis':
       return _sendActionItemBump(workflowId, targetStep);
 
     default:
+      // Try action item lookup as fallback before giving up
+      var fallback = _sendActionItemBump(workflowId, targetStep);
+      if (fallback && fallback.success) return fallback;
       recipient = '';
       formType  = 'General';
   }
@@ -199,21 +227,40 @@ function _sendBumpEmail(workflowId, targetStep) {
 function _sendActionItemBump(workflowId, targetStep) {
   // Category lookup maps
   var specialistCatMap = {
-    'creditcard': 'Credit Card', 'businesscards': 'Business Cards',
-    'fleetio': 'Fleetio', 'jonas': 'Jonas', 'centralpurchasing': 'Central Purchasing',
-    'sitedocs': 'SiteDocs', 'review_306090': '30/60/90 Review',
-    'safety_onboarding': 'Safety', 'safety_term': 'Safety'
+    // Current category names
+    'creditcard': 'Finance', 'credit_card': 'Finance',
+    'fleetio': 'Fleet', 'fleet': 'Fleet',
+    'jonas': 'Purchasing', 'purchasing': 'Purchasing',
+    'businesscards': 'Business Cards', 'business_cards': 'Business Cards',
+    'centralpurchasing': 'Purchasing', 'central_purchasing': 'Purchasing',
+    'sitedocs': 'ID Setup', 'wis_user': 'ID Setup',
+    'review_306090': '30/60/90 Review', 'review': '30/60/90 Review',
+    'jr_title': 'JR Title',
+    'safety_onboarding': 'Safety', 'safety': 'Safety', 'safety_term': 'Safety',
+    'hr_systems': 'HR', 'hr': 'HR',
+    'adp_setup': 'Payroll', 'payroll': 'Payroll',
+    'wis': 'WIS', 'wis_assignment': 'WIS',
+    'id_setup': 'ID Setup', 'itconfirmation': 'IT Confirmation', 'it_confirmation': 'IT Confirmation',
   };
   var eoeCatMap = {
-    'asset_collection': 'Assets', 'systems_deactivation': 'IT',
-    'systems_deactivation_hr': 'HR', 'systems_deactivation_fleet': 'Fleet',
-    'systems_deactivation_finance': 'Finance', 'systems_deactivation_deact': 'Deactivation'
+    'asset_collection': 'Assets', 'assets': 'Assets',
+    'systems_deactivation': 'IT',
+    'systems_deactivation_hr': 'HR',
+    'systems_deactivation_fleet': 'Fleet',
+    'systems_deactivation_purchasing': 'Purchasing',
+    'systems_deactivation_finance': 'Finance',   // legacy
+    'systems_deactivation_payroll': 'Payroll',
+    'systems_deactivation_deact': 'Deactivation',
+    'eoe_process': 'EOE',
   };
   var changeCatMap = {
-    'change_manager': 'Manager', 'change_it': 'IT', 'change_purchasing': 'Purchasing',
-    'change_idsetup': 'ID Setup', 'change_safety': 'Safety',
-    'change_businesscards': 'Business Cards', 'change_creditcard': 'Credit Card',
-    'change_fleetio': 'Fleetio', 'change_jonas': 'Jonas'
+    'change_manager': 'Manager', 'change_it': 'IT',
+    'change_hr': 'HR', 'change_wis': 'WIS',
+    'change_purchasing': 'Purchasing', 'change_idsetup': 'ID Setup',
+    'change_safety': 'Safety', 'change_businesscards': 'Business Cards',
+    'change_creditcard': 'Finance', 'change_fleetio': 'Fleet',
+    'change_jonas': 'Purchasing',  // legacy
+    'change_assets': 'Assets',
   };
 
   var cat = specialistCatMap[targetStep] || eoeCatMap[targetStep] || changeCatMap[targetStep];

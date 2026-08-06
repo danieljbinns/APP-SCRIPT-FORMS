@@ -1,2 +1,5 @@
 # Docs and planning files — never push to GAS
 docs/**
+
+# Test files — Node.js only, never push to GAS
+__tests__/**

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Systems Survey</title>
+<style>
+  :root {
+    --bg:         #0c0c0c;
+    --card:       #1a1a1a;
+    --inner:      #222;
+    --border:     #333;
+    --sub-border: #2a2a2a;
+    --text:       #ffffff;
+    --muted:      #a0a0a0;
+    --dim:        #555;
+    --red:        #EB1C2D;
+    --red-h:      #c41522;
+    --input-bg:   #2a2a2a;
+    --input-bd:   #444;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 32px 20px 80px;
+  }
+
+  /* ── Page header ── */
+  .hdr {
+    max-width: 100%;
+    margin: 0 0 36px;
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 20px;
+  }
+  .hdr .eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--red); margin-bottom: 10px;
+  }
+  .hdr h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .hdr p  { color: var(--muted); font-size: 13px; max-width: 580px; }
+  .meta {
+    display: flex; gap: 16px; margin-top: 18px; flex-wrap: wrap;
+  }
+  .meta-f { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
+  .meta-f label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .meta-f input {
+    background: var(--input-bg); border: 1px solid var(--input-bd);
+    border-radius: 6px; color: var(--text); padding: 7px 11px; font-size: 13px;
+  }
+  .meta-f input:focus { outline: none; border-color: var(--red); }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    max-width: 100%; margin: 0 0 20px;
+    display: flex; gap: 10px; justify-content: flex-end;
+  }
+  .btn {
+    padding: 8px 18px; border-radius: 6px; font-size: 12px;
+    font-weight: 600; cursor: pointer; border: none;
+  }
+  .btn-p { background: var(--red); color: #fff; }
+  .btn-p:hover { background: var(--red-h); }
+  .btn-s { background: var(--input-bg); color: var(--text); border: 1px solid var(--input-bd); }
+  .btn-s:hover { border-color: var(--red); }
+
+  /* ── Section card ── */
+  .section {
+    max-width: 100%; margin: 0 0 28px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .sec-hdr {
+    background: #111; border-bottom: 1px solid var(--border);
+    padding: 14px 22px; display: flex; align-items: center; gap: 10px;
+  }
+  .sec-num {
+    background: var(--red); color: #fff; font-size: 11px; font-weight: 800;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .sec-title { font-size: 14px; font-weight: 700; flex: 1; }
+  .sec-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  }
+  .tag-wf  { background:#1a1a2e; color:#a0a0ff; border:1px solid #3333aa; }
+  .tag-rt  { background:#1a2e1a; color:#80ff80; border:1px solid #336633; }
+  .tag-sys { background:#2e1a00; color:#ffcc80; border:1px solid #664400; }
+
+  /* ── Divider ── */
+  .divider {
+    padding: 8px 22px;
+    background: #161616; border-bottom: 1px solid var(--sub-border);
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--dim);
+  }
+
+  /* ── Row group (label + input on one line) ── */
+  .row-group { padding: 14px 22px; border-bottom: 1px solid var(--sub-border); }
+  .row-group:last-child { border-bottom: none; }
+  .row-group .rg-label {
+    font-size: 13px; font-weight: 600; margin-bottom: 4px;
+  }
+  .row-group .rg-note {
+    font-size: 11px; color: var(--muted); margin-bottom: 8px; font-style: italic;
+  }
+
+  /* ── Contact block (name + email side by side) ── */
+  .contact-block {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .contact-block .tag {
+    font-size: 11px; color: var(--muted); min-width: 120px; flex-shrink: 0;
+  }
+  .contact-block input {
+    flex: 1; min-width: 140px;
+    background: var(--input-bg); border: 1px solid var(--input-bd);
+    border-radius: 6px; color: var(--text); padding: 7px 11px; font-size: 13px; font-family: inherit;
+  }
+  .contact-block input:focus { outline: none; border-color: var(--red); }
+
+  /* stacked contacts */
+  .contacts { display: flex; flex-direction: column; gap: 8px; }
+
+  /* ── System rows (yes/no + optional alias) ── */
+  .sys-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .sys-table th {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); padding: 6px 10px; text-align: left;
+    border-bottom: 1px solid var(--sub-border);
+  }
+  .sys-table td { padding: 6px 10px; border-bottom: 1px solid var(--sub-border); vertical-align: middle; }
+  .sys-table tr:last-child td { border-bottom: none; }
+  .sys-table tr:hover td { background: #1f1f1f; }
+  .sys-name { font-size: 13px; font-weight: 500; white-space: nowrap; }
+  .sys-note { font-size: 11px; color: var(--muted); }
+  .yn-group { display: flex; gap: 6px; }
+  .yn-btn {
+    padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 700;
+    cursor: pointer; border: 1px solid var(--input-bd); background: var(--input-bg);
+    color: var(--muted); user-select: none; transition: all .12s;
+  }
+  .yn-btn.yes.active { background: #0d2e0d; border-color: #336633; color: #86efac; }
+  .yn-btn.no.active  { background: #2e0d0d; border-color: #663333; color: #ffaaaa; }
+  .yn-btn:hover { border-color: var(--red); }
+  .sys-alias {
+    background: var(--input-bg); border: 1px solid var(--input-bd);
+    border-radius: 5px; color: var(--text); padding: 4px 9px;
+    font-size: 12px; font-family: inherit; width: 100%;
+  }
+  .sys-alias:focus { outline: none; border-color: var(--red); }
+
+  /* ── Add-new row ── */
+  .add-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+  .add-row input {
+    flex: 1; min-width: 130px;
+    background: var(--input-bg); border: 1px solid var(--input-bd);
+    border-radius: 6px; color: var(--text); padding: 7px 11px; font-size: 13px; font-family: inherit;
+  }
+  .add-row input:focus { outline: none; border-color: var(--red); }
+  .add-btn {
+    padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 700;
+    background: var(--input-bg); border: 1px solid var(--input-bd); color: var(--muted); cursor: pointer;
+  }
+  .add-btn:hover { border-color: var(--red); color: var(--text); }
+
+  /* ── Checkbox grid (equipment) ── */
+  .check-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 7px;
+    margin-top: 6px;
+  }
+  .check-item {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--input-bg); border: 1px solid var(--input-bd);
+    border-radius: 6px; padding: 7px 11px; cursor: pointer; font-size: 13px; user-select: none;
+  }
+  .check-item:hover { border-color: var(--red); }
+  .check-item input { accent-color: var(--red); cursor: pointer; }
+
+  /* ── Notes textarea ── */
+  .notes {
+    width: 100%; margin-top: 8px;
+    background: var(--input-bg); border: 1px solid var(--input-bd);
+    border-radius: 6px; color: var(--text); padding: 9px 12px;
+    font-size: 13px; font-family: inherit; resize: vertical; min-height: 60px;
+  }
+  .notes:focus { outline: none; border-color: var(--red); }
+
+  @media print {
+    .toolbar { display: none; }
+    body { background: #fff; color: #111; padding: 12px; font-size: 12px; }
+    .hdr { border-bottom: 2px solid #EB1C2D; }
+    .hdr .eyebrow { color: #EB1C2D; }
+    .hdr h1 { font-size: 20px; }
+    .hdr p { color: #555; }
+    .section { border: 1px solid #ccc; background: #fff; page-break-inside: avoid; margin-bottom: 16px; }
+    .sec-hdr { background: #f5f5f5; border-bottom: 1px solid #ccc; }
+    .sec-num { background: #EB1C2D; }
+    .sec-tag { border: 1px solid #ccc; color: #555 !important; background: #f5f5f5 !important; }
+    .divider { background: #fafafa; color: #888; border-bottom: 1px solid #eee; }
+    .row-group { border-bottom: 1px solid #eee; }
+    .rg-label { color: #111; }
+    .rg-note { color: #777; }
+    .sys-table th { color: #555; border-bottom: 1px solid #ddd; }
+    .sys-table td { border-bottom: 1px solid #eee; }
+    .sys-name { color: #111; }
+    .sys-note { color: #888; }
+    .sys-alias {
+      border: 1px solid #ccc !important; background: #fff !important;
+      color: #111 !important; font-size: 11px;
+    }
+    .yn-btn { border: 1px solid #ccc; background: #fff; color: #999; font-size: 10px; padding: 2px 8px; }
+    .yn-btn.yes.active { background: #e6f4e6; border-color: #4caf50; color: #2e7d2e; }
+    .yn-btn.no.active  { background: #fce8e8; border-color: #e57373; color: #b71c1c; }
+    .notes { border: 1px solid #ccc !important; background: #fff !important; color: #111 !important; }
+    .contact-block .tag { color: #777; }
+    .contact-block input {
+      border: 1px solid #ccc !important; background: #fff !important; color: #111 !important;
+    }
+    .meta-f input {
+      border: 1px solid #ccc !important; background: #fff !important; color: #111 !important;
+    }
+    .add-row { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="eyebrow">TEAM Group — Employee Management System</div>
+  <h1>Employee Systems Survey</h1>
+  <p>Fill in your team contacts for each workflow step, then mark which systems and equipment your company uses. Leave anything blank — we'll review together.</p>
+</div>
+
+<div class="toolbar">
+  <button class="btn btn-s" onclick="exportText()">Export as Text</button>
+  <button class="btn btn-p" onclick="window.print()">Save as PDF</button>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     SECTION 1 — TEAM ROUTING
+═══════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-hdr">
+    <div class="sec-num">1</div>
+    <div class="sec-title">Team Routing — Who handles each step</div>
+    <span class="sec-tag tag-rt">Routing</span>
+  </div>
+
+  <div class="divider">New Hire</div>
+
+  <div class="row-group">
+    <div class="rg-label">ID Setup — creates employee accounts (SiteDocs, DSS, BOSS WIS)</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email</span><input type="email" placeholder="group email address"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">HR Verification — verifies employee info, assigns ADP ID</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email</span><input type="email" placeholder="group email address"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">Payroll — ADP payroll setup and access</div>
+    <div class="rg-note">Same as HR? Note below if so.</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email</span><input type="email" placeholder="group email address"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">IT Setup — provisions email, devices, software access</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email</span><input type="email" placeholder="group email address"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">IT Confirmation — signs off that IT setup is complete before launch</div>
+    <div class="rg-note">Often a single person (e.g. IT manager). Can be same as IT Setup.</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Person</span><input type="text" placeholder="Name"></div>
+      <div class="contact-block"><span class="tag">Email</span><input type="email" placeholder="direct email"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">Safety — SiteDocs onboarding, DSS learning paths</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email</span><input type="email" placeholder="group email address"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">Fleet — Fleetio account and vehicle assignment</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email</span><input type="email" placeholder="group email address"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">Purchasing — Central Purchasing / Jonas access setup</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email</span><input type="email" placeholder="group email address"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">Credit Card — company card application and setup</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email</span><input type="email" placeholder="group email address"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">Business Cards — digital/physical business card ordering</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email / Email</span><input type="email" placeholder="email address"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">30/60/90 Day Review &amp; JR Assignment</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email</span><input type="email" placeholder="group email address"></div>
+    </div>
+  </div>
+
+  <div class="divider">Status Change / Position Change</div>
+
+  <div class="row-group">
+    <div class="rg-label">HR Approval — approves all status/position change requests</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email</span><input type="email" placeholder="group email address"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">Any routing differences for Status Change vs New Hire? (IT, Fleet, Purchasing, Safety contacts)</div>
+    <textarea class="notes" placeholder="e.g. 'IT is the same but Fleet changes go to a different manager for status changes...'"></textarea>
+  </div>
+
+  <div class="divider">End of Employment (EOE)</div>
+
+  <div class="row-group">
+    <div class="rg-label">HR Approval — approves termination before offboarding begins</div>
+    <div class="contacts">
+      <div class="contact-block"><span class="tag">Team / Person</span><input type="text" placeholder="Name or team name"></div>
+      <div class="contact-block"><span class="tag">Group Email</span><input type="email" placeholder="group email address"></div>
+    </div>
+  </div>
+
+  <div class="row-group">
+    <div class="rg-label">Any routing differences for EOE vs New Hire? (IT, Fleet, Purchasing, Safety, ID Setup contacts)</div>
+    <textarea class="notes" placeholder="e.g. 'Deactivations go to a shared IT inbox, not the same team as provisioning...'"></textarea>
+  </div>
+
+  <div class="divider">Any Additional Teams</div>
+
+  <div class="row-group">
+    <div class="rg-label">Any other teams or contacts that should receive workflow notifications?</div>
+    <div class="contacts" style="gap:16px; flex-direction:column;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="contact-block" style="flex:1"><span class="tag">Role / Step</span><input type="text" placeholder="What they handle"></div>
+        <div class="contact-block" style="flex:1"><span class="tag">Email</span><input type="email" placeholder="group email"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="contact-block" style="flex:1"><span class="tag">Role / Step</span><input type="text" placeholder="What they handle"></div>
+        <div class="contact-block" style="flex:1"><span class="tag">Email</span><input type="email" placeholder="group email"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="contact-block" style="flex:1"><span class="tag">Role / Step</span><input type="text" placeholder="What they handle"></div>
+        <div class="contact-block" style="flex:1"><span class="tag">Email</span><input type="email" placeholder="group email"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     SECTION 2 — SYSTEMS
+═══════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-hdr">
+    <div class="sec-num">2</div>
+    <div class="sec-title">Systems — Do you use these? Mark Yes / No. Note your equivalent if different.</div>
+    <span class="sec-tag tag-sys">Systems</span>
+  </div>
+
+  <div class="divider">Email &amp; HR</div>
+  <div class="row-group">
+    <table class="sys-table">
+      <tr><th style="width:200px">System</th><th style="width:110px">Use it?</th><th>Your equivalent / notes</th></tr>
+      <tr>
+        <td><div class="sys-name">Google Workspace</div><div class="sys-note">Email, Drive, Calendar</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="e.g. Microsoft 365 / Outlook"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">ADP</div><div class="sys-note">Payroll &amp; HR system</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="e.g. Dayforce, Payworks, Ceridian"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">BOSS</div><div class="sys-note">Internal operations platform</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Alternate or N/A"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">Incidents</div><div class="sys-note">Incident reporting system</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Alternate or N/A"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">Net Promoter Score</div><div class="sys-note">NPS / employee feedback</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Alternate or N/A"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">CAA</div><div class="sys-note">CAA access</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Alternate or N/A"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">Delivery App</div><div class="sys-note">Delivery / dispatch app</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Alternate or N/A"></td>
+      </tr>
+    </table>
+    <div class="add-row" id="add-hr">
+      <input type="text" placeholder="New system name">
+      <input type="text" placeholder="What it does">
+      <input type="text" placeholder="Who manages it">
+      <button class="add-btn" onclick="addRow('sys-table-hr', this)">+ Add</button>
+    </div>
+    <table class="sys-table" id="sys-table-hr" style="margin-top:6px"></table>
+  </div>
+
+  <div class="divider">Safety</div>
+  <div class="row-group">
+    <table class="sys-table">
+      <tr><th style="width:200px">System</th><th style="width:110px">Use it?</th><th>Your equivalent / notes</th></tr>
+      <tr>
+        <td><div class="sys-name">SiteDocs</div><div class="sys-note">Safety management platform</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Alternate safety platform"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">DSS</div><div class="sys-note">Digital safety &amp; training system</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Alternate or N/A"></td>
+      </tr>
+    </table>
+    <div class="add-row">
+      <input type="text" placeholder="New system name">
+      <input type="text" placeholder="What it does">
+      <input type="text" placeholder="Who manages it">
+      <button class="add-btn" onclick="addRow('sys-table-safety', this)">+ Add</button>
+    </div>
+    <table class="sys-table" id="sys-table-safety" style="margin-top:6px"></table>
+  </div>
+
+  <div class="divider">Fleet</div>
+  <div class="row-group">
+    <table class="sys-table">
+      <tr><th style="width:200px">System</th><th style="width:110px">Use it?</th><th>Your equivalent / notes</th></tr>
+      <tr>
+        <td><div class="sys-name">Fleetio</div><div class="sys-note">Fleet &amp; vehicle management</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Alternate fleet system"></td>
+      </tr>
+    </table>
+    <div class="add-row">
+      <input type="text" placeholder="New system name">
+      <input type="text" placeholder="What it does">
+      <input type="text" placeholder="Who manages it">
+      <button class="add-btn" onclick="addRow('sys-table-fleet', this)">+ Add</button>
+    </div>
+    <table class="sys-table" id="sys-table-fleet" style="margin-top:6px"></table>
+  </div>
+
+  <div class="divider">Finance &amp; Purchasing</div>
+  <div class="row-group">
+    <table class="sys-table">
+      <tr><th style="width:200px">System</th><th style="width:110px">Use it?</th><th>Your equivalent / notes</th></tr>
+      <tr>
+        <td><div class="sys-name">Central Purchasing / Jonas</div><div class="sys-note">Purchasing &amp; job cost system</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Alternate purchasing system"></td>
+      </tr>
+    </table>
+    <div class="add-row">
+      <input type="text" placeholder="New system name">
+      <input type="text" placeholder="What it does">
+      <input type="text" placeholder="Who manages it">
+      <button class="add-btn" onclick="addRow('sys-table-fin', this)">+ Add</button>
+    </div>
+    <table class="sys-table" id="sys-table-fin" style="margin-top:6px"></table>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     SECTION 3 — EQUIPMENT TYPES
+═══════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-hdr">
+    <div class="sec-num">3</div>
+    <div class="sec-title">Equipment — Mark Yes / No. Add anything new.</div>
+    <span class="sec-tag tag-sys">Equipment</span>
+  </div>
+
+  <div class="row-group">
+    <table class="sys-table">
+      <tr><th style="width:200px">Equipment</th><th style="width:110px">You use it?</th><th>Notes</th></tr>
+      <tr>
+        <td><div class="sys-name">Laptop / Computer</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Brand / model preference, who provisions"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">Mobile Phone</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Carrier, model preference"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">Tablet</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Notes"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">Company Vehicle</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Notes"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">Credit Card</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Card types offered (e.g. Visa USA, Home Depot)"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">Business Cards</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Digital, physical, or both"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">Key / Access Card</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Notes"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">Tools / PPE</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Notes"></td>
+      </tr>
+      <tr>
+        <td><div class="sys-name">Uniform</div></td>
+        <td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>
+        <td><input class="sys-alias" type="text" placeholder="Notes"></td>
+      </tr>
+    </table>
+    <div class="add-row">
+      <input type="text" placeholder="New equipment type">
+      <input type="text" placeholder="Notes">
+      <button class="add-btn" onclick="addEquip(this)">+ Add</button>
+    </div>
+    <table class="sys-table" id="equip-table-custom" style="margin-top:6px"></table>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     SECTION 4 — NOTES
+═══════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-hdr">
+    <div class="sec-num">4</div>
+    <div class="sec-title">Notes &amp; Meeting Items</div>
+  </div>
+  <div class="row-group">
+    <div class="rg-label">Anything else we should know before configuring your routing?</div>
+    <textarea class="notes" style="min-height:100px" placeholder="Edge cases, exceptions, anything that works differently for your company..."></textarea>
+  </div>
+</div>
+
+
+<script>
+function exportText() {
+  var lines = ['EMPLOYEE SYSTEMS SURVEY', '='.repeat(50), ''];
+
+  document.querySelectorAll('.section').forEach(function(sec) {
+    var t = sec.querySelector('.sec-title');
+    if (t) { lines.push(''); lines.push('── ' + t.textContent.trim().toUpperCase()); lines.push(''); }
+
+    sec.querySelectorAll('.divider').forEach(function(d) {
+      lines.push('  [' + d.textContent.trim() + ']');
+    });
+
+    sec.querySelectorAll('.row-group').forEach(function(rg) {
+      var lbl = rg.querySelector('.rg-label');
+      if (lbl) lines.push('  ' + lbl.textContent.trim());
+
+      // System table rows
+      rg.querySelectorAll('.sys-table tr').forEach(function(tr) {
+        var name = tr.querySelector('.sys-name');
+        if (!name) return;
+        var yn   = tr.querySelector('.yn-btn.active');
+        var alias = tr.querySelector('.sys-alias');
+        var val  = yn ? yn.textContent.trim() : '—';
+        var note = alias && alias.value.trim() ? ' — ' + alias.value.trim() : '';
+        lines.push('    ' + name.textContent.trim() + ': ' + val + note);
+      });
+
+      // Contact blocks
+      rg.querySelectorAll('.contact-block').forEach(function(cb) {
+        var tag = cb.querySelector('.tag');
+        var inp = cb.querySelector('input');
+        if (tag && inp && inp.value.trim()) lines.push('    ' + tag.textContent.trim() + ': ' + inp.value.trim());
+      });
+
+      // Textareas
+      rg.querySelectorAll('textarea').forEach(function(ta) {
+        if (ta.value.trim()) lines.push('    Notes: ' + ta.value.trim());
+      });
+
+      lines.push('');
+    });
+  });
+
+  var blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'employee-systems-survey.txt';
+  a.click();
+}
+
+function yn(btn) {
+  var group = btn.closest('.yn-group');
+  group.querySelectorAll('.yn-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+function addRow(tableId, btn) {
+  var row = btn.closest('.add-row');
+  var inputs = row.querySelectorAll('input[type=text]');
+  var name = inputs[0] ? inputs[0].value.trim() : '';
+  if (!name) return;
+  var what = inputs[1] ? inputs[1].value.trim() : '';
+  var who  = inputs[2] ? inputs[2].value.trim() : '';
+  var tbl  = document.getElementById(tableId);
+  if (!tbl.rows.length) {
+    var hdr = tbl.insertRow();
+    hdr.innerHTML = '<th style="width:200px">System</th><th style="width:110px">Use it?</th><th>Your equivalent / notes</th>';
+  }
+  var tr = tbl.insertRow();
+  tr.innerHTML =
+    '<td><div class="sys-name">' + name + '</div>' + (what ? '<div class="sys-note">' + what + '</div>' : '') + '</td>' +
+    '<td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>' +
+    '<td><input class="sys-alias" type="text" placeholder="' + (who || 'Notes') + '"></td>';
+  inputs.forEach(function(i) { i.value = ''; });
+  inputs[0].focus();
+}
+
+function addEquip(btn) {
+  var row = btn.closest('.add-row');
+  var inputs = row.querySelectorAll('input[type=text]');
+  var name = inputs[0] ? inputs[0].value.trim() : '';
+  if (!name) return;
+  var notes = inputs[1] ? inputs[1].value.trim() : '';
+  var tbl = document.getElementById('equip-table-custom');
+  if (!tbl.rows.length) {
+    var hdr = tbl.insertRow();
+    hdr.innerHTML = '<th style="width:200px">Equipment</th><th style="width:110px">You use it?</th><th>Notes</th>';
+  }
+  var tr = tbl.insertRow();
+  tr.innerHTML =
+    '<td><div class="sys-name">' + name + '</div></td>' +
+    '<td><div class="yn-group"><span class="yn-btn yes" onclick="yn(this)">Yes</span><span class="yn-btn no" onclick="yn(this)">No</span></div></td>' +
+    '<td><input class="sys-alias" type="text" value="' + notes + '" placeholder="Notes"></td>';
+  inputs.forEach(function(i) { i.value = ''; });
+  inputs[0].focus();
+}
+
+function exportAnswers() {
+  var lines = ['SUBSIDIARY ROUTING & SYSTEMS SURVEY', '='.repeat(50), ''];
+
+  // Meta
+  document.querySelectorAll('.meta-f').forEach(function(f) {
+    var lbl = f.querySelector('label');
+    var inp = f.querySelector('input');
+    if (lbl && inp) lines.push(lbl.textContent.trim() + ': ' + (inp.value || '—'));
+  });
+  lines.push('');
+
+  // Sections
+  document.querySelectorAll('.section').forEach(function(sec) {
+    var t = sec.querySelector('.sec-title');
+    if (t) { lines.push(''); lines.push('── ' + t.textContent.trim().toUpperCase()); lines.push(''); }
+
+    sec.querySelectorAll('.divider').forEach(function(div) {
+      lines.push('  [' + div.textContent.trim() + ']');
+    });
+
+    sec.querySelectorAll('.row-group').forEach(function(rg) {
+      var lbl = rg.querySelector('.rg-label');
+      if (lbl) lines.push('  ' + lbl.textContent.trim());
+
+      // Contact pairs
+      rg.querySelectorAll('.contact-block').forEach(function(cb) {
+        var tag = cb.querySelector('.tag');
+        var inp = cb.querySelector('input');
+        if (tag && inp && inp.value.trim()) lines.push('    ' + tag.textContent.trim() + ': ' + inp.value.trim());
+      });
+
+      // Checked items
+      rg.querySelectorAll('input[type=checkbox]:checked').forEach(function(el) {
+        var lbl2 = el.closest('label');
+        if (lbl2) lines.push('    ✓ ' + lbl2.textContent.trim());
+      });
+
+      // Notes
+      rg.querySelectorAll('textarea').forEach(function(ta) {
+        if (ta.value.trim()) lines.push('    Notes: ' + ta.value.trim());
+      });
+
+      lines.push('');
+    });
+  });
+
+  var blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'subsidiary-routing-survey.txt';
+  a.click();
+}
+</script>
+</body>
+</html>

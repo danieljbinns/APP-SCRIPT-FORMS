@@ -173,7 +173,7 @@ function _sendPositionChangeSubmitEmails(workflowId) {
     siteName:        pcData.siteName,
     jobTitle:        pcData.titleChange || '',
     hireDate:        pcData.effDate,
-    requestDate:     new Date().toLocaleDateString(),
+    requestDate:     pcData.dateRequested || '',
     requesterEmail:  pcData.requesterEmail,
     changeTypes:     pcData.changes,
     siteTransfer:    pcData.siteTransfer,
@@ -320,18 +320,93 @@ function getPositionChangeData(workflowId) {
 }
 
 /**
- * Handle HR Approval for Position Change
+ * Processes HR approval or rejection of a Position Change / Status Change request.
+ *
+ * Called by: google.script.run from StatusChangeApproval.html (HR approval form).
+ *
+ * ON APPROVAL
+ * ────────────
+ * 1. Writes a row to POSITION_CHANGE_APPROVALS with decision, notes, confirmedTitle,
+ *    confirmedNewManager, and the HR submitter's email.
+ *
+ * 2. SpreadsheetApp.flush() is called immediately after the row write.
+ *    WHY: All subsequent operations in this function (sendFormEmail, ActionItemService
+ *    calls) may trigger calls to getWorkflowContext() indirectly. getWorkflowContext()
+ *    for CHANGE_ workflows does NOT read POSITION_CHANGE_APPROVALS (see dead-code note
+ *    in EmailUtils.js), but the direct reads in notifyWorkflowClosure() (ActionItemService.js)
+ *    DO read POSITION_CHANGE_APPROVALS from the same spreadsheet instance. The flush
+ *    ensures the row is committed before any of those reads occur.
+ *
+ * 3. Creates action items for each team based on the requested changes:
+ *    - Receiving Manager (all transfers / manager assignments)
+ *    - Business Cards, Credit Card, Fleetio (access + vehicle return + removal)
+ *    - Central Purchasing/Jonas
+ *    - IT (systems + equipment, excl. specialist-handled; formType='it_setup' so
+ *      ActionItemForm renders the full IT Setup form with email/computer/phone/BOSS fields)
+ *    - Assets (equipment returns — assigned to old manager)
+ *    - SiteDocs removal (WIS User category, routed to IDSETUP)
+ *    - ID Setup (BOSS WIS account update — always)
+ *    - WIS Assignment (manager BOSS module update — always)
+ *    - SiteDocs new account (WIS User category — only if SiteDocs in systems)
+ *    - Safety (DSS + SiteDocs site update — always)
+ *
+ * 4. IT action item uses formType='it_setup'.
+ *    This routes ActionItemForm.html to the full IT Setup form (same as New Hire/Equipment).
+ *    When IT closes this action item, submitITSetup() is NOT called — instead, IT uses
+ *    the standard IT Setup form at buildFormUrl('it_setup', {wf: workflowId}), which
+ *    calls submitITSetup() directly, which then closes the action item and fires
+ *    checkWorkflowCompletion(). Alternatively, _sdCloseAllAI() passes formDataJSON directly
+ *    to ActionItemService.closeActionItem() which handles the IT_RESULTS write itself.
+ *
+ * 5. approvalActionTeams[] is built incrementally and passed into changeContext.actionTeams.
+ *    Since changeContext holds a reference to the same array, emails sent after each team
+ *    is added automatically include the growing list in Section 6 of the email template.
+ *
+ * ON REJECTION
+ * ─────────────
+ * Marks the workflow 'Rejected' and sends a rejection email to the requester and current manager.
+ * No action items are created.
+ *
+ * @param {Object} formData - From StatusChangeApproval.html:
+ *   workflowId, decision ('Approved'|'Rejected'), notes, confirmedNewManager (email),
+ *   confirmedTitle, confirmedJrTitle
+ * @returns {{ success: boolean, message: string }}
  */
 function submitPositionChangeApproval(formData) {
+  const caller = Session.getActiveUser().getEmail();
+  const callerRole = AccessControlService.getUserRolePayload(caller);
+  if (!callerRole.isHR && !callerRole.isAdmin) {
+    return { success: false, message: 'Access denied.' };
+  }
   try {
     rawLog('submitPositionChangeApproval', formData);
     const { workflowId, decision, notes, confirmedNewManager, confirmedTitle, confirmedJrTitle } = formData;
     const formId = generateFormId('CHG_APP');
 
-    addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, [
-      workflowId, formId, new Date(), decision, notes,
-      confirmedTitle || '', confirmedNewManager || '', Session.getActiveUser().getEmail()
-    ]);
+    // Acquire lock — check and write must be atomic to prevent duplicate approvals
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
+    try {
+      const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+      const appSheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
+      const appData = appSheet.getDataRange().getValues();
+      for (let i = 1; i < appData.length; i++) {
+        if (appData[i][0] === workflowId) {
+          return { success: true, message: 'Approval already processed for this workflow.' };
+        }
+      }
+      // Write inside lock — check and write are atomic
+      // Columns: [0] WorkflowId, [1] FormId, [2] Timestamp, [3] Decision, [4] Notes,
+      //          [5] ConfirmedTitle, [6] ConfirmedNewManager, [7] SubmittedBy
+      addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, [
+        workflowId, formId, new Date(), decision, notes,
+        confirmedTitle || '', confirmedNewManager || '', Session.getActiveUser().getEmail()
+      ]);
+      // Flush before lock release so row is visible to same-execution reads
+      SpreadsheetApp.flush();
+    } finally {
+      lock.releaseLock();
+    }
 
     if (decision === 'Approved') {
       const changeData = getPositionChangeData(workflowId);
@@ -347,7 +422,10 @@ function submitPositionChangeApproval(formData) {
       // Current (old) manager email — from stored current manager or parsed managerChange
       const mgrMatches = (changeData.managerChange || '').match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
       const mgrOldEmail = changeData.currentManagerEmail || (mgrMatches.length > 0 ? mgrMatches[0].replace(/[()]/g, '') : '');
-      const mgrNewEmail = receivingManagerEmail || (mgrMatches.length > 1 ? mgrMatches[1].replace(/[()]/g, '') : mgrOldEmail);
+      // Only use a new manager email for routing if a Reporting Manager Change was explicitly requested
+      const mgrNewEmail = (changeData.changes && changeData.changes.includes('Reporting Manager Change'))
+        ? (receivingManagerEmail || (mgrMatches.length > 1 ? mgrMatches[1].replace(/[()]/g, '') : mgrOldEmail))
+        : mgrOldEmail;
 
       // Effective job title: HR's confirmed title > request's new title > current title
       const effectiveTitle = (confirmedTitle && confirmedTitle.trim()) ? confirmedTitle.trim() : (changeData.jobTitle || changeData.currentTitle || '');
@@ -373,7 +451,7 @@ function submitPositionChangeApproval(formData) {
         jobTitle: effectiveTitle,
         siteName: changeData.siteName,
         hireDate: changeData.effDate,
-        requestDate: changeData.effDate,
+        requestDate: changeData.dateRequested || '',
         requesterEmail: changeData.requesterEmail,
         changeTypes: changeData.changes,
         siteTransfer: changeData.siteTransfer,
@@ -508,7 +586,7 @@ function submitPositionChangeApproval(formData) {
         if (!ccItems.length) ccItems.push('Verify card type(s) required for new role (USA / Canada / Home Depot) with requester');
         ccItems.push('Submit credit card application for ' + changeData.employeeName);
         ccItems.push('Confirm application submitted and card delivery timeline');
-        const ccTid = ActionItemService.createActionItem(workflowId, 'Credit Card', 'Credit Card Order', JSON.stringify(ccItems), CONFIG.EMAILS.CREDIT_CARD, 'creditcard');
+        const ccTid = ActionItemService.createActionItem(workflowId, 'Finance', 'Credit Card Order', JSON.stringify(ccItems), CONFIG.EMAILS.CREDIT_CARD, 'creditcard');
         tasksCreated++;
         approvalActionTeams.push('Credit Card');
         sendFormEmail({
@@ -528,7 +606,7 @@ function submitPositionChangeApproval(formData) {
           'Remove access to vehicles no longer required',
           'Confirm employee has correct vehicle access and account is active'
         ]);
-        const flTid = ActionItemService.createActionItem(workflowId, 'Fleetio', 'Fleetio Access Update', flDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
+        const flTid = ActionItemService.createActionItem(workflowId, 'Fleet', 'Fleetio Access Update', flDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
         tasksCreated++;
         approvalActionTeams.push('Fleetio');
         sendFormEmail({
@@ -547,7 +625,7 @@ function submitPositionChangeApproval(formData) {
           'Update vehicle record in Fleetio — unassign from employee',
           'Confirm vehicle condition and log any issues'
         ]);
-        const flRetTid = ActionItemService.createActionItem(workflowId, 'Fleetio', 'Vehicle Return', flRetDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
+        const flRetTid = ActionItemService.createActionItem(workflowId, 'Assets', 'Vehicle Return', flRetDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
         tasksCreated++;
         approvalActionTeams.push('Fleetio (Vehicle Return)');
         sendFormEmail({
@@ -566,7 +644,7 @@ function submitPositionChangeApproval(formData) {
           'Unassign all vehicles from employee account',
           'Confirm access has been removed'
         ]);
-        const flRemTid = ActionItemService.createActionItem(workflowId, 'Fleetio', 'Fleetio Access Removal', flRemDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
+        const flRemTid = ActionItemService.createActionItem(workflowId, 'Fleet', 'Fleetio Access Removal', flRemDesc, CONFIG.EMAILS.FLEETIO, 'fleetio');
         tasksCreated++;
         approvalActionTeams.push('Fleetio (Removal)');
         sendFormEmail({
@@ -587,7 +665,7 @@ function submitPositionChangeApproval(formData) {
           'Remove access for old sites/job numbers no longer required',
           'Confirm all purchasing sites and job numbers are configured and active'
         ]);
-        const cpjTid = ActionItemService.createActionItem(workflowId, 'Jonas', 'Central Purchasing/Jonas Update', cpjDesc, CONFIG.EMAILS.JONAS, 'jonas');
+        const cpjTid = ActionItemService.createActionItem(workflowId, 'Purchasing', 'Central Purchasing/Jonas Update', cpjDesc, CONFIG.EMAILS.JONAS, 'jonas');
         tasksCreated++;
         approvalActionTeams.push('Central Purchasing/Jonas');
         sendFormEmail({
@@ -660,14 +738,21 @@ function submitPositionChangeApproval(formData) {
         // Computer/phone/tablet retrieval goes to old manager asset task, not IT
 
         if (itDescItems.length > 0) {
-          const itTid = ActionItemService.createActionItem(workflowId, 'IT', 'IT Access & Equipment Setup', JSON.stringify(itDescItems), CONFIG.EMAILS.IT);
+          // formType='it_setup' is the critical routing key here.
+          // When ActionItemForm.html loads this task, it detects formType='it_setup' and
+          // renders the full IT Setup form (email account, computer, phone, BOSS, system
+          // access checkboxes) instead of the generic checklist view.
+          // When IT submits that form, it calls submitITSetup() (ITSetupHandler.js) which
+          // writes to IT_RESULTS and then closes THIS action item via
+          // ActionItemService.closeActionItem(), which triggers checkWorkflowCompletion().
+          ActionItemService.createActionItem(workflowId, 'IT', 'IT Access & Equipment Setup', JSON.stringify(itDescItems), CONFIG.EMAILS.IT, 'it_setup');
           tasksCreated++;
           approvalActionTeams.push('IT');
           sendFormEmail({
             to: CONFIG.EMAILS.IT,
             subject: 'IT Action Required',
-            body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please complete the IT tasks listed in the action item.',
-            formUrl: buildFormUrl('action_item_view', { tid: itTid }),
+            body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please complete the IT setup using the form below. Record all access and equipment details.',
+            formUrl: buildFormUrl('it_setup', { wf: workflowId }),
             contextData: changeContext
           });
         }
@@ -700,11 +785,11 @@ function submitPositionChangeApproval(formData) {
           'Remove SiteDocs supervisor access for ' + changeData.employeeName,
           'Confirm access has been removed and account is deactivated'
         ]);
-        const sdRemTid = ActionItemService.createActionItem(workflowId, 'Safety', 'SiteDocs Access Removal', sdRemDesc, CONFIG.EMAILS.SAFETY, 'safety_change');
+        const sdRemTid = ActionItemService.createActionItem(workflowId, 'ID Setup', 'SiteDocs Access Removal', sdRemDesc, CONFIG.EMAILS.IDSETUP, 'safety_change');
         tasksCreated++;
-        approvalActionTeams.push('Safety (SiteDocs Removal)');
+        approvalActionTeams.push('ID Setup (SiteDocs Removal)');
         sendFormEmail({
-          to: CONFIG.EMAILS.SAFETY,
+          to: CONFIG.EMAILS.IDSETUP,
           subject: 'SiteDocs Access Removal Required',
           body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please remove their SiteDocs supervisor access.',
           formUrl: buildFormUrl('action_item_view', { tid: sdRemTid }),
@@ -712,27 +797,54 @@ function submitPositionChangeApproval(formData) {
         });
       }
 
-      // 3. ID Setup — update BOSS WIS records only
-      // Also handles new SiteDocs account if requested (SiteDocs in systems)
-      var idDescItems = ['Update BOSS WIS records to reflect the new position/site for ' + changeData.employeeName + '.'];
-      if (allSystems.includes('SiteDocs')) {
-        idDescItems.push('Create new SiteDocs supervisor account as requested.');
-      }
+      // 3a. ID Setup — update BOSS WIS user account for new position/site.
+      //
+      // SEQUENCING: The manager's WIS module assignment (step 3b) must happen AFTER
+      // ID Setup updates the account — the manager can't assign correct WIS modules
+      // until the employee exists on the right site in BOSS.
+      //
+      // The manager WIS item is NOT created here. Instead, closing THIS item triggers
+      // launchWisAssignment() via a post-close hook in ActionItemService.closeActionItem()
+      // (Special Case 3). That function creates the manager WIS item and sends the email.
+      //
+      // formType 'boss_wis_update' is the hook's trigger key — do not rename without
+      // updating the matching condition in ActionItemService.js Special Case 3.
       const idTid = ActionItemService.createActionItem(
-        workflowId, 'ID Setup', 'BOSS WIS Records Update',
-        JSON.stringify(idDescItems), CONFIG.EMAILS.IDSETUP
+        workflowId, 'ID Setup', 'BOSS WIS User Account Update',
+        JSON.stringify(['Update BOSS WIS user account for ' + changeData.employeeName + ' to reflect the new position/site.']),
+        CONFIG.EMAILS.IDSETUP,
+        'boss_wis_update'                                   // hook trigger key — see ActionItemService Special Case 3
       );
       tasksCreated++;
-      approvalActionTeams.push('ID Setup');
+      approvalActionTeams.push('ID Setup (BOSS WIS — manager WIS assignment fires after this closes)');
       sendFormEmail({
         to: CONFIG.EMAILS.IDSETUP,
-        subject: 'BOSS WIS Update Required',
-        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update BOSS WIS records to reflect the new position and/or site.' +
-              (allSystems.includes('SiteDocs') ? ' A new SiteDocs supervisor account has also been requested.' : ''),
+        subject: 'BOSS WIS Account Update Required',
+        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. Please update their BOSS WIS user account to reflect the new position and/or site. ' +
+              '<br><br><em>Note: Once you submit this form, the manager will automatically receive a WIS module assignment task.</em>',
         formUrl: buildFormUrl('action_item_view', { tid: idTid }),
         displayName: 'TEAM Group - Employee Management',
         contextData: changeContext
       });
+
+      // 3b. ID Setup — create new SiteDocs supervisor account if requested
+      if (allSystems.includes('SiteDocs')) {
+      const sdIdTid = ActionItemService.createActionItem(
+        workflowId, 'ID Setup', 'SiteDocs Account Setup',
+        JSON.stringify(['Create new SiteDocs supervisor account for ' + changeData.employeeName + ' at new site.']),
+        CONFIG.EMAILS.IDSETUP
+      );
+      tasksCreated++;
+      approvalActionTeams.push('ID Setup (SiteDocs Account)');
+      sendFormEmail({
+        to: CONFIG.EMAILS.IDSETUP,
+        subject: 'SiteDocs Account Setup Required',
+        body: 'A status change has been approved for <strong>' + changeData.employeeName + '</strong>. A new SiteDocs supervisor account has been requested for their new site.',
+        formUrl: buildFormUrl('action_item_view', { tid: sdIdTid }),
+        displayName: 'TEAM Group - Employee Management',
+        contextData: changeContext
+      });
+      }
 
       // 4. Safety — update DSS site/learning path and SiteDocs site (not a new account)
       var safDescItems = [
@@ -758,24 +870,57 @@ function submitPositionChangeApproval(formData) {
         contextData: changeContext
       });
 
-      updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Change Processed');
-      syncWorkflowState(workflowId);
+      // ── ADP Update — HR + Payroll action item ─────────────────────────────────
+      // Always created on Status Change approval. HR and Payroll share one action item
+      // (one form, one close) — whoever processes ADP updates submits the form.
+      // Category 'HR' → counts toward ADP/HR dashboard button (HR + Payroll combined).
+      // The full change context is visible in the email and on the form.
+      //
+      // Checklist is built dynamically from what actually changed so the recipient
+      // only sees items relevant to this specific status change.
+      // ADP checklist — concise, action-oriented.
+      // Reports fields (oldReportsTo / newReportsFrom) are intentionally omitted from
+      // the checklist because they are already visible in the email context block and
+      // on the form header (rendered by buildStatusChangeContextBlock Section 2).
+      // Seeing them in both the header AND as checklist items would be redundant.
+      var adpItems = [];
 
-      // Notify payroll
-      approvalActionTeams.push('Payroll');
-      var payrollBody = 'HR has approved a status change for <strong>' + changeData.employeeName + '</strong>.';
-      if (changeData.newReportsFrom && changeData.newReportsFrom !== 'N/A') {
-        payrollBody += '<br><br><strong>Direct Report Reassignment:</strong> ' + changeData.employeeName + '\'s direct reports are being reassigned to <strong>' + changeData.newReportsFrom + '</strong>. Please update ADP reporting structure accordingly.';
-      } else if (changeData.oldReportsTo && changeData.oldReportsTo !== 'N/A') {
-        payrollBody += '<br><br><strong>Direct Reports:</strong> ' + changeData.employeeName + ' currently has direct reports (' + changeData.oldReportsTo + '). Please confirm reassignment with HR and update ADP reporting structure.';
+      // Always: update the employee record
+      adpItems.push('Update ' + changeData.employeeName + ' in ADP');
+
+      // Delegation — employee is losing their direct reports
+      if (changeData.oldReportsTo && changeData.oldReportsTo !== 'N/A' && changeData.oldReportsTo !== '') {
+        adpItems.push('Reassign reports from ' + changeData.employeeName + ' to: ' + changeData.oldReportsTo);
       }
-      if (notes) payrollBody += '<br><br><em>HR Notes: ' + notes + '</em>';
+
+      // Delegation — employee is gaining direct reports from someone else
+      if (changeData.newReportsFrom && changeData.newReportsFrom !== 'N/A' && changeData.newReportsFrom !== '') {
+        adpItems.push('Reassign reports to ' + changeData.employeeName + ' from: ' + changeData.newReportsFrom);
+      }
+
+      const adpTid = ActionItemService.createActionItem(
+        workflowId,
+        'HR',                                                        // category — HR counts toward ADP/HR button
+        'ADP Update Required — ' + changeData.employeeName,
+        JSON.stringify(adpItems),
+        CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL,             // both receive the same action item
+        'adp_update'
+      );
+      tasksCreated++;
+      approvalActionTeams.push('HR + Payroll (ADP Update)');
       sendFormEmail({
-        to: CONFIG.EMAILS.PAYROLL,
-        subject: 'Status Change Approved',
-        body: payrollBody,
+        to:          CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL,
+        subject:     'ADP Update Required — ' + changeData.employeeName,
+        body:        'HR has approved a status change for <strong>' + changeData.employeeName + '</strong>. ' +
+                     'Please review the change details below and update ADP accordingly. ' +
+                     'Use the form link to confirm completion once done.',
+        formUrl:     buildFormUrl('action_item_view', { tid: adpTid }),
+        displayName: 'TEAM Group - Employee Management',
         contextData: changeContext
       });
+
+      updateWorkflow(workflowId, 'In Progress', tasksCreated > 0 ? 'Action Items Pending' : 'Change Processed');
+      syncWorkflowState(workflowId);
 
       // Notify requester
       const scRecipients = [changeData.requesterEmail];
@@ -809,20 +954,27 @@ function submitPositionChangeApproval(formData) {
         contextData: {
           workflowType: 'Status Change',
           employeeName: changeDataRej.employeeName,
+          jobTitle: changeDataRej.jobTitle || changeDataRej.currentTitle || '',
           siteName: changeDataRej.siteName,
           hireDate: changeDataRej.effDate,
+          requestDate: changeDataRej.dateRequested || '',
           requesterEmail: changeDataRej.requesterEmail,
+          department: changeDataRej.department || '',
           changeTypes: changeDataRej.changes,
           siteTransfer: changeDataRej.siteTransfer,
           titleChange: changeDataRej.titleChange,
           classChange: changeDataRej.classChange,
           managerChange: changeDataRej.managerChange,
+          managerEmail: mgrOldEmailRej,
+          managerName: changeDataRej.currentManagerName || '',
           currentTitle: changeDataRej.currentTitle || '',
           currentManagerName: changeDataRej.currentManagerName || '',
           currentManagerEmail: mgrOldEmailRej,
           employmentType: changeDataRej.currentClass || '',
           systems: changeDataRej.systems,
           equipmentRaw: changeDataRej.equipment,
+          removalAccess: changeDataRej.removalAccess || '',
+          equipmentReturn: changeDataRej.equipmentReturn || '',
           hrDecision: 'Rejected',
           hrNotes: notes || ''
         }
@@ -832,5 +984,98 @@ function submitPositionChangeApproval(formData) {
     }
   } catch (e) {
     return { success: false, message: e.message };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// launchWisAssignment
+//
+// Called by ActionItemService.closeActionItem() (Special Case 3) when the
+// ID Setup "BOSS WIS User Account Update" item (formType='boss_wis_update')
+// is closed on a CHANGE_ workflow.
+//
+// WHY post-close and not at approval time?
+// The manager can only assign the correct WIS modules AFTER ID Setup has
+// updated the employee's account in BOSS to the new site. Creating both items
+// simultaneously would let the manager proceed before the account exists on
+// the right site. This sequencing matches New Hire, where the WIS assignment
+// goes to the manager only after ID Setup completes.
+//
+// This function is intentionally defined in PositionChangeHandler.js (not
+// ActionItemService.js) so all Status Change email/form building logic stays
+// in one place. ActionItemService calls it by name — GAS global scope makes
+// this cross-file call legal without any imports.
+//
+// @param {string} workflowId  — CHANGE_ workflow ID
+// ─────────────────────────────────────────────────────────────────────────────
+function launchWisAssignment(workflowId) {
+  try {
+    const changeData = getPositionChangeData(workflowId);
+    if (!changeData) {
+      Logger.log('[launchWisAssignment] No changeData found for ' + workflowId + ' — WIS assignment skipped');
+      return;
+    }
+
+    // Resolve the manager who receives the WIS assignment:
+    // prefer the confirmed new/receiving manager; fall back to current manager.
+    const managerEmail = changeData.receivingManagerEmail
+      || changeData.mgrNewEmail
+      || changeData.currentManagerEmail
+      || '';
+
+    if (!managerEmail) {
+      Logger.log('[launchWisAssignment] No manager email found for ' + workflowId + ' — WIS assignment skipped');
+      return;
+    }
+
+    // Build a minimal changeContext for the email template — enough for the
+    // Status Change context block to render correctly in the manager's email.
+    const wisContext = {
+      workflowId:          workflowId,
+      workflowType:        'Status Change',
+      employeeName:        changeData.employeeName || '',
+      jobTitle:            changeData.jobTitle     || changeData.currentTitle || '',
+      siteName:            changeData.siteName     || '',
+      hireDate:            changeData.effDate      || '',
+      requestDate:         changeData.dateRequested || '',
+      requesterEmail:      changeData.requesterEmail || '',
+      changeTypes:         changeData.changes       || '',
+      siteTransfer:        changeData.siteTransfer  || '',
+      titleChange:         changeData.titleChange   || '',
+      classChange:         changeData.classChange   || '',
+      managerChange:       changeData.managerChange || '',
+      managerEmail:        managerEmail,
+      currentManagerName:  changeData.currentManagerName || '',
+      systems:             changeData.systems        || ''
+    };
+
+    // Create the WIS assignment action item assigned to the manager.
+    // Category 'WIS' is non-blocking in checkWorkflowCompletion() — this task
+    // will not hold up workflow completion if the manager is slow to respond.
+    const wisTid = ActionItemService.createActionItem(
+      workflowId,
+      'WIS',
+      'BOSS WIS Module Assignment — ' + changeData.employeeName,
+      JSON.stringify([
+        'Assign the correct BOSS WIS (Work Instructions & Safety) modules to ' + changeData.employeeName + ' for their new position/site.',
+        'Note: ID Setup has updated the BOSS account — the employee is now on the correct site.'
+      ]),
+      managerEmail,
+      'wis_assignment'
+    );
+
+    sendFormEmail({
+      to:          managerEmail,
+      subject:     'BOSS WIS Assignment Required — ' + changeData.employeeName,
+      body:        'The ID Setup team has updated <strong>' + changeData.employeeName + '\'s</strong> BOSS WIS account for their new position/site. ' +
+                   'Please assign the appropriate WIS modules for their new role.',
+      formUrl:     buildFormUrl('action_item_view', { tid: wisTid }),
+      displayName: 'TEAM Group - Employee Management',
+      contextData: wisContext
+    });
+
+    Logger.log('[launchWisAssignment] WIS assignment item ' + wisTid + ' created for manager ' + managerEmail + ' on ' + workflowId);
+  } catch (e) {
+    Logger.log('[launchWisAssignment] Error: ' + e.message);
   }
 }

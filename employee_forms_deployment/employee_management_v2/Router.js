@@ -5,6 +5,19 @@
 
 function doGet(e) {
   try {
+    // Maintenance mode — serve splash page for all requests when MAINTENANCE_MODE='true' in Script Properties.
+    // MAINTENANCE_BYPASS_EMAILS Script Property (comma-separated) allows specific users through.
+    if (CONFIG.MAINTENANCE_MODE) {
+      var _userEmail = Session.getActiveUser().getEmail().toLowerCase();
+      var _bypass = (PropertiesService.getScriptProperties().getProperty('MAINTENANCE_BYPASS_EMAILS') || '')
+        .split(',').map(function(e) { return e.trim().toLowerCase(); }).filter(Boolean);
+      if (_bypass.indexOf(_userEmail) === -1) {
+        return HtmlService.createTemplateFromFile('MaintenancePage').evaluate()
+          .setTitle('Down for Maintenance')
+          .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      }
+    }
+
     const userEmail = Session.getActiveUser().getEmail();
     const form = e.parameter.form;
     const workflowId = e.parameter.wf || e.parameter.id || '';
@@ -104,6 +117,45 @@ function doGet(e) {
   } catch (error) {
     Logger.log('Router error: ' + error.toString());
     return HtmlService.createHtmlOutput('<h1>Error</h1><p>' + error.message + '</p>');
+  }
+}
+
+/**
+ * POST entry point for portal automation (n8n) — secret-gated, no Google login required.
+ * Intended for a dedicated ANYONE-access deployment so n8n (which has no Google session)
+ * can call it. The PORTAL_SHARED_SECRET Script Property is the authorization; because an
+ * anonymous web app has no Session user, this path does NOT use the per-user allowlist that
+ * completeMyTask (Execution API) enforces — the secret is the gate.
+ *
+ * Request body (JSON):
+ *   { "secret":"…", "workflowId":"NEW_EMP_…", "itemName":"Verify and assign JR title", "comments":"…" }
+ * Response (JSON): { success, message, taskId? }
+ *
+ * NOTE: Apps Script doPost cannot read custom request headers, so the secret MUST be in the
+ * body (or ?secret= query), never an X-Portal-Secret header.
+ */
+function doPost(e) {
+  function _json(o) {
+    return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+  }
+  try {
+    var body = {};
+    try { body = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (_) { body = {}; }
+    var secret   = body.secret || (e && e.parameter && e.parameter.secret) || '';
+    var expected = ConfigurationService.getSetting('PORTAL_SHARED_SECRET') || '';
+    if (!expected)          return _json({ success: false, message: 'Endpoint not configured' });
+    if (secret !== expected) return _json({ success: false, message: 'Unauthorized' });
+
+    var action = body.action || 'completeJrTitle';
+    if (action !== 'completeJrTitle') return _json({ success: false, message: 'Unknown action: ' + action });
+    if (!body.workflowId)             return _json({ success: false, message: 'workflowId is required' });
+
+    var comments = body.comments ||
+      ('JR title verified & assigned via n8n' + (body.itemName ? ' (' + body.itemName + ')' : ''));
+    return _json(jrCompleteViaSecret(body.workflowId, comments));
+  } catch (err) {
+    Logger.log('[doPost] ERROR: ' + err);
+    return _json({ success: false, message: String(err) });
   }
 }
 

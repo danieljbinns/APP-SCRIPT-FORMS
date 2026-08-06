@@ -62,6 +62,11 @@ function submitTerminationRequest(formData) {
       }
     }
 
+    // Validate manager was selected from directory (name auto-fills only on directory select)
+    if (formData.managerEmail && !formData.managerName) {
+      return { success: false, message: 'Manager must be selected from the directory lookup — please search and select a name.' };
+    }
+
     const rowData = [
       formData.workflowId,
       formData.formId,
@@ -73,7 +78,7 @@ function submitTerminationRequest(formData) {
       formData.empType || '',
       formData.empWorkEmail || 'N/A',
       formData.empPhone || 'N/A',
-      formData.empSerial || 'N/A',
+      formData.empSerial || 'N/A', // COMPUTER_SERIAL (index 10) — reserved to keep column parity with prod; form no longer collects it
       formData.siteName,
       formData.termDate,
       formData.reason,
@@ -93,11 +98,6 @@ function submitTerminationRequest(formData) {
       formData.lastDayWorked || '',
       attachmentUrl
     ];
-
-    // Validate manager was selected from directory (name auto-fills only on directory select)
-    if (formData.managerEmail && !formData.managerName) {
-      return { success: false, message: 'Manager must be selected from the directory lookup — please search and select a name.' };
-    }
 
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATIONS, rowData);
     if (!sheetSuccess) throw new Error('Failed to record termination in sheet');
@@ -139,8 +139,9 @@ function _sendTerminationSubmitEmails(workflowId) {
     managerEmail:      termData.managerEmail,
     requestDate:       new Date().toLocaleDateString(),
     requesterEmail:    termData.requesterEmail,
+    termDate:          fmtDate_(termData.termDate),
     hireDate:          fmtDate_(termData.termDate),
-    employmentType:    termData.empType,
+    employmentType:    termData.employmentType || termData.empType,
     lastDayWorked:     fmtDate_(termData.lastDayWorked),
     reason:            termData.reason,
     equipmentRaw:      termData.eqToReturn,
@@ -181,22 +182,35 @@ function getTerminationData(workflowId) {
   const data = getRowByRequestId(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATIONS, workflowId);
   if (!data) return null;
   const TR = SCHEMA.TERMINATIONS;
+  const termDate = data[TR.TERM_DATE]
+    ? (data[TR.TERM_DATE] instanceof Date
+        ? Utilities.formatDate(data[TR.TERM_DATE], Session.getScriptTimeZone(), 'yyyy-MM-dd')
+        : Utilities.formatDate(new Date(data[TR.TERM_DATE]), Session.getScriptTimeZone(), 'yyyy-MM-dd'))
+    : '';
   return {
-    workflowId:     data[TR.WORKFLOW_ID],
-    employeeName:   data[TR.EMPLOYEE_NAME],
-    empID:          data[TR.EMPLOYEE_ID],
-    empType:        data[TR.EMPLOYEE_TYPE],
-    siteName:       data[TR.SITE],
-    termDate:       data[TR.TERM_DATE] ? (data[TR.TERM_DATE] instanceof Date ? Utilities.formatDate(data[TR.TERM_DATE], Session.getScriptTimeZone(), 'yyyy-MM-dd') : Utilities.formatDate(new Date(data[TR.TERM_DATE]), Session.getScriptTimeZone(), 'yyyy-MM-dd')) : '',
-    reason:         data[TR.REASON],
-    requesterEmail: data[TR.REQUESTER_EMAIL],
-    managerName:    data[TR.MANAGER_NAME],
-    managerEmail:   data[TR.MANAGER_EMAIL],
-    hasReports:     data[TR.HAS_REPORTS],
-    reportsToNew:   data[TR.REASSIGN_REPORTS_TO],
-    empPhone:       data[TR.PHONE],
-    systems:        data[TR.SYSTEMS_TO_DEACTIVATE],
-    eqToReturn:     data[TR.EQUIPMENT_TO_RETURN],
+    workflowId:       data[TR.WORKFLOW_ID],
+    workflowType:     'Termination',
+    employeeName:     data[TR.EMPLOYEE_NAME],
+    empID:            data[TR.EMPLOYEE_ID],
+    empType:          data[TR.EMPLOYEE_TYPE],
+    employmentType:   data[TR.EMPLOYEE_TYPE],   // normalized alias for M-19
+    siteName:         data[TR.SITE],
+    termDate:         termDate,
+    hireDate:         termDate,                  // alias so RequestHeader.html rd.hireDate fallback works
+    reason:           data[TR.REASON],
+    requesterEmail:   data[TR.REQUESTER_EMAIL],
+    managerName:      data[TR.MANAGER_NAME],
+    managerEmail:     data[TR.MANAGER_EMAIL],
+    hasReports:       data[TR.HAS_REPORTS],
+    reportsToNew:     data[TR.REASSIGN_REPORTS_TO],
+    empPhone:         data[TR.PHONE],
+    systems:          data[TR.SYSTEMS_TO_DEACTIVATE],
+    eqToReturn:       data[TR.EQUIPMENT_TO_RETURN],
+    googleForward:    data[TR.EMAIL_FORWARDING]      || '',
+    googleFiles:      data[TR.DRIVE_FILES_TRANSFER]  || '',
+    googleDelegate:   data[TR.INBOX_DELEGATE]         || '',
+    googleDuration:   data[TR.ACCOUNT_DURATION]       || '',
+    googleVacation:   data[TR.VACATION_RESPONDER]     || '',
     googleOffboarding: {
       forward:   data[TR.EMAIL_FORWARDING],
       files:     data[TR.DRIVE_FILES_TRANSFER],
@@ -205,8 +219,12 @@ function getTerminationData(workflowId) {
       vacation:  data[TR.VACATION_RESPONDER]
     },
     originalComments: data[TR.COMMENTS],
-    lastDayWorked:  data[TR.LAST_DAY_WORKED] ? (data[TR.LAST_DAY_WORKED] instanceof Date ? Utilities.formatDate(new Date(data[TR.LAST_DAY_WORKED]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[TR.LAST_DAY_WORKED]) : '',
-    attachmentUrl:  data[SCHEMA.TERMINATIONS.ATTACHMENT_URL] || ''
+    lastDayWorked:    data[TR.LAST_DAY_WORKED]
+      ? (data[TR.LAST_DAY_WORKED] instanceof Date
+          ? Utilities.formatDate(new Date(data[TR.LAST_DAY_WORKED]), Session.getScriptTimeZone(), 'yyyy-MM-dd')
+          : data[TR.LAST_DAY_WORKED])
+      : '',
+    attachmentUrl:    data[SCHEMA.TERMINATIONS.ATTACHMENT_URL] || ''
   };
 }
 
@@ -214,15 +232,35 @@ function getTerminationData(workflowId) {
  * Handle HR Approval Submission
  */
 function submitTerminationApproval(formData) {
+  const caller = Session.getActiveUser().getEmail();
+  const callerRole = AccessControlService.getUserRolePayload(caller);
+  if (!callerRole.isHR && !callerRole.isAdmin) {
+    return { success: false, message: 'Access denied.' };
+  }
   try {
     rawLog('submitTerminationApproval', formData);
     const { workflowId, decision, notes } = formData;
     const formId = generateFormId('TERM_APP');
-    
-    // Record approval
-    addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATION_APPROVALS, [
-      workflowId, formId, new Date(), decision, notes, 'YES', Session.getActiveUser().getEmail()
-    ]);
+
+    // Acquire lock — check and write must be atomic to prevent duplicate approvals
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
+    try {
+      const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+      const appSheet = ss.getSheetByName(CONFIG.SHEETS.TERMINATION_APPROVALS);
+      const appData = appSheet.getDataRange().getValues();
+      for (let i = 1; i < appData.length; i++) {
+        if (appData[i][0] === workflowId) {
+          return { success: true, message: 'Approval already processed for this workflow.' };
+        }
+      }
+      // Record approval inside lock so duplicate check and write are atomic
+      addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATION_APPROVALS, [
+        workflowId, formId, new Date(), decision, notes, 'YES', Session.getActiveUser().getEmail()
+      ]);
+    } finally {
+      lock.releaseLock();
+    }
     
     if (decision === 'Approved') {
       const termData = getTerminationData(workflowId);
@@ -292,15 +330,18 @@ function submitTerminationApproval(formData) {
       // HR Group (ADP) — CC Payroll since different locations handle this differently
       const hrItems = selectedSystems.filter(s => s === 'ADP Supervisor Access').map(s => 'Remove from ' + s);
       if (hrItems.length > 0) {
-        const hrAndPayroll = CONFIG.EMAILS.HR + ',' + CONFIG.EMAILS.PAYROLL;
         const hrDescItems = hrItems.slice();
         if (termData.hasReports === 'Yes') {
           const newMgr = (termData.reportsToNew && termData.reportsToNew !== 'N/A') ? termData.reportsToNew : 'TBD — confirm with HR';
           hrDescItems.push('Direct reports to be reassigned to: ' + newMgr);
           hrDescItems.push('Update ADP reporting structure to reflect direct report reassignment');
         }
-        const tid = ActionItemService.createActionItem(workflowId, 'HR', 'HR Systems Deactivation - ' + termData.employeeName, JSON.stringify(hrDescItems), hrAndPayroll);
-        sendActionItemEmail(hrAndPayroll, 'HR Action Required', tid, termData, hrItems);
+        const tid = ActionItemService.createActionItem(workflowId, 'HR', 'HR Systems Deactivation - ' + termData.employeeName, JSON.stringify(hrDescItems), CONFIG.EMAILS.HR);
+        sendActionItemEmail(CONFIG.EMAILS.HR, 'HR Action Required', tid, termData, hrItems);
+        tasksCreated++;
+        const adpItems = ['Remove ADP Supervisor Access for ' + termData.employeeName];
+        const tidPayroll = ActionItemService.createActionItem(workflowId, 'Payroll', 'ADP Deactivation - ' + termData.employeeName, JSON.stringify(adpItems), CONFIG.EMAILS.PAYROLL);
+        sendActionItemEmail(CONFIG.EMAILS.PAYROLL, 'Payroll Action Required', tidPayroll, termData, adpItems);
         tasksCreated++;
       }
 
@@ -315,8 +356,8 @@ function submitTerminationApproval(formData) {
       // Central Purchasing/Jonas Group
       if (selectedSystems.includes('Central Purchasing/Jonas')) {
         const financeItems = ['Remove from Central Purchasing/Jonas'];
-        const tid = ActionItemService.createActionItem(workflowId, 'Finance', `Central Purchasing/Jonas Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
-        sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Finance Action Required', tid, termData, financeItems);
+        const tid = ActionItemService.createActionItem(workflowId, 'Purchasing', `Central Purchasing/Jonas Deactivation - ${termData.employeeName}`, JSON.stringify(financeItems), CONFIG.EMAILS.JONAS);
+        sendActionItemEmail(CONFIG.EMAILS.JONAS, 'Purchasing Action Required', tid, termData, financeItems);
         tasksCreated++;
       }
 

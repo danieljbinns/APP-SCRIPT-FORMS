@@ -115,21 +115,77 @@ function buildEmailSubject(action, contextData, opts) {
 }
 
 /**
- * Helper function to build context data from workflow
- * Fetches initial request data to include in subsequent emails
- * @param {string} workflowId - Workflow ID
- * @returns {Object} Context data for emails
+ * Builds the canonical email context object for a given workflow.
+ *
+ * This is the single source of truth for all data that appears in email templates.
+ * Every sendFormEmail() call ultimately uses the object returned here (via contextData)
+ * to populate createContextBlockV2() → the per-workflow template builders in EmailTemplates.js.
+ *
+ * WORKFLOW ROUTING (early-return branches)
+ * ─────────────────────────────────────────
+ * The function routes by workflowId prefix:
+ *
+ *   TERM_   → getTerminationData() (TerminationHandler.js) provides the base object.
+ *             Enriched with TERMINATION_APPROVALS (hrDecision, hrNotes, hrSubmittedBy,
+ *             hrTimestamp). Returns immediately after enrichment.
+ *
+ *   CHANGE_ → getPositionChangeData() (PositionChangeHandler.js) provides the base object.
+ *             Returns immediately after building the context literal.
+ *             NOTE: The POSITION_CHANGE_APPROVALS enrichment block that follows the
+ *             return statement is DEAD CODE — it is never executed. Enrichment for
+ *             CHANGE_ workflows is handled in notifyWorkflowClosure() (ActionItemService.js).
+ *
+ *   EQUIP_REQ_ / NEW_EMP_ → Falls through to the shared INITIAL_REQUESTS read below.
+ *
+ * SHARED READ PATH (New Hire + Equipment Request)
+ * ─────────────────────────────────────────────────
+ * After the early-return branches, the function reads the INITIAL_REQUESTS sheet,
+ * locates the matching row by header name lookup, and builds a `context` object.
+ * Three additional sheet reads augment the base object:
+ *
+ *   HR_VERIFICATION_RESULTS — ADP Associate ID, verified job title / JR title,
+ *                             HR-verified manager name & email, hrTimestamp, hrSubmittedBy.
+ *                             Only populated after HR Verification is complete.
+ *
+ *   ID_SETUP_RESULTS        — internalEmployeeId, siteDocsWorkerId, siteDocsJobCode,
+ *                             siteDocsUsername, siteDocsPassword, dssUsername, dssPassword,
+ *                             bossWisCreated, idTimestamp, idSubmittedBy.
+ *                             For New Hire: populated after ID Setup step.
+ *                             For Equipment Request: populated after WIS User action item
+ *                             closes (written by closeActionItem() in ActionItemService.js).
+ *
+ *   IT_RESULTS              — All IT Setup fields: assignedEmail, emailTempPassword,
+ *                             computer*, phone*, bossAccess, incidentsAccess, caaAccess,
+ *                             deliveryAppAccess, netPromoterAccess, itNotes, itTimestamp,
+ *                             itSubmittedBy, bossDetails.
+ *                             For New Hire/Equipment: populated after submitITSetup().
+ *                             For CHANGE_: populated after closeActionItem() CHANGE_ branch.
+ *
+ * SHEET CACHING CAVEAT
+ * ─────────────────────
+ * GAS may cache Spreadsheet.getSheetByName() / getDataRange().getValues() results
+ * within a single script execution. When closeActionItem() and notifyWorkflowClosure()
+ * run in the same execution and need fresh data, they read from their in-memory
+ * wfTasks snapshot instead of relying on this function's sheet reads.
+ *
+ * @param {string} workflowId - Workflow ID (e.g. 'NEW_EMP_XXXX', 'TERM_XXXX',
+ *                              'CHANGE_XXXX', 'EQUIP_REQ_XXXX')
+ * @returns {Object|null} Populated context object, or null if workflow data not found
  */
 function getWorkflowContext(workflowId) {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
 
-    // Support for Termination Workflows
+    // ── EARLY RETURN: Termination Workflows (TERM_) ───────────────────────────
+    // getTerminationData() reads the TERMINATIONS sheet and returns a structured object.
+    // This branch enriches it with HR approval data from TERMINATION_APPROVALS.
+    // TERMINATION_APPROVALS columns: [0] WorkflowId, [2] Timestamp, [3] Decision,
+    //   [4] Notes, [6] SubmittedBy
     if (workflowId && workflowId.startsWith('TERM')) {
       const termData = typeof getTerminationData === 'function' ? getTerminationData(workflowId) : null;
       if (termData) {
         const g = termData.googleOffboarding || {};
-        return {
+        const termContext = {
           workflowType:    'Termination',
           employeeName:    termData.employeeName,
           employmentType:  termData.empType || '',
@@ -138,6 +194,7 @@ function getWorkflowContext(workflowId) {
           managerEmail:    termData.managerEmail,
           requesterEmail:  termData.requesterEmail,
           hireDate:        termData.termDate,
+          termDate:        termData.termDate,
           lastDayWorked:   termData.lastDayWorked  || '',
           equipmentRaw:    termData.eqToReturn,
           systems:         termData.systems ? termData.systems.split(',').map(function(s){ return s.trim(); }) : [],
@@ -153,19 +210,46 @@ function getWorkflowContext(workflowId) {
           googleVacation:  g.vacation || '',
           originalComments: termData.originalComments || ''
         };
+        // Enrich with HR approval data (decision, notes, approver, timestamp)
+        const taSheet = ss.getSheetByName(CONFIG.SHEETS.TERMINATION_APPROVALS);
+        if (taSheet) {
+          const taData = taSheet.getDataRange().getValues();
+          const taRow = taData.find(function(r) { return r[0] === workflowId; });
+          if (taRow) {
+            if (taRow[3]) termContext.hrDecision    = String(taRow[3]);
+            if (taRow[4]) termContext.hrNotes       = String(taRow[4]);
+            if (taRow[6]) termContext.hrSubmittedBy = String(taRow[6]);
+            if (taRow[2]) termContext.hrTimestamp   = taRow[2] instanceof Date
+              ? Utilities.formatDate(taRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a')
+              : String(taRow[2]);
+          }
+        }
+        return termContext;
       }
     }
 
-    // Support for Position Change / Status Change Workflows
+    // ── EARLY RETURN: Status Change Workflows (CHANGE_) ──────────────────────
+    // getPositionChangeData() reads the POSITION_CHANGES sheet row.
+    // Manager emails are parsed from the stored "Name (email) -> Name (email)" delta string
+    // rather than from separate columns, since POSITION_CHANGES stores the combined string.
+    //
+    // IMPORTANT: The POSITION_CHANGE_APPROVALS enrichment block below the `return` is
+    // dead code — it references `changeContext` which is not declared in this scope.
+    // HR approval enrichment for CHANGE_ workflows is performed in:
+    //   notifyWorkflowClosure() (ActionItemService.js) — for the Workflow Completed email
+    //   submitPositionChangeApproval() (PositionChangeHandler.js) — for all approval emails
+    // If CHANGE_ context ever needs HR approval data in a non-closure context, the
+    // POSITION_CHANGE_APPROVALS read must be moved before this `return` statement.
     if (workflowId && workflowId.startsWith('CHANGE_')) {
       const changeData = typeof getPositionChangeData === 'function' ? getPositionChangeData(workflowId) : null;
       if (changeData) {
-        // Parse manager emails from stored managerChange string "Name (email) -> Name (email)"
+        // Parse manager emails from stored managerChange string: "Name (email) -> Name (email)"
+        // Each parenthesised group is a full email address. First match = old manager, second = new.
         const mcStr = String(changeData.managerChange || '');
         const mcMatches = mcStr.match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
         const mgrOldEmail = changeData.currentManagerEmail || (mcMatches.length > 0 ? mcMatches[0].replace(/[()]/g, '') : '');
         const mgrNewEmail = changeData.mgrNewEmail || (mcMatches.length > 1 ? mcMatches[1].replace(/[()]/g, '') : mgrOldEmail);
-        return {
+        const changeContext = {
           workflowType: 'Status Change',
           employeeName: changeData.employeeName || '',
           jobTitle: changeData.jobTitle || changeData.currentTitle || '',
@@ -189,17 +273,39 @@ function getWorkflowContext(workflowId) {
           currentTitle: changeData.currentTitle || '',
           currentManagerName: changeData.currentManagerName || '',
           currentManagerEmail: changeData.currentManagerEmail || '',
-          creditCardUSA:            changeData.creditCardUSA || '',
-          creditCardLimitUSA:       changeData.creditCardLimitUSA || '',
-          creditCardCanada:         changeData.creditCardCanada || '',
-          creditCardLimitCanada:    changeData.creditCardLimitCanada || '',
-          creditCardHomeDepot:      changeData.creditCardHomeDepot || '',
-          creditCardLimitHomeDepot: changeData.creditCardLimitHomeDepot || ''
+          creditCardUSA:            changeData.ccUSA || '',
+          creditCardLimitUSA:       changeData.ccLimitUSA || '',
+          creditCardCanada:         changeData.ccCAN || '',
+          creditCardLimitCanada:    changeData.ccLimitCAN || '',
+          creditCardHomeDepot:      changeData.ccHD || '',
+          creditCardLimitHomeDepot: changeData.ccLimitHD || '',
+          requestDate:              changeData.dateRequested || changeData.effDate || '',
+          oldReportsTo:  changeData.oldReportsTo  || '',
+          newReportsFrom: changeData.newReportsFrom || ''
         };
+        // Enrich with HR approval data if available
+        const pcaSheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGE_APPROVALS);
+        if (pcaSheet) {
+          const pcaData = pcaSheet.getDataRange().getValues();
+          const pcaRow = pcaData.find(function(r) { return r[0] === workflowId; });
+          if (pcaRow) {
+            if (pcaRow[3]) changeContext.hrDecision         = String(pcaRow[3]);
+            if (pcaRow[4]) changeContext.hrNotes            = String(pcaRow[4]);
+            if (pcaRow[5]) changeContext.confirmedTitle     = String(pcaRow[5]);
+            if (pcaRow[6]) changeContext.confirmedNewManager = String(pcaRow[6]);
+            if (pcaRow[7]) changeContext.hrSubmittedBy      = String(pcaRow[7]);
+            if (pcaRow[2]) changeContext.hrTimestamp        = pcaRow[2] instanceof Date
+              ? Utilities.formatDate(pcaRow[2], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a')
+              : String(pcaRow[2]);
+          }
+        }
+        return changeContext;
       }
     }
 
-    // Equipment requests now stored in Initial_Requests — falls through to shared read below
+    // Equipment requests are stored in INITIAL_REQUESTS (same sheet as New Hire) —
+    // falls through to the shared read below. The workflowType is derived from
+    // workflowId prefix: 'EQUIP_REQ_' → 'Equipment Request', else 'New Hire'.
 
     const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
 
@@ -268,23 +374,41 @@ function getWorkflowContext(workflowId) {
       bossCostSheetJobs: row[headers.indexOf('BOSS Cost Sheet Jobs')]   || row[headers.indexOf('Cost Sheet Jobs')] || '',
       bossTripReports:  row[headers.indexOf('BOSS Trip Reports')]       || row[headers.indexOf('Trip Reports')] || '',
       bossGrievances:   row[headers.indexOf('BOSS Grievances')]         || row[headers.indexOf('Grievances')] || '',
-      vehicleRequested: row[headers.indexOf('Vehicle Requested')]       || row[headers.indexOf('Company Vehicle')] || '',
-      fleetioAccess:    row[headers.indexOf('Fleetio Access')]          || ''
+      // Derive from systems/equipment arrays (reliable) rather than column header lookup
+      vehicleRequested: (String(row[SCHEMA.INITIAL_REQUESTS.EQUIPMENT] || '').toLowerCase().indexOf('vehicle') !== -1) ? 'Yes' : (row[headers.indexOf('Vehicle Requested')] || row[headers.indexOf('Company Vehicle')] || ''),
+      fleetioAccess:    (systemsList.some(function(s){ return s.toLowerCase() === 'fleetio'; })) ? 'Yes' : (row[headers.indexOf('Fleetio Access')] || ''),
+      // Specialist-task fields — read via schema index since header names vary
+      creditCardUSA:    String(row[SCHEMA.INITIAL_REQUESTS.CC_USA]           || ''),
+      creditCardCanada: String(row[SCHEMA.INITIAL_REQUESTS.CC_CAN]           || ''),
+      creditCardHomeDepot: String(row[SCHEMA.INITIAL_REQUESTS.CC_HD]         || ''),
+      jonasJobNumbers:  String(row[SCHEMA.INITIAL_REQUESTS.JONAS_JOB_NUMBERS]|| ''),
+      plan306090:       String(row[SCHEMA.INITIAL_REQUESTS.PLAN_306090]      || ''),
+      businessCards:    String(row[SCHEMA.INITIAL_REQUESTS.EQUIPMENT]        || '').toLowerCase().indexOf('business card') !== -1 ? 'Yes' : 'No'
     };
     
-    // PHASE 4 FIX: Check HR Verification Results for verified titles and ADP ID
-    // This ensures downstream forms/emails use the HR-approved data
+    // ── AUGMENT 1: HR Verification Results ───────────────────────────────────────
+    // HR Verification is the step after ID Setup in the New Hire workflow. Once HR
+    // submits via HRVerificationHandler.js, a row is written to HR_VERIFICATION_RESULTS.
+    // This read overlays the HR-approved title, JR title, manager, ADP ID, and
+    // hrSubmittedBy/hrTimestamp onto the context built from INITIAL_REQUESTS above.
+    //
+    // VERIFIED_JR_TITLE stores "Job Title / JR Title" when a JR title is assigned.
+    // The ' / ' separator is used to split them into context.jobTitle and context.jrTitle.
+    //
+    // Presence of context.adpAssociateId is used by buildNewHireContextBlock() to
+    // determine hasHr=true, which unlocks the IT Setup section gate.
     const hrSheet = ss.getSheetByName(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
     if (hrSheet) {
         const hrData = hrSheet.getDataRange().getValues();
-        // Workflow ID is Col A (0), ADP ID is Col D (3), Verified Title is Col H (7)
         const HR = SCHEMA.HR_VERIFICATION_RESULTS;
+        // Col A (index 0) = Workflow ID
         const hrRow = hrData.find(r => r[0] === workflowId);
         if (hrRow) {
              if (hrRow[HR.ADP_ASSOCIATE_ID]) context.adpAssociateId = hrRow[HR.ADP_ASSOCIATE_ID];
              if (hrRow[HR.VERIFIED_NAME])    context.verifiedName   = String(hrRow[HR.VERIFIED_NAME]);
              if (hrRow[HR.VERIFIED_MANAGER])       context.verifiedManagerName  = String(hrRow[HR.VERIFIED_MANAGER]);
              if (hrRow[HR.VERIFIED_MANAGER_EMAIL]) context.verifiedManagerEmail = String(hrRow[HR.VERIFIED_MANAGER_EMAIL]);
+             // VERIFIED_JR_TITLE = "Job Title / JR Title" — split on ' / ' to separate
              const verifiedTitles = hrRow[HR.VERIFIED_JR_TITLE];
              if (verifiedTitles && String(verifiedTitles).includes(' / ')) {
                  const parts = String(verifiedTitles).split(' / ');
@@ -296,11 +420,24 @@ function getWorkflowContext(workflowId) {
         }
     }
 
-    // PHASE 5 FIX: Fetch ID Setup Credentials (DSS/SiteDocs) for emails
+    // ── AUGMENT 2: ID Setup Results ───────────────────────────────────────────────
+    // For New Hire: written by submitEmployeeIDSetup() (IDSetup.js) after the ID Setup
+    //   team completes their form. Provides internal IDs and SiteDocs/DSS credentials.
+    // For Equipment Request: written by closeActionItem() (ActionItemService.js) when
+    //   the 'WIS User' action item closes. Provides SiteDocs credentials only
+    //   (no internalEmployeeId/siteDocsWorkerId for Equipment workflows).
+    //
+    // Presence of context.internalEmployeeId is used by buildNewHireContextBlock()
+    // to determine hasId=true (unlocks HR Verification section for New Hire).
+    // For Equipment Request, these fields populate the SiteDocs rows in the IT Setup
+    // section of the email template (isEquipment=true path in buildNewHireContextBlock).
     const idSheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
     if (idSheet) {
         const idData = idSheet.getDataRange().getValues();
-        // Workflow ID is Col A, Headers: WFID, FormID, Time, EmpID, WorkerID, JobCode, SD User, SD Pass, DSS User, DSS Pass
+        // SCHEMA.ID_SETUP_RESULTS columns: WORKFLOW_ID, FORM_ID, SUBMISSION_TS,
+        //   INTERNAL_EMP_ID, SITEDOCS_WORKER_ID, SITEDOCS_JOB_CODE,
+        //   SITEDOCS_USERNAME, SITEDOCS_PASSWORD, DSS_USERNAME, DSS_PASSWORD,
+        //   BOSS_WIS_CREATED, SUBMITTED_BY
         const ID = SCHEMA.ID_SETUP_RESULTS;
         const idRow = idData.find(r => r[0] === workflowId);
         if (idRow) {
@@ -317,7 +454,26 @@ function getWorkflowContext(workflowId) {
         }
     }
 
-    // Fetch all IT Results fields
+    // ── AUGMENT 3: IT Results ─────────────────────────────────────────────────────
+    // Written by submitITSetup() (ITSetupHandler.js) for New Hire and Equipment Request.
+    // For CHANGE_ workflows, written by closeActionItem() when the IT action item closes.
+    //
+    // 'N/A' values are stored as-is in the sheet but must be suppressed in emails —
+    // they appear when IT did not assign that item (e.g. no phone). Each field filters
+    // 'N/A' to empty string so the email template only renders rows with real data.
+    //
+    // context.computerType: overrides the request-time value from INITIAL_REQUESTS because
+    // IT may assign a different type than originally requested.
+    //
+    // context.bossDetails: parsed from JSON string stored in BOSS_DETAILS column.
+    //   Shape: { committees: string[], costSheets: string[], tripReports: 'Yes'|'',
+    //            grievances: 'Yes'|'' }
+    //   Used by buildNewHireContextBlock and buildStatusChangeContextBlock to render
+    //   per-committee/cost-sheet BOSS access rows.
+    //
+    // Presence of context.itTimestamp (or context.assignedEmail) is used by
+    // buildNewHireContextBlock / buildStatusChangeContextBlock to determine hasIt=true
+    // (flips IT Setup section from 'Active' to 'Complete').
     const IT = SCHEMA.IT_RESULTS;
     const itSheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
     if (itSheet) {
@@ -325,11 +481,13 @@ function getWorkflowContext(workflowId) {
         const itRow = itData.find(r => r[0] === workflowId);
         if (itRow) {
             context.assignedEmail      = itRow[IT.ASSIGNED_EMAIL]      || '';
+            // Suppress 'N/A' — means IT did not create / did not assign
             context.emailTempPassword  = (itRow[IT.EMAIL_PASSWORD]     && itRow[IT.EMAIL_PASSWORD]     !== 'N/A') ? String(itRow[IT.EMAIL_PASSWORD])     : '';
             context.computerAssigned   = itRow[IT.COMPUTER_ASSIGNED]   || '';
             context.computerSerial     = (itRow[IT.COMPUTER_SERIAL]    && itRow[IT.COMPUTER_SERIAL]    !== 'N/A') ? String(itRow[IT.COMPUTER_SERIAL])    : '';
             context.computerModel      = (itRow[IT.COMPUTER_MODEL]     && itRow[IT.COMPUTER_MODEL]     !== 'N/A') ? String(itRow[IT.COMPUTER_MODEL])     : '';
-            if (itRow[IT.COMPUTER_TYPE] && itRow[IT.COMPUTER_TYPE] !== 'N/A') context.computerType = String(itRow[IT.COMPUTER_TYPE]);  // overrides request-time value
+            // IT-confirmed type overrides the requested type from INITIAL_REQUESTS
+            if (itRow[IT.COMPUTER_TYPE] && itRow[IT.COMPUTER_TYPE] !== 'N/A') context.computerType = String(itRow[IT.COMPUTER_TYPE]);
             context.phoneAssigned      = itRow[IT.PHONE_ASSIGNED]      || '';
             context.phoneCarrier       = (itRow[IT.PHONE_CARRIER]      && itRow[IT.PHONE_CARRIER]      !== 'N/A') ? String(itRow[IT.PHONE_CARRIER])      : '';
             context.phoneModel         = (itRow[IT.PHONE_MODEL]        && itRow[IT.PHONE_MODEL]        !== 'N/A') ? String(itRow[IT.PHONE_MODEL])        : '';
@@ -343,11 +501,15 @@ function getWorkflowContext(workflowId) {
             context.itNotes            = itRow[IT.IT_NOTES]            || '';
             if (itRow[IT.SUBMISSION_TS]) context.itTimestamp   = itRow[IT.SUBMISSION_TS] instanceof Date ? Utilities.formatDate(itRow[IT.SUBMISSION_TS], Session.getScriptTimeZone(), 'MMM d, yyyy · h:mm a') : String(itRow[IT.SUBMISSION_TS]);
             if (itRow[IT.SUBMITTED_BY])  context.itSubmittedBy = String(itRow[IT.SUBMITTED_BY]);
+            // BOSS sub-object: committees[], costSheets[], tripReports, grievances
+            if (itRow[IT.BOSS_DETAILS]) {
+              try { context.bossDetails = JSON.parse(String(itRow[IT.BOSS_DETAILS])); } catch(e) {}
+            }
         }
     }
-    
+
     return context;
-    
+
   } catch (error) {
     Logger.log('Error getting workflow context: ' + error.toString());
     return null;
@@ -371,11 +533,26 @@ function sendFormEmail(options) {
     return false;
   }
 
+  // DEV: suppress all emails when CONFIG.SUPPRESS_EMAILS is true
+  if (CONFIG.SUPPRESS_EMAILS) {
+    Logger.log('[EMAIL SUPPRESSED] To: ' + to + ' | Subject: ' + subject);
+    return true;
+  }
+
   try {
     // E1: Build standardized subject — canonical format defined in buildEmailSubject()
     var enrichedSubject = buildEmailSubject(subject, contextData, subjectOpts);
 
-    const redirectEmail = ConfigurationService.getSetting('EMAIL_REDIRECT_ALL');
+    // Non-prod fail-safe: DEV/STAGING must NEVER reach real recipients. If no explicit
+    // EMAIL_REDIRECT_ALL is configured, force a redirect to the admin address rather than
+    // sending to the real 'to'. Only PROD (ENVIRONMENT === 'PROD') may send to real
+    // recipients without a redirect. Fail-safe, not fail-open: an unset property in a
+    // non-prod environment redirects instead of leaking mail to managers/specialists.
+    let redirectEmail = ConfigurationService.getSetting('EMAIL_REDIRECT_ALL');
+    if (!redirectEmail && typeof ENVIRONMENT !== 'undefined' && ENVIRONMENT !== 'PROD') {
+      redirectEmail = 'dbinns@team-group.com';
+      Logger.log('⚠ [EMAIL SAFE-GUARD] Non-prod (' + ENVIRONMENT + ') with EMAIL_REDIRECT_ALL unset — forcing redirect to dbinns@team-group.com');
+    }
     const finalTo = redirectEmail ? redirectEmail : to;
     const finalSubject = redirectEmail ? '[TEST] ' + enrichedSubject : enrichedSubject;
     
@@ -771,10 +948,11 @@ function esBtnRow(formUrl, opts) {
 function createContextBlockV2(context, opts) {
   if (!context) return '';
   var type = context.workflowType || 'New Hire';
-  if (type === 'New Hire')           return buildNewHireContextBlock(context, opts);
-  if (type === 'Termination')        return buildTerminationContextBlock(context, opts);
-  if (type === 'Status Change')      return buildStatusChangeContextBlock(context, opts);
-  if (type === 'Equipment Request')  return buildEquipmentContextBlock(context, opts);
+  // Equipment Request uses the same unified block as New Hire — isEquipment flag
+  // inside buildNewHireContextBlock suppresses ID Setup and HR Verification sections
+  if (type === 'New Hire' || type === 'Equipment Request') return buildNewHireContextBlock(context, opts);
+  if (type === 'Termination')   return buildTerminationContextBlock(context, opts);
+  if (type === 'Status Change') return buildStatusChangeContextBlock(context, opts);
   return buildNewHireContextBlock(context, opts); // safe fallback
 }
 
@@ -952,10 +1130,10 @@ function notifyAdminActionItemFailure(workflowId, category, taskName, assignedTo
       return;
     }
 
-    MailApp.sendEmail({
+    sendFormEmail({
       to: adminEmails.join(','),
       subject: subject,
-      htmlBody: body
+      body: body
     });
 
     Logger.log('[notifyAdminActionItemFailure] Alert sent for ' + workflowId + ' / ' + category);

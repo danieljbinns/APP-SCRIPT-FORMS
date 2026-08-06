@@ -386,8 +386,9 @@ function updateVacationResponder(email) {
                     doSubmit();
                 };
                 reader.onerror = function() {
-                    // Upload failed silently — still submit without attachment
-                    doSubmit();
+                    btn.disabled = false;
+                    btn.textContent = originalLabel;
+                    alert('File upload failed. Please try again or remove the attachment.');
                 };
                 reader.readAsDataURL(fileToUpload);
             } else {

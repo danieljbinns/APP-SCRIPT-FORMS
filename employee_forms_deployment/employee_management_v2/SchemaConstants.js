@@ -108,7 +108,8 @@ const SCHEMA = {
     DEPARTMENT:            50,  // string   — Department
     PURCHASING_SITES:      51,  // csv      — Purchasing Sites
     STATUS:                52,  // string   — Status
-    ADP_SALARY_ACCESS:     53   // boolean  — ADP Salary Access
+    ADP_SALARY_ACCESS:     53,  // boolean  — ADP Salary Access
+    BOSS_TRAINING_ONLY:    54   // string   — BOSS Training User Only (Yes/No)
   },
 
   // ─────────────────────────────────────────────
@@ -125,9 +126,10 @@ const SCHEMA = {
     SITEDOCS_PASSWORD:   7,   // string   — SiteDocs Password
     DSS_USERNAME:        8,   // string   — DSS Username
     DSS_PASSWORD:        9,   // string   — DSS Password
-    SETUP_NOTES:         10,  // string   — Setup Notes
-    SUBMITTED_BY:        11,  // string   — Submitted By
-    BOSS_WIS_CREATED:    12   // boolean  — BOSS WIS Created
+    SETUP_NOTES:              10,  // string   — Setup Notes
+    SUBMITTED_BY:             11,  // string   — Submitted By
+    BOSS_WIS_CREATED:         12,  // boolean  — BOSS WIS Created
+    SITEDOCS_BADGE_CREATED:   13   // boolean  — SiteDocs Badge/Supervisor account created
   },
 
   // ─────────────────────────────────────────────
@@ -171,7 +173,8 @@ const SCHEMA = {
     DELIVERY_APP_ACCESS:   18,  // boolean  — Delivery App Access
     NET_PROMOTER_ACCESS:   19,  // boolean  — Net Promoter Access
     IT_NOTES:              20,  // string   — IT Notes
-    SUBMITTED_BY:          21   // string   — Submitted By
+    SUBMITTED_BY:          21,  // string   — Submitted By
+    BOSS_DETAILS:          22   // json     — BOSS committee/cost sheet/trip/grievances confirmations
   },
 
   // ─────────────────────────────────────────────
@@ -216,7 +219,7 @@ const SCHEMA = {
   },
 
   // ─────────────────────────────────────────────
-  // TERMINATIONS  (29 columns, 0–28)
+  // TERMINATIONS  (28 columns, 0–27)
   // ─────────────────────────────────────────────
   TERMINATIONS: {
     WORKFLOW_ID:            0,   // string   — Workflow ID
@@ -229,7 +232,7 @@ const SCHEMA = {
     EMPLOYEE_TYPE:          7,   // string   — Employee Type
     WORK_EMAIL:             8,   // string   — Work Email
     PHONE:                  9,   // string   — Phone
-    COMPUTER_SERIAL:        10,  // string   — Computer Serial
+    COMPUTER_SERIAL:        10,  // string   — Computer Serial (reserved — realigned to match prod)
     SITE:                   11,  // string   — Site
     TERM_DATE:              12,  // date     — Term Date
     REASON:                 13,  // string   — Reason

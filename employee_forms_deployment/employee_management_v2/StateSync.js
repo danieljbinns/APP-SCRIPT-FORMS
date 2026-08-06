@@ -90,7 +90,7 @@ function syncWorkflowState(workflowId) {
     
     const foundWf = wfSheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext();
     if (!foundWf) return; // Workflow doesn't exist
-    const wfRow = wfSheet.getRange(foundWf.getRow(), 1, 1, 9).getValues()[0];
+    const wfRow = wfSheet.getRange(foundWf.getRow(), 1, 1, wfSheet.getLastColumn()).getValues()[0];
     
     let reqInfo = { 
       requesterName: 'Unknown', requesterEmail: '', managerEmail: '', 
@@ -170,6 +170,7 @@ function syncWorkflowState(workflowId) {
             businessCards:   !!(row[PC.EQUIPMENT] && String(row[PC.EQUIPMENT]).includes('Business Cards')),
             siteDocs:        !!(row[PC.SYSTEMS_ADDED] && String(row[PC.SYSTEMS_ADDED]).includes('SiteDocs')),
             review:          (String(row[PC.PLAN_306090] || '') === 'Yes'),
+            jrTitle:         (String(row[PC.PLAN_306090] || '') === 'Yes'),
             isChange:        true
           }
         };
@@ -192,6 +193,7 @@ function syncWorkflowState(workflowId) {
             businessCards: !!(row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('Business Cards')),
             siteDocs:      !!((row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('SiteDocs')) || (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('SiteDocs Tablet'))),
             review:        false,
+            jrTitle:       false,
             safety:        false,
             isEquip:       true
           }
@@ -216,6 +218,7 @@ function syncWorkflowState(workflowId) {
             businessCards: !!(row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('Business Cards')),
             siteDocs:      !!((row[IR.SYSTEMS] && String(row[IR.SYSTEMS]).includes('SiteDocs')) || (row[IR.EQUIPMENT] && String(row[IR.EQUIPMENT]).includes('SiteDocs Tablet'))),
             review:        (row[IR.PLAN_306090] === 'Yes'),
+            jrTitle:       (row[IR.PLAN_306090] === 'Yes'),
             safety:        true
           }
         };
@@ -238,12 +241,23 @@ function syncWorkflowState(workflowId) {
           const wfCol = aiHdrs.indexOf('Workflow ID');
           const catCol = aiHdrs.indexOf('Category');
           const stCol  = aiHdrs.indexOf('Status');
-          const SPECIALIST_CATS = new Set(['Credit Card','Business Cards','Fleetio','Jonas','SiteDocs','30/60/90 Review','Safety']);
+          // Current category names + legacy (pre-rename) names for old workflows still in sheet.
+          const SPECIALIST_CATS = new Set([
+            // Current names
+            'Finance', 'Fleet', 'Purchasing', 'Business Cards', '30/60/90 Review', 'Safety',
+            'IT Confirmation', 'WIS', 'ID Setup',
+            // Legacy names (pre-rename)
+            'Credit Card', 'Fleetio', 'Jonas', 'SiteDocs'
+          ]);
           // Map category → reqInfo.items key so we can skip unrequired specialists
           const CAT_ITEMS_KEY = {
+            // Current names
+            'Finance': 'creditCard', 'Fleet': 'fleetio', 'Purchasing': 'jonas',
+            'Business Cards': 'businessCards', 'ID Setup': 'siteDocs',
+            '30/60/90 Review': 'review', 'Safety': 'safety',
+            // Legacy names
             'Jonas': 'jonas', 'Credit Card': 'creditCard', 'Fleetio': 'fleetio',
-            'Business Cards': 'businessCards', 'SiteDocs': 'siteDocs',
-            '30/60/90 Review': 'review', 'Safety': 'safety'
+            'SiteDocs': 'siteDocs',
           };
           for (let i = 1; i < aiData.length; i++) {
             if (String(aiData[i][wfCol]) !== workflowId) continue;
@@ -254,6 +268,7 @@ function syncWorkflowState(workflowId) {
               const key = CAT_ITEMS_KEY[cat];
               if (key && typeof reqInfo.items[key] === 'boolean' && !reqInfo.items[key]) continue;
             }
+            if (cat === 'WIS' || cat === 'IT Confirmation') continue;
             if (String(aiData[i][stCol]) !== 'Closed') pending.push(cat);
           }
         }
@@ -265,7 +280,7 @@ function syncWorkflowState(workflowId) {
       } else if (currentStep === 'IT Setup Needed') {
         const sheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
         const done = sheet && sheet.getRange("A:A").createTextFinder(workflowId).matchEntireCell(true).findNext() !== null;
-        if (!done) granularStatus = 'Pending: IT Setup';
+        if (!done) granularStatus = 'Pending: IT';
       } else if (currentStep === 'HR Verification Needed') {
         granularStatus = 'Pending: HR Verification';
       } else if (currentStep === 'ID Setup Needed') {
@@ -274,6 +289,30 @@ function syncWorkflowState(workflowId) {
         // Legacy step value — IDSetup.js used to leave this instead of advancing
         // to 'HR Verification Needed'. Treat as HR Verification pending in the view.
         granularStatus = 'Pending: HR Verification';
+      } else if (currentStep === 'Action Items Pending') {
+        // Itemize the open action-item categories so EOE / Termination / Status Change /
+        // Equipment show 'Pending: <categories>' consistently — same shape the Specialist
+        // Forms branch produces. Uses Status === 'Open' to match the dashboard's
+        // openCategories / getMyTaskCounts semantics.
+        const aiSheet2 = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+        const openCats = [];
+        if (aiSheet2 && aiSheet2.getLastRow() > 1) {
+          const aiData2 = aiSheet2.getDataRange().getValues();
+          const aiHdrs2 = aiData2[0];
+          const wfCol2  = aiHdrs2.indexOf('Workflow ID');
+          const catCol2 = aiHdrs2.indexOf('Category');
+          const stCol2  = aiHdrs2.indexOf('Status');
+          for (let i = 1; i < aiData2.length; i++) {
+            if (String(aiData2[i][wfCol2]) !== workflowId) continue;
+            if (String(aiData2[i][stCol2] || '') !== 'Open') continue;
+            const cat2 = String(aiData2[i][catCol2] || '');
+            if (cat2 && openCats.indexOf(cat2) === -1) openCats.push(cat2);
+          }
+        }
+        if (openCats.length > 0) {
+          granularStatus = 'Pending: ' + openCats.join(', ');
+        }
+        // else: leave granularStatus as the raw 'Action Items Pending'
       }
     }
     

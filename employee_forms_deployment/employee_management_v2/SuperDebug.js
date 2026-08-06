@@ -343,91 +343,9 @@ function _sdVerifyDashboardView(workflowId, expectedMap) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * One-time migration: rename "Computer Make" → "Computer Serial" in IT Results header.
- * Safe to re-run — skips if header is already correct.
- */
-
-/**
- * sdFixPositionChangesHeaders()
- * Writes all 61 correct Position Changes headers directly to row 1 at the right positions.
- * Needed when appendRow silently extended the sheet before migration, causing migration to
- * place new headers at wrong column positions (62+ instead of 29-60).
- * Safe to re-run — overwrites header row in place without touching data rows.
- */
-function sdFixPositionChangesHeaders() {
-  var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  var sheet = ss.getSheetByName(CONFIG.SHEETS.POSITION_CHANGES);
-  if (!sheet) { Logger.log('[sdFix] Position Changes sheet not found'); return; }
-
-  var headers = [
-    'Workflow ID', 'Form ID', 'Timestamp', 'Requester Name', 'Requester Email',
-    'Employee Name', 'Employee ID', 'Effective Date', 'Current Site', 'Change Types',
-    'Site Transfer (Old -> New)', 'Title Change (Old -> New)', 'Classification (Old -> New)',
-    'Manager Change (Old -> New)', 'Reassign Old Reports To', 'New Reports From',
-    'Google Account', 'Systems Added', 'Equipment', 'Removed Access', 'Comments', 'Department',
-    'Purchasing Sites', 'Receiving Manager Email', 'Current Title', 'Current Manager Email',
-    'Current Manager Name', 'Current Class',
-    'Date Requested', 'First Name', 'Last Name',
-    'BOSS Training Only', 'BOSS Sites', 'BOSS Cost Sheet', 'BOSS Cost Jobs',
-    'BOSS Trip Reports', 'BOSS Grievances',
-    'ADP Sites', 'ADP Salary Access',
-    'JR Required', 'JR Assignment', '30/60/90 Plan',
-    'Computer Req', 'Computer Type', 'Computer Prev User', 'Computer Prev Type', 'Computer Serial', 'Office 365',
-    'CC USA', 'CC Limit USA', 'CC Canada', 'CC Limit Canada', 'CC Home Depot', 'CC Limit Home Depot',
-    'Phone Req', 'Phone Prev User', 'Phone Prev Number',
-    'Jonas Job Numbers', 'Equipment to Return', 'Status', 'Attachment URL'
-  ];
-
-  // Write headers directly at positions 1-61 in row 1
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-
-  // Clear any duplicate header columns beyond position 61 (left by wrong migration runs)
-  var lastCol = sheet.getLastColumn();
-  if (lastCol > headers.length) {
-    var extraCols = lastCol - headers.length;
-    sheet.getRange(1, headers.length + 1, 1, extraCols).clearContent();
-    Logger.log('[sdFix] Cleared ' + extraCols + ' duplicate header column(s) beyond position ' + headers.length);
-  }
-
-  Logger.log('[sdFix] Position Changes headers fixed — ' + headers.length + ' columns written to row 1');
-  return { fixed: headers.length, cleared: Math.max(0, lastCol - headers.length) };
-}
-
-function sdFixITResultsHeader() {
-  var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  var sheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
-  if (!sheet) return { error: 'IT Results sheet not found' };
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  var idx = headers.indexOf('Computer Make');
-  if (idx === -1) {
-    var hasSerial = headers.indexOf('Computer Serial');
-    return { alreadyCorrect: true, serialIdx: hasSerial, headers: headers };
-  }
-  sheet.getRange(1, idx + 1).setValue('Computer Serial');
-  SpreadsheetApp.flush();
-  return { fixed: true, wasAtColumn: idx + 1, newValue: 'Computer Serial' };
-}
-
-/**
- * Returns key config values as GAS actually sees them — diagnoses sheet/config mismatches.
- */
-function sdDiagnose() {
-  var spreadsheetId = CONFIG.SPREADSHEET_ID;
-  var ss = SpreadsheetApp.openById(spreadsheetId);
-  var itSheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
-  var itHeaders = itSheet ? itSheet.getRange(1, 1, 1, 22).getValues()[0] : ['SHEET NOT FOUND'];
-  var props = PropertiesService.getScriptProperties().getProperties();
-  return {
-    spreadsheetId:   spreadsheetId,
-    itResultsSheet:  CONFIG.SHEETS.IT_RESULTS,
-    itHeaders:       itHeaders,
-    scriptProperties: props
-  };
-}
-
-/**
- * Verify email suppression is active before any test run.
- * Aborts (throws) if neither SUPPRESS_EMAILS nor EMAIL_REDIRECT_ALL is set.
+ * Verify email safety before any SuperDebug run.
+ * Throws unless CONFIG.SUPPRESS_EMAILS is true or EMAIL_REDIRECT_ALL is set,
+ * guaranteeing no real emails reach recipients during tests.
  */
 function checkSuperDebugEmailSafety() {
   var suppressed = (typeof CONFIG !== 'undefined' && CONFIG.SUPPRESS_EMAILS === true);
@@ -445,14 +363,87 @@ function checkSuperDebugEmailSafety() {
   return { suppressed: suppressed, redirect: redirect };
 }
 
+/**
+ * Diagnostic: locate an action item by task id in the ACTIVE dev spreadsheet and return
+ * its status/closedBy/etc. Also returns the active spreadsheet id (to resolve which sheet
+ * the SuperDebug runs actually write to). Read-only.
+ */
+function sdFindTask(taskId) {
+  var AI = SCHEMA.ACTION_ITEMS;
+  var ssId = CONFIG.SPREADSHEET_ID;
+  var out = { spreadsheetId: ssId, taskId: taskId, found: false };
+  var sheet = SpreadsheetApp.openById(ssId).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+  var data = sheet.getDataRange().getValues();
+  for (var i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
+    if (String(data[i][AI.TASK_ID]) === String(taskId)) {
+      out.found      = true;
+      out.workflowId = String(data[i][AI.WORKFLOW_ID] || '');
+      out.category   = String(data[i][AI.CATEGORY]    || '');
+      out.formType   = String(data[i][AI.FORM_TYPE]   || '');
+      out.status     = String(data[i][AI.STATUS]      || '');
+      out.completed  = String(data[i][AI.COMPLETED_DATE] || '');
+      out.closedBy   = String(data[i][AI.CLOSED_BY]   || '');
+      out.notes      = String(data[i][AI.NOTES]       || '');
+      break;
+    }
+  }
+  return out;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CLOSE ALL ACTION ITEMS HELPER (logs each close)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Close every open AI for workflowId in dependency order.
- * Iterates until no open items remain (handles items spawned by closing others).
- * Returns count of items closed.
+ * Closes every open Action Item for a given workflow in a multi-pass loop.
+ *
+ * This is the SuperDebug equivalent of a human completing every specialist form.
+ * It replaces the need to manually open each ActionItemForm.html URL during testing.
+ *
+ * MULTI-PASS LOOP
+ * ───────────────
+ * Closing some action items causes new ones to be spawned (e.g. closing the IT action
+ * item for a CHANGE_ workflow triggers checkWorkflowCompletion, which may trigger
+ * notifyWorkflowClosure — but it does NOT spawn new AIs in the current implementation).
+ * The loop retries up to maxPasses=15 times, re-fetching pending tasks each iteration
+ * until none remain. In practice, 1-2 passes are sufficient for all workflow types.
+ *
+ * FORMDATA INJECTION (two special cases)
+ * ───────────────────────────────────────
+ *
+ * 1. WIS User action item on EQUIP_REQ_ workflows:
+ *    When the ID Setup team closes the WIS User action item in production, they submit
+ *    SiteDocs credentials via the ActionItemForm specialist view. In SuperDebug, those
+ *    credentials are injected as formDataJSON so that closeActionItem() triggers the
+ *    WIS User secondary write to ID_SETUP_RESULTS (ActionItemService.js).
+ *    Without this injection, the Equipment workflow completion email would show empty
+ *    SiteDocs credential fields. The injected values match the EQUIP_REQ_ sentinel
+ *    employee (SdEquip SdEquipLast).
+ *    Fields: siteDocsUsername, siteDocsPassword, bossWisCreated
+ *
+ * 2. IT action item (category='IT', formType='it_setup') on CHANGE_ workflows:
+ *    In production, IT fills out the full IT Setup form (ITSetup.html) and submits via
+ *    submitITSetup(), which both appends to IT_RESULTS and closes the action item.
+ *    In SuperDebug, there is no form submission — _sdCloseAllAI() closes action items
+ *    directly via ActionItemService.closeActionItem(). For the IT action item, we must
+ *    pass formDataJSON so that:
+ *      (a) closeActionItem()'s CHANGE_ branch writes to IT_RESULTS
+ *      (b) notifyWorkflowClosure()'s CHANGE_ enrichment reads IT fields from wfTasks
+ *    The injected payload uses PascalCase field names matching submitITSetup() expectations.
+ *    It includes bossDetails pre-parsed (not as BOSS_Cmte_* keys) to match what
+ *    submitITSetup() builds in its bossDetails object and injects via Object.assign.
+ *    Fields: Email_Created, Email_Username, Email_Domain, Email_Temp_Password,
+ *    Computer_[field], Phone_[field], BOSS_Access, BOSS_Cmte_[site]/BOSS_TripReports (dynamic),
+ *    Incidents_Access, CAA_Access, Delivery_App_Access, Net_Promoter_Score_Access,
+ *    IT_Notes, bossDetails (pre-built object)
+ *
+ * SpreadsheetApp.flush() is called after each pass to ensure writes from one pass
+ * are visible to the next iteration's getPendingTasks() call.
+ * Utilities.sleep(500) gives the spreadsheet time to settle between passes.
+ *
+ * @param {string} workflowId   - Workflow ID to close all open AIs for
+ * @param {string} phaseLabel   - Label used in _sdLog entries (e.g. 'Phase 10', 'Phase 4 Equip')
+ * @returns {number} Total count of action items closed across all passes
  */
 function _sdCloseAllAI(workflowId, phaseLabel) {
   var closed = 0;
@@ -467,8 +458,71 @@ function _sdCloseAllAI(workflowId, phaseLabel) {
     pending.forEach(function(row) {
       var taskId   = row[SCHEMA.ACTION_ITEMS.TASK_ID];
       var taskName = row[SCHEMA.ACTION_ITEMS.TASK_NAME];
+      var category = String(row[SCHEMA.ACTION_ITEMS.CATEGORY] || '');
       _sdLog('INFO', phaseLabel, 'Closing AI: [' + taskId + '] ' + taskName);
-      var r = ActionItemService.closeActionItem(taskId, 'SUPERDEBUG AUTO-CLOSE', SD_EMAIL, null, null);
+
+      // Default: no specialist form data (generic checklist action items)
+      var formDataJSON = null;
+
+      // ── INJECT 1: WIS User credentials for Equipment Request workflows ──────────
+      // Simulates the ID Setup team submitting SiteDocs credentials via the WIS User
+      // specialist form on ActionItemForm.html. closeActionItem() detects this combination
+      // and writes a row to ID_SETUP_RESULTS, making credentials available to
+      // notifyWorkflowClosure() via the wfTasks snapshot.
+      if (category === 'ID Setup' && workflowId.startsWith('EQUIP_REQ_')) {
+        formDataJSON = JSON.stringify({
+          siteDocsUsername: 'sdequip.sdequiplast@sitedocs.test',
+          siteDocsPassword: 'SdSiteDocsPass123!',
+          bossWisCreated:   'Yes'
+        });
+      }
+
+      // ── INJECT 2: Full IT Setup data for Status Change IT action items ──────────
+      // Simulates IT submitting the IT Setup form for a CHANGE_ workflow.
+      // In production this happens via submitITSetup() → ActionItemService.closeActionItem().
+      // Here we bypass submitITSetup() and close the action item directly, so we must
+      // inject the full formDataJSON to trigger:
+      //   (a) closeActionItem()'s CHANGE_ branch → writes to IT_RESULTS
+      //   (b) notifyWorkflowClosure()'s CHANGE_ enrichment → overlays IT fields from wfTasks
+      //
+      // NOTE: BOSS_Cmte_SD_New_Site and BOSS_TripReports keys are the dynamic form-control
+      // names (matching the BOSS committees/trip-reports checkboxes in ITSetup.html).
+      // closeActionItem() does NOT parse these keys — they are only parsed by submitITSetup().
+      // Instead, the pre-built `bossDetails` object is what closeActionItem() and
+      // notifyWorkflowClosure() actually use for BOSS sub-row rendering.
+      var formType = String(row[SCHEMA.ACTION_ITEMS.FORM_TYPE] || '');
+      if (category === 'IT' && formType === 'it_setup' && workflowId.startsWith('CHANGE_')) {
+        formDataJSON = JSON.stringify({
+          Email_Created:             'Yes',
+          Email_Username:            'sdchange.sdchangelast',
+          Email_Domain:              '@sd-test.com',
+          Email_Temp_Password:       'ChangePass123!',
+          Computer_Assigned:         'Yes',
+          Computer_Serial:           'SD-SERIAL-CHANGE',
+          Computer_Model:            'SD Change MacBook Pro',
+          Computer_Type:             'Laptop',
+          Phone_Assigned:            'No',
+          Phone_Carrier:             '',
+          Phone_Model:               '',
+          Phone_Number:              '',
+          Phone_VM_Password:         '',
+          BOSS_Access:               'Yes',
+          // Dynamic BOSS committee/trip-report keys — only parsed by submitITSetup(),
+          // not by closeActionItem(). Included here for completeness/debugging.
+          BOSS_Cmte_SD_New_Site:     'Confirmed',
+          BOSS_TripReports:          'Confirmed',
+          Incidents_Access:          'Yes',
+          CAA_Access:                'No',
+          Delivery_App_Access:       'No',
+          Net_Promoter_Score_Access: 'No',
+          IT_Notes:                  'SUPERDEBUG — Status Change IT Setup — all fields populated',
+          // Pre-built bossDetails: used directly by closeActionItem() and notifyWorkflowClosure()
+          // to render BOSS sub-rows (committees, costSheets, tripReports, grievances).
+          bossDetails: { committees: ['SD New Site'], costSheets: [], tripReports: 'Yes', grievances: '' }
+        });
+      }
+
+      var r = ActionItemService.closeActionItem(taskId, 'SUPERDEBUG AUTO-CLOSE', SD_EMAIL, null, formDataJSON);
       if (r && r.success === false) {
         _sdLog('WARN', phaseLabel, 'closeActionItem returned success:false for ' + taskId);
       } else {
@@ -476,8 +530,10 @@ function _sdCloseAllAI(workflowId, phaseLabel) {
       }
       closed++;
     });
+    // Flush so the next getPendingTasks() call reads fresh STATUS values from the sheet
     SpreadsheetApp.flush();
     _sdEmailExtract(phaseLabel + ' AI close pass ' + (pass + 1));
+    // Brief pause to let the spreadsheet batch writes settle before the next pass
     Utilities.sleep(500);
   }
   _sdLog('INFO', phaseLabel, 'Total AIs closed: ' + closed);
@@ -534,7 +590,7 @@ var SD_NH_INITIAL = {
   jonasJobNumbers:       'SD-9999',
   jrRequired:            'No',
   jrAssignment:          '',
-  plan306090:            'No',
+  plan306090:            'Yes',  // ER-3: gate is now === 'Yes'; 'No' must not fire 30/60/90
   comments:              'SUPERDEBUG — DELETE AFTER REVIEW',
   adpSites:              ['8888'],
   purchasingSites:       [],
@@ -604,26 +660,30 @@ var SD_NH_ITCONF = function(wfId) { return {
 }; };
 
 var SD_NH_ITSETUP = function(wfId) { return {
-  workflowId:             wfId,
-  Email_Created:          'No',
-  Email_Username:         '',
-  Email_Domain:           '',
-  Email_Temp_Password:    '',
-  Computer_Assigned:      'Yes',
-  Computer_Serial:        'SD-SERIAL-001',
-  Computer_Model:         'SD Test Mac',
-  Computer_Type:          'Laptop',
-  Phone_Assigned:         'No',
-  Phone_Carrier:          '',
-  Phone_Model:            '',
-  Phone_Number:           '',
-  Phone_VM_Password:      '',
-  BOSS_Access:            'Yes',
-  Incidents_Access:       'No',
-  CAA_Access:             'No',
-  Delivery_App_Access:    'No',
-  Net_Promoter_Score_Access: 'No',
-  IT_Notes:               'SUPERDEBUG IT SETUP'
+  workflowId:                wfId,
+  Email_Created:             'Yes',
+  Email_Username:            'sdfirst.sdlast',
+  Email_Domain:              '@sd-test.com',
+  Email_Temp_Password:       'TempPass123!',
+  Computer_Assigned:         'Yes',
+  Computer_Serial:           'SD-SERIAL-001',
+  Computer_Model:            'SD Test MacBook Pro',
+  Computer_Type:             'Laptop',
+  Phone_Assigned:            'Yes',
+  Phone_Carrier:             'SD Mobile',
+  Phone_Model:               'SD Phone Pro',
+  Phone_Number:              '555-0199',
+  Phone_VM_Password:         '9999',
+  BOSS_Access:               'Yes',
+  BOSS_Cmte_SD_Site_A:       'Confirmed',   // BOSS committee — SD Site A
+  BOSS_CostSheet_SD_Job_001: 'Confirmed',   // BOSS cost sheet — SD Job 001
+  BOSS_TripReports:          'Confirmed',   // BOSS trip reports
+  BOSS_Grievances:           'Confirmed',   // BOSS grievances
+  Incidents_Access:          'Yes',
+  CAA_Access:                'Yes',
+  Delivery_App_Access:       'Yes',
+  Net_Promoter_Score_Access: 'Yes',
+  IT_Notes:                  'SUPERDEBUG IT SETUP — all fields populated for email verification'
 }; };
 
 /**
@@ -798,8 +858,9 @@ function runSuperDebugNewHire() {
     });
 
     // Verify all expected AIs created by triggerSpecialists
-    // Safety already exists; new ones: Credit Card, Business Cards, Fleetio, 30/60/90 Review, Jonas, WIS
-    _sdVerifyAI(wfId, ['Safety', 'Credit Card', 'Business Cards', 'Fleetio', '30/60/90 Review', 'Jonas', 'WIS']);
+    // Safety always exists; new ones: Finance, Business Cards, Fleet, 30/60/90 Review, Purchasing, WIS
+    // ID Setup (SiteDocs Account Setup) is NOT created for New Hire — ID Setup form handles SiteDocs there
+    _sdVerifyAI(wfId, ['Safety', 'Finance', 'Business Cards', 'Fleet', '30/60/90 Review', 'JR Title', 'Purchasing', 'WIS']);
     _sdVerifyWorkflow(wfId, 'In Progress', 'Specialist Forms Needed');
 
     Utilities.sleep(500);
@@ -838,6 +899,111 @@ function runSuperDebugNewHire() {
   }
 
   return _sdSummary('New Hire — ' + (wfId || '(no wfId)'));
+}
+
+/**
+ * Focused LIVE E2E for the JR Title split + completeMyTask (N8N entry point).
+ * Drives the real New Hire chain (plan306090=Yes) through submitITSetup so
+ * triggerSpecialists creates BOTH the 30/60/90 Review and the standalone JR Title
+ * action items, then closes ONLY the JR task via completeMyTask() — exercising the
+ * real group-membership auth path (caller must be a member of grp.forms.jrtitle).
+ * Verifies the 30/60/90 task stays Open, and that completeMyTask rejects a
+ * non-jr_title task. Returns a structured result (no cleanup — call
+ * cleanupSuperDebugAll() afterward). Safe: email redirect confirmed before running.
+ */
+function sdRunJrTitleE2E(byWorkflow, createOnly, ov) {
+  _SD_RESULTS = {}; _SD_EMAIL_COUNTS = {};
+  var out = { steps: [], closedVia: createOnly ? '(none — createOnly)' : (byWorkflow ? 'completeJrTitleForWorkflow' : 'completeMyTask') };
+  try {
+    checkSuperDebugEmailSafety(); // throws unless redirect/suppress active
+
+    // Optional overrides (ov) customize the employee for a realistic test. Applied to
+    // every payload carrying these fields so the value survives to the JR email
+    // (INITIAL → HRV → ITCONF each write name/title to the IR sheet before IT Setup fires).
+    ov = ov || {};
+    function _ov(base) {
+      var c = {}; for (var k in base) c[k] = base[k];
+      if (ov.firstName != null) c.firstName = ov.firstName;
+      if (ov.lastName  != null) c.lastName  = ov.lastName;
+      if (ov.title != null) { if ('positionTitle' in c) c.positionTitle = ov.title; if ('jobTitle' in c) c.jobTitle = ov.title; }
+      if (ov.managerEmail != null) { if ('reportingManagerEmail' in c) c.reportingManagerEmail = ov.managerEmail; if ('managerEmail' in c) c.managerEmail = ov.managerEmail; }
+      return c;
+    }
+
+    var initRes = submitInitialRequest(_ov(SD_NH_INITIAL));
+    if (!initRes || !initRes.success) throw new Error('submitInitialRequest: ' + (initRes && initRes.message));
+    var wfId = initRes.workflowId;
+    out.workflowId = wfId; out.steps.push('initial:ok');
+
+    out.steps.push('idsetup:' + (submitEmployeeIDSetup(SD_NH_IDSETUP(wfId)) || {}).success);
+    out.steps.push('hrverif:' + (submitHRVerification(_ov(SD_NH_HRVERIF(wfId))) || {}).success);
+    out.steps.push('itconf:'  + (submitITConfirmation(_ov(SD_NH_ITCONF(wfId))) || {}).success);
+    var itRes = submitITSetup(_ov(SD_NH_ITSETUP(wfId)));
+    if (!itRes || !itRes.success) throw new Error('submitITSetup: ' + (itRes && itRes.message));
+    out.steps.push('itsetup:ok');
+    SpreadsheetApp.flush();
+
+    // Locate the JR Title and 30/60/90 action items created by triggerSpecialists
+    var AI = SCHEMA.ACTION_ITEMS;
+    var aiSheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    var rows = aiSheet.getDataRange().getValues();
+    var jr = null, review = null;
+    for (var i = SCHEMA.ROW.FIRST_DATA; i < rows.length; i++) {
+      if (rows[i][AI.WORKFLOW_ID] !== wfId) continue;
+      if (String(rows[i][AI.FORM_TYPE]) === 'jr_title')      jr = rows[i];
+      if (String(rows[i][AI.FORM_TYPE]) === 'review_306090') review = rows[i];
+    }
+    out.jrCreated     = !!jr;
+    out.reviewCreated = !!review;
+    out.jrTaskId      = jr     ? String(jr[AI.TASK_ID])     : null;
+    out.reviewTaskId  = review ? String(review[AI.TASK_ID]) : null;
+    out.jrCategory    = jr     ? String(jr[AI.CATEGORY])    : null;
+    out.jrAssignee    = jr     ? String(jr[AI.ASSIGNED_TO]) : null;
+    out.jrDescription = jr     ? String(jr[AI.DESCRIPTION]) : null;
+    if (!jr) throw new Error('JR Title action item was NOT created by triggerSpecialists');
+
+    // createOnly: leave the JR task OPEN (for external doPost smoke-testing) and return.
+    if (createOnly) { out.emailCounts = _SD_EMAIL_COUNTS; return out; }
+
+    // Close the JR task via the N8N Execution-API entry point.
+    // byWorkflow=true exercises completeJrTitleForWorkflow(wfId) — george's actual call path.
+    out.completeMyTask = byWorkflow
+      ? completeJrTitleForWorkflow(wfId, 'Live E2E: JR title verified & assigned')
+      : completeMyTask(out.jrTaskId, 'Live E2E: JR title verified & assigned');
+    SpreadsheetApp.flush();
+
+    // Re-read statuses to confirm independent closure
+    rows = aiSheet.getDataRange().getValues();
+    for (var j = SCHEMA.ROW.FIRST_DATA; j < rows.length; j++) {
+      if (String(rows[j][AI.TASK_ID]) === out.jrTaskId)     out.jrStatusAfter     = String(rows[j][AI.STATUS]);
+      if (String(rows[j][AI.TASK_ID]) === out.reviewTaskId) out.reviewStatusAfter = String(rows[j][AI.STATUS]);
+    }
+
+    // Negative: completeMyTask must REJECT a non-jr_title task
+    if (out.reviewTaskId) out.guardReject = completeMyTask(out.reviewTaskId, 'should be rejected');
+
+  } catch (e) {
+    out.error = e.message;
+  }
+  out.emailCounts = _SD_EMAIL_COUNTS;
+  return out;
+}
+
+/**
+ * Diagnostic: which group-membership API works under the current auth context?
+ * completeMyTask's assignee check failed on a group-assigned task; this tells us
+ * whether GroupsApp or AdminDirectory.Members.hasMember is the reliable path.
+ */
+function sdCheckGroupMembership() {
+  var caller = Session.getActiveUser().getEmail();
+  var eff    = Session.getEffectiveUser().getEmail();
+  var group  = 'grp.forms.jrtitle@team-group.com';
+  var out = { caller: caller, effective: eff, group: group };
+  try { out.groupsApp = GroupsApp.getGroup(group).hasMember(caller); }
+  catch (e) { out.groupsAppError = e.message; }
+  try { var r = AdminDirectory.Members.hasMember(group, caller); out.adminDir = r && r.isMember; }
+  catch (e) { out.adminDirError = e.message; }
+  return out;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -942,9 +1108,9 @@ function runSuperDebugEOE() {
       'Notes':     'SUPERDEBUG EOE APPROVAL'
     });
 
-    // Verify AIs created: IT, HR, Fleet, Finance, Deactivation, Assets + Safety/SiteDocs
+    // Verify AIs created: IT, HR, Payroll, Fleet, Purchasing, Deactivation, EOE, Assets
     _sdLog('INFO', 'Phase 3', 'Verifying Action Items created by approval...');
-    _sdVerifyAI(wfId, ['IT', 'HR', 'Fleet', 'Finance', 'Deactivation', 'EOE', 'Assets']);
+    _sdVerifyAI(wfId, ['IT', 'HR', 'Payroll', 'Fleet', 'Purchasing', 'Deactivation', 'EOE', 'Assets']);
 
     _sdVerifyWorkflow(wfId, 'In Progress', null);
 
@@ -1135,8 +1301,10 @@ function runSuperDebugStatusChange_Title() {
     _sdVerifyRow('Phase 3 ChangeAppr', CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, wfId, {
       'Decision': 'Approved'
     });
-    // Always created: ID Setup, Safety. BOSS in sys → IT.
-    _sdVerifyAI(wfId, ['IT', 'ID Setup', 'Safety']);
+    // Always created: ID Setup, Safety, HR (ADP Update). BOSS in sys → IT.
+    // WIS (manager assignment) is NOT verified here — created post-close by
+    // boss_wis_update hook, not at approval time. _sdCloseAllAI() picks it up.
+    _sdVerifyAI(wfId, ['IT', 'ID Setup', 'Safety', 'HR']);
 
     Utilities.sleep(500);
 
@@ -1222,8 +1390,9 @@ function runSuperDebugStatusChange_Site() {
     else _sdLog('PASS', 'Phase 3', 'submitPositionChangeApproval succeeded ✓');
 
     // Manager (receivingManagerEmail set), Fleetio access + Fleetio vehicle return,
-    // IT (BOSS in sys), Assets (Vehicle in equipRem), ID Setup + Safety (always).
-    _sdVerifyAI(wfId, ['Manager', 'Fleetio', 'IT', 'Assets', 'ID Setup', 'Safety']);
+    // IT (BOSS in sys), Assets (Vehicle in equipRem), ID Setup + Safety + HR (always).
+    // WIS (manager assignment) NOT here — fires post-close via boss_wis_update hook.
+    _sdVerifyAI(wfId, ['Manager', 'Fleet', 'IT', 'Assets', 'ID Setup', 'Safety', 'HR']);
 
     Utilities.sleep(500);
 
@@ -1328,10 +1497,10 @@ function runSuperDebugStatusChange_Full() {
     else _sdLog('PASS', 'Phase 3', 'submitPositionChangeApproval succeeded ✓');
 
     // Manager (receivingManagerEmail), IT (BOSS in sys + Computer in equip/ret),
-    // Fleetio (sys + vehicle return), Jonas (Central Purchasing/Jonas in sys),
-    // Credit Card (Credit Card in equip), Assets (Vehicle+Computer in equipRem),
-    // Safety (SiteDocs removal + always), ID Setup (always).
-    _sdVerifyAI(wfId, ['Manager', 'IT', 'Fleetio', 'Jonas', 'Credit Card', 'Assets', 'ID Setup', 'Safety']);
+    // Fleet (sys + vehicle return), Purchasing (Jonas in sys), Finance (CC in equip),
+    // Assets (Vehicle+Computer in equipRem), Safety (SiteDocs removal + always),
+    // ID Setup + HR (always). WIS NOT here — fires post-close via boss_wis_update hook.
+    _sdVerifyAI(wfId, ['Manager', 'IT', 'Fleet', 'Purchasing', 'Finance', 'Assets', 'ID Setup', 'Safety', 'HR']);
 
     Utilities.sleep(500);
 
@@ -1383,7 +1552,7 @@ var SD_EQUIP_REQUEST = {
   position:       'SD Equip Position',
   managerName:    'SD Equip Manager',
   managerEmail:   SD_EMAIL,
-  systems:        ['BOSS', 'Jonas'],
+  systems:        ['BOSS', 'Jonas', 'SiteDocs'],
   equipment:      ['Laptop', 'Business Cards'],
   department:     'IT',
   comments:       'SUPERDEBUG EQUIPMENT REQUEST — DELETE',
@@ -1416,7 +1585,7 @@ var SD_EQUIP_ITCONF = function(wfId) { return {
   reportingManagerName:  'SD Equip Manager',
   reportingManagerEmail: SD_EMAIL,
   systemAccess:          'Yes',
-  systems:               ['BOSS', 'Jonas'],
+  systems:               ['BOSS', 'Jonas', 'SiteDocs'],
   equipment:             ['Laptop', 'Business Cards'],
   googleEmail:           '',
   googleDomain:          '',
@@ -1435,8 +1604,38 @@ var SD_EQUIP_ITCONF = function(wfId) { return {
   notes:                 'SUPERDEBUG — Equipment IT Confirmation'
 }; };
 
+// ER-1: IT Setup payload for Equipment (same PascalCase field names as New Hire — submitITSetup reads PascalCase)
+var SD_EQUIP_ITSETUP = function(wfId) { return {
+  workflowId:                wfId,
+  Email_Created:             'Yes',
+  Email_Username:            'sdequip.sdequiplast',
+  Email_Domain:              '@sd-test.com',
+  Email_Temp_Password:       'EquipPass123!',
+  Computer_Assigned:         'Yes',
+  Computer_Serial:           'SD-SERIAL-EQUIP',
+  Computer_Model:            'SD Test Equip MacBook Pro',
+  Computer_Type:             'Laptop',
+  Phone_Assigned:            'Yes',
+  Phone_Carrier:             'SD Mobile',
+  Phone_Model:               'SD Phone Pro',
+  Phone_Number:              '555-0200',
+  Phone_VM_Password:         '8888',
+  BOSS_Access:               'Yes',
+  BOSS_Cmte_SD_Equip_Site:   'Confirmed',   // BOSS committee
+  BOSS_CostSheet_SD_Job_002: 'Confirmed',   // BOSS cost sheet
+  BOSS_TripReports:          'Confirmed',
+  BOSS_Grievances:           'Confirmed',
+  Incidents_Access:          'Yes',
+  CAA_Access:                'Yes',
+  Delivery_App_Access:       'Yes',
+  Net_Promoter_Score_Access: 'Yes',
+  IT_Notes:                  'SUPERDEBUG — Equipment IT Setup — all fields populated'
+}; };
+
 /**
  * Full Equipment Request trace — 8 phases.
+ * Updated for ER-1: Equipment now routes through submitITSetup (same as New Hire).
+ * Old checklist path (launchEquipmentActionItems) is commented out in EquipmentRequestHandler.js.
  */
 function runSuperDebugEquipment() {
   _SD_RESULTS = [];
@@ -1480,8 +1679,8 @@ function runSuperDebugEquipment() {
 
     Utilities.sleep(300);
 
-    // ── Phase 3: IT Confirmation → launchEquipmentActionItems ────────────────
-    _sdSection(3, 'submitITConfirmation → launchEquipmentActionItems');
+    // ── Phase 3: IT Confirmation → IT Setup Needed (ER-1: no checklist AIs) ──
+    _sdSection(3, 'submitITConfirmation → step=IT Setup Needed (ER-1 path)');
     _sdEmailCapture();
     var itcResult = submitITConfirmation(SD_EQUIP_ITCONF(wfId));
     SpreadsheetApp.flush();
@@ -1490,52 +1689,102 @@ function runSuperDebugEquipment() {
     if (!itcResult || !itcResult.success) _sdLog('FAIL', 'Phase 3', 'submitITConfirmation: ' + (itcResult && itcResult.message));
     else _sdLog('PASS', 'Phase 3', 'submitITConfirmation succeeded ✓');
 
-    // First AI created: IT Email Setup (triggers launchEquipmentActionItems)
-    _sdLog('INFO', 'Phase 3', 'Checking for initial Equipment IT action item...');
-    _sdVerifyAI(wfId, ['IT']);
-    _sdVerifyWorkflow(wfId, 'In Progress', null);
+    // ER-1: step must be 'IT Setup Needed', NOT 'Email Setup Needed'
+    _sdVerifyWorkflow(wfId, 'In Progress', 'IT Setup Needed');
+
+    // ER-1: No checklist AIs should exist at this point — IT gets the it_setup form URL by email
+    var aiSheet3 = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    var rawAI3 = aiSheet3 ? aiSheet3.getDataRange().getValues() : [];
+    var aiCount3 = 0;
+    for (var r3 = 1; r3 < rawAI3.length; r3++) {
+      if (rawAI3[r3].join('|').indexOf(wfId) !== -1) aiCount3++;
+    }
+    if (aiCount3 === 0) {
+      _sdLog('PASS', 'Phase 3', 'No checklist AIs created after IT Confirmation (correct — ER-1) ✓');
+    } else {
+      _sdLog('FAIL', 'Phase 3', 'Expected 0 AIs after IT Confirmation but found ' + aiCount3 + ' — old checklist path still active?');
+    }
 
     Utilities.sleep(500);
 
-    // ── Phase 4: Close ALL IT tasks → triggers launchRemainingEquipmentTasks
-    // Phase 1 now creates multiple IT tasks (Google Account + Hardware + Software).
-    // launchRemainingEquipmentTasks only fires when ALL phase-1 IT tasks are closed.
-    _sdSection(4, 'Close all IT AIs → triggers remaining equipment tasks');
-    var pending4 = ActionItemService.getPendingTasks(wfId);
-    _sdLog('INFO', 'Phase 4', pending4.length + ' open IT AI(s) to close');
-
+    // ── Phase 4: submitITSetup → writes IT_Results, triggers specialists ───────
+    _sdSection(4, 'submitITSetup → IT_Results written + triggerSpecialists');
     _sdEmailCapture();
-    var closedIT = 0;
-    pending4.forEach(function(task) {
-      var closeR = ActionItemService.closeActionItem(
-        task[SCHEMA.ACTION_ITEMS.TASK_ID],
-        'SUPERDEBUG close IT task',
-        SD_EMAIL, null, null
-      );
-      SpreadsheetApp.flush();
-      if (closeR && closeR.success !== false) {
-        closedIT++;
-      } else {
-        _sdLog('WARN', 'Phase 4', 'Close returned: ' + JSON.stringify(closeR));
-      }
-      Utilities.sleep(300);
+    var itsResult = submitITSetup(SD_EQUIP_ITSETUP(wfId));
+    SpreadsheetApp.flush();
+    _sdEmailExtract('Phase 4 Equip ITSetup');
+
+    if (!itsResult || !itsResult.success) _sdLog('FAIL', 'Phase 4', 'submitITSetup: ' + (itsResult && itsResult.message));
+    else _sdLog('PASS', 'Phase 4', 'submitITSetup succeeded ✓');
+
+    // Verify IT_Results row written
+    _sdVerifyRow('Phase 4 IT Results', CONFIG.SHEETS.IT_RESULTS, wfId, {
+      'Computer Assigned': 'Yes',
+      'Computer Type':     'Laptop'
     });
-    _sdLog(closedIT === pending4.length ? 'PASS' : 'WARN', 'Phase 4', 'Closed ' + closedIT + '/' + pending4.length + ' IT AI(s) ✓');
-    _sdEmailExtract('Phase 4 IT close');
-    Utilities.sleep(500);
 
-    // ── Phase 5: Dump all remaining AIs ──────────────────────────────────────
-    _sdSection(5, 'Dump all remaining AIs after launchRemainingEquipmentTasks');
-    // Equipment handler creates Jonas tasks under category 'Finance', not 'Jonas'
-    _sdVerifyAI(wfId, ['IT', 'Finance', 'Business Cards']);
+    // Verify step advanced
+    _sdVerifyWorkflow(wfId, 'In Progress', 'Specialist Forms Needed');
 
-    // ── Phase 6: Close remaining AIs ─────────────────────────────────────────
-    _sdSection(6, 'Close remaining Action Items');
+    // ── Phase 5: Check specialist AIs (raw scan — avoids GAS sheet cache issue) ─
+    _sdSection(5, 'Verify specialist AIs from triggerSpecialists');
+    // Equipment with BOSS+Jonas+BusinessCards — expect: Business Cards, Jonas/Purchasing, WIS Assignment (via manager)
+    // ER-2 will gate WIS on !EQUIP_REQ_ — until then WIS may still appear; note it
+    SpreadsheetApp.flush();
+    var aiSheet5 = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    var rawAI5 = aiSheet5 ? aiSheet5.getDataRange().getValues() : [];
+    var specialistCategories = [];
+    for (var r5 = 1; r5 < rawAI5.length; r5++) {
+      if (rawAI5[r5].join('|').indexOf(wfId) !== -1) {
+        var cat5 = rawAI5[r5][SCHEMA.ACTION_ITEMS.CATEGORY] || rawAI5[r5][2] || '';
+        if (cat5) specialistCategories.push(cat5);
+      }
+    }
+    _sdLog('INFO', 'Phase 5', 'Specialist AIs found: [' + specialistCategories.join(', ') + ']');
+
+    // Business Cards — must exist (equipment includes 'Business Cards')
+    if (specialistCategories.indexOf('Business Cards') !== -1) {
+      _sdLog('PASS', 'Phase 5', 'Business Cards AI present ✓');
+    } else {
+      _sdLog('FAIL', 'Phase 5', 'Business Cards AI missing — expected from equipment list');
+    }
+
+    // Jonas (or Purchasing after Fix 5 rename) — must exist (Jonas job numbers set)
+    var hasJonas = specialistCategories.indexOf('Jonas') !== -1 || specialistCategories.indexOf('Purchasing') !== -1;
+    if (hasJonas) {
+      _sdLog('PASS', 'Phase 5', 'Jonas/Purchasing AI present ✓');
+    } else {
+      _sdLog('FAIL', 'Phase 5', 'Jonas/Purchasing AI missing — expected (jonasJobNumbers set)');
+    }
+
+    // ER-4: SiteDocs must route to ID Setup team (formerly category 'WIS User', now renamed 'ID Setup')
+    if (specialistCategories.indexOf('ID Setup') !== -1) {
+      _sdLog('PASS', 'Phase 5', 'SiteDocs → ID Setup AI created for ID Setup team ✓ (ER-4)');
+    } else {
+      _sdLog('FAIL', 'Phase 5', 'ID Setup AI missing — SiteDocs in systems but no ID Setup action item (category was renamed from WIS User)');
+    }
+
+    // ER-2: WIS Assignment must NOT fire for Equipment Requests
+    if (specialistCategories.indexOf('WIS Assignment') !== -1 || specialistCategories.indexOf('WIS') !== -1) {
+      _sdLog('FAIL', 'Phase 5', 'WIS Assignment AI present for Equipment — ER-2 gate not working');
+    } else {
+      _sdLog('PASS', 'Phase 5', 'WIS Assignment correctly absent for Equipment ✓ (ER-2)');
+    }
+
+    // ER-3: 30/60/90 Review must NOT fire for Equipment Requests
+    if (specialistCategories.indexOf('30/60/90 Review') !== -1) {
+      _sdLog('FAIL', 'Phase 5', '30/60/90 Review AI present for Equipment — ER-3 gate not working');
+    } else {
+      _sdLog('PASS', 'Phase 5', '30/60/90 Review correctly absent for Equipment ✓ (ER-3)');
+    }
+
+    // ── Phase 6: Close all specialist AIs ────────────────────────────────────
+    _sdSection(6, 'Close all specialist Action Items');
     _sdEmailCapture();
     var closedCount = _sdCloseAllAI(wfId, 'Phase 6 Equip');
     SpreadsheetApp.flush();
     _sdEmailExtract('Phase 6 Equip final');
-    _sdLog('INFO', 'Phase 6', 'Closed ' + closedCount + ' total AI(s) in this pass');
+    _sdLog('INFO', 'Phase 6', 'Closed ' + closedCount + ' total AI(s)');
 
     Utilities.sleep(800);
 
@@ -1550,6 +1799,7 @@ function runSuperDebugEquipment() {
     // ── Phase 8: Final sheet audit ────────────────────────────────────────────
     _sdSection(8, 'Final sheet audit');
     _sdDumpRow('Phase 8 Final', CONFIG.SHEETS.INITIAL_REQUESTS, wfId);
+    _sdDumpRow('Phase 8 Final', CONFIG.SHEETS.IT_RESULTS,       wfId);
     _sdDumpRow('Phase 8 Final', CONFIG.SHEETS.WORKFLOWS,        wfId);
     _sdDumpRow('Phase 8 Final', CONFIG.SHEETS.DASHBOARD_VIEW,   wfId);
 
@@ -1569,7 +1819,10 @@ function runSuperDebugEquipment() {
  * Run all 4 suites in sequence.
  * Final combined report printed at end.
  */
-function runSuperDebugAll() {
+function runSuperDebugAll(autoCleanup) {
+  // autoCleanup=true → delete all test workflows after run completes (default: false for safety)
+  const shouldCleanup = autoCleanup === true;
+
   Logger.log('[SD] ════════════ SUPERDEBUG ALL SUITES ════════════');
   var results = {};
 
@@ -1600,6 +1853,16 @@ function runSuperDebugAll() {
   Logger.log('[SD]  TOTAL:        PASS ' + totalPass + '  FAIL ' + totalFail +
              (totalFail === 0 ? '  ✓ ALL SUITES PASS' : '  ✗ FAILURES — see individual suite logs'));
   Logger.log('[SD] ════════════════════════════════════════════════');
+
+  // Auto-cleanup if requested and all tests passed
+  if (shouldCleanup && totalFail === 0) {
+    Logger.log('[SD] Cleanup requested and all tests passed — deleting test workflows...');
+    cleanupSuperDebugAll();
+    Logger.log('[SD] Cleanup complete.');
+  } else if (shouldCleanup && totalFail > 0) {
+    Logger.log('[SD] ✗ Tests failed — skipping cleanup to preserve debug data. Run cleanupSuperDebugAll() manually when ready.');
+  }
+
   return results;
 }
 
@@ -1691,138 +1954,6 @@ function cleanupSuperDebugWorkflow(wfId) {
   if (!wfId) { Logger.log('[SD] cleanupSuperDebugWorkflow: no ID provided.'); return; }
   Logger.log('[SD] Purging single workflow: ' + wfId);
   return _purgeWorkflowRows([wfId]);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// sdSendCompletionEmail
-// Called by the autonomous runner after all suites pass to notify the developer.
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Send a plain-text completion email summarising all suite results.
- * @param {string}  to        Recipient email address
- * @param {Object}  summary   { suites: [{name,pass,fail,warn,emails,failures[]}], overallPass: bool }
- */
-function sdSendCompletionEmail(to, summary) {
-  var lines = [];
-  var overallPass = summary.overallPass !== false;
-
-  lines.push('SuperDebug Autonomous Run — ' + (overallPass ? 'ALL SUITES PASSED' : 'FAILURES FOUND'));
-  lines.push('Run completed: ' + new Date().toLocaleString());
-  lines.push('Dev spreadsheet: https://docs.google.com/spreadsheets/d/1KeWBbh8755mRXFSK2dCeSW75djpaPgtprbmqd7BAsMA');
-  lines.push('Dev app: https://script.google.com/a/macros/robinsonsolutions.com/s/AKfycbyKdavUuqgt2zRFxxbRgwSbqru_3HLxk5oEYUauBukRL2CZ28bwZtYUZhubs3d3NoMnUQ/exec');
-  lines.push('');
-  lines.push('SUITE RESULTS');
-  lines.push('─────────────────────────────────────────');
-
-  (summary.suites || []).forEach(function(s) {
-    var status = s.fail === 0 ? 'PASS' : 'FAIL';
-    lines.push(status + '  ' + s.name + '  (pass=' + s.pass + ' fail=' + s.fail + ' emails=' + s.emails + ')');
-    if (s.failures && s.failures.length) {
-      s.failures.forEach(function(f) { lines.push('      FAIL: ' + f); });
-    }
-  });
-
-  lines.push('');
-  lines.push(overallPass
-    ? 'Ready for dashboard review. All automated checks clean.'
-    : 'NOT ready — fix failures above before reviewing dashboard.');
-
-  var subject = overallPass
-    ? '[SuperDebug] All suites PASSED — ready for dashboard review'
-    : '[SuperDebug] FAILURES detected — action required';
-
-  MailApp.sendEmail(to, subject, lines.join('\n'));
-  Logger.log('[SD] Completion email sent to ' + to);
-  return { sent: true, to: to, subject: subject };
-}
-
-/**
- * Quick smoke-test: sends a test email to confirm MailApp works.
- */
-function sdTestEmail(to) {
-  MailApp.sendEmail(to, '[SuperDebug] Email test — OK', 'MailApp is working from SuperDebug.js.');
-  return { sent: true };
-}
-
-/**
- * No-parameter wrapper — sends the autonomous run completion email.
- * Called by gas_runner.py after all suites pass (runner cannot pass parameters).
- * Results are hardcoded from the confirmed-passing autonomous run (2026-05-15):
- *   New Hire: 50 checks, 0 fail
- *   EOE: 31 checks, 0 fail
- *   Status Change Title: 18 checks, 0 fail
- *   Status Change Site: 22 checks, 0 fail
- *   Status Change Full: 31 checks, 0 fail
- *   Equipment: 20 checks, 0 fail
- *   TOTAL: 172 checks, 0 failures
- */
-function sdSendCompletionEmailFinal() {
-  var summary = {
-    overallPass: true,
-    suites: [
-      { name: 'New Hire',              pass: 50, fail: 0, warn: 0, emails: 18, failures: [] },
-      { name: 'EOE (Termination)',     pass: 31, fail: 0, warn: 0, emails: 12, failures: [] },
-      { name: 'Status Change — Title', pass: 18, fail: 0, warn: 0, emails: 4,  failures: [] },
-      { name: 'Status Change — Site',  pass: 22, fail: 0, warn: 0, emails: 4,  failures: [] },
-      { name: 'Status Change — Full',  pass: 31, fail: 0, warn: 0, emails: 6,  failures: [] },
-      { name: 'Equipment Request',     pass: 20, fail: 0, warn: 0, emails: 8,  failures: [] }
-    ]
-  };
-  return sdSendCompletionEmail('dbinns@team-group.com', summary);
-}
-
-/**
- * Diagnostic — returns the spreadsheet ID this script is actually using.
- * Use to confirm dev Script Property override is set correctly.
- */
-function sdGetSpreadsheetId() {
-  var id = CONFIG.SPREADSHEET_ID;
-  Logger.log('[SD] CONFIG.SPREADSHEET_ID = ' + id);
-  return { spreadsheetId: id, url: 'https://docs.google.com/spreadsheets/d/' + id };
-}
-
-/**
- * Run all 4 suites and return combined results INCLUDING full GAS log.
- * Use instead of runSuperDebugAll() when you want the log captured to a file.
- */
-function runSuperDebugAllWithLog() {
-  _SD_RESULTS = [];
-  var results = runSuperDebugAll();
-
-  var totalPass = results.newHire.pass + results.eoe.pass + results.equip.pass +
-                  (results.status.title.pass + results.status.site.pass + results.status.full.pass);
-  var totalFail = results.newHire.fail + results.eoe.fail + results.equip.fail +
-                  (results.status.title.fail + results.status.site.fail + results.status.full.fail);
-
-  return {
-    pass:   totalPass,
-    fail:   totalFail,
-    suites: {
-      newHire:      { pass: results.newHire.pass,        fail: results.newHire.fail },
-      eoe:          { pass: results.eoe.pass,            fail: results.eoe.fail },
-      changeTitle:  { pass: results.status.title.pass,   fail: results.status.title.fail },
-      changeSite:   { pass: results.status.site.pass,    fail: results.status.site.fail },
-      changeFull:   { pass: results.status.full.pass,    fail: results.status.full.fail },
-      equipment:    { pass: results.equip.pass,          fail: results.equip.fail }
-    },
-    gasLog: Logger.getLog()
-  };
-}
-
-/**
- * _sdSetEmailRedirect — Set or clear EMAIL_REDIRECT_ALL Script Property.
- * Called by run_superdebug.py --prod before/after suite runs.
- * Pass empty string to clear.
- */
-function _sdSetEmailRedirect(email) {
-  var props = PropertiesService.getScriptProperties();
-  if (email) {
-    props.setProperty('EMAIL_REDIRECT_ALL', email);
-  } else {
-    props.deleteProperty('EMAIL_REDIRECT_ALL');
-  }
-  return { ok: true, email: email || '(cleared)' };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1973,21 +2104,3 @@ function runSuperDebugAggregation() {
   return _sdSummary('Aggregation Layer');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// runSuperDebugCleanup
-// gas_runner.py-friendly wrapper for cleanupSuperDebugAll().
-// Returns { pass, fail, deleted, gasLog } so the standard runner log parsing works.
-// ─────────────────────────────────────────────────────────────────────────────
-
-function runSuperDebugCleanup() {
-  var result = cleanupSuperDebugAll();
-  var deleted = result ? (result.deleted || result.totalDeleted || 0) : 0;
-  Logger.log('[SD] runSuperDebugCleanup: deleted=' + deleted + ' rows');
-  return {
-    pass:    deleted >= 0 ? 1 : 0,
-    fail:    0,
-    deleted: deleted,
-    sheets:  result ? result.sheets : {},
-    gasLog:  Logger.getLog()
-  };
-}

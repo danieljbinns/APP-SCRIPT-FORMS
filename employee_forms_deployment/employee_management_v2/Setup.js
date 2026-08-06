@@ -426,3 +426,18 @@ function setEmailRedirect(addr)   { var a = addr || 'dbinns@team-group.com'; Pro
 function clearEmailRedirect()     { PropertiesService.getScriptProperties().deleteProperty('EMAIL_REDIRECT_ALL'); Logger.log('EMAIL_REDIRECT_ALL cleared'); }
 function enableEasterEggs()       { PropertiesService.getScriptProperties().setProperty('EASTER_EGGS_ENABLED', 'true'); Logger.log('EASTER_EGGS_ENABLED = true'); }
 function disableEasterEggs()      { PropertiesService.getScriptProperties().deleteProperty('EASTER_EGGS_ENABLED'); Logger.log('EASTER_EGGS_ENABLED cleared'); }
+
+// DEV-ONLY helpers — not present in prod
+function enableMaintenanceMode()  { PropertiesService.getScriptProperties().setProperty('MAINTENANCE_MODE', 'true');  Logger.log('MAINTENANCE_MODE = true'); }
+function disableMaintenanceMode() { PropertiesService.getScriptProperties().deleteProperty('MAINTENANCE_MODE'); Logger.log('MAINTENANCE_MODE cleared'); }
+function setMaintenanceBypass(emails) { var v = emails || 'dbinns@robinsonsolutions.com'; PropertiesService.getScriptProperties().setProperty('MAINTENANCE_BYPASS_EMAILS', v); Logger.log('MAINTENANCE_BYPASS_EMAILS = ' + v); return { ok: true, value: v }; }
+function clearMaintenanceBypass()     { PropertiesService.getScriptProperties().deleteProperty('MAINTENANCE_BYPASS_EMAILS'); Logger.log('MAINTENANCE_BYPASS_EMAILS cleared'); return { ok: true }; }
+function suppressEmails()         { PropertiesService.getScriptProperties().setProperty('SUPPRESS_EMAILS_OVERRIDE', 'true');  Logger.log('SUPPRESS_EMAILS_OVERRIDE = true'); }
+// Authorized non-admin closers for completeMyTask (JR Title tasks), comma-separated emails.
+// e.g. setJrTaskClosers('george.anthony@team-group.com') — add the service account here later.
+function setJrTaskClosers(csv)    { var v = csv || ''; PropertiesService.getScriptProperties().setProperty('JR_TASK_CLOSERS', v); Logger.log('JR_TASK_CLOSERS = ' + v); return { ok: true, value: v }; }
+function getJrTaskClosers()        { return { value: PropertiesService.getScriptProperties().getProperty('JR_TASK_CLOSERS') || '' }; }
+// Shared secret for the doPost portal-automation endpoint (n8n). Set once, keep out of source.
+function setPortalSecret(s)        { var v = s || ''; PropertiesService.getScriptProperties().setProperty('PORTAL_SHARED_SECRET', v); Logger.log('PORTAL_SHARED_SECRET set (len ' + v.length + ')'); return { ok: true, length: v.length }; }
+function getPortalSecretLen()      { return { length: (PropertiesService.getScriptProperties().getProperty('PORTAL_SHARED_SECRET') || '').length }; }
+function unsuppressEmails()       { PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE'); Logger.log('SUPPRESS_EMAILS_OVERRIDE cleared'); }

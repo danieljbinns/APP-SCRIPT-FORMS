@@ -17,25 +17,27 @@ function serveInitialRequest() {
 function submitInitialRequest(formData) {
   try {
     rawLog('submitInitialRequest', formData);
+
+    // C-8/H-4: Validate required fields BEFORE creating any workflow record
+    const requiredFields = [
+      'firstName', 'lastName', 'hireDate', 'requesterEmail',
+      'reportingManagerName', 'reportingManagerEmail',
+      'positionTitle', 'siteName', 'jobSiteNumber',
+      'employmentType', 'employeeType', 'newHireOrRehire', 'systemAccess'
+    ];
+    const validation = validateRequiredFields(formData, requiredFields);
+    if (!validation.valid) {
+      return { success: false, message: validation.message };
+    }
+
     // Create workflow first
     const workflowId = createWorkflow('NEW_EMP', 'New Employee Onboarding', formData.requesterEmail);
     const formId = generateFormId('INIT_REQ');
-    
+
     // Add IDs to form data
     formData.workflowId = workflowId;
     formData.formId = formId;
     formData.timestamp = new Date();
-    
-    // Validate required fields
-    const requiredFields = ['firstName', 'lastName', 'hireDate', 'requesterEmail', 'reportingManagerName', 'reportingManagerEmail'];
-    const validation = validateRequiredFields(formData, requiredFields);
-    
-    if (!validation.valid) {
-      return {
-        success: false,
-        message: validation.message
-      };
-    }
     
     // Format data for spreadsheet
     const rowData = formatInitialRequestData(formData);
@@ -194,8 +196,9 @@ function formatInitialRequestData(data) {
     Array.isArray(data.adpSites) ? data.adpSites.join(', ') : (data.adpSites || ''),
     data.department || '',
     Array.isArray(data.purchasingSites) ? data.purchasingSites.join(', ') : (data.purchasingSites || ''),
-    '',                        // col 52 — Status (written later by ITConfirmationHandler)
-    data.adpSalaryAccess || 'No'  // col 53 — ADP Salary Access
+    '',                           // col 52 — Status (written later by ITConfirmationHandler)
+    data.adpSalaryAccess || 'No', // col 53 — ADP Salary Access
+    data.bossTrainingOnly || 'No' // col 54 — BOSS Training User Only (ER-5)
   ];
 }
 

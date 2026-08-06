@@ -1,4 +1,4 @@
-/**
+﻿/**
  * System & Equipment Access Form - Backend Handler
  *
  * Flow:
@@ -31,8 +31,14 @@ function serveEquipmentRequest() {
 function submitEquipmentRequest(formData) {
   try {
     rawLog('submitEquipmentRequest', formData);
+
+    // Lock prevents duplicate concurrent submissions — covers createWorkflow + addSheetRow
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
+    let workflowId, employeeName;
+    try {
     // 1. Create Workflow Record
-    const workflowId = createWorkflow('EQUIP_REQ', 'System & Equipment Request', formData.reqEmail || formData.requesterEmail);
+    workflowId = createWorkflow('EQUIP_REQ', 'System & Equipment Request', formData.reqEmail || formData.requesterEmail);
     const formId = generateFormId('EQUIP');
 
     formData.workflowId = workflowId;
@@ -44,7 +50,7 @@ function submitEquipmentRequest(formData) {
     const validation = validateRequiredFields(formData, requiredFields);
     if (!validation.valid) return { success: false, message: validation.message };
 
-    const employeeName = formData.firstName + ' ' + formData.lastName;
+    employeeName = formData.firstName + ' ' + formData.lastName;
 
     // 3. Set status — awaiting IT Confirmation
     updateWorkflow(workflowId, 'In Progress', 'IT Confirmation Needed', employeeName);
@@ -62,6 +68,10 @@ function submitEquipmentRequest(formData) {
     const rowData = formatInitialRequestData(formData);
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.INITIAL_REQUESTS, rowData);
     if (!sheetSuccess) throw new Error('Failed to write request to Initial Requests database');
+
+    } finally {
+      lock.releaseLock();
+    }
 
     // 5 & 6. Send confirmation and IT notification — extracted helper so ReplayService can refire missed emails
     _sendEquipmentRequestSubmitEmails(workflowId);
@@ -143,7 +153,7 @@ function _sendEquipmentRequestSubmitEmails(workflowId) {
   }
   const itConfirmationUrl = buildFormUrl('it_confirmation', { wf: workflowId });
   sendFormEmail({
-    to: 'davelangohr@team-group.com',
+    to: CONFIG.EMAILS.IT_CONFIRMATION,
     subject: 'IT Confirmation Required',
     body: 'A System & Equipment Access request has been submitted for <b>' + erData.employeeName + '</b> and requires your review and confirmation.\n\nPlease review the request details and confirm using the button below.',
     formUrl: itConfirmationUrl,
@@ -153,12 +163,17 @@ function _sendEquipmentRequestSubmitEmails(workflowId) {
 }
 
 /**
+ * ER-1 FIX: launchEquipmentActionItems is no longer called — Equipment now uses
+ * the same it_setup → submitITSetup → triggerSpecialists path as New Hire.
+ * Commented out (not deleted) for easy revert if needed.
+ *
  * Called by ITConfirmationHandler.submitITConfirmation after IT Confirmation is approved.
  * Phase 1: all IT tasks (Google Account, hardware, software) launch together.
  * Phase 2: non-IT tasks (HR, Finance, Credit Card, Business Cards, Vehicle) launch once
  *   IT closes all their tasks — triggered by ActionItemService.checkWorkflowCompletion.
  * @param {string} workflowId
  */
+/* ER-1 COMMENTED OUT — revert by uncommenting
 function launchEquipmentActionItems(workflowId) {
   try {
     const context = getWorkflowContext(workflowId);
@@ -222,8 +237,13 @@ function launchEquipmentActionItems(workflowId) {
     Logger.log('[ERROR] launchEquipmentActionItems: ' + e.message);
   }
 }
+ER-1 COMMENTED OUT END */
 
 /**
+ * ER-1 FIX: launchRemainingEquipmentTasks is no longer called — Equipment now uses
+ * triggerSpecialists() via the shared submitITSetup path.
+ * Commented out (not deleted) for easy revert if needed.
+ *
  * Creates non-IT (and optionally IT) action items for an equipment request.
  * - Called by launchEquipmentActionItems directly when no Google Account needed (skipIT=false) → creates everything.
  * - Called by ActionItemService.checkWorkflowCompletion after IT closes phase-1 tasks (skipIT=true) → non-IT only.
@@ -261,8 +281,6 @@ function launchRemainingEquipmentTasks(workflowId, skipIT) {
         adp = true;
       } else if (sl.indexOf('jonas') !== -1) {
         jonas = true;
-      } else if (sl.indexOf('incident') !== -1 || sl.indexOf('net promoter') !== -1) {
-        hrSystems.push(s);
       } else if (!skipIT) {
         itSoftware.push(s); // IT software only when not already done in phase 1
       }
@@ -314,7 +332,7 @@ function launchRemainingEquipmentTasks(workflowId, skipIT) {
 
     if (jonas) {
       const tid = ActionItemService.createActionItem(
-        workflowId, 'Finance', 'Central Purchasing/Jonas Setup',
+        workflowId, 'Purchasing', 'Central Purchasing/Jonas Setup',
         JSON.stringify(['Set up Central Purchasing/Jonas access for ' + employeeName]),
         CONFIG.EMAILS.JONAS, 'jonas'
       );
@@ -324,7 +342,7 @@ function launchRemainingEquipmentTasks(workflowId, skipIT) {
 
     if (creditCard) {
       const tid = ActionItemService.createActionItem(
-        workflowId, 'Credit Card', 'Credit Card Setup',
+        workflowId, 'Finance', 'Credit Card Setup',
         JSON.stringify(['Set up company credit card for ' + employeeName]),
         CONFIG.EMAILS.CREDIT_CARD, 'creditcard'
       );
@@ -360,6 +378,7 @@ function launchRemainingEquipmentTasks(workflowId, skipIT) {
     Logger.log('[ERROR] launchRemainingEquipmentTasks: ' + e.message);
   }
 }
+/* ER-1 COMMENTED OUT END */
 
 /**
  * Sends a task notification email to the assigned team with a link to the action item form.

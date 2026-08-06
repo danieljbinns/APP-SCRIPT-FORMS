@@ -147,10 +147,16 @@ function getRequestDetails(workflowId) {
         const aiCreatedCol= aiHdrs.indexOf('Created Date');
         const aiFtCol     = aiHdrs.indexOf('Form Type');
 
-        const SPECIALIST_CATS = new Set(['Credit Card','Business Cards','Fleetio','Jonas','SiteDocs','30/60/90 Review','Safety']);
+        const SPECIALIST_CATS = new Set([
+          // Current category names (post-rename)
+          'Safety', 'Finance', 'Business Cards', 'Fleet', '30/60/90 Review', 'JR Title',
+          'Purchasing', 'IT Confirmation', 'WIS',
+          // Legacy category names — pre-rename workflows already written to the sheet
+          'Credit Card', 'Fleetio', 'Jonas', 'SiteDocs'
+        ]);
         const NODE_MAP = {
           'creditcard':'credit_card','businesscards':'business_cards',
-          'review_306090':'review','centralpurchasing':'central_purchasing',
+          'review_306090':'review','jr_title':'jr_title','centralpurchasing':'central_purchasing',
           'safety_onboarding':'safety','safety_term':'safety_term'
         };
 
@@ -212,6 +218,13 @@ function getRequestDetails(workflowId) {
     context.currentUser  = _currentUser;
     context.checklist    = checklist;
     context.type         = 'Onboarding';
+    // H-5: expose workflow status for the status badge in RequestDetails.html
+    const _wfDataOnb = getWorkflow(workflowId);
+    context.status = _wfDataOnb ? String(_wfDataOnb['Status'] || '') : '';
+    // Top-level aliases so RequestDetails.html isOwner check can resolve cancel/bump permission
+    // without having to dig into requestData column-header keys.
+    context.requesterEmail = r['Requester Email'] || '';
+    context.managerEmail   = r['Manager Email']   || '';
     return context;
 
   } catch (e) {
@@ -288,16 +301,32 @@ function getStepResultData(workflowId, stepTarget) {
       case 'hr_verification':   return readAllFromSheet(CONFIG.SHEETS.HR_VERIFICATION_RESULTS);
       case 'it_setup':          return readAllFromSheet(CONFIG.SHEETS.IT_RESULTS);
 
+      // Post-rename: try current category first, fall back to legacy for old workflows.
+      // Finance = Credit Card team; Fleet = Fleetio; Purchasing = Jonas/Central Purchasing.
       case 'creditcard':
-      case 'credit_card':       return readActionItems('Credit Card');
+      case 'credit_card':
+      case 'finance': { const _r = readActionItems('Finance'); return Object.keys(_r).length > 0 ? _r : readActionItems('Credit Card'); }
+      case 'fleetio':
+      case 'fleet':   { const _r = readActionItems('Fleet');   return Object.keys(_r).length > 0 ? _r : readActionItems('Fleetio'); }
+      case 'jonas':
+      case 'purchasing': { const _r = readActionItems('Purchasing'); return Object.keys(_r).length > 0 ? _r : readActionItems('Jonas'); }
       case 'businesscards':
       case 'business_cards':    return readActionItems('Business Cards');
-      case 'fleetio':           return readActionItems('Fleetio');
-      case 'jonas':             return readActionItems('Jonas');
       case 'centralpurchasing':
-      case 'central_purchasing':return readActionItems('Central Purchasing');
+      case 'central_purchasing': { const _r = readActionItems('Purchasing'); return Object.keys(_r).length > 0 ? _r : readActionItems('Central Purchasing'); }
+      // Other action item categories
+      case 'wis':
+      case 'wis_assignment':    return readActionItems('WIS');
+      case 'wis_user': { const _r = readActionItems('ID Setup'); return Object.keys(_r).length > 0 ? _r : readActionItems('WIS User'); }
+      case 'hr':
+      case 'hr_systems':        return readActionItems('HR');
+      case 'payroll':
+      case 'adp_setup':         return readActionItems('Payroll');
+      case 'assets':            return readActionItems('Assets');
+      case 'deactivation':      return readActionItems('Deactivation');
       case 'review_306090':
       case 'review':            return readActionItems('30/60/90 Review');
+      case 'jr_title':          return readActionItems('JR Title');
       case 'safety_onboarding':
       case 'safety':            return readActionItems('Safety');
       case 'safety_term':       return readActionItems('Safety');
@@ -330,12 +359,15 @@ function getStepResultData(workflowId, stepTarget) {
           appr
         );
       }
-      case 'asset_collection':           return readActionItems('Assets');
-      case 'systems_deactivation':       return readActionItems('IT');
-      case 'systems_deactivation_hr':    return readActionItems('HR');
-      case 'systems_deactivation_fleet': return readActionItems('Fleet');
-      case 'systems_deactivation_finance': return readActionItems('Finance');
-      case 'systems_deactivation_deact': return readActionItems('Deactivation');
+      case 'asset_collection':                return readActionItems('Assets');
+      case 'systems_deactivation':           return readActionItems('IT');
+      case 'systems_deactivation_hr':        return readActionItems('HR');
+      case 'systems_deactivation_fleet':     return readActionItems('Fleet');
+      case 'systems_deactivation_purchasing':{ const _r = readActionItems('Purchasing'); return Object.keys(_r).length > 0 ? _r : readActionItems('Jonas'); }
+      case 'systems_deactivation_finance':  { const _r = readActionItems('Finance'); return Object.keys(_r).length > 0 ? _r : readActionItems('Credit Card'); }
+      case 'systems_deactivation_payroll':   return readActionItems('Payroll');
+      case 'systems_deactivation_deact':     return readActionItems('Deactivation');
+      case 'eoe_process':                    return readActionItems('EOE');
 
       // ── Status Change ───────────────────────────────────────────────────────
       case 'change_request':          return readAllFromSheet(CONFIG.SHEETS.POSITION_CHANGES);
@@ -352,18 +384,22 @@ function getStepResultData(workflowId, stepTarget) {
           appr
         );
       }
-      case 'change_manager':      return readActionItems('Manager');
-      case 'change_it':           return readActionItems('IT');
-      case 'change_purchasing':   return readActionItems('Purchasing');
-      case 'change_idsetup':      return readActionItems('ID Setup');
-      case 'change_safety':       return readActionItems('Safety');
-      case 'change_businesscards':return readActionItems('Business Cards');
-      case 'change_creditcard':   return readActionItems('Credit Card');
-      case 'change_fleetio':      return readActionItems('Fleetio');
-      case 'change_jonas':        return readActionItems('Jonas');
+      case 'change_manager':       return readActionItems('Manager');
+      case 'change_it':            return readActionItems('IT');
+      case 'change_hr':            return readActionItems('HR');
+      case 'change_wis':           return readActionItems('WIS');
+      case 'change_assets':        return readActionItems('Assets');
+      case 'change_purchasing':    return readActionItems('Purchasing');
+      case 'change_idsetup':       return readActionItems('ID Setup');
+      case 'change_safety':        return readActionItems('Safety');
+      case 'change_businesscards': return readActionItems('Business Cards');
+      case 'change_creditcard':   { const _r = readActionItems('Finance'); return Object.keys(_r).length > 0 ? _r : readActionItems('Credit Card'); }
+      case 'change_fleetio':      { const _r = readActionItems('Fleet');   return Object.keys(_r).length > 0 ? _r : readActionItems('Fleetio'); }
+      case 'change_jonas':        { const _r = readActionItems('Purchasing'); return Object.keys(_r).length > 0 ? _r : readActionItems('Jonas'); }
 
       // ── Equipment Request ───────────────────────────────────────────────────
       case 'equipment_request':   return readAllFromSheet(CONFIG.SHEETS.INITIAL_REQUESTS);
+      case 'itconfirmation': // NH action item target (no underscore — derived from category string)
       case 'it_confirmation': {
         const ss2    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
         const icSh   = ss2.getSheetByName('IT Confirmation Results');
@@ -420,7 +456,13 @@ function getTerminationDetails(workflowId) {
     const reqRow     = reqSheet.getRange(foundReq.getRow(), 1, 1, reqLastCol).getValues()[0];
 
     const r = {};
-    const _sv = function(v) { return v instanceof Date ? v.toString() : String(v === null || v === undefined ? '' : v); };
+    // Same [L guard as getChangeDetails — GAS Java array objects from sheet dropdowns
+    const _sv = function(v) {
+      if (v === null || v === undefined) return '';
+      if (v instanceof Date) return v.toLocaleString();
+      var s = String(v);
+      return s.indexOf('[L') === 0 ? '' : s;
+    };
     reqHeaders.forEach(function(h, i) {
       if (!h) return;
       r[h] = _sv(reqRow[i]);
@@ -478,9 +520,16 @@ function getTerminationDetails(workflowId) {
       }
 
       const catTargetMap = {
-        'Assets':'asset_collection','IT':'systems_deactivation','HR':'systems_deactivation_hr',
-        'Fleet':'systems_deactivation_fleet','Finance':'systems_deactivation_finance',
-        'Deactivation':'systems_deactivation_deact','Safety':'safety_term'
+        'Assets':      'asset_collection',
+        'IT':          'systems_deactivation',
+        'HR':          'systems_deactivation_hr',
+        'Fleet':       'systems_deactivation_fleet',
+        'Purchasing':  'systems_deactivation_purchasing', // post-rename (was Jonas/Finance)
+        'Finance':     'systems_deactivation_finance',    // legacy
+        'Payroll':     'systems_deactivation_payroll',    // ADP deactivation
+        'Deactivation':'systems_deactivation_deact',
+        'Safety':      'safety_term',
+        'EOE':         'eoe_process',                     // Complete EOE Process action item
       };
       for (const cat in cats) {
         const c = cats[cat];
@@ -504,6 +553,9 @@ function getTerminationDetails(workflowId) {
     context.status      = termWf ? String(termWf['Status'] || '') : '';
     context.checklist   = checklist;
     context.type        = 'End of Employment';
+    // Top-level aliases — RequestDetails.html isOwner check reads these directly
+    context.requesterEmail = r['Requester Email'] || '';
+    context.managerEmail   = r['Manager Email']   || '';
     return context;
   } catch (e) {
     Logger.log('getTerminationDetails Error: ' + e.toString());
@@ -597,7 +649,10 @@ function getEquipmentRequestDetails(workflowId) {
       checklist:   [],
       isAdmin:     AccessControlService.isAdmin(_cu3),
       rolePayload: AccessControlService.getUserRolePayload(_cu3),
-      currentUser: _cu3
+      currentUser: _cu3,
+      // Top-level aliases — RequestDetails.html isOwner check reads these directly
+      requesterEmail: requestData['Requester Email'] || '',
+      managerEmail:   requestData['Manager Email']   || ''
     };
 
     context.checklist.push({
@@ -647,7 +702,8 @@ function getEquipmentRequestDetails(workflowId) {
         'IT':                'it_setup',
         'ID Setup':          'id_setup',
         'Central Purchasing':'centralpurchasing',
-        '30/60/90 Review':   'review_306090'
+        '30/60/90 Review':   'review_306090',
+        'JR Title':          'jr_title'
       };
 
       for (let i = 1; i < aiData.length; i++) {
@@ -659,12 +715,13 @@ function getEquipmentRequestDetails(workflowId) {
         // Derive target: prefer Form Type (matches action item form routes), then category map, then slugify
         const target = ftVal || EQUIP_CAT_TARGET[catVal] || catVal.toLowerCase().replace(/[\s\/]+/g, '');
         context.checklist.push({
-          name:   String(aiData[i][nmCol] || catVal || ''),
-          status: st === 'Closed' ? 'Complete' : st,
-          target: target,
-          by:     String(aiData[i][byCol] || ''),
-          time:   tDate instanceof Date ? Utilities.formatDate(tDate, _tz, 'M/d/yyyy h:mm a') : String(tDate || ''),
-          tid:    String(aiData[i][tidCol] || '')
+          name:     String(aiData[i][nmCol] || catVal || ''),
+          category: catVal,   // exposed so Dashboard stepper BADGE_LABEL can key by category not task name
+          status:   st === 'Closed' ? 'Complete' : st,
+          target:   target,
+          by:       String(aiData[i][byCol] || ''),
+          time:     tDate instanceof Date ? Utilities.formatDate(tDate, _tz, 'M/d/yyyy h:mm a') : String(tDate || ''),
+          tid:      String(aiData[i][tidCol] || '')
         });
       }
     }
@@ -694,11 +751,19 @@ function getChangeDetails(workflowId) {
     const reqRow     = reqSheet.getRange(foundReq.getRow(), 1, 1, reqLastCol).getValues()[0];
 
     const _tz = Session.getScriptTimeZone();
+    // _sv: safe value stringifier — guards against GAS Java array objects (e.g. from sheet
+    // data-validation dropdowns) that String() converts to '[Ljava.lang.Object;@hash'.
+    // Detected by the leading '[L' prefix on the toString result; returned as empty string.
+    const _sv = function(v) {
+      if (v === null || v === undefined) return '';
+      if (v instanceof Date) return Utilities.formatDate(v, _tz, 'M/d/yyyy');
+      var s = String(v);
+      return s.indexOf('[L') === 0 ? '' : s;
+    };
     const r = {};
     reqHeaders.forEach(function(h, i) {
       if (!h) return;
-      const val = reqRow[i];
-      r[h] = val instanceof Date ? Utilities.formatDate(val, _tz, 'M/d/yyyy') : (val === undefined || val === null ? '' : String(val));
+      r[h] = _sv(reqRow[i]);
     });
     const _fmt = function(v) { return v instanceof Date ? Utilities.formatDate(v, _tz, 'M/d/yyyy') : String(v || ''); };
     const PCN  = SCHEMA.POSITION_CHANGES;
@@ -709,10 +774,14 @@ function getChangeDetails(workflowId) {
     r['Site Name']              = r['Site Name']              || _fmt(reqRow[PCN.CURRENT_SITE]);
     r['Change Type']            = r['Change Type']            || _fmt(reqRow[PCN.CHANGE_TYPES]);
     r['Department']             = r['Department']             || _fmt(reqRow[PCN.DEPARTMENT]);
-    r['Current Title']          = r['Current Title']          || _fmt(reqRow[24]);
-    r['Current Manager Email']  = r['Current Manager Email']  || _fmt(reqRow[25]);
-    r['Current Manager Name']   = r['Current Manager Name']   || _fmt(reqRow[26]);
-    r['Current Classification'] = r['Current Classification'] || _fmt(reqRow[27]);
+    var _ctI  = reqHeaders.indexOf('Current Title');
+    var _cmeI = reqHeaders.indexOf('Current Manager Email');
+    var _cmnI = reqHeaders.indexOf('Current Manager Name');
+    var _ccI  = reqHeaders.indexOf('Current Classification');
+    r['Current Title']          = r['Current Title']          || _fmt(reqRow[_ctI  >= 0 ? _ctI  : 24]);
+    r['Current Manager Email']  = r['Current Manager Email']  || _fmt(reqRow[_cmeI >= 0 ? _cmeI : 25]);
+    r['Current Manager Name']   = r['Current Manager Name']   || _fmt(reqRow[_cmnI >= 0 ? _cmnI : 26]);
+    r['Current Classification'] = r['Current Classification'] || _fmt(reqRow[_ccI  >= 0 ? _ccI  : 27]);
     context.requestData = r;
 
     const wf = getWorkflow(workflowId);
@@ -764,9 +833,21 @@ function getChangeDetails(workflowId) {
       }
 
       const catTargetMap = {
-        'Manager':'change_manager','IT':'change_it','Purchasing':'change_purchasing',
-        'ID Setup':'change_idsetup','Safety':'change_safety','Business Cards':'change_businesscards',
-        'Credit Card':'change_creditcard','Fleetio':'change_fleetio','Jonas':'change_jonas'
+        'Manager':       'change_manager',
+        'IT':            'change_it',
+        'HR':            'change_hr',            // ADP Update action item
+        'WIS':           'change_wis',           // WIS Assignment (fires post-ID Setup)
+        'Purchasing':    'change_purchasing',
+        'ID Setup':      'change_idsetup',
+        'Safety':        'change_safety',
+        'Business Cards':'change_businesscards',
+        'Finance':       'change_creditcard',    // post-rename: Finance = credit card team
+        'Fleet':         'change_fleetio',       // post-rename: Fleet = Fleetio
+        'Assets':        'change_assets',
+        // Legacy category names (pre-rename workflows)
+        'Credit Card':   'change_creditcard',
+        'Fleetio':       'change_fleetio',
+        'Jonas':         'change_jonas'
       };
       for (const cat in cats) {
         const c       = cats[cat];
@@ -787,6 +868,10 @@ function getChangeDetails(workflowId) {
     context.rolePayload = AccessControlService.getUserRolePayload(_cu4);
     context.currentUser = _cu4;
     context.checklist   = checklist;
+    // Top-level aliases — RequestDetails.html isOwner check reads these directly.
+    // Status Change: 'Current Manager Email' is the manager at time of submission; no plain 'Manager Email' column.
+    context.requesterEmail = r['Requester Email']      || '';
+    context.managerEmail   = r['Manager Email']         || r['Current Manager Email'] || '';
     return context;
   } catch (e) {
     Logger.log('getChangeDetails Error: ' + e.toString());

@@ -158,25 +158,56 @@ function submitEmployeeIDSetup(formData) {
     
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     let resultsSheet = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
-    
+
     if (!resultsSheet) {
       resultsSheet = ss.insertSheet(CONFIG.SHEETS.ID_SETUP_RESULTS);
       resultsSheet.appendRow([
         'Workflow ID', 'Form ID', 'Submission Timestamp', 'Internal Employee ID',
         'SiteDocs Worker ID', 'SiteDocs Job Code', 'SiteDocs Username',
         'SiteDocs Password', 'DSS Username', 'DSS Password',
-        'Setup Notes', 'Submitted By', 'BOSS WIS Created'
+        'Setup Notes', 'Submitted By', 'BOSS WIS Created', 'SiteDocs Badge Created'
       ]);
       resultsSheet.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
-    
+
+    // Acquire lock and validate/recompute employee ID to prevent duplicates
+    const lock = LockService.getScriptLock();
+    lock.waitLock(5000);
+    let finalEmployeeId = formData.internalEmployeeId;
+    try {
+      const existingData = resultsSheet.getDataRange().getValues();
+      let idExists = false;
+      for (let i = 1; i < existingData.length; i++) {
+        if (existingData[i][3] === finalEmployeeId) {
+          idExists = true;
+          break;
+        }
+      }
+      // If submitted ID already exists, recompute the next available ID
+      if (idExists) {
+        let maxId = 29999;
+        for (let i = 1; i < existingData.length; i++) {
+          const id = existingData[i][3];
+          if (id && !isNaN(id)) {
+            const numId = parseInt(id);
+            if (numId > maxId) {
+              maxId = numId;
+            }
+          }
+        }
+        finalEmployeeId = String(maxId + 1);
+      }
+    } finally {
+      lock.releaseLock();
+    }
+
     resultsSheet.appendRow([
-      workflowId, formId, new Date(), formData.internalEmployeeId,
+      workflowId, formId, new Date(), finalEmployeeId,
       formData.siteDocsWorkerId, formData.siteDocsJobCode,
       formData.siteDocsUsername || 'N/A', formData.siteDocsPassword || 'N/A',
       formData.dssUsername, formData.dssPassword,
       formData.setupNotes || '', Session.getActiveUser().getEmail(),
-      formData.bossWisCreated || 'No'
+      formData.bossWisCreated || 'No', formData.siteDocsBadgeCreated || 'No'
     ]);
     
     const actingUser = Session.getActiveUser().getEmail();
@@ -280,7 +311,29 @@ function triggerNextStepFromIDSetup(workflowId, setupData, requestData) {
     Logger.log('[SUCCESS] HR Verification email sent to HR + Payroll (Hourly/No System Access - HR Step active)');
 
     // Send Safety Onboarding form to safety group (hourly path fires here; salary fires after HR Verification)
-    sendSafetyOnboardingEmail(workflowId, requestData, setupData);
+    // M-14: guard against duplicate Safety Onboarding email
+    var hasSafetyAI = false;
+    try {
+      var safetyAiSh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+      if (safetyAiSh) {
+        var safetyAiData = safetyAiSh.getDataRange().getValues();
+        var safetyH      = safetyAiData[0];
+        var safetyWfCol  = safetyH.indexOf('Workflow ID');
+        var safetyCatCol = safetyH.indexOf('Category');
+        for (var si = 1; si < safetyAiData.length; si++) {
+          if (String(safetyAiData[si][safetyWfCol]) === workflowId &&
+              String(safetyAiData[si][safetyCatCol]) === 'Safety') {
+            hasSafetyAI = true;
+            break;
+          }
+        }
+      }
+    } catch (safetyErr) {
+      Logger.log('[triggerNextStepFromIDSetup] Safety AI check failed (non-fatal): ' + safetyErr.message);
+    }
+    if (!hasSafetyAI) {
+      sendSafetyOnboardingEmail(workflowId, requestData, setupData);
+    }
 
   } else {
     // Standard Path (Salary OR System Access)
