@@ -78,6 +78,7 @@ function submitTerminationRequest(formData) {
       formData.empType || '',
       formData.empWorkEmail || 'N/A',
       formData.empPhone || 'N/A',
+      formData.empSerial || 'N/A', // COMPUTER_SERIAL (index 10) — reserved to keep column parity with prod; form no longer collects it
       formData.siteName,
       formData.termDate,
       formData.reason,

@@ -252,7 +252,7 @@ function seedSheets() {
   _rt.captures.seedSheet('Terminations', [
     ['Workflow ID','Form ID','Timestamp','Requester Name','Requester Email',
      'Employee Name','Employee ID','Employee Type','Work Email','Phone',
-     'Site','Term Date','Reason','Manager Name','Manager Email',
+     'Computer Serial','Site','Term Date','Reason','Manager Name','Manager Email',
      'HR Approved','Has Reports','Reports To New','Systems','Email Forwarding',
      'Email Files To','Email Delegate','Account Duration','Vacation Responder',
      'Equipment','Comments','Last Day Worked','Attachment URL']
@@ -1297,8 +1297,8 @@ results.push(runScenario('TerminationRequest.html — full field map', () => {
   truthy('Terminations: at least 1 row written', termAppends.length >= 1);
 
   const tRow = termAppends[termAppends.length - 1].values;
-  console.log('\n  SHEET MAP — Terminations (' + tRow.length + ' cols, expected 28):');
-  eq('Terminations row has 28 columns', tRow.length, 28);
+  console.log('\n  SHEET MAP — Terminations (' + tRow.length + ' cols, expected 29):');
+  eq('Terminations row has 29 columns', tRow.length, 29);
 
   truthy( "TERM[0] workflowId starts with TERM_",       String(tRow[0]).startsWith('TERM_'));
   truthy( "TERM[1] formId assigned (TERM_REQ_*)",       String(tRow[1]).startsWith('TERM_REQ_'));
@@ -1310,36 +1310,37 @@ results.push(runScenario('TerminationRequest.html — full field map', () => {
   assertCol(tRow,  7, 'Salary',                         "HTML 'empType'       → formData.empType       → TERM[7]");
   assertCol(tRow,  8, 'jdoe@team-group.com',            "HTML 'empWorkEmail'  → formData.empWorkEmail  → TERM[8]");
   assertCol(tRow,  9, '613-555-0200',                   "HTML 'empPhone'      → formData.empPhone      → TERM[9]");
-  assertCol(tRow, 10, 'Ottawa Main',                    "HTML 'siteName'      → formData.siteName      → TERM[10]");
-  assertCol(tRow, 11, '2026-08-01',                     "HTML 'termDate'      → formData.termDate      → TERM[11]");
-  assertCol(tRow, 12, 'Terminated',                     "HTML 'reason'        → formData.reason        → TERM[12]");
-  assertCol(tRow, 13, 'Alice Manager',                  "HTML 'managerName'   → formData.managerName   → TERM[13]");
-  assertCol(tRow, 14, 'boss@team-group.com',            "HTML 'managerEmail'  → formData.managerEmail  → TERM[14]");
-  assertCol(tRow, 15, 'Pending',                        "HTML 'hr_approved'   → formData.hr_approved   → TERM[15]");
-  assertCol(tRow, 16, 'Yes',                            "HTML 'has_reports'   → formData.has_reports   → TERM[16]");
-  assertCol(tRow, 17, 'mgr2@team-group.com',            "HTML 'reports_to_new'→ formData.reports_to_new→ TERM[17]");
+  assertCol(tRow, 10, 'N/A',                            "TERM[10] COMPUTER_SERIAL — reserved (form does not collect)");
+  assertCol(tRow, 11, 'Ottawa Main',                    "HTML 'siteName'      → formData.siteName      → TERM[11]");
+  assertCol(tRow, 12, '2026-08-01',                     "HTML 'termDate'      → formData.termDate      → TERM[12]");
+  assertCol(tRow, 13, 'Terminated',                     "HTML 'reason'        → formData.reason        → TERM[13]");
+  assertCol(tRow, 14, 'Alice Manager',                  "HTML 'managerName'   → formData.managerName   → TERM[14]");
+  assertCol(tRow, 15, 'boss@team-group.com',            "HTML 'managerEmail'  → formData.managerEmail  → TERM[15]");
+  assertCol(tRow, 16, 'Pending',                        "HTML 'hr_approved'   → formData.hr_approved   → TERM[16]");
+  assertCol(tRow, 17, 'Yes',                            "HTML 'has_reports'   → formData.has_reports   → TERM[17]");
+  assertCol(tRow, 18, 'mgr2@team-group.com',            "HTML 'reports_to_new'→ formData.reports_to_new→ TERM[18]");
 
   // Systems CSV
-  const sysWritten = String(tRow[18] || '');
-  truthy("HTML 'systems[]' Email → TERM[18] contains Email",      sysWritten.includes('Email'));
-  truthy("HTML 'systems[]' BOSS  → TERM[18] contains BOSS",       sysWritten.includes('BOSS'));
-  truthy("HTML 'systems[]' SharePoint → TERM[18] contains SharePoint", sysWritten.includes('SharePoint'));
+  const sysWritten = String(tRow[19] || '');
+  truthy("HTML 'systems[]' Email → TERM[19] contains Email",      sysWritten.includes('Email'));
+  truthy("HTML 'systems[]' BOSS  → TERM[19] contains BOSS",       sysWritten.includes('BOSS'));
+  truthy("HTML 'systems[]' SharePoint → TERM[19] contains SharePoint", sysWritten.includes('SharePoint'));
 
-  assertCol(tRow, 19, 'Yes',                            "HTML 'google_forward'   → formData.google_forward   → TERM[19]");
-  assertCol(tRow, 20, 'jdoe-archive',                   "HTML 'google_files'     → formData.google_files     → TERM[20]");
-  assertCol(tRow, 21, 'boss@team-group.com',            "HTML 'google_delegate'  → formData.google_delegate  → TERM[21]");
-  assertCol(tRow, 22, '3 Months',                       "HTML 'google_duration'  → formData.google_duration  → TERM[22]");
-  contains(                                             "HTML 'google_vacation' → TERM[23] contains 'Out of office'",
-    tRow[23], 'Out of office');
+  assertCol(tRow, 20, 'Yes',                            "HTML 'google_forward'   → formData.google_forward   → TERM[20]");
+  assertCol(tRow, 21, 'jdoe-archive',                   "HTML 'google_files'     → formData.google_files     → TERM[21]");
+  assertCol(tRow, 22, 'boss@team-group.com',            "HTML 'google_delegate'  → formData.google_delegate  → TERM[22]");
+  assertCol(tRow, 23, '3 Months',                       "HTML 'google_duration'  → formData.google_duration  → TERM[23]");
+  contains(                                             "HTML 'google_vacation' → TERM[24] contains 'Out of office'",
+    tRow[24], 'Out of office');
 
   // Equipment CSV
-  const eqWritten = String(tRow[24] || '');
-  truthy("HTML 'equip[]' Laptop       → TERM[24] contains Laptop",  eqWritten.includes('Laptop'));
-  truthy("HTML 'equip[]' Mobile Phone → TERM[24] contains Mobile",  eqWritten.includes('Mobile'));
+  const eqWritten = String(tRow[25] || '');
+  truthy("HTML 'equip[]' Laptop       → TERM[25] contains Laptop",  eqWritten.includes('Laptop'));
+  truthy("HTML 'equip[]' Mobile Phone → TERM[25] contains Mobile",  eqWritten.includes('Mobile'));
 
-  assertCol(tRow, 25, 'Final day confirmed.',           "HTML 'comments'      → formData.comments      → TERM[25]");
-  assertCol(tRow, 26, '2026-07-31',                     "HTML 'lastDayWorked' → formData.lastDayWorked → TERM[26]");
-  assertCol(tRow, 27, '',                               "TERM[27] attachmentUrl — no file attachment in test");
+  assertCol(tRow, 26, 'Final day confirmed.',           "HTML 'comments'      → formData.comments      → TERM[26]");
+  assertCol(tRow, 27, '2026-07-31',                     "HTML 'lastDayWorked' → formData.lastDayWorked → TERM[27]");
+  assertCol(tRow, 28, '',                               "TERM[28] attachmentUrl — no file attachment in test");
 
   // ── STEP 5: EMAIL CONTEXT MAP ────────────────────────────────────────────
   //

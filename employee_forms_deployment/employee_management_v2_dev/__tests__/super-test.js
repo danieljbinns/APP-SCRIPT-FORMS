@@ -302,7 +302,7 @@ function seedReferenceSheets() {
   _rt.captures.seedSheet('Terminations', [
     ['Workflow ID','Form ID','Timestamp','Requester Name','Requester Email',
      'Employee Name','Employee ID','Employee Type','Work Email','Phone',
-     'Site','Term Date','Reason','Manager Name','Manager Email',
+     'Computer Serial','Site','Term Date','Reason','Manager Name','Manager Email',
      'HR Approved','Has Reports','Reports To New','Systems','Email Forwarding',
      'Email Files To','Email Delegate','Account Duration','Vacation Responder',
      'Equipment','Comments','Last Day Worked','Attachment URL']
@@ -958,27 +958,28 @@ results.push(runScenario('TERMINATION REQUEST — Full termination', () => {
   atLeast('Terminations: row written', termAppends.length, 1);
   if (termAppends.length > 0) {
     const tRow = termAppends[termAppends.length - 1];
-    console.log('    Row has ' + tRow.values.length + ' columns (expected 28)');
+    console.log('    Row has ' + tRow.values.length + ' columns (expected 29)');
     assertCol(tRow.values,  0, wfId,                    'TERM[0]  WORKFLOW_ID');
     assertCol(tRow.values,  3, 'David Binns',           'TERM[3]  REQUESTER_NAME');
     assertCol(tRow.values,  4, 'dbinns@team-group.com', 'TERM[4]  REQUESTER_EMAIL');
     assertCol(tRow.values,  5, 'Sam Leaving',           'TERM[5]  EMPLOYEE_NAME');
     assertCol(tRow.values,  8, 'sleaving@team-group.com','TERM[8]  WORK_EMAIL');
-    assertCol(tRow.values, 10, 'Ottawa Main',           'TERM[10] SITE');
-    assertCol(tRow.values, 12, 'Resigned',              'TERM[12] REASON');
-    assertCol(tRow.values, 13, 'Bob Manager',           'TERM[13] MANAGER_NAME');
-    assertCol(tRow.values, 14, 'mgr@team-group.com',    'TERM[14] MANAGER_EMAIL');
+    assertCol(tRow.values, 10, 'N/A',                   'TERM[10] COMPUTER_SERIAL (reserved)');
+    assertCol(tRow.values, 11, 'Ottawa Main',           'TERM[11] SITE');
+    assertCol(tRow.values, 13, 'Resigned',              'TERM[13] REASON');
+    assertCol(tRow.values, 14, 'Bob Manager',           'TERM[14] MANAGER_NAME');
+    assertCol(tRow.values, 15, 'mgr@team-group.com',    'TERM[15] MANAGER_EMAIL');
     // Systems to deactivate
-    const sysDeact = String(tRow.values[18] || '');
-    truthy('TERM[18] SYSTEMS contains Google Account', sysDeact.includes('Google Account'));
-    truthy('TERM[18] SYSTEMS contains BOSS',           sysDeact.includes('BOSS'));
+    const sysDeact = String(tRow.values[19] || '');
+    truthy('TERM[19] SYSTEMS contains Google Account', sysDeact.includes('Google Account'));
+    truthy('TERM[19] SYSTEMS contains BOSS',           sysDeact.includes('BOSS'));
     // Equipment to return
-    const equipRet = String(tRow.values[24] || '');
-    truthy('TERM[24] EQUIPMENT contains Computer',     equipRet.includes('Computer'));
+    const equipRet = String(tRow.values[25] || '');
+    truthy('TERM[25] EQUIPMENT contains Computer',     equipRet.includes('Computer'));
     // Google offboarding
-    assertCol(tRow.values, 19, 'mgr@team-group.com',   'TERM[19] EMAIL_FORWARDING');
-    assertCol(tRow.values, 22, 'Default 1 Month then delete', 'TERM[22] ACCOUNT_DURATION');
-    assertCol(tRow.values, 23, 'Sam Leaving is no longer with TEAM Group.', 'TERM[23] VACATION_RESPONDER');
+    assertCol(tRow.values, 20, 'mgr@team-group.com',   'TERM[20] EMAIL_FORWARDING');
+    assertCol(tRow.values, 23, 'Default 1 Month then delete', 'TERM[23] ACCOUNT_DURATION');
+    assertCol(tRow.values, 24, 'Sam Leaving is no longer with TEAM Group.', 'TERM[24] VACATION_RESPONDER');
   }
 
   // ── Emails ──────────────────────────────────────────────────────────────────
