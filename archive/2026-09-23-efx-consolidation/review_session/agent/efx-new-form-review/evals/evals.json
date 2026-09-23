@@ -1,0 +1,8 @@
+{
+  "skill_name": "efx-new-form-review",
+  "evals": [
+    { "id": 1, "prompt": "HR wants a new optional field 'Union Status' (Union / Non-Union) on the New Hire form so George's SiteDocs job-code mapping stops guessing. Add it end to end in the efx fork — no UI layout changes beyond the input itself.", "expected_output": "Traces InitialRequest.html → formatInitialRequestData → SchemaConstants (col 57), adds optional key to FormContracts.new_hire with enum, bumps FormContracts.VERSION, adds an efx-test assertion, regenerates docs, runs n8n-check (additive), updates mapping doc. Does not touch prod.", "files": [] },
+    { "id": 2, "prompt": "George needs to be able to reopen a closed action item from n8n. Can you expose that?", "expected_output": "Finds there is no reopen function in the app, explains it would be a new backend function + alias (n8n_reopenTask) with an audit trail, drafts the handler in ActionItemService, contract/CALLABLE entry, alias, tests, and flags it as additive but new behaviour to announce.", "files": [] },
+    { "id": 3, "prompt": "we renamed dssUsername to trainingUsername in the ID setup form html and handler, n8n-check is red now, help", "expected_output": "Identifies the breaking rename, restores a compatibility alias (accept both keys, map old→new), bumps N8N_API_VERSION, documents deprecation, runs n8n-check --update after explaining the announcement requirement.", "files": [] }
+  ]
+}

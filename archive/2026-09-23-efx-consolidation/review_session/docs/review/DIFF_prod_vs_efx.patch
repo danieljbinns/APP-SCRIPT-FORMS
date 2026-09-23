@@ -1,0 +1,2171 @@
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/AGENTS.md employee_forms_efx/employee_management_v2_efx/AGENTS.md
+--- employee_forms_deployment/employee_management_v2/AGENTS.md	1969-12-31 19:00:00.000000000 -0500
++++ employee_forms_efx/employee_management_v2_efx/AGENTS.md	2026-09-16 22:59:54.274001800 -0400
+@@ -0,0 +1,93 @@
++# AGENTS.md — `employee_management_v2_efx` (an EFX-registered Apps Script project)
++
++These are the rules for **this Apps Script project**. Every project exposed to n8n through EFX carries a copy
++of this file. Repo-wide rules are in `../AGENTS.md`; read that first.
++
++## 1. What the EFX helper files are
++
++| File | Role | May you edit it? |
++|---|---|---|
++| `N8n.js` | The public surface n8n calls: `n8n_*` aliases, `N8N_API_VERSION`, `N8N_ALIASES[]`, `N8N_ERROR_CODES[]` (nothing private lives here) | Yes — add aliases; follow §3–§5 |
++| `N8nEnvelope.js` | Private helpers behind the aliases: `n8nActor_`, `n8nOk_`/`n8nErr_`, `n8nGuard_`, `n8nOptions_`, `n8nSubmit_`, `n8nBool_` (string booleans), `n8nParse_` (string\|object), `n8nMapHandlerError_` (handler message → code) | Rarely; changes affect every alias |
++| `FormContracts.js` | Declares, per form, the handler `fn`, `required[]`, `optional[]`, `types`, `enums`, `targetSheet`, `verified`, `responseFields`; `CALLABLE` allow-list; `validate()`; `hash` | Yes — this is the file you must keep in sync (§2) |
++| `EfxApi.js` | Primitives: `efxInfo`, `efxRunAs`, `efxReadRecord`, `efxTaskList`, `efxTaskClose`, `efxEmployeeIdGet/Allocate`, `efxEventsSince` | Rarely; changes here affect every alias |
++| `Actor.js` | Request-scoped identity (`Actor.run`, `Actor.email`, `canOverrideEmployeeId`) | No (shared across projects) |
++| `EmployeeIdRegistry.js` | Internal Employee ID allocator; sheet `Employee IDs` | No, except FLOOR/sheet name per project |
++| `RawLog.js` | Event feed (`Event ID`, `Kind`, `rawLogResult`, optional signed fan-out) — logging only | No, except `RAW_LOG_MAX_ROWS` |
++| `EfxUtil.js` | Pure helpers shared by RawLog/EfxApi/N8n: `EFX_SECRET_KEY_RE`, `efxRedact_`, `efxJsonSafe`, `efxSign_` | No (shared across projects) |
++| `Setup.js` (EFX section), `Config.js` (EFX flags), `Services/ConfigurationService.js` (EFX defaults), `MigrationTools.js` (`migrateEfx*`) | Wiring | Yes, additively |
++
++Handlers use `Actor.email()` instead of `Session.getActiveUser().getEmail()`. Keep it that way in any new
++handler code.
++
++## 2. The contract rule
++
++`FormContracts.js` is the single source of truth for what n8n may send. When a change touches any of:
++
++- a `submit*` / `close*` / `get*` function's parameters or return object,
++- a form field: HTML `name=`, handler key, `format*Data` array order, sheet column/`SCHEMA` index,
++- an action-item `formType` string,
++- an `n8n_*` alias,
++
++then **the same commit** must:
++
++1. update the affected `FormContracts` entry (`required`, `optional`, `types`, `enums`, `responseFields`,
++   `targetSheet`, `verified`);
++2. bump `FormContracts.VERSION`;
++3. if breaking (see §4), bump `N8N_API_VERSION` in `N8n.js` and add a deprecation shim (§5);
++4. update `N8N_ALIASES[]` if an alias was added/changed;
++5. pass `node __tests__/super-test.js`, `node __tests__/efx-test.js`, `node __tests__/form-field-map-test.js`;
++6. update `../docs/wiki/FOR_GEORGE.md` §2 and `../docs/mapping/<form>.md`.
++
++Do not set `verified:true` on a contract unless its keys were checked against the form HTML and handler
++(that is what `form-field-map-test.js` proves). Do not add an alias for a `verified:false` form.
++
++## 3. Additive-only rule
++
++Changes to the n8n-facing surface are **additive by default**:
++
++- New optional field → allowed. New alias → allowed. New optional return field → allowed. New enum value → allowed.
++- Making a field required, renaming/removing a field, removing/renaming an alias, changing the envelope keys
++  (`ok, apiVersion, requestId, result, error{code,message}`), changing an error code's meaning → **breaking**;
++  needs §4 + §5.
++- `FormContracts.validate` rejects unknown keys, so *removing* a field from a contract breaks any wrapper that
++  still sends it. Remove only after the deprecation window.
++- Never change `efxTaskClose` semantics ("identical to Complete in ActionItemForm.html") — extend via new
++  parameters with defaults.
++
++## 4. Version bumps
++
++| Constant | Format | Bump when |
++|---|---|---|
++| `FormContracts.VERSION` | `'YYYY.MM.DD'` (`-proto` until first TEST deploy) | any contract change, additive or not |
++| `N8N_API_VERSION` (`N8n.js`) | `'YYYY.MM.DD-n'` | breaking change to aliases/envelope/contracts, or alias deprecation start/removal |
++
++Both are returned by `n8n_contracts()` (`contractsVersion`, `apiVersion`) and by `n8n_ping` (`apiVersion`,
++`libraryVersion`). The Router / `n8n-check` compare `hash` per form; a bump without a real change is harmless, a
++change without a bump is a drift incident (`../docs/wiki/RUNBOOKS.md` §6).
++
++## 5. Alias deprecation policy
++
++1. Add the new alias. Keep the old one as a one-line shim that calls the new one and adds `deprecated: true`
++   and `replacedBy: 'n8n_newName'` to the envelope via the `extra` argument of `n8nOk_`.
++2. Mark the old row in `N8N_ALIASES` with `deprecated: true, until: 'YYYY-MM-DD'` (≥ 30 days; ≥ 7 days for
++   TEST-only aliases).
++3. Bump `N8N_API_VERSION`; note it in `../docs/wiki/FOR_GEORGE.md` §2 and tell the n8n owner.
++4. After the date, remove the shim and the row; bump `N8N_API_VERSION` again.
++
++The same policy applies to contract field renames: accept both keys in the alias (map old → new before
++`validate`) during the window.
++
++## 6. Project-specific facts
++
++- Environment: `Config.js` `ENVIRONMENT` string; sheet from Script Property `SPREADSHEET_ID` (coded default is
++  the **dev** sheet — never rely on it). `.clasp.json` scriptId must be the TEST script, never prod/dev.
++- Self-check from the editor: `efxSelfTest()` (no writes). Migrations: `migrateEfxDryRun()` → `migrateEfxApply()`;
++  optional `migrateEfxBackfillDryRun()` → `…Apply()`.
++- EFX Script Properties (via `Setup.js` setters only): `SAFETY_TRAINING_AT_SUBMIT`, `EFX_EVENT_WEBHOOK_URL`,
++  `EFX_EVENT_KID`, `EFX_EVENT_SECRET`. Non-prod must also have `EMAIL_REDIRECT_ALL`.
++- Sheets created on demand: `Employee IDs`, `Raw Log`. Appended header: `Initial Requests` col 56
++  `Internal Employee ID` (`SCHEMA.INITIAL_REQUESTS.INTERNAL_EMP_ID = 55`).
++- Known handler issues the contracts route around (do not "fix" as a side effect of EFX work; file separately):
++  `submitITConfirmation` defined twice (`BOSSReviewHandler.js`, `ITConfirmationHandler.js`);
++  `submitSpecialistForm` sheet map dead (all → `Specialist Results`).
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/Actor.js employee_forms_efx/employee_management_v2_efx/Actor.js
+--- employee_forms_deployment/employee_management_v2/Actor.js	1969-12-31 19:00:00.000000000 -0500
++++ employee_forms_efx/employee_management_v2_efx/Actor.js	2026-09-16 21:44:23.117742300 -0400
+@@ -0,0 +1,52 @@
++/**
++ * Actor.js — Employee Forms backend addition  (PROTOTYPE / NON-PRODUCTION)
++ *
++ * Request-scoped identity. When a human uses the web app, Actor.email() === Session.getActiveUser().getEmail().
++ * When the EFX Bridge calls a library function, it wraps the call in Actor.run(actor, fn) so every
++ * "Submitted By" / closedBy / Raw Log user gets an attributable automation identity instead of ''.
++ *
++ * Apps Script executions are single-threaded per invocation, so a module-level variable is safe.
++ * Migration: replace `Session.getActiveUser().getEmail()` with `Actor.email()` in the submit handlers,
++ * RawLog.js and closeActionItemWithNotes first; the rest can follow mechanically.
++ */
++var Actor = (function () {
++  var override_ = null; // { id, email, display } for the current execution only
++
++  function run(actor, fn) {
++    var prev = override_;
++    override_ = (actor && typeof actor === 'object') ? actor : null;
++    try { return fn(); } finally { override_ = prev; }
++  }
++
++  function email() {
++    if (override_ && override_.email) return String(override_.email);
++    try { return Session.getActiveUser().getEmail() || ''; } catch (e) { return ''; }
++  }
++
++  /** Human-readable attribution when no email exists (e.g. 'New-hire intake (n8n)'). */
++  function label() {
++    if (override_) return String(override_.display || override_.email || override_.id || 'automation');
++    return email();
++  }
++
++  function isAutomation() { return !!override_; }
++  function current() { return override_; }
++
++  /**
++   * AUTHORIZATION identity — the real Google session (web app visitor, or the impersonated bot under the
++   * Execution API). Never the caller-asserted actor, which can be spoofed by any n8n author.
++   * Use principal() for role checks (isHR/isIT/isAdmin, canCancel/canBump/canEditDates); email() for attribution.
++   */
++  function principal() {
++    try { return Session.getActiveUser().getEmail() || ''; } catch (e) { return ''; }
++  }
++
++  /** Only app admins (by REAL session identity) may override a pre-assigned Internal Employee ID. */
++  function canOverrideEmployeeId() {
++    var e = principal().toLowerCase();
++    if (!e) return false;
++    return (CONFIG.ADMIN_EMAILS || []).some(function (a) { return String(a).toLowerCase() === e; });
++  }
++
++  return { run: run, email: email, principal: principal, label: label, isAutomation: isAutomation, current: current, canOverrideEmployeeId: canOverrideEmployeeId };
++})();
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/BOSSReviewHandler.js employee_forms_efx/employee_management_v2_efx/BOSSReviewHandler.js
+--- employee_forms_deployment/employee_management_v2/BOSSReviewHandler.js	2026-05-25 18:47:43.276432000 -0400
++++ employee_forms_efx/employee_management_v2_efx/BOSSReviewHandler.js	2026-09-16 21:12:45.114257800 -0400
+@@ -292,7 +292,7 @@
+       formData.computerType        || '',
+       formData.phoneRequestType    || '',
+       formData.notes               || '',
+-      Session.getActiveUser().getEmail()
++      Actor.email()
+     ]);
+ 
+     const context = getWorkflowContext(workflowId);
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/Config.js employee_forms_efx/employee_management_v2_efx/Config.js
+--- employee_forms_deployment/employee_management_v2/Config.js	2026-08-06 09:24:21.928529500 -0400
++++ employee_forms_efx/employee_management_v2_efx/Config.js	2026-09-16 21:36:35.701266200 -0400
+@@ -3,7 +3,9 @@
+  * Single source of truth for ALL form URLs and settings
+  */
+ 
+-const ENVIRONMENT = 'PROD';
++// EFX fork: 'TEST' (not 'PROD') so EmailUtils.sendFormEmail force-redirects all mail to dbinns@team-group.com whenever
++// EMAIL_REDIRECT_ALL is unset (EmailUtils.js:562). Set to 'PROD' ONLY when these changes are promoted to the real prod folder.
++const ENVIRONMENT = 'TEST';
+ 
+ const CONFIG = {
+ 
+@@ -35,6 +37,14 @@
+   get MAINTENANCE_MODE() {
+     return ConfigurationService.getSetting('MAINTENANCE_MODE') === 'true';
+   },
++
++  // ── EFX (n8n integration) flags — all default off/empty; set via Setup.js setters ──
++  // Create the Safety Onboarding action item at initial submit (default: legacy timing).
++  get SAFETY_TRAINING_AT_SUBMIT() {
++    return ConfigurationService.getSetting('SAFETY_TRAINING_AT_SUBMIT') === 'true';
++  },
++  // Optional signed webhook for Raw Log events (RawLog.js fan-out). Empty = disabled.
++  get EFX_EVENT_WEBHOOK_URL()    { return ConfigurationService.getSetting('EFX_EVENT_WEBHOOK_URL') || ''; },
+   
+   // ==========================================================================
+   // SHEET NAMES
+@@ -65,7 +75,9 @@
+     IT_CONFIRMATION_RESULTS: 'IT Confirmation Results',
+     // Safety Onboarding and Safety Termination removed — now Action Items with formType.
+     FORM_EDIT_LOG: 'Form Edit Log',
+-    AUDIT_LOG: 'Audit Log'
++    AUDIT_LOG: 'Audit Log',
++    EMPLOYEE_IDS: 'Employee IDs',   // EFX allocator registry (self-creating)
++    RAW_LOG: 'Raw Log'              // EFX event feed (self-creating; RawLog.js)
+   },
+   
+   // ==========================================================================
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/DashboardActionsHandler.js employee_forms_efx/employee_management_v2_efx/DashboardActionsHandler.js
+--- employee_forms_deployment/employee_management_v2/DashboardActionsHandler.js	2026-05-25 18:13:54.534629600 -0400
++++ employee_forms_efx/employee_management_v2_efx/DashboardActionsHandler.js	2026-09-16 21:44:30.073733500 -0400
+@@ -20,7 +20,7 @@
+ // ─────────────────────────────────────────────────────────────────────────────
+ 
+ function adminDeleteWorkflows(workflowIds) {
+-  const userEmail = Session.getActiveUser().getEmail();
++  const userEmail = Actor.principal(); // authorization (EFX)
+   try {
+     if (!AccessControlService.isAdmin(userEmail)) {
+       return { success: false, message: 'Permission denied. Admin access required.' };
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/EfxApi.js employee_forms_efx/employee_management_v2_efx/EfxApi.js
+--- employee_forms_deployment/employee_management_v2/EfxApi.js	1969-12-31 19:00:00.000000000 -0500
++++ employee_forms_efx/employee_management_v2_efx/EfxApi.js	2026-09-16 22:53:24.486006900 -0400
+@@ -0,0 +1,283 @@
++/**
++ * EfxBridgeApi.js — Employee Forms backend addition  (PROTOTYPE / NON-PRODUCTION)
++ *
++ * The ONLY surface the EFX Bridge calls (as a library, symbol `EF`). Top-level functions so they are
++ * exposed by the library. Arguments crossing the library boundary are JSON strings or primitives.
++ * No business logic here — everything delegates to existing Forms functions wrapped in Actor.run().
++ */
++
++function efxInfo() {
++  var callerSession = 'unknown';
++  try { callerSession = Session.getActiveUser().getEmail() ? 'authenticated' : 'anonymous'; } catch (e) {}
++  return {
++    env: (typeof ENVIRONMENT !== 'undefined') ? ENVIRONMENT : '?',
++    spreadsheetId: CONFIG.SPREADSHEET_ID,          // resolved by THIS script's Script Properties (V1 check)
++    libraryVersion: FormContracts.VERSION,
++    callerSession: callerSession
++  };
++}
++
++function efxContracts() { return FormContracts.list(); }
++function efxContract(form) { return FormContracts.get(String(form)); }
++function efxValidate(form, data) { return FormContracts.validate(String(form), data || {}); }
++
++/** Runs an allow-listed top-level Forms function under an actor identity. */
++function efxRunAs(actorJson, fnName, argsJson) {
++  var actor = (typeof actorJson === 'string') ? JSON.parse(actorJson) : (actorJson || {});
++  var args  = (typeof argsJson === 'string') ? JSON.parse(argsJson) : (argsJson || []);
++  if (!FormContracts.isCallable(fnName)) throw new Error('efxRunAs: function not exposed: ' + fnName);
++  var fn = globalThis[fnName];
++  if (typeof fn !== 'function') throw new Error('efxRunAs: function not found: ' + fnName);
++  var out = Actor.run(actor, function () { return fn.apply(null, args); });
++  // Allow-listed reads such as getStepResultData(wf, 'id_setup') return credential columns verbatim — redact on the way
++  // out (review pass 2 L8). Dates → ISO first, so a Date value is not flattened to {} by the redactor.
++  return (typeof efxRedact_ === 'function') ? efxRedact_(efxJsonSafe(out)) : out;
++}
++
++/** One sheet row → { <header>: value } (blank headers skipped; Dates → ISO via efxJsonSafe). Shared by efxReadRecord and efxListWorkflows. */
++function efxRowToRecord_(headers, row) {
++  var rec = {};
++  headers.forEach(function (h, j) { if (h) rec[h] = efxJsonSafe(row[j]); });
++  return rec;
++}
++
++/** Header-keyed read-back of the row for a workflow in a result/request sheet. */
++function efxReadRecord(sheetName, workflowId) {
++  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
++  var sh = ss.getSheetByName(sheetName);
++  if (!sh) return null;
++  var data = sh.getDataRange().getValues();
++  var headers = data[0] || [];
++  for (var i = data.length - 1; i >= 1; i--) {               // newest first
++    if (String(data[i][0]) === String(workflowId)) {
++      var rec = efxRowToRecord_(headers, data[i]);
++      // Result sheets carry credentials (DSS Password, SiteDocs Password, Email Password, Phone VM Password) — never hand them to n8n (review pass 2 H1)
++      return (typeof efxRedact_ === 'function') ? efxRedact_(rec) : rec;
++    }
++  }
++  return null;
++}
++
++/** task.list — { workflowId?, taskId?, assignedTo?, formType?, status? } */
++function efxTaskList(p) {
++  p = p || {};
++  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
++  var sh = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
++  var AI = SCHEMA.ACTION_ITEMS;
++  var data = sh ? sh.getDataRange().getValues() : [];
++  var out = [];
++  for (var i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
++    var r = data[i];
++    if (p.taskId     && String(r[AI.TASK_ID])     !== String(p.taskId))     continue;
++    if (p.workflowId && String(r[AI.WORKFLOW_ID]) !== String(p.workflowId)) continue;
++    if (p.formType   && String(r[AI.FORM_TYPE])   !== String(p.formType))   continue;
++    if (p.status     && String(r[AI.STATUS])      !== String(p.status))     continue;
++    if (p.assignedTo && String(r[AI.ASSIGNED_TO]).toLowerCase() !== String(p.assignedTo).toLowerCase()) continue;
++    var desc = []; try { desc = JSON.parse(String(r[AI.DESCRIPTION] || '[]')); } catch (e) { desc = [String(r[AI.DESCRIPTION] || '')]; }
++    var draft = null; try { draft = r[AI.DRAFT] ? JSON.parse(String(r[AI.DRAFT])) : null; } catch (e) {}
++    out.push({
++      taskId: String(r[AI.TASK_ID]), workflowId: String(r[AI.WORKFLOW_ID]), category: r[AI.CATEGORY], name: r[AI.TASK_NAME],
++      description: desc, assignedTo: r[AI.ASSIGNED_TO], status: r[AI.STATUS],
++      createdDate: r[AI.CREATED_DATE] instanceof Date ? r[AI.CREATED_DATE].toISOString() : r[AI.CREATED_DATE],
++      completedDate: r[AI.COMPLETED_DATE] instanceof Date ? r[AI.COMPLETED_DATE].toISOString() : (r[AI.COMPLETED_DATE] || null),
++      notes: r[AI.NOTES], closedBy: r[AI.CLOSED_BY], formType: r[AI.FORM_TYPE], draft: draft
++    });
++  }
++  return { tasks: out, count: out.length };
++}
++
++/**
++ * Draft cell → { items: { <name>: {status, by, at, comments} } } — the ONLY shape ActionItemForm.html (taskDraft.items) and
++ * notifyTaskClosure (draft.items) read. Accepts the raw cell (string) or an already-parsed object (efxTaskList.draft) and
++ * returns a fresh object. Legacy shapes are lifted: { checkedItems:[…] } → Collected; a flat map (jrCompleteViaSecret —
++ * mapping review defect #11) → items. Unparsable → empty. Shared by efxTaskClose and n8n_saveTaskDraft (review pass 2 §5).
++ */
++function efxParseDraft_(cell) {
++  var draft = { items: {} };
++  try {
++    var prev = (cell && typeof cell === 'object') ? JSON.parse(JSON.stringify(cell)) : JSON.parse(String(cell || '{}'));
++    if (prev && typeof prev === 'object') {
++      if (prev.items && typeof prev.items === 'object') draft.items = prev.items;
++      else if (Array.isArray(prev.checkedItems)) prev.checkedItems.forEach(function (n) { draft.items[n] = { status: 'Collected' }; });
++      else draft.items = prev; // legacy flat map
++    }
++  } catch (e) { draft = { items: {} }; }
++  return draft;
++}
++
++/** Status column of the Workflows row for a workflowId ('' when sheet/row missing) — same read as StateSync (SCHEMA.WORKFLOWS.STATUS). */
++function efxWorkflowStatus_(ss, workflowId) {
++  var sh = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
++  if (!sh) return '';
++  var WF = SCHEMA.WORKFLOWS, data = sh.getDataRange().getValues();
++  for (var i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
++    if (String(data[i][WF.WORKFLOW_ID]) === String(workflowId)) return String(data[i][WF.STATUS] || '');
++  }
++  return '';
++}
++
++/**
++ * task.close — identical effect to a human clicking Complete in ActionItemForm.html.
++ * p: { taskId } | { workflowId, formType }  + optional { notes, checklist:{item:{status,comments}}, formData }
++ * Returns { taskId, workflowId, success, ... } or { code, message } on error.
++ */
++function efxTaskClose(actorJson, p, dryRun) {
++  var actor = (typeof actorJson === 'string') ? JSON.parse(actorJson) : (actorJson || {});
++  p = p || {};
++  if (!p.taskId && !(p.workflowId && p.formType)) return { code: 'E_VALIDATION', message: 'taskId, or workflowId + formType, is required' };
++
++  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
++  var sh = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
++  var AI = SCHEMA.ACTION_ITEMS;
++  var data = sh ? sh.getDataRange().getValues() : [];
++  var row = null, closedRow = null, otherRow = null;
++  for (var i = SCHEMA.ROW.FIRST_DATA; i < data.length; i++) {
++    var r = data[i];
++    if (p.taskId) {
++      if (String(r[AI.TASK_ID]) === String(p.taskId)) { row = r; break; }
++    } else if (String(r[AI.WORKFLOW_ID]) === String(p.workflowId) && String(r[AI.FORM_TYPE]) === String(p.formType)) {
++      var rs = String(r[AI.STATUS]);
++      if (rs === 'Open') { row = r; break; }
++      // Only a Closed row means "already done". Cancelled (or anything else) is E_TASK_NOT_OPEN, which n8n must NOT treat as success (review pass 2 L3)
++      if (rs === 'Closed') closedRow = r; else otherRow = r;
++    }
++  }
++  if (!row && closedRow) return { code: 'E_ALREADY_CLOSED', message: 'Task ' + closedRow[AI.TASK_ID] + ' for ' + p.workflowId + ' (' + p.formType + ') is already closed' };
++  if (!row && otherRow) return { code: 'E_TASK_NOT_OPEN', message: 'Task ' + otherRow[AI.TASK_ID] + ' for ' + p.workflowId + ' (' + p.formType + ') is "' + otherRow[AI.STATUS] + '" — only Open tasks can be closed' };
++  if (!row) return { code: 'E_NOT_FOUND', message: p.taskId ? ('Task not found: ' + p.taskId) : ('No open ' + p.formType + ' task for ' + p.workflowId) };
++  // When both taskId and formType are given, the task must be of that type (jr closer must not close a WIS task — review F7)
++  if (p.taskId && p.formType && String(row[AI.FORM_TYPE]) !== String(p.formType)) {
++    return { code: 'E_VALIDATION', message: 'Task ' + row[AI.TASK_ID] + ' is formType "' + row[AI.FORM_TYPE] + '", not "' + p.formType + '"' };
++  }
++  var st = String(row[AI.STATUS]);
++  if (st === 'Closed') return { code: 'E_ALREADY_CLOSED', message: 'Task ' + row[AI.TASK_ID] + ' is already closed' };
++  if (st !== 'Open') return { code: 'E_TASK_NOT_OPEN', message: 'Task ' + row[AI.TASK_ID] + ' is "' + st + '" — only Open tasks can be closed' };
++  // An Open task whose WORKFLOW is Cancelled must not be closable either (cancelRequest flips the tasks it finds, but a task
++  // created afterwards, or a row edited by hand, can still read Open) — review pass 2 L3
++  if (efxWorkflowStatus_(ss, row[AI.WORKFLOW_ID]) === 'Cancelled') {
++    return { code: 'E_TASK_NOT_OPEN', message: 'Task ' + row[AI.TASK_ID] + ' is Open but workflow ' + row[AI.WORKFLOW_ID] + ' is Cancelled — only tasks of active workflows can be closed' };
++  }
++
++  var taskId = String(row[AI.TASK_ID]);
++  var by = actor.email || actor.display || actor.id || 'automation';
++  var items = []; try { items = JSON.parse(String(row[AI.DESCRIPTION] || '[]')); } catch (e) { items = []; }
++  var draft = efxParseDraft_(row[AI.DRAFT]);   // { items:{…} } — the shape the UI reads (see efxParseDraft_)
++  var now = new Date().toISOString();
++  items.forEach(function (it) {
++    if (typeof it === 'string' && it.indexOf('__') !== 0) {
++      var c = p.checklist && p.checklist[it];
++      draft.items[it] = { status: (c && c.status) || 'Complete', by: by, at: now, comments: (c && c.comments) || p.notes || '' };
++    }
++  });
++
++  if (dryRun) return { dryRun: true, taskId: taskId, workflowId: String(row[AI.WORKFLOW_ID]), wouldClose: true, draft: draft };
++
++  var res = Actor.run(actor, function () {
++    return ActionItemService.closeActionItem(taskId, p.notes || '', by, JSON.stringify(draft), p.formData ? JSON.stringify(p.formData) : null);
++  });
++  if (res && res.success === false && /already/i.test(res.message || '')) return { code: 'E_ALREADY_CLOSED', message: res.message };
++  if (!res || res.success === false) return { code: 'E_UPSTREAM', message: (res && res.message) || 'closeActionItem failed' };
++  var out = { taskId: taskId, workflowId: String(row[AI.WORKFLOW_ID]) };
++  Object.keys(res).forEach(function (k) { out[k] = res[k]; });
++  return out;
++}
++
++function efxEmployeeIdGet(workflowId) { return EmployeeIdRegistry.info(workflowId); }
++
++/**
++ * workflow.list — reads the materialised Dashboard_View (StateSync) header-keyed.
++ * filter: { type?: 'Onboarding'|'Equipment'|'Status Change'|'End of Employment' | prefix 'NEW_EMP_'…, status?, step? (substring),
++ *           since?: ISO date (Last Updated >=), employeeName? (substring), limit?: 100, offset?: 0 }
++ */
++function efxListWorkflows(f) {
++  f = f || {};
++  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
++  var sh = ss.getSheetByName(CONFIG.SHEETS.DASHBOARD_VIEW);
++  if (!sh || sh.getLastRow() < 2) return { workflows: [], count: 0, total: 0, source: CONFIG.SHEETS.DASHBOARD_VIEW };
++  var data = sh.getDataRange().getValues(), H = data[0];
++  var DV = SCHEMA.DASHBOARD_VIEW;
++  var typeOf = function (id) {
++    id = String(id || '');
++    return id.indexOf('TERM_') === 0 ? 'End of Employment' : id.indexOf('CHANGE_') === 0 ? 'Status Change' : id.indexOf('EQUIP_REQ_') === 0 ? 'Equipment' : 'Onboarding';
++  };
++  var since = f.since ? new Date(f.since).getTime() : 0;
++  var limit = Math.min(Number(f.limit) || 100, 500), offset = Number(f.offset) || 0;
++  var out = [], total = 0;
++  for (var i = 1; i < data.length; i++) {
++    var r = data[i]; var id = String(r[DV.WORKFLOW_ID] || ''); if (!id) continue;
++    var t = typeOf(id);
++    if (f.type && !(t === f.type || id.indexOf(String(f.type)) === 0)) continue;
++    if (f.status && String(r[DV.GLOBAL_STATUS]) !== String(f.status)) continue;
++    if (f.step && String(r[DV.GRANULAR_STEP] || '').toLowerCase().indexOf(String(f.step).toLowerCase()) === -1) continue;
++    if (f.employeeName && String(r[DV.EMPLOYEE_NAME] || '').toLowerCase().indexOf(String(f.employeeName).toLowerCase()) === -1) continue;
++    if (since) { var lu = r[DV.LAST_UPDATED] instanceof Date ? r[DV.LAST_UPDATED].getTime() : new Date(r[DV.LAST_UPDATED]).getTime(); if (!(lu >= since)) continue; }
++    total++;
++    if (total <= offset || out.length >= limit) continue;
++    var rec = { workflowId: id, type: t };
++    var byHeader = efxRowToRecord_(H, r);
++    Object.keys(byHeader).forEach(function (h) { rec[h] = byHeader[h]; });   // same precedence as before: a header named like a fixed key still wins (review L6, unchanged)
++    out.push(rec);
++  }
++  return { workflows: out, count: out.length, total: total, offset: offset, limit: limit, source: CONFIG.SHEETS.DASHBOARD_VIEW };
++}
++
++function efxEmployeeIdAllocate(actorJson, workflowId, employeeName) {
++  var actor = (typeof actorJson === 'string') ? JSON.parse(actorJson) : (actorJson || {});
++  return Actor.run(actor, function () {
++    var id = EmployeeIdRegistry.allocate(workflowId, { employeeName: employeeName || '', source: 'efx.employeeId.allocate' });
++    return EmployeeIdRegistry.info(workflowId);
++  });
++}
++
++/** events.since — { afterEventId?, afterTs?, kinds?[], sources?[], limit? } over the Raw Log (RawLog.v2 columns). */
++function efxEventsSince(p) {
++  p = p || {};
++  var limit = Math.min(Number(p.limit) || 200, 1000);
++  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
++  var sh = ss.getSheetByName(RAW_LOG_SHEET);
++  if (!sh || sh.getLastRow() < 2) return { events: [], nextAfterEventId: p.afterEventId || null, pruned: false };
++  // Review pass 2 M6: a 1-minute poller must not read the whole Raw Log (thousands of rows incl. payload JSON) every tick.
++  // With a cursor we read only the tail (p.tail rows, default 1500) and fall back to a full read if the cursor is not in it.
++  var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
++  var tail = Math.max(Math.min(Number(p.tail) || 1500, 20000), limit + 1);
++  var H = sh.getRange(1, 1, 1, lastCol).getValues()[0];
++  function readTail_() {
++    if (!(p.afterEventId || p.afterTs) || lastRow - 1 <= tail) return sh.getRange(2, 1, lastRow - 1, lastCol).getValues();
++    return sh.getRange(lastRow - tail + 1, 1, tail, lastCol).getValues();
++  }
++  var body = readTail_();
++  if (p.afterEventId && body.length < lastRow - 1) {
++    var cE = H.indexOf('Event ID');
++    var found = cE >= 0 && body.some(function (r) { return String(r[cE] || '') === String(p.afterEventId); });
++    if (!found) body = sh.getRange(2, 1, lastRow - 1, lastCol).getValues();   // cursor older than the tail → full read (then pruned logic decides)
++  }
++  var data = [H].concat(body);
++  var col = function (name) { return H.indexOf(name); };
++  var cTs = col('Timestamp'), cSrc = col('Source'), cWf = col('Workflow ID'), cUser = col('User'), cJson = col('Raw JSON'), cEid = col('Event ID'), cKind = col('Kind');
++  var events = [];
++  var passed = !p.afterEventId;
++  var afterTs = p.afterTs ? new Date(p.afterTs).getTime() : 0;
++  for (var i = 1; i < data.length && events.length < limit; i++) {
++    var r = data[i];
++    var eid = cEid >= 0 ? String(r[cEid] || '') : '';
++    if (!passed) { if (eid === String(p.afterEventId)) passed = true; continue; }
++    var ts = r[cTs] instanceof Date ? r[cTs] : new Date(r[cTs]);
++    if (afterTs && ts.getTime() <= afterTs) continue;
++    var kind = cKind >= 0 ? String(r[cKind] || 'submit') : 'submit';
++    if (Array.isArray(p.kinds) && p.kinds.length && p.kinds.indexOf(kind) === -1) continue;
++    if (Array.isArray(p.sources) && p.sources.length && p.sources.indexOf(String(r[cSrc])) === -1) continue;
++    var payload = null; try { payload = JSON.parse(String(r[cJson] || 'null')); } catch (e) { payload = String(r[cJson]); }
++    if (typeof efxRedact_ === 'function') payload = efxRedact_(payload);   // never leak passwords via the API (review F2)
++    events.push({ eventId: eid || null, ts: ts.toISOString(), kind: kind, source: r[cSrc], workflowId: r[cWf], actor: r[cUser], payload: payload });
++  }
++  var pruned = !!p.afterEventId && !passed;   // cursor not found → rows were pruned; caller should resync by afterTs
++  // Cursor: last event that HAS an id (legacy v1 rows have none → never hand back null, review F9); plus a time cursor.
++  var lastWithId = null;
++  for (var k = events.length - 1; k >= 0; k--) { if (events[k].eventId) { lastWithId = events[k].eventId; break; } }
++  return {
++    events: events,
++    nextAfterEventId: lastWithId || (p.afterEventId || null),
++    nextAfterTs: events.length ? events[events.length - 1].ts : (p.afterTs || null),
++    pruned: pruned
++  };
++}
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/EfxUtil.js employee_forms_efx/employee_management_v2_efx/EfxUtil.js
+--- employee_forms_deployment/employee_management_v2/EfxUtil.js	1969-12-31 19:00:00.000000000 -0500
++++ employee_forms_efx/employee_management_v2_efx/EfxUtil.js	2026-09-16 22:53:15.729065700 -0400
+@@ -0,0 +1,52 @@
++/**
++ * EfxUtil.js — pure helpers shared by RawLog.js, EfxApi.js and N8n.js  (fork: employee_management_v2_efx)
++ *
++ *   efxRedact_(v)        deep-copies v replacing values whose key matches EFX_SECRET_KEY_RE with '[REDACTED]'
++ *   efxJsonSafe(v)       deep-converts Dates to ISO strings so Execution API returns are JSON-safe
++ *   efxSign_(secret,env) HMAC-SHA256 over the canonical event envelope (signed webhook fan-out)
++ *
++ * All three are plain function declarations (hoisted across files) and are only called at runtime from function bodies,
++ * so file order does not matter; callers keep their `typeof efxRedact_ === 'function'` guards. Moved verbatim from
++ * RawLog.js / EfxApi.js (review pass 2 §5). No sheet access, no side effects.
++ */
++
++/**
++ * Redacts credential-like keys anywhere in an object (deep). The Raw Log sheet keeps the full payload as before
++ * (recovery net, prod behaviour), but nothing leaving the sheet via API/webhook may carry passwords (review F2).
++ */
++var EFX_SECRET_KEY_RE = /password|passwd|pwd|secret|token|apikey|api_key|vm_?pin|Email_Temp_Password/i;
++function efxRedact_(v, depth) {
++  depth = depth || 0;
++  if (depth > 6 || v === null || typeof v !== 'object') return v;
++  if (Array.isArray(v)) return v.map(function (x) { return efxRedact_(x, depth + 1); });
++  var out = {};
++  Object.keys(v).forEach(function (k) {
++    out[k] = EFX_SECRET_KEY_RE.test(k) ? (v[k] === '' || v[k] === null || v[k] === undefined ? v[k] : '[REDACTED]') : efxRedact_(v[k], depth + 1);
++  });
++  return out;
++}
++
++/** Deep-converts Dates to ISO strings so Execution API returns are JSON-safe. */
++function efxJsonSafe(v, depth) {
++  depth = depth || 0;
++  if (v instanceof Date) return isNaN(v.getTime()) ? '' : v.toISOString();
++  if (depth > 8 || v === null || typeof v !== 'object') return v;
++  if (Array.isArray(v)) return v.map(function (x) { return efxJsonSafe(x, depth + 1); });
++  var out = {};
++  Object.keys(v).forEach(function (k) { out[k] = efxJsonSafe(v[k], depth + 1); });
++  return out;
++}
++
++/** Same canonical/HMAC as the bridge's Auth.js (kept tiny here to avoid a dependency). */
++function efxSign_(secret, env) {
++  function hex(bytes) { return bytes.map(function (b) { b = (b + 256) % 256; return (b < 16 ? '0' : '') + b.toString(16); }).join(''); }
++  function stable(v) {
++    if (v === undefined) return 'null';
++    if (v === null || typeof v !== 'object') return JSON.stringify(v);
++    if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
++    return '{' + Object.keys(v).filter(function (k) { return v[k] !== undefined; }).sort().map(function (k) { return JSON.stringify(k) + ':' + stable(v[k]); }).join(',') + '}';
++  }
++  var payloadHash = hex(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, stable(env.payload || {}), Utilities.Charset.UTF_8));
++  var canonical = [String(env.v), String(env.kid), String(env.ts), String(env.nonce), String(env.action), payloadHash].join('\n');
++  return hex(Utilities.computeHmacSha256Signature(canonical, secret, Utilities.Charset.UTF_8));
++}
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/EmailUtils.js employee_forms_efx/employee_management_v2_efx/EmailUtils.js
+--- employee_forms_deployment/employee_management_v2/EmailUtils.js	2026-08-06 12:46:59.827768100 -0400
++++ employee_forms_efx/employee_management_v2_efx/EmailUtils.js	2026-09-16 21:35:10.943651500 -0400
+@@ -454,6 +454,16 @@
+         }
+     }
+ 
++    // ── AUGMENT 2b (EFX): pre-assigned Internal Employee ID ─────────────────────────
++    // Exposed as a SEPARATE field so email templates are unchanged: hasId (EmailTemplates.js:114) still
++    // means "ID Setup step completed". Automation reads preassignedEmployeeId; humans see it once ID Setup runs.
++    try {
++        if (typeof EmployeeIdRegistry !== 'undefined') {
++            const _pre = EmployeeIdRegistry.get(workflowId);
++            if (_pre) context.preassignedEmployeeId = _pre;
++        }
++    } catch (e) { /* non-fatal */ }
++
+     // ── AUGMENT 3: IT Results ─────────────────────────────────────────────────────
+     // Written by submitITSetup() (ITSetupHandler.js) for New Hire and Equipment Request.
+     // For CHANGE_ workflows, written by closeActionItem() when the IT action item closes.
+@@ -1051,6 +1061,22 @@
+  */
+ function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
+   try {
++    // EFX: idempotent — if a Safety Onboarding task already exists for this workflow (open OR closed, e.g. created at
++    // submit under SAFETY_TRAINING_AT_SUBMIT and already closed by n8n), do not create/email a second one.
++    try {
++      var _aiSh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
++      if (_aiSh) {
++        var _AI = SCHEMA.ACTION_ITEMS, _rows = _aiSh.getDataRange().getValues();
++        for (var _i = SCHEMA.ROW.FIRST_DATA; _i < _rows.length; _i++) {
++          if (String(_rows[_i][_AI.WORKFLOW_ID]) === String(workflowId) &&
++              (String(_rows[_i][_AI.FORM_TYPE]) === 'safety_onboarding' || String(_rows[_i][_AI.CATEGORY]) === 'Safety')) {
++            Logger.log('[sendSafetyOnboardingEmail] Safety task already exists for ' + workflowId + ' (' + _rows[_i][_AI.TASK_ID] + ', ' + _rows[_i][_AI.STATUS] + ') — skipping duplicate');
++            return;
++          }
++        }
++      }
++    } catch (_dedupeErr) { Logger.log('[sendSafetyOnboardingEmail] dedupe check failed (continuing): ' + _dedupeErr.message); }
++
+     const siteDocsJobCode = (setupData && setupData.siteDocsJobCode) || (function() {
+       try {
+         var sh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/EmployeeIdRegistry.js employee_forms_efx/employee_management_v2_efx/EmployeeIdRegistry.js
+--- employee_forms_deployment/employee_management_v2/EmployeeIdRegistry.js	1969-12-31 19:00:00.000000000 -0500
++++ employee_forms_efx/employee_management_v2_efx/EmployeeIdRegistry.js	2026-09-16 22:26:36.603916900 -0400
+@@ -0,0 +1,141 @@
++/**
++ * EmployeeIdRegistry.js — Employee Forms backend addition  (PROTOTYPE / NON-PRODUCTION)
++ *
++ * Allocates the Internal Employee ID at initial-request submission (spec/05_EMPLOYEE_ID_TIMING_FIX.md).
++ * Sheet 'Employee IDs': Internal Employee ID | Workflow ID | Employee Name | Allocated At | Allocated By | Source | Note
++ *
++ * Correctness does not depend on LockService (library scoping may give the UI path and the bridge path
++ * different locks): allocate() uses append-then-verify — the lowest row holding a given id wins; losers
++ * delete their row and retry. Reads max() from BOTH this sheet and 'ID Setup Results' col D for continuity.
++ * No timestamp fallback: on failure it throws.
++ */
++var EmployeeIdRegistry = (function () {
++  var SHEET = 'Employee IDs';
++  var HEADERS = ['Internal Employee ID', 'Workflow ID', 'Employee Name', 'Allocated At', 'Allocated By', 'Source', 'Note'];
++  var FLOOR = 30000;
++  var MAX_RETRY = 5;
++
++  function ss_() { return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID); }
++
++  function sheet_() {
++    var ss = ss_();
++    var sh = ss.getSheetByName(SHEET);
++    if (!sh) {
++      sh = ss.insertSheet(SHEET);
++      sh.appendRow(HEADERS);
++      try { sh.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold'); sh.setFrozenRows(1); } catch (e) {}
++    }
++    return sh;
++  }
++
++  function rows_(sh) {
++    var lr = sh.getLastRow();
++    if (lr < 2) return [];
++    return sh.getRange(2, 1, lr - 1, HEADERS.length).getValues();
++  }
++
++  function get(workflowId) {
++    if (!workflowId) return null;
++    var rows = rows_(sheet_());
++    for (var i = 0; i < rows.length; i++) {
++      if (String(rows[i][1]) === String(workflowId) && rows[i][0] !== '') return String(rows[i][0]);
++    }
++    return null;
++  }
++
++  function maxKnown_(sh) {
++    var m = FLOOR - 1;
++    rows_(sh).forEach(function (r) { var n = parseInt(r[0], 10); if (!isNaN(n) && n > m) m = n; });
++    var idsh = ss_().getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
++    if (idsh && idsh.getLastRow() > 1) {
++      idsh.getRange(2, SCHEMA.ID_SETUP_RESULTS.INTERNAL_EMP_ID + 1, idsh.getLastRow() - 1, 1).getValues()
++        .forEach(function (r) { var n = parseInt(r[0], 10); if (!isNaN(n) && n > m) m = n; });
++    }
++    return m;
++  }
++
++  function record_(sh, id, workflowId, meta, source) {
++    sh.appendRow([String(id), String(workflowId), meta.employeeName || '', new Date(), Actor.email() || 'system', source, meta.note || '']);
++  }
++
++  /** Deletes the (last) row that matches id+workflowId. */
++  function deleteMine_(sh, id, workflowId) {
++    var rows = rows_(sh);
++    for (var i = rows.length - 1; i >= 0; i--) {
++      if (String(rows[i][0]) === String(id) && String(rows[i][1]) === String(workflowId)) { sh.deleteRow(i + 2); return; }
++    }
++  }
++
++  /**
++   * @param {string} workflowId
++   * @param {{employeeName?:string, source?:string, existingEmployeeId?:string, note?:string}} meta
++   * @returns {string} the allocated (or pre-existing) id
++   */
++  function allocate(workflowId, meta) {
++    if (!workflowId) throw new Error('EmployeeIdRegistry.allocate: workflowId required');
++    meta = meta || {};
++    var existing = get(workflowId);
++    if (existing) return existing;
++
++    var sh = sheet_();
++    if (meta.existingEmployeeId) {                 // rehire carrying a prior id (policy: Q1)
++      record_(sh, meta.existingEmployeeId, workflowId, meta, 'rehire-carry');
++      return String(meta.existingEmployeeId);
++    }
++
++    var lock = LockService.getScriptLock();
++    try { lock.waitLock(10000); } catch (e) { throw new Error('EmployeeIdRegistry: could not obtain the allocation lock (busy) - retry: ' + e.message); }   // review pass 2 M5: never allocate unlocked
++    try {
++      // Re-check inside the lock: a concurrent double-submit for the same workflow may have allocated meanwhile (review F5)
++      var again = get(workflowId);
++      if (again) return again;
++      for (var attempt = 0; attempt < MAX_RETRY; attempt++) {
++        var candidate = String(maxKnown_(sh) + 1);
++        record_(sh, candidate, workflowId, meta, meta.source || 'allocate');
++        // verify: lowest row with this id wins
++        var rows = rows_(sh);
++        for (var i = 0; i < rows.length; i++) {
++          if (String(rows[i][0]) === candidate) {
++            if (String(rows[i][1]) === String(workflowId)) return candidate;   // we won (or a duplicate of ours)
++            break;                                                             // someone else won → lose
++          }
++        }
++        deleteMine_(sh, candidate, workflowId);
++      }
++      throw new Error('EmployeeIdRegistry: could not allocate a unique id after ' + MAX_RETRY + ' attempts');
++    } finally {
++      if (lock) { try { lock.releaseLock(); } catch (e) {} }
++    }
++  }
++
++  /** Read-only preview of what the next id would be (display only — never persist this). */
++  function peek() { return String(maxKnown_(sheet_()) + 1); }
++
++  /** Admin override: rewrite the registry id for a workflow so registry == ID Setup Results (audited in Note). */
++  function setOverride(workflowId, newId, note) {
++    var sh = sheet_(); var rows = rows_(sh);
++    for (var i = 0; i < rows.length; i++) {
++      if (String(rows[i][1]) === String(workflowId)) {
++        sh.getRange(i + 2, 1).setValue(String(newId));
++        sh.getRange(i + 2, 7).setValue(((rows[i][6] ? rows[i][6] + ' | ' : '') + 'was ' + rows[i][0] + '; ' + (note || 'override')).slice(0, 500));
++        return true;
++      }
++    }
++    record_(sh, String(newId), workflowId, { note: note || 'override' }, 'admin-override');
++    return true;
++  }
++
++  function info(workflowId) {
++    var rows = rows_(sheet_());
++    for (var i = 0; i < rows.length; i++) {
++      if (String(rows[i][1]) === String(workflowId)) {
++        return { internalEmployeeId: String(rows[i][0]), workflowId: String(rows[i][1]), employeeName: rows[i][2],
++                 allocatedAt: rows[i][3] instanceof Date ? rows[i][3].toISOString() : String(rows[i][3]),
++                 allocatedBy: rows[i][4], source: rows[i][5] };
++      }
++    }
++    return { internalEmployeeId: null, workflowId: String(workflowId) };
++  }
++
++  return { allocate: allocate, get: get, peek: peek, info: info, setOverride: setOverride, SHEET: SHEET, FLOOR: FLOOR };
++})();
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/FormContracts.js employee_forms_efx/employee_management_v2_efx/FormContracts.js
+--- employee_forms_deployment/employee_management_v2/FormContracts.js	1969-12-31 19:00:00.000000000 -0500
++++ employee_forms_efx/employee_management_v2_efx/FormContracts.js	2026-09-16 22:26:36.603916900 -0400
+@@ -0,0 +1,301 @@
++/**
++ * FormContracts.js — Employee Forms backend addition  (PROTOTYPE / NON-PRODUCTION)
++ *
++ * Declarative registry of what each real submit function accepts. Derived from the client payloads the
++ * HTML actually posts. This is what makes "every field on every form" reachable without per-form endpoints.
++ *
++ * `verified:true`  — keys traced HTML name= → client payload key → handler field access → sheet column on 2026-09-16
++ *                    (see docs/mapping/*.md in the fork root for the per-form tables with file:line citations).
++ * `verified:false` — one or more links of that chain could not be confirmed (it_confirmation: duplicate handler definition;
++ *                    specialist: dead sheet map). Keys are still the real payload keys.
++ *
++ * Conventions that matter for callers:
++ *   • `required` = keys the HANDLER rejects when missing (validateRequiredFields), or — for handlers with no server
++ *     check — the HTML-required controls the UI always posts. `optional` = every other key the UI can post.
++ *   • `dynamicPrefixes` (it_setup only) = key prefixes accepted in addition to the listed keys (BOSS_Cmte_<site>, …).
++ *   • Access: submitHRVerification / submitITSetup / both approvals check the role of the SESSION PRINCIPAL
++ *     (Actor.principal() = Session.getActiveUser() — under the Execution API that is the impersonated efx-bot), never the
++ *     caller-asserted actor.email (attribution only). efx-bot must be in the matching grp.forms.* group or
++ *     CONFIG.ADMIN_EMAILS, otherwise the handler returns { success:false, message:'Access denied.' } → alias E_FORBIDDEN.
++ *   • validateRequiredFields (new_hire, equipment_request) also rejects ANY string value whose first char is = + - or @.
++ */
++var FormContracts = (function () {
++  var VERSION = '2026.09.16-r2';
++
++  var C = {
++    new_hire: {
++      form: 'new_hire', kind: 'workflow', prefix: 'NEW_EMP_', createsWorkflow: true, verified: true,
++      fn: 'submitInitialRequest', targetSheet: 'Initial Requests',
++      // InitialRequestHandler.js:22-27 (validateRequiredFields)
++      required: ['firstName', 'lastName', 'hireDate', 'requesterEmail', 'reportingManagerName', 'reportingManagerEmail',
++                 'positionTitle', 'siteName', 'jobSiteNumber', 'employmentType', 'employeeType', 'newHireOrRehire', 'systemAccess'],
++      // InitialRequest.html:1155-1207 (client data object) + formatInitialRequestData (InitialRequestHandler.js:174-233)
++      optional: ['requesterName', 'dateRequested', 'middleName', 'preferredName', 'systems', 'equipment', 'googleEmail', 'googleDomain',
++                 'computerRequestType', 'computerType', 'computerPreviousUser', 'computerPreviousType', 'computerSerialNumber',
++                 'office365Required', 'creditCardUSA', 'creditCardLimitUSA', 'creditCardCanada', 'creditCardLimitCanada',
++                 'creditCardHomeDepot', 'creditCardLimitHomeDepot', 'phoneRequestType', 'phonePreviousUser', 'phonePreviousNumber',
++                 'bossJobSites', 'bossCostSheet', 'bossCostSheetJobs', 'bossTripReports', 'bossGrievances', 'jonasJobNumbers',
++                 'jrRequired', 'jrAssignment', 'plan306090', 'comments', 'adpSites', 'department', 'purchasingSites',
++                 'adpSalaryAccess', 'bossTrainingOnly', 'existingInternalEmployeeId'],
++      types: { systems: 'string[]', equipment: 'string[]', adpSites: 'string[]|csv', purchasingSites: 'string[]|csv',
++               bossJobSites: 'csv', bossCostSheetJobs: 'csv', jonasJobNumbers: 'csv',
++               hireDate: 'yyyy-MM-dd', dateRequested: 'yyyy-MM-dd', systemAccess: 'YesNo', plan306090: 'YesNo', jrRequired: 'YesNo',
++               creditCardUSA: 'YesNo|empty', creditCardCanada: 'YesNo|empty', creditCardHomeDepot: 'YesNo|empty',
++               adpSalaryAccess: 'YesNo', bossTrainingOnly: 'YesNo', office365Required: 'YesNo|empty' },
++      enums: { siteName: 'reference.sites', jobSiteNumber: 'reference.jobNumbers', jrAssignment: 'reference.jrs',
++               employmentType: ['Hourly', 'Salary'], newHireOrRehire: ['New Hire', 'Rehire'], employeeType: ['Direct Hire', 'Agency'],
++               systemAccess: ['Yes', 'No'], computerRequestType: ['New', 'Reassignment', ''], computerType: ['Chromebook', 'Windows', 'Mac', ''],
++               phoneRequestType: ['New', 'Reassignment', ''],
++               googleDomain: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com', 'stgroup.ca', ''] },
++      // multi-value checkbox groups (InitialRequest.html:251-382, :394-519) — allowed values, not validated as scalars
++      multi: { systems: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'Fleetio', 'Google Account', 'Incidents', 'Central Purchasing/Jonas', 'Net Promoter Score', 'SiteDocs Supervisor'],
++               equipment: ['Business Cards', 'Computer', 'Credit Card', 'Mobile Phone', 'SiteDocs Tablet', 'Vehicle'] },
++      responseFields: ['success', 'workflowId', 'formId', 'internalEmployeeId', 'message', 'scriptUrl'],
++      notes: 'The UI clears fields of hidden sections before submit (InitialRequest.html:1210-1266); callers must do the same. ' +
++             'Renames done by the UI: hireType→newHireOrRehire, position→positionTitle, managerEmail→reportingManagerEmail, ' +
++             'managerName→reportingManagerName, googleEmailLocal→googleEmail, costSheetJobNumbers→bossCostSheetJobs, bossGrievance→bossGrievances.'
++    },
++    equipment_request: {
++      form: 'equipment_request', kind: 'workflow', prefix: 'EQUIP_REQ_', createsWorkflow: true, verified: true,
++      fn: 'submitEquipmentRequest', targetSheet: 'Initial Requests',
++      // EquipmentRequestHandler.js:49 (validateRequiredFields) — note createWorkflow runs BEFORE this check (:41)
++      required: ['firstName', 'lastName', 'siteName', 'managerEmail', 'managerName', 'position'],
++      // InitialRequest.html mode=equipment posts the full new_hire data object + aliases (:1331-1336); new-hire-only
++      // controls are disabled so their keys arrive as null (:676-690). Handler normalises aliases (:60-65) and forces systemAccess='Yes'.
++      optional: ['reqName', 'reqEmail', 'requesterName', 'requesterEmail', 'positionTitle', 'reportingManagerEmail', 'reportingManagerName',
++                 'dateRequested', 'middleName', 'preferredName', 'systems', 'equipment', 'googleEmail', 'googleDomain',
++                 'computerRequestType', 'computerType', 'computerPreviousUser', 'computerPreviousType', 'computerSerialNumber',
++                 'office365Required', 'creditCardUSA', 'creditCardLimitUSA', 'creditCardCanada', 'creditCardLimitCanada',
++                 'creditCardHomeDepot', 'creditCardLimitHomeDepot', 'phoneRequestType', 'phonePreviousUser', 'phonePreviousNumber',
++                 'bossJobSites', 'bossCostSheet', 'bossCostSheetJobs', 'bossTripReports', 'bossGrievances', 'jonasJobNumbers',
++                 'comments', 'adpSites', 'department', 'purchasingSites', 'adpSalaryAccess', 'bossTrainingOnly',
++                 'hireDate', 'newHireOrRehire', 'employeeType', 'employmentType', 'jobSiteNumber', 'systemAccess',
++                 'jrRequired', 'jrAssignment', 'plan306090'],
++      types: { systems: 'string[]', equipment: 'string[]', adpSites: 'string[]|csv', purchasingSites: 'string[]|csv' },
++      enums: { siteName: 'reference.sites' },
++      responseFields: ['success', 'workflowId', 'scriptUrl'],
++      notes: 'Writes to Initial Requests (Equipment_Requests sheet is never written). No internalEmployeeId, no rawLogResult. ' +
++             'Next step is IT Confirmation (davelangohr) → IT Setup → triggerSpecialists with EQUIP_ guards.'
++    },
++    termination_request: {
++      form: 'termination_request', kind: 'workflow', prefix: 'TERM_', createsWorkflow: true, verified: true,
++      fn: 'submitTerminationRequest', targetSheet: 'Terminations',
++      // No validateRequiredFields in TerminationHandler.js; only managerEmail-without-managerName is rejected (:66-68).
++      // `required` here = HTML-required controls (TerminationRequest.html) so a payload mirrors what the UI always sends.
++      required: ['reqName', 'reqEmail', 'empName', 'empType', 'siteName', 'termDate', 'lastDayWorked', 'reason', 'managerName', 'managerEmail', 'has_reports'],
++      // Raw HTML name= keys; checkbox groups arrive comma-joined as ONE string (TerminationRequest.html:340-353).
++      optional: ['empWorkEmail', 'empPhone', 'hr_approved', 'reports_to_new', 'systems', 'google_forward', 'google_files', 'google_delegate',
++                 'google_duration', 'google_vacation', 'equip', 'comments', 'attachmentBase64', 'attachmentName', 'attachmentMimeType'],
++      types: { systems: 'csv|string[]', equip: 'csv|string[]', termDate: 'yyyy-MM-dd', lastDayWorked: 'yyyy-MM-dd',
++               has_reports: 'YesNo', hr_approved: 'YesNo', attachmentBase64: 'base64' },
++      enums: { siteName: 'reference.sites', empType: ['Hourly', 'Salary'],
++               reason: ['Deceased', 'End of contract', 'Resigned', 'Retired', 'Terminated'],
++               google_duration: ['Default 1 Month then delete', 'Longer (Specify in notes)', 'Delete Immediately (No forwarding/access)'] },
++      // multi-value fields (CSV or array) — allowed values, not validated as scalars
++      multi: { systems: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'Google Account', 'Incidents', 'Fleetio', 'Central Purchasing/Jonas'],
++               equip: ['Computer/Laptop', 'Mobile Phone', 'Tablet', 'Credit Card', 'Vehicle and Keys', 'Building Access Card/Keys'] },
++      responseFields: ['success', 'workflowId', 'message'],
++      notes: 'hr_approved is only required by the UI when reason==="Terminated"; reports_to_new when has_reports==="Yes"; ' +
++             'google_* when systems contains "Google Account". Column 10 (Computer Serial) is always "N/A" — the form no longer collects empSerial.'
++    },
++    position_change_request: {
++      form: 'position_change_request', kind: 'workflow', prefix: 'CHANGE_', createsWorkflow: true, verified: true,
++      fn: 'submitPositionChangeRequest', targetSheet: 'Position Changes',
++      // No validateRequiredFields; manager name/email pairing checks only (PositionChangeHandler.js:27-35), after createWorkflow (:19).
++      // `required` = HTML-required controls that are stored (PositionSiteChangeRequest.html:42,46,53,79,83).
++      required: ['firstName', 'lastName', 'currentClass', 'effDate', 'siteName'],
++      // Raw HTML name= keys (PositionSiteChangeRequest.html:601-620): text/select → string, every checkbox group → array,
++      // checked radio → string, dual-lists (adpSites, purchasingSites, bossComm, bossCostJobs, jonasJobs) → CSV string.
++      optional: ['reqName', 'reqEmail', 'reqDate', 'currentTitle', 'currentManagerEmail', 'currentManagerName',
++                 'changeType', 'siteOld', 'siteNew', 'department', 'receivingManagerEmail', 'titleOld', 'titleNew', 'classOld', 'classNew',
++                 'mgrOldEmail', 'mgrOldName', 'mgrNewEmail', 'mgrNewName', 'hadReports', 'oldReportsTo', 'gainingReports', 'newReportsFrom',
++                 'hasGoogle', 'existingEmail', 'googleEmail', 'googleDomain', 'sys', 'adpSalaryAccess', 'adpSites',
++                 'bossTrainingOnly', 'bossComm', 'bossCost', 'bossCostJobs', 'bossTrip', 'bossGriev',
++                 'jrReq', 'jrTitle', 'plan306090', 'equip', 'computerRequestType', 'computerType', 'office365Required',
++                 'computerPreviousUser', 'computerPreviousType', 'computerSerialNumber',
++                 'creditCardUSA', 'creditCardLimitUSA', 'creditCardCanada', 'creditCardLimitCanada', 'creditCardHomeDepot', 'creditCardLimitHomeDepot',
++                 'phoneRequestType', 'phonePreviousUser', 'phonePreviousNumber', 'purchasingSites', 'jonasJobs', 'equipRem', 'rem',
++                 'comments', 'attachmentBase64', 'attachmentName', 'attachmentMimeType'],
++      types: { changeType: 'string[]|csv', sys: 'string[]|csv', equip: 'string[]|csv', equipRem: 'string[]|csv', rem: 'string[]|csv',
++               adpSites: 'csv', purchasingSites: 'csv', bossComm: 'csv', bossCostJobs: 'csv', jonasJobs: 'csv',
++               effDate: 'yyyy-MM-dd', reqDate: 'yyyy-MM-dd',
++               adpSalaryAccess: 'Yes|empty (send a STRING; the UI sends ["Yes"]/[] which is written raw)',
++               creditCardUSA: 'Yes|empty (string)', creditCardCanada: 'Yes|empty (string)', creditCardHomeDepot: 'Yes|empty (string)' },
++      enums: { siteName: 'reference.sites', currentClass: ['Hourly', 'Salary'], classOld: ['Hourly', 'Salary', ''], classNew: ['Hourly', 'Salary', ''],
++               jrTitle: 'reference.jrs' },
++      // multi-value fields (array or CSV) — allowed values, not validated as scalars
++      multi: { changeType: ['Site Transfer', 'Position Change', 'Classification', 'Manager Change'],
++               sys: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'DSS', 'Fleetio', 'Google Account', 'Incidents', 'Central Purchasing/Jonas', 'Net Promoter Score', 'SiteDocs'],
++               equip: ['Business Cards', 'Computer', 'Credit Card', 'Mobile Phone', 'SiteDocs Tablet', 'Vehicle'],
++               equipRem: ['Computer', 'Mobile Phone', 'SiteDocs Tablet', 'Vehicle', 'Credit Card'],
++               rem: ['ADP', 'BOSS', 'CAA', 'Delivery', 'Fleetio', 'Google Account', 'SiteDocs'] },
++      responseFields: ['success', 'workflowId', 'message'],
++      notes: 'hadReports/gainingReports/hasGoogle are UI gatekeepers and are NOT stored. reqEmail falls back to Actor.email(). ' +
++             'Approval code tests changeType for "Reporting Manager Change" (PositionChangeHandler.js:426) which the UI never sends ("Manager Change").'
++    },
++    id_setup: {
++      form: 'id_setup', kind: 'step', createsWorkflow: false, verified: true,
++      fn: 'submitEmployeeIDSetup', targetSheet: 'ID Setup Results', idField: 'internalEmployeeId',
++      // No validateRequiredFields in IDSetup.js; `required` = always-required HTML controls (EmployeeIDSetup.html:39,51,56,96,101 minus the id).
++      required: ['workflowId', 'siteDocsWorkerId', 'siteDocsJobCode', 'dssUsername', 'dssPassword'],
++      optional: ['internalEmployeeId', 'formId', 'siteDocsUsername', 'siteDocsPassword', 'setupNotes', 'bossWisCreated', 'siteDocsBadgeCreated'],
++      types: { bossWisCreated: 'YesNo', siteDocsBadgeCreated: 'YesNo', internalEmployeeId: 'numeric string' },
++      // Hard-coded <option>s in EmployeeIDSetup.html:57-63 (not a reference list)
++      enums: { siteDocsJobCode: ['Hourly 1', 'Hourly 2', 'Salary 1', 'Salary 2', 'Supervisor', 'Manager'] },
++      responseFields: ['success', 'message'],
++      notes: 'internalEmployeeId is pre-assigned at submitInitialRequest (EmployeeIdRegistry); omit it or send the pre-assigned value. ' +
++             'A different value is honoured ONLY when the session principal is an admin (Actor.canOverrideEmployeeId(); IDSetup.js) — there is no override flag; ' +
++             'non-admins get {success:false,"Internal Employee ID is pre-assigned (…) and cannot be changed here."}. ' +
++             'siteDocsUsername/Password are required by the UI only when the request’s Systems contains "SiteDocs". formId is ignored (regenerated). ' +
++             'Every submit APPENDS a row (no update-in-place). Step → "HR Verification Needed"; Hourly+No system access also emails credentials and creates the Safety item.'
++    },
++    hr_verification: {
++      form: 'hr_verification', kind: 'step', createsWorkflow: false, verified: true,
++      fn: 'submitHRVerification', targetSheet: 'HR Verification Results',
++      // Client payload HRVerification.html:201-215; handler reads exactly these (HRVerificationHandler.js:155-163,199-203).
++      // No validateRequiredFields; `required` = HTML-required controls. ACCESS: actor must be isHR or isAdmin (:94-98).
++      required: ['workflowId', 'firstName', 'lastName', 'managerName', 'managerEmail', 'jobTitle', 'adpAssociateId'],
++      optional: ['formId', 'hireDate', 'jrTitle', 'siteName', 'department', 'notes'],
++      types: { hireDate: 'yyyy-MM-dd' },
++      enums: { siteName: 'reference.sites', jrTitle: 'reference.jrs' },
++      responseFields: ['success', 'message'],
++      notes: 'jrTitle is required by the UI only when the request’s JR Req === "Yes". Stored as "jobTitle / jrTitle" in col 7. ' +
++             'Also overwrites Initial Requests cols 6,10,12,14,15,17,18,46,50. A second submit for the same workflow updates in place and sends NO emails. ' +
++             'The hidden internalEmployeeId input is not posted by the UI.'
++    },
++    it_setup: {
++      form: 'it_setup', kind: 'step', createsWorkflow: false, verified: true,
++      fn: 'submitITSetup', targetSheet: 'IT Results',
++      // Client payload ITSetup.html:370-385 (FormData, multi-values joined with ","); handler ITSetupHandler.js:214,256-296.
++      // No validateRequiredFields; `required` = HTML-required radios. ACCESS: actor must be isIT or isAdmin (:207-211).
++      required: ['workflowId', 'Email_Created', 'Computer_Assigned', 'Phone_Assigned', 'BOSS_Access'],
++      optional: ['requestId', 'formId', 'Employee_Name', 'Email_Username', 'Email_Domain', 'Email_Temp_Password',
++                 'Computer_Serial', 'Computer_Model', 'Computer_Type',
++                 'Phone_Carrier', 'Phone_Model', 'Phone_Number', 'Phone_VM_Password',
++                 'BOSS_TripReports', 'BOSS_Grievances', 'Incidents_Access', 'CAA_Access', 'Delivery_App_Access', 'Net_Promoter_Score_Access', 'IT_Notes'],
++      // Dynamic per-committee / per-job confirmations (ITSetup.html:213,223), value "Confirmed"
++      dynamicPrefixes: ['BOSS_Cmte_', 'BOSS_CostSheet_'],
++      types: { Email_Created: 'YesNo', Computer_Assigned: 'YesNo', Phone_Assigned: 'YesNo', BOSS_Access: 'YesNo',
++               Incidents_Access: 'YesNo', CAA_Access: 'YesNo', Delivery_App_Access: 'YesNo', Net_Promoter_Score_Access: 'YesNo',
++               BOSS_TripReports: 'Confirmed|absent', BOSS_Grievances: 'Confirmed|absent' },
++      enums: { Email_Domain: ['@team-group.com', '@robinsonsolutions.com', '@industrialappliedtech.com', ''] },
++      responseFields: ['success', 'message'],
++      notes: 'Email_Username/Domain/Temp_Password are required by the UI regardless of Email_Created (static required attr); Assigned Email is built only when Email_Created==="Yes". ' +
++             'The UI defaults Incidents/CAA/Delivery/NPS to "No" when unchecked — send them explicitly. bossDetails is server-derived (not a payload key). ' +
++             'First submit for NEW_EMP_/EQUIP_REQ_ → step "Specialist Forms Needed" + triggerSpecialists; for CHANGE_ it closes the IT it_setup action item. ' +
++             'A second submit updates IT Results in place with no side effects.'
++    },
++    it_confirmation: {
++      form: 'it_confirmation', kind: 'step', createsWorkflow: false, verified: false,
++      fn: 'submitITConfirmation', targetSheet: 'IT Confirmation Results',
++      required: ['workflowId'],
++      // NEW_EMP_/EQUIP_REQ_: InitialRequest.html mode=it_confirmation posts the full new_hire data object + workflowId + notes (:1326-1328).
++      // CHANGE_: PositionSiteChangeRequest.html posts its raw keys + workflowId + notes (:630-632). Handler reads the union below.
++      optional: ['notes', 'hireType', 'employeeType', 'employmentType', 'firstName', 'middleName', 'lastName', 'preferredName',
++                 'positionTitle', 'position', 'siteName', 'jobSiteNumber', 'reportingManagerEmail', 'reportingManagerName', 'managerEmail', 'managerName',
++                 'systemAccess', 'systems', 'equipment', 'googleEmail', 'googleDomain', 'computerRequestType', 'computerType', 'phoneRequestType',
++                 'bossJobSites', 'bossCostSheet', 'bossCostSheetJobs', 'bossTripReports', 'bossGrievances', 'jonasJobNumbers', 'adpSites',
++                 'department', 'purchasingSites',
++                 // posted by the UI but ignored by the handler:
++                 'requesterName', 'requesterEmail', 'dateRequested', 'hireDate', 'newHireOrRehire', 'computerPreviousUser', 'computerPreviousType',
++                 'computerSerialNumber', 'office365Required', 'creditCardUSA', 'creditCardLimitUSA', 'creditCardCanada', 'creditCardLimitCanada',
++                 'creditCardHomeDepot', 'creditCardLimitHomeDepot', 'phonePreviousUser', 'phonePreviousNumber', 'jrRequired', 'jrAssignment',
++                 'plan306090', 'comments', 'adpSalaryAccess', 'bossTrainingOnly',
++                 // CHANGE_ keys:
++                 'siteNew', 'titleNew', 'classNew', 'sys', 'equip', 'rem'],
++      responseFields: ['success', 'scriptUrl'],
++      notes: 'Defined twice (BOSSReviewHandler.js:181 / ITConfirmationHandler.js:44) — last-loaded wins; resolve before exposing. ' +
++             'BUG: handler reads formData.hireType but the New Hire UI posts newHireOrRehire → col 7 (New Hire/Rehire) is blanked on confirmation. ' +
++             'Does not close the "IT Confirmation" action item. Step → "IT Setup Needed", emails IT.'
++    },
++    termination_approval: {
++      form: 'termination_approval', kind: 'step', createsWorkflow: false, verified: true,
++      fn: 'submitTerminationApproval', targetSheet: 'Termination Approval Results',
++      // TerminationApproval.html:64-68; TerminationHandler.js:242. ACCESS: actor must be isHR or isAdmin (:235-239).
++      required: ['workflowId', 'decision'], optional: ['notes'], enums: { decision: ['Approved', 'Rejected'] },
++      responseFields: ['success', 'message'],
++      notes: 'Follow-up Required (col 5) is the literal "YES" — not a payload key. Duplicate approvals return {success:true,"Approval already processed…"} without side effects.'
++    },
++    position_change_approval: {
++      form: 'position_change_approval', kind: 'step', createsWorkflow: false, verified: true,
++      fn: 'submitPositionChangeApproval', targetSheet: 'Position Change Approval Result',
++      // StatusChangeApproval.html:110-117; PositionChangeHandler.js:383. ACCESS: actor must be isHR or isAdmin (:376-380).
++      required: ['workflowId', 'decision'], optional: ['notes', 'confirmedTitle', 'confirmedNewManager', 'confirmedJrTitle'],
++      enums: { decision: ['Approved', 'Rejected'], confirmedJrTitle: 'reference.jrs' },
++      responseFields: ['success', 'message'],
++      notes: 'confirmedJrTitle is used in email context only (not stored). Duplicate approvals return {success:true,"Approval already processed…"}.'
++    },
++    specialist: {
++      form: 'specialist', kind: 'step', createsWorkflow: false, verified: false,
++      fn: 'submitSpecialistForm', targetSheet: 'Specialist Results',
++      // SafetyOnboarding.html:83-88 et al. post { workflowId, department, details (JSON string), notes }; Specialist.js:61-62,94,105,113,119.
++      required: ['workflowId', 'department'], optional: ['formId', 'details', 'notes', 'jrTitle'],
++      enums: { department: ['creditcard', 'businesscards', 'fleetio', 'jonas', 'sitedocs', 'review', 'safety', 'safetyterm', 'wis'] },
++      notes: 'Specialist.js sheet map is dead (all → Specialist Results, safety rows misaligned) and it never closes the action item. Prefer n8n_closeTask / n8n_assignSafetyTraining.'
++    }
++  };
++
++  /** Only these top-level Forms functions may be invoked through efxRunAs. */
++  var CALLABLE = {};
++  Object.keys(C).forEach(function (k) { CALLABLE[C[k].fn] = true; });
++  ['getRequestDetails', 'getStepResultData', 'getTerminationDetails', 'getEquipmentRequestDetails', 'getWorkflow',
++   'getDashboardData', 'getMyTaskCounts', 'getInitialFormData', 'getSitesList', 'getJRsList', 'searchDirectoryUsers',
++   'cancelRequest', 'bumpRequest', 'updateHireDate', 'saveActionItemDraft', 'closeActionItemWithNotes'
++  ].forEach(function (f) { CALLABLE[f] = true; });
++
++  function list() {
++    return Object.keys(C).map(function (k) {
++      var c = C[k];
++      return { form: c.form, kind: c.kind, prefix: c.prefix || null, createsWorkflow: !!c.createsWorkflow, fn: c.fn,
++               action: c.createsWorkflow ? 'workflow.create' : 'form.submit', verified: !!c.verified, targetSheet: c.targetSheet };
++    });
++  }
++
++  function hash_(obj) {
++    var s = JSON.stringify(obj);
++    try {
++      var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, s, Utilities.Charset.UTF_8);
++      return 'sha256:' + bytes.map(function (b) { b = (b + 256) % 256; return (b < 16 ? '0' : '') + b.toString(16); }).join('');
++    } catch (e) {
++      // Fallback (e.g. local mock runtime without DigestAlgorithm): stable FNV-1a-style hash
++      var h = 0x811c9dc5;
++      for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 0x01000193) >>> 0; }
++      return 'fnv1a:' + ('00000000' + h.toString(16)).slice(-8);
++    }
++  }
++
++  function get(form) {
++    var c = C[form];
++    if (!c) return null;
++    var out = {};
++    Object.keys(c).forEach(function (k) { out[k] = c[k]; });
++    out.version = VERSION;
++    out.hash = hash_({ r: c.required, o: c.optional, t: c.types || {}, v: VERSION });
++    return out;
++  }
++
++  function validate(form, data) {
++    var c = C[form];
++    if (!c) return { ok: false, fields: [{ field: 'form', problem: 'unknown form ' + form }] };
++    data = data || {};
++    var problems = [];
++    c.required.forEach(function (k) {
++      var v = data[k];
++      if (v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)) problems.push({ field: k, problem: 'required' });
++    });
++    var known = {};
++    c.required.concat(c.optional || []).forEach(function (k) { known[k] = true; });
++    var prefixes = c.dynamicPrefixes || [];
++    function isDynamic_(k) { return prefixes.some(function (p) { return k.indexOf(p) === 0; }); }
++    Object.keys(data).forEach(function (k) { if (!known[k] && !isDynamic_(k)) problems.push({ field: k, problem: 'unknown field (not in contract)' }); });
++    Object.keys(c.enums || {}).forEach(function (k) {
++      var e = c.enums[k];
++      if (Array.isArray(e) && data[k] !== undefined && data[k] !== '' && e.indexOf(data[k]) === -1) problems.push({ field: k, problem: 'must be one of ' + e.join('|') });
++    });
++    return { ok: problems.length === 0, fields: problems };
++  }
++
++  function isCallable(fnName) { return !!CALLABLE[fnName]; }
++
++  return { VERSION: VERSION, list: list, get: get, validate: validate, isCallable: isCallable };
++})();
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/HRVerificationHandler.js employee_forms_efx/employee_management_v2_efx/HRVerificationHandler.js
+--- employee_forms_deployment/employee_management_v2/HRVerificationHandler.js	2026-08-06 09:24:19.537987500 -0400
++++ employee_forms_efx/employee_management_v2_efx/HRVerificationHandler.js	2026-09-16 21:44:29.509817100 -0400
+@@ -91,7 +91,7 @@
+ }
+ 
+ function submitHRVerification(formData) {
+-  const caller = Session.getActiveUser().getEmail();
++  const caller = Actor.principal(); // authorization: real session identity (EFX)
+   const callerRole = AccessControlService.getUserRolePayload(caller);
+   if (!callerRole.isHR && !callerRole.isAdmin) {
+     return { success: false, message: 'Access denied.' };
+@@ -186,7 +186,7 @@
+     }
+     
+     // Build notes — flag if hire date was changed during verification
+-    const actingUser = Session.getActiveUser().getEmail();
++    const actingUser = Actor.email();
+ 
+     let verificationNotes = formData.notes || '';
+     if (formData.hireDate && originalHireDate && formData.hireDate !== originalHireDate) {
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/IDSetup.js employee_forms_efx/employee_management_v2_efx/IDSetup.js
+--- employee_forms_deployment/employee_management_v2/IDSetup.js	2026-08-06 09:24:19.622116000 -0400
++++ employee_forms_efx/employee_management_v2_efx/IDSetup.js	2026-09-16 21:44:35.924004500 -0400
+@@ -18,7 +18,10 @@
+   }
+ 
+   template.requestData = requestData;
+-  template.generatedEmployeeId = generateEmployeeId();
++  // EFX: show the id allocated at submission. For workflows created BEFORE cut-over (no registry row) allocate now
++  // (idempotent) so page view and submit agree — the legacy max()+1 prediction is no longer used (review F1).
++  template.generatedEmployeeId = EmployeeIdRegistry.get(workflowId) ||
++    EmployeeIdRegistry.allocate(workflowId, { employeeName: requestData.employeeName, source: 'serveIDSetup (pre-cutover)' });
+   // FORCE DSS Username to be firstname.lastname per user request (ignore requested email for this field)
+   const dssDefault = generateDssUsername(requestData.firstName, requestData.lastName);
+   template.generatedDssUsername = dssDefault;
+@@ -132,10 +135,9 @@
+     return String(maxId + 1);
+     
+   } catch (error) {
++    // EFX: no silent timestamp fallback (it produced colliding ids). Fail loudly instead.
+     Logger.log('Error generating employee ID: ' + error.toString());
+-    // Fallback to timestamp-based if there's an error
+-    const timestamp = new Date().getTime();
+-    return  '30' + timestamp.toString().slice(-3);
++    throw new Error('Could not generate Internal Employee ID: ' + error.message);
+   }
+ }
+ 
+@@ -170,35 +172,21 @@
+       resultsSheet.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
+     }
+ 
+-    // Acquire lock and validate/recompute employee ID to prevent duplicates
+-    const lock = LockService.getScriptLock();
+-    lock.waitLock(5000);
+-    let finalEmployeeId = formData.internalEmployeeId;
+-    try {
+-      const existingData = resultsSheet.getDataRange().getValues();
+-      let idExists = false;
+-      for (let i = 1; i < existingData.length; i++) {
+-        if (existingData[i][3] === finalEmployeeId) {
+-          idExists = true;
+-          break;
+-        }
+-      }
+-      // If submitted ID already exists, recompute the next available ID
+-      if (idExists) {
+-        let maxId = 29999;
+-        for (let i = 1; i < existingData.length; i++) {
+-          const id = existingData[i][3];
+-          if (id && !isNaN(id)) {
+-            const numId = parseInt(id);
+-            if (numId > maxId) {
+-              maxId = numId;
+-            }
+-          }
+-        }
+-        finalEmployeeId = String(maxId + 1);
++    // EFX: the Internal Employee ID is pre-assigned at submitInitialRequest. Use it. For workflows created
++    // before cut-over (no registry row) allocate now — same allocator, same continuity guarantees.
++    // A different submitted value is only honoured for admins (audited); everyone else gets a clear message
++    // instead of the old silent swap.
++    const preassigned = EmployeeIdRegistry.get(workflowId);
++    let finalEmployeeId = preassigned || EmployeeIdRegistry.allocate(workflowId, {
++      employeeName: requestData.employeeName, source: 'submitEmployeeIDSetup'
++    });
++    if (formData.internalEmployeeId && String(formData.internalEmployeeId) !== String(finalEmployeeId)) {
++      if (!Actor.canOverrideEmployeeId()) {
++        return { success: false, message: 'Internal Employee ID is pre-assigned (' + finalEmployeeId + ') and cannot be changed here.' };
+       }
+-    } finally {
+-      lock.releaseLock();
++      Logger.log('[EFX] Admin override of Internal Employee ID for ' + workflowId + ': ' + finalEmployeeId + ' → ' + formData.internalEmployeeId + ' by ' + Actor.principal());
++      finalEmployeeId = String(formData.internalEmployeeId);
++      EmployeeIdRegistry.setOverride(workflowId, finalEmployeeId, 'admin override by ' + Actor.principal()); // keep registry == sheet (review F6)
+     }
+ 
+     resultsSheet.appendRow([
+@@ -206,11 +194,18 @@
+       formData.siteDocsWorkerId, formData.siteDocsJobCode,
+       formData.siteDocsUsername || 'N/A', formData.siteDocsPassword || 'N/A',
+       formData.dssUsername, formData.dssPassword,
+-      formData.setupNotes || '', Session.getActiveUser().getEmail(),
++      formData.setupNotes || '', Actor.email(),
+       formData.bossWisCreated || 'No', formData.siteDocsBadgeCreated || 'No'
+     ]);
+-    
+-    const actingUser = Session.getActiveUser().getEmail();
++
++    // EFX: post-write event (final ids + credentials presence, never the passwords)
++    rawLogResult('submitEmployeeIDSetup', workflowId, {
++      formId: formId, internalEmployeeId: finalEmployeeId,
++      siteDocsWorkerId: formData.siteDocsWorkerId || '', siteDocsJobCode: formData.siteDocsJobCode || '',
++      dssUsername: formData.dssUsername || '', bossWisCreated: formData.bossWisCreated || 'No'
++    });
++
++    const actingUser = Actor.email();
+     // Advance directly to HR Verification — no intermediate 'ID Setup Complete' step.
+     // triggerNextStepFromIDSetup sends the HR Verification email; step must already
+     // reflect what is actually pending so Dashboard_View and task counts are correct.
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/ITConfirmationHandler.js employee_forms_efx/employee_management_v2_efx/ITConfirmationHandler.js
+--- employee_forms_deployment/employee_management_v2/ITConfirmationHandler.js	2026-08-06 09:24:19.703871600 -0400
++++ employee_forms_efx/employee_management_v2_efx/ITConfirmationHandler.js	2026-09-16 21:12:45.336570300 -0400
+@@ -155,7 +155,7 @@
+       formData.computerType        || '',
+       formData.phoneRequestType    || '',
+       formData.notes               || '',
+-      Session.getActiveUser().getEmail()
++      Actor.email()
+     ]);
+ 
+     const context = getWorkflowContext(workflowId) || { employeeName: workflowId };
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/ITSetupHandler.js employee_forms_efx/employee_management_v2_efx/ITSetupHandler.js
+--- employee_forms_deployment/employee_management_v2/ITSetupHandler.js	2026-08-06 09:24:19.867393800 -0400
++++ employee_forms_efx/employee_management_v2_efx/ITSetupHandler.js	2026-09-16 21:44:29.619212700 -0400
+@@ -204,7 +204,7 @@
+  * @returns {{ success: boolean, message: string }}
+  */
+ function submitITSetup(formData) {
+-  const caller = Session.getActiveUser().getEmail();
++  const caller = Actor.principal(); // authorization: real session identity (EFX)
+   const callerRole = AccessControlService.getUserRolePayload(caller);
+   if (!callerRole.isIT && !callerRole.isAdmin) {
+     return { success: false, message: 'Access denied.' };
+@@ -292,11 +292,11 @@
+       formData.Delivery_App_Access,
+       formData.Net_Promoter_Score_Access,
+       formData.IT_Notes || '',
+-      Session.getActiveUser().getEmail(),
++      Actor.email(),
+       JSON.stringify(bossDetails)   // col 22 — BOSS committee/cost sheet/trip/grievances
+     ];
+     
+-    const actingUser = Session.getActiveUser().getEmail();
++    const actingUser = Actor.email();
+ 
+     if (existingITRowIndex !== -1 && itSheet) {
+       // UPDATE path — overwrite existing row in-place.
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/InitialRequestHandler.js employee_forms_efx/employee_management_v2_efx/InitialRequestHandler.js
+--- employee_forms_deployment/employee_management_v2/InitialRequestHandler.js	2026-08-06 09:24:20.033919800 -0400
++++ employee_forms_efx/employee_management_v2_efx/InitialRequestHandler.js	2026-09-16 22:26:36.603916900 -0400
+@@ -30,13 +30,29 @@
+       return { success: false, message: validation.message };
+     }
+ 
+-    // Create workflow first
+-    const workflowId = createWorkflow('NEW_EMP', 'New Employee Onboarding', formData.requesterEmail);
++    // EFX (review pass 2 M4): a carried (rehire) id must look like an Internal Employee ID — a typo here would move the
++    // allocation high-water mark for everyone. Checked before anything is written.
++    if (formData.existingInternalEmployeeId && !/^\d{4,6}$/.test(String(formData.existingInternalEmployeeId).trim())) {
++      return { success: false, message: 'Existing Internal Employee ID must be a 4-6 digit number (got "' + formData.existingInternalEmployeeId + '").' };
++    }
++
++    // Create workflow first (dedupeKey = employee + hire date, so two different hires from one automation requester never merge)
++    const workflowId = createWorkflow('NEW_EMP', 'New Employee Onboarding', formData.requesterEmail,
++      String(formData.firstName || '').trim() + ' ' + String(formData.lastName || '').trim() + '|' + String(formData.hireDate || ''));
+     const formId = generateFormId('INIT_REQ');
+ 
++    // EFX: mint the Internal Employee ID at submission (was: at ID Setup page view — IDSetup.js:21).
++    // Idempotent per workflowId; reads max() across Employee IDs + ID Setup Results for continuity.
++    const internalEmployeeId = EmployeeIdRegistry.allocate(workflowId, {
++      employeeName: formData.firstName + ' ' + formData.lastName,
++      source: 'submitInitialRequest',
++      existingEmployeeId: formData.existingInternalEmployeeId || ''
++    });
++
+     // Add IDs to form data
+     formData.workflowId = workflowId;
+     formData.formId = formId;
++    formData.internalEmployeeId = internalEmployeeId;
+     formData.timestamp = new Date();
+     
+     // Format data for spreadsheet
+@@ -59,7 +75,26 @@
+     syncWorkflowState(workflowId);
+ 
+     Logger.log('[SUCCESS] Form submitted: Workflow ID: ' + workflowId + ', Form ID: ' + formId);
+-    
++
++    // EFX: post-mint event for automation (Raw Log 'result' row + optional signed webhook).
++    rawLogResult('submitInitialRequest', workflowId, {
++      formId: formId, internalEmployeeId: internalEmployeeId,
++      employeeName: employeeName, employmentType: formData.employmentType, employeeType: formData.employeeType,
++      siteName: formData.siteName, positionTitle: formData.positionTitle, hireDate: formData.hireDate,
++      managerEmail: formData.reportingManagerEmail, requesterEmail: formData.requesterEmail,
++      systems: formData.systems || [], plan306090: formData.plan306090 || '', jrAssignment: formData.jrAssignment || ''
++    });
++
++    // EFX (flagged, default off): create the Safety Onboarding action item at submit so training can be
++    // assigned right away. When off, behaviour is unchanged (created at ID Setup for hourly / after HR for salary).
++    if (CONFIG.SAFETY_TRAINING_AT_SUBMIT) {
++      try {
++        sendSafetyOnboardingEmail(workflowId, {
++          employeeName: employeeName, position: formData.positionTitle, siteName: formData.siteName, hireDate: formData.hireDate
++        }, {});
++      } catch (safetyErr) { Logger.log('[EFX] Safety-at-submit failed (non-fatal): ' + safetyErr.message); }
++    }
++
+     // Send initial emails with full context
+     const idSetupUrl = buildFormUrl('id_setup', { wf: workflowId });
+     
+@@ -88,6 +123,7 @@
+       success: true,
+       workflowId: workflowId,
+       formId: formId,
++      internalEmployeeId: internalEmployeeId,   // EFX: available to automation at submission
+       message: 'Request submitted successfully',
+       scriptUrl: ScriptApp.getService().getUrl()
+     };
+@@ -198,7 +234,8 @@
+     Array.isArray(data.purchasingSites) ? data.purchasingSites.join(', ') : (data.purchasingSites || ''),
+     '',                           // col 52 — Status (written later by ITConfirmationHandler)
+     data.adpSalaryAccess || 'No', // col 53 — ADP Salary Access
+-    data.bossTrainingOnly || 'No' // col 54 — BOSS Training User Only (ER-5)
++    data.bossTrainingOnly || 'No', // col 54 — BOSS Training User Only (ER-5)
++    data.internalEmployeeId || '' // col 55 — Internal Employee ID (EFX: allocated at submit)
+   ];
+ }
+ 
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/MigrationTools.js employee_forms_efx/employee_management_v2_efx/MigrationTools.js
+--- employee_forms_deployment/employee_management_v2/MigrationTools.js	2026-08-06 09:24:20.117755800 -0400
++++ employee_forms_efx/employee_management_v2_efx/MigrationTools.js	2026-09-16 21:13:08.984118500 -0400
+@@ -892,3 +892,83 @@
+   Logger.log('[migrateProdDeployApply] DONE — category renames applied: ' + cats.changes);
+   return { applied: true, headers: headers, categoryRenames: cats };
+ }
++
++// ═══════════════════════════════════════════════════════════════════════════
++// EFX migration — sheet changes for the n8n integration (idempotent, dry-run first)
++//   1. 'Initial Requests': append header 'Internal Employee ID' (col 56) if missing
++//   2. 'Employee IDs' registry sheet: create with headers if missing; optional backfill from 'ID Setup Results'
++//   3. 'Raw Log': append headers 'Event ID', 'Kind' (cols 6-7) if missing
++// Run: migrateEfxDryRun()  → inspect log →  migrateEfxApply()  (→ migrateEfxBackfillEmployeeIds() optional)
++// Never touches existing data cells; only headers/new sheets/appended rows.
++// ═══════════════════════════════════════════════════════════════════════════
++function migrateEfx(dryRun) {
++  if (dryRun === undefined) dryRun = true;
++  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
++  var report = { mode: dryRun ? 'dry_run' : 'applied', spreadsheetId: CONFIG.SPREADSHEET_ID, changes: [] };
++  function note(s) { report.changes.push(s); Logger.log('[migrateEfx] ' + (dryRun ? 'WOULD ' : 'DID ') + s); }
++
++  // 1. Initial Requests header
++  var ir = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
++  if (!ir) throw new Error('Initial Requests sheet not found');
++  var irHeaders = ir.getRange(1, 1, 1, ir.getLastColumn()).getValues()[0];
++  var idx = irHeaders.indexOf('Internal Employee ID');
++  if (idx === -1) {
++    var target = SCHEMA.INITIAL_REQUESTS.INTERNAL_EMP_ID + 1; // 56
++    if (ir.getLastColumn() + 1 !== target) note('WARNING: Initial Requests has ' + ir.getLastColumn() + ' columns; schema expects header at col ' + target + ' — verify BOSS Training User Only is col 55 before applying');
++    note("add header 'Internal Employee ID' at Initial Requests col " + target);
++    if (!dryRun) ir.getRange(1, target).setValue('Internal Employee ID');
++  } else if (idx !== SCHEMA.INITIAL_REQUESTS.INTERNAL_EMP_ID) {
++    note("WARNING: 'Internal Employee ID' exists at index " + idx + ' but SCHEMA says ' + SCHEMA.INITIAL_REQUESTS.INTERNAL_EMP_ID + ' — fix SchemaConstants, do not move data');
++  } else note("'Internal Employee ID' header already present (no-op)");
++
++  // 2. Employee IDs registry
++  var reg = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEE_IDS);
++  if (!reg) {
++    note("create sheet 'Employee IDs' with headers");
++    if (!dryRun) {
++      reg = ss.insertSheet(CONFIG.SHEETS.EMPLOYEE_IDS);
++      reg.appendRow(['Internal Employee ID', 'Workflow ID', 'Employee Name', 'Allocated At', 'Allocated By', 'Source', 'Note']);
++      reg.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
++      reg.setFrozenRows(1);
++    }
++  } else note("'Employee IDs' sheet already present (no-op)");
++
++  // 3. Raw Log headers
++  var rl = ss.getSheetByName(CONFIG.SHEETS.RAW_LOG);
++  if (rl) {
++    var rlHeaders = rl.getRange(1, 1, 1, Math.max(rl.getLastColumn(), 1)).getValues()[0];
++    if (rlHeaders.indexOf('Event ID') === -1) {
++      note("add headers 'Event ID','Kind' at Raw Log cols 6-7");
++      if (!dryRun) rl.getRange(1, 6, 1, 2).setValues([['Event ID', 'Kind']]);
++    } else note("Raw Log already has 'Event ID' (no-op)");
++  } else note("Raw Log sheet absent — RawLog.js creates it with all 7 headers on first write (no-op)");
++
++  return report;
++}
++function migrateEfxDryRun() { return migrateEfx(true); }
++function migrateEfxApply()  { return migrateEfx(false); }
++
++/** Optional: seed 'Employee IDs' from 'ID Setup Results' so max() reads are cheap and the registry is complete. Idempotent. */
++function migrateEfxBackfillEmployeeIds(dryRun) {
++  if (dryRun === undefined) dryRun = true;
++  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
++  var reg = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEE_IDS);
++  if (!reg) throw new Error("Run migrateEfxApply() first — 'Employee IDs' missing");
++  var have = {};
++  reg.getDataRange().getValues().slice(1).forEach(function (r) { if (r[1]) have[String(r[1])] = true; });
++  var idsh = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
++  var rows = idsh ? idsh.getDataRange().getValues().slice(1) : [];
++  var ID = SCHEMA.ID_SETUP_RESULTS, added = 0, skipped = 0, out = [];
++  rows.forEach(function (r) {
++    var wf = String(r[ID.WORKFLOW_ID] || ''), id = r[ID.INTERNAL_EMP_ID];
++    if (!wf || id === '' || isNaN(parseInt(id, 10))) { skipped++; return; }
++    if (have[wf]) { skipped++; return; }
++    out.push([String(id), wf, '', r[ID.SUBMISSION_TS] || '', r[ID.SUBMITTED_BY] || 'backfill', 'backfill:ID Setup Results', '']);
++    have[wf] = true; added++;
++  });
++  if (!dryRun && out.length) reg.getRange(reg.getLastRow() + 1, 1, out.length, 7).setValues(out);
++  Logger.log('[migrateEfxBackfill] ' + (dryRun ? 'WOULD add ' : 'added ') + added + ', skipped ' + skipped);
++  return { mode: dryRun ? 'dry_run' : 'applied', added: added, skipped: skipped };
++}
++function migrateEfxBackfillDryRun() { return migrateEfxBackfillEmployeeIds(true); }
++function migrateEfxBackfillApply()  { return migrateEfxBackfillEmployeeIds(false); }
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/N8n.js employee_forms_efx/employee_management_v2_efx/N8n.js
+--- employee_forms_deployment/employee_management_v2/N8n.js	1969-12-31 19:00:00.000000000 -0500
++++ employee_forms_efx/employee_management_v2_efx/N8n.js	2026-09-16 22:53:21.558778000 -0400
+@@ -0,0 +1,266 @@
++/**
++ * N8n.js — EFX alias layer for n8n  (fork: employee_management_v2_efx)
++ *
++ * WHAT THIS IS
++ *   The stable, documented set of functions n8n calls through the Apps Script Execution API
++ *   (via the Router sub-workflow / node). Every alias validates against FormContracts, runs under an
++ *   Actor identity, and calls the SAME handler the web UI calls — so tasks close, next steps unlock and
++ *   the same emails send. Nothing here writes to a sheet directly.
++ *
++ * CONTRACT FOR CALLERS (n8n)
++ *   n8n_<name>(actor, ...args)  → { ok, apiVersion, requestId, result } | { ok:false, error:{code,message,fields?} }
++ *   actor: JSON string or object { id:'n8n:<workflow-slug>', email:'efx-bot@team-group.com', display:'…' }
++ *   All args are JSON-serialisable. Dates as 'yyyy-MM-dd'.
++ *
++ * CONTRACT FOR MAINTAINERS (us) — see AGENTS.md
++ *   Additions are free. Renames/removals keep an alias for a deprecation window and bump N8N_API_VERSION.
++ *   Every alias maps to a FormContracts entry or an allow-listed read function. No business logic here.
++ *   This file holds ONLY the public surface (n8n_* functions, N8N_ALIASES, N8N_API_VERSION); the private envelope
++ *   helpers (n8nActor_/n8nOk_/n8nErr_/n8nGuard_/n8nOptions_/n8nSubmit_/n8nBool_/n8nParse_/n8nMapHandlerError_) are in
++ *   N8nEnvelope.js. tools/gen-contracts.js and tools/n8n-workflows-check.js parse THIS file for N8N_ALIASES and `function n8n_*`.
++ */
++var N8N_API_VERSION = '2026.09.17-1';   // 2026.09.17-1: + all remaining forms, generic create/submit, cancel/bump/hireDate, drafts, list/context
++
++var N8N_ALIASES = [
++  // ── generic (contract-driven) ──
++  { name: 'n8n_createWorkflow',        kind: 'create', desc: 'Generic: create any workflow-creating form by name (new_hire | equipment_request | termination_request | position_change_request)' },
++  { name: 'n8n_submitForm',            kind: 'update', desc: 'Generic: submit any step form by name (id_setup | hr_verification | it_setup | termination_approval | position_change_approval)' },
++  // ── named wrappers for the remaining forms ──
++  { name: 'n8n_createEquipmentRequest',      kind: 'create', desc: 'Equipment/systems request (EQUIP_REQ_)', form: 'equipment_request' },
++  { name: 'n8n_createTerminationRequest',    kind: 'create', desc: 'End of employment request (TERM_) — goes to HR approval', form: 'termination_request' },
++  { name: 'n8n_submitTerminationApproval',   kind: 'update', desc: 'HR/Payroll decision on a TERM_ workflow (Approved | Rejected) — creates offboarding action items', form: 'termination_approval' },
++  { name: 'n8n_createPositionChangeRequest', kind: 'create', desc: 'Status / position / site change request (CHANGE_) — goes to HR approval', form: 'position_change_request' },
++  { name: 'n8n_submitPositionChangeApproval',kind: 'update', desc: 'HR decision on a CHANGE_ workflow — creates change action items', form: 'position_change_approval' },
++  { name: 'n8n_submitItSetup',               kind: 'update', desc: 'IT Setup step — creates specialist action items (JR, 30/60/90, WIS, …)', form: 'it_setup' },
++  // ── workflow actions ──
++  { name: 'n8n_cancelWorkflow',        kind: 'update', desc: 'Cancel a workflow (audited; cancels its open tasks) — principal must be HR/IT/Admin/requester/manager' },
++  { name: 'n8n_bumpWorkflow',          kind: 'update', desc: 'Send the reminder for the current step (rate-limited by the app)' },
++  { name: 'n8n_updateHireDate',        kind: 'update', desc: 'Change the hire date (HR/IT/Admin principal)' },
++  { name: 'n8n_saveTaskDraft',         kind: 'update', desc: 'Save partial checklist/notes on an action item without closing it' },
++  // ── reads ──
++  { name: 'n8n_listWorkflows',         kind: 'read',   desc: 'List workflows from Dashboard_View with filters (type/status/step/since/limit)' },
++  { name: 'n8n_getContext',            kind: 'read',   desc: 'Full workflow context as used by emails (getWorkflowContext), credentials redacted' },
++  { name: 'n8n_ping',                  kind: 'read',   desc: 'Health: env, effective spreadsheet, versions' },
++  { name: 'n8n_info',                  kind: 'read',   desc: 'Same as ping plus alias list' },
++  { name: 'n8n_contracts',             kind: 'read',   desc: 'Field/function contracts for every form' },
++  { name: 'n8n_createInitialRequest',  kind: 'create', desc: 'New Hire — real submitInitialRequest; returns workflowId + internalEmployeeId', form: 'new_hire' },
++  { name: 'n8n_submitIdSetup',         kind: 'update', desc: 'ID Setup step — real submitEmployeeIDSetup (uses pre-assigned id)', form: 'id_setup' },
++  { name: 'n8n_submitHrVerification',  kind: 'update', desc: 'HR Verification step (contract verified in r2 against HRVerification.html)', form: 'hr_verification' },
++  { name: 'n8n_getWorkflow',           kind: 'read',   desc: 'Request details + checklist (getRequestDetails)' },
++  { name: 'n8n_getEmployeeId',         kind: 'read',   desc: 'Pre-assigned Internal Employee ID for a workflow' },
++  { name: 'n8n_listTasks',             kind: 'read',   desc: 'Action items by workflow/formType/status/assignee' },
++  { name: 'n8n_closeTask',             kind: 'close',  desc: 'Close any action item exactly like the Complete button' },
++  { name: 'n8n_closeJrTask',           kind: 'close',  desc: 'JR: close jr_title task by TK- id or workflowId (replaces doPost completeJrTitle)' },
++  { name: 'n8n_assignSafetyTraining',  kind: 'close',  desc: 'Safety: close safety_onboarding task with SiteDocs/DSS confirmation' },
++  { name: 'n8n_events',                kind: 'read',   desc: 'Event feed (Raw Log) since cursor' }
++];
++
++/**
++ * Error codes the alias layer returns as error.code — SOURCE OF TRUTH for the "Error codes" table in docs/N8N_CONTRACTS.md
++ * (rendered by tools/gen-contracts.js) and for n8n/README.md. Changing a code's MEANING is breaking (AGENTS.md §3);
++ * adding a row is additive. Do not invent codes elsewhere without adding them here.
++ */
++var N8N_ERROR_CODES = [
++  { code: 'E_VALIDATION',       meaning: 'payload failed the FormContracts check (`error.fields[]` lists field + problem) or bad/missing arguments', n8n: 'fix the mapping; do not retry' },
++  { code: 'E_UNKNOWN_FORM',     meaning: 'form name not in FormContracts', n8n: 'fix the form name; do not retry' },
++  { code: 'E_UNVERIFIED_FORM',  meaning: 'form contract is `verified:false` (`it_confirmation`, `specialist`); pass `options.allowUnverified=true` to override', n8n: 'do not retry' },
++  { code: 'E_UPSTREAM',         meaning: 'the Forms handler returned `success:false`; its message is passed through and `error.upstream` carries the raw result', n8n: 'read the message (usually data/state); retry only if it says so' },
++  { code: 'E_FORBIDDEN',        meaning: 'the real session principal (efx-bot) lacks the role (HR/IT/Admin/requester/manager); `error.principal` names it', n8n: 'do not retry until the group membership changes' },
++  { code: 'E_NOT_FOUND',        meaning: 'workflow not found, or no open task of that formType for the workflow', n8n: 'check the ids; do not retry' },
++  { code: 'E_ALREADY_CLOSED',   meaning: 'the task is already Closed', n8n: 'treat as success (idempotent close)' },
++  { code: 'E_TASK_NOT_OPEN',    meaning: 'the task is Cancelled (or otherwise not Open), or its workflow is Cancelled', n8n: 'NOT a success — do not retry; the workflow was cancelled' },
++  { code: 'E_RATE_LIMITED',     meaning: 'a bump reminder was already sent recently for this step (one per step per hour)', n8n: 'retry later' },
++  { code: 'E_INTERNAL',         meaning: 'unexpected exception inside the alias layer', n8n: 'retry once after a minute; if it repeats, send us the requestId' }
++];
++
++// ── read ────────────────────────────────────────────────────────────────────────
++function n8n_ping() {
++  return n8nGuard_(function () {
++    var info = efxInfo();
++    info.apiVersion = N8N_API_VERSION;
++    info.deploymentUrl = CONFIG.DEPLOYMENT_URL || '';
++    info.principal = Actor.principal();   // who Forms authorises as (the impersonated efx-bot under the Execution API)
++    return n8nOk_(info);
++  });
++}
++function n8n_info() {
++  return n8nGuard_(function () {
++    var info = efxInfo(); info.apiVersion = N8N_API_VERSION; info.aliases = N8N_ALIASES;
++    return n8nOk_(info);
++  });
++}
++function n8n_contracts() {
++  return n8nGuard_(function () {
++    var forms = FormContracts.list().map(function (f) { return FormContracts.get(f.form); });
++    return n8nOk_({ apiVersion: N8N_API_VERSION, contractsVersion: FormContracts.VERSION, aliases: N8N_ALIASES, forms: forms });
++  });
++}
++function n8n_getWorkflow(actor, workflowId) {
++  return n8nGuard_(function () {
++    if (!workflowId) return n8nErr_('E_VALIDATION', 'workflowId is required');
++    var r = Actor.run(n8nActor_(actor), function () { return getRequestDetails(String(workflowId)); });
++    if (!r || r.success === false) return n8nErr_('E_NOT_FOUND', (r && r.message) || 'Workflow not found');
++    var pre = null; try { pre = EmployeeIdRegistry.info(String(workflowId)); } catch (e) {}
++    return n8nOk_(r, { employeeId: pre });
++  });
++}
++function n8n_getEmployeeId(actor, workflowId) {
++  return n8nGuard_(function () {
++    if (!workflowId) return n8nErr_('E_VALIDATION', 'workflowId is required');
++    return n8nOk_(EmployeeIdRegistry.info(String(workflowId)));
++  });
++}
++function n8n_listTasks(actor, filter) {
++  return n8nGuard_(function () {
++    return n8nOk_(efxTaskList(n8nParse_(filter, {})));
++  });
++}
++function n8n_events(actor, params) {
++  return n8nGuard_(function () {
++    return n8nOk_(efxEventsSince(n8nParse_(params, {})));
++  });
++}
++
++// ── create / update ─────────────────────────────────────────────────────────────
++/** New Hire. data = exactly what InitialRequest.html posts (see FormContracts.new_hire). include: ['record'] optional. */
++function n8n_createInitialRequest(actor, data, include) {
++  return n8nSubmit_(actor, 'new_hire', n8nParse_(data, {}), true, include || []);
++}
++/** ID Setup. internalEmployeeId may be omitted — the pre-assigned id is used. */
++function n8n_submitIdSetup(actor, data, include) {
++  return n8nSubmit_(actor, 'id_setup', n8nParse_(data, {}), false, include || []);
++}
++/** HR Verification — contract verified in FormContracts r2 (2026-09-16); check n8n_contracts().forms[].verified if the version changes. */
++function n8n_submitHrVerification(actor, data, include) {
++  return n8nSubmit_(actor, 'hr_verification', n8nParse_(data, {}), false, include || []);
++}
++
++// ── generic + remaining forms (all contract-driven; unverified forms refused unless allowUnverified) ──
++function n8n_createWorkflow(actor, form, data, options) {
++  return n8nSubmit_(actor, String(form || ''), n8nParse_(data, {}), true, options);
++}
++function n8n_submitForm(actor, form, data, options) {
++  var d = n8nParse_(data, {});
++  if (d && d.workflowId === undefined && options && options.workflowId) d.workflowId = options.workflowId;
++  return n8nSubmit_(actor, String(form || ''), d, false, options);
++}
++function n8n_createEquipmentRequest(actor, data, options)       { return n8n_createWorkflow(actor, 'equipment_request', data, options); }
++function n8n_createTerminationRequest(actor, data, options)     { return n8n_createWorkflow(actor, 'termination_request', data, options); }
++function n8n_createPositionChangeRequest(actor, data, options)  { return n8n_createWorkflow(actor, 'position_change_request', data, options); }
++function n8n_submitTerminationApproval(actor, data, options)    { return n8n_submitForm(actor, 'termination_approval', data, options); }
++function n8n_submitPositionChangeApproval(actor, data, options) { return n8n_submitForm(actor, 'position_change_approval', data, options); }
++function n8n_submitItSetup(actor, data, options)                { return n8n_submitForm(actor, 'it_setup', data, options); }
++
++// ── workflow actions (authorization = real session principal inside the handlers) ──
++function n8n_cancelWorkflow(actor, workflowId) {
++  return n8nGuard_(function () {
++    if (!workflowId) return n8nErr_('E_VALIDATION', 'workflowId is required');
++    var r = Actor.run(n8nActor_(actor), function () { return cancelRequest(String(workflowId)); });
++    if (!r || r.success === false) return n8nMapHandlerError_(r, 'E_UPSTREAM', { message: 'cancelRequest failed', codes: ['E_NOT_FOUND'] });
++    return n8nOk_(r);
++  });
++}
++function n8n_bumpWorkflow(actor, workflowId, targetStep) {
++  return n8nGuard_(function () {
++    if (!workflowId) return n8nErr_('E_VALIDATION', 'workflowId is required');
++    var r = Actor.run(n8nActor_(actor), function () { return bumpRequest(String(workflowId), targetStep || ''); });
++    if (!r || r.success === false) return n8nMapHandlerError_(r, 'E_UPSTREAM', { message: 'bumpRequest failed', codes: ['E_RATE_LIMITED'] });
++    return n8nOk_(r);
++  });
++}
++function n8n_updateHireDate(actor, workflowId, newDate) {
++  return n8nGuard_(function () {
++    if (!workflowId || !newDate) return n8nErr_('E_VALIDATION', 'workflowId and newDate (yyyy-MM-dd) are required');
++    var r = Actor.run(n8nActor_(actor), function () { return updateHireDate(String(workflowId), String(newDate)); });
++    if (!r || r.success === false) return n8nMapHandlerError_(r, 'E_UPSTREAM', { message: 'updateHireDate failed' });
++    return n8nOk_(r);
++  });
++}
++/** checklist: { "<item>": { status:'Pending'|'Complete'|'Collected'|…, comments? } } — saved in the UI's {items:{…}} shape */
++function n8n_saveTaskDraft(actor, taskId, notes, checklist) {
++  return n8nGuard_(function () {
++    if (!taskId) return n8nErr_('E_VALIDATION', 'taskId is required');
++    var a = n8nActor_(actor);
++    var items = n8nParse_(checklist, {});
++    var now = new Date().toISOString(), by = a.email || a.display || a.id;
++    // Merge into the existing draft (a human's autosave) instead of replacing it — review pass 2 M2
++    var existing = (efxTaskList({ taskId: String(taskId) }).tasks || [])[0];
++    if (!existing) return n8nErr_('E_NOT_FOUND', 'Task not found: ' + taskId);
++    var draft = efxParseDraft_(existing.draft);   // same lift as efxTaskClose (legacy shapes included) — refactor R3
++    Object.keys(items).forEach(function (k) { var v = items[k] || {}; draft.items[k] = { status: v.status || 'Pending', by: by, at: now, comments: v.comments || '' }; });
++    var mergedNotes = (notes === undefined || notes === null) ? (existing.notes || '') : String(notes);
++    var r = Actor.run(a, function () { return saveActionItemDraft(String(taskId), mergedNotes, JSON.stringify(draft)); });
++    if (!r || r.success === false) return n8nErr_('E_UPSTREAM', (r && r.message) || 'saveActionItemDraft failed');
++    return n8nOk_(r);
++  });
++}
++
++// ── reads ──
++function n8n_listWorkflows(actor, filter) {
++  return n8nGuard_(function () {
++    return n8nOk_(efxListWorkflows(n8nParse_(filter, {})));
++  });
++}
++function n8n_getContext(actor, workflowId) {
++  return n8nGuard_(function () {
++    if (!workflowId) return n8nErr_('E_VALIDATION', 'workflowId is required');
++    var ctx = Actor.run(n8nActor_(actor), function () { return getWorkflowContext(String(workflowId)); });
++    if (!ctx) return n8nErr_('E_NOT_FOUND', 'No context for ' + workflowId);
++    var safe = (typeof efxRedact_ === 'function') ? efxRedact_(ctx) : ctx;
++    return n8nOk_(efxJsonSafe(safe));
++  });
++}
++
++// ── close ───────────────────────────────────────────────────────────────────────
++/** Generic: { taskId } | { workflowId, formType } + { notes, checklist, formData, dryRun } */
++function n8n_closeTask(actor, params) {
++  return n8nGuard_(function () {
++    var p = n8nParse_(params, {});
++    var r = efxTaskClose(JSON.stringify(n8nActor_(actor)), p, n8nBool_(p.dryRun));
++    if (r && r.code) return n8nErr_(r.code, r.message);
++    return n8nOk_(r);
++  });
++}
++/** JR — drop-in for doPost completeJrTitle: accepts TK- task id or NEW_EMP_ workflowId. */
++function n8n_closeJrTask(actor, idOrWorkflow, notes) {
++  return n8nGuard_(function () {
++    if (!idOrWorkflow) return n8nErr_('E_VALIDATION', 'A task id (TK-…) or workflowId is required');
++    var p = String(idOrWorkflow).indexOf('TK-') === 0
++      ? { taskId: String(idOrWorkflow), formType: 'jr_title' }     // formType enforced even by TK- id (review F7)
++      : { workflowId: String(idOrWorkflow), formType: 'jr_title' };
++    p.notes = notes || 'JR title verified & assigned via n8n';
++    var r = efxTaskClose(JSON.stringify(n8nActor_(actor)), p, false);
++    if (r && r.code) return n8nErr_(r.code, r.message);
++    return n8nOk_(r);
++  });
++}
++/**
++ * Safety — closes the 'safety_onboarding' action item for a workflow with confirmations.
++ * details: { siteDocsConfirmed: 'Yes'|'No', dssConfirmed: 'Yes'|'No', notes }
++ * If SAFETY_TRAINING_AT_SUBMIT is on, the task already exists from submit; otherwise it is created at ID Setup (hourly)
++ * or after HR Verification (salary) — this alias closes whichever exists, or returns E_NOT_FOUND.
++ */
++function n8n_assignSafetyTraining(actor, workflowId, details) {
++  return n8nGuard_(function () {
++    if (!workflowId) return n8nErr_('E_VALIDATION', 'workflowId is required');
++    var d = n8nParse_(details, {});
++    // Closing means "training assigned". Refuse to close with a 'No' unless the caller explicitly forces it (audited in notes).
++    if ((d.siteDocsConfirmed === 'No' || d.dssConfirmed === 'No') && !n8nBool_(d.force)) {
++      return n8nErr_('E_VALIDATION', 'Both siteDocsConfirmed and dssConfirmed must be "Yes" to close the Safety task; pass force:true to close anyway (recorded in notes).',
++        { fields: [{ field: d.siteDocsConfirmed === 'No' ? 'siteDocsConfirmed' : 'dssConfirmed', problem: 'is "No"' }] });
++    }
++    if (n8nBool_(d.force)) d.notes = (d.notes ? d.notes + ' — ' : '') + 'FORCED close with unconfirmed items via n8n';
++    var p = {
++      workflowId: String(workflowId), formType: 'safety_onboarding',
++      notes: d.notes || 'SiteDocs locations + DSS learning paths assigned via n8n',
++      checklist: {
++        'Assign SiteDocs locations for employee': { status: (d.siteDocsConfirmed === 'No') ? 'Open' : 'Complete', comments: d.siteDocsNotes || '' },
++        'Assign DSS learning paths':              { status: (d.dssConfirmed === 'No') ? 'Open' : 'Complete',      comments: d.dssNotes || '' }
++      },
++      formData: { siteDocsConfirmed: d.siteDocsConfirmed || 'Yes', dssConfirmed: d.dssConfirmed || 'Yes', source: 'n8n' }
++    };
++    var r = efxTaskClose(JSON.stringify(n8nActor_(actor)), p, n8nBool_(d.dryRun));
++    if (r && r.code) return n8nErr_(r.code, r.message);
++    return n8nOk_(r);
++  });
++}
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/N8nEnvelope.js employee_forms_efx/employee_management_v2_efx/N8nEnvelope.js
+--- employee_forms_deployment/employee_management_v2/N8nEnvelope.js	1969-12-31 19:00:00.000000000 -0500
++++ employee_forms_efx/employee_management_v2_efx/N8nEnvelope.js	2026-09-16 22:53:18.604293500 -0400
+@@ -0,0 +1,115 @@
++/**
++ * N8nEnvelope.js — private helpers behind the n8n_* aliases  (fork: employee_management_v2_efx)
++ *
++ * Nothing here is called by n8n directly. N8n.js (the public alias file) calls these; they are plain function
++ * declarations (hoisted across Apps Script files) plus one `var` rule table read only at call time, so file order is
++ * irrelevant. Moved verbatim from N8n.js (review pass 2 §5).
++ *
++ *   n8nActor_(actor)                       string|object → { id, email, display }
++ *   n8nOk_(result, extra) / n8nErr_(code, message, extra)   envelope builders (REQ-XXXXXXXX ids)
++ *   n8nGuard_(fn)                          thrown error → E_INTERNAL envelope
++ *   n8nParse_(v, fallback)                 JSON string | object | nothing
++ *   n8nBool_(v)                            true | 'true' | 'yes' | '1' → true
++ *   n8nOptions_(options)                   ['record'] | { include, allowUnverified }
++ *   n8nMapHandlerError_(res, fallbackCode, opts)   handler { success:false, message } → E_FORBIDDEN / E_NOT_FOUND / E_RATE_LIMITED / fallback
++ *   n8nSubmit_(actor, form, data, expectCreate, options)   the generic validate → Actor.run(handler) → envelope path
++ */
++
++function n8nActor_(actor) {
++  var a = actor;
++  if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { a = { id: String(actor) }; } }
++  a = (a && typeof a === 'object') ? a : {};
++  return { id: String(a.id || 'n8n'), email: String(a.email || '').toLowerCase(), display: String(a.display || a.id || 'n8n automation') };
++}
++function n8nOk_(result, extra) {
++  var r = { ok: true, apiVersion: N8N_API_VERSION, requestId: 'REQ-' + Utilities.getUuid().slice(0, 8).toUpperCase(), result: result };
++  if (extra) Object.keys(extra).forEach(function (k) { r[k] = extra[k]; });
++  return r;
++}
++function n8nErr_(code, message, extra) {
++  var e = { code: code, message: message };
++  if (extra) Object.keys(extra).forEach(function (k) { e[k] = extra[k]; });
++  return { ok: false, apiVersion: N8N_API_VERSION, requestId: 'REQ-' + Utilities.getUuid().slice(0, 8).toUpperCase(), error: e };
++}
++function n8nGuard_(fn) {
++  try { return fn(); } catch (err) { return n8nErr_('E_INTERNAL', String((err && err.message) || err)); }
++}
++/**
++ * JSON string → object, object → itself, nothing/'' → fallback; n8n expressions hand us either form (review pass 2 §5).
++ * Malformed JSON still throws (→ E_INTERNAL inside n8nGuard_, a script error outside it) — deliberately unchanged.
++ * n8nActor_ keeps its own try/catch (a non-JSON string is a bare actor id).
++ */
++function n8nParse_(v, fallback) {
++  if (typeof v === 'string') return v === '' ? fallback : JSON.parse(v);
++  return v || fallback;
++}
++/** n8n expressions deliver booleans as strings as often as not: true | 'true' | 'yes' | '1' → true; anything else → false (review pass 2 L4). */
++function n8nBool_(v) {
++  if (v === true) return true;
++  if (typeof v !== 'string') return false;
++  var s = v.trim().toLowerCase();
++  return s === 'true' || s === 'yes' || s === '1';
++}
++/** options: array → include list (legacy) | object { include:[], allowUnverified:false } */
++function n8nOptions_(options) {
++  if (Array.isArray(options)) return { include: options, allowUnverified: false };
++  if (typeof options === 'string') { try { options = JSON.parse(options); } catch (e) { options = {}; } }
++  options = options || {};
++  return { include: Array.isArray(options.include) ? options.include : [], allowUnverified: n8nBool_(options.allowUnverified) };
++}
++/**
++ * Maps a handler's { success:false, message } to the envelope error (review pass 2 §5 / M1). Rules, in order:
++ *   E_FORBIDDEN    /permission|access denied|not authori[sz]ed|forbidden/i  — every site; adds `principal` (the real session)
++ *   E_NOT_FOUND    /not found/i                                            — only when listed in opts.codes
++ *   E_RATE_LIMITED /already sent/i                                         — only when listed in opts.codes
++ * Anything else → fallbackCode. `upstream` carries the raw handler result. Each alias opts into exactly the codes it
++ * produced before this helper existed (cancel: E_NOT_FOUND; bump: E_RATE_LIMITED; updateHireDate and the submits: none —
++ * a "not found" from a submit handler stays E_UPSTREAM), so no message changes code.
++ */
++var N8N_HANDLER_ERROR_RULES = [
++  { code: 'E_FORBIDDEN',    re: /permission|access denied|not authori[sz]ed|forbidden/i, always: true },
++  { code: 'E_NOT_FOUND',    re: /not found/i },
++  { code: 'E_RATE_LIMITED', re: /already sent/i }
++];
++function n8nMapHandlerError_(res, fallbackCode, opts) {
++  opts = opts || {};
++  var msg = (res && res.message) || opts.message || 'handler failed';
++  var codes = opts.codes || [];
++  var code = fallbackCode || 'E_UPSTREAM';
++  for (var i = 0; i < N8N_HANDLER_ERROR_RULES.length; i++) {
++    var rule = N8N_HANDLER_ERROR_RULES[i];
++    if ((rule.always || codes.indexOf(rule.code) >= 0) && rule.re.test(msg)) { code = rule.code; break; }
++  }
++  var extra = { upstream: res || null };
++  if (code === 'E_FORBIDDEN') extra.principal = Actor.principal();
++  return n8nErr_(code, msg, extra);
++}
++/** Validate against a FormContracts form, then run its handler under the actor. */
++function n8nSubmit_(actor, form, data, expectCreate, options) {
++  return n8nGuard_(function () {
++    var a = n8nActor_(actor);
++    var opt = n8nOptions_(options), include = opt.include;
++    var c = FormContracts.get(form);
++    if (!c) return n8nErr_('E_UNKNOWN_FORM', 'Unknown form: ' + form);
++    if (expectCreate !== !!c.createsWorkflow) return n8nErr_('E_VALIDATION', 'Wrong alias for form ' + form);
++    if (c.verified === false && !opt.allowUnverified) {
++      return n8nErr_('E_UNVERIFIED_FORM', 'Form "' + form + '" is not verified for automation (' + (c.notes || 'see FormContracts') + '). Pass options.allowUnverified=true to override.');
++    }
++    var v = FormContracts.validate(form, data || {});
++    if (!v.ok) return n8nErr_('E_VALIDATION', 'Payload failed contract for ' + form, { fields: v.fields });
++    var fn = globalThis[c.fn];
++    if (typeof fn !== 'function') return n8nErr_('E_INTERNAL', 'Handler missing: ' + c.fn);
++    // Handlers mutate the payload they receive (workflowId, formId, timestamp, internalEmployeeId). Hand them a copy
++    // so a caller that retries with the same object is not rejected as "unknown field" on the second attempt.
++    var payload = JSON.parse(JSON.stringify(data || {}));
++    var res = Actor.run(a, function () { return fn(payload); });
++    // Role checks run against the real session principal (efx-bot), not actor.email — surface them as E_FORBIDDEN (review pass 2 M1)
++    if (!res || res.success === false) return n8nMapHandlerError_(res, 'E_UPSTREAM', { message: c.fn + ' failed' });
++    var extra = {};
++    var recWf = res.workflowId || (data && data.workflowId);   // step handlers (ID Setup, HR, IT, approvals) return no workflowId
++    if (include && include.indexOf('record') >= 0 && recWf && c.targetSheet) {
++      try { extra.record = efxReadRecord(c.targetSheet, recWf); } catch (e) { extra.recordWarning = e.message; }
++    }
++    return n8nOk_(res, extra);
++  });
++}
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/PositionChangeHandler.js employee_forms_efx/employee_management_v2_efx/PositionChangeHandler.js
+--- employee_forms_deployment/employee_management_v2/PositionChangeHandler.js	2026-08-06 09:24:20.197291400 -0400
++++ employee_forms_efx/employee_management_v2_efx/PositionChangeHandler.js	2026-09-16 21:44:29.840555200 -0400
+@@ -16,7 +16,7 @@
+ function submitPositionChangeRequest(formData) {
+   try {
+     rawLog('submitPositionChangeRequest', formData);
+-    const workflowId = createWorkflow('CHANGE', 'Position/Site Change Request', formData.reqEmail || Session.getActiveUser().getEmail());
++    const workflowId = createWorkflow('CHANGE', 'Position/Site Change Request', formData.reqEmail || Actor.email());
+     const formId = generateFormId('POS_CHANGE');
+ 
+     formData.workflowId = workflowId;
+@@ -373,7 +373,7 @@
+  * @returns {{ success: boolean, message: string }}
+  */
+ function submitPositionChangeApproval(formData) {
+-  const caller = Session.getActiveUser().getEmail();
++  const caller = Actor.principal(); // authorization: real session identity (EFX)
+   const callerRole = AccessControlService.getUserRolePayload(caller);
+   if (!callerRole.isHR && !callerRole.isAdmin) {
+     return { success: false, message: 'Access denied.' };
+@@ -400,7 +400,7 @@
+       //          [5] ConfirmedTitle, [6] ConfirmedNewManager, [7] SubmittedBy
+       addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, [
+         workflowId, formId, new Date(), decision, notes,
+-        confirmedTitle || '', confirmedNewManager || '', Session.getActiveUser().getEmail()
++        confirmedTitle || '', confirmedNewManager || '', Actor.email()
+       ]);
+       // Flush before lock release so row is visible to same-execution reads
+       SpreadsheetApp.flush();
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/RawLog.js employee_forms_efx/employee_management_v2_efx/RawLog.js
+--- employee_forms_deployment/employee_management_v2/RawLog.js	2026-05-25 18:46:33.346051500 -0400
++++ employee_forms_efx/employee_management_v2_efx/RawLog.js	2026-09-16 22:53:15.726916600 -0400
+@@ -1,47 +1,67 @@
+ /**
+- * RawLog.js — Append-only safety net for all form submissions.
+- * Writes raw JSON to "Raw Log" sheet BEFORE any field mapping or sheet writes.
+- * If the main handler crashes or maps data incorrectly, this row survives for recovery.
++ * RawLog.js — EFX fork (v2): Event ID/Kind, rawLogResult, Actor, optional signed webhook fan-out
+  *
+- * Usage: rawLog('submitInitialRequest', formData)
++ * Same contract as today (rawLog(source, formData) is the first line of every submit handler) plus:
++ *   • Event ID + Kind columns (appended — existing readers unaffected)
++ *   • Actor.email() instead of Session (automation calls are attributable)
++ *   • rawLogResult(source, workflowId, result) — post-mint event carrying the final ids
++ *   • optional signed webhook fan-out to n8n when Script Property EFX_EVENT_WEBHOOK_URL is set
++ *
++ * Still append-only, still non-fatal, still pruned to RAW_LOG_MAX_ROWS.
++ *
++ * Helpers used here but shared with EfxApi/N8n — efxRedact_ (EFX_SECRET_KEY_RE) and efxSign_ — live in EfxUtil.js.
+  */
+-
+ var RAW_LOG_SHEET = 'Raw Log';
+-var RAW_LOG_MAX_ROWS = 5000; // prune oldest rows when exceeded
++var RAW_LOG_MAX_ROWS = 5000;
++var RAW_LOG_HEADERS = ['Timestamp', 'Source', 'Workflow ID', 'User', 'Raw JSON', 'Event ID', 'Kind'];
++
++function rawLog(source, formData) { return rawLogEvent_('submit', source, (formData && (formData.workflowId || formData.wf)) || '', formData); }
+ 
+-function rawLog(source, formData) {
++function rawLogResult(source, workflowId, result) { return rawLogEvent_('result', source, workflowId || '', result); }
++
++function rawLogEvent_(kind, source, workflowId, payload) {
++  var eventId = 'EVT-' + Utilities.formatDate(new Date(), 'UTC', 'yyyyMMddHHmmss') + '-' + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
+   try {
+-    var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
++    var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+     var sheet = ss.getSheetByName(RAW_LOG_SHEET);
+-
+     if (!sheet) {
+       sheet = ss.insertSheet(RAW_LOG_SHEET);
+-      var hdr = sheet.getRange(1, 1, 1, 5);
+-      hdr.setValues([['Timestamp', 'Source', 'Workflow ID', 'User', 'Raw JSON']]);
+-      hdr.setFontWeight('bold').setBackground('#1a1a1a').setFontColor('#ffffff');
+-      sheet.setFrozenRows(1);
+-      sheet.setColumnWidth(1, 160);
+-      sheet.setColumnWidth(2, 200);
+-      sheet.setColumnWidth(3, 180);
+-      sheet.setColumnWidth(4, 200);
+-      sheet.setColumnWidth(5, 600);
++      sheet.getRange(1, 1, 1, RAW_LOG_HEADERS.length).setValues([RAW_LOG_HEADERS]);
++      try { sheet.getRange(1, 1, 1, RAW_LOG_HEADERS.length).setFontWeight('bold'); sheet.setFrozenRows(1); } catch (e) {}
++    } else if (sheet.getLastColumn() < RAW_LOG_HEADERS.length) {
++      // upgrade in place: append the two new headers (existing 5 columns untouched)
++      sheet.getRange(1, 6, 1, 2).setValues([['Event ID', 'Kind']]);
+     }
+-
+-    var wfId = formData && (formData.workflowId || formData.wf || '') || '';
+     var user = '';
+-    try { user = Session.getActiveUser().getEmail(); } catch (e2) {}
+-
++    try { user = (typeof Actor !== 'undefined') ? Actor.email() : Session.getActiveUser().getEmail(); } catch (e2) {}
+     var json = '';
+-    try { json = JSON.stringify(formData); } catch (e3) { json = String(formData); }
++    try { json = JSON.stringify(payload); } catch (e3) { json = String(payload); }
+ 
+-    sheet.appendRow([new Date(), source, wfId, user, json]);
++    sheet.appendRow([new Date(), source, String(workflowId || ''), user, json, eventId, kind]);
+ 
+-    // Prune oldest rows if over limit (keep header + newest RAW_LOG_MAX_ROWS)
+     var total = sheet.getLastRow();
+-    if (total > RAW_LOG_MAX_ROWS + 1) {
+-      sheet.deleteRows(2, total - RAW_LOG_MAX_ROWS - 1);
+-    }
++    if (total > RAW_LOG_MAX_ROWS + 1) sheet.deleteRows(2, total - RAW_LOG_MAX_ROWS - 1);
++
++    rawLogFanOut_({ eventId: eventId, kind: kind, source: source, workflowId: String(workflowId || ''), actor: user, payload: payload });
+   } catch (e) {
+     Logger.log('[RawLog] Logging failed (non-fatal): ' + e.message);
+   }
++  return eventId;
++}
++
++/** Fire-and-forget signed POST to n8n. Never throws; never delays a submit by more than the fetch timeout. */
++function rawLogFanOut_(event) {
++  var url = '';
++  try { url = PropertiesService.getScriptProperties().getProperty('EFX_EVENT_WEBHOOK_URL') || ''; } catch (e) {}
++  if (!url) return;
++  try {
++    event = efxRedact_(event);
++    var kid = PropertiesService.getScriptProperties().getProperty('EFX_EVENT_KID') || '';
++    var secret = PropertiesService.getScriptProperties().getProperty('EFX_EVENT_SECRET') || '';
++    var env = { v: 1, kid: kid, ts: Math.floor(Date.now() / 1000), nonce: Utilities.getUuid().replace(/-/g, ''), action: 'event', actor: { id: 'forms:rawlog' }, payload: event };
++    if (secret) env.sig = efxSign_(secret, env);
++    UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', payload: JSON.stringify(env), muteHttpExceptions: true, followRedirects: true });
++  } catch (e) {
++    Logger.log('[RawLog] fan-out failed (non-fatal): ' + e.message);
++  }
+ }
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/RequestActionsHandler.js employee_forms_efx/employee_management_v2_efx/RequestActionsHandler.js
+--- employee_forms_deployment/employee_management_v2/RequestActionsHandler.js	2026-08-06 09:24:20.347442600 -0400
++++ employee_forms_efx/employee_management_v2_efx/RequestActionsHandler.js	2026-09-16 21:44:29.953695900 -0400
+@@ -25,7 +25,7 @@
+ 
+ function cancelRequest(workflowId) {
+   try {
+-    var userEmail = Session.getActiveUser().getEmail();
++    var userEmail = Actor.principal(); // authorization (EFX)
+     var wf = getWorkflow(workflowId);
+     if (!wf) return { success: false, message: 'Workflow not found.' };
+ 
+@@ -60,7 +60,7 @@
+     return { success: true, message: 'Request cancelled successfully.' };
+   } catch (e) {
+     Logger.log('[cancelRequest] Error: ' + e.toString());
+-    writeAuditLog(Session.getActiveUser().getEmail(), 'CANCEL', workflowId, '', 'error: ' + e.message);
++    writeAuditLog(Actor.email(), 'CANCEL', workflowId, '', 'error: ' + e.message);
+     return { success: false, message: e.message };
+   }
+ }
+@@ -71,7 +71,7 @@
+ 
+ function updateHireDate(workflowId, newDateStr) {
+   try {
+-    var userEmail = Session.getActiveUser().getEmail();
++    var userEmail = Actor.principal(); // authorization (EFX)
+ 
+     if (!AccessControlService.getUserRolePayload(userEmail).canEditDates) {
+       return { success: false, message: 'Permission denied. Only HR, IT, or Admin can edit hire dates.' };
+@@ -106,7 +106,7 @@
+     return { success: false, message: 'Workflow not found in Initial Requests.' };
+   } catch (e) {
+     Logger.log('[updateHireDate] Error: ' + e.toString());
+-    writeAuditLog(Session.getActiveUser().getEmail(), 'UPDATE_HIRE_DATE', workflowId, newDateStr, 'error: ' + e.message);
++    writeAuditLog(Actor.email(), 'UPDATE_HIRE_DATE', workflowId, newDateStr, 'error: ' + e.message);
+     return { success: false, message: e.message };
+   }
+ }
+@@ -119,7 +119,7 @@
+ 
+ function bumpRequest(workflowId, targetStep) {
+   try {
+-    var userEmail = Session.getActiveUser().getEmail();
++    var userEmail = Actor.principal(); // authorization (EFX)
+     Logger.log('[bumpRequest] ' + workflowId + ' / ' + targetStep + ' by ' + userEmail);
+ 
+     var wf = getWorkflow(workflowId);
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/SchemaConstants.js employee_forms_efx/employee_management_v2_efx/SchemaConstants.js
+--- employee_forms_deployment/employee_management_v2/SchemaConstants.js	2026-08-06 09:24:20.762641000 -0400
++++ employee_forms_efx/employee_management_v2_efx/SchemaConstants.js	2026-09-16 21:11:49.146380900 -0400
+@@ -109,7 +109,21 @@
+     PURCHASING_SITES:      51,  // csv      — Purchasing Sites
+     STATUS:                52,  // string   — Status
+     ADP_SALARY_ACCESS:     53,  // boolean  — ADP Salary Access
+-    BOSS_TRAINING_ONLY:    54   // string   — BOSS Training User Only (Yes/No)
++    BOSS_TRAINING_ONLY:    54,  // string   — BOSS Training User Only (Yes/No)
++    INTERNAL_EMP_ID:       55   // number   — Internal Employee ID (EFX: allocated at submit; header 'Internal Employee ID')
++  },
++
++  // ─────────────────────────────────────────────
++  // EMPLOYEE IDS  (7 columns) — EFX allocator registry (EmployeeIdRegistry.js)
++  // ─────────────────────────────────────────────
++  EMPLOYEE_IDS: {
++    INTERNAL_EMP_ID: 0,  // number   — Internal Employee ID
++    WORKFLOW_ID:     1,  // string   — Workflow ID
++    EMPLOYEE_NAME:   2,  // string   — Employee Name
++    ALLOCATED_AT:    3,  // datetime — Allocated At
++    ALLOCATED_BY:    4,  // string   — Allocated By (Actor)
++    SOURCE:          5,  // string   — submitInitialRequest | submitEmployeeIDSetup | rehire-carry | efx.employeeId.allocate
++    NOTE:            6   // string   — Note
+   },
+ 
+   // ─────────────────────────────────────────────
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/Services/ActionItemService.js employee_forms_efx/employee_management_v2_efx/Services/ActionItemService.js
+--- employee_forms_deployment/employee_management_v2/Services/ActionItemService.js	2026-08-06 09:24:20.930537700 -0400
++++ employee_forms_efx/employee_management_v2_efx/Services/ActionItemService.js	2026-09-16 21:32:39.139574500 -0400
+@@ -102,6 +102,8 @@
+ 
+       addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.ACTION_ITEMS, rowData);
+       Logger.log(`[ActionItemService] Created Task ${taskId} (${formType || 'no-form'}) for Workflow ${workflowId}`);
++      // EFX: task event for automation (n8n_events / Router Trigger). Non-fatal.
++      try { if (typeof rawLogEvent_ === 'function') rawLogEvent_('task.created', 'createActionItem', workflowId, { taskId: taskId, category: category, name: name, formType: formType || '', assignedTo: assignedTo }); } catch (e) {}
+       return taskId;
+     } catch (e) {
+       Logger.log(`[ERROR] Failed to create action item: ${e.message}`);
+@@ -187,6 +189,8 @@
+       sheet.getRange(rowIndex, AI.COMPLETED_DATE + 1).setValue(new Date());
+       sheet.getRange(rowIndex, AI.NOTES + 1).setValue(notes);
+       sheet.getRange(rowIndex, AI.CLOSED_BY + 1).setValue(closedBy);
++      // EFX: task event for automation. Non-fatal.
++      try { if (typeof rawLogEvent_ === 'function') rawLogEvent_('task.closed', 'closeActionItem', workflowId, { taskId: taskId, category: data[rowIndex - 1][AI.CATEGORY] || '', formType: data[rowIndex - 1][AI.FORM_TYPE] || '', closedBy: closedBy }); } catch (e) {}
+ 
+       // Persist draft checklist state (set by ActionItemForm.html's autosave)
+       if (draftJSON) {
+@@ -970,7 +974,7 @@
+  * @returns {{ success: boolean, message?: string }}
+  */
+ function closeActionItemWithNotes(taskId, notes, draftJSON, formDataJSON) {
+-  return ActionItemService.closeActionItem(taskId, notes, Session.getActiveUser().getEmail(), draftJSON, formDataJSON);
++  return ActionItemService.closeActionItem(taskId, notes, Actor.email(), draftJSON, formDataJSON);
+ }
+ 
+ /**
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/Services/ConfigurationService.js employee_forms_efx/employee_management_v2_efx/Services/ConfigurationService.js
+--- employee_forms_deployment/employee_management_v2/Services/ConfigurationService.js	2026-05-25 18:13:54.573483100 -0400
++++ employee_forms_efx/employee_management_v2_efx/Services/ConfigurationService.js	2026-09-16 21:12:00.086390500 -0400
+@@ -22,7 +22,12 @@
+     'EMAIL_SAFETY': 'grp.forms.safety@team-group.com',
+     'EMAIL_NOTIFICATIONS': 'grp.forms.it@team-group.com',
+     'EMAIL_REDIRECT_ALL': '', // Set this to an email in Script Properties to redirect ALL outbound mail
+-    
++
++    // EFX (n8n integration) — defaults keep legacy behaviour; override via Script Properties
++    'SAFETY_TRAINING_AT_SUBMIT': 'false',
++    'EFX_EVENT_WEBHOOK_URL': '',
++    'EFX_EVENT_KID': '',
++
+     // Resource IDs (Override in Script Properties for Staging/Test)
+     'SPREADSHEET_ID': '1o2KulGLhpClbvbkYG-VqsaOJNQfAcpVZgRtc-FKpuAw',
+     'MAIN_FOLDER_ID': '1vBZVuzXmSatnLGiqhU7QoS0zBK2NGDQE',
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/Setup.js employee_forms_efx/employee_management_v2_efx/Setup.js
+--- employee_forms_deployment/employee_management_v2/Setup.js	2026-08-06 09:24:21.014490800 -0400
++++ employee_forms_efx/employee_management_v2_efx/Setup.js	2026-09-16 21:12:11.991026400 -0400
+@@ -439,5 +439,20 @@
+ function getJrTaskClosers()        { return { value: PropertiesService.getScriptProperties().getProperty('JR_TASK_CLOSERS') || '' }; }
+ // Shared secret for the doPost portal-automation endpoint (n8n). Set once, keep out of source.
+ function setPortalSecret(s)        { var v = s || ''; PropertiesService.getScriptProperties().setProperty('PORTAL_SHARED_SECRET', v); Logger.log('PORTAL_SHARED_SECRET set (len ' + v.length + ')'); return { ok: true, length: v.length }; }
++
++// ── EFX (n8n integration) setters — run from the editor; values never live in the repo ──
++function setSafetyTrainingAtSubmit(on) { PropertiesService.getScriptProperties().setProperty('SAFETY_TRAINING_AT_SUBMIT', on ? 'true' : 'false'); return { SAFETY_TRAINING_AT_SUBMIT: !!on }; }
++function setEfxEventWebhook(url, kid, secret) {
++  var p = PropertiesService.getScriptProperties();
++  p.setProperty('EFX_EVENT_WEBHOOK_URL', url || ''); p.setProperty('EFX_EVENT_KID', kid || ''); p.setProperty('EFX_EVENT_SECRET', secret || '');
++  return { url: url || '', kid: kid || '', secretLen: String(secret || '').length };
++}
++function clearEfxEventWebhook() { return setEfxEventWebhook('', '', ''); }
++/** Editor smoke test for the n8n alias layer (no writes): ping + contracts + a dryRun close. */
++function efxSelfTest() {
++  var out = { ping: n8n_ping(), contracts: n8n_contracts().ok, dryRunClose: n8n_closeTask({ id: 'selftest' }, { taskId: 'TK-NONE', dryRun: true }) };
++  Logger.log(JSON.stringify(out).slice(0, 1500));
++  return out;
++}
+ function getPortalSecretLen()      { return { length: (PropertiesService.getScriptProperties().getProperty('PORTAL_SHARED_SECRET') || '').length }; }
+ function unsuppressEmails()       { PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE'); Logger.log('SUPPRESS_EMAILS_OVERRIDE cleared'); }
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/Specialist.js employee_forms_efx/employee_management_v2_efx/Specialist.js
+--- employee_forms_deployment/employee_management_v2/Specialist.js	2026-05-25 18:47:41.854267300 -0400
++++ employee_forms_efx/employee_management_v2_efx/Specialist.js	2026-09-16 21:12:45.567040400 -0400
+@@ -96,7 +96,7 @@
+         workflowId, formId, new Date(),
+         details.siteDocsConfirmed ? 'Yes' : 'No',
+         details.dssConfirmed ? 'Yes' : 'No',
+-        formData.notes || '', Session.getActiveUser().getEmail()
++        formData.notes || '', Actor.email()
+       ]);
+     } else if (dept === 'safetyterm') {
+       let details = {};
+@@ -105,12 +105,12 @@
+         workflowId, formId, new Date(),
+         details.siteDocsRemoved ? 'Yes' : 'No',
+         details.bossDeactivated ? 'Yes' : 'No',
+-        formData.notes || '', Session.getActiveUser().getEmail()
++        formData.notes || '', Actor.email()
+       ]);
+     } else {
+       resultsSheet.appendRow([
+         workflowId, formId, new Date(),
+-        formData.details || JSON.stringify(formData), formData.notes || '', Session.getActiveUser().getEmail()
++        formData.details || JSON.stringify(formData), formData.notes || '', Actor.email()
+       ]);
+     }
+ 
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/TerminationHandler.js employee_forms_efx/employee_management_v2_efx/TerminationHandler.js
+--- employee_forms_deployment/employee_management_v2/TerminationHandler.js	2026-08-06 09:24:21.444684700 -0400
++++ employee_forms_efx/employee_management_v2_efx/TerminationHandler.js	2026-09-16 21:44:29.731976200 -0400
+@@ -32,7 +32,7 @@
+ function submitTerminationRequest(formData) {
+   try {
+     rawLog('submitTerminationRequest', formData);
+-    const workflowId = createWorkflow('TERM', 'End of Employment Request', formData.reqEmail || Session.getActiveUser().getEmail());
++    const workflowId = createWorkflow('TERM', 'End of Employment Request', formData.reqEmail || Actor.email());
+     const formId = generateFormId('TERM_REQ');
+     
+     formData.workflowId = workflowId;
+@@ -232,7 +232,7 @@
+  * Handle HR Approval Submission
+  */
+ function submitTerminationApproval(formData) {
+-  const caller = Session.getActiveUser().getEmail();
++  const caller = Actor.principal(); // authorization: real session identity (EFX)
+   const callerRole = AccessControlService.getUserRolePayload(caller);
+   if (!callerRole.isHR && !callerRole.isAdmin) {
+     return { success: false, message: 'Access denied.' };
+@@ -256,7 +256,7 @@
+       }
+       // Record approval inside lock so duplicate check and write are atomic
+       addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATION_APPROVALS, [
+-        workflowId, formId, new Date(), decision, notes, 'YES', Session.getActiveUser().getEmail()
++        workflowId, formId, new Date(), decision, notes, 'YES', Actor.email()
+       ]);
+     } finally {
+       lock.releaseLock();
+diff -ruN --strip-trailing-cr '--exclude=__tests__' '--exclude=docs' '--exclude=.clasp.json' employee_forms_deployment/employee_management_v2/WorkflowManager.js employee_forms_efx/employee_management_v2_efx/WorkflowManager.js
+--- employee_forms_deployment/employee_management_v2/WorkflowManager.js	2026-08-06 09:24:21.618634500 -0400
++++ employee_forms_efx/employee_management_v2_efx/WorkflowManager.js	2026-09-16 22:26:36.603916900 -0400
+@@ -66,9 +66,20 @@
+ /**
+  * Create new workflow record in master Workflows sheet
+  */
+-function createWorkflow(workflowType, workflowName, initiatorEmail) {
++function createWorkflow(workflowType, workflowName, initiatorEmail, dedupeKey) {
+   try {
+-    const workflowId = generateWorkflowId(workflowType);
++    let workflowId = generateWorkflowId(workflowType);
++    // EFX (review pass 2 H2): when the caller supplies a dedupeKey (e.g. employee name + hire date), the 30-second
++    // idempotency guard keys on (type, initiator, dedupeKey) instead of (type, initiator). Under automation the
++    // initiator is constant (efx-bot / the n8n actor), so two *different* employees created within 30 s must NOT
++    // collapse into one workflow and one Internal Employee ID. Human double-clicks still dedupe (same key).
++    const _dedupeCacheKey = dedupeKey ? ('wfdedupe:' + workflowType + ':' + String(initiatorEmail).toLowerCase() + ':' + String(dedupeKey).toLowerCase()) : null;
++    if (_dedupeCacheKey) {
++      try {
++        const _hit = CacheService.getScriptCache().get(_dedupeCacheKey);
++        if (_hit) { Logger.log('[createWorkflow] Idempotency guard (dedupeKey): returning existing ' + _hit); return _hit; }
++      } catch (e) { /* cache unavailable -> fall through to the row guard */ }
++    }
+     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+     let workflowsSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+     
+@@ -92,7 +103,7 @@
+     const _WF = SCHEMA.WORKFLOWS;
+     const _allWf = workflowsSheet.getDataRange().getValues();
+     const _cutoff = new Date(new Date().getTime() - 30000);
+-    for (let _wi = SCHEMA.ROW.FIRST_DATA; _wi < _allWf.length; _wi++) {
++    for (let _wi = SCHEMA.ROW.FIRST_DATA; _wi < _allWf.length && !_dedupeCacheKey; _wi++) {
+       if (String(_allWf[_wi][_WF.WORKFLOW_TYPE]) === workflowType &&
+           String(_allWf[_wi][_WF.INITIATOR_EMAIL]) === initiatorEmail) {
+         const _wfCreated = _allWf[_wi][_WF.CREATED_DATE];
+@@ -103,6 +114,18 @@
+       }
+     }
+     
++    // Uniqueness guard (EFX): ids are second-resolution + 3 random digits, so two creates in the same second can
++    // collide (seen in the E2E suite; possible for automation bursts). Regenerate until the id is unused.
++    for (let _tries = 0; _tries < 10; _tries++) {
++      let _taken = false;
++      for (let _wi = SCHEMA.ROW.FIRST_DATA; _wi < _allWf.length; _wi++) {
++        if (String(_allWf[_wi][_WF.WORKFLOW_ID]) === workflowId) { _taken = true; break; }
++      }
++      if (!_taken) break;
++      Logger.log('[createWorkflow] id collision ' + workflowId + ' — regenerating');
++      workflowId = generateWorkflowId(workflowType);
++    }
++
+     workflowsSheet.appendRow([
+       workflowId,
+       workflowType,
+@@ -115,6 +138,7 @@
+       ''
+     ]);
+     
++    if (_dedupeCacheKey) { try { CacheService.getScriptCache().put(_dedupeCacheKey, workflowId, 30); } catch (e) {} }
+     Logger.log('[SUCCESS] Created workflow: ' + workflowId);
+     return workflowId;
+     
+@@ -227,7 +251,7 @@
+ 
+   /* --- original body (disabled) ---
+   try {
+-    const userEmail = Session.getActiveUser().getEmail();
++    const userEmail = Actor.principal(); // authorization (EFX)
+     if (!AccessControlService.isAdmin(userEmail)) {
+       return { success: false, message: 'Permission denied. Admin access required.' };
+     }

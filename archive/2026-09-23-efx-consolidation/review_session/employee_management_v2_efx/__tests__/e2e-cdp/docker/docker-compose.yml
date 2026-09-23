@@ -1,0 +1,19 @@
+services:
+  chrome-authbox:
+    build: .
+    container_name: chrome-authbox
+    shm_size: "2gb"
+    # Ports bound to 127.0.0.1 ONLY — this container holds a live Google session
+    # and CDP is unauthenticated, so it must never be exposed on the network.
+    ports:
+      - "127.0.0.1:6080:6080"   # noVNC — one-time interactive login
+      - "127.0.0.1:9222:9222"   # CDP   — automation (Playwright/run-form.js)
+    volumes:
+      - chrome-profile:/profile  # persistent Google session
+    # Optional: protect the VNC view with a password.
+    # environment:
+    #   VNC_PASSWORD: "choose-something"
+    restart: unless-stopped
+
+volumes:
+  chrome-profile:

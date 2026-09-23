@@ -1,0 +1,21 @@
+{
+  "name": "efx-sheet-migration",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node twin of MigrationTools.migrateEfx(): adds the EFX headers/tabs to an Employee Forms spreadsheet (dry-run by default).",
+  "main": "migrate-efx-sheet.js",
+  "bin": {
+    "migrate-efx-sheet": "./migrate-efx-sheet.js"
+  },
+  "scripts": {
+    "check": "node --check migrate-efx-sheet.js && node --check print-dwd-token.js",
+    "dry-run": "node migrate-efx-sheet.js --sheet",
+    "apply": "node migrate-efx-sheet.js --apply --sheet"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

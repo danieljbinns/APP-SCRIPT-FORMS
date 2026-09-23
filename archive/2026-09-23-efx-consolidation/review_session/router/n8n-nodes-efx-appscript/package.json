@@ -1,0 +1,58 @@
+{
+  "name": "n8n-nodes-efx-appscript",
+  "version": "0.1.0",
+  "description": "n8n community node: call Employee Forms (Apps Script) n8n_* aliases through the Apps Script Execution API with a Google Service Account, plus a polling trigger over the Forms event feed. SCAFFOLD - untested.",
+  "keywords": [
+    "n8n-community-node-package",
+    "apps-script",
+    "google",
+    "employee-forms",
+    "efx"
+  ],
+  "license": "UNLICENSED",
+  "private": true,
+  "homepage": "https://gitlab.com/team-prometheussoftware/n8n-nodes-efx-appscript",
+  "author": {
+    "name": "TEAM Group / Robinson Solutions IT",
+    "email": "dbinns@team-group.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/team-prometheussoftware/n8n-nodes-efx-appscript.git"
+  },
+  "engines": {
+    "node": ">=20.15"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && gulp build:icons",
+    "dev": "tsc --watch",
+    "format": "prettier nodes --write",
+    "lint": "eslint nodes package.json",
+    "lintfix": "eslint nodes package.json --fix",
+    "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [],
+    "nodes": [
+      "dist/nodes/EfxRouter/EfxRouter.node.js",
+      "dist/nodes/EfxRouterTrigger/EfxRouterTrigger.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "^7.15.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.3",
+    "gulp": "^5.0.0",
+    "n8n-workflow": "*",
+    "prettier": "^3.3.2",
+    "typescript": "^5.5.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

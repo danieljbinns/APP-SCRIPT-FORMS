@@ -1,0 +1,15 @@
+{
+  "name": "efx-tools",
+  "private": true,
+  "description": "Local tools for the EFX fork: contract docs generator, n8n compatibility check, Execution API caller. No deploy tooling here on purpose.",
+  "scripts": {
+    "contracts": "node gen-contracts.js",
+    "n8n-check": "node n8n-check.js",
+    "lint:n8n": "node n8n-workflows-check.js",
+    "test": "node ../employee_management_v2_efx/__tests__/super-test.js && node ../employee_management_v2_efx/__tests__/form-field-map-test.js && node ../employee_management_v2_efx/__tests__/efx-test.js && node ../employee_management_v2_efx/__tests__/migration-test.js && node ../employee_management_v2_efx/__tests__/efx-e2e-test.js",
+    "gate": "npm test && npm run contracts && npm run n8n-check && npm run lint:n8n"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}

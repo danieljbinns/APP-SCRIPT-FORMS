@@ -1,0 +1,224 @@
+{
+  "name": "Forms · Assign Safety Training",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Forms · Assign Safety Training → `n8n_assignSafetyTraining(actor, workflowId, details)`\nCloses the workflow's `safety_onboarding` action item with confirmations:\n- `siteDocsConfirmed` Yes|No → checklist \"Assign SiteDocs locations for employee\" (No leaves it Open)\n- `dssConfirmed` Yes|No → checklist \"Assign DSS learning paths\"\n- `notes`, `siteDocsNotes`, `dssNotes` optional; `dryRun:true` validates + resolves the task, writes nothing (returns `wouldClose`, `draft`).\n**When does the task exist?** If Forms setting `SAFETY_TRAINING_AT_SUBMIT=true` it exists from Initial Request submit; otherwise it is created at **ID Setup (hourly)** or after **HR Verification (salary)**. Before that: `EFX E_NOT_FOUND`.",
+        "width": 920,
+        "height": 380,
+        "color": 4
+      },
+      "id": "sticky-contract",
+      "name": "contract",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Attribution\nPass `actor` from the calling workflow so Forms records who did it, e.g.\n`{{ { id: 'n8n:' + $workflow.name, email: 'efx-bot@team-group.com', display: $workflow.name + ' (n8n)' } }}`\nIf omitted the Router attributes the call to itself. `idempotencyKey` (optional) makes a retry replay the first result for 10 min.\nErrors throw as `EFX <CODE>: message` — attach an error output or error workflow on the calling node.",
+        "width": 520,
+        "height": 220,
+        "color": 5
+      },
+      "id": "sticky-actor",
+      "name": "actor",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        340,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "workflowId",
+              "type": "string"
+            },
+            {
+              "name": "siteDocsConfirmed",
+              "type": "string"
+            },
+            {
+              "name": "dssConfirmed",
+              "type": "string"
+            },
+            {
+              "name": "notes",
+              "type": "string"
+            },
+            {
+              "name": "siteDocsNotes",
+              "type": "string"
+            },
+            {
+              "name": "dssNotes",
+              "type": "string"
+            },
+            {
+              "name": "dryRun",
+              "type": "boolean"
+            },
+            {
+              "name": "actor",
+              "type": "object"
+            },
+            {
+              "name": "idempotencyKey",
+              "type": "string"
+            },
+            {
+              "name": "treatAlreadyClosedAsSuccess",
+              "type": "boolean"
+            }
+          ]
+        }
+      },
+      "id": "trigger",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// helpers\nconst inp = $input.first().json;\nconst empty = v => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);\nconst pick = (keys) => { const o = {}; for (const k of keys) if (!empty(inp[k])) o[k] = inp[k]; return o; };\nconst asObj = (v) => { if (empty(v)) return {}; if (typeof v === 'string') { try { return JSON.parse(v); } catch (e) { throw new Error('EFX E_VALIDATION: JSON field is not valid JSON'); } } return v; };\nconst asArr = (v) => empty(v) ? [] : (Array.isArray(v) ? v : String(v).split(',').map(s => s.trim()).filter(Boolean));\nconst bool = (v, d) => empty(v) ? d : (v === true || String(v).toLowerCase() === 'true');\nconst passthru = { actor: empty(inp.actor) ? undefined : inp.actor, idempotencyKey: empty(inp.idempotencyKey) ? '' : String(inp.idempotencyKey) };\n\nif (empty(inp.workflowId)) throw new Error('EFX E_VALIDATION: workflowId is required');\nconst yn = (v) => empty(v) ? 'Yes' : (String(v).toLowerCase() === 'no' ? 'No' : 'Yes');\nconst details = { siteDocsConfirmed: yn(inp.siteDocsConfirmed), dssConfirmed: yn(inp.dssConfirmed) };\nif (!empty(inp.notes)) details.notes = String(inp.notes);\nif (!empty(inp.siteDocsNotes)) details.siteDocsNotes = String(inp.siteDocsNotes);\nif (!empty(inp.dssNotes)) details.dssNotes = String(inp.dssNotes);\nif (bool(inp.dryRun, false)) details.dryRun = true;\nreturn [{ json: Object.assign({ fn: 'n8n_assignSafetyTraining', args: [String(inp.workflowId).trim(), details], treatAlreadyClosedAsSuccess: bool(inp.treatAlreadyClosedAsSuccess, true) }, passthru) }];"
+      },
+      "id": "build-args",
+      "name": "Build args",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -60,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "={{ $json.fn }}",
+            "args": "={{ $json.args }}",
+            "actor": "={{ $json.actor }}",
+            "idempotencyKey": "={{ $json.idempotencyKey }}",
+            "treatAlreadyClosedAsSuccess": "={{ $json.treatAlreadyClosedAsSuccess }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "call-router",
+      "name": "EFX · Router",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Build args",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build args": {
+      "main": [
+        [
+          {
+            "node": "EFX · Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

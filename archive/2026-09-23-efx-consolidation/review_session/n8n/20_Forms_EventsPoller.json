@@ -1,0 +1,491 @@
+{
+  "name": "Forms · Events Poller",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Forms · Events Poller (Raw Log → n8n)\nEvery minute: `n8n_events(actor, { afterEventId | afterTs, limit })` through the Router → one item per new event → routed by `source`.\nEvent item: `{ eventId, ts, kind, source, workflowId, actor, payload, internalEmployeeId, formId }`.\n\n**Kinds:** `submit` = the form payload as posted (first line of every submit handler; workflowId is empty for creates). `result` = post-write event carrying the final ids — emitted today for **submitInitialRequest** (`workflowId, formId, internalEmployeeId, …`) and **submitEmployeeIDSetup**. The Initial Request / ID Setup outputs below fire on `kind:'result'` so George gets the ids; the `submit` twins land in *Other*.\n**Sources seen today:** submitInitialRequest, submitEmployeeIDSetup, submitHRVerification, submitITSetup, submitITConfirmation, submitSpecialistForm, submitEquipmentRequest, submitTerminationRequest, submitTerminationApproval, submitPositionChangeRequest, submitPositionChangeApproval.\n**Task events** (`task.created` / `task.closed`) are **emitted by Forms since 2026-09-17** (`Services/ActionItemService.js` → `rawLogEvent_('task.created'|'task.closed')`, payload: taskId, workflowId, category, formType, assignedTo/closedBy) — the JR trigger can move from the Gmail regex to `task.created {formType:'jr_title'}` once the TEST tier proves the poller.\n\nCursor = workflow static data (`afterEventId`, `afterTs`, `seen[]`). `pruned:true` → cursor reset to `afterTs = now-1d`. Static data only persists for **active-workflow** executions; a manual run always reads the last 24 h. Replace `<<ROUTER_WORKFLOW_ID>>` before activating. Attach the *Error Notifications - Global Handler* as the error workflow.",
+        "width": 1180,
+        "height": 470,
+        "color": 4
+      },
+      "id": "sticky-overview",
+      "name": "overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -560
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule",
+      "name": "Every minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Cursor lives in workflow static data (production executions only — manual test runs do not persist it).\nconst sd = $getWorkflowStaticData('global');\nconst params = { limit: 200 };\nif (sd.afterEventId) params.afterEventId = sd.afterEventId;\nelse params.afterTs = sd.afterTs || new Date(Date.now() - 24 * 3600 * 1000).toISOString();   // first run / after prune: last 24 h\nreturn [{ json: { params, cursor: { afterEventId: sd.afterEventId || null, afterTs: params.afterTs || null } } }];"
+      },
+      "id": "load-cursor",
+      "name": "Load cursor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_events",
+            "args": "={{ [ $json.params ] }}",
+            "actor": "={{ { id: 'n8n:forms-events-poller', email: 'efx-bot@team-group.com', display: 'Forms Events Poller (n8n)' } }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "events",
+      "name": "Router: n8n_events",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        180,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Router output (flattened n8n_events result): { ok, events[], nextAfterEventId, pruned, requestId, ... }\nconst sd = $getWorkflowStaticData('global');\nconst r = $input.first().json;\n\nif (r.pruned === true) {\n  // The cursor eventId is no longer in the Raw Log (RAW_LOG_MAX_ROWS pruning) → resync by time: afterTs = now - 1 day.\n  sd.afterEventId = null;\n  sd.afterTs = new Date(Date.now() - 24 * 3600 * 1000).toISOString();\n  sd.lastPruneResetAt = new Date().toISOString();\n  return [];   // next tick re-reads from afterTs; the seen-set below suppresses duplicates\n}\n\nconst events = Array.isArray(r.events) ? r.events : [];\nsd.seen = Array.isArray(sd.seen) ? sd.seen : [];\nconst seen = new Set(sd.seen);\nconst fresh = events.filter(e => e && e.eventId && !seen.has(e.eventId));\n\nif (r.nextAfterEventId) { sd.afterEventId = r.nextAfterEventId; sd.afterTs = null; }\nelse if (!sd.afterEventId) { sd.afterTs = new Date(Date.now() - 10 * 60 * 1000).toISOString(); }   // nothing yet: keep a 10-min time window moving\n\nfor (const e of fresh) sd.seen.push(e.eventId);\nif (sd.seen.length > 1000) sd.seen = sd.seen.slice(-1000);\nsd.lastPollAt = new Date().toISOString();\nsd.lastBatch = fresh.length;\n\nreturn fresh.map(e => ({ json: {\n  eventId: e.eventId, ts: e.ts, kind: e.kind, source: e.source, workflowId: e.workflowId || '', actor: e.actor || '',\n  payload: e.payload,\n  // convenience for George's flows (present on kind:'result' events)\n  internalEmployeeId: (e.payload && e.payload.internalEmployeeId) || null,\n  formId: (e.payload && e.payload.formId) || null\n} }));"
+      },
+      "id": "fanout",
+      "name": "Advance cursor & fan out",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c002",
+                    "leftValue": "={{ $json.source }}",
+                    "rightValue": "submitInitialRequest",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "id": "c003",
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "result",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Initial Request"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c004",
+                    "leftValue": "={{ $json.source }}",
+                    "rightValue": "submitEmployeeIDSetup",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "id": "c005",
+                    "leftValue": "={{ $json.kind }}",
+                    "rightValue": "result",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ID Setup"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c006",
+                    "leftValue": "={{ $json.source }}",
+                    "rightValue": "submitHRVerification",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "HR Verification"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c007",
+                    "leftValue": "={{ $json.source }}",
+                    "rightValue": "submitITSetup",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "IT Setup"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c008",
+                    "leftValue": "={{ String($json.kind).startsWith('task') || String($json.source).startsWith('task') ? 'task' : '' }}",
+                    "rightValue": "task",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Task events"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Other"
+        }
+      },
+      "id": "switch-source",
+      "name": "Route by source",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        700,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "out-initial",
+      "name": "On Initial Request Submitted",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        -280
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "out-idsetup",
+      "name": "On ID Setup Submitted",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        -140
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "out-hr",
+      "name": "On HR Verification Submitted",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "out-it",
+      "name": "On IT Setup Submitted",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        140
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "out-task",
+      "name": "On Task Event",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        280
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "out-other",
+      "name": "Other events",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### For George\nReplace the NoOp placeholders with your flows:\n- **On Initial Request Submitted** → `{{ $json.workflowId }}`, `{{ $json.internalEmployeeId }}`, `{{ $json.payload }}` (formId, message). Start SiteDocs/DSS/BOSS account creation here — the id is final at this point. Then call *Forms · Submit ID Setup*.\n- **On IT Setup Submitted** → the `jr_title` action item now exists for `{{ $json.workflowId }}` (use *Forms · List Tasks* with formType `jr_title` to get the TK- id).\n- Filter by employee type with `{{ $json.payload.employmentType }}` on Initial Request events.",
+        "width": 460,
+        "height": 330,
+        "color": 5
+      },
+      "id": "sticky-george",
+      "name": "george",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        -300
+      ]
+    }
+  ],
+  "connections": {
+    "Every minute": {
+      "main": [
+        [
+          {
+            "node": "Load cursor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load cursor": {
+      "main": [
+        [
+          {
+            "node": "Router: n8n_events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router: n8n_events": {
+      "main": [
+        [
+          {
+            "node": "Advance cursor & fan out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Advance cursor & fan out": {
+      "main": [
+        [
+          {
+            "node": "Route by source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by source": {
+      "main": [
+        [
+          {
+            "node": "On Initial Request Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "On ID Setup Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "On HR Verification Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "On IT Setup Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "On Task Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Other events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "<<ERROR_WORKFLOW_ID>>"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

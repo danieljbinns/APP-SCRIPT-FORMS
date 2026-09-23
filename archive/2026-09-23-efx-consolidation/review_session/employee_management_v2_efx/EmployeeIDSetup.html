@@ -1,0 +1,205 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee ID Setup</title>
+  <?!= include('Styles') ?>
+</head>
+
+<body>
+  <div class="container">
+    <a href="<?= getBaseUrl() ?>" target="_top" class="back-link">&#8592; Back to Portal</a>
+
+    <div class="logo-container">
+      <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+        alt="Team Group Companies" class="logo">
+    </div>
+
+    <div id="form-container" class="card-form">
+      <h1>Employee ID Setup</h1>
+      <p class="subtitle">Initial Employee Setup — System IDs &amp; Access</p>
+
+      <hr>
+
+      <div id="requestHeaderWrap">
+        <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
+      </div>
+
+      <form id="setupForm" autocomplete="off">
+        <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+        <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+
+        <!-- Internal Employee ID -->
+        <div class="form-section">
+          <h2>Internal Employee ID</h2>
+          <div class="form-field">
+            <label>Internal Employee ID <span class="required">*</span></label>
+            <input type="text" name="internalEmployeeId" value="<?= generatedEmployeeId ?>" required>
+            <small>Auto-generated. Modify if needed or use existing ID for rehires.</small>
+          </div>
+        </div>
+
+        <!-- SiteDocs Setup (ALL Employees) -->
+        <div class="form-section">
+          <h2>SiteDocs Setup</h2>
+          <div class="callout callout-warning"><strong>Note:</strong> All employees receive SiteDocs worker access.</div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>SiteDocs Worker ID <span class="required">*</span></label>
+              <input type="text" name="siteDocsWorkerId" required>
+              <small>Worker ID assigned in SiteDocs system</small>
+            </div>
+            <div class="form-field">
+              <label>SiteDocs Job Code <span class="required">*</span></label>
+              <select name="siteDocsJobCode" required>
+                <option value="">-- Select Job Code --</option>
+                <option value="Hourly 1">Hourly 1</option>
+                <option value="Hourly 2">Hourly 2</option>
+                <option value="Salary 1">Salary 1</option>
+                <option value="Salary 2">Salary 2</option>
+                <option value="Supervisor">Supervisor</option>
+                <option value="Manager">Manager</option>
+              </select>
+              <small>Job classification for SiteDocs permissions</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- SiteDocs Admin/Login Access (Conditional — only when SiteDocs supervisor was requested) -->
+        <? if (requestData.siteDocsAccess) { ?>
+        <div class="form-section">
+          <h2>SiteDocs Admin / Login Access</h2>
+          <div class="callout callout-info"><strong>Note:</strong> SiteDocs admin/login access was requested in the initial form.</div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>SiteDocs Training Username <span class="required">*</span></label>
+              <input type="text" name="siteDocsUsername" value="<?= generatedSiteDocsDefault || '' ?>" required>
+            </div>
+            <div class="form-field">
+              <label>SiteDocs Training Password <span class="required">*</span></label>
+              <input type="text" name="siteDocsPassword" required>
+              <small>Temporary password for initial login</small>
+            </div>
+          </div>
+        </div>
+        <? } ?>
+
+        <!-- DSS Training Access (ALL Employees) -->
+        <div class="form-section">
+          <h2>DSS Training Access</h2>
+          <div class="callout callout-warning"><strong>Note:</strong> All employees receive DSS training platform access.</div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>DSS Username <span class="required">*</span></label>
+              <input type="text" name="dssUsername" value="<?= generatedDssUsername ?>" required>
+              <small>Auto-generated from name. Modify if needed.</small>
+            </div>
+            <div class="form-field">
+              <label>DSS Password <span class="required">*</span></label>
+              <input type="text" name="dssPassword" required>
+              <small>Temporary password for initial login</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOSS WIS Account -->
+        <div class="form-section">
+          <h2>BOSS WIS Account</h2>
+          <label class="confirm-item" for="bossWisCreated">
+            <input type="checkbox" name="bossWisCreated" id="bossWisCreated" value="Yes">
+            <div>
+              BOSS WIS Account Created
+              <span>Confirm that a BOSS WIS account has been set up for this employee.</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- SiteDocs Badge Link -->
+        <div class="form-section">
+          <h2>SiteDocs Badge Link</h2>
+          <label class="confirm-item" for="siteDocsBadgeCreated">
+            <input type="checkbox" name="siteDocsBadgeCreated" id="siteDocsBadgeCreated" value="Yes">
+            <div>
+              SiteDocs Badge Link Created
+              <span>Confirm that the SiteDocs badge link has been created for this employee.</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- Setup Notes -->
+        <div class="form-section">
+          <h2>Setup Notes</h2>
+          <div class="form-field">
+            <label>Additional Comments / Notes</label>
+            <textarea name="setupNotes" placeholder="Any additional notes about the employee setup process"></textarea>
+          </div>
+        </div>
+
+        <div id="statusMessage"></div>
+
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-full">Complete Employee ID Setup</button>
+      </form>
+
+      <?!= includeWithData('SuccessScreen', {baseUrl: getBaseUrl()}) ?>
+
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('setupForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById('submitBtn');
+      const statusMsg = document.getElementById('statusMessage');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Processing...';
+      statusMsg.innerHTML = '';
+
+      const formData = new FormData(e.target);
+      const data = {
+        workflowId: formData.get('workflowId'),
+        formId: formData.get('formId'),
+        internalEmployeeId: formData.get('internalEmployeeId'),
+        siteDocsWorkerId: formData.get('siteDocsWorkerId'),
+        siteDocsJobCode: formData.get('siteDocsJobCode'),
+        siteDocsUsername: formData.get('siteDocsUsername'),
+        siteDocsPassword: formData.get('siteDocsPassword'),
+        dssUsername: formData.get('dssUsername'),
+        dssPassword: formData.get('dssPassword'),
+        setupNotes: formData.get('setupNotes'),
+        bossWisCreated: formData.get('bossWisCreated') || 'No',
+        siteDocsBadgeCreated: formData.get('siteDocsBadgeCreated') || 'No'
+      };
+
+      google.script.run
+        .withSuccessHandler(function(response) {
+          if (response.success) {
+            document.getElementById('setupForm').style.display = 'none';
+            document.getElementById('requestHeaderWrap').style.display = 'none';
+            document.getElementById('successTitle').textContent = 'ID Setup Complete';
+            document.getElementById('successMessage').textContent = 'HR and relevant teams have been notified.';
+            document.getElementById('successRequestId').textContent = 'Request ID: ' + data.workflowId;
+            document.getElementById('successAnotherLink').style.display = 'none';
+            document.getElementById('success-screen').style.display = 'block';
+          } else {
+            statusMsg.innerHTML = '<div class="callout callout-warning">❌ ' + response.message + '</div>';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Complete Employee ID Setup';
+          }
+        })
+        .withFailureHandler(function(error) {
+          statusMsg.innerHTML = '<div class="callout callout-warning">❌ Submission failed: ' + error.message + '</div>';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Complete Employee ID Setup';
+        })
+        .submitEmployeeIDSetup(data);
+    });
+  </script>
+  <?!= include('SharedComponents') ?>
+  <?!= safeInclude('Konami') ?>
+</body>
+
+</html>

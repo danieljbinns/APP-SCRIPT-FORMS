@@ -1,0 +1,795 @@
+{
+  "name": "Ref · Onboarding via EFX (hourly)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 40 · Reference — Hourly onboarding via EFX (inactive, STAGING only)\nEvent-driven rebuild of George's *Employee Onboarding (Hourly / Salary Branch)* draft. Everything that was blocked on \"the employee number isn't in the email\" is solved by the `result` event: **`internalEmployeeId` is final at Initial Request submit.**\n\nFlow: poll `n8n_events` (kinds `result`, sources `submitInitialRequest`) → one item per new hire → **Hourly only** → map title → SiteDocs *Create Worker* (George's node shape) → Litmos: find manager → *Create User* → **Forms · Submit ID Setup** (`siteDocsWorkerId`, `siteDocsJobCode`, `dssUsername`, generated `dssPassword`, **no internalEmployeeId**) → Forms advances to HR Verification and sends its own emails. Salary hires end in a NoOp stub.\n\n**Placeholders:** `<<ROUTER_WORKFLOW_ID>>`, `<<SUBMIT_ID_SETUP_WORKFLOW_ID>>` (imported 11), credentials `SiteDocs API (<<TIER>>)` and `DSS (Litmos) API (<<TIER>>)` (HTTP Header Auth — George's existing \"Site doc's POC\" / \"DSS (Litmos) API\" on staging), `<<LITMOS_TEAM_ID>>` optional.\nEvery external node is *On Error → Continue (error output)* → **one Gmail to dbinns** (placeholder recipient until approved). Static-data cursor persists only when the workflow is **active**. Swap the first three nodes for the *Apps Script Router Trigger* community node once installed.",
+        "width": 1400,
+        "height": 420,
+        "color": 4
+      },
+      "id": "sticky-overview",
+      "name": "overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        -700
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule",
+      "name": "Every minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Same cursor logic as 20_Forms_EventsPoller, but filtered server-side to kinds:['result'] sources:['submitInitialRequest'].\n// When the Apps Script Router Trigger community node is installed, replace \"Every minute\" + this node + \"Router: n8n_events\" with it.\nconst sd = $getWorkflowStaticData('global');\nconst params = { limit: 100, kinds: ['result'], sources: ['submitInitialRequest'] };\nif (sd.afterEventId) params.afterEventId = sd.afterEventId; else params.afterTs = sd.afterTs || new Date(Date.now() - 24 * 3600 * 1000).toISOString();\nreturn [{ json: { params } }];"
+      },
+      "id": "cursor",
+      "name": "Load cursor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_events",
+            "args": "={{ [ $json.params ] }}",
+            "actor": "={{ { id: 'n8n:ref-onboarding-efx', email: 'efx-bot@team-group.com', display: 'Ref Onboarding via EFX (n8n)' } }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "events",
+      "name": "Router: n8n_events",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        -180,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Advance the cursor and emit one normalised item per NEW Initial Request. The 'result' payload (InitialRequestHandler.rawLogResult) carries:\n//   formId, internalEmployeeId, employeeName, employmentType, employeeType, siteName, positionTitle, hireDate, managerEmail, requesterEmail, systems[], plan306090, jrAssignment\nconst sd = $getWorkflowStaticData('global');\nconst r = $input.first().json;\nif (r.pruned === true) { sd.afterEventId = null; sd.afterTs = new Date(Date.now() - 24 * 3600 * 1000).toISOString(); return []; }\nconst events = Array.isArray(r.events) ? r.events : [];\nsd.seen = Array.isArray(sd.seen) ? sd.seen : [];\nconst seen = new Set(sd.seen);\nconst fresh = events.filter(e => e && e.eventId && !seen.has(e.eventId));\nif (r.nextAfterEventId) { sd.afterEventId = r.nextAfterEventId; sd.afterTs = null; } else if (!sd.afterEventId) { sd.afterTs = new Date(Date.now() - 10 * 60 * 1000).toISOString(); }\nfor (const e of fresh) sd.seen.push(e.eventId);\nif (sd.seen.length > 1000) sd.seen = sd.seen.slice(-1000);\nreturn fresh.map(e => {\n  const p = e.payload || {};\n  const name = String(p.employeeName || '').trim();\n  const sp = name.indexOf(' ');\n  return { json: {\n    eventId: e.eventId, workflowId: e.workflowId, internalEmployeeId: String(p.internalEmployeeId || ''),\n    employeeName: name,\n    // employeeName is \"First Last\" — split on the first space. For exact first/middle/last call Forms · Get Workflow / Get Context instead.\n    firstName: sp > 0 ? name.slice(0, sp) : name, lastName: sp > 0 ? name.slice(sp + 1) : '',\n    employmentType: p.employmentType || '', employeeType: p.employeeType || '', siteName: p.siteName || '', positionTitle: p.positionTitle || '',\n    hireDate: p.hireDate || '', managerEmail: p.managerEmail || '', requesterEmail: p.requesterEmail || '', systems: p.systems || [], jrAssignment: p.jrAssignment || '',\n    union: undefined   // portal does not send union status yet — George's mapper defaults to UNION\n  } };\n});"
+      },
+      "id": "normalise",
+      "name": "Normalise event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        60,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Router: n8n_events** — the Execution API call. `kinds:['result']` + `sources:['submitInitialRequest']` are filtered server-side, so only post-mint Initial Request events come back. `Normalise event` splits `employeeName` into first/last (call *Forms · Get Workflow* if you need exact names) and carries `internalEmployeeId`, `siteName`, `positionTitle`, `hireDate`, `managerEmail`.",
+        "width": 620,
+        "height": 150,
+        "color": 6
+      },
+      "id": "sticky-n-events",
+      "name": "n-events",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c076",
+              "leftValue": "={{ $json.employmentType === 'Hourly' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "hourly",
+      "name": "Hourly?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        300,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "salary-stub",
+      "name": "Salary flow — not built yet",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// George's SiteDocs title-code mapper (from mw4aXq7lq5W1EQBy \"Map Job Title to SiteDocs Code\", 2026-09-11 scheme) + the Forms siteDocsJobCode it maps to.\n// Forms' id_setup.siteDocsJobCode enum is Hourly 1 | Hourly 2 | Salary 1 | Salary 2 | Supervisor | Manager (EmployeeIDSetup.html) — NOT the SiteDocs code.\nconst SITE_IS_UNION = $json.union !== false;\nconst normalize = (s) => (s || '').toLowerCase().replace(/[-_]/g, ' ').replace(/\\s+/g, ' ').trim();\nconst title = normalize($json.positionTitle);\nconst HOURLY_TITLES = ['general cleaner', 'industrial cleaner', 'booth cleaner', 'janitorial', 'janitor', 'high pressure blaster', 'water blaster', 'general labor', 'dock worker', 'loader', 'facilities maintenance', 'skilled trades', 'equipment operator', 'piv', 'tug', 'sweeper', 'fork truck', 'driver'];\nconst SITE_SUP_TITLES = ['site manager', 'account manager', 'site supervisor', 'site team lead', 'general cleaner team lead', 'high pressure blaster team lead', 'project manager', 'hourly supervisor', 'team leader', 'tl'];\nlet siteDocsTitleCode = null, formsJobCode = 'Hourly 1';\nif (SITE_SUP_TITLES.some(t => title.includes(t))) { siteDocsTitleCode = SITE_IS_UNION ? 'Site-Sup – Union' : 'Site-Sup'; formsJobCode = 'Supervisor'; }\nelse if (HOURLY_TITLES.some(t => title.includes(t))) { siteDocsTitleCode = SITE_IS_UNION ? 'HRLY-U' : 'HRLY'; formsJobCode = 'Hourly 1'; }\nif (!siteDocsTitleCode) throw new Error('No SiteDocs title code for position \"' + $json.positionTitle + '\" (' + $json.workflowId + ') — add it to the mapper or handle manually');\nreturn [{ json: Object.assign({}, $json, { siteDocsTitleCode, formsJobCode }) }];"
+      },
+      "id": "map",
+      "name": "Map title codes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Map title codes** — George's 2026-09-11 SiteDocs scheme (HRLY-U/HRLY, Site-Sup – Union/Site-Sup; union defaults to true until the portal sends it) **plus** the Forms `siteDocsJobCode` (Hourly 1 / Supervisor) that ID Setup requires. Unknown titles throw → error email.",
+        "width": 440,
+        "height": 130,
+        "color": 6
+      },
+      "id": "sticky-n-map",
+      "name": "n-map",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        560,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-1.sitedocs.com/api/v1/workers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "FirstName",
+              "value": "={{ $json.firstName }}"
+            },
+            {
+              "name": "LastName",
+              "value": "={{ $json.lastName }}"
+            },
+            {
+              "name": "JobTitle",
+              "value": "={{ $json.siteDocsTitleCode }}"
+            },
+            {
+              "name": "Position",
+              "value": "={{ $json.siteDocsTitleCode }}"
+            },
+            {
+              "name": "EmployeeNumber",
+              "value": "={{ $json.internalEmployeeId }}"
+            },
+            {
+              "name": "DateHired",
+              "value": "={{ $json.hireDate }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "sd-create",
+      "name": "SiteDocs: Create Worker",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        820,
+        -80
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "<<SITEDOCS_CREDENTIAL_ID>>",
+          "name": "SiteDocs API (<<TIER>>)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "**SiteDocs: Create Worker** — George's exact node (mw4aXq7lq5W1EQBy), with `EmployeeNumber` now the real `internalEmployeeId`. Response `id`/`Id` becomes Forms `siteDocsWorkerId`. Location assignment / QR certification steps from his draft can be inserted after this node unchanged (they read `$('SiteDocs: Create Worker')`).",
+        "width": 460,
+        "height": 150,
+        "color": 6
+      },
+      "id": "sticky-n-sd",
+      "name": "n-sd",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        820,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.litmoseu.com/v1.svc/users?source=n8n-onboarding&search={{ encodeURIComponent($('Normalise event').item.json.managerEmail) }}&format=json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "lit-mgr",
+      "name": "Litmos: Find Manager",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        -80
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "<<LITMOS_CREDENTIAL_ID>>",
+          "name": "DSS (Litmos) API (<<TIER>>)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pick the Litmos user whose name matches the manager (George: name match is more reliable than email across domains).\nconst ev = $('Normalise event').item.json;\nconst users = Array.isArray($json) ? $json : (Array.isArray($json.value) ? $json.value : ($json.Users || $json.users || (Array.isArray($json.body) ? $json.body : [])));\nconst wantEmail = String(ev.managerEmail || '').toLowerCase();\nlet hit = users.find(u => String(u.Email || u.email || '').toLowerCase() === wantEmail);\nif (!hit && users.length === 1) hit = users[0];\nreturn [{ json: { managerId: hit ? (hit.Id || hit.id) : null, managerMatch: hit ? 'email' : 'none', candidates: users.length } }];"
+      },
+      "id": "resolve-mgr",
+      "name": "Resolve Manager ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// DSS (Litmos) username: initials + hire date YYYYMMDD + site abbreviation (George, confirmed 2026-09-14 against real records, e.g. AP20260514CAM).\n// Password: GENERATED per run — never hard-coded. It is passed to Litmos and to Forms · Submit ID Setup (which stores it exactly as the UI does) and nowhere else.\nconst ev = $('Normalise event').item.json;\nconst first = (ev.firstName || '')[0] || '', last = (ev.lastName || '')[0] || '';\n// hireDate arrives as yyyy-MM-dd — use the string directly (new Date('yyyy-MM-dd') is UTC midnight and shifts a day in local time, a latent bug in the original draft)\nconst m = /^(\\d{4})-(\\d{2})-(\\d{2})/.exec(String(ev.hireDate || ''));\nconst yyyymmdd = m ? m[1] + m[2] + m[3] : '00000000';\nconst siteAbbrev = (ev.siteName || '').replace(/[^a-zA-Z]/g, '').slice(0, 4).toUpperCase();   // TODO George: real site → abbreviation lookup\nconst dssUsername = (first + last + yyyymmdd + siteAbbrev).toUpperCase();\nfunction randomPassword(len) {\n  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!#$%&*+-=?@';\n  let bytes;\n  try { bytes = require('crypto').randomBytes(len); } catch (e) { bytes = Array.from({ length: len }, () => Math.floor(Math.random() * 256)); }   // crypto needs NODE_FUNCTION_ALLOW_BUILTIN=crypto\n  let out = ''; for (let i = 0; i < len; i++) out += alphabet[bytes[i] % alphabet.length];\n  return 'Tg' + out;   // guaranteed upper+lower prefix\n}\nconst sd = $('SiteDocs: Create Worker').item.json;\nconst siteDocsWorkerId = String(sd.id || sd.Id || '');\nif (!siteDocsWorkerId) throw new Error('SiteDocs: Create Worker returned no id for ' + ev.workflowId);\nreturn [{ json: { workflowId: ev.workflowId, firstName: ev.firstName, lastName: ev.lastName, internalEmployeeId: ev.internalEmployeeId, siteDocsWorkerId, formsJobCode: $('Map title codes').item.json.formsJobCode, dssUsername, dssPassword: randomPassword(14), managerId: $('Resolve Manager ID').item.json.managerId || null } }];"
+      },
+      "id": "dss-user",
+      "name": "Build DSS user + password",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1580,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Litmos** — find the manager (search by the event's `managerEmail`; George prefers name-matching — swap the query if needed), then **Build DSS user + password**: username = initials + hireDate + site abbrev (George's confirmed scheme); password is **generated per run** (`crypto.randomBytes` when `NODE_FUNCTION_ALLOW_BUILTIN=crypto`, else Math.random fallback) and only ever sent to Litmos and to Forms. Then **Litmos: Create User** (`IsCustomUsername=true`, `ExternalEmployeeId = internalEmployeeId`).",
+        "width": 720,
+        "height": 170,
+        "color": 6
+      },
+      "id": "sticky-n-dss",
+      "name": "n-dss",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.litmoseu.com/v1.svc/users?source=n8n-onboarding&format=json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ UserName: $json.dssUsername, FirstName: $json.firstName, LastName: $json.lastName, Email: '', Password: $json.dssPassword, AccessLevel: 'Learner', DisableMessages: false, Active: true, IsCustomUsername: true, SkipFirstLogin: true, ManagerId: $json.managerId || undefined, ExternalEmployeeId: $json.internalEmployeeId }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "lit-create",
+      "name": "Litmos: Create User",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1840,
+        -80
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "<<LITMOS_CREDENTIAL_ID>>",
+          "name": "DSS (Litmos) API (<<TIER>>)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<SUBMIT_ID_SETUP_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $('Build DSS user + password').item.json.workflowId }}",
+            "siteDocsWorkerId": "={{ $('Build DSS user + password').item.json.siteDocsWorkerId }}",
+            "siteDocsJobCode": "={{ $('Build DSS user + password').item.json.formsJobCode }}",
+            "dssUsername": "={{ $('Build DSS user + password').item.json.dssUsername }}",
+            "dssPassword": "={{ $('Build DSS user + password').item.json.dssPassword }}",
+            "setupNotes": "={{ 'Accounts created by n8n (Ref Onboarding via EFX). SiteDocs worker ' + $('Build DSS user + password').item.json.siteDocsWorkerId + ', Litmos user id ' + ($json.Id || $json.id || 'n/a') }}",
+            "actor": "={{ { id: 'n8n:ref-onboarding-efx', email: 'efx-bot@team-group.com', display: 'Ref Onboarding via EFX (n8n)' } }}",
+            "idempotencyKey": "={{ 'idsetup-' + $('Build DSS user + password').item.json.workflowId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "siteDocsWorkerId",
+              "displayName": "siteDocsWorkerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "siteDocsJobCode",
+              "displayName": "siteDocsJobCode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dssUsername",
+              "displayName": "dssUsername",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dssPassword",
+              "displayName": "dssPassword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "setupNotes",
+              "displayName": "setupNotes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "submit-idsetup",
+      "name": "Forms · Submit ID Setup",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        2100,
+        -80
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "**Forms · Submit ID Setup** (sub-workflow 11) — the write-back. Sends exactly the r2 `id_setup` required keys; **no `internalEmployeeId`** (Forms uses the pre-assigned one). Forms then appends *ID Setup Results*, moves the step to \"HR Verification Needed\" and emails HR itself — no Gmail node needed here. `idempotencyKey` per workflow makes a re-run within 10 min a no-op.",
+        "width": 480,
+        "height": 170,
+        "color": 6
+      },
+      "id": "sticky-n-forms",
+      "name": "n-forms",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2100,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "done",
+      "name": "Done — Forms advanced to HR Verification",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2380,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// One error email per failed node. $json.error is set by \"On Error → Continue (using error output)\"; the node name tells you where it broke.\nconst j = $input.first().json;\nconst ev = (() => { try { return $('Normalise event').item.json; } catch (e) { return {}; } })();\nconst where = j.__failedNode || 'see execution';\nconst msg = String((j.error && j.error.message) || j.error || JSON.stringify(j).slice(0, 500));\nreturn [{ json: {\n  subject: '[EFX onboarding ref] FAILED — ' + (ev.employeeName || ev.workflowId || 'unknown') + ' @ ' + where,\n  html: '<p><strong>Onboarding automation failed</strong></p><ul><li>Workflow: ' + (ev.workflowId || 'n/a') + '</li><li>Employee: ' + (ev.employeeName || 'n/a') + ' (#' + (ev.internalEmployeeId || 'n/a') + ')</li><li>Site: ' + (ev.siteName || 'n/a') + '</li><li>Failed at: ' + where + '</li></ul><pre>' + msg.replace(/</g, '&lt;') + '</pre><p>n8n execution ' + $execution.id + ' · ' + $workflow.name + '</p><p>Nothing was written to Forms unless the failure is at \"Forms · Submit ID Setup\" (check the ID Setup Results sheet). SiteDocs/Litmos objects created before the failure may need manual cleanup.</p>'\n} }];"
+      },
+      "id": "build-err",
+      "name": "Build error email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "dbinns@team-group.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "gmail-err",
+      "name": "Gmail: error → dbinns",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1340,
+        420
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ESH5aDZWt0qo7oKD",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "**Error branch** — every external call has *On Error → Continue (using error output)* wired here. One email per failure, to **dbinns only** until George approves recipients. Consider also setting *Settings → Error workflow* = global handler for Code-node throws (title mapper, missing SiteDocs id).",
+        "width": 520,
+        "height": 130,
+        "color": 3
+      },
+      "id": "sticky-n-err",
+      "name": "n-err",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1580,
+        380
+      ]
+    }
+  ],
+  "connections": {
+    "Every minute": {
+      "main": [
+        [
+          {
+            "node": "Load cursor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load cursor": {
+      "main": [
+        [
+          {
+            "node": "Router: n8n_events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router: n8n_events": {
+      "main": [
+        [
+          {
+            "node": "Normalise event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise event": {
+      "main": [
+        [
+          {
+            "node": "Hourly?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hourly?": {
+      "main": [
+        [
+          {
+            "node": "Map title codes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Salary flow — not built yet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map title codes": {
+      "main": [
+        [
+          {
+            "node": "SiteDocs: Create Worker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SiteDocs: Create Worker": {
+      "main": [
+        [
+          {
+            "node": "Litmos: Find Manager",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build error email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Litmos: Find Manager": {
+      "main": [
+        [
+          {
+            "node": "Resolve Manager ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build error email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Manager ID": {
+      "main": [
+        [
+          {
+            "node": "Build DSS user + password",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build DSS user + password": {
+      "main": [
+        [
+          {
+            "node": "Litmos: Create User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Litmos: Create User": {
+      "main": [
+        [
+          {
+            "node": "Forms · Submit ID Setup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build error email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forms · Submit ID Setup": {
+      "main": [
+        [
+          {
+            "node": "Done — Forms advanced to HR Verification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build error email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build error email": {
+      "main": [
+        [
+          {
+            "node": "Gmail: error → dbinns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "<<ERROR_WORKFLOW_ID>>"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

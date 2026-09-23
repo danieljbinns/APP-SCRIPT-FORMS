@@ -1,0 +1,17 @@
+{
+  "scriptId": "REPLACE_ME_efx_test_script_id__NEVER_PROD",
+  "rootDir": "",
+  "scriptExtensions": [
+    ".js",
+    ".gs"
+  ],
+  "htmlExtensions": [
+    ".html"
+  ],
+  "jsonExtensions": [
+    ".json"
+  ],
+  "filePushOrder": [],
+  "skipSubdirectories": false,
+  "_note": "EFX FORK. scriptId intentionally blank. Create a NEW script with `clasp create --type webapp --title \"Employee Forms EFX TEST\"` tomorrow. Never point this at prod 1AuIbJl1jR\u2026."
+}

@@ -1,0 +1,283 @@
+{
+  "name": "Forms · Create Initial Request",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Forms · Create Initial Request → `n8n_createInitialRequest(actor, data, include)`\nRuns the **real** `submitInitialRequest` (same emails, same tasks, same sheets). Returns `workflowId` (`NEW_EMP_…`), `formId`, **`internalEmployeeId`** (5-digit, minted at submit), `message` — flattened by the Router.\n\n**Required** (FormContracts r2 `new_hire`): `firstName lastName hireDate(yyyy-MM-dd) requesterEmail reportingManagerName reportingManagerEmail positionTitle siteName(reference.sites) jobSiteNumber(reference.jobNumbers) employmentType(Hourly|Salary) employeeType(Direct Hire|Agency) newHireOrRehire(New Hire|Rehire) systemAccess(Yes|No)`\nOther enums: `computerRequestType/phoneRequestType(New|Reassignment|'')`, `computerType(Chromebook|Windows|Mac|'')`, `googleDomain(team-group.com|robinsonsolutions.com|industrialappliedtech.com|stgroup.ca|'')`. `systems[]` ⊂ ADP Supervisor Access, BOSS, CAA, Delivery, Fleetio, Google Account, Incidents, Central Purchasing/Jonas, Net Promoter Score, SiteDocs Supervisor; `equipment[]` ⊂ Business Cards, Computer, Credit Card, Mobile Phone, SiteDocs Tablet, Vehicle. String values may not start with `= + - @` (formula-injection guard).\n**Optional inputs exposed here:** `requesterName dateRequested systems[] equipment[] plan306090 jrRequired jrAssignment(reference.jrs) comments`\n**Anything else from the optional list** (middleName, googleEmail, computer*, creditCard*, phone*, boss*, jonasJobNumbers, adpSites, department, purchasingSites, adpSalaryAccess, bossTrainingOnly, existingInternalEmployeeId) → put in `extra` as a JSON object. Unknown keys fail with `E_VALIDATION` (fields listed).\n`includeRecord:true` adds `record` (header-keyed row from *Initial Requests*).\nContract hash drift: call `n8n_contracts` and compare `forms[].hash` if this ever starts failing.",
+        "width": 920,
+        "height": 380,
+        "color": 4
+      },
+      "id": "sticky-contract",
+      "name": "contract",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Attribution\nPass `actor` from the calling workflow so Forms records who did it, e.g.\n`{{ { id: 'n8n:' + $workflow.name, email: 'efx-bot@team-group.com', display: $workflow.name + ' (n8n)' } }}`\nIf omitted the Router attributes the call to itself. `idempotencyKey` (optional) makes a retry replay the first result for 10 min.\nErrors throw as `EFX <CODE>: message` — attach an error output or error workflow on the calling node.",
+        "width": 520,
+        "height": 220,
+        "color": 5
+      },
+      "id": "sticky-actor",
+      "name": "actor",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        340,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "firstName",
+              "type": "string"
+            },
+            {
+              "name": "lastName",
+              "type": "string"
+            },
+            {
+              "name": "hireDate",
+              "type": "string"
+            },
+            {
+              "name": "requesterEmail",
+              "type": "string"
+            },
+            {
+              "name": "requesterName",
+              "type": "string"
+            },
+            {
+              "name": "reportingManagerName",
+              "type": "string"
+            },
+            {
+              "name": "reportingManagerEmail",
+              "type": "string"
+            },
+            {
+              "name": "positionTitle",
+              "type": "string"
+            },
+            {
+              "name": "siteName",
+              "type": "string"
+            },
+            {
+              "name": "jobSiteNumber",
+              "type": "string"
+            },
+            {
+              "name": "employmentType",
+              "type": "string"
+            },
+            {
+              "name": "employeeType",
+              "type": "string"
+            },
+            {
+              "name": "newHireOrRehire",
+              "type": "string"
+            },
+            {
+              "name": "systemAccess",
+              "type": "string"
+            },
+            {
+              "name": "systems",
+              "type": "array"
+            },
+            {
+              "name": "equipment",
+              "type": "array"
+            },
+            {
+              "name": "plan306090",
+              "type": "string"
+            },
+            {
+              "name": "jrRequired",
+              "type": "string"
+            },
+            {
+              "name": "jrAssignment",
+              "type": "string"
+            },
+            {
+              "name": "dateRequested",
+              "type": "string"
+            },
+            {
+              "name": "comments",
+              "type": "string"
+            },
+            {
+              "name": "extra",
+              "type": "object"
+            },
+            {
+              "name": "includeRecord",
+              "type": "boolean"
+            },
+            {
+              "name": "actor",
+              "type": "object"
+            },
+            {
+              "name": "idempotencyKey",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "trigger",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// helpers\nconst inp = $input.first().json;\nconst empty = v => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);\nconst pick = (keys) => { const o = {}; for (const k of keys) if (!empty(inp[k])) o[k] = inp[k]; return o; };\nconst asObj = (v) => { if (empty(v)) return {}; if (typeof v === 'string') { try { return JSON.parse(v); } catch (e) { throw new Error('EFX E_VALIDATION: JSON field is not valid JSON'); } } return v; };\nconst asArr = (v) => empty(v) ? [] : (Array.isArray(v) ? v : String(v).split(',').map(s => s.trim()).filter(Boolean));\nconst bool = (v, d) => empty(v) ? d : (v === true || String(v).toLowerCase() === 'true');\nconst passthru = { actor: empty(inp.actor) ? undefined : inp.actor, idempotencyKey: empty(inp.idempotencyKey) ? '' : String(inp.idempotencyKey) };\n\n// new_hire contract (FormContracts.js, verified:true). Unknown keys are rejected by Forms with E_VALIDATION → only pass contract keys.\nconst REQUIRED = ['firstName','lastName','hireDate','requesterEmail','reportingManagerName','reportingManagerEmail','positionTitle','siteName','jobSiteNumber','employmentType','employeeType','newHireOrRehire','systemAccess'];\nconst OPTIONAL = ['requesterName','dateRequested','middleName','preferredName','systems','equipment','googleEmail','googleDomain','computerRequestType','computerType','computerPreviousUser','computerPreviousType','computerSerialNumber','office365Required','creditCardUSA','creditCardLimitUSA','creditCardCanada','creditCardLimitCanada','creditCardHomeDepot','creditCardLimitHomeDepot','phoneRequestType','phonePreviousUser','phonePreviousNumber','bossJobSites','bossCostSheet','bossCostSheetJobs','bossTripReports','bossGrievances','jonasJobNumbers','jrRequired','jrAssignment','plan306090','comments','adpSites','department','purchasingSites','adpSalaryAccess','bossTrainingOnly','existingInternalEmployeeId'];\nconst data = Object.assign({}, asObj(inp.extra), pick(REQUIRED.concat(OPTIONAL)));\nif (!empty(inp.systems)) data.systems = asArr(inp.systems);\nif (!empty(inp.equipment)) data.equipment = asArr(inp.equipment);\nif (empty(data.dateRequested)) data.dateRequested = $now.toFormat('yyyy-MM-dd');\nconst missing = REQUIRED.filter(k => empty(data[k]));\nif (missing.length) throw new Error('EFX E_VALIDATION: new_hire missing required field(s): ' + missing.join(', '));\nconst unknown = Object.keys(data).filter(k => !REQUIRED.includes(k) && !OPTIONAL.includes(k));\nif (unknown.length) throw new Error('EFX E_VALIDATION: new_hire unknown field(s) (not in contract): ' + unknown.join(', '));\nconst include = bool(inp.includeRecord, false) ? ['record'] : [];\nreturn [{ json: Object.assign({ fn: 'n8n_createInitialRequest', args: [data, include] }, passthru) }];"
+      },
+      "id": "build-args",
+      "name": "Build args",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -60,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "={{ $json.fn }}",
+            "args": "={{ $json.args }}",
+            "actor": "={{ $json.actor }}",
+            "idempotencyKey": "={{ $json.idempotencyKey }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "call-router",
+      "name": "EFX · Router",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Build args",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build args": {
+      "main": [
+        [
+          {
+            "node": "EFX · Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

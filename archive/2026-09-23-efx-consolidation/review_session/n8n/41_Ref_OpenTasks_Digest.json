@@ -1,0 +1,344 @@
+{
+  "name": "Ref · Open Tasks Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 41 · Reference — Open action-items digest (inactive)\nWeekdays 08:00 → **Forms · List Tasks** (`status: Open`) → group by *Assigned To* → **one email per assignee** in the CCF-reminder style (`JLkRRVF6n5Kcwswy`).\n\n**Safety:** `recipientOverride` in *Workflow Configuration* is **dbinns@team-group.com** — every digest goes there (subject prefixed `[TEST → <assignee>]`) until George/HR approve real recipients; then blank it. `portalUrl` = the tier's portal `/exec` URL for deep links (placeholder). `minTasks` lets you skip people with fewer open items.\nPlaceholders: `<<LIST_TASKS_WORKFLOW_ID>>` (imported 15), `<<PORTAL_EXEC_URL>>`, `<<ERROR_WORKFLOW_ID>>`. Gmail credential = team \"Gmail account\".",
+        "width": 1100,
+        "height": 300,
+        "color": 4
+      },
+      "id": "sticky-overview",
+      "name": "overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        -520
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "schedule",
+      "name": "Weekdays at 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c081",
+              "name": "recipientOverride",
+              "value": "dbinns@team-group.com",
+              "type": "string"
+            },
+            {
+              "id": "c082",
+              "name": "portalUrl",
+              "value": "<<PORTAL_EXEC_URL>>",
+              "type": "string"
+            },
+            {
+              "id": "c083",
+              "name": "minTasks",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "c084",
+              "name": "ccList",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "config",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<LIST_TASKS_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "Open",
+            "actor": "={{ { id: 'n8n:ref-open-tasks-digest', email: 'efx-bot@team-group.com', display: 'Ref Open Tasks Digest (n8n)' } }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "formType",
+              "displayName": "formType",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "assignedTo",
+              "displayName": "assignedTo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "taskId",
+              "displayName": "taskId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "list-tasks",
+      "name": "Forms · List Tasks",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Forms · List Tasks** (sub-workflow 15) → `n8n_listTasks(actor, { status:'Open' })` → `{ tasks[], count }`. Add `formType` here to digest only one kind (e.g. `jr_title`).",
+        "width": 420,
+        "height": 110,
+        "color": 6
+      },
+      "id": "sticky-n-list",
+      "name": "n-list",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -180,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Group open action items by Assigned To (email). Mirrors \"Group by Lead\" in the CCF reminder workflow.\nconst r = $input.first().json;               // Forms · List Tasks output: { ok, tasks[], count, ... }\nconst cfg = $('Workflow Configuration').first().json;\nconst tasks = Array.isArray(r.tasks) ? r.tasks : [];\nconst groups = {};\nconst ageDays = (iso) => { const t = new Date(iso).getTime(); return isNaN(t) ? null : Math.floor((Date.now() - t) / 86400000); };\nfor (const t of tasks) {\n  const assignee = String(t.assignedTo || '').trim().toLowerCase();\n  if (!assignee || !assignee.includes('@')) continue;\n  if (!groups[assignee]) groups[assignee] = { assignee, tasks: [] };\n  groups[assignee].tasks.push({\n    taskId: t.taskId, workflowId: t.workflowId, category: t.category, name: t.name, formType: t.formType,\n    items: Array.isArray(t.description) ? t.description.filter(d => typeof d === 'string' && !d.startsWith('__')) : [],\n    createdDate: t.createdDate, ageDays: ageDays(t.createdDate), hasDraft: !!t.draft\n  });\n}\nconst out = Object.values(groups).map(g => { g.tasks.sort((a, b) => (b.ageDays || 0) - (a.ageDays || 0)); g.count = g.tasks.length; g.oldestDays = g.tasks[0] ? g.tasks[0].ageDays : 0; return g; });\nif (cfg.minTasks && Number(cfg.minTasks) > 1) return out.filter(g => g.count >= Number(cfg.minTasks)).map(g => ({ json: g }));\nreturn out.map(g => ({ json: g }));"
+      },
+      "id": "group",
+      "name": "Group by Assigned To",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Build one HTML email per assignee — same visual style as the CCF Tracker reminder (header bar, item cards, footer).\nconst g = $input.item.json;\nconst cfg = $('Workflow Configuration').first().json;\nconst count = g.count;\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;');\nconst portal = cfg.portalUrl && !String(cfg.portalUrl).startsWith('<<') ? String(cfg.portalUrl) : '';\nconst subject = 'Employee Forms Reminder: ' + count + ' open action item' + (count !== 1 ? 's' : '') + ' assigned to you';\nlet html = '<html><head><style>' +\n  'body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }' +\n  '.header { background-color: #f4f4f4; padding: 15px; border-left: 4px solid #0066cc; }' +\n  '.content { padding: 20px; }' +\n  '.task-item { margin-bottom: 15px; padding: 10px; background-color: #f9f9f9; border-radius: 5px; }' +\n  '.age { color: #d9534f; font-weight: bold; }' +\n  '.footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 0.9em; color: #666; }' +\n  '</style></head><body>' +\n  '<div class=\"header\"><h2>Employee Forms – Open Action Items Reminder</h2></div><div class=\"content\">' +\n  '<p>Hello,</p><p>You have <strong>' + count + '</strong> open action item' + (count !== 1 ? 's' : '') + ' in the Employee Forms portal' + (g.oldestDays ? ' (oldest: <span class=\"age\">' + g.oldestDays + ' days</span>)' : '') + '.</p>' +\n  '<p>Please review and complete the following:</p><ul>';\nfor (const t of g.tasks) {\n  const link = portal ? '<a href=\"' + portal + '?page=requestdetails&id=' + encodeURIComponent(t.workflowId) + '\" target=\"_blank\">' + esc(t.workflowId) + '</a>' : esc(t.workflowId);\n  html += '<li class=\"task-item\"><strong>' + esc(t.category || t.formType) + ':</strong> ' + esc(t.name) + '<br>' +\n    '<strong>Workflow:</strong> ' + link + ' &nbsp;·&nbsp; <strong>Task:</strong> ' + esc(t.taskId) + '<br>' +\n    '<strong>Open for:</strong> <span class=\"age\">' + (t.ageDays == null ? '?' : t.ageDays) + ' day' + (t.ageDays === 1 ? '' : 's') + '</span>' + (t.hasDraft ? ' &nbsp;·&nbsp; draft saved' : '') +\n    (t.items.length ? '<br><small>' + t.items.map(esc).join(' · ') + '</small>' : '') + '</li>';\n}\nhtml += '</ul>' +\n  (portal ? '<p><strong>LINK TO PORTAL:</strong><br><a href=\"' + portal + '?page=dashboard\" target=\"_blank\">Employee Forms – My Tasks</a></p>' : '') +\n  '<div class=\"footer\"><p>This is an automated reminder from the Employee Forms portal (via n8n). Reply to IT if a task is no longer yours.</p></div>' +\n  '</div></body></html>';\nconst override = cfg.recipientOverride && !String(cfg.recipientOverride).startsWith('<<') ? String(cfg.recipientOverride) : '';\nreturn { assignee: g.assignee, sendTo: override || g.assignee, overridden: !!override, subject: (override ? '[TEST → ' + g.assignee + '] ' : '') + subject, html, count };"
+      },
+      "id": "email",
+      "name": "Build Email Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Group by Assigned To** — one item per assignee with their tasks (oldest first, age in days, checklist items, draft flag). **Build Email Content** runs once per item and renders the CCF-style HTML; when `recipientOverride` is set the real assignee is only shown in the subject.",
+        "width": 560,
+        "height": 130,
+        "color": 6
+      },
+      "id": "sticky-n-email",
+      "name": "n-email",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        100,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.sendTo }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false,
+          "ccList": "={{ $('Workflow Configuration').first().json.ccList }}"
+        }
+      },
+      "id": "gmail",
+      "name": "Send Reminder Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        600,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ESH5aDZWt0qo7oKD",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Weekdays at 08:00": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Forms · List Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forms · List Tasks": {
+      "main": [
+        [
+          {
+            "node": "Group by Assigned To",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group by Assigned To": {
+      "main": [
+        [
+          {
+            "node": "Build Email Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email Content": {
+      "main": [
+        [
+          {
+            "node": "Send Reminder Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "<<ERROR_WORKFLOW_ID>>"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
