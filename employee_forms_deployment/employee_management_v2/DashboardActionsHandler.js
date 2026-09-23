@@ -20,7 +20,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 function adminDeleteWorkflows(workflowIds) {
-  const userEmail = Session.getActiveUser().getEmail();
+  const userEmail = Actor.principal(); // authorization (EFX)
   try {
     if (!AccessControlService.isAdmin(userEmail)) {
       return { success: false, message: 'Permission denied. Admin access required.' };

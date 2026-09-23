@@ -32,7 +32,7 @@ function serveTerminationRequest() {
 function submitTerminationRequest(formData) {
   try {
     rawLog('submitTerminationRequest', formData);
-    const workflowId = createWorkflow('TERM', 'End of Employment Request', formData.reqEmail || Session.getActiveUser().getEmail());
+    const workflowId = createWorkflow('TERM', 'End of Employment Request', formData.reqEmail || Actor.email());
     const formId = generateFormId('TERM_REQ');
     
     formData.workflowId = workflowId;
@@ -232,7 +232,7 @@ function getTerminationData(workflowId) {
  * Handle HR Approval Submission
  */
 function submitTerminationApproval(formData) {
-  const caller = Session.getActiveUser().getEmail();
+  const caller = Actor.principal(); // authorization: real session identity (EFX)
   const callerRole = AccessControlService.getUserRolePayload(caller);
   if (!callerRole.isHR && !callerRole.isAdmin) {
     return { success: false, message: 'Access denied.' };
@@ -256,7 +256,7 @@ function submitTerminationApproval(formData) {
       }
       // Record approval inside lock so duplicate check and write are atomic
       addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.TERMINATION_APPROVALS, [
-        workflowId, formId, new Date(), decision, notes, 'YES', Session.getActiveUser().getEmail()
+        workflowId, formId, new Date(), decision, notes, 'YES', Actor.email()
       ]);
     } finally {
       lock.releaseLock();

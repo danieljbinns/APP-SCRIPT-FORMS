@@ -204,7 +204,7 @@ function getITContextData(workflowId) {
  * @returns {{ success: boolean, message: string }}
  */
 function submitITSetup(formData) {
-  const caller = Session.getActiveUser().getEmail();
+  const caller = Actor.principal(); // authorization: real session identity (EFX)
   const callerRole = AccessControlService.getUserRolePayload(caller);
   if (!callerRole.isIT && !callerRole.isAdmin) {
     return { success: false, message: 'Access denied.' };
@@ -292,11 +292,11 @@ function submitITSetup(formData) {
       formData.Delivery_App_Access,
       formData.Net_Promoter_Score_Access,
       formData.IT_Notes || '',
-      Session.getActiveUser().getEmail(),
+      Actor.email(),
       JSON.stringify(bossDetails)   // col 22 — BOSS committee/cost sheet/trip/grievances
     ];
     
-    const actingUser = Session.getActiveUser().getEmail();
+    const actingUser = Actor.email();
 
     if (existingITRowIndex !== -1 && itSheet) {
       // UPDATE path — overwrite existing row in-place.

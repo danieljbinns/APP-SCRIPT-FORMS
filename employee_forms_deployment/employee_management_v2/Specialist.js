@@ -96,7 +96,7 @@ function submitSpecialistForm(formData) {
         workflowId, formId, new Date(),
         details.siteDocsConfirmed ? 'Yes' : 'No',
         details.dssConfirmed ? 'Yes' : 'No',
-        formData.notes || '', Session.getActiveUser().getEmail()
+        formData.notes || '', Actor.email()
       ]);
     } else if (dept === 'safetyterm') {
       let details = {};
@@ -105,12 +105,12 @@ function submitSpecialistForm(formData) {
         workflowId, formId, new Date(),
         details.siteDocsRemoved ? 'Yes' : 'No',
         details.bossDeactivated ? 'Yes' : 'No',
-        formData.notes || '', Session.getActiveUser().getEmail()
+        formData.notes || '', Actor.email()
       ]);
     } else {
       resultsSheet.appendRow([
         workflowId, formId, new Date(),
-        formData.details || JSON.stringify(formData), formData.notes || '', Session.getActiveUser().getEmail()
+        formData.details || JSON.stringify(formData), formData.notes || '', Actor.email()
       ]);
     }
 

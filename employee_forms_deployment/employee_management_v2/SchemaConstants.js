@@ -109,7 +109,21 @@ const SCHEMA = {
     PURCHASING_SITES:      51,  // csv      — Purchasing Sites
     STATUS:                52,  // string   — Status
     ADP_SALARY_ACCESS:     53,  // boolean  — ADP Salary Access
-    BOSS_TRAINING_ONLY:    54   // string   — BOSS Training User Only (Yes/No)
+    BOSS_TRAINING_ONLY:    54,  // string   — BOSS Training User Only (Yes/No)
+    INTERNAL_EMP_ID:       55   // number   — Internal Employee ID (EFX: allocated at submit; header 'Internal Employee ID')
+  },
+
+  // ─────────────────────────────────────────────
+  // EMPLOYEE IDS  (7 columns) — EFX allocator registry (EmployeeIdRegistry.js)
+  // ─────────────────────────────────────────────
+  EMPLOYEE_IDS: {
+    INTERNAL_EMP_ID: 0,  // number   — Internal Employee ID
+    WORKFLOW_ID:     1,  // string   — Workflow ID
+    EMPLOYEE_NAME:   2,  // string   — Employee Name
+    ALLOCATED_AT:    3,  // datetime — Allocated At
+    ALLOCATED_BY:    4,  // string   — Allocated By (Actor)
+    SOURCE:          5,  // string   — submitInitialRequest | submitEmployeeIDSetup | rehire-carry | efx.employeeId.allocate
+    NOTE:            6   // string   — Note
   },
 
   // ─────────────────────────────────────────────

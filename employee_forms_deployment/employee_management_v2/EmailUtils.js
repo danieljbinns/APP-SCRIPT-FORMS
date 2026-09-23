@@ -454,6 +454,16 @@ function getWorkflowContext(workflowId) {
         }
     }
 
+    // ── AUGMENT 2b (EFX): pre-assigned Internal Employee ID ─────────────────────────
+    // Exposed as a SEPARATE field so email templates are unchanged: hasId (EmailTemplates.js:114) still
+    // means "ID Setup step completed". Automation reads preassignedEmployeeId; humans see it once ID Setup runs.
+    try {
+        if (typeof EmployeeIdRegistry !== 'undefined') {
+            const _pre = EmployeeIdRegistry.get(workflowId);
+            if (_pre) context.preassignedEmployeeId = _pre;
+        }
+    } catch (e) { /* non-fatal */ }
+
     // ── AUGMENT 3: IT Results ─────────────────────────────────────────────────────
     // Written by submitITSetup() (ITSetupHandler.js) for New Hire and Equipment Request.
     // For CHANGE_ workflows, written by closeActionItem() when the IT action item closes.
@@ -1051,6 +1061,22 @@ function createEmailTemplateV2(subject, body, formUrl, contextData, opts) {
  */
 function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
   try {
+    // EFX: idempotent — if a Safety Onboarding task already exists for this workflow (open OR closed, e.g. created at
+    // submit under SAFETY_TRAINING_AT_SUBMIT and already closed by n8n), do not create/email a second one.
+    try {
+      var _aiSh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+      if (_aiSh) {
+        var _AI = SCHEMA.ACTION_ITEMS, _rows = _aiSh.getDataRange().getValues();
+        for (var _i = SCHEMA.ROW.FIRST_DATA; _i < _rows.length; _i++) {
+          if (String(_rows[_i][_AI.WORKFLOW_ID]) === String(workflowId) &&
+              (String(_rows[_i][_AI.FORM_TYPE]) === 'safety_onboarding' || String(_rows[_i][_AI.CATEGORY]) === 'Safety')) {
+            Logger.log('[sendSafetyOnboardingEmail] Safety task already exists for ' + workflowId + ' (' + _rows[_i][_AI.TASK_ID] + ', ' + _rows[_i][_AI.STATUS] + ') — skipping duplicate');
+            return;
+          }
+        }
+      }
+    } catch (_dedupeErr) { Logger.log('[sendSafetyOnboardingEmail] dedupe check failed (continuing): ' + _dedupeErr.message); }
+
     const siteDocsJobCode = (setupData && setupData.siteDocsJobCode) || (function() {
       try {
         var sh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);

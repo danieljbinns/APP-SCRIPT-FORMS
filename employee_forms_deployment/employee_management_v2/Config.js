@@ -35,6 +35,14 @@ const CONFIG = {
   get MAINTENANCE_MODE() {
     return ConfigurationService.getSetting('MAINTENANCE_MODE') === 'true';
   },
+
+  // ── EFX (n8n integration) flags — all default off/empty; set via Setup.js setters ──
+  // Create the Safety Onboarding action item at initial submit (default: legacy timing).
+  get SAFETY_TRAINING_AT_SUBMIT() {
+    return ConfigurationService.getSetting('SAFETY_TRAINING_AT_SUBMIT') === 'true';
+  },
+  // Optional signed webhook for Raw Log events (RawLog.js fan-out). Empty = disabled.
+  get EFX_EVENT_WEBHOOK_URL()    { return ConfigurationService.getSetting('EFX_EVENT_WEBHOOK_URL') || ''; },
   
   // ==========================================================================
   // SHEET NAMES
@@ -65,7 +73,9 @@ const CONFIG = {
     IT_CONFIRMATION_RESULTS: 'IT Confirmation Results',
     // Safety Onboarding and Safety Termination removed — now Action Items with formType.
     FORM_EDIT_LOG: 'Form Edit Log',
-    AUDIT_LOG: 'Audit Log'
+    AUDIT_LOG: 'Audit Log',
+    EMPLOYEE_IDS: 'Employee IDs',   // EFX allocator registry (self-creating)
+    RAW_LOG: 'Raw Log'              // EFX event feed (self-creating; RawLog.js)
   },
   
   // ==========================================================================

@@ -91,7 +91,7 @@ function getHRVerificationData(workflowId) {
 }
 
 function submitHRVerification(formData) {
-  const caller = Session.getActiveUser().getEmail();
+  const caller = Actor.principal(); // authorization: real session identity (EFX)
   const callerRole = AccessControlService.getUserRolePayload(caller);
   if (!callerRole.isHR && !callerRole.isAdmin) {
     return { success: false, message: 'Access denied.' };
@@ -186,7 +186,7 @@ function submitHRVerification(formData) {
     }
     
     // Build notes — flag if hire date was changed during verification
-    const actingUser = Session.getActiveUser().getEmail();
+    const actingUser = Actor.email();
 
     let verificationNotes = formData.notes || '';
     if (formData.hireDate && originalHireDate && formData.hireDate !== originalHireDate) {

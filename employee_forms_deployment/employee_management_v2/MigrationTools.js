@@ -892,3 +892,83 @@ function migrateProdDeployApply() {
   Logger.log('[migrateProdDeployApply] DONE — category renames applied: ' + cats.changes);
   return { applied: true, headers: headers, categoryRenames: cats };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EFX migration — sheet changes for the n8n integration (idempotent, dry-run first)
+//   1. 'Initial Requests': append header 'Internal Employee ID' (col 56) if missing
+//   2. 'Employee IDs' registry sheet: create with headers if missing; optional backfill from 'ID Setup Results'
+//   3. 'Raw Log': append headers 'Event ID', 'Kind' (cols 6-7) if missing
+// Run: migrateEfxDryRun()  → inspect log →  migrateEfxApply()  (→ migrateEfxBackfillEmployeeIds() optional)
+// Never touches existing data cells; only headers/new sheets/appended rows.
+// ═══════════════════════════════════════════════════════════════════════════
+function migrateEfx(dryRun) {
+  if (dryRun === undefined) dryRun = true;
+  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var report = { mode: dryRun ? 'dry_run' : 'applied', spreadsheetId: CONFIG.SPREADSHEET_ID, changes: [] };
+  function note(s) { report.changes.push(s); Logger.log('[migrateEfx] ' + (dryRun ? 'WOULD ' : 'DID ') + s); }
+
+  // 1. Initial Requests header
+  var ir = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
+  if (!ir) throw new Error('Initial Requests sheet not found');
+  var irHeaders = ir.getRange(1, 1, 1, ir.getLastColumn()).getValues()[0];
+  var idx = irHeaders.indexOf('Internal Employee ID');
+  if (idx === -1) {
+    var target = SCHEMA.INITIAL_REQUESTS.INTERNAL_EMP_ID + 1; // 56
+    if (ir.getLastColumn() + 1 !== target) note('WARNING: Initial Requests has ' + ir.getLastColumn() + ' columns; schema expects header at col ' + target + ' — verify BOSS Training User Only is col 55 before applying');
+    note("add header 'Internal Employee ID' at Initial Requests col " + target);
+    if (!dryRun) ir.getRange(1, target).setValue('Internal Employee ID');
+  } else if (idx !== SCHEMA.INITIAL_REQUESTS.INTERNAL_EMP_ID) {
+    note("WARNING: 'Internal Employee ID' exists at index " + idx + ' but SCHEMA says ' + SCHEMA.INITIAL_REQUESTS.INTERNAL_EMP_ID + ' — fix SchemaConstants, do not move data');
+  } else note("'Internal Employee ID' header already present (no-op)");
+
+  // 2. Employee IDs registry
+  var reg = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEE_IDS);
+  if (!reg) {
+    note("create sheet 'Employee IDs' with headers");
+    if (!dryRun) {
+      reg = ss.insertSheet(CONFIG.SHEETS.EMPLOYEE_IDS);
+      reg.appendRow(['Internal Employee ID', 'Workflow ID', 'Employee Name', 'Allocated At', 'Allocated By', 'Source', 'Note']);
+      reg.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
+      reg.setFrozenRows(1);
+    }
+  } else note("'Employee IDs' sheet already present (no-op)");
+
+  // 3. Raw Log headers
+  var rl = ss.getSheetByName(CONFIG.SHEETS.RAW_LOG);
+  if (rl) {
+    var rlHeaders = rl.getRange(1, 1, 1, Math.max(rl.getLastColumn(), 1)).getValues()[0];
+    if (rlHeaders.indexOf('Event ID') === -1) {
+      note("add headers 'Event ID','Kind' at Raw Log cols 6-7");
+      if (!dryRun) rl.getRange(1, 6, 1, 2).setValues([['Event ID', 'Kind']]);
+    } else note("Raw Log already has 'Event ID' (no-op)");
+  } else note("Raw Log sheet absent — RawLog.js creates it with all 7 headers on first write (no-op)");
+
+  return report;
+}
+function migrateEfxDryRun() { return migrateEfx(true); }
+function migrateEfxApply()  { return migrateEfx(false); }
+
+/** Optional: seed 'Employee IDs' from 'ID Setup Results' so max() reads are cheap and the registry is complete. Idempotent. */
+function migrateEfxBackfillEmployeeIds(dryRun) {
+  if (dryRun === undefined) dryRun = true;
+  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var reg = ss.getSheetByName(CONFIG.SHEETS.EMPLOYEE_IDS);
+  if (!reg) throw new Error("Run migrateEfxApply() first — 'Employee IDs' missing");
+  var have = {};
+  reg.getDataRange().getValues().slice(1).forEach(function (r) { if (r[1]) have[String(r[1])] = true; });
+  var idsh = ss.getSheetByName(CONFIG.SHEETS.ID_SETUP_RESULTS);
+  var rows = idsh ? idsh.getDataRange().getValues().slice(1) : [];
+  var ID = SCHEMA.ID_SETUP_RESULTS, added = 0, skipped = 0, out = [];
+  rows.forEach(function (r) {
+    var wf = String(r[ID.WORKFLOW_ID] || ''), id = r[ID.INTERNAL_EMP_ID];
+    if (!wf || id === '' || isNaN(parseInt(id, 10))) { skipped++; return; }
+    if (have[wf]) { skipped++; return; }
+    out.push([String(id), wf, '', r[ID.SUBMISSION_TS] || '', r[ID.SUBMITTED_BY] || 'backfill', 'backfill:ID Setup Results', '']);
+    have[wf] = true; added++;
+  });
+  if (!dryRun && out.length) reg.getRange(reg.getLastRow() + 1, 1, out.length, 7).setValues(out);
+  Logger.log('[migrateEfxBackfill] ' + (dryRun ? 'WOULD add ' : 'added ') + added + ', skipped ' + skipped);
+  return { mode: dryRun ? 'dry_run' : 'applied', added: added, skipped: skipped };
+}
+function migrateEfxBackfillDryRun() { return migrateEfxBackfillEmployeeIds(true); }
+function migrateEfxBackfillApply()  { return migrateEfxBackfillEmployeeIds(false); }

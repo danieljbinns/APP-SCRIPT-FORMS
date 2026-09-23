@@ -16,7 +16,7 @@ function servePositionSiteChange() {
 function submitPositionChangeRequest(formData) {
   try {
     rawLog('submitPositionChangeRequest', formData);
-    const workflowId = createWorkflow('CHANGE', 'Position/Site Change Request', formData.reqEmail || Session.getActiveUser().getEmail());
+    const workflowId = createWorkflow('CHANGE', 'Position/Site Change Request', formData.reqEmail || Actor.email());
     const formId = generateFormId('POS_CHANGE');
 
     formData.workflowId = workflowId;
@@ -373,7 +373,7 @@ function getPositionChangeData(workflowId) {
  * @returns {{ success: boolean, message: string }}
  */
 function submitPositionChangeApproval(formData) {
-  const caller = Session.getActiveUser().getEmail();
+  const caller = Actor.principal(); // authorization: real session identity (EFX)
   const callerRole = AccessControlService.getUserRolePayload(caller);
   if (!callerRole.isHR && !callerRole.isAdmin) {
     return { success: false, message: 'Access denied.' };
@@ -400,7 +400,7 @@ function submitPositionChangeApproval(formData) {
       //          [5] ConfirmedTitle, [6] ConfirmedNewManager, [7] SubmittedBy
       addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGE_APPROVALS, [
         workflowId, formId, new Date(), decision, notes,
-        confirmedTitle || '', confirmedNewManager || '', Session.getActiveUser().getEmail()
+        confirmedTitle || '', confirmedNewManager || '', Actor.email()
       ]);
       // Flush before lock release so row is visible to same-execution reads
       SpreadsheetApp.flush();

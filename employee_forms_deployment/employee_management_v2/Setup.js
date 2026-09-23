@@ -439,5 +439,55 @@ function setJrTaskClosers(csv)    { var v = csv || ''; PropertiesService.getScri
 function getJrTaskClosers()        { return { value: PropertiesService.getScriptProperties().getProperty('JR_TASK_CLOSERS') || '' }; }
 // Shared secret for the doPost portal-automation endpoint (n8n). Set once, keep out of source.
 function setPortalSecret(s)        { var v = s || ''; PropertiesService.getScriptProperties().setProperty('PORTAL_SHARED_SECRET', v); Logger.log('PORTAL_SHARED_SECRET set (len ' + v.length + ')'); return { ok: true, length: v.length }; }
+
+// ── EFX (n8n integration) setters — run from the editor; values never live in the repo ──
+function setSafetyTrainingAtSubmit(on) { PropertiesService.getScriptProperties().setProperty('SAFETY_TRAINING_AT_SUBMIT', on ? 'true' : 'false'); return { SAFETY_TRAINING_AT_SUBMIT: !!on }; }
+function setEfxEventWebhook(url, kid, secret) {
+  var p = PropertiesService.getScriptProperties();
+  p.setProperty('EFX_EVENT_WEBHOOK_URL', url || ''); p.setProperty('EFX_EVENT_KID', kid || ''); p.setProperty('EFX_EVENT_SECRET', secret || '');
+  return { url: url || '', kid: kid || '', secretLen: String(secret || '').length };
+}
+function clearEfxEventWebhook() { return setEfxEventWebhook('', '', ''); }
+/** Editor smoke test for the n8n alias layer (no writes): ping + contracts + a dryRun close. */
+function efxSelfTest() {
+  var out = { ping: n8n_ping(), contracts: n8n_contracts().ok, dryRunClose: n8n_closeTask({ id: 'selftest' }, { taskId: 'TK-NONE', dryRun: true }) };
+  Logger.log(JSON.stringify(out).slice(0, 1500));
+  return out;
+}
 function getPortalSecretLen()      { return { length: (PropertiesService.getScriptProperties().getProperty('PORTAL_SHARED_SECRET') || '').length }; }
 function unsuppressEmails()       { PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE'); Logger.log('SUPPRESS_EMAILS_OVERRIDE cleared'); }
+
+/**
+ * efxSetScriptProperties(json)
+ * ---------------------------------------------------------------------------
+ * Generic, tier-agnostic bulk Script Property setter, callable via the Apps
+ * Script Execution API so a tier can be configured without hand-typing rows in
+ * the editor. Added for the EFX deployment automation.
+ *
+ * Unlike setupProdScriptProperties() this hardcodes NO ids, and it refuses to
+ * point a non-PROD script at the production spreadsheet.
+ *
+ * @param {Object|string} json  property map, or a JSON string of one
+ * @return {{ok:boolean, count:number, keys:string[]}}
+ */
+function efxSetScriptProperties(json) {
+  var PROD_SHEET_ID = '1kGjw8e-uIehaBemlsRZ4Yq1QrYOWkJvWzhKbgfl4Pxo';
+
+  var obj = (typeof json === 'string') ? JSON.parse(json) : json;
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    throw new Error('efxSetScriptProperties: expected an object or a JSON string of one');
+  }
+
+  if (obj.SPREADSHEET_ID === PROD_SHEET_ID && ENVIRONMENT !== 'PROD') {
+    throw new Error('efxSetScriptProperties: refusing to point a ' + ENVIRONMENT +
+                    ' script at the PROD spreadsheet.');
+  }
+
+  var keys = Object.keys(obj);
+  if (!keys.length) return { ok: true, count: 0, keys: [] };
+
+  PropertiesService.getScriptProperties().setProperties(obj, false);
+  Logger.log('[efxSetScriptProperties] ' + ENVIRONMENT + ': set ' + keys.length +
+             ' propert(ies): ' + keys.join(', '));
+  return { ok: true, count: keys.length, keys: keys };
+}

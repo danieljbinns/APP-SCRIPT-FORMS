@@ -66,9 +66,20 @@ function generateFormId(formType) {
 /**
  * Create new workflow record in master Workflows sheet
  */
-function createWorkflow(workflowType, workflowName, initiatorEmail) {
+function createWorkflow(workflowType, workflowName, initiatorEmail, dedupeKey) {
   try {
-    const workflowId = generateWorkflowId(workflowType);
+    let workflowId = generateWorkflowId(workflowType);
+    // EFX (review pass 2 H2): when the caller supplies a dedupeKey (e.g. employee name + hire date), the 30-second
+    // idempotency guard keys on (type, initiator, dedupeKey) instead of (type, initiator). Under automation the
+    // initiator is constant (efx-bot / the n8n actor), so two *different* employees created within 30 s must NOT
+    // collapse into one workflow and one Internal Employee ID. Human double-clicks still dedupe (same key).
+    const _dedupeCacheKey = dedupeKey ? ('wfdedupe:' + workflowType + ':' + String(initiatorEmail).toLowerCase() + ':' + String(dedupeKey).toLowerCase()) : null;
+    if (_dedupeCacheKey) {
+      try {
+        const _hit = CacheService.getScriptCache().get(_dedupeCacheKey);
+        if (_hit) { Logger.log('[createWorkflow] Idempotency guard (dedupeKey): returning existing ' + _hit); return _hit; }
+      } catch (e) { /* cache unavailable -> fall through to the row guard */ }
+    }
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     let workflowsSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
     
@@ -92,7 +103,7 @@ function createWorkflow(workflowType, workflowName, initiatorEmail) {
     const _WF = SCHEMA.WORKFLOWS;
     const _allWf = workflowsSheet.getDataRange().getValues();
     const _cutoff = new Date(new Date().getTime() - 30000);
-    for (let _wi = SCHEMA.ROW.FIRST_DATA; _wi < _allWf.length; _wi++) {
+    for (let _wi = SCHEMA.ROW.FIRST_DATA; _wi < _allWf.length && !_dedupeCacheKey; _wi++) {
       if (String(_allWf[_wi][_WF.WORKFLOW_TYPE]) === workflowType &&
           String(_allWf[_wi][_WF.INITIATOR_EMAIL]) === initiatorEmail) {
         const _wfCreated = _allWf[_wi][_WF.CREATED_DATE];
@@ -103,6 +114,18 @@ function createWorkflow(workflowType, workflowName, initiatorEmail) {
       }
     }
     
+    // Uniqueness guard (EFX): ids are second-resolution + 3 random digits, so two creates in the same second can
+    // collide (seen in the E2E suite; possible for automation bursts). Regenerate until the id is unused.
+    for (let _tries = 0; _tries < 10; _tries++) {
+      let _taken = false;
+      for (let _wi = SCHEMA.ROW.FIRST_DATA; _wi < _allWf.length; _wi++) {
+        if (String(_allWf[_wi][_WF.WORKFLOW_ID]) === workflowId) { _taken = true; break; }
+      }
+      if (!_taken) break;
+      Logger.log('[createWorkflow] id collision ' + workflowId + ' — regenerating');
+      workflowId = generateWorkflowId(workflowType);
+    }
+
     workflowsSheet.appendRow([
       workflowId,
       workflowType,
@@ -115,6 +138,7 @@ function createWorkflow(workflowType, workflowName, initiatorEmail) {
       ''
     ]);
     
+    if (_dedupeCacheKey) { try { CacheService.getScriptCache().put(_dedupeCacheKey, workflowId, 30); } catch (e) {} }
     Logger.log('[SUCCESS] Created workflow: ' + workflowId);
     return workflowId;
     
@@ -227,7 +251,7 @@ function adminPurgeWorkflows(workflowIds) {
 
   /* --- original body (disabled) ---
   try {
-    const userEmail = Session.getActiveUser().getEmail();
+    const userEmail = Actor.principal(); // authorization (EFX)
     if (!AccessControlService.isAdmin(userEmail)) {
       return { success: false, message: 'Permission denied. Admin access required.' };
     }

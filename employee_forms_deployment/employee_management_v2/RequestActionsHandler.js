@@ -25,7 +25,7 @@
 
 function cancelRequest(workflowId) {
   try {
-    var userEmail = Session.getActiveUser().getEmail();
+    var userEmail = Actor.principal(); // authorization (EFX)
     var wf = getWorkflow(workflowId);
     if (!wf) return { success: false, message: 'Workflow not found.' };
 
@@ -60,7 +60,7 @@ function cancelRequest(workflowId) {
     return { success: true, message: 'Request cancelled successfully.' };
   } catch (e) {
     Logger.log('[cancelRequest] Error: ' + e.toString());
-    writeAuditLog(Session.getActiveUser().getEmail(), 'CANCEL', workflowId, '', 'error: ' + e.message);
+    writeAuditLog(Actor.email(), 'CANCEL', workflowId, '', 'error: ' + e.message);
     return { success: false, message: e.message };
   }
 }
@@ -71,7 +71,7 @@ function cancelRequest(workflowId) {
 
 function updateHireDate(workflowId, newDateStr) {
   try {
-    var userEmail = Session.getActiveUser().getEmail();
+    var userEmail = Actor.principal(); // authorization (EFX)
 
     if (!AccessControlService.getUserRolePayload(userEmail).canEditDates) {
       return { success: false, message: 'Permission denied. Only HR, IT, or Admin can edit hire dates.' };
@@ -106,7 +106,7 @@ function updateHireDate(workflowId, newDateStr) {
     return { success: false, message: 'Workflow not found in Initial Requests.' };
   } catch (e) {
     Logger.log('[updateHireDate] Error: ' + e.toString());
-    writeAuditLog(Session.getActiveUser().getEmail(), 'UPDATE_HIRE_DATE', workflowId, newDateStr, 'error: ' + e.message);
+    writeAuditLog(Actor.email(), 'UPDATE_HIRE_DATE', workflowId, newDateStr, 'error: ' + e.message);
     return { success: false, message: e.message };
   }
 }
@@ -119,7 +119,7 @@ function updateHireDate(workflowId, newDateStr) {
 
 function bumpRequest(workflowId, targetStep) {
   try {
-    var userEmail = Session.getActiveUser().getEmail();
+    var userEmail = Actor.principal(); // authorization (EFX)
     Logger.log('[bumpRequest] ' + workflowId + ' / ' + targetStep + ' by ' + userEmail);
 
     var wf = getWorkflow(workflowId);

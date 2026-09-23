@@ -102,6 +102,8 @@ var ActionItemService = (function() {
 
       addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.ACTION_ITEMS, rowData);
       Logger.log(`[ActionItemService] Created Task ${taskId} (${formType || 'no-form'}) for Workflow ${workflowId}`);
+      // EFX: task event for automation (n8n_events / Router Trigger). Non-fatal.
+      try { if (typeof rawLogEvent_ === 'function') rawLogEvent_('task.created', 'createActionItem', workflowId, { taskId: taskId, category: category, name: name, formType: formType || '', assignedTo: assignedTo }); } catch (e) {}
       return taskId;
     } catch (e) {
       Logger.log(`[ERROR] Failed to create action item: ${e.message}`);
@@ -187,6 +189,8 @@ var ActionItemService = (function() {
       sheet.getRange(rowIndex, AI.COMPLETED_DATE + 1).setValue(new Date());
       sheet.getRange(rowIndex, AI.NOTES + 1).setValue(notes);
       sheet.getRange(rowIndex, AI.CLOSED_BY + 1).setValue(closedBy);
+      // EFX: task event for automation. Non-fatal.
+      try { if (typeof rawLogEvent_ === 'function') rawLogEvent_('task.closed', 'closeActionItem', workflowId, { taskId: taskId, category: data[rowIndex - 1][AI.CATEGORY] || '', formType: data[rowIndex - 1][AI.FORM_TYPE] || '', closedBy: closedBy }); } catch (e) {}
 
       // Persist draft checklist state (set by ActionItemForm.html's autosave)
       if (draftJSON) {
@@ -970,7 +974,7 @@ var ActionItemService = (function() {
  * @returns {{ success: boolean, message?: string }}
  */
 function closeActionItemWithNotes(taskId, notes, draftJSON, formDataJSON) {
-  return ActionItemService.closeActionItem(taskId, notes, Session.getActiveUser().getEmail(), draftJSON, formDataJSON);
+  return ActionItemService.closeActionItem(taskId, notes, Actor.email(), draftJSON, formDataJSON);
 }
 
 /**

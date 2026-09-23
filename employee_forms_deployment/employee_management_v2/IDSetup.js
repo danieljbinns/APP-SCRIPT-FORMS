@@ -18,7 +18,10 @@ function serveIDSetup(workflowId) {
   }
 
   template.requestData = requestData;
-  template.generatedEmployeeId = generateEmployeeId();
+  // EFX: show the id allocated at submission. For workflows created BEFORE cut-over (no registry row) allocate now
+  // (idempotent) so page view and submit agree — the legacy max()+1 prediction is no longer used (review F1).
+  template.generatedEmployeeId = EmployeeIdRegistry.get(workflowId) ||
+    EmployeeIdRegistry.allocate(workflowId, { employeeName: requestData.employeeName, source: 'serveIDSetup (pre-cutover)' });
   // FORCE DSS Username to be firstname.lastname per user request (ignore requested email for this field)
   const dssDefault = generateDssUsername(requestData.firstName, requestData.lastName);
   template.generatedDssUsername = dssDefault;
@@ -132,10 +135,9 @@ function generateEmployeeId() {
     return String(maxId + 1);
     
   } catch (error) {
+    // EFX: no silent timestamp fallback (it produced colliding ids). Fail loudly instead.
     Logger.log('Error generating employee ID: ' + error.toString());
-    // Fallback to timestamp-based if there's an error
-    const timestamp = new Date().getTime();
-    return  '30' + timestamp.toString().slice(-3);
+    throw new Error('Could not generate Internal Employee ID: ' + error.message);
   }
 }
 
@@ -170,35 +172,21 @@ function submitEmployeeIDSetup(formData) {
       resultsSheet.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#EB1C2D').setFontColor('#ffffff');
     }
 
-    // Acquire lock and validate/recompute employee ID to prevent duplicates
-    const lock = LockService.getScriptLock();
-    lock.waitLock(5000);
-    let finalEmployeeId = formData.internalEmployeeId;
-    try {
-      const existingData = resultsSheet.getDataRange().getValues();
-      let idExists = false;
-      for (let i = 1; i < existingData.length; i++) {
-        if (existingData[i][3] === finalEmployeeId) {
-          idExists = true;
-          break;
-        }
+    // EFX: the Internal Employee ID is pre-assigned at submitInitialRequest. Use it. For workflows created
+    // before cut-over (no registry row) allocate now — same allocator, same continuity guarantees.
+    // A different submitted value is only honoured for admins (audited); everyone else gets a clear message
+    // instead of the old silent swap.
+    const preassigned = EmployeeIdRegistry.get(workflowId);
+    let finalEmployeeId = preassigned || EmployeeIdRegistry.allocate(workflowId, {
+      employeeName: requestData.employeeName, source: 'submitEmployeeIDSetup'
+    });
+    if (formData.internalEmployeeId && String(formData.internalEmployeeId) !== String(finalEmployeeId)) {
+      if (!Actor.canOverrideEmployeeId()) {
+        return { success: false, message: 'Internal Employee ID is pre-assigned (' + finalEmployeeId + ') and cannot be changed here.' };
       }
-      // If submitted ID already exists, recompute the next available ID
-      if (idExists) {
-        let maxId = 29999;
-        for (let i = 1; i < existingData.length; i++) {
-          const id = existingData[i][3];
-          if (id && !isNaN(id)) {
-            const numId = parseInt(id);
-            if (numId > maxId) {
-              maxId = numId;
-            }
-          }
-        }
-        finalEmployeeId = String(maxId + 1);
-      }
-    } finally {
-      lock.releaseLock();
+      Logger.log('[EFX] Admin override of Internal Employee ID for ' + workflowId + ': ' + finalEmployeeId + ' → ' + formData.internalEmployeeId + ' by ' + Actor.principal());
+      finalEmployeeId = String(formData.internalEmployeeId);
+      EmployeeIdRegistry.setOverride(workflowId, finalEmployeeId, 'admin override by ' + Actor.principal()); // keep registry == sheet (review F6)
     }
 
     resultsSheet.appendRow([
@@ -206,11 +194,18 @@ function submitEmployeeIDSetup(formData) {
       formData.siteDocsWorkerId, formData.siteDocsJobCode,
       formData.siteDocsUsername || 'N/A', formData.siteDocsPassword || 'N/A',
       formData.dssUsername, formData.dssPassword,
-      formData.setupNotes || '', Session.getActiveUser().getEmail(),
+      formData.setupNotes || '', Actor.email(),
       formData.bossWisCreated || 'No', formData.siteDocsBadgeCreated || 'No'
     ]);
-    
-    const actingUser = Session.getActiveUser().getEmail();
+
+    // EFX: post-write event (final ids + credentials presence, never the passwords)
+    rawLogResult('submitEmployeeIDSetup', workflowId, {
+      formId: formId, internalEmployeeId: finalEmployeeId,
+      siteDocsWorkerId: formData.siteDocsWorkerId || '', siteDocsJobCode: formData.siteDocsJobCode || '',
+      dssUsername: formData.dssUsername || '', bossWisCreated: formData.bossWisCreated || 'No'
+    });
+
+    const actingUser = Actor.email();
     // Advance directly to HR Verification — no intermediate 'ID Setup Complete' step.
     // triggerNextStepFromIDSetup sends the HR Verification email; step must already
     // reflect what is actually pending so Dashboard_View and task counts are correct.

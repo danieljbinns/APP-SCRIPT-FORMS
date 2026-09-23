@@ -22,7 +22,12 @@ var ConfigurationService = (function() {
     'EMAIL_SAFETY': 'grp.forms.safety@team-group.com',
     'EMAIL_NOTIFICATIONS': 'grp.forms.it@team-group.com',
     'EMAIL_REDIRECT_ALL': '', // Set this to an email in Script Properties to redirect ALL outbound mail
-    
+
+    // EFX (n8n integration) — defaults keep legacy behaviour; override via Script Properties
+    'SAFETY_TRAINING_AT_SUBMIT': 'false',
+    'EFX_EVENT_WEBHOOK_URL': '',
+    'EFX_EVENT_KID': '',
+
     // Resource IDs (Override in Script Properties for Staging/Test)
     'SPREADSHEET_ID': '1o2KulGLhpClbvbkYG-VqsaOJNQfAcpVZgRtc-FKpuAw',
     'MAIN_FOLDER_ID': '1vBZVuzXmSatnLGiqhU7QoS0zBK2NGDQE',

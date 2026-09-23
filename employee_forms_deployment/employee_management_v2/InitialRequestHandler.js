@@ -30,13 +30,29 @@ function submitInitialRequest(formData) {
       return { success: false, message: validation.message };
     }
 
-    // Create workflow first
-    const workflowId = createWorkflow('NEW_EMP', 'New Employee Onboarding', formData.requesterEmail);
+    // EFX (review pass 2 M4): a carried (rehire) id must look like an Internal Employee ID — a typo here would move the
+    // allocation high-water mark for everyone. Checked before anything is written.
+    if (formData.existingInternalEmployeeId && !/^\d{4,6}$/.test(String(formData.existingInternalEmployeeId).trim())) {
+      return { success: false, message: 'Existing Internal Employee ID must be a 4-6 digit number (got "' + formData.existingInternalEmployeeId + '").' };
+    }
+
+    // Create workflow first (dedupeKey = employee + hire date, so two different hires from one automation requester never merge)
+    const workflowId = createWorkflow('NEW_EMP', 'New Employee Onboarding', formData.requesterEmail,
+      String(formData.firstName || '').trim() + ' ' + String(formData.lastName || '').trim() + '|' + String(formData.hireDate || ''));
     const formId = generateFormId('INIT_REQ');
+
+    // EFX: mint the Internal Employee ID at submission (was: at ID Setup page view — IDSetup.js:21).
+    // Idempotent per workflowId; reads max() across Employee IDs + ID Setup Results for continuity.
+    const internalEmployeeId = EmployeeIdRegistry.allocate(workflowId, {
+      employeeName: formData.firstName + ' ' + formData.lastName,
+      source: 'submitInitialRequest',
+      existingEmployeeId: formData.existingInternalEmployeeId || ''
+    });
 
     // Add IDs to form data
     formData.workflowId = workflowId;
     formData.formId = formId;
+    formData.internalEmployeeId = internalEmployeeId;
     formData.timestamp = new Date();
     
     // Format data for spreadsheet
@@ -59,7 +75,26 @@ function submitInitialRequest(formData) {
     syncWorkflowState(workflowId);
 
     Logger.log('[SUCCESS] Form submitted: Workflow ID: ' + workflowId + ', Form ID: ' + formId);
-    
+
+    // EFX: post-mint event for automation (Raw Log 'result' row + optional signed webhook).
+    rawLogResult('submitInitialRequest', workflowId, {
+      formId: formId, internalEmployeeId: internalEmployeeId,
+      employeeName: employeeName, employmentType: formData.employmentType, employeeType: formData.employeeType,
+      siteName: formData.siteName, positionTitle: formData.positionTitle, hireDate: formData.hireDate,
+      managerEmail: formData.reportingManagerEmail, requesterEmail: formData.requesterEmail,
+      systems: formData.systems || [], plan306090: formData.plan306090 || '', jrAssignment: formData.jrAssignment || ''
+    });
+
+    // EFX (flagged, default off): create the Safety Onboarding action item at submit so training can be
+    // assigned right away. When off, behaviour is unchanged (created at ID Setup for hourly / after HR for salary).
+    if (CONFIG.SAFETY_TRAINING_AT_SUBMIT) {
+      try {
+        sendSafetyOnboardingEmail(workflowId, {
+          employeeName: employeeName, position: formData.positionTitle, siteName: formData.siteName, hireDate: formData.hireDate
+        }, {});
+      } catch (safetyErr) { Logger.log('[EFX] Safety-at-submit failed (non-fatal): ' + safetyErr.message); }
+    }
+
     // Send initial emails with full context
     const idSetupUrl = buildFormUrl('id_setup', { wf: workflowId });
     
@@ -88,6 +123,7 @@ function submitInitialRequest(formData) {
       success: true,
       workflowId: workflowId,
       formId: formId,
+      internalEmployeeId: internalEmployeeId,   // EFX: available to automation at submission
       message: 'Request submitted successfully',
       scriptUrl: ScriptApp.getService().getUrl()
     };
@@ -198,7 +234,8 @@ function formatInitialRequestData(data) {
     Array.isArray(data.purchasingSites) ? data.purchasingSites.join(', ') : (data.purchasingSites || ''),
     '',                           // col 52 — Status (written later by ITConfirmationHandler)
     data.adpSalaryAccess || 'No', // col 53 — ADP Salary Access
-    data.bossTrainingOnly || 'No' // col 54 — BOSS Training User Only (ER-5)
+    data.bossTrainingOnly || 'No', // col 54 — BOSS Training User Only (ER-5)
+    data.internalEmployeeId || '' // col 55 — Internal Employee ID (EFX: allocated at submit)
   ];
 }
 

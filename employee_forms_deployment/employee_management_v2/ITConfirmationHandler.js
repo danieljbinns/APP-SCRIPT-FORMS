@@ -57,9 +57,29 @@ function submitITConfirmation(formData) {
     const origData = isChange ? getFullPositionChangeData(workflowId) : getFullNewHireData(workflowId);
 
     if (!isChange) {
+      // ── EFX fix (2026-09-17) ───────────────────────────────────────────────────────────────
+      // This block rewrites the FULL Initial Requests row. The IT Confirmation screen loads an
+      // EDITABLE COPY of the original submission, so a key the caller did not send means
+      // "unchanged" — never "clear". Without this backfill a partial payload blanks First Name,
+      // Last Name, Position Title, Site Name, Manager, Employment Type and ~18 further columns.
+      // Verified live on TEST 2026-09-17: submitting only {workflowId, notes} wiped the record.
+      //
+      // A key that IS present but empty still clears, so deliberate blanking from the UI works.
+      //
+      // Only five columns previously had an origData fallback, and two of those read key names
+      // getFullNewHireData never returns (computerRequestType / phoneRequestType, vs the actual
+      // computerReq / phoneReq) — so those two silently blanked as well. Hence the alias map.
+      if (origData) {
+        const ORIG_KEY_ALIAS = { computerReq: 'computerRequestType', phoneReq: 'phoneRequestType' };
+        Object.keys(origData).forEach(function (k) {
+          const target = ORIG_KEY_ALIAS[k] || k;
+          if (!Object.prototype.hasOwnProperty.call(formData, target)) formData[target] = origData[k];
+        });
+      }
+      // ──────────────────────────────────────────────────────────────────────────────────────
+
       // Write corrections back to Initial_Requests sheet in-place (new hire AND equipment)
       // Equipment requests now share the Initial_Requests sheet — no separate write-back needed
-      // Write corrections back to Initial Requests sheet in-place
       const sheet = ss.getSheetByName(CONFIG.SHEETS.INITIAL_REQUESTS);
       const rows  = sheet.getDataRange().getValues();
       const IR = SCHEMA.INITIAL_REQUESTS;
@@ -155,7 +175,7 @@ function submitITConfirmation(formData) {
       formData.computerType        || '',
       formData.phoneRequestType    || '',
       formData.notes               || '',
-      Session.getActiveUser().getEmail()
+      Actor.email()
     ]);
 
     const context = getWorkflowContext(workflowId) || { employeeName: workflowId };
