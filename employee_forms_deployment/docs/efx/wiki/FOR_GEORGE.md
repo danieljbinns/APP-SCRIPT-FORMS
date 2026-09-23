@@ -8,9 +8,7 @@ else in this repo is background.
 > termination and position-change approvals, hire-date change / cancel / bump, reading context for your own emails),
 > plus the testing rules and the full error-code table for the wrappers in `n8n/`.
 
-> **Status:** the functions below exist in the **TEST** fork and are unit-tested locally. They are **not yet
-> deployed** to a script you can call. Until the Router wrappers land in `n8n/`, keep JR on `doPost` @76.
-> Anything marked *planned* is not built yet.
+> **Status (2026-09-23):** live in **production**. The functions below are deployed on the prod script. The portal runs the EFX code (deployment v78) and these wrappers are callable by id with no allow-list: Get Workflow `A7nqVbqn19kzaSfi`, List Tasks `5HoAXNxCWVF6wtYx`, Close Task `C4oJSaevEqMvSCZe`, Submit ID Setup `P3HiVnzoxaRYYTZN`, Close JR Task `zxaTLTTNK28LpnNg`. Current instructions: `docs/efx/handoff/HANDOFF.md` (human) and `AGENT.md` (agent). Other wrappers exist on TEST only until asked for.
 
 ---
 

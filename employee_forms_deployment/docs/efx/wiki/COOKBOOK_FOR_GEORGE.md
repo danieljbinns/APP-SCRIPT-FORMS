@@ -8,8 +8,7 @@ Read first (once): [FOR_GEORGE.md](FOR_GEORGE.md) (what you can call), [`n8n/REA
 order, placeholders). Background if you want it: [HOW_IT_WORKS.md](HOW_IT_WORKS.md), [FAQ.md](FAQ.md). On-call fixes:
 [RUNBOOKS.md](RUNBOOKS.md).
 
-> **Status:** the kit targets the **TEST** Forms script on **staging n8n**. Nothing here is pointed at prod until
-> [`docs/plans/CUTOVER_PLAN_JR.md`](../plans/CUTOVER_PLAN_JR.md) says so (see §3).
+> **Status (2026-09-23):** live in **production**. Recipes still show the TEST names; on prod use the `(PROD)` wrappers listed here. The portal runs the EFX code (deployment v78) and these wrappers are callable by id with no allow-list: Get Workflow `A7nqVbqn19kzaSfi`, List Tasks `5HoAXNxCWVF6wtYx`, Close Task `C4oJSaevEqMvSCZe`, Submit ID Setup `P3HiVnzoxaRYYTZN`, Close JR Task `zxaTLTTNK28LpnNg`. Current instructions: `docs/efx/handoff/HANDOFF.md` (human) and `AGENT.md` (agent). Other wrappers exist on TEST only until asked for.
 
 ---
 
