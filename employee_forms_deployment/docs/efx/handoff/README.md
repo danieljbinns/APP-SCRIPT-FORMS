@@ -1,91 +1,65 @@
-# The JR close, without the password — a plain-English summary
+# George's onboarding automation and the Employee Forms door — plain English
 
 *For anyone, technical or not. Two minutes.*
 
 ---
 
-**Two things are ready to hand over: the JR ticket close, and the Employee ID Setup submit.**
-This page explains the first; the second works exactly the same way.
-
 ## The one-sentence version
 
-When n8n finishes assigning a JR in BOSS, it has to tell the Employee Forms portal "that's done".
-Today it does that by posting a **shared password** to a **hidden web address**. We are replacing that
-one step with a proper, identified connection — and nothing else about the JR process changes.
+When a manager submits a new hire in the Employee Forms portal, George's automation can now pick that up from
+the email Forms already sends, read the employee number off it, do the SiteDocs / DSS / BOSS setup after his own
+approval step, and hand the result straight back to Forms — through a door that knows who is knocking. The JR
+close uses the same door.
 
----
+## What was blocking hourly onboarding since August
 
-## What happens today
+George's design always had a human submit the initial request. His automation runs **after** that. It needed
+three things it did not have:
 
-George's automation ends by calling a web address that looks like this:
+| Needed | Was | Now |
+|---|---|---|
+| To know a hire was submitted | No signal he could use | He is in the **ID Setup** group; Forms emails it at every submit |
+| The internal employee number | Minted only when someone opened the ID Setup page | Minted **at submit** and printed in that email |
+| A way to hand ID Setup back | A password posted to a hidden web address, JR only | Named, permanent calls: Submit ID Setup, Close Task, Get Workflow, List Tasks, Close JR Task |
 
-```
-https://script.google.com/macros/s/AKfycbw…/exec
-```
+## What changed on 2026-09-23
 
-with a password in the message body. That address was published on purpose so automation could reach
-it **without logging in**. It works. But it has three properties worth naming:
+- The two submit emails (`ID Setup Required` to the ID Setup team, `Request Submitted` to the requester) now show
+  **Request ID** and **Internal ID**.
+- George (and Binns' robinsonsolutions account) were added to `grp.forms.idsetup`.
+- Three more doors were opened in production: **Get Workflow**, **List Tasks**, **Close Task**.
+- A working reference workflow — email in, approval click, ID Setup submitted — was built against production and
+  is George's to copy.
+- The production portal was updated so people submitting requests run the same code.
 
-| | |
-|---|---|
-| **Anyone who has the address and the password can use it** | There is no "who did this". The portal cannot tell George's automation from anyone else. |
-| **The address can change** | A new deployment of the Forms app mints a **new** URL. The old one keeps working, so nothing fails loudly — it just quietly stops being the current one. |
-| **It can only do one thing** | It closes a JR task. Anything else automation needs later means building another one of these. |
+## What George does with it
 
-## What replaces it
-
-The same step, but the call goes through a door that knows who is knocking.
-
-- It runs as a real, named account — `efx-bot` — so the portal records **who** closed the task.
-- The address is a **permanent ID**, not a URL. Redeploying the Forms app cannot move it.
-- **No shared password.** Authentication is a Google service account, the same mechanism the rest of
-  the company's automation already uses.
-- The same door can do ~27 other things when they're wanted. Nothing new gets built for the next one.
-
-## What actually changes in George's workflow
-
-**One node.** The last step, `Mark Portal JR Complete`, changes from "post to a web address" to
-"call a shared sub-workflow". Every other node stays exactly as it is.
-
-## What does *not* change
-
-- How JRs are requested, reviewed or approved.
-- The BOSS assignment itself — same Lambda, same session, same screen-scraping.
-- The emails, the tracking sheet, the approval template.
-- Any of the rules about who may do what. Those live in Forms and always did.
-
-## Is it proven?
-
-Yes. On 2026-09-18 the entire chain was run end to end against a test copy — started by a genuine
-email, driven by a human clicking the real buttons, ending with a real assignment in BOSS staging and
-the task closed in the portal. Roughly 210 further automated calls ran earlier with no flaky failures.
-
-Evidence: [`PROOF-2026-09-18.md`](PROOF-2026-09-18.md).
+1. Trigger on the `ID Setup Required` email in his inbox.
+2. Read the Request ID and Internal ID off it (and, if he wants everything, call **Get Workflow**).
+3. Draft the SiteDocs / DSS / BOSS setup, email himself for approval.
+4. On approval, do the real setup — **his side, unchanged**.
+5. Call **Submit ID Setup**. Forms advances the hire, writes the sheets, sends the emails, creates the Safety task.
+6. For JR: one node in `BOSS JR Assignment` becomes **Close JR Task**. Nothing else there changes.
 
 ## What it cannot do
 
-- It does not touch BOSS. BOSS access still works exactly as it does today, with the same fragility.
-- It does not change any business rule. It is a door, not a decision-maker.
-- **Live as of 2026-09-18.** The Forms code and the connection are deployed to production and verified
-  against it. The JR close itself was proven end to end on a test copy — see PROOF.
-
----
+- It does not touch SiteDocs, DSS or BOSS. Those stay George's.
+- It does not change any business rule. Who may do what, which team gets emailed, how numbers are issued: all
+  in Forms, as before.
+- It cannot be pointed at the wrong spreadsheet from n8n. The door decides.
 
 ## Where to go next
 
-These four documents travel together — they are sent by email, there is nothing to log in to.
-
 | You are | Read |
 |---|---|
-| Handing this to George or his agent | `HANDOFF.md` |
-| Wanting the evidence | `PROOF-2026-09-18.md` |
+| George, or editing his workflows | `HANDOFF.md` |
+| George's agent | `AGENT.md` |
+| Running the live demo | `DEMO_2026-09-23.md` |
 | Wanting the picture | `FLOW.md` |
-| Technical, want the full list of what else the door can do | Ask Binns for the EFX function reference |
+| Wanting the evidence | `PROOF-2026-09-23.md`, `PROOF-2026-09-18.md` |
 
-## How it is actually delivered
+## How it is delivered
 
-The workflows live in **Daniel Binns' n8n** and are shared **read-only**. Nobody is sent files to
-import, and the Google credential that makes the call is never shared — it stays inside Binns'
-Router. George's workflow simply calls one shared sub-workflow by name.
-
-That is deliberate: it grants the ability to make one specific call, not a key to the whole system.
+The doors live in **Daniel Binns' n8n**. George calls them by id from his own workflows. The Google credential
+that makes the call stays inside Binns' Router and is never shared. A copy of the reference workflow is provided
+as a template with credentials removed.

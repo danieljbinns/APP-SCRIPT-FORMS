@@ -1,121 +1,90 @@
 # The flow, in pictures
 
-Three diagrams: what changes, the whole JR chain, and what the new door actually is.
+Three diagrams: George's hourly onboarding through the door, the JR one-node swap, and what the door is.
 
 ---
 
-## 1. The change — one node
+## 1. Hourly onboarding — George's flow
+
+```mermaid
+flowchart TD
+  H0{{"👤 Manager submits<br/>Initial Request in the portal"}} --> F0["Forms mints the<br/>Internal Employee ID"]
+  F0 --> E1[/"Email: ID Setup Required<br/>→ grp.forms.idsetup (George)<br/>Request ID · Internal ID"/]
+  F0 --> E2[/"Email: Request Submitted<br/>→ requester"/]
+
+  subgraph G["George's n8n workflow"]
+    T1["Gmail trigger<br/>subject: ID Setup Required"] --> P1["Parse Request ID<br/>+ Internal ID"]
+    P1 --> W1[["Forms · Get Workflow (PROD)<br/>request + employeeId"]]
+    W1 --> D1["Draft SiteDocs / DSS / BOSS<br/><i>his real calls go here</i>"]
+    D1 --> A1[/"Approval email to George"/]
+    A1 --> H1{{"👤 George clicks Approve"}}
+    H1 --> R1["Do the real setup<br/><i>SiteDocs · DSS · BOSS — his side</i>"]
+    R1 --> W2[["Forms · Submit ID Setup (PROD)"]]
+  end
+  E1 --> T1
+
+  W2 --> F1["Forms: step → HR Verification Needed<br/>emails HR · creates Safety task"]
+  F1 --> W3[["Forms · Close Task (PROD)<br/>when his part of a task is done"]]
+
+  style F0 fill:#1e3a5f,color:#fff
+  style W1 fill:#14532d,color:#fff
+  style W2 fill:#14532d,color:#fff
+  style W3 fill:#14532d,color:#fff
+  style E1 fill:#14532d,color:#fff
+```
+
+**Green is what this project adds:** the id in the email, and named calls into Forms. Everything inside the
+dashed box is George's; the only things he calls are the green boxes.
+
+---
+
+## 2. JR — one node changes
 
 ```mermaid
 flowchart LR
-  subgraph BEFORE["BEFORE — today"]
+  subgraph BEFORE["BEFORE"]
     A1[Apply Duty Changes] --> A2["Mark Portal JR Complete<br/>httpRequest"]
-    A2 -- "shared password<br/>in the body" --> A3(["/exec web address<br/>anonymous, no identity"])
-    A3 --> A4[(Employee Forms<br/>spreadsheet)]
+    A2 -- "shared password<br/>in the body" --> A3(["/exec web address<br/>anonymous"])
   end
-
-  subgraph AFTER["AFTER — the change"]
-    B1[Apply Duty Changes] --> B2["Mark Portal JR Complete<br/>executeWorkflow"]
-    B2 --> B3["Forms · Close JR Task"]
+  subgraph AFTER["AFTER"]
+    B1[Apply Duty Changes] --> B2["Forms · Close JR Task (EFX)<br/>executeWorkflow"]
+    B2 --> B3[["Forms · Close JR Task (PROD)"]]
     B3 --> B4["EFX Router"]
-    B4 -- "Google service account<br/>acting as efx-bot" --> B5(["Apps Script<br/>Execution API"])
-    B5 --> B6[(Employee Forms<br/>spreadsheet)]
+    B4 -- "service account<br/>as efx-bot" --> B5(["Apps Script<br/>Execution API"])
   end
-
   style A2 fill:#7f1d1d,color:#fff
   style A3 fill:#7f1d1d,color:#fff
   style B2 fill:#14532d,color:#fff
   style B3 fill:#14532d,color:#fff
-  style B4 fill:#14532d,color:#fff
 ```
 
-**Red is what goes away:** a published address anyone can reach, gated only by a password, with no
-record of who called it. **Green is what replaces it:** an identified call over a permanent id.
-
-Everything to the left of that node is unchanged.
+Everything upstream of that node — Gmail trigger, parsing, tracker, approval, BOSS Lambda — is untouched.
 
 ---
 
-## 2. The whole JR chain
-
-Three workflows, two human clicks. Only the last box on the right is new.
-
-```mermaid
-flowchart TD
-  E0([New hire completes IT Setup<br/>in Employee Forms]) --> E1[/"Forms emails:<br/>'JR Assignment — Name'"/]
-
-  subgraph W1["JR 1 · Assignment Automation"]
-    T1["Gmail trigger<br/>subject:'JR Assignment' is:unread"] --> P1[Parse the email]
-    P1 --> M1[Find the JR template<br/>in the Index sheet]
-    M1 --> C1[Copy template<br/>+ write the duties]
-    C1 --> L1[Log a row<br/>in the tracker]
-    L1 --> X1[/"Email the manager<br/>for review"/]
-  end
-  E1 --> T1
-
-  H1{{"👤 Manager clicks<br/>'Looks good'"}}
-  X1 --> H1
-
-  subgraph W2["JR 2 · Manager Response"]
-    R2[Find the row<br/>by token] --> S2[Mark Completed<br/>+ move the file]
-    S2 --> X2[/"Email: Ready for BOSS"/]
-  end
-  H1 --> R2
-
-  H2{{"👤 Click<br/>'Assign in BOSS'"}}
-  X2 --> H2
-
-  subgraph W3["JR 3 · BOSS Assignment"]
-    V3[Look up the<br/>BOSS job id] --> B3["Assign in BOSS<br/>via Lambda"]
-    B3 --> D3[Apply duty changes]
-    D3 --> N3["Mark Portal JR Complete"]
-  end
-  H2 --> V3
-
-  N3 --> Z3[["Forms · Close JR Task<br/>→ Router → Forms"]]
-  Z3 --> Z4[(Task closed,<br/>Closed By recorded)]
-
-  style N3 fill:#14532d,color:#fff
-  style Z3 fill:#14532d,color:#fff
-  style Z4 fill:#14532d,color:#fff
-```
-
----
-
-## 3. What the "door" actually is
-
-The Router is one shared sub-workflow. Every capability is a thin wrapper over it — so adding the
-next one costs a wrapper, not a new endpoint, new password and new deployment.
+## 3. What the door is
 
 ```mermaid
 flowchart LR
-  G1["Forms · Close JR Task"] --> R
-  G2["Forms · Create Initial Request"] --> R
-  G3["Forms · Submit ID Setup"] --> R
-  G4["…24 more wrappers"] --> R
-
-  R["EFX Router<br/><i>one shared sub-workflow</i>"]
-  R -- "service account,<br/>impersonating efx-bot" --> API(["Apps Script Execution API<br/>scripts/{permanent id}:run"])
+  G1["Forms · Submit ID Setup"] --> R
+  G2["Forms · Close JR Task"] --> R
+  G3["Forms · Get Workflow"] --> R
+  G4["Forms · List Tasks"] --> R
+  G5["Forms · Close Task"] --> R
+  R["EFX · Router (PROD)<br/><i>one shared sub-workflow</i>"]
+  R -- "SA impersonating efx-bot" --> API(["Execution API<br/>scripts/{script id}:run"])
   API --> F["Employee Forms<br/><i>all the rules live here</i>"]
   F --> SS[(Spreadsheet)]
-  F --> EM[/Emails to the right teams/]
-
+  F --> EM[/Emails/]
   style R fill:#1e3a5f,color:#fff
   style F fill:#1e3a5f,color:#fff
 ```
 
-**The point of the shape:** n8n holds no business rules. Who may do what, what a valid hire looks
-like, which team gets emailed, how employee numbers are issued — all of that stays in Forms. When
-those rules change, nothing in n8n changes.
-
----
-
-## Reading the arrows
+n8n holds no business rules and never writes to the spreadsheet. When the rules change, nothing in n8n changes.
 
 | Symbol | Meaning |
 |---|---|
-| 👤 | A human clicks a button in an email |
-| Green | New — the part this project adds |
-| Red | Removed — the password-and-URL path |
-| `[( )]` | Data at rest: the spreadsheet |
-| `[/ /]` | An email leaving the system |
+| 👤 | A human acts |
+| `[[ ]]` | A shared sub-workflow George calls by id |
+| Green | Added by this project |
+| Red | Removed: the password-and-URL path |

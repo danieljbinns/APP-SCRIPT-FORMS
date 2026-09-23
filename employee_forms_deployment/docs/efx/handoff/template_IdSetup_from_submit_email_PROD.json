@@ -1,0 +1,545 @@
+{
+  "name": "Forms · ID Setup from submit email (TEMPLATE — import, then pick your Gmail credential)",
+  "nodes": [
+    {
+      "id": "gmail-trigger",
+      "name": "New submit email",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "subject:(\"ID Setup Required\" OR \"Request Submitted\") newer_than:2d",
+          "readStatus": "unread"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "<<YOUR_GMAIL_CREDENTIAL_ID>>",
+          "name": "<<YOUR_GMAIL_CREDENTIAL>>"
+        }
+      }
+    },
+    {
+      "id": "parse-submit-email",
+      "name": "Parse submit email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Forms sends two emails at submit: \"ID Setup Required\" (to grp.forms.idsetup) and \"Request Submitted\" (to the requester).\n// Since 2026-09-23 both carry the Request ID (NEW_EMP_…) and the pre-assigned Internal ID in Request Details. Read them off the email.\nconst m = $input.first().json;\nconst html = String(m.html || m.text || m.snippet || '');\nconst text = html.replace(/<style[\\s\\S]*?<\\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\\s+/g, ' ');\nconst wfFromLink = (html.match(/[?&]wf=(NEW_EMP_[A-Za-z0-9_-]+)/) || [])[1];         // ID Setup Required: the form button URL\nconst wfFromRow  = (text.match(/Request ID\\s*(NEW_EMP_[A-Za-z0-9_-]+)/) || [])[1];   // both emails: the Request ID row\nconst workflowId = wfFromLink || wfFromRow || '';\nif (!workflowId) return [];                                                           // not a New Hire submit email — ignore\nconst internalIdFromEmail = (text.match(/Internal ID\\s*(\\d{4,6})\\b/) || [])[1] || '';\nconst employeeNameFromEmail = ((text.match(/Employee\\s+(.+?)\\s+(?:Request ID|Internal ID|Type |Job Title)/) || [])[1] || '').trim();\n// Dedupe: a requester who is also in the ID Setup group receives BOTH emails for one hire.\nconst sd = $getWorkflowStaticData('global'); sd.seen = sd.seen || {}; const now = Date.now();\nfor (const k of Object.keys(sd.seen)) if (now - sd.seen[k] > 7 * 864e5) delete sd.seen[k];\nif (sd.seen[workflowId]) return [];\nsd.seen[workflowId] = now;\nreturn [{ json: { workflowId, internalIdFromEmail, employeeNameFromEmail, subject: String(m.subject || ''), messageId: String(m.id || '') } }];"
+      }
+    },
+    {
+      "id": "forms-get-workflow-prod-",
+      "name": "Forms · Get Workflow (PROD)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "onError": "continueErrorOutput",
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "A7nqVbqn19kzaSfi",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $json.workflowId }}",
+            "actor": "={{ { id: 'n8n:idsetup-from-email', email: 'efx-bot@team-group.com', display: 'ID Setup from submit email (n8n)' } }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "draft-accounts",
+      "name": "Draft accounts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// George's step 3: draft the SiteDocs / DSS / BOSS setup, then ask for approval.\n// Input = Forms · Get Workflow (PROD), flattened: requestData (sheet headers as keys), employeeId {internalEmployeeId}, checklist[], status.\nconst g  = $input.first().json;\nconst p  = $('Parse submit email').first().json;\nconst rd = g.requestData || {};\nconst id = String((g.employeeId && g.employeeId.internalEmployeeId) || rd['Internal Employee ID'] || p.internalIdFromEmail || '');\nif (!id) throw new Error('No Internal Employee ID for ' + p.workflowId + ' (it is minted at submit — check the Employee IDs tab)');\nif (String(g.status || '') === 'Cancelled') throw new Error(p.workflowId + ' is Cancelled — nothing to set up');\nconst first = String(rd['First Name'] || '').trim(), last = String(rd['Last Name'] || '').trim();\nconst employmentType = String(rd['Employment Type'] || '');\nconst out = {\n  workflowId: p.workflowId, internalEmployeeId: id,\n  employeeName: (first + ' ' + last).trim() || p.employeeNameFromEmail,\n  employmentType, positionTitle: String(rd['Position Title'] || ''), siteName: String(rd['Site Name'] || ''),\n  hireDate: String(rd['Hire Date'] || ''), managerEmail: String(rd['Manager Email'] || ''), systemAccess: String(rd['System Access'] || ''),\n  // ---- DRAFTED, NOT CREATED. George: replace these with the real SiteDocs / DSS / BOSS calls; keep the output keys. ----\n  siteDocsWorkerId: 'SD-' + id,\n  siteDocsJobCode: /salary/i.test(employmentType) ? 'Salary 1' : 'Hourly 1',   // strict enum: Hourly 1 | Hourly 2 | Salary 1 | Salary 2 | Supervisor | Manager\n  dssUsername: ((first[0] || 'x') + (last[0] || 'x')).toLowerCase() + id,\n  dssPassword: 'Temp-' + Math.random().toString(36).slice(2, 10) + '!'\n};\n// Survive the approval wait: node data from before a Wait-resume is not reachable afterwards, so stash it by execution id.\nconst sd = $getWorkflowStaticData('global'); sd.drafts = sd.drafts || {}; const now = Date.now();\nfor (const k of Object.keys(sd.drafts)) if (now - (sd.drafts[k]._at || 0) > 7 * 864e5) delete sd.drafts[k];\nsd.drafts['x' + $execution.id] = Object.assign({ _at: now }, out);\nreturn [{ json: out }];"
+      }
+    },
+    {
+      "id": "email-approver",
+      "name": "Email approver",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "sendTo": "<<APPROVER_EMAIL>>",
+        "subject": "=Approve account setup — {{ $json.employeeName }} ({{ $json.internalEmployeeId }})",
+        "message": "=<p><strong>{{ $json.employeeName }}</strong> was submitted as a new hire in Employee Forms.</p>\n<p>Internal employee number <strong>{{ $json.internalEmployeeId }}</strong> · {{ $json.employmentType }} · {{ $json.positionTitle }} · {{ $json.siteName }} · start {{ $json.hireDate }}</p>\n<p>These accounts are <em>about to be created</em>. Check them, then approve:</p>\n<ul><li>SiteDocs worker id: <strong>{{ $json.siteDocsWorkerId }}</strong></li><li>SiteDocs job code: <strong>{{ $json.siteDocsJobCode }}</strong></li><li>DSS username: <strong>{{ $json.dssUsername }}</strong></li></ul>\n<p><a href=\"{{ $execution.resumeUrl.replace('http://localhost:5678', 'https://n8n-staging.team-group.com') }}\" style=\"background:#22c55e;color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600\">Approve &amp; submit ID Setup</a></p>\n<p style=\"color:#888;font-size:12px\">Nothing is submitted to Forms until you click. Workflow {{ $json.workflowId }}</p>",
+        "options": {
+          "appendAttribution": false,
+          "ccList": "<<CC_EMAIL_OPTIONAL>>"
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "<<YOUR_GMAIL_CREDENTIAL_ID>>",
+          "name": "<<YOUR_GMAIL_CREDENTIAL>>"
+        }
+      }
+    },
+    {
+      "id": "wait-approval",
+      "name": "Wait for approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      }
+    },
+    {
+      "id": "build-id-setup",
+      "name": "Build ID Setup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// After the approval click. Read the stashed draft (pre-wait node data is unavailable after a Wait resume).\nconst sd = $getWorkflowStaticData('global');\nconst d = (sd.drafts || {})['x' + $execution.id];\nif (!d) throw new Error('No stashed draft for execution ' + $execution.id + ' — the run started before the stash existed, or it expired');\nreturn [{ json: {\n  workflowId: d.workflowId,\n  siteDocsWorkerId: d.siteDocsWorkerId, siteDocsJobCode: d.siteDocsJobCode,\n  dssUsername: d.dssUsername, dssPassword: d.dssPassword,\n  setupNotes: 'Submitted by n8n after approval (ID Setup from submit email)',\n  actor: { id: 'n8n:idsetup-from-email', email: 'efx-bot@team-group.com', display: 'ID Setup from submit email (n8n)' },\n  _employeeName: d.employeeName, _internalEmployeeId: d.internalEmployeeId\n} }];"
+      }
+    },
+    {
+      "id": "forms-submit-id-setup-prod-",
+      "name": "Forms · Submit ID Setup (PROD)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "onError": "continueErrorOutput",
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "P3HiVnzoxaRYYTZN",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $json.workflowId }}",
+            "siteDocsWorkerId": "={{ $json.siteDocsWorkerId }}",
+            "siteDocsJobCode": "={{ $json.siteDocsJobCode }}",
+            "dssUsername": "={{ $json.dssUsername }}",
+            "dssPassword": "={{ $json.dssPassword }}",
+            "setupNotes": "={{ $json.setupNotes }}",
+            "actor": "={{ { id: 'n8n:idsetup-from-email', email: 'efx-bot@team-group.com', display: 'ID Setup from submit email (n8n)' } }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "siteDocsWorkerId",
+              "displayName": "siteDocsWorkerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "siteDocsJobCode",
+              "displayName": "siteDocsJobCode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dssUsername",
+              "displayName": "dssUsername",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dssPassword",
+              "displayName": "dssPassword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "siteDocsUsername",
+              "displayName": "siteDocsUsername",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "siteDocsPassword",
+              "displayName": "siteDocsPassword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "setupNotes",
+              "displayName": "setupNotes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "bossWisCreated",
+              "displayName": "bossWisCreated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "siteDocsBadgeCreated",
+              "displayName": "siteDocsBadgeCreated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "extra",
+              "displayName": "extra",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "includeRecord",
+              "displayName": "includeRecord",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "confirm-submitted",
+      "name": "Confirm submitted",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1920,
+        0
+      ],
+      "parameters": {
+        "sendTo": "<<APPROVER_EMAIL>>",
+        "subject": "=ID Setup submitted — {{ $('Build ID Setup').first().json._employeeName }} ({{ $('Build ID Setup').first().json._internalEmployeeId }})",
+        "message": "=<p>ID Setup was submitted to Employee Forms for <strong>{{ $('Build ID Setup').first().json._employeeName }}</strong> (employee {{ $('Build ID Setup').first().json._internalEmployeeId }}) after approval.</p><p>Forms replied: <em>{{ $json.message }}</em> · request {{ $json.requestId }}</p><p>Forms now advances the hire to HR Verification and sends its own emails. For an hourly hire with no system access it also creates the Safety Onboarding task.</p>",
+        "options": {
+          "appendAttribution": false,
+          "ccList": "<<CC_EMAIL_OPTIONAL>>"
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "<<YOUR_GMAIL_CREDENTIAL_ID>>",
+          "name": "<<YOUR_GMAIL_CREDENTIAL>>"
+        }
+      }
+    },
+    {
+      "id": "report-error",
+      "name": "Report error",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "sendTo": "<<APPROVER_EMAIL>>",
+        "subject": "=⚠️ ID Setup automation failed — {{ $('Parse submit email').first().json.workflowId }}",
+        "message": "=<p>The ID Setup automation hit an error for workflow <strong>{{ $('Parse submit email').first().json.workflowId }}</strong>.</p><pre>{{ JSON.stringify($json.error || $json, null, 2) }}</pre><p>Branch on the <code>[efxCode=…]</code> tag at the end of the message: E_NOT_FOUND (check the id), E_VALIDATION (fix the mapping), E_UPSTREAM (Forms refused — read the message), E_DISABLED (an admin switched the alias off).</p>",
+        "options": {
+          "appendAttribution": false,
+          "ccList": "<<CC_EMAIL_OPTIONAL>>"
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "<<YOUR_GMAIL_CREDENTIAL_ID>>",
+          "name": "<<YOUR_GMAIL_CREDENTIAL>>"
+        }
+      }
+    },
+    {
+      "id": "sticky-2",
+      "name": "Sticky Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -440
+      ],
+      "parameters": {
+        "content": "## ID Setup from the submit email (PROD) — Binns' inbox\n**George's flow, end to end.** A human submits the Initial Request in the portal. Forms emails **ID Setup Required** to grp.forms.idsetup (George is a member) and **Request Submitted** to the requester. Both carry **Request ID** and the pre-assigned **Internal ID**.\n\n1. Gmail trigger on that email\n2. Parse Request ID / Internal ID off the email\n3. **Forms · Get Workflow (PROD)** — full request + `employeeId` block (belt and braces)\n4. Draft SiteDocs / DSS / BOSS values ← *replace with the real calls*\n5. One-click approval email\n6. On click → **Forms · Submit ID Setup (PROD)**. Forms advances the step and emails HR itself.\n\nInactive until switched on. Nothing here writes to a spreadsheet — Forms does.",
+        "height": 400,
+        "width": 620,
+        "color": 5
+      }
+    },
+    {
+      "id": "sticky-3",
+      "name": "Sticky Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        720,
+        -440
+      ],
+      "parameters": {
+        "content": "### Make it yours\n- **New submit email** → your Gmail credential; keep the subject filter\n- **Email approver** → your approver; drop the cc\n- **Draft accounts** → real SiteDocs worker + DSS user + BOSS WIS; keep the output keys\n- Optional: reject link, reminder, timeout on **Wait for approval**\n- The earlier sketch created the hire itself as a test fixture; this one starts from the real email. That is the only structural difference.",
+        "height": 300,
+        "width": 520,
+        "color": 6
+      }
+    }
+  ],
+  "connections": {
+    "New submit email": {
+      "main": [
+        [
+          {
+            "node": "Parse submit email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse submit email": {
+      "main": [
+        [
+          {
+            "node": "Forms · Get Workflow (PROD)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forms · Get Workflow (PROD)": {
+      "main": [
+        [
+          {
+            "node": "Draft accounts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft accounts": {
+      "main": [
+        [
+          {
+            "node": "Email approver",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email approver": {
+      "main": [
+        [
+          {
+            "node": "Wait for approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for approval": {
+      "main": [
+        [
+          {
+            "node": "Build ID Setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build ID Setup": {
+      "main": [
+        [
+          {
+            "node": "Forms · Submit ID Setup (PROD)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forms · Submit ID Setup (PROD)": {
+      "main": [
+        [
+          {
+            "node": "Confirm submitted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
