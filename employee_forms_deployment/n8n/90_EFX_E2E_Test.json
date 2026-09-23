@@ -1,0 +1,3520 @@
+{
+  "name": "EFX · E2E Test",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## EFX · E2E Test (manual, TEST script only)\nExercises the whole chain through the Router, one alias per node, an IF assertion after each, **stops at the first failure** and ends in *Summary* with PASS/FAIL per step.\n\n**Before running:** (1) point `<<ROUTER_WORKFLOW_ID>>` at a Router whose HTTP node targets the **TEST** script; (2) the TEST script's Script Properties must have **`EMAIL_REDIRECT_ALL`** set (dbinns@team-group.com) — this run sends the real Initial Request / HR Verification emails; (3) replace `<<EXPECTED_ENV>>` (DEV) in *Test config*; optional `<<EXISTING_JR_TASK_ID>>` (an OPEN `jr_title` TK- id on the TEST sheet) enables steps 7b/7c.\n\nSteps: 1 ping · 2 contracts (new_hire, id_setup present) · 3 create Initial Request (fixed payload, hireDate=today+14, `employeeType:'Direct Hire'` per r2 enum) → 5-digit internalEmployeeId · 4 getEmployeeId equals it · 5 getWorkflow checklist has \"ID Setup\" Pending · 6 submit ID Setup **without** internalEmployeeId · 6b re-submit expects an error (**optional**, reported as WARN) · 7 listTasks jr_title == 0 (the JR task only exists after IT Setup) · 7b/7c closeTask dryRun then closeJrTask on `<<EXISTING_JR_TASK_ID>>` if given · 8 assignSafetyTraining dryRun → expects `E_NOT_FOUND` unless `SAFETY_TRAINING_AT_SUBMIT=true` (then expects `dryRun:true`) · 9 events since start include our workflowId (`result` event).\n\n**OPTIONAL steps 10–12** run only when `RUN_EXTENDED = true` in *Test config* (default false → SKIPPED): 10 createTerminationRequest (TERM_) · 10b submitTerminationApproval Approved · 11 createPositionChangeRequest (CHANGE_) · 11b submitPositionChangeApproval Approved · 12 listWorkflows since start contains our ids. The approvals check the **real session principal** (efx-bot) for HR/Admin — if it is not in `grp.forms.hr` / `CONFIG.ADMIN_EMAILS` on the TEST tier they report **WARN**, not FAIL. Approved terminations/changes create offboarding/change action items and send emails (redirected).\n\nEvery run leaves a `NEW_EMP_` workflow \"EFX Test Hire<stamp>\" (plus TERM_/CHANGE_ when extended) on the TEST sheet — cancel them from the dashboard afterwards (Summary lists them).",
+        "width": 1500,
+        "height": 460,
+        "color": 4
+      },
+      "id": "sticky-overview",
+      "name": "overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -640
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "manual",
+      "name": "Run E2E",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fixed test payload against the TEST script. Replace <<EXPECTED_ENV>> (e.g. DEV) and optionally <<EXISTING_JR_TASK_ID>> (a TK- id of an OPEN jr_title task on the TEST sheet).\n// runExtended: set to true to also run the OPTIONAL steps 10-12 (termination create → approve, position change create → approve, listWorkflows).\n// Default false keeps the core run (1-9) unchanged. The approvals need efx-bot to be HR/Admin (real session principal) — otherwise they report WARN.\nconst RUN_EXTENDED = false;\nconst cfg = { expectedEnv: '<<EXPECTED_ENV>>', existingJrTaskId: '<<EXISTING_JR_TASK_ID>>', runExtended: RUN_EXTENDED === true };\nif (cfg.expectedEnv.startsWith('<<')) cfg.expectedEnv = '';\nif (cfg.existingJrTaskId.startsWith('<<')) cfg.existingJrTaskId = '';\nconst pad = n => String(n).padStart(2, '0');\nconst ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());\nconst now = new Date();\nconst hire = new Date(now.getTime() + 14 * 86400000);\nconst stamp = now.toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);\nconst runStartIso = new Date(now.getTime() - 60000).toISOString();   // 1 min slack for clock skew vs Apps Script server time\nconst payload = {\n  requesterName: 'EFX E2E (n8n)', requesterEmail: 'dbinns@team-group.com', dateRequested: ymd(now), hireDate: ymd(hire),\n  newHireOrRehire: 'New Hire', employeeType: 'Direct Hire', employmentType: 'Salary',   // r2 enum: employeeType ∈ Direct Hire|Agency (was 'Salary' in the r1 brief)\n  firstName: 'EFX Test', lastName: 'Hire' + stamp, positionTitle: 'Site Supervisor',\n  siteName: 'Aurora', jobSiteNumber: 'INDIRECT - Aurora',\n  reportingManagerName: 'David Binns', reportingManagerEmail: 'dbinns@team-group.com',\n  systemAccess: 'Yes', systems: ['BOSS', 'SiteDocs Supervisor'], equipment: [],\n  plan306090: 'Yes', jrRequired: 'Yes', jrAssignment: 'Site Supervisor',\n  comments: 'EFX E2E test run ' + stamp + ' — safe to cancel'\n};\nconst idSetup = { siteDocsWorkerId: 'EFX-TEST', siteDocsJobCode: 'Hourly 1', dssUsername: 'efx.test', dssPassword: 'Test-Only-Not-Real', setupNotes: 'EFX E2E test ' + stamp };\nconst actor = { id: 'n8n:efx-e2e-test', email: 'efx-bot@team-group.com', display: 'EFX E2E Test (n8n)' };\n// Extended (optional) payloads — FormContracts r2 termination_request / position_change_request required keys.\nconst term = new Date(now.getTime() + 7 * 86400000);\nconst termination = {\n  reqName: 'EFX E2E (n8n)', reqEmail: 'dbinns@team-group.com', empName: 'EFX Test Hire' + stamp, empType: 'Salary', siteName: 'Aurora',\n  termDate: ymd(term), lastDayWorked: ymd(term), reason: 'Resigned', managerName: 'David Binns', managerEmail: 'dbinns@team-group.com',\n  has_reports: 'No', comments: 'EFX E2E test run ' + stamp + ' — safe to cancel'\n};\nconst positionChange = {\n  reqName: 'EFX E2E (n8n)', reqEmail: 'dbinns@team-group.com', reqDate: ymd(now), firstName: 'EFX Test', lastName: 'Hire' + stamp,\n  currentClass: 'Salary', effDate: ymd(hire), siteName: 'Aurora', changeType: ['Position Change'], titleOld: 'Site Supervisor', titleNew: 'Site Manager',\n  currentTitle: 'Site Supervisor', currentManagerName: 'David Binns', currentManagerEmail: 'dbinns@team-group.com',\n  comments: 'EFX E2E test run ' + stamp + ' — safe to cancel'\n};\nreturn [{ json: { cfg, stamp, runStartIso, payload, idSetup, actor, termination, positionChange } }];"
+      },
+      "id": "cfg",
+      "name": "Test config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_ping",
+            "args": "={{ [] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-1",
+      "name": "1 Ping",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c010",
+              "leftValue": "={{ $json.ok === true && !!$json.env && (!$('Test config').first().json.cfg.expectedEnv || $json.env === $('Test config').first().json.cfg.expectedEnv) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-1",
+      "name": "1 Ping OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -30,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c011",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c012",
+              "name": "step",
+              "value": "1",
+              "type": "string"
+            },
+            {
+              "id": "c013",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-1",
+      "name": "Fail: 1 Ping",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -30,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_contracts",
+            "args": "={{ [] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-2",
+      "name": "2 Contracts",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c014",
+              "leftValue": "={{ Array.isArray($json.forms) && ['new_hire', 'id_setup'].every(f => $json.forms.some(x => x.form === f)) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-2",
+      "name": "2 Contracts OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        230,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c015",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c016",
+              "name": "step",
+              "value": "2",
+              "type": "string"
+            },
+            {
+              "id": "c017",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-2",
+      "name": "Fail: 2 Contracts",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        230,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_createInitialRequest",
+            "args": "={{ [ $('Test config').first().json.payload, [] ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}",
+            "idempotencyKey": "={{ 'e2e-create-' + $('Test config').first().json.stamp }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-3",
+      "name": "3 CreateInitialRequest",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        360,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c018",
+              "leftValue": "={{ $json.ok === true && /^\\d{5}$/.test(String($json.internalEmployeeId)) && String($json.workflowId).startsWith('NEW_EMP_') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-3",
+      "name": "3 CreateInitialRequest OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        490,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c019",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c020",
+              "name": "step",
+              "value": "3",
+              "type": "string"
+            },
+            {
+              "id": "c021",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-3",
+      "name": "Fail: 3 CreateInitialRequest",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        490,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_getEmployeeId",
+            "args": "={{ [ $('3 CreateInitialRequest').first().json.workflowId ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-4",
+      "name": "4 GetEmployeeId",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        620,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c022",
+              "leftValue": "={{ String($json.internalEmployeeId) === String($('3 CreateInitialRequest').first().json.internalEmployeeId) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-4",
+      "name": "4 GetEmployeeId OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        750,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c023",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c024",
+              "name": "step",
+              "value": "4",
+              "type": "string"
+            },
+            {
+              "id": "c025",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-4",
+      "name": "Fail: 4 GetEmployeeId",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        750,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_getWorkflow",
+            "args": "={{ [ $('3 CreateInitialRequest').first().json.workflowId ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-5",
+      "name": "5 GetWorkflow",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c026",
+              "leftValue": "={{ Array.isArray($json.checklist) && $json.checklist.some(c => c.name === 'ID Setup' && c.status === 'Pending') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-5",
+      "name": "5 GetWorkflow OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1010,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c027",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c028",
+              "name": "step",
+              "value": "5",
+              "type": "string"
+            },
+            {
+              "id": "c029",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-5",
+      "name": "Fail: 5 GetWorkflow",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1010,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_submitIdSetup",
+            "args": "={{ [ Object.assign({ workflowId: $('3 CreateInitialRequest').first().json.workflowId }, $('Test config').first().json.idSetup), [] ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-6",
+      "name": "6 SubmitIdSetup",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1140,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c030",
+              "leftValue": "={{ $json.ok === true && $json.success !== false }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-6",
+      "name": "6 SubmitIdSetup OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1270,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c031",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c032",
+              "name": "step",
+              "value": "6",
+              "type": "string"
+            },
+            {
+              "id": "c033",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-6",
+      "name": "Fail: 6 SubmitIdSetup",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1270,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_submitIdSetup",
+            "args": "={{ [ Object.assign({ workflowId: $('3 CreateInitialRequest').first().json.workflowId }, $('Test config').first().json.idSetup, { setupNotes: 'EFX E2E duplicate submit (expected to be rejected)' }), [] ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-6b",
+      "name": "6b SubmitIdSetup again",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1400,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Optional assertion: a second ID Setup for the same workflow should be rejected (workflow already advanced).\nconst j = $input.first().json;\nconst errored = !!j.error;\nreturn [{ json: { step: '6b', optional: true, pass: errored,\n  note: errored ? 'Second ID Setup rejected as expected: ' + String(j.error.message || j.error)\n                : 'WARN: second ID Setup was accepted — Forms did not reject a re-submit (optional assertion; a duplicate ID Setup Results row now exists)' } }];"
+      },
+      "id": "verdict-6b",
+      "name": "6b verdict (optional)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1530,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_listTasks",
+            "args": "={{ [ { workflowId: $('3 CreateInitialRequest').first().json.workflowId, formType: 'jr_title' } ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-7",
+      "name": "7 ListTasks jr_title",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1660,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c034",
+              "leftValue": "={{ Array.isArray($json.tasks) && $json.tasks.length === 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-7",
+      "name": "7 ListTasks jr_title OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1790,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c035",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c036",
+              "name": "step",
+              "value": "7",
+              "type": "string"
+            },
+            {
+              "id": "c037",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-7",
+      "name": "Fail: 7 ListTasks jr_title",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1790,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c038",
+              "leftValue": "={{ !!$('Test config').first().json.cfg.existingJrTaskId }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-7a",
+      "name": "Existing JR task id given?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_closeTask",
+            "args": "={{ [ { taskId: $('Test config').first().json.cfg.existingJrTaskId, dryRun: true } ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-7b",
+      "name": "7b CloseTask dryRun",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        2180,
+        -200
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c039",
+              "leftValue": "={{ $json.dryRun === true && $json.wouldClose === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-7b",
+      "name": "7b CloseTask dryRun OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2310,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c040",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c041",
+              "name": "step",
+              "value": "7b",
+              "type": "string"
+            },
+            {
+              "id": "c042",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-7b",
+      "name": "Fail: 7b CloseTask dryRun",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2310,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_closeJrTask",
+            "args": "={{ [ $('Test config').first().json.cfg.existingJrTaskId, 'EFX E2E close ' + $('Test config').first().json.stamp ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}",
+            "treatAlreadyClosedAsSuccess": "={{ true }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-7c",
+      "name": "7c CloseJrTask real",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        2440,
+        -200
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c043",
+              "leftValue": "={{ $json.ok === true && (!!$json.taskId || $json.alreadyClosed === true) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-7c",
+      "name": "7c CloseJrTask real OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2570,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c044",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c045",
+              "name": "step",
+              "value": "7c",
+              "type": "string"
+            },
+            {
+              "id": "c046",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-7c",
+      "name": "Fail: 7c CloseJrTask real",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2570,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_assignSafetyTraining",
+            "args": "={{ [ $('3 CreateInitialRequest').first().json.workflowId, { dryRun: true, siteDocsConfirmed: 'Yes', dssConfirmed: 'Yes', notes: 'EFX E2E dry run' } ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-8",
+      "name": "8 AssignSafetyTraining dryRun",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        2700,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Two valid outcomes, depending on the Forms setting SAFETY_TRAINING_AT_SUBMIT:\n//   false (default): the safety_onboarding task does not exist yet (created at ID Setup for hourly / after HR Verification for salary) → EFX E_NOT_FOUND\n//   true            : the task exists from submit → dryRun returns { dryRun:true, wouldClose:true }\nconst j = $input.first().json;\nif (j.error) {\n  const m = String(j.error.message || j.error);\n  const pass = m.includes('E_NOT_FOUND');\n  return [{ json: { step: '8', pass, mode: 'SAFETY_TRAINING_AT_SUBMIT=false', note: pass ? 'E_NOT_FOUND as expected (safety task not created yet for a Salary hire)' : 'Unexpected error: ' + m } }];\n}\nconst pass = j.dryRun === true && j.wouldClose === true;\nreturn [{ json: { step: '8', pass, mode: 'SAFETY_TRAINING_AT_SUBMIT=true', note: pass ? 'dryRun resolved the safety task (exists at submit)' : 'Unexpected success shape: ' + JSON.stringify(j).slice(0, 300) } }];"
+      },
+      "id": "verdict-8",
+      "name": "8 verdict",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2830,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c047",
+              "leftValue": "={{ $json.pass === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-8",
+      "name": "8 AssignSafetyTraining OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2830,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c048",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c049",
+              "name": "step",
+              "value": "8",
+              "type": "string"
+            },
+            {
+              "id": "c050",
+              "name": "message",
+              "value": "={{ $json.note }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-8",
+      "name": "Fail: 8 AssignSafetyTraining dryRun",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2830,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_events",
+            "args": "={{ [ { afterTs: $('Test config').first().json.runStartIso, sources: ['submitInitialRequest'], limit: 500 } ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-9",
+      "name": "9 Events since start",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        2960,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c051",
+              "leftValue": "={{ Array.isArray($json.events) && $json.events.some(e => e.workflowId === $('3 CreateInitialRequest').first().json.workflowId) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-9",
+      "name": "9 Events since start OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3090,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c052",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c053",
+              "name": "step",
+              "value": "9",
+              "type": "string"
+            },
+            {
+              "id": "c054",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-9",
+      "name": "Fail: 9 Events since start",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3090,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c055",
+              "leftValue": "={{ $('Test config').first().json.cfg.runExtended === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-ext",
+      "name": "Run extended?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_createTerminationRequest",
+            "args": "={{ [ $('Test config').first().json.termination, {} ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}",
+            "idempotencyKey": "={{ 'e2e-term-' + $('Test config').first().json.stamp }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-10",
+      "name": "10 CreateTerminationRequest",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        3480,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c056",
+              "leftValue": "={{ $json.ok === true && String($json.workflowId).startsWith('TERM_') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-10",
+      "name": "10 CreateTerminationRequest OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3610,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c057",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c058",
+              "name": "step",
+              "value": "10",
+              "type": "string"
+            },
+            {
+              "id": "c059",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-10",
+      "name": "Fail: 10 CreateTerminationRequest",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3610,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_submitTerminationApproval",
+            "args": "={{ [ { workflowId: $('10 CreateTerminationRequest').first().json.workflowId, decision: 'Approved', notes: 'EFX E2E approval ' + $('Test config').first().json.stamp }, {} ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-10b",
+      "name": "10b SubmitTerminationApproval",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        3740,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Termination approval: PASS when accepted; WARN when the real session principal (efx-bot) is not HR/Admin; FAIL otherwise.\nconst j = $input.first().json;\nif (j.error) {\n  const m = String(j.error.message || j.error);\n  const forbidden = /E_FORBIDDEN|Access denied/i.test(m);\n  return [{ json: { step: '10b', optional: true, pass: forbidden, warn: forbidden, note: forbidden ? 'WARN: approval refused — efx-bot@team-group.com is not in grp.forms.hr / CONFIG.ADMIN_EMAILS on this tier: ' + m : 'Unexpected error: ' + m } }];\n}\nreturn [{ json: { step: '10b', optional: true, pass: j.ok === true && j.success !== false, warn: false, note: j.message || 'approved' } }];"
+      },
+      "id": "verdict-10b",
+      "name": "10b verdict (optional)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3870,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c060",
+              "leftValue": "={{ $json.pass === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-10b",
+      "name": "10b OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3870,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c061",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c062",
+              "name": "step",
+              "value": "10b",
+              "type": "string"
+            },
+            {
+              "id": "c063",
+              "name": "message",
+              "value": "={{ $json.note }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-10b",
+      "name": "Fail: 10b SubmitTerminationApproval",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3870,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_createPositionChangeRequest",
+            "args": "={{ [ $('Test config').first().json.positionChange, {} ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}",
+            "idempotencyKey": "={{ 'e2e-chg-' + $('Test config').first().json.stamp }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-11",
+      "name": "11 CreatePositionChangeRequest",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        4000,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c064",
+              "leftValue": "={{ $json.ok === true && String($json.workflowId).startsWith('CHANGE_') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-11",
+      "name": "11 CreatePositionChangeRequest OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        4130,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c065",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c066",
+              "name": "step",
+              "value": "11",
+              "type": "string"
+            },
+            {
+              "id": "c067",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-11",
+      "name": "Fail: 11 CreatePositionChangeRequest",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4130,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_submitPositionChangeApproval",
+            "args": "={{ [ { workflowId: $('11 CreatePositionChangeRequest').first().json.workflowId, decision: 'Approved', notes: 'EFX E2E approval ' + $('Test config').first().json.stamp, confirmedTitle: 'Site Manager' }, {} ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-11b",
+      "name": "11b SubmitPositionChangeApproval",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        4260,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Position change approval: PASS when accepted; WARN when the real session principal (efx-bot) is not HR/Admin; FAIL otherwise.\nconst j = $input.first().json;\nif (j.error) {\n  const m = String(j.error.message || j.error);\n  const forbidden = /E_FORBIDDEN|Access denied/i.test(m);\n  return [{ json: { step: '11b', optional: true, pass: forbidden, warn: forbidden, note: forbidden ? 'WARN: approval refused — efx-bot@team-group.com is not in grp.forms.hr / CONFIG.ADMIN_EMAILS on this tier: ' + m : 'Unexpected error: ' + m } }];\n}\nreturn [{ json: { step: '11b', optional: true, pass: j.ok === true && j.success !== false, warn: false, note: j.message || 'approved' } }];"
+      },
+      "id": "verdict-11b",
+      "name": "11b verdict (optional)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4390,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c068",
+              "leftValue": "={{ $json.pass === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-11b",
+      "name": "11b OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        4390,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c069",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c070",
+              "name": "step",
+              "value": "11b",
+              "type": "string"
+            },
+            {
+              "id": "c071",
+              "name": "message",
+              "value": "={{ $json.note }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-11b",
+      "name": "Fail: 11b SubmitPositionChangeApproval",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4390,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_listWorkflows",
+            "args": "={{ [ { since: $('Test config').first().json.runStartIso, limit: 100 } ] }}",
+            "actor": "={{ $('Test config').first().json.actor }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-12",
+      "name": "12 ListWorkflows",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        4520,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c072",
+              "leftValue": "={{ Array.isArray($json.workflows) && $json.workflows.some(w => w.workflowId === $('3 CreateInitialRequest').first().json.workflowId || w.workflowId === $('10 CreateTerminationRequest').first().json.workflowId || w.workflowId === $('11 CreatePositionChangeRequest').first().json.workflowId) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-12",
+      "name": "12 ListWorkflows OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        4650,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c073",
+              "name": "status",
+              "value": "FAIL",
+              "type": "string"
+            },
+            {
+              "id": "c074",
+              "name": "step",
+              "value": "12",
+              "type": "string"
+            },
+            {
+              "id": "c075",
+              "name": "message",
+              "value": "={{ $json.error ? ('Router error: ' + ($json.error.message || JSON.stringify($json.error))) : ('Assertion failed. Output: ' + JSON.stringify($json).slice(0, 600)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fail-12",
+      "name": "Fail: 12 ListWorkflows",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4650,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Builds the PASS/FAIL table. A node that never executed throws when referenced — that is how NOT RUN is detected.\nconst STEPS = [\n  ['1', '1 Ping', 'n8n_ping → env'],\n  ['2', '2 Contracts', 'n8n_contracts → forms include new_hire, id_setup'],\n  ['3', '3 CreateInitialRequest', 'n8n_createInitialRequest → 5-digit internalEmployeeId'],\n  ['4', '4 GetEmployeeId', 'n8n_getEmployeeId equals step 3'],\n  ['5', '5 GetWorkflow', 'n8n_getWorkflow → checklist \"ID Setup\" Pending'],\n  ['6', '6 SubmitIdSetup', 'n8n_submitIdSetup without internalEmployeeId'],\n  ['6b', '6b verdict (optional)', 'second ID Setup rejected (optional)'],\n  ['7', '7 ListTasks jr_title', 'n8n_listTasks jr_title == 0 before IT Setup'],\n  ['7b', '7b CloseTask dryRun', 'n8n_closeTask dryRun on <<EXISTING_JR_TASK_ID>> (only if given)'],\n  ['7c', '7c CloseJrTask real', 'n8n_closeJrTask on <<EXISTING_JR_TASK_ID>> (only if given)'],\n  ['8', '8 verdict', 'n8n_assignSafetyTraining dryRun → E_NOT_FOUND | dryRun:true'],\n  ['9', '9 Events since start', 'n8n_events → result event with our workflowId'],\n  ['10', '10 CreateTerminationRequest', 'OPTIONAL (runExtended) n8n_createTerminationRequest → TERM_ id'],\n  ['10b', '10b verdict (optional)', 'OPTIONAL n8n_submitTerminationApproval Approved (WARN if efx-bot is not HR/Admin)'],\n  ['11', '11 CreatePositionChangeRequest', 'OPTIONAL n8n_createPositionChangeRequest → CHANGE_ id'],\n  ['11b', '11b verdict (optional)', 'OPTIONAL n8n_submitPositionChangeApproval Approved (WARN if efx-bot is not HR/Admin)'],\n  ['12', '12 ListWorkflows', 'OPTIONAL n8n_listWorkflows since start includes our ids']\n];\nconst EXT = ['10', '10b', '11', '11b', '12'];\nconst get = (n) => { try { return $(n).first().json; } catch (e) { return undefined; } };\nconst incoming = $input.first().json;\nconst failed = incoming && incoming.status === 'FAIL' ? incoming : null;\nconst cfg = get('Test config') || {};\nconst created = get('3 CreateInitialRequest') || {};\nconst rows = STEPS.map(([id, node, what]) => {\n  const out = get(node);\n  let status, note = '';\n  if (failed && String(failed.step) === id) { status = 'FAIL'; note = failed.message; }\n  else if (out === undefined) { status = ((id === '7b' || id === '7c') && !(cfg.cfg && cfg.cfg.existingJrTaskId)) || (EXT.includes(id) && !(cfg.cfg && cfg.cfg.runExtended)) ? 'SKIPPED' : 'NOT RUN'; }\n  else if (id === '6b') { status = out.pass ? 'PASS' : 'WARN'; note = out.note; }\n  else if (id === '10b' || id === '11b') { status = out.warn ? 'WARN' : (out.pass ? 'PASS' : 'FAIL'); note = out.note; }\n  else if (id === '8') { status = out.pass ? 'PASS' : 'FAIL'; note = out.mode + ' — ' + out.note; }\n  else if (out.error) { status = 'FAIL'; note = String(out.error.message || out.error); }\n  else { status = 'PASS'; if (id === '3') note = out.workflowId + ' / ' + out.internalEmployeeId; if (id === '1') note = 'env=' + out.env + ' apiVersion=' + out.apiVersion; }\n  return { step: id, what, status, note };\n});\nconst overall = failed || rows.some(r => r.status === 'FAIL') ? 'FAIL' : 'PASS';\nconst table = rows.map(r => r.step.padEnd(3) + ' ' + r.status.padEnd(8) + ' ' + r.what + (r.note ? '  — ' + r.note : '')).join('\\n');\nreturn [{ json: { overall, failedStep: failed ? failed.step : null, workflowId: created.workflowId || null, internalEmployeeId: created.internalEmployeeId || null, stamp: cfg.stamp || null, steps: rows, table,\n  cleanup: [created.workflowId, (get('10 CreateTerminationRequest') || {}).workflowId, (get('11 CreatePositionChangeRequest') || {}).workflowId].filter(Boolean).map(id => 'Cancel ' + id + ' (EFX Test Hire' + (cfg.stamp || '') + ') from the TEST dashboard.').join(' ') || 'nothing created' } }];"
+      },
+      "id": "summary",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5040,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Run E2E": {
+      "main": [
+        [
+          {
+            "node": "Test config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1 Ping": {
+      "main": [
+        [
+          {
+            "node": "1 Ping OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 1 Ping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 1 Ping": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test config": {
+      "main": [
+        [
+          {
+            "node": "1 Ping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2 Contracts": {
+      "main": [
+        [
+          {
+            "node": "2 Contracts OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 2 Contracts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 2 Contracts": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1 Ping OK?": {
+      "main": [
+        [
+          {
+            "node": "2 Contracts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3 CreateInitialRequest": {
+      "main": [
+        [
+          {
+            "node": "3 CreateInitialRequest OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 3 CreateInitialRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 3 CreateInitialRequest": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2 Contracts OK?": {
+      "main": [
+        [
+          {
+            "node": "3 CreateInitialRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4 GetEmployeeId": {
+      "main": [
+        [
+          {
+            "node": "4 GetEmployeeId OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 4 GetEmployeeId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 4 GetEmployeeId": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3 CreateInitialRequest OK?": {
+      "main": [
+        [
+          {
+            "node": "4 GetEmployeeId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5 GetWorkflow": {
+      "main": [
+        [
+          {
+            "node": "5 GetWorkflow OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 5 GetWorkflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 5 GetWorkflow": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4 GetEmployeeId OK?": {
+      "main": [
+        [
+          {
+            "node": "5 GetWorkflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6 SubmitIdSetup": {
+      "main": [
+        [
+          {
+            "node": "6 SubmitIdSetup OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 6 SubmitIdSetup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 6 SubmitIdSetup": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5 GetWorkflow OK?": {
+      "main": [
+        [
+          {
+            "node": "6 SubmitIdSetup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6 SubmitIdSetup OK?": {
+      "main": [
+        [
+          {
+            "node": "6b SubmitIdSetup again",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6b SubmitIdSetup again": {
+      "main": [
+        [
+          {
+            "node": "6b verdict (optional)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "6b verdict (optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7 ListTasks jr_title": {
+      "main": [
+        [
+          {
+            "node": "7 ListTasks jr_title OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 7 ListTasks jr_title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 7 ListTasks jr_title": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6b verdict (optional)": {
+      "main": [
+        [
+          {
+            "node": "7 ListTasks jr_title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7 ListTasks jr_title OK?": {
+      "main": [
+        [
+          {
+            "node": "Existing JR task id given?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7b CloseTask dryRun": {
+      "main": [
+        [
+          {
+            "node": "7b CloseTask dryRun OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 7b CloseTask dryRun",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 7b CloseTask dryRun": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing JR task id given?": {
+      "main": [
+        [
+          {
+            "node": "7b CloseTask dryRun",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "8 AssignSafetyTraining dryRun",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7c CloseJrTask real": {
+      "main": [
+        [
+          {
+            "node": "7c CloseJrTask real OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 7c CloseJrTask real",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 7c CloseJrTask real": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7b CloseTask dryRun OK?": {
+      "main": [
+        [
+          {
+            "node": "7c CloseJrTask real",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7c CloseJrTask real OK?": {
+      "main": [
+        [
+          {
+            "node": "8 AssignSafetyTraining dryRun",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8 AssignSafetyTraining dryRun": {
+      "main": [
+        [
+          {
+            "node": "8 verdict",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "8 verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8 verdict": {
+      "main": [
+        [
+          {
+            "node": "8 AssignSafetyTraining OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8 AssignSafetyTraining OK?": {
+      "main": [
+        [
+          {
+            "node": "9 Events since start",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 8 AssignSafetyTraining dryRun",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 8 AssignSafetyTraining dryRun": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9 Events since start": {
+      "main": [
+        [
+          {
+            "node": "9 Events since start OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 9 Events since start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 9 Events since start": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9 Events since start OK?": {
+      "main": [
+        [
+          {
+            "node": "Run extended?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 CreateTerminationRequest": {
+      "main": [
+        [
+          {
+            "node": "10 CreateTerminationRequest OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 10 CreateTerminationRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 10 CreateTerminationRequest": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run extended?": {
+      "main": [
+        [
+          {
+            "node": "10 CreateTerminationRequest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 CreateTerminationRequest OK?": {
+      "main": [
+        [
+          {
+            "node": "10b SubmitTerminationApproval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10b SubmitTerminationApproval": {
+      "main": [
+        [
+          {
+            "node": "10b verdict (optional)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "10b verdict (optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10b verdict (optional)": {
+      "main": [
+        [
+          {
+            "node": "10b OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10b OK?": {
+      "main": [
+        [
+          {
+            "node": "11 CreatePositionChangeRequest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 10b SubmitTerminationApproval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 10b SubmitTerminationApproval": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11 CreatePositionChangeRequest": {
+      "main": [
+        [
+          {
+            "node": "11 CreatePositionChangeRequest OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 11 CreatePositionChangeRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 11 CreatePositionChangeRequest": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11 CreatePositionChangeRequest OK?": {
+      "main": [
+        [
+          {
+            "node": "11b SubmitPositionChangeApproval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11b SubmitPositionChangeApproval": {
+      "main": [
+        [
+          {
+            "node": "11b verdict (optional)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "11b verdict (optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11b verdict (optional)": {
+      "main": [
+        [
+          {
+            "node": "11b OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11b OK?": {
+      "main": [
+        [
+          {
+            "node": "12 ListWorkflows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 11b SubmitPositionChangeApproval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 11b SubmitPositionChangeApproval": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12 ListWorkflows": {
+      "main": [
+        [
+          {
+            "node": "12 ListWorkflows OK?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail: 12 ListWorkflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail: 12 ListWorkflows": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12 ListWorkflows OK?": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

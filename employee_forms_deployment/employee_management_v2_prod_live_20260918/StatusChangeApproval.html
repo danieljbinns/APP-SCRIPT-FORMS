@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Status Change Approval</title>
+    <?!= include('Styles') ?>
+</head>
+
+<body class="card-layout">
+    <div class="container-narrow">
+        <a href="<?= getBaseUrl() ?>?form=dashboard" target="_top" class="back-link">&#8592; Back to Portal</a>
+        <div class="card">
+            <h1>Status Change Approval</h1>
+            <p class="subtitle">HR Review required for position/site changes</p>
+
+            <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
+
+            <form id="approvalForm">
+                <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+
+                <p class="section-title">HR Confirmation</p>
+
+                <div class="form-group">
+                    <label>Confirmed New Manager Email</label>
+                    <input type="email" name="confirmedNewManager" id="confirmedNewManager"
+                        value="<?= requestData.receivingManagerEmail || requestData.mgrNewEmail || '' ?>"
+                        placeholder="Receiving or new direct manager email">
+                    <p class="help-text">Pre-filled from request. Update if the effective manager has changed.</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Confirmed Job Title</label>
+                    <input type="text" name="confirmedTitle" id="confirmedTitle"
+                        value="<?= requestData.titleNew || requestData.currentTitle || '' ?>"
+                        placeholder="Free-text job title as it should appear on record...">
+                    <p class="help-text">
+                        <?= requestData.currentTitle ? 'Current: ' + requestData.currentTitle : '' ?>
+                        <?= requestData.titleNew ? ' | Requested new: ' + requestData.titleNew : '' ?>
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label>Confirmed JR Title <span class="help-text" style="display:inline;">(select from JR list — leave blank if not applicable)</span></label>
+                    <select name="confirmedJrTitle" id="confirmedJrTitle">
+                        <option value="">Loading...</option>
+                    </select>
+                    <p class="help-text">JR titles drive safety, learning, and system access assignments. Select the correct JR for the new role.</p>
+                </div>
+
+                <div class="form-group">
+                    <label>HR Decision</label>
+                    <input type="hidden" name="decision" id="decisionInput" value="Approved" required>
+                    <div class="status-btn-group">
+                        <button type="button" class="status-btn active" id="btnApproved" onclick="setDecision('Approved')">Approve Change</button>
+                        <button type="button" class="status-btn" id="btnRejected" onclick="setDecision('Rejected')">Reject</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full" id="submitBtn">Submit Decision</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Load JR titles client-side
+        window.addEventListener('DOMContentLoaded', function() {
+            google.script.run
+                .withSuccessHandler(function(jrs) {
+                    var select = document.getElementById('confirmedJrTitle');
+                    select.innerHTML = '<option value="">— No JR / Not applicable —</option>';
+                    if (jrs && jrs.length) {
+                        jrs.forEach(function(jr) {
+                            var opt = document.createElement('option');
+                            opt.value = jr; opt.textContent = jr;
+                            select.appendChild(opt);
+                        });
+                    }
+                })
+                .withFailureHandler(function() {
+                    document.getElementById('confirmedJrTitle').innerHTML = '<option value="">Error loading titles</option>';
+                })
+                .getJRsList();
+        });
+
+        function setDecision(value) {
+            document.getElementById('decisionInput').value = value;
+            document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
+            if (value === 'Approved') {
+                document.getElementById('btnApproved').classList.add('active');
+            } else {
+                document.getElementById('btnRejected').classList.add('active');
+            }
+        }
+
+        document.getElementById('approvalForm').onsubmit = function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            const formData = {
+                workflowId: this.workflowId.value,
+                decision: this.decision.value,
+                notes: this.notes.value,
+                confirmedNewManager: this.confirmedNewManager.value,
+                confirmedTitle: this.confirmedTitle.value,
+                confirmedJrTitle: this.confirmedJrTitle.value
+            };
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res.success) {
+                        document.querySelector('.card').innerHTML = `<div style="text-align:center; padding:40px;"><h2>✓ Action Completed</h2><p>${res.message}</p></div>`;
+                    } else {
+                        alert('Error: ' + res.message);
+                        btn.disabled = false;
+                        btn.textContent = 'Submit Decision';
+                    }
+                })
+                .withFailureHandler(function(err) { btn.disabled = false; btn.textContent = 'Submit Decision'; alert('Error: ' + err.message); })
+                .submitPositionChangeApproval(formData);
+        }
+    </script>
+  <?!= include('SharedComponents') ?>
+  <?!= safeInclude('Konami') ?>
+</body>
+
+</html>

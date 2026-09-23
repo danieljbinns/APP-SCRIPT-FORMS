@@ -1,0 +1,3397 @@
+{
+  "$comment": "Mechanical extraction — regenerate with review/tools/extract-fields.js. Human-authored notes live in the matching .notes.json and are merged by merge-fields.js; this file is safe to overwrite. snapshotLine is valid for this snapshot only — use `control` as the durable identifier.",
+  "template": "InitialRequest.html",
+  "servesForms": [
+    {
+      "key": "FORM_NEW_HIRE",
+      "label": "New Employee Request",
+      "mode": "new_hire",
+      "baseMode": "new_hire",
+      "route": "ROUTE_INITIAL_REQUEST",
+      "variantNote": null
+    },
+    {
+      "key": "FORM_EQUIPMENT",
+      "label": "Equipment and Systems Request",
+      "mode": "equipment",
+      "baseMode": "equipment",
+      "route": "ROUTE_EQUIPMENT_REQUEST",
+      "variantNote": null
+    },
+    {
+      "key": "FORM_IT_CONFIRMATION",
+      "label": "IT Confirmation",
+      "mode": "it_confirmation",
+      "baseMode": "new_hire",
+      "route": "ROUTE_IT_CONFIRMATION",
+      "variantNote": "baseMode is set from the workflow: new_hire for NEW_EMP_, equipment for EQUIP_REQ_. When baseMode is equipment the new-hire-only fields are hidden here too. A CHANGE_ workflow uses PositionSiteChangeRequest.html instead — see FORM_IT_CONFIRMATION_CHANGE."
+    }
+  ],
+  "sharedTemplate": true,
+  "sharedTemplateNote": "One template, one definition per field, deliberately shared so a field is only edited once. Each mode is a distinct form in use — see servesForms and each field's availability map. An edit to a shared field changes every mode listed here.",
+  "extractedAt": "2026-09-19",
+  "fieldCount": 52,
+  "counts": {
+    "markup": 47,
+    "dynamic": 5,
+    "notSubmitted": 1
+  },
+  "submitStyle": "explicit-map",
+  "payloadKeys": 51,
+  "orphanPayloadKeys": [],
+  "fields": {
+    "FIELD_INITIAL_REQUEST_dateRequested": {
+      "key": "FIELD_INITIAL_REQUEST_dateRequested",
+      "control": "dateRequested",
+      "id": null,
+      "label": "Date Requested *",
+      "type": "date",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Requester Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 73,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "dateRequested"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_requesterEmail": {
+      "key": "FIELD_INITIAL_REQUEST_requesterEmail",
+      "control": "requesterEmail",
+      "id": "requesterEmail",
+      "label": "Requester Email *",
+      "type": "email",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Requester Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 80,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "requesterEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_requesterName": {
+      "key": "FIELD_INITIAL_REQUEST_requesterName",
+      "control": "requesterName",
+      "id": "requesterName",
+      "label": "Requester Name *",
+      "type": "text",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Requester Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 86,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "requesterName"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_hireDate": {
+      "key": "FIELD_INITIAL_REQUEST_hireDate",
+      "control": "hireDate",
+      "id": "hireDate",
+      "label": "Hire Date *",
+      "type": "date",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "new-hire-only",
+      "modeGateSource": ".form-row.new-hire-only",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 101,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": false,
+          "disabled": true,
+          "requiredEffective": false,
+          "reason": [
+            ".new-hire-only is hidden in equipment mode (via .form-row.new-hire-only)",
+            ".new-hire-only controls are disabled in equipment mode"
+          ]
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "hireDate"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_hireType": {
+      "key": "FIELD_INITIAL_REQUEST_hireType",
+      "control": "hireType",
+      "id": null,
+      "label": "New Hire",
+      "type": "radio",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "new-hire-only",
+      "modeGateSource": ".form-row.new-hire-only",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "New Hire",
+          "line": 111
+        },
+        {
+          "value": "Rehire",
+          "line": 115
+        }
+      ],
+      "snapshotLine": 111,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": false,
+          "disabled": true,
+          "requiredEffective": false,
+          "reason": [
+            ".new-hire-only is hidden in equipment mode (via .form-row.new-hire-only)",
+            ".new-hire-only controls are disabled in equipment mode"
+          ]
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "newHireOrRehire"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_employeeType": {
+      "key": "FIELD_INITIAL_REQUEST_employeeType",
+      "control": "employeeType",
+      "id": null,
+      "label": "Direct Hire",
+      "type": "radio",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "new-hire-only",
+      "modeGateSource": ".form-row.new-hire-only",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Direct Hire",
+          "line": 125
+        },
+        {
+          "value": "Agency",
+          "line": 129
+        }
+      ],
+      "snapshotLine": 125,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": false,
+          "disabled": true,
+          "requiredEffective": false,
+          "reason": [
+            ".new-hire-only is hidden in equipment mode (via .form-row.new-hire-only)",
+            ".new-hire-only controls are disabled in equipment mode"
+          ]
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "employeeType"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_employmentType": {
+      "key": "FIELD_INITIAL_REQUEST_employmentType",
+      "control": "employmentType",
+      "id": null,
+      "label": "Hourly",
+      "type": "radio",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "new-hire-only",
+      "modeGateSource": ".form-row.new-hire-only",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Hourly",
+          "line": 139
+        },
+        {
+          "value": "Salary",
+          "line": 144
+        }
+      ],
+      "snapshotLine": 139,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": false,
+          "disabled": true,
+          "requiredEffective": false,
+          "reason": [
+            ".new-hire-only is hidden in equipment mode (via .form-row.new-hire-only)",
+            ".new-hire-only controls are disabled in equipment mode"
+          ]
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "employmentType"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_firstName": {
+      "key": "FIELD_INITIAL_REQUEST_firstName",
+      "control": "firstName",
+      "id": null,
+      "label": "First Name *",
+      "type": "text",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 154,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "firstName"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_middleName": {
+      "key": "FIELD_INITIAL_REQUEST_middleName",
+      "control": "middleName",
+      "id": null,
+      "label": "Middle Name",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 159,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "middleName"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_lastName": {
+      "key": "FIELD_INITIAL_REQUEST_lastName",
+      "control": "lastName",
+      "id": null,
+      "label": "Last Name *",
+      "type": "text",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 164,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "lastName"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_preferredName": {
+      "key": "FIELD_INITIAL_REQUEST_preferredName",
+      "control": "preferredName",
+      "id": null,
+      "label": "Preferred Name",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 169,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "preferredName"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_position": {
+      "key": "FIELD_INITIAL_REQUEST_position",
+      "control": "position",
+      "id": "position",
+      "label": "Job Title *",
+      "type": "text",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 176,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "positionTitle"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_siteName": {
+      "key": "FIELD_INITIAL_REQUEST_siteName",
+      "control": "siteName",
+      "id": "siteName",
+      "label": "Site Name *",
+      "type": "select",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 182,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "siteName"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_jobSiteNumber": {
+      "key": "FIELD_INITIAL_REQUEST_jobSiteNumber",
+      "control": "jobSiteNumber",
+      "id": "jobSiteNumber",
+      "label": "Job Site Number *",
+      "type": "select",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 189,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": false,
+          "disabled": true,
+          "requiredEffective": false,
+          "reason": [
+            "explicitly disabled, un-required and its wrapper hidden in equipment mode"
+          ]
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "jobSiteNumber"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_department": {
+      "key": "FIELD_INITIAL_REQUEST_department",
+      "control": "department",
+      "id": "department",
+      "label": "Department (Optional)",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 198,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "department"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_managerEmail": {
+      "key": "FIELD_INITIAL_REQUEST_managerEmail",
+      "control": "managerEmail",
+      "id": "managerEmail",
+      "label": "Reporting Manager Email *",
+      "type": "email",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 207,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "reportingManagerEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_managerName": {
+      "key": "FIELD_INITIAL_REQUEST_managerName",
+      "control": "managerName",
+      "id": "managerName",
+      "label": "Reporting Manager Name *",
+      "type": "text",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 214,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "reportingManagerName"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_systemAccess": {
+      "key": "FIELD_INITIAL_REQUEST_systemAccess",
+      "control": "systemAccess",
+      "id": "systemAccessYes",
+      "label": "Yes",
+      "type": "radio",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": "new-hire-only",
+      "modeGateSource": ".question-wrapper.new-hire-only",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Yes",
+          "line": 222
+        },
+        {
+          "value": "No",
+          "line": 227
+        }
+      ],
+      "snapshotLine": 222,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": false,
+          "disabled": true,
+          "requiredEffective": false,
+          "reason": [
+            ".new-hire-only is hidden in equipment mode (via .question-wrapper.new-hire-only)",
+            ".new-hire-only controls are disabled in equipment mode"
+          ]
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "systemAccess"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_systems": {
+      "key": "FIELD_INITIAL_REQUEST_systems",
+      "control": "systems",
+      "id": "adpSupervisorAccess",
+      "label": "ADP Supervisor Access",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Systems/Apps",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "systemAccessSection",
+      "gateChain": [
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'block'",
+          "handler": "toggleSystemAccess",
+          "snapshotLine": 946
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleSystemAccess",
+          "snapshotLine": 948
+        }
+      ],
+      "options": [
+        {
+          "value": "ADP Supervisor Access",
+          "line": 251
+        },
+        {
+          "value": "BOSS",
+          "line": 271
+        },
+        {
+          "value": "CAA",
+          "line": 319
+        },
+        {
+          "value": "Delivery",
+          "line": 323
+        },
+        {
+          "value": "Fleetio",
+          "line": 327
+        },
+        {
+          "value": "Google Account",
+          "line": 331
+        },
+        {
+          "value": "Incidents",
+          "line": 358
+        },
+        {
+          "value": "Central Purchasing/Jonas",
+          "line": 362
+        },
+        {
+          "value": "Net Promoter Score",
+          "line": 378
+        },
+        {
+          "value": "SiteDocs Supervisor",
+          "line": 382
+        }
+      ],
+      "snapshotLine": 251,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "systems"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_adpSalaryAccess": {
+      "key": "FIELD_INITIAL_REQUEST_adpSalaryAccess",
+      "control": "adpSalaryAccess",
+      "id": "adpSalaryAccess",
+      "label": "Requires access to salary data? If checked, HR/Payroll will be notified to grant salary data permissions in ADP before the start date.",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Systems/Apps",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "adpSitesSection",
+      "gateChain": [
+        "adpSitesSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "adpSitesSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "adpChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 1007
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 258
+        }
+      ],
+      "snapshotLine": 258,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "adpSalaryAccess"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_bossTrainingOnly": {
+      "key": "FIELD_INITIAL_REQUEST_bossTrainingOnly",
+      "control": "bossTrainingOnly",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Systems/Apps",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "bossDetailsSection",
+      "gateChain": [
+        "bossDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "bossDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "bossChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 1012
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 279
+        },
+        {
+          "value": "No",
+          "line": 280
+        }
+      ],
+      "snapshotLine": 279,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "bossTrainingOnly"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_bossCostSheet": {
+      "key": "FIELD_INITIAL_REQUEST_bossCostSheet",
+      "control": "bossCostSheet",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Systems/Apps",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "bossDetailsSection",
+      "gateChain": [
+        "bossDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "bossDetailsSection",
+        "bossFullAccessFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "bossChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 1012
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 292
+        },
+        {
+          "value": "No",
+          "line": 293
+        }
+      ],
+      "snapshotLine": 292,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "bossCostSheet"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_bossTripReports": {
+      "key": "FIELD_INITIAL_REQUEST_bossTripReports",
+      "control": "bossTripReports",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Systems/Apps",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "bossDetailsSection",
+      "gateChain": [
+        "bossDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "bossDetailsSection",
+        "bossFullAccessFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "bossChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 1012
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 305
+        },
+        {
+          "value": "No",
+          "line": 306
+        }
+      ],
+      "snapshotLine": 305,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "bossTripReports"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_bossGrievance": {
+      "key": "FIELD_INITIAL_REQUEST_bossGrievance",
+      "control": "bossGrievance",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Systems/Apps",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "bossDetailsSection",
+      "gateChain": [
+        "bossDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "bossDetailsSection",
+        "bossFullAccessFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "bossChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 1012
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 312
+        },
+        {
+          "value": "No",
+          "line": 313
+        }
+      ],
+      "snapshotLine": 312,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "bossGrievances"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_googleEmailLocal": {
+      "key": "FIELD_INITIAL_REQUEST_googleEmailLocal",
+      "control": "googleEmailLocal",
+      "id": "googleEmailLocal",
+      "label": "Requested Email Address",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Systems/Apps",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "googleAccountDetailsSection",
+      "gateChain": [
+        "googleAccountDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "googleAccountDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "googleChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 1022
+        }
+      ],
+      "options": [],
+      "snapshotLine": 339,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "googleEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_googleDomain": {
+      "key": "FIELD_INITIAL_REQUEST_googleDomain",
+      "control": "googleDomain",
+      "id": "googleDomain",
+      "label": "Email Domain",
+      "type": "select",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Systems/Apps",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "googleAccountDetailsSection",
+      "gateChain": [
+        "googleAccountDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "googleAccountDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "googleChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 1022
+        }
+      ],
+      "options": [],
+      "snapshotLine": 345,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "googleDomain"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_equipment": {
+      "key": "FIELD_INITIAL_REQUEST_equipment",
+      "control": "equipment",
+      "id": null,
+      "label": "Digital Business Cards",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Equipment",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "systemAccessSection",
+      "gateChain": [
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'block'",
+          "handler": "toggleSystemAccess",
+          "snapshotLine": 946
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleSystemAccess",
+          "snapshotLine": 948
+        }
+      ],
+      "options": [
+        {
+          "value": "Business Cards",
+          "line": 394
+        },
+        {
+          "value": "Computer",
+          "line": 398
+        },
+        {
+          "value": "Credit Card",
+          "line": 455
+        },
+        {
+          "value": "Mobile Phone",
+          "line": 489
+        },
+        {
+          "value": "SiteDocs Tablet",
+          "line": 515
+        },
+        {
+          "value": "Vehicle",
+          "line": 519
+        }
+      ],
+      "snapshotLine": 394,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "equipment"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_computerRequestType": {
+      "key": "FIELD_INITIAL_REQUEST_computerRequestType",
+      "control": "computerRequestType",
+      "id": null,
+      "label": "New Request",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "computerDetailsSection",
+      "gateChain": [
+        "computerDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "computerDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "computerChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 1036
+        }
+      ],
+      "options": [
+        {
+          "value": "New",
+          "line": 406
+        },
+        {
+          "value": "Reassignment",
+          "line": 407
+        }
+      ],
+      "snapshotLine": 406,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "computerRequestType"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_computerType": {
+      "key": "FIELD_INITIAL_REQUEST_computerType",
+      "control": "computerType",
+      "id": null,
+      "label": "Chromebook",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "computerNewFields",
+      "gateChain": [
+        "computerNewFields",
+        "computerDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "computerDetailsSection",
+        "computerNewFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'block'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 1056
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 1059
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 1062
+        }
+      ],
+      "options": [
+        {
+          "value": "Chromebook",
+          "line": 414
+        },
+        {
+          "value": "Windows",
+          "line": 415
+        },
+        {
+          "value": "Mac",
+          "line": 416
+        }
+      ],
+      "snapshotLine": 414,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "computerType"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_office365Required": {
+      "key": "FIELD_INITIAL_REQUEST_office365Required",
+      "control": "office365Required",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "office365Question",
+      "gateChain": [
+        "office365Question",
+        "computerNewFields",
+        "computerDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "computerDetailsSection",
+        "computerNewFields",
+        "office365Question"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'block'",
+          "handler": "toggleOffice365Question",
+          "snapshotLine": 1089
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleOffice365Question",
+          "snapshotLine": 1091
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 426
+        },
+        {
+          "value": "No",
+          "line": 427
+        }
+      ],
+      "snapshotLine": 426,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "office365Required"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_computerPreviousUser": {
+      "key": "FIELD_INITIAL_REQUEST_computerPreviousUser",
+      "control": "computerPreviousUser",
+      "id": null,
+      "label": "Previous User Name",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "computerDetailsSection",
+      "gateChain": [
+        "computerDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "computerDetailsSection",
+        "computerReassignFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "computerChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 1036
+        }
+      ],
+      "options": [],
+      "snapshotLine": 436,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "computerPreviousUser"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_computerPreviousType": {
+      "key": "FIELD_INITIAL_REQUEST_computerPreviousType",
+      "control": "computerPreviousType",
+      "id": null,
+      "label": "Previous Computer Type",
+      "type": "select",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "computerDetailsSection",
+      "gateChain": [
+        "computerDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "computerDetailsSection",
+        "computerReassignFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "computerChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 1036
+        }
+      ],
+      "options": [],
+      "snapshotLine": 440,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "computerPreviousType"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_computerSerialNumber": {
+      "key": "FIELD_INITIAL_REQUEST_computerSerialNumber",
+      "control": "computerSerialNumber",
+      "id": null,
+      "label": "Serial Number (if known)",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "computerDetailsSection",
+      "gateChain": [
+        "computerDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "computerDetailsSection",
+        "computerReassignFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "computerChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 1036
+        }
+      ],
+      "options": [],
+      "snapshotLine": 449,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "computerSerialNumber"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_creditCardUSA": {
+      "key": "FIELD_INITIAL_REQUEST_creditCardUSA",
+      "control": "creditCardUSA",
+      "id": null,
+      "label": "USA Credit Card",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 1041
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 464
+        }
+      ],
+      "snapshotLine": 464,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardUSA"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_creditCardLimitUSA": {
+      "key": "FIELD_INITIAL_REQUEST_creditCardLimitUSA",
+      "control": "creditCardLimitUSA",
+      "id": null,
+      "label": "USA Credit Card",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 1041
+        }
+      ],
+      "options": [],
+      "snapshotLine": 467,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardLimitUSA"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_creditCardCanada": {
+      "key": "FIELD_INITIAL_REQUEST_creditCardCanada",
+      "control": "creditCardCanada",
+      "id": null,
+      "label": "Canada Credit Card",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 1041
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 472
+        }
+      ],
+      "snapshotLine": 472,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardCanada"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_creditCardLimitCanada": {
+      "key": "FIELD_INITIAL_REQUEST_creditCardLimitCanada",
+      "control": "creditCardLimitCanada",
+      "id": null,
+      "label": "Canada Credit Card",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 1041
+        }
+      ],
+      "options": [],
+      "snapshotLine": 475,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardLimitCanada"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_creditCardHomeDepot": {
+      "key": "FIELD_INITIAL_REQUEST_creditCardHomeDepot",
+      "control": "creditCardHomeDepot",
+      "id": null,
+      "label": "Home Depot Credit Card",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 1041
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 480
+        }
+      ],
+      "snapshotLine": 480,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardHomeDepot"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_creditCardLimitHomeDepot": {
+      "key": "FIELD_INITIAL_REQUEST_creditCardLimitHomeDepot",
+      "control": "creditCardLimitHomeDepot",
+      "id": null,
+      "label": "Home Depot Credit Card",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 1041
+        }
+      ],
+      "options": [],
+      "snapshotLine": 483,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardLimitHomeDepot"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_phoneRequestType": {
+      "key": "FIELD_INITIAL_REQUEST_phoneRequestType",
+      "control": "phoneRequestType",
+      "id": null,
+      "label": "New Request",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Mobile Phone Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "mobilePhoneDetailsSection",
+      "gateChain": [
+        "mobilePhoneDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "mobilePhoneDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "phoneChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 1046
+        }
+      ],
+      "options": [
+        {
+          "value": "New",
+          "line": 497
+        },
+        {
+          "value": "Reassignment",
+          "line": 498
+        }
+      ],
+      "snapshotLine": 497,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "phoneRequestType"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_phonePreviousUser": {
+      "key": "FIELD_INITIAL_REQUEST_phonePreviousUser",
+      "control": "phonePreviousUser",
+      "id": null,
+      "label": "Previous User Name",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Mobile Phone Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "phoneReassignFields",
+      "gateChain": [
+        "phoneReassignFields",
+        "mobilePhoneDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "mobilePhoneDetailsSection",
+        "phoneReassignFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'none'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 1057
+        },
+        {
+          "rule": "'block'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 1060
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 1063
+        },
+        {
+          "rule": "'block'",
+          "handler": "togglePhoneReassignFields",
+          "snapshotLine": 1073
+        },
+        {
+          "rule": "'none'",
+          "handler": "togglePhoneReassignFields",
+          "snapshotLine": 1075
+        }
+      ],
+      "options": [],
+      "snapshotLine": 505,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "phonePreviousUser"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_phonePreviousNumber": {
+      "key": "FIELD_INITIAL_REQUEST_phonePreviousNumber",
+      "control": "phonePreviousNumber",
+      "id": null,
+      "label": "Previous Phone Number",
+      "type": "tel",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Mobile Phone Details",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "phoneReassignFields",
+      "gateChain": [
+        "phoneReassignFields",
+        "mobilePhoneDetailsSection",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "mobilePhoneDetailsSection",
+        "phoneReassignFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'none'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 1057
+        },
+        {
+          "rule": "'block'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 1060
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 1063
+        },
+        {
+          "rule": "'block'",
+          "handler": "togglePhoneReassignFields",
+          "snapshotLine": 1073
+        },
+        {
+          "rule": "'none'",
+          "handler": "togglePhoneReassignFields",
+          "snapshotLine": 1075
+        }
+      ],
+      "options": [],
+      "snapshotLine": 509,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "phonePreviousNumber"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_jrRequired": {
+      "key": "FIELD_INITIAL_REQUEST_jrRequired",
+      "control": "jrRequired",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "JR Assignment",
+      "classes": [],
+      "modeGate": "new-hire-only",
+      "modeGateSource": ".new-hire-only",
+      "wrapper": "systemAccessSection",
+      "gateChain": [
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'block'",
+          "handler": "toggleSystemAccess",
+          "snapshotLine": 946
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleSystemAccess",
+          "snapshotLine": 948
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 532
+        },
+        {
+          "value": "No",
+          "line": 536
+        }
+      ],
+      "snapshotLine": 532,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": false,
+          "disabled": true,
+          "requiredEffective": false,
+          "reason": [
+            ".new-hire-only is hidden in equipment mode (via .new-hire-only)",
+            ".new-hire-only controls are disabled in equipment mode"
+          ]
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "jrRequired"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_jrAssignment": {
+      "key": "FIELD_INITIAL_REQUEST_jrAssignment",
+      "control": "jrAssignment",
+      "id": null,
+      "label": "Select JR Title to Assign",
+      "type": "select",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "JR Assignment",
+      "classes": [],
+      "modeGate": "new-hire-only",
+      "modeGateSource": ".new-hire-only",
+      "wrapper": "jrPicker",
+      "gateChain": [
+        "jrPicker",
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection",
+        "jrPicker"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'block'",
+          "handler": "toggleJRPicker",
+          "snapshotLine": 1122
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleJRPicker",
+          "snapshotLine": 1124
+        }
+      ],
+      "options": [],
+      "snapshotLine": 545,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": false,
+          "disabled": true,
+          "requiredEffective": false,
+          "reason": [
+            ".new-hire-only is hidden in equipment mode (via .new-hire-only)",
+            ".new-hire-only controls are disabled in equipment mode"
+          ]
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "jrAssignment"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_plan306090": {
+      "key": "FIELD_INITIAL_REQUEST_plan306090",
+      "control": "plan306090",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "30-60-90 Day Plan",
+      "classes": [],
+      "modeGate": "new-hire-only",
+      "modeGateSource": ".new-hire-only",
+      "wrapper": "systemAccessSection",
+      "gateChain": [
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'block'",
+          "handler": "toggleSystemAccess",
+          "snapshotLine": 946
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleSystemAccess",
+          "snapshotLine": 948
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 562
+        },
+        {
+          "value": "No",
+          "line": 566
+        }
+      ],
+      "snapshotLine": 562,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": false,
+          "disabled": true,
+          "requiredEffective": false,
+          "reason": [
+            ".new-hire-only is hidden in equipment mode (via .new-hire-only)",
+            ".new-hire-only controls are disabled in equipment mode"
+          ]
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "plan306090"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_comments": {
+      "key": "FIELD_INITIAL_REQUEST_comments",
+      "control": "comments",
+      "id": null,
+      "label": "Comments",
+      "type": "textarea",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Additional Comments",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": "systemAccessSection",
+      "gateChain": [
+        "systemAccessSection",
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "systemAccessSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'block'",
+          "handler": "toggleSystemAccess",
+          "snapshotLine": 946
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleSystemAccess",
+          "snapshotLine": 948
+        }
+      ],
+      "options": [],
+      "snapshotLine": 578,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "comments"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_notes": {
+      "key": "FIELD_INITIAL_REQUEST_notes",
+      "control": "notes",
+      "id": null,
+      "label": "Review Notes (Optional)",
+      "type": "textarea",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Additional Comments",
+      "classes": [],
+      "modeGate": "gated-form",
+      "modeGateSource": "#mainForm",
+      "wrapper": null,
+      "gateChain": [
+        "mainForm"
+      ],
+      "pageGate": "mainForm",
+      "ancestorIds": [
+        "form-container",
+        "mainForm",
+        "submit-container"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 591,
+      "sourceTemplate": "InitialRequest.html",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [],
+      "submitted": false
+    },
+    "FIELD_INITIAL_REQUEST_bossJobSites": {
+      "key": "FIELD_INITIAL_REQUEST_bossJobSites",
+      "control": "bossJobSites",
+      "id": null,
+      "label": null,
+      "type": "checkbox",
+      "required": false,
+      "multiple": true,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": null,
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "bossCommitteesCheckboxes",
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 806,
+      "sourceTemplate": "InitialRequest.html",
+      "origin": "dynamic",
+      "builtBy": "buildDualList",
+      "builtFrom": "INJECTED_REF_DATA.committees",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "payloadKeys": [
+        "bossJobSites"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_costSheetJobNumbers": {
+      "key": "FIELD_INITIAL_REQUEST_costSheetJobNumbers",
+      "control": "costSheetJobNumbers",
+      "id": null,
+      "label": null,
+      "type": "checkbox",
+      "required": false,
+      "multiple": true,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": null,
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "costSheetJobCheckboxes",
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 809,
+      "sourceTemplate": "InitialRequest.html",
+      "origin": "dynamic",
+      "builtBy": "buildDualList",
+      "builtFrom": "INJECTED_REF_DATA.jobs",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "payloadKeys": [
+        "bossCostSheetJobs"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_adpSites": {
+      "key": "FIELD_INITIAL_REQUEST_adpSites",
+      "control": "adpSites",
+      "id": null,
+      "label": null,
+      "type": "checkbox",
+      "required": false,
+      "multiple": true,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": null,
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "adpSitesCheckboxes",
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 810,
+      "sourceTemplate": "InitialRequest.html",
+      "origin": "dynamic",
+      "builtBy": "buildDualList",
+      "builtFrom": "INJECTED_REF_DATA.jobs",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "payloadKeys": [
+        "adpSites"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_purchasingSites": {
+      "key": "FIELD_INITIAL_REQUEST_purchasingSites",
+      "control": "purchasingSites",
+      "id": null,
+      "label": null,
+      "type": "checkbox",
+      "required": false,
+      "multiple": true,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": null,
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "purchasingSitesCheckboxes",
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 811,
+      "sourceTemplate": "InitialRequest.html",
+      "origin": "dynamic",
+      "builtBy": "buildDualList",
+      "builtFrom": "INJECTED_REF_DATA.jobs",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "payloadKeys": [
+        "purchasingSites"
+      ],
+      "submitted": true
+    },
+    "FIELD_INITIAL_REQUEST_jonasJobNumbers": {
+      "key": "FIELD_INITIAL_REQUEST_jonasJobNumbers",
+      "control": "jonasJobNumbers",
+      "id": null,
+      "label": null,
+      "type": "checkbox",
+      "required": false,
+      "multiple": true,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": null,
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "jonasJobNumbersCheckboxes",
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 812,
+      "sourceTemplate": "InitialRequest.html",
+      "origin": "dynamic",
+      "builtBy": "buildDualList",
+      "builtFrom": "INJECTED_REF_DATA.jobs",
+      "availability": {
+        "FORM_NEW_HIRE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_EQUIPMENT": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "payloadKeys": [
+        "jonasJobNumbers"
+      ],
+      "submitted": true
+    }
+  }
+}

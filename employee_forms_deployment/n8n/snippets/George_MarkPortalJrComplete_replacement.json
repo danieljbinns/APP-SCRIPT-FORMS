@@ -1,0 +1,107 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<CLOSE_JR_TASK_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "idOrWorkflow": "={{ $('Find Row by Employee').first().json.portalTicketId }}",
+            "notes": "={{ 'JR title assigned in BOSS via n8n — job ' + ($('Assign JR in BOSS').first().json.jobId || '') + ', user ' + ($('Assign JR in BOSS').first().json.userId || '') }}",
+            "actor": "={{ { id: 'n8n:boss-jr-assignment', email: 'efx-bot@team-group.com', display: 'BOSS JR Assignment (n8n)' } }}",
+            "idempotencyKey": "={{ 'jr-close-' + $('Find Row by Employee').first().json.portalTicketId + '-' + $execution.id }}",
+            "treatAlreadyClosedAsSuccess": "={{ true }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "idOrWorkflow",
+              "displayName": "idOrWorkflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "efx-close-jr",
+      "name": "Forms · Close JR Task (EFX)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1952,
+        304
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "### Replaces \"Mark Portal JR Complete\" (doPost completeJrTitle @76)\nSame position on the canvas. Wire: **Apply Duty Changes → this node → Confirm to George**; the **error output** → *Email George — Error*.\n`idOrWorkflow` = tracker column K (`portalTicketId`, TK-…). If the tracker row has no TK- id, pass the `NEW_EMP_` workflow id instead — the alias resolves the open `jr_title` task.\nPick the imported *Forms · Close JR Task* sub-workflow in the Workflow field (`<<CLOSE_JR_TASK_WORKFLOW_ID>>`).",
+        "width": 460,
+        "height": 230,
+        "color": 5
+      },
+      "id": "sticky-george-jr",
+      "name": "george-jr",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1952,
+        40
+      ]
+    }
+  ],
+  "connections": {}
+}

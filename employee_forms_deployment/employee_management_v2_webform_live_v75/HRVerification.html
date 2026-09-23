@@ -1,0 +1,253 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Verification &amp; ADP</title>
+  <?!= include('Styles') ?>
+</head>
+
+<body>
+  <div class="container">
+    <a href="<?= getBaseUrl() ?>" target="_top" class="back-link">&#8592; Back to Portal</a>
+
+    <div class="logo-container">
+      <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+        alt="Team Group Companies" class="logo">
+    </div>
+
+    <div id="form-container" class="card-form">
+      <h1>HR Verification &amp; ADP Setup</h1>
+      <p class="subtitle">Complete the verification and internal ID assignment to proceed</p>
+
+      <hr>
+
+      <div id="requestHeaderWrap">
+        <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
+      </div>
+
+<? var _pd = requestData.isEdit && requestData.previousData ? requestData.previousData : {}; ?>
+      <form id="hrVerificationForm" autocomplete="off">
+        <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+        <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+        <input type="hidden" name="internalEmployeeId" value="<?= requestData.internalEmployeeId || 'PENDING' ?>">
+
+        <? if (requestData.isEdit) { ?>
+        <div class="callout callout-info">
+          <strong>✏️ Previously Submitted — Edit Mode</strong><br>
+          Originally submitted by <strong><?= requestData.previousData.submittedBy ?></strong> on <?= requestData.previousData.submittedAt ?>.
+          Changes will update the existing record and be logged for auditing.
+        </div>
+        <? } ?>
+
+        <div class="callout callout-warning">
+          <strong>⚠️ Verification Required</strong><br>
+          Please confirm the employee details below match what is on file in ADP before assigning the Associate ID.
+          Update any fields that differ from the official record.
+        </div>
+
+        <!-- Request Context -->
+        <div class="form-section">
+          <h2>Request Context</h2>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Site</label>
+              <select name="siteName" id="siteName">
+                <option value="">Loading sites...</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Hire Date</label>
+              <input type="date" name="hireDate" value="<?= (_pd.hireDate || requestData.hireDate) ? String(_pd.hireDate || requestData.hireDate).substring(0, 10) : '' ?>">
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Department</label>
+            <input type="text" name="department" value="<?= _pd.department || requestData.department || '' ?>" placeholder="e.g. Operations, Finance">
+          </div>
+        </div>
+
+        <!-- Verified Information -->
+        <div class="form-section">
+          <h2>Verified Information</h2>
+          <div class="form-row">
+            <div class="form-field">
+              <label>First Name <span class="required">*</span></label>
+              <input type="text" name="firstName" value="<?= _pd.firstName || requestData.firstName || '' ?>" required>
+            </div>
+            <div class="form-field">
+              <label>Last Name <span class="required">*</span></label>
+              <input type="text" name="lastName" value="<?= _pd.lastName || requestData.lastName || '' ?>" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Reporting Manager Name <span class="required">*</span></label>
+              <input type="text" name="managerName" value="<?= _pd.managerName || requestData.managerName || '' ?>" required>
+            </div>
+            <div class="form-field">
+              <label>Reporting Manager Email <span class="required">*</span></label>
+              <input type="email" name="managerEmail" value="<?= _pd.managerEmail || requestData.managerEmail || '' ?>" required>
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Job Title (HR Title) <span class="required">*</span></label>
+            <input type="text" name="jobTitle" value="<?= _pd.jobTitle || requestData.position || requestData.jobTitle || '' ?>" required>
+          </div>
+          <? if (requestData.jrRequired === 'Yes') { ?>
+          <div class="form-field">
+            <label>JR Title (Verified Position) <span class="required">*</span></label>
+            <select name="jrTitle" id="jrTitle" data-original-value="<?= requestData.jrTitle || '' ?>" required>
+              <option value="">Loading titles...</option>
+            </select>
+          </div>
+          <? } else { ?>
+          <input type="hidden" name="jrTitle" value="">
+          <? } ?>
+        </div>
+
+        <!-- ADP Assignment -->
+        <div class="form-section">
+          <h2>ADP Assignment</h2>
+          <div class="form-field">
+            <label>ADP Associate ID <span class="required">*</span></label>
+            <input type="text" name="adpAssociateId" value="<?= _pd.adpAssociateId || requestData.adpAssociateId || '' ?>" placeholder="e.g. 123456" required>
+          </div>
+          <div class="form-field">
+            <label>Internal HR Notes (Optional)</label>
+            <textarea name="notes"><?= requestData.isEdit && requestData.previousData ? requestData.previousData.notes : '' ?></textarea>
+          </div>
+        </div>
+
+        <div id="statusMessage"></div>
+
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-full">
+          <?= requestData.isEdit ? 'Update Verification' : 'Submit Verification' ?>
+        </button>
+      </form>
+
+      <?!= includeWithData('SuccessScreen', {baseUrl: getBaseUrl()}) ?>
+
+    </div>
+  </div>
+
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Submitting verification...</p>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', function() {
+      var currentSite = '<?= requestData.siteName || '' ?>';
+      google.script.run
+        .withSuccessHandler(function(sites) {
+          var select = document.getElementById('siteName');
+          select.innerHTML = '<option value="">-- Select Site --</option>';
+          (sites || []).forEach(function(s) {
+            var opt = document.createElement('option');
+            opt.value = s; opt.textContent = s;
+            if (s === currentSite) opt.selected = true;
+            select.appendChild(opt);
+          });
+          if (currentSite && !sites.includes(currentSite)) {
+            var opt = document.createElement('option');
+            opt.value = currentSite; opt.textContent = currentSite + ' (Original)';
+            opt.selected = true;
+            select.appendChild(opt);
+          }
+        })
+        .withFailureHandler(function() {
+          document.getElementById('siteName').innerHTML = '<option value="">Error loading sites</option>';
+        })
+        .getSitesList();
+    });
+
+    <? if (requestData.jrRequired === 'Yes') { ?>
+    window.addEventListener('DOMContentLoaded', function() {
+      google.script.run
+        .withSuccessHandler(function(jrs) {
+          var select = document.getElementById('jrTitle');
+          var originalValue = select.getAttribute('data-original-value');
+          select.innerHTML = '<option value="">-- Select Verified Title --</option>';
+          if (jrs && jrs.length) {
+            jrs.forEach(function(jr) {
+              var option = document.createElement('option');
+              option.value = jr;
+              option.textContent = jr;
+              if (jr === originalValue) option.selected = true;
+              select.appendChild(option);
+            });
+          }
+          if (originalValue && (!jrs || !jrs.includes(originalValue))) {
+            var option = document.createElement('option');
+            option.value = originalValue;
+            option.textContent = originalValue + ' (Original)';
+            option.selected = true;
+            select.appendChild(option);
+          }
+        })
+        .withFailureHandler(function(err) {
+          var select = document.getElementById('jrTitle');
+          select.innerHTML = '<option value="">Error loading titles</option>';
+        })
+        .getJRsList();
+    });
+    <? } ?>
+
+    document.getElementById('hrVerificationForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      var submitBtn = document.getElementById('submitBtn');
+      var statusMsg = document.getElementById('statusMessage');
+      var overlay = document.getElementById('loading-overlay');
+
+      submitBtn.disabled = true;
+      overlay.style.display = 'flex';
+      statusMsg.innerHTML = '';
+
+      var formData = {
+        workflowId: this.workflowId.value,
+        formId: this.formId.value,
+        hireDate: this.hireDate.value,
+        firstName: this.firstName.value,
+        lastName: this.lastName.value,
+        managerName: this.managerName.value,
+        managerEmail: this.managerEmail.value,
+        jobTitle: this.jobTitle.value,
+        jrTitle: this.jrTitle.value,
+        siteName: this.siteName.value,
+        department: this.department.value,
+        adpAssociateId: this.adpAssociateId.value,
+        notes: this.notes.value
+      };
+
+      google.script.run
+        .withSuccessHandler(function(response) {
+          overlay.style.display = 'none';
+          if (response.success) {
+            document.getElementById('hrVerificationForm').style.display = 'none';
+            document.getElementById('requestHeaderWrap').style.display = 'none';
+            document.getElementById('successTitle').textContent = 'Verification Complete';
+            document.getElementById('successMessage').textContent = 'Records updated. The next step has been notified.';
+            document.getElementById('successRequestId').textContent = 'Request ID: ' + formData.workflowId;
+            document.getElementById('successAnotherLink').style.display = 'none';
+            document.getElementById('success-screen').style.display = 'block';
+          } else {
+            statusMsg.innerHTML = '<div class="callout callout-warning">&#10060; ' + response.message + '</div>';
+            submitBtn.disabled = false;
+          }
+        })
+        .withFailureHandler(function(err) {
+          overlay.style.display = 'none';
+          statusMsg.innerHTML = '<div class="callout callout-warning">&#10060; Submission failed: ' + err.message + '</div>';
+          submitBtn.disabled = false;
+        })
+        .submitHRVerification(formData);
+    });
+  </script>
+  <?!= include('SharedComponents') ?>
+  <?!= safeInclude('Konami') ?>
+</body>
+
+</html>

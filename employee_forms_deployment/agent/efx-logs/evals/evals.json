@@ -1,0 +1,8 @@
+{
+  "skill_name": "efx-logs",
+  "evals": [
+    { "id": 1, "prompt": "George says his JR flow ran at 14:20 but the Forms task TK-8247F3AB is still open. Where do I look and what do I check, in order?", "expected_output": "n8n execution for J7RU99n01pq9Xk3D around 14:20 (public API or UI) → the Router response envelope (requestId, error.code) → n8n_listTasks / n8n_events task.closed for that taskId → Apps Script Executions/Cloud Logging for the alias → concludes with the likely cause (E_NOT_FOUND vs formType mismatch vs auth).", "files": [] },
+    { "id": 2, "prompt": "who created the internal employee id 30412 and when? and was it n8n or a person", "expected_output": "Reads the Employee IDs registry (Allocated By / Source / Allocated At) via n8n_getEmployeeId or the sheet, explains actor vs human attribution, cross-references the Raw Log result event.", "files": [] },
+    { "id": 3, "prompt": "Pull the last 20 failed n8n executions on staging for the EFX router and summarise the error codes", "expected_output": "Uses the public API with the key from D:\\Credentials\\n8n\\api-key-staging.txt (never prints it), filters status=error for the router workflow, tabulates error.code counts, links each to the FAQ remedy.", "files": [] }
+  ]
+}

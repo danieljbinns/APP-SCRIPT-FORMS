@@ -1,0 +1,275 @@
+{
+  "name": "EFX · Canary",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## EFX · Canary (every 15 min, **inactive by default**)\nCalls `n8n_ping` through the Router and asserts the effective environment: `env === '<<EXPECTED_ENV>>'` (TEST|DEV|STAGING|PROD) **and** `spreadsheetId === '<<EXPECTED_SHEET_ID>>'` (the sheet this tier must write to — catches the Script-Properties/config-resolution trap).\nTransport/script failures (error output of the Router call) alert too.\n\nWhy not `callerSession`? Through the Execution API the script runs **as the impersonated user** (`efx-bot@team-group.com`), so `callerSession` is `authenticated`, not `anonymous` — it is informational only and included in the alert body.\nAlert → Gmail to dbinns@team-group.com, subject `[EFX canary] …`. Replace placeholders, pick the Router id, then activate. Point *Settings → Error workflow* at the global handler as well.",
+        "width": 1040,
+        "height": 330,
+        "color": 4
+      },
+      "id": "sticky-overview",
+      "name": "overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "schedule",
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "<<ROUTER_WORKFLOW_ID>>",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fn": "n8n_ping",
+            "args": "={{ [] }}",
+            "actor": "={{ { id: 'n8n:efx-canary', email: 'efx-bot@team-group.com', display: 'EFX Canary (n8n)' } }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fn",
+              "displayName": "fn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "args",
+              "displayName": "args",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "array",
+              "removed": false
+            },
+            {
+              "id": "actor",
+              "displayName": "actor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "idempotencyKey",
+              "displayName": "idempotencyKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "treatAlreadyClosedAsSuccess",
+              "displayName": "treatAlreadyClosedAsSuccess",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "ping",
+      "name": "Router: n8n_ping",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        -80,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c009",
+              "leftValue": "={{ $json.ok === true && $json.env === '<<EXPECTED_ENV>>' && $json.spreadsheetId === '<<EXPECTED_SHEET_ID>>' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "healthy",
+      "name": "Healthy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        180,
+        -60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "ok",
+      "name": "Healthy",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        440,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build one alert item from either the IF false-branch (assertion) or the Execute Workflow error output (transport/script).\nconst j = $input.first().json;\nconst expected = { env: '<<EXPECTED_ENV>>', spreadsheetId: '<<EXPECTED_SHEET_ID>>' };\nlet reason, detail;\nif (j.error) {\n  reason = 'Router call failed';\n  detail = String((j.error && j.error.message) || j.error);\n} else {\n  const problems = [];\n  if (j.ok !== true) problems.push('ok=' + JSON.stringify(j.ok));\n  if (j.env !== expected.env) problems.push('env=' + JSON.stringify(j.env) + ' (expected ' + expected.env + ')');\n  if (j.spreadsheetId !== expected.spreadsheetId) problems.push('spreadsheetId=' + JSON.stringify(j.spreadsheetId) + ' (expected ' + expected.spreadsheetId + ')');\n  reason = 'Ping assertion failed';\n  detail = problems.join('; ') || 'unknown';\n}\nreturn [{ json: {\n  subject: '[EFX canary] ' + reason + ' — ' + expected.env,\n  html: '<p><strong>' + reason + '</strong></p><pre>' + detail.replace(/</g, '&lt;') + '</pre>'\n      + '<p>apiVersion: ' + (j.apiVersion || 'n/a') + ' · libraryVersion: ' + (j.libraryVersion || 'n/a') + ' · callerSession: ' + (j.callerSession || 'n/a') + ' · requestId: ' + (j.requestId || 'n/a') + '</p>'\n      + '<p>Workflow: ' + $workflow.name + ' · execution ' + $execution.id + ' · ' + new Date().toISOString() + '</p>'\n      + '<p>Checks: SA credential/DWD, script still linked to the SA GCP project, API-executable deployment present, Script Properties (SPREADSHEET_ID) unchanged, n8n Router placeholders.</p>'\n} }];"
+      },
+      "id": "build-alert",
+      "name": "Build alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "dbinns@team-group.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "gmail-alert",
+      "name": "Gmail: alert dbinns",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        700,
+        60
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ESH5aDZWt0qo7oKD",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "Router: n8n_ping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router: n8n_ping": {
+      "main": [
+        [
+          {
+            "node": "Healthy?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Healthy?": {
+      "main": [
+        [
+          {
+            "node": "Healthy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build alert": {
+      "main": [
+        [
+          {
+            "node": "Gmail: alert dbinns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "$comment": "Hand-authored notes for InitialRequest.html. Merged into the per-form Markdown by review/tools/render-fields.js. Never overwritten by extract-fields.js. `effect` = what the value causes downstream (routing, task creation, email content). Descriptive only — no findings. Fields with no entry render as 'not yet documented'.",
+  "template": "InitialRequest.html",
+  "authoredAt": "2026-09-19",
+  "fields": {
+    "dateRequested": {
+      "effect": "Stored as Date Requested; shown in the dashboard Date Requested column."
+    },
+    "requesterEmail": {
+      "effect": "Becomes the workflow initiator. Grants that person ROLE_REQUESTER (tier 6) — cancel and remind rights on this request. Receives every status email."
+    },
+    "requesterName": {
+      "effect": "Stored; shown as Requester on the dashboard and in the step tracker."
+    },
+    "hireDate": {
+      "effect": "Stored as Hire Date and shown as Start Date on the dashboard. Part of the duplicate-submission key (name + hire date). Drives the 'Add Start Date to Calendar' link in the ID Setup emails. Changing it at HR Verification notifies Safety and ID Setup."
+    },
+    "hireType": {
+      "effect": "Stored as New Hire/Rehire. A rehire may carry an existing Internal Employee ID, which is validated as 4–6 digits before anything is written.",
+      "label": "New Hire or Rehire"
+    },
+    "employeeType": {
+      "effect": "Stored as Employee Type; shown in the Emp Type dashboard column.",
+      "label": "Employee Type"
+    },
+    "employmentType": {
+      "effect": "ROUTING. Combined with System Access: Hourly + System Access=No completes the workflow at HR Verification and never reaches IT. Also decides when the Safety task is created — at ID Setup on the hourly path, after HR Verification otherwise.",
+      "label": "Employment Type"
+    },
+    "firstName": {
+      "effect": "Half the employee name used for the workflow record, emails, task titles and the duplicate-submission key. Also seeds the DSS username as first.last at ID Setup."
+    },
+    "middleName": {
+      "effect": "Stored only."
+    },
+    "lastName": {
+      "effect": "As firstName — name, dedupe key and DSS username seed."
+    },
+    "preferredName": {
+      "effect": "Stored only."
+    },
+    "position": {
+      "effect": "Stored as Position Title; appears in specialist task descriptions and emails. Changing it at HR Verification notifies Safety and ID Setup."
+    },
+    "siteName": {
+      "effect": "Stored as Site Name; shown in the dashboard Site column and carried into Safety and ID Setup context. Changing it at HR Verification notifies Safety."
+    },
+    "jobSiteNumber": {
+      "effect": "Stored as Job Site #. New-hire only — hidden, un-required and disabled in equipment mode."
+    },
+    "department": {
+      "effect": "Stored; carried into the workflow context block on emails."
+    },
+    "managerEmail": {
+      "effect": "Becomes the assignee of the WIS Assignment task and grants that person ROLE_MANAGER (tier 7). Shown on the dashboard and used for the My Open Requests panel."
+    },
+    "managerName": {
+      "effect": "Stored; shown in emails and the request header."
+    },
+    "systemAccess": {
+      "effect": "ROUTING. Answering No clears the systems and equipment lists before they are written, and combined with Hourly ends the workflow at HR Verification. Also reveals the systems/equipment section when Yes.",
+      "label": "Needs System Access?"
+    },
+    "systems": {
+      "effect": "CREATES TASKS. 'BOSS' inserts the IT Confirmation step before IT Setup. 'Fleetio' creates the Fleet task. 'SiteDocs' creates the ID Setup task on equipment requests only — on a new hire the SiteDocs account is made during ID Setup. 'Google Account' reveals the Google account fields. Stored as a comma-separated list.",
+      "label": "Systems / Apps"
+    },
+    "adpSalaryAccess": {
+      "effect": "When Yes, the Payroll notification sent after HR Verification carries an explicit salary-access callout.",
+      "label": "ADP Salary Access"
+    },
+    "bossTrainingOnly": {
+      "effect": "Changes the WIS task wording to training modules only, explicitly excluding committee, cost sheet, trip reports and grievances.",
+      "label": "BOSS Training User Only"
+    },
+    "bossCostSheet": {
+      "effect": "Stored as a BOSS detail; becomes an IT checklist line. Reveals the cost sheet job numbers picker when Yes.",
+      "label": "BOSS Cost Sheet"
+    },
+    "bossTripReports": {
+      "effect": "Stored as a BOSS detail; becomes an IT checklist line.",
+      "label": "BOSS Trip Reports"
+    },
+    "bossGrievance": {
+      "effect": "Stored as BOSS Grievances; becomes an IT checklist line.",
+      "label": "BOSS Grievances"
+    },
+    "bossJobSites": {
+      "effect": "Built at load from reference data. Stored as the BOSS job sites list.",
+      "label": "BOSS Job Sites"
+    },
+    "costSheetJobNumbers": {
+      "effect": "Built at load from reference data. Stored as the BOSS cost sheet job list; only meaningful when Cost Sheet is Yes.",
+      "label": "BOSS Cost Sheet Job Numbers"
+    },
+    "googleEmailLocal": {
+      "effect": "The requested mailbox name. Combined with the domain it seeds the SiteDocs username default at ID Setup, and IT confirms or changes it at IT Setup."
+    },
+    "googleDomain": {
+      "effect": "The requested domain, combined with the local part above."
+    },
+    "equipment": {
+      "effect": "CREATES TASKS. 'Business Cards' creates the Business Cards task. 'SiteDocs Tablet' counts toward the SiteDocs indicator on the dashboard. Everything else becomes IT provisioning checklist lines. Stored as a comma-separated list.",
+      "label": "Equipment"
+    },
+    "computerRequestType": {
+      "effect": "New or reassigned. Chooses which computer detail block is shown, and becomes an IT checklist line.",
+      "label": "Computer Request Type"
+    },
+    "computerType": {
+      "effect": "Stored; IT checklist detail for a new machine.",
+      "label": "Computer Type"
+    },
+    "office365Required": {
+      "effect": "Stored; IT checklist detail.",
+      "label": "Office 365 Required"
+    },
+    "computerPreviousUser": {
+      "effect": "Stored; IT checklist detail for a reassigned machine."
+    },
+    "computerPreviousType": {
+      "effect": "Stored; IT checklist detail for a reassigned machine."
+    },
+    "computerSerialNumber": {
+      "effect": "Stored; IT checklist detail for a reassigned machine."
+    },
+    "creditCardUSA": {
+      "effect": "CREATES A TASK. Any of the three card boxes creates the Finance task; this one adds the USA card line with its requested limit.",
+      "label": "USA Credit Card"
+    },
+    "creditCardLimitUSA": {
+      "effect": "Requested monthly limit, quoted on the USA line of the Finance task. Falls back to 'Standard' when blank."
+    },
+    "creditCardCanada": {
+      "effect": "CREATES A TASK. Adds the Canada card line to the Finance task.",
+      "label": "Canada Credit Card"
+    },
+    "creditCardLimitCanada": {
+      "effect": "Requested monthly limit for the Canada card; 'Standard' when blank."
+    },
+    "creditCardHomeDepot": {
+      "effect": "CREATES A TASK. Adds the Home Depot card line to the Finance task.",
+      "label": "Home Depot Credit Card"
+    },
+    "creditCardLimitHomeDepot": {
+      "effect": "Requested monthly limit for the Home Depot card; 'Standard' when blank."
+    },
+    "phoneRequestType": {
+      "effect": "New or reassigned. Chooses which phone detail block is shown; becomes an IT checklist line. The number is also reused on termination to build the phone suspension line.",
+      "label": "Mobile Phone Request Type"
+    },
+    "phonePreviousUser": {
+      "effect": "Stored; IT checklist detail for a reassigned phone."
+    },
+    "phonePreviousNumber": {
+      "effect": "Stored; IT checklist detail for a reassigned phone."
+    },
+    "jrRequired": {
+      "effect": "Whether a JR title applies. Reveals the JR picker when Yes.",
+      "label": "JR Title Required?"
+    },
+    "jrAssignment": {
+      "effect": "The chosen JR title. Carried into HR Verification, where it is combined with the job title on the verification record."
+    },
+    "plan306090": {
+      "effect": "CREATES TWO TASKS. Yes creates the 30/60/90 Review task for the review group AND a separate JR Title task for the JR group — different assignees, closed independently. Suppressed on equipment requests. The 30/60/90 task blocks completion; the JR Title task does not.",
+      "label": "30/60/90 Day Plan"
+    },
+    "jonasJobNumbers": {
+      "effect": "CREATES A TASK. Built at load from reference data. Any value creates the Purchasing task, with one checklist line per job number. Stored comma-separated.",
+      "label": "Jonas Job Numbers"
+    },
+    "purchasingSites": {
+      "effect": "CREATES A TASK. Built at load from reference data. Any value creates the Purchasing task (combined with Jonas job numbers if both are set), with one line per site.",
+      "label": "Central Purchasing Sites"
+    },
+    "adpSites": {
+      "effect": "Built at load from reference data. Stored as the ADP sites list; revealed when ADP is among the systems.",
+      "label": "ADP Sites"
+    },
+    "comments": {
+      "effect": "Stored as Comments; carried into the context block on downstream emails."
+    },
+    "notes": {
+      "effect": "Present on the page but not included in the submitted payload."
+    }
+  }
+}

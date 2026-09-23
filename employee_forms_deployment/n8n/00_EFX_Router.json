@@ -1,0 +1,242 @@
+{
+  "name": "EFX · Router",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## EFX · Router — Apps Script Execution API transport\n**One sub-workflow, every alias.** Callers pass `fn` (an `n8n_*` alias from `N8n.js`), `args` (array), optional `actor`, `idempotencyKey`, `treatAlreadyClosedAsSuccess`.\nThe router always sends `parameters = [actor, ...args]` because every alias is `n8n_<name>(actor, ...)`.\n\n### Setup (once per tier)\n1. **GCP project** (`efx-<tier>`): enable *Apps Script API*; create Service Account; enable Domain-Wide Delegation; in Workspace Admin → Security → API controls → DWD, authorise the SA client id with scopes: `https://www.googleapis.com/auth/script.projects` **plus every scope in the script's `appsscript.json`** (spreadsheets, gmail.send, drive, script.external_request, userinfo.email, admin.directory.*).\n2. **Apps Script project** (`<<EFX_SCRIPT_ID>>`): Project Settings → *Change project* → link to the **same GCP project** as the SA (Execution API rule). Deploy → *New deployment* → type **API Executable** (access: anyone in domain or only me).\n3. **n8n credential**: *Google Service Account* (type `googleApi`) named **`EFX Google SA (<<TIER>>)`**: SA email + private key, **Impersonate a user = `efx-bot@team-group.com`**, and tick *Set up for use in HTTP Request node* with the scopes above (that is where the scopes come from for the HTTP Request node).\n4. Replace `<<EFX_SCRIPT_ID>>` in the HTTP Request URL. Select the credential on that node.\n5. Copy this workflow's id after import and paste it into every `1x_*`/`20`/`30`/`90` file (`<<ROUTER_WORKFLOW_ID>>`).\n\n`devMode:false` runs the API-executable deployment (not HEAD). Timeout 120 s (Apps Script max is 6 min; aliases are sub-minute).",
+        "width": 760,
+        "height": 620,
+        "color": 4
+      },
+      "id": "sticky-setup",
+      "name": "setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1120,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Error contract (guard rule)\nAnything that is not a clean `{ok:true}` envelope **throws**, so n8n's error handling (error output / error workflow / retry) triggers:\n- `EFX E_TRANSPORT: …` — HTTP/auth/deployment problem, non-JSON body, `done:false`\n- `EFX E_SCRIPT: …` — the Apps Script function threw (message + stack)\n- `EFX <code>: <message>` — alias returned `ok:false` (`E_VALIDATION` with `fields`, `E_NOT_FOUND`, `E_UPSTREAM`, `E_INTERNAL`, …)\n- **Exception:** `E_ALREADY_CLOSED` → passes through as `{ok:true, alreadyClosed:true}` when `treatAlreadyClosedAsSuccess` (default **true**). Set it to `false` to make re-closing a hard error.\n\n**Codes added in API 2026.09.17-1:** `E_UNVERIFIED_FORM` (form contract is `verified:false` — it_confirmation, specialist; pass `options.allowUnverified=true` to override) · `E_FORBIDDEN` (the **real session principal** lacks the role — HR/IT/Admin/requester/manager) · `E_RATE_LIMITED` (bump reminder sent too recently — retry later; safe to retry) · `E_TASK_NOT_OPEN` (task is Cancelled, not just closed) · `E_UNKNOWN_FORM`.\n\n**Authorization ≠ attribution.** Role checks (HR/IT/Admin) run against the *real* Execution API session = the impersonated `efx-bot@team-group.com`, so efx-bot must be in the matching `grp.forms.*` group or `CONFIG.ADMIN_EMAILS`. `actor.email`/`actor.id` are written to *Submitted By* / *closedBy* / Raw Log for attribution only and grant nothing.\n\nOutput on success = the alias `result` **flattened** + `ok`, `fn`, `requestId`, `apiVersion`, `tookMs` (+ `record`/`employeeId` extras when present). Error messages start with `EFX <CODE>:` so an error workflow can regex the code.\n\n`idempotencyKey` replays the cached envelope for 10 min (workflow static data; production executions only).",
+        "width": 760,
+        "height": 560,
+        "color": 5
+      },
+      "id": "sticky-errors",
+      "name": "errors",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1120,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "fn",
+              "type": "string"
+            },
+            {
+              "name": "args",
+              "type": "array"
+            },
+            {
+              "name": "actor",
+              "type": "object"
+            },
+            {
+              "name": "idempotencyKey",
+              "type": "string"
+            },
+            {
+              "name": "treatAlreadyClosedAsSuccess",
+              "type": "boolean"
+            }
+          ]
+        }
+      },
+      "id": "trigger",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// EFX Router — normalise inputs, apply defaults, build the scripts.run request body.\n// Contract (N8n.js): every alias is n8n_<name>(actor, ...args) → this node always puts actor at parameters[0].\nconst sd = $getWorkflowStaticData('global');\nconst inp = $input.first().json;\n\nconst fn = String(inp.fn || '').trim();\nif (!/^n8n_[A-Za-z0-9_]+$/.test(fn)) throw new Error('EFX E_VALIDATION: fn must be an n8n_* alias from N8n.js (got \"' + fn + '\")');\n\nlet args = inp.args;\nif (typeof args === 'string' && args.trim()) { try { args = JSON.parse(args); } catch (e) { throw new Error('EFX E_VALIDATION: args is a string but not valid JSON'); } }\nif (args === undefined || args === null || args === '') args = [];\nif (!Array.isArray(args)) args = [args];\n\nlet actor = inp.actor;\nif (typeof actor === 'string' && actor.trim()) { try { actor = JSON.parse(actor); } catch (e) { actor = { id: actor }; } }\nif (!actor || typeof actor !== 'object' || Array.isArray(actor)) actor = {};\n// Default actor: the calling workflow should pass its own; otherwise attribute to this router.\nconst defaults = { id: 'n8n:' + $workflow.name, email: 'efx-bot@team-group.com', display: $workflow.name + ' (n8n)' };\nactor = Object.assign({}, defaults, Object.fromEntries(Object.entries(actor).filter(([k, v]) => v !== undefined && v !== null && v !== '')));\nif (!inp.actor || !inp.actor.display) actor.display = (actor.id !== defaults.id) ? String(actor.id).replace(/^n8n:/, '') + ' (n8n)' : defaults.display;\n\nconst raw = inp.treatAlreadyClosedAsSuccess;\nconst treatAlreadyClosedAsSuccess = (raw === undefined || raw === null || raw === '') ? true : (raw === true || String(raw).toLowerCase() === 'true');\n\n// Idempotency (best effort): replay a cached envelope for the same key within 10 minutes.\n// NOTE: $getWorkflowStaticData persists only for production (non-manual) executions.\nconst idempotencyKey = String(inp.idempotencyKey || '').trim();\nconst TTL_MS = 10 * 60 * 1000; const now = Date.now();\nsd.idem = sd.idem || {};\nfor (const k of Object.keys(sd.idem)) if (now - (sd.idem[k].at || 0) > TTL_MS) delete sd.idem[k];\nconst hit = idempotencyKey && sd.idem[idempotencyKey] ? sd.idem[idempotencyKey].out : null;\n\nreturn [{ json: {\n  fn, args, actor, idempotencyKey, treatAlreadyClosedAsSuccess,\n  cacheHit: !!hit, cached: hit || null, startedAt: now,\n  request: { function: fn, parameters: [actor].concat(args), devMode: false }\n} }];"
+      },
+      "id": "set-defaults",
+      "name": "Set defaults",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c001",
+              "leftValue": "={{ $json.cacheHit === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cache-hit",
+      "name": "Cache hit?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Idempotent replay — same idempotencyKey within 10 minutes.\nreturn [{ json: Object.assign({}, $json.cached, { idempotentReplay: true }) }];"
+      },
+      "id": "return-cached",
+      "name": "Return cached",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://script.googleapis.com/v1/scripts/<<EFX_SCRIPT_ID>>:run",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 120000
+        }
+      },
+      "id": "http-scripts-run",
+      "name": "scripts.run (Execution API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        420,
+        100
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "<<GOOGLE_SA_CREDENTIAL_ID>>",
+          "name": "EFX Google SA (<<TIER>>)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// EFX Router — unwrap the Execution API response and apply the guard rule.\n// Execution API shapes:\n//   HTTP 4xx/5xx           → { error: { code, message, status } }                       → E_TRANSPORT\n//   script threw           → { done: true, error: { code: 3, message, details: [...] } } → E_SCRIPT\n//   ok                     → { done: true, response: { '@type': ..., result: <alias return> } }\n// The alias return is the EFX envelope { ok, apiVersion, requestId, result } | { ok:false, error:{code,message,fields?} }.\nconst inp = $('Set defaults').first().json;\nconst r = $input.first().json;\nconst status = Number(r.statusCode || 0);\nlet body = (r.body !== undefined ? r.body : r.data);   // n8n HTTP v4.2: responseFormat \"text\" + fullResponse puts the payload in .data, not .body\nif (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = null; } }\nconst _raw = (r.body !== undefined ? r.body : r.data);\nconst snippet = typeof _raw === 'string' ? _raw.slice(0, 300) : JSON.stringify(_raw || '').slice(0, 300);\n\nfunction fail(code, message, requestId) {\n  // Message format is stable on purpose: error workflows can regex /^EFX (E_[A-Z_]+):/ to branch on the code.\n  // n8n's Code node parses \"Name: rest\" and DROPS the leading \"EFX <code>: \" from error.message\n    // (it survives only in error.stack), and splits mid-JSON when the message contains colons.\n    // So the code is ALSO appended as a trailing tag, which n8n never strips. Branch on that.\n    throw new Error('EFX ' + code + ': ' + message + ' [fn=' + inp.fn + (requestId ? ', requestId=' + requestId : '') + '] [efxCode=' + code + ']');\n}\n\nif (!body || typeof body !== 'object') fail('E_TRANSPORT', 'Non-JSON response from script.googleapis.com (HTTP ' + status + '): ' + snippet);\nif (status >= 400 || (body.error && body.done !== true)) {\n  const ge = body.error || {};\n  fail('E_TRANSPORT', 'Execution API HTTP ' + status + ' ' + (ge.status || '') + ': ' + (ge.message || snippet)\n    + ' — check: SA credential + impersonation of efx-bot@team-group.com, script linked to the SA\\'s GCP project, API-executable deployment, script.projects scope, <<EFX_SCRIPT_ID>> replaced');\n}\nif (body.done !== true) fail('E_TRANSPORT', 'Execution API returned done=false');\nif (body.error) {\n  const d = (body.error.details && body.error.details[0]) || {};\n  const trace = Array.isArray(d.scriptStackTraceElements) ? ' @ ' + d.scriptStackTraceElements.map(s => s.function + ':' + s.lineNumber).join(' < ') : '';\n  fail('E_SCRIPT', (d.errorType ? d.errorType + ': ' : '') + (d.errorMessage || body.error.message || 'Apps Script error') + trace);\n}\n\nconst env = body.response ? body.response.result : undefined;\nif (env === undefined || env === null) fail('E_SCRIPT', 'Function returned nothing — not an n8n_* alias, or it returned undefined');\nif (typeof env !== 'object' || typeof env.ok !== 'boolean') fail('E_SCRIPT', 'Return value is not an EFX envelope {ok,...}: ' + JSON.stringify(env).slice(0, 300));\n\nconst meta = { fn: inp.fn, requestId: env.requestId || null, apiVersion: env.apiVersion || null, tookMs: Date.now() - inp.startedAt };\nlet out;\nif (env.ok === false) {\n  const err = env.error || {}; const code = err.code || 'E_UNKNOWN';\n  if (code === 'E_ALREADY_CLOSED' && inp.treatAlreadyClosedAsSuccess) {\n    out = Object.assign({ ok: true, alreadyClosed: true, code, message: err.message || '' }, meta);   // safe no-op for closers\n  } else {\n    fail(code, (err.message || 'no message') + (err.fields ? ' fields=' + JSON.stringify(err.fields) : ''), env.requestId);\n  }\n} else {\n  const res = env.result;\n  out = Object.assign({ ok: true }, (res && typeof res === 'object' && !Array.isArray(res)) ? res : { value: res }, meta);\n  for (const k of Object.keys(env)) if (!['ok', 'apiVersion', 'requestId', 'result'].includes(k)) out[k] = env[k];   // e.g. record, employeeId\n}\n\nif (inp.idempotencyKey) { const sd = $getWorkflowStaticData('global'); sd.idem = sd.idem || {}; sd.idem[inp.idempotencyKey] = { at: Date.now(), out }; }\nreturn [{ json: out }];"
+      },
+      "id": "unwrap-guard",
+      "name": "Unwrap & guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Set defaults",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set defaults": {
+      "main": [
+        [
+          {
+            "node": "Cache hit?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cache hit?": {
+      "main": [
+        [
+          {
+            "node": "Return cached",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "scripts.run (Execution API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "scripts.run (Execution API)": {
+      "main": [
+        [
+          {
+            "node": "Unwrap & guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

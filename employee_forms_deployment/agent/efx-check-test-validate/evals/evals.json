@@ -1,0 +1,8 @@
+{
+  "skill_name": "efx-check-test-validate",
+  "evals": [
+    { "id": 1, "prompt": "I just changed submitEmployeeIDSetup in the efx fork (P:\\Repos\\github\\danieljbinns\\APP SCRIPT FORMS\\employee_forms_efx) to also write the SiteDocs badge date. Is everything still green and did I break anything for n8n?", "expected_output": "Runs the three suites and tools/n8n-check.js, reports pass/fail counts, flags whether the contract changed (additive vs breaking) and what to do (bump version / --update), notes anything the mock cannot verify.", "files": [] },
+    { "id": 2, "prompt": "efx-test.js is failing with 'must be one of Direct Hire|Agency' on the CREATE scenario after I edited the payload — what's wrong?", "expected_output": "Explains the employeeType vs employmentType enum from FormContracts r2, points to docs/mapping/INITIAL_REQUEST.md, fixes the payload (not the contract), reruns.", "files": [] },
+    { "id": 3, "prompt": "Tomorrow's TEST script is deployed (script id in D:\\Credentials\\n8n\\efx-test.txt, SA key at D:\\Credentials\\google\\gcp\\efx-test-sa.json). Do the smoke checks before George starts.", "expected_output": "Uses tools/exec-api-call.js for n8n_ping / n8n_contracts / a dryRun close, checks env='TEST' and spreadsheetId is the TEST copy, refuses to touch prod, reports results in the §5 format.", "files": [] }
+  ]
+}

@@ -1,0 +1,414 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT Setup — <?= requestData.employeeName ?></title>
+  <?!= include('Styles') ?>
+</head>
+
+<body>
+  <div class="container">
+    <a href="<?= getBaseUrl() ?>" target="_top" class="back-link">&#8592; Back to Portal</a>
+
+    <div class="logo-container">
+      <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png"
+        alt="Team Group Companies" class="logo">
+    </div>
+
+    <div id="form-container" class="card-form">
+      <h1>IT Setup</h1>
+      <p class="subtitle">Information Technology Provisioning</p>
+
+      <hr>
+
+      <div id="requestHeaderWrap">
+        <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
+      </div>
+
+      <form id="taskForm" autocomplete="off">
+        <input type="hidden" name="workflowId"    value="<?= workflowId ?>">
+        <input type="hidden" name="formId"         value="<?= formId !== undefined ? formId : '' ?>">
+        <input type="hidden" name="Employee_Name"  value="<?= requestData.employeeName ?>">
+
+        <!-- Hidden pre-population context values -->
+        <input type="hidden" id="ctx_googleEmail"        value="<?= requestData.googleEmail        || '' ?>">
+        <input type="hidden" id="ctx_googleDomain"       value="<?= requestData.googleDomain       || '' ?>">
+        <input type="hidden" id="ctx_computerType"       value="<?= requestData.computerType       || '' ?>">
+        <input type="hidden" id="ctx_computerReq"        value="<?= requestData.computerReq        || '' ?>">
+        <input type="hidden" id="ctx_computerSerial"     value="<?= requestData.computerSerial     || '' ?>">
+        <input type="hidden" id="ctx_phoneReq"           value="<?= requestData.phoneReq           || '' ?>">
+        <input type="hidden" id="ctx_bossJobSites"       value="<?= requestData.bossJobSites       || '' ?>">
+        <input type="hidden" id="ctx_bossCostSheet"      value="<?= requestData.bossCostSheet      || '' ?>">
+        <input type="hidden" id="ctx_bossCostSheetJobs"  value="<?= requestData.bossCostSheetJobs  || '' ?>">
+        <input type="hidden" id="ctx_bossTripReports"    value="<?= requestData.bossTripReports    || '' ?>">
+        <input type="hidden" id="ctx_bossGrievances"     value="<?= requestData.bossGrievances     || '' ?>">
+
+        <!-- ── Google Account Setup ── -->
+        <div class="form-section">
+          <h2>Google Account Setup</h2>
+
+          <div class="form-field">
+            <label>Email Account Created <span class="required">*</span></label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="Email_Created" value="Yes" required>
+                <span class="radio-button">Yes</span>
+              </label>
+              <label>
+                <input type="radio" name="Email_Created" value="No">
+                <span class="radio-button">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-field">
+              <label>Email Username <span class="required">*</span></label>
+              <input type="text" id="emailUsername" name="Email_Username" placeholder="firstname.lastname" required>
+              <small>Username portion only — before the @</small>
+            </div>
+            <div class="form-field">
+              <label>Email Domain <span class="required">*</span></label>
+              <select id="emailDomain" name="Email_Domain" required>
+                <option value="">— Select Domain —</option>
+                <option value="@team-group.com">@team-group.com</option>
+                <option value="@robinsonsolutions.com">@robinsonsolutions.com</option>
+                <option value="@industrialappliedtech.com">@industrialappliedtech.com</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>Temporary Email Password <span class="required">*</span></label>
+            <input type="text" id="emailTempPassword" name="Email_Temp_Password" placeholder="Initial password for first login" required>
+          </div>
+        </div>
+
+        <!-- ── Computer Assignment ── -->
+        <div class="form-section">
+          <h2>Computer Assignment</h2>
+
+          <? if (requestData.computerReq && requestData.computerReq !== 'None') { ?>
+          <div class="callout callout-info">
+            <strong>Requested:</strong> <?= requestData.computerReq ?>
+            <? if (requestData.computerType) { ?> — <?= requestData.computerType ?><? } ?>
+            <? if (requestData.computerPrevUser) { ?> &nbsp;·&nbsp; Prev user: <?= requestData.computerPrevUser ?><? } ?>
+            <? if (requestData.computerSerial) { ?> &nbsp;·&nbsp; S/N: <?= requestData.computerSerial ?><? } ?>
+          </div>
+          <? } ?>
+
+          <div class="form-field">
+            <label>Computer Assigned <span class="required">*</span></label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="Computer_Assigned" value="Yes" required>
+                <span class="radio-button">Yes</span>
+              </label>
+              <label>
+                <input type="radio" name="Computer_Assigned" value="No">
+                <span class="radio-button">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label>Serial Number</label>
+              <input type="text" id="computerMake" name="Computer_Serial">
+            </div>
+            <div class="form-field">
+              <label>Model</label>
+              <input type="text" id="computerModel" name="Computer_Model">
+            </div>
+            <div class="form-field">
+              <label>Type</label>
+              <select id="computerType" name="Computer_Type">
+                <option value="">— Select —</option>
+                <option value="Chromebook">Chromebook</option>
+                <option value="Windows PC">Windows PC</option>
+                <option value="Mac">Mac</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Phone Assignment ── -->
+        <div class="form-section">
+          <h2>Phone Assignment</h2>
+
+          <? if (requestData.phoneReq && requestData.phoneReq !== 'No') { ?>
+          <div class="callout callout-info">
+            <strong>Requested:</strong> <?= requestData.phoneReq ?>
+            <? if (requestData.phonePrevUser) { ?> &nbsp;·&nbsp; Prev user: <?= requestData.phonePrevUser ?><? } ?>
+            <? if (requestData.phonePrevNumber) { ?> (<?= requestData.phonePrevNumber ?>)<? } ?>
+          </div>
+          <? } ?>
+
+          <div class="form-field">
+            <label>Phone Assigned <span class="required">*</span></label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="Phone_Assigned" value="Yes" required>
+                <span class="radio-button">Yes</span>
+              </label>
+              <label>
+                <input type="radio" name="Phone_Assigned" value="No">
+                <span class="radio-button">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label>Carrier</label>
+              <input type="text" id="phoneCarrier" name="Phone_Carrier">
+            </div>
+            <div class="form-field">
+              <label>Model</label>
+              <input type="text" id="phoneModel" name="Phone_Model">
+            </div>
+            <div class="form-field">
+              <label>Phone Number</label>
+              <input type="tel" id="phoneNumber" name="Phone_Number">
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>Voicemail Password</label>
+            <input type="text" id="phoneVMPassword" name="Phone_VM_Password" placeholder="Initial voicemail PIN">
+          </div>
+        </div>
+
+        <!-- ── BOSS & System Access ── -->
+        <div class="form-section">
+          <h2>BOSS &amp; System Access</h2>
+
+          <div class="form-field">
+            <label>BOSS Access Granted <span class="required">*</span></label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="BOSS_Access" value="Yes" required>
+                <span class="radio-button">Yes</span>
+              </label>
+              <label>
+                <input type="radio" name="BOSS_Access" value="No">
+                <span class="radio-button">No</span>
+              </label>
+            </div>
+          </div>
+
+          <? if (requestData.bossTrainingOnly === 'Yes') { ?>
+          <!-- ER-5: Training User Only — hide full-access BOSS fields -->
+          <div class="form-field" style="background:#fff8e1; border-left:4px solid #f9a825; padding:12px 16px; border-radius:4px; margin-top:12px;">
+            <strong>Training User Only</strong><br>
+            This employee is flagged as a BOSS training user only. Do <strong>not</strong> assign committees, cost sheets, trip reports, or grievances. Assign training modules only.
+          </div>
+          <? } else { ?>
+          <label class="form-label" style="margin: 20px 0 10px; display:block;">Confirm BOSS Access — check each item once assigned:</label>
+
+          <? if (requestData.bossJobSites) { requestData.bossJobSites.split(',').forEach(function(site) { site = site.trim(); if (site) { var skey = site.replace(/[^a-zA-Z0-9]/g,'_'); ?>
+          <div class="confirm-item">
+            <input type="checkbox" id="BOSS_Cmte_<?= skey ?>" name="BOSS_Cmte_<?= skey ?>" value="Confirmed">
+            <label for="BOSS_Cmte_<?= skey ?>">
+              Committee: <?= site ?>
+              <span>Grant BOSS committee access for this site</span>
+            </label>
+          </div>
+          <? }}); } ?>
+
+          <? if (requestData.bossCostSheetJobs) { requestData.bossCostSheetJobs.split(',').forEach(function(job) { job = job.trim(); if (job) { var jkey = job.replace(/[^a-zA-Z0-9]/g,'_'); ?>
+          <div class="confirm-item">
+            <input type="checkbox" id="BOSS_CostSheet_<?= jkey ?>" name="BOSS_CostSheet_<?= jkey ?>" value="Confirmed">
+            <label for="BOSS_CostSheet_<?= jkey ?>">
+              Cost Sheet: <?= job ?>
+              <span>Grant BOSS cost sheet access for this job</span>
+            </label>
+          </div>
+          <? }}); } ?>
+
+          <? if (requestData.bossTripReports === 'Yes') { ?>
+          <div class="confirm-item">
+            <input type="checkbox" id="BOSS_TripReports" name="BOSS_TripReports" value="Confirmed">
+            <label for="BOSS_TripReports">
+              Trip Reports
+              <span>Grant BOSS trip report access</span>
+            </label>
+          </div>
+          <? } ?>
+
+          <? if (requestData.bossGrievances === 'Yes') { ?>
+          <div class="confirm-item">
+            <input type="checkbox" id="BOSS_Grievances" name="BOSS_Grievances" value="Confirmed">
+            <label for="BOSS_Grievances">
+              Grievances
+              <span>Grant BOSS grievances access</span>
+            </label>
+          </div>
+          <? } ?>
+          <? } ?> <!-- end bossTrainingOnly check -->
+
+          <label class="form-label" style="margin: 20px 0 10px; display:block;">Additional System Access — check each system that was granted:</label>
+
+          <div class="confirm-item">
+            <input type="checkbox" id="Incidents_Access" name="Incidents_Access" value="Yes">
+            <label for="Incidents_Access">
+              Incidents Access
+              <span>Access to the Incidents reporting system</span>
+            </label>
+          </div>
+          <div class="confirm-item">
+            <input type="checkbox" id="CAA_Access" name="CAA_Access" value="Yes">
+            <label for="CAA_Access">
+              CAA Access
+              <span>Access to the CAA system</span>
+            </label>
+          </div>
+          <div class="confirm-item">
+            <input type="checkbox" id="Delivery_App_Access" name="Delivery_App_Access" value="Yes">
+            <label for="Delivery_App_Access">
+              Delivery App Access
+              <span>Access to the delivery application</span>
+            </label>
+          </div>
+          <div class="confirm-item">
+            <input type="checkbox" id="Net_Promoter_Score_Access" name="Net_Promoter_Score_Access" value="Yes">
+            <label for="Net_Promoter_Score_Access">
+              Net Promoter Score Access
+              <span>Access to NPS reporting tools</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- ── Notes ── -->
+        <div class="form-section">
+          <h2>IT Setup Notes</h2>
+          <div class="form-field">
+            <label>Additional Comments / Notes</label>
+            <textarea id="itNotes" name="IT_Notes" rows="4"
+              placeholder="Any additional notes about the IT setup process"></textarea>
+          </div>
+        </div>
+
+        <div id="statusMessage"></div>
+
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-full">Complete IT Setup</button>
+      </form>
+
+      <?!= includeWithData('SuccessScreen', {baseUrl: getBaseUrl()}) ?>
+
+    </div>
+  </div>
+
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Submitting IT setup...</p>
+  </div>
+
+  <script>
+    // ── Pre-population ────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', function() {
+      // 1. Email username — use stored googleEmail if available, otherwise build from name
+      var googleEmail = document.getElementById('ctx_googleEmail').value.replace(/^"|"$/g, '').trim();
+      if (googleEmail) {
+        document.getElementById('emailUsername').value = googleEmail;
+      } else {
+        var employeeName = <?= JSON.stringify(requestData.employeeName || '') ?>;
+        if (employeeName) {
+          var parts = employeeName.trim().split(/\s+/);
+          if (parts.length >= 2) {
+            document.getElementById('emailUsername').value =
+              (parts[0] + '.' + parts[parts.length - 1]).toLowerCase();
+          }
+        }
+      }
+
+      // 2. Email domain
+      var googleDomain = document.getElementById('ctx_googleDomain').value;
+      var domainSelect = document.getElementById('emailDomain');
+      if (googleDomain) {
+        var domainVal = googleDomain.startsWith('@') ? googleDomain : '@' + googleDomain;
+        domainSelect.value = domainVal;
+      } else if (domainSelect.value === '') {
+        domainSelect.value = '@team-group.com'; // default
+      }
+
+      // 3. Computer type from request
+      var compType = document.getElementById('ctx_computerType').value;
+      if (compType) {
+        var compSelect = document.getElementById('computerType');
+        if      (compType === 'Laptop (Windows)' || compType === 'Desktop (Windows)') compSelect.value = 'Windows PC';
+        else if (compType.includes('Mac'))        compSelect.value = 'Mac';
+        else if (compType.includes('Chromebook')) compSelect.value = 'Chromebook';
+      }
+
+      // 4. Computer serial from request
+      var computerSerial = document.getElementById('ctx_computerSerial').value;
+      if (computerSerial) document.getElementById('computerMake').value = computerSerial;
+
+      // 5. Default BOSS_Access to Yes if any BOSS sites were requested
+      var bossSites = document.getElementById('ctx_bossJobSites').value;
+      if (bossSites) {
+        var bossYes = document.querySelector('input[name="BOSS_Access"][value="Yes"]');
+        if (bossYes) bossYes.checked = true;
+      }
+    });
+
+    // ── Submit ────────────────────────────────────────────────
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      var submitBtn = document.getElementById('submitBtn');
+      var statusMsg = document.getElementById('statusMessage');
+      var overlay   = document.getElementById('loading-overlay');
+
+      submitBtn.disabled = true;
+      overlay.style.display = 'flex';
+      statusMsg.innerHTML = '';
+
+      var formData = {};
+      var fd = new FormData(e.target);
+      var seen = new Set();
+      fd.forEach(function(value, key) {
+        if (!seen.has(key)) {
+          seen.add(key);
+          var all = fd.getAll(key);
+          formData[key] = all.length > 1 ? all.join(',') : value;
+        }
+      });
+
+      // Default unchecked system access items to 'No'
+      ['Incidents_Access', 'CAA_Access', 'Delivery_App_Access', 'Net_Promoter_Score_Access'].forEach(function(field) {
+        if (!formData[field]) formData[field] = 'No';
+      });
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          overlay.style.display = 'none';
+          if (res && res.success) {
+            document.getElementById('taskForm').style.display = 'none';
+            document.getElementById('requestHeaderWrap').style.display = 'none';
+            document.getElementById('successTitle').textContent = 'IT Setup Complete';
+            document.getElementById('successMessage').textContent = 'The requester and specialist teams have been notified.';
+            document.getElementById('successRequestId').textContent = 'Workflow: ' + formData.workflowId;
+            document.getElementById('successAnotherLink').style.display = 'none';
+            document.getElementById('success-screen').style.display = 'block';
+          } else {
+            statusMsg.innerHTML = '<div class="callout callout-warning">&#10060; ' + (res.message || 'Submission failed.') + '</div>';
+            submitBtn.disabled = false;
+          }
+        })
+        .withFailureHandler(function(err) {
+          overlay.style.display = 'none';
+          statusMsg.innerHTML = '<div class="callout callout-warning">&#10060; System error: ' + err.message + '</div>';
+          submitBtn.disabled = false;
+        })
+        .submitITSetup(formData);
+    });
+  </script>
+  <?!= include('SharedComponents') ?>
+  <?!= safeInclude('Konami') ?>
+</body>
+
+</html>

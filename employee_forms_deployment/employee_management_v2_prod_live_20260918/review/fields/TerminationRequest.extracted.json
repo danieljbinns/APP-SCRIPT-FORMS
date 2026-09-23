@@ -1,0 +1,1084 @@
+{
+  "$comment": "Mechanical extraction — regenerate with review/tools/extract-fields.js. Human-authored notes live in the matching .notes.json and are merged by merge-fields.js; this file is safe to overwrite. snapshotLine is valid for this snapshot only — use `control` as the durable identifier.",
+  "template": "TerminationRequest.html",
+  "servesForms": [
+    {
+      "key": "FORM_TERMINATION",
+      "label": "End of Employment Request",
+      "mode": "default",
+      "baseMode": null,
+      "route": "ROUTE_TERMINATION",
+      "variantNote": null
+    }
+  ],
+  "sharedTemplate": false,
+  "sharedTemplateNote": null,
+  "extractedAt": "2026-09-19",
+  "fieldCount": 24,
+  "counts": {
+    "markup": 24,
+    "dynamic": 0,
+    "notSubmitted": 0
+  },
+  "submitStyle": "passthrough",
+  "payloadKeys": 0,
+  "orphanPayloadKeys": [],
+  "fields": {
+    "FIELD_TERMINATION_REQUEST_reqEmail": {
+      "key": "FIELD_TERMINATION_REQUEST_reqEmail",
+      "control": "reqEmail",
+      "id": "reqEmail",
+      "label": "Requester Email *",
+      "type": "email",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Requester Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 27,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "reqEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_reqName": {
+      "key": "FIELD_TERMINATION_REQUEST_reqName",
+      "control": "reqName",
+      "id": "reqName",
+      "label": "Requester Name *",
+      "type": "text",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Requester Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 31,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "reqName"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_empName": {
+      "key": "FIELD_TERMINATION_REQUEST_empName",
+      "control": "empName",
+      "id": null,
+      "label": "Employee Name *",
+      "type": "text",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 39,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "empName"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_empWorkEmail": {
+      "key": "FIELD_TERMINATION_REQUEST_empWorkEmail",
+      "control": "empWorkEmail",
+      "id": "empWorkEmail",
+      "label": "Current Work Email *",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm",
+        "email_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 54,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "empWorkEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_managerEmail": {
+      "key": "FIELD_TERMINATION_REQUEST_managerEmail",
+      "control": "managerEmail",
+      "id": "managerEmail",
+      "label": "Manager Email *",
+      "type": "email",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 62,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "managerEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_managerName": {
+      "key": "FIELD_TERMINATION_REQUEST_managerName",
+      "control": "managerName",
+      "id": "managerName",
+      "label": "Manager Name *",
+      "type": "text",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 69,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "managerName"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_siteName": {
+      "key": "FIELD_TERMINATION_REQUEST_siteName",
+      "control": "siteName",
+      "id": "siteName",
+      "label": "Site Name *",
+      "type": "select",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 75,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "siteName"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_empType": {
+      "key": "FIELD_TERMINATION_REQUEST_empType",
+      "control": "empType",
+      "id": null,
+      "label": "Hourly",
+      "type": "radio",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Hourly",
+          "line": 82
+        },
+        {
+          "value": "Salary",
+          "line": 84
+        }
+      ],
+      "snapshotLine": 82,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "empType"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_termDate": {
+      "key": "FIELD_TERMINATION_REQUEST_termDate",
+      "control": "termDate",
+      "id": null,
+      "label": "Effective Date of Termination *",
+      "type": "date",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Termination Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 94,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "termDate"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_lastDayWorked": {
+      "key": "FIELD_TERMINATION_REQUEST_lastDayWorked",
+      "control": "lastDayWorked",
+      "id": null,
+      "label": "Last Day Worked *",
+      "type": "date",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Termination Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 98,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "lastDayWorked"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_reason": {
+      "key": "FIELD_TERMINATION_REQUEST_reason",
+      "control": "reason",
+      "id": "reason",
+      "label": "Reason for Leaving *",
+      "type": "select",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Termination Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 102,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "reason"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_hr_approved": {
+      "key": "FIELD_TERMINATION_REQUEST_hr_approved",
+      "control": "hr_approved",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Termination Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "hr_approval_sec",
+      "gateChain": [
+        "hr_approval_sec"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm",
+        "hr_approval_sec"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'block'",
+          "handler": "handleReasonChange",
+          "snapshotLine": 304
+        },
+        {
+          "rule": "'none'",
+          "handler": "handleReasonChange",
+          "snapshotLine": 307
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 116
+        },
+        {
+          "value": "No",
+          "line": 118
+        }
+      ],
+      "snapshotLine": 116,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "hr_approved"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_has_reports": {
+      "key": "FIELD_TERMINATION_REQUEST_has_reports",
+      "control": "has_reports",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Termination Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Yes",
+          "line": 126
+        },
+        {
+          "value": "No",
+          "line": 129
+        }
+      ],
+      "snapshotLine": 126,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "has_reports"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_reports_to_new": {
+      "key": "FIELD_TERMINATION_REQUEST_reports_to_new",
+      "control": "reports_to_new",
+      "id": "reports_to_new",
+      "label": "Who will these reports report to? *",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Termination Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm",
+        "reports_logic"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 134,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "reports_to_new"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_systems": {
+      "key": "FIELD_TERMINATION_REQUEST_systems",
+      "control": "systems",
+      "id": null,
+      "label": "ADP Supervisor Access",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "System Access Removal",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "ADP Supervisor Access",
+          "line": 144
+        },
+        {
+          "value": "BOSS",
+          "line": 152
+        },
+        {
+          "value": "CAA",
+          "line": 154
+        },
+        {
+          "value": "Delivery",
+          "line": 156
+        },
+        {
+          "value": "Google Account",
+          "line": 158
+        },
+        {
+          "value": "Incidents",
+          "line": 160
+        },
+        {
+          "value": "Fleetio",
+          "line": 168
+        },
+        {
+          "value": "Central Purchasing/Jonas",
+          "line": 176
+        }
+      ],
+      "snapshotLine": 144,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "systems"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_google_forward": {
+      "key": "FIELD_TERMINATION_REQUEST_google_forward",
+      "control": "google_forward",
+      "id": "google_forward",
+      "label": "Email Forwarding To",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Google Account Offboarding",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm",
+        "google_logic"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 186,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "google_forward"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_google_files": {
+      "key": "FIELD_TERMINATION_REQUEST_google_files",
+      "control": "google_files",
+      "id": "google_files",
+      "label": "Transfer Drive Files To",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Google Account Offboarding",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm",
+        "google_logic"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 194,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "google_files"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_google_delegate": {
+      "key": "FIELD_TERMINATION_REQUEST_google_delegate",
+      "control": "google_delegate",
+      "id": "google_delegate",
+      "label": "Delegated Inbox Access To",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Google Account Offboarding",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm",
+        "google_logic"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 203,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "google_delegate"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_google_duration": {
+      "key": "FIELD_TERMINATION_REQUEST_google_duration",
+      "control": "google_duration",
+      "id": null,
+      "label": "Keep Account Active For",
+      "type": "select",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Google Account Offboarding",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm",
+        "google_logic"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 209,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "google_duration"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_google_vacation": {
+      "key": "FIELD_TERMINATION_REQUEST_google_vacation",
+      "control": "google_vacation",
+      "id": "google_vacation",
+      "label": "Vacation Responder Message",
+      "type": "textarea",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Google Account Offboarding",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm",
+        "google_logic"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 219,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "google_vacation"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_equip": {
+      "key": "FIELD_TERMINATION_REQUEST_equip",
+      "control": "equip",
+      "id": null,
+      "label": "Computer / Laptop",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Equipment   Assets",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Computer/Laptop",
+          "line": 229
+        },
+        {
+          "value": "Mobile Phone",
+          "line": 233
+        },
+        {
+          "value": "Tablet",
+          "line": 241
+        },
+        {
+          "value": "Credit Card",
+          "line": 245
+        },
+        {
+          "value": "Vehicle and Keys",
+          "line": 249
+        },
+        {
+          "value": "Building Access Card/Keys",
+          "line": 253
+        }
+      ],
+      "snapshotLine": 229,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "equip"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_empPhone": {
+      "key": "FIELD_TERMINATION_REQUEST_empPhone",
+      "control": "empPhone",
+      "id": "empPhone",
+      "label": "Phone Number",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Equipment   Assets",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "equip_phone_sec",
+      "gateChain": [
+        "equip_phone_sec"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm",
+        "equip_phone_sec"
+      ],
+      "showHideRules": [
+        {
+          "rule": "'block'",
+          "handler": "toggleEquipPhone",
+          "snapshotLine": 316
+        },
+        {
+          "rule": "'none'",
+          "handler": "toggleEquipPhone",
+          "snapshotLine": 318
+        }
+      ],
+      "options": [],
+      "snapshotLine": 238,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "empPhone"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_attachment": {
+      "key": "FIELD_TERMINATION_REQUEST_attachment",
+      "control": "attachment",
+      "id": "attachmentFile",
+      "label": "Upload Documentation",
+      "type": "file",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Documentation & Logistics",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 262,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "attachment"
+      ],
+      "submitted": true
+    },
+    "FIELD_TERMINATION_REQUEST_comments": {
+      "key": "FIELD_TERMINATION_REQUEST_comments",
+      "control": "comments",
+      "id": null,
+      "label": "Additional Comments / Notes",
+      "type": "textarea",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Documentation & Logistics",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "terminationForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 270,
+      "sourceTemplate": "TerminationRequest.html",
+      "availability": {
+        "FORM_TERMINATION": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "comments"
+      ],
+      "submitted": true
+    }
+  }
+}

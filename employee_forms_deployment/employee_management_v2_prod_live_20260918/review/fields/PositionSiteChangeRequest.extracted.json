@@ -1,0 +1,3588 @@
+{
+  "$comment": "Mechanical extraction — regenerate with review/tools/extract-fields.js. Human-authored notes live in the matching .notes.json and are merged by merge-fields.js; this file is safe to overwrite. snapshotLine is valid for this snapshot only — use `control` as the durable identifier.",
+  "template": "PositionSiteChangeRequest.html",
+  "servesForms": [
+    {
+      "key": "FORM_POSITION_CHANGE",
+      "label": "Position / Site Change",
+      "mode": "default",
+      "baseMode": null,
+      "route": "ROUTE_POSITION_CHANGE",
+      "variantNote": null
+    },
+    {
+      "key": "FORM_IT_CONFIRMATION_CHANGE",
+      "label": "IT Confirmation — Status Change",
+      "mode": "it_confirmation",
+      "baseMode": null,
+      "route": "ROUTE_IT_CONFIRMATION",
+      "variantNote": null
+    }
+  ],
+  "sharedTemplate": true,
+  "sharedTemplateNote": "One template, one definition per field, deliberately shared so a field is only edited once. Each mode is a distinct form in use — see servesForms and each field's availability map. An edit to a shared field changes every mode listed here.",
+  "extractedAt": "2026-09-19",
+  "fieldCount": 67,
+  "counts": {
+    "markup": 62,
+    "dynamic": 5,
+    "notSubmitted": 0
+  },
+  "submitStyle": "passthrough-dom",
+  "payloadKeys": 0,
+  "orphanPayloadKeys": [],
+  "fields": {
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_reqEmail": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_reqEmail",
+      "control": "reqEmail",
+      "id": "reqEmail",
+      "label": "Requester Email *",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Requester Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 26,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "reqEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_reqName": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_reqName",
+      "control": "reqName",
+      "id": "reqName",
+      "label": "Requester Name *",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Requester Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 30,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "reqName"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_reqDate": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_reqDate",
+      "control": "reqDate",
+      "id": null,
+      "label": "Date Requested",
+      "type": "date",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Requester Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 34,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "reqDate"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_firstName": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_firstName",
+      "control": "firstName",
+      "id": null,
+      "label": "First Name *",
+      "type": "text",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 42,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "firstName"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_lastName": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_lastName",
+      "control": "lastName",
+      "id": null,
+      "label": "Last Name *",
+      "type": "text",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 46,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "lastName"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_currentClass": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_currentClass",
+      "control": "currentClass",
+      "id": null,
+      "label": "Hourly",
+      "type": "radio",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Hourly",
+          "line": 53
+        },
+        {
+          "value": "Salary",
+          "line": 54
+        }
+      ],
+      "snapshotLine": 53,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "currentClass"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_currentTitle": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_currentTitle",
+      "control": "currentTitle",
+      "id": null,
+      "label": "Current Job Title",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 59,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "currentTitle"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_currentManagerEmail": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_currentManagerEmail",
+      "control": "currentManagerEmail",
+      "id": "currentManagerEmail",
+      "label": "Current Manager Email",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 66,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "currentManagerEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_currentManagerName": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_currentManagerName",
+      "control": "currentManagerName",
+      "id": "currentManagerName",
+      "label": "Current Manager Name",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 73,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "currentManagerName"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_effDate": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_effDate",
+      "control": "effDate",
+      "id": null,
+      "label": "Effective Date of Change *",
+      "type": "date",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 79,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "effDate"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_siteName": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_siteName",
+      "control": "siteName",
+      "id": "siteName",
+      "label": "Site Name *",
+      "type": "select",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Employee Information",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 83,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "siteName"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_changeType": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_changeType",
+      "control": "changeType",
+      "id": null,
+      "label": "Site Transfer",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Type of Change",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Site Transfer",
+          "line": 91
+        },
+        {
+          "value": "Position Change",
+          "line": 93
+        },
+        {
+          "value": "Classification",
+          "line": 95
+        },
+        {
+          "value": "Manager Change",
+          "line": 97
+        }
+      ],
+      "snapshotLine": 91,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "changeType"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_siteOld": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_siteOld",
+      "control": "siteOld",
+      "id": null,
+      "label": "Current Site",
+      "type": "select",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Site Transfer / Department Change",
+      "classes": [
+        "site-list"
+      ],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "site_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 106,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "siteOld"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_siteNew": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_siteNew",
+      "control": "siteNew",
+      "id": null,
+      "label": "New Site",
+      "type": "select",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Site Transfer / Department Change",
+      "classes": [
+        "site-list"
+      ],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "site_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 107,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "siteNew"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_department": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_department",
+      "control": "department",
+      "id": null,
+      "label": "New Department",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Site Transfer / Department Change",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "site_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 111,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "department"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_receivingManagerEmail": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_receivingManagerEmail",
+      "control": "receivingManagerEmail",
+      "id": "receivingManagerEmail",
+      "label": "Receiving Manager Email *",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Site Transfer / Department Change",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "site_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 116,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "receivingManagerEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_titleOld": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_titleOld",
+      "control": "titleOld",
+      "id": null,
+      "label": "Current Title",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Position Change",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "pos_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 125,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "titleOld"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_titleNew": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_titleNew",
+      "control": "titleNew",
+      "id": null,
+      "label": "New Title",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Position Change",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "pos_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 126,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "titleNew"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_classOld": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_classOld",
+      "control": "classOld",
+      "id": null,
+      "label": "Salary",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Classification Change",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "class_sec"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Hourly",
+          "line": 135
+        },
+        {
+          "value": "Salary",
+          "line": 135
+        }
+      ],
+      "snapshotLine": 135,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "classOld"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_classNew": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_classNew",
+      "control": "classNew",
+      "id": null,
+      "label": "Salary",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Classification Change",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "class_sec"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Hourly",
+          "line": 139
+        },
+        {
+          "value": "Salary",
+          "line": 139
+        }
+      ],
+      "snapshotLine": 139,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "classNew"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_mgrOldEmail": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_mgrOldEmail",
+      "control": "mgrOldEmail",
+      "id": "mgrOldEmail",
+      "label": "Old Manager Email",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Reporting Manager Change",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "mgr_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 149,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "mgrOldEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_mgrOldName": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_mgrOldName",
+      "control": "mgrOldName",
+      "id": "mgrOldName",
+      "label": "Old Manager Name",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Reporting Manager Change",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "mgr_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 153,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "mgrOldName"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_mgrNewEmail": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_mgrNewEmail",
+      "control": "mgrNewEmail",
+      "id": "mgrNewEmail",
+      "label": "New Manager Email",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Reporting Manager Change",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "mgr_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 156,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "mgrNewEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_mgrNewName": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_mgrNewName",
+      "control": "mgrNewName",
+      "id": "mgrNewName",
+      "label": "New Manager Name",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Reporting Manager Change",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "mgr_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 160,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "mgrNewName"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_hadReports": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_hadReports",
+      "control": "hadReports",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Reporting Management",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Yes",
+          "line": 168
+        },
+        {
+          "value": "No",
+          "line": 169
+        }
+      ],
+      "snapshotLine": 168,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "hadReports"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_oldReportsTo": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_oldReportsTo",
+      "control": "oldReportsTo",
+      "id": "oldReportsTo",
+      "label": "Reassign PREVIOUS Reports To *",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Reporting Management",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "reassign_logic"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 173,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "oldReportsTo"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_gainingReports": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_gainingReports",
+      "control": "gainingReports",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Reporting Management",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Yes",
+          "line": 182
+        },
+        {
+          "value": "No",
+          "line": 183
+        }
+      ],
+      "snapshotLine": 182,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "gainingReports"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_newReportsFrom": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_newReportsFrom",
+      "control": "newReportsFrom",
+      "id": "newReportsFrom",
+      "label": "Who were these reports reporting to before? *",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Reporting Management",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "gain_logic"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 187,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "newReportsFrom"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_hasGoogle": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_hasGoogle",
+      "control": "hasGoogle",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": true,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "System Access",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Yes",
+          "line": 197
+        },
+        {
+          "value": "No",
+          "line": 198
+        }
+      ],
+      "snapshotLine": 197,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": true,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "hasGoogle"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_existingEmail": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_existingEmail",
+      "control": "existingEmail",
+      "id": "existingEmail",
+      "label": "Existing Email Address *",
+      "type": "email",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "System Access",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "google_email_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 202,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "existingEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_sys": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_sys",
+      "control": "sys",
+      "id": "adpSupervisorAccess",
+      "label": "ADP Supervisor Access",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "NEW System Access Needed",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "ADP Supervisor Access",
+          "line": 216
+        },
+        {
+          "value": "BOSS",
+          "line": 234
+        },
+        {
+          "value": "CAA",
+          "line": 279
+        },
+        {
+          "value": "Delivery",
+          "line": 280
+        },
+        {
+          "value": "DSS",
+          "line": 281
+        },
+        {
+          "value": "Fleetio",
+          "line": 282
+        },
+        {
+          "value": "Google Account",
+          "line": 283
+        },
+        {
+          "value": "Incidents",
+          "line": 284
+        },
+        {
+          "value": "Central Purchasing/Jonas",
+          "line": 285
+        },
+        {
+          "value": "Net Promoter Score",
+          "line": 297
+        },
+        {
+          "value": "SiteDocs",
+          "line": 298
+        }
+      ],
+      "snapshotLine": 216,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "sys"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_adpSalaryAccess": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_adpSalaryAccess",
+      "control": "adpSalaryAccess",
+      "id": "adpSalaryAccess",
+      "label": "Requires access to salary data? If checked, HR/Payroll will be notified to grant salary data permissions in ADP.",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "NEW System Access Needed",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "adpSitesSection",
+      "gateChain": [
+        "adpSitesSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "adpSitesSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "adpChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 528
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 221
+        }
+      ],
+      "snapshotLine": 221,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "adpSalaryAccess"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_bossTrainingOnly": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_bossTrainingOnly",
+      "control": "bossTrainingOnly",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "NEW System Access Needed",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "bossDetailsSection",
+      "gateChain": [
+        "bossDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "bossDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "bossChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 531
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 240
+        },
+        {
+          "value": "No",
+          "line": 241
+        }
+      ],
+      "snapshotLine": 240,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "bossTrainingOnly"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_bossCost": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_bossCost",
+      "control": "bossCost",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "NEW System Access Needed",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "bossDetailsSection",
+      "gateChain": [
+        "bossDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "bossDetailsSection",
+        "bossFullAccessFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "bossChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 531
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 253
+        },
+        {
+          "value": "No",
+          "line": 254
+        }
+      ],
+      "snapshotLine": 253,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "bossCost"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_bossTrip": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_bossTrip",
+      "control": "bossTrip",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "NEW System Access Needed",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "bossDetailsSection",
+      "gateChain": [
+        "bossDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "bossDetailsSection",
+        "bossFullAccessFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "bossChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 531
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 266
+        },
+        {
+          "value": "No",
+          "line": 267
+        }
+      ],
+      "snapshotLine": 266,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "bossTrip"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_bossGriev": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_bossGriev",
+      "control": "bossGriev",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "NEW System Access Needed",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "bossDetailsSection",
+      "gateChain": [
+        "bossDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "bossDetailsSection",
+        "bossFullAccessFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "bossChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 531
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 273
+        },
+        {
+          "value": "No",
+          "line": 274
+        }
+      ],
+      "snapshotLine": 273,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "bossGriev"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_googleEmail": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_googleEmail",
+      "control": "googleEmail",
+      "id": null,
+      "label": "Requested Email",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "New Google Account Setup",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "new_google_sec",
+      "gateChain": [
+        "new_google_sec"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "new_google_sec"
+      ],
+      "showHideRules": [
+        {
+          "rule": "googleChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 537
+        }
+      ],
+      "options": [],
+      "snapshotLine": 305,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "googleEmail"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_googleDomain": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_googleDomain",
+      "control": "googleDomain",
+      "id": null,
+      "label": "Domain",
+      "type": "select",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "New Google Account Setup",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "new_google_sec",
+      "gateChain": [
+        "new_google_sec"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "new_google_sec"
+      ],
+      "showHideRules": [
+        {
+          "rule": "googleChecked ? 'block' : 'none'",
+          "handler": "toggleSections",
+          "snapshotLine": 537
+        }
+      ],
+      "options": [],
+      "snapshotLine": 306,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "googleDomain"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_jrReq": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_jrReq",
+      "control": "jrReq",
+      "id": null,
+      "label": "No",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "JR & Training",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Yes",
+          "line": 319
+        },
+        {
+          "value": "No",
+          "line": 319
+        }
+      ],
+      "snapshotLine": 319,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "jrReq"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_plan306090": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_plan306090",
+      "control": "plan306090",
+      "id": null,
+      "label": "No",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "JR & Training",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Yes",
+          "line": 323
+        },
+        {
+          "value": "No",
+          "line": 323
+        }
+      ],
+      "snapshotLine": 323,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "plan306090"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_jrTitle": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_jrTitle",
+      "control": "jrTitle",
+      "id": "jrTitle",
+      "label": "Select JR Title to Assign",
+      "type": "select",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "JR & Training",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "jr_sec"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 328,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "jrTitle"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_equip": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_equip",
+      "control": "equip",
+      "id": null,
+      "label": "Digital Business Cards",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Equipment Request",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Business Cards",
+          "line": 339
+        },
+        {
+          "value": "Computer",
+          "line": 342
+        },
+        {
+          "value": "Credit Card",
+          "line": 401
+        },
+        {
+          "value": "Mobile Phone",
+          "line": 437
+        },
+        {
+          "value": "SiteDocs Tablet",
+          "line": 464
+        },
+        {
+          "value": "Vehicle",
+          "line": 465
+        }
+      ],
+      "snapshotLine": 339,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "equip"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_computerRequestType": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_computerRequestType",
+      "control": "computerRequestType",
+      "id": null,
+      "label": "New Request",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "computerDetailsSection",
+      "gateChain": [
+        "computerDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "computerDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "computerChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 568
+        }
+      ],
+      "options": [
+        {
+          "value": "New",
+          "line": 351
+        },
+        {
+          "value": "Reassignment",
+          "line": 352
+        }
+      ],
+      "snapshotLine": 351,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "computerRequestType"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_computerType": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_computerType",
+      "control": "computerType",
+      "id": null,
+      "label": "Chromebook",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "computerNewFields",
+      "gateChain": [
+        "computerNewFields",
+        "computerDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "computerDetailsSection",
+        "computerNewFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "(requestType && requestType.value === 'New') ? 'block' : 'none'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 579
+        }
+      ],
+      "options": [
+        {
+          "value": "Chromebook",
+          "line": 359
+        },
+        {
+          "value": "Windows",
+          "line": 360
+        },
+        {
+          "value": "Mac",
+          "line": 361
+        }
+      ],
+      "snapshotLine": 359,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "computerType"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_office365Required": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_office365Required",
+      "control": "office365Required",
+      "id": null,
+      "label": "Yes",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "office365Question",
+      "gateChain": [
+        "office365Question",
+        "computerNewFields",
+        "computerDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "computerDetailsSection",
+        "computerNewFields",
+        "office365Question"
+      ],
+      "showHideRules": [
+        {
+          "rule": "show ? 'block' : 'none'",
+          "handler": "toggleOffice365Question",
+          "snapshotLine": 591
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 371
+        },
+        {
+          "value": "No",
+          "line": 372
+        }
+      ],
+      "snapshotLine": 371,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "office365Required"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_computerPreviousUser": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_computerPreviousUser",
+      "control": "computerPreviousUser",
+      "id": null,
+      "label": "Previous User Name",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "computerReassignFields",
+      "gateChain": [
+        "computerReassignFields",
+        "computerDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "computerDetailsSection",
+        "computerReassignFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "(requestType && requestType.value === 'Reassignment') ? 'block' : 'none'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 580
+        }
+      ],
+      "options": [],
+      "snapshotLine": 381,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "computerPreviousUser"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_computerPreviousType": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_computerPreviousType",
+      "control": "computerPreviousType",
+      "id": null,
+      "label": "Previous Computer Type",
+      "type": "select",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "computerReassignFields",
+      "gateChain": [
+        "computerReassignFields",
+        "computerDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "computerDetailsSection",
+        "computerReassignFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "(requestType && requestType.value === 'Reassignment') ? 'block' : 'none'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 580
+        }
+      ],
+      "options": [],
+      "snapshotLine": 385,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "computerPreviousType"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_computerSerialNumber": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_computerSerialNumber",
+      "control": "computerSerialNumber",
+      "id": null,
+      "label": "Serial Number (if known)",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Computer Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "computerReassignFields",
+      "gateChain": [
+        "computerReassignFields",
+        "computerDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "computerDetailsSection",
+        "computerReassignFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "(requestType && requestType.value === 'Reassignment') ? 'block' : 'none'",
+          "handler": "toggleComputerReassignFields",
+          "snapshotLine": 580
+        }
+      ],
+      "options": [],
+      "snapshotLine": 394,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "computerSerialNumber"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardUSA": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardUSA",
+      "control": "creditCardUSA",
+      "id": null,
+      "label": "USA Credit Card",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 571
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 411
+        }
+      ],
+      "snapshotLine": 411,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardUSA"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardLimitUSA": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardLimitUSA",
+      "control": "creditCardLimitUSA",
+      "id": null,
+      "label": "USA Credit Card",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 571
+        }
+      ],
+      "options": [],
+      "snapshotLine": 414,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardLimitUSA"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardCanada": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardCanada",
+      "control": "creditCardCanada",
+      "id": null,
+      "label": "Canada Credit Card",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 571
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 419
+        }
+      ],
+      "snapshotLine": 419,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardCanada"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardLimitCanada": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardLimitCanada",
+      "control": "creditCardLimitCanada",
+      "id": null,
+      "label": "Canada Credit Card",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 571
+        }
+      ],
+      "options": [],
+      "snapshotLine": 422,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardLimitCanada"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardHomeDepot": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardHomeDepot",
+      "control": "creditCardHomeDepot",
+      "id": null,
+      "label": "Home Depot Credit Card",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 571
+        }
+      ],
+      "options": [
+        {
+          "value": "Yes",
+          "line": 427
+        }
+      ],
+      "snapshotLine": 427,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardHomeDepot"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardLimitHomeDepot": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_creditCardLimitHomeDepot",
+      "control": "creditCardLimitHomeDepot",
+      "id": null,
+      "label": "Home Depot Credit Card",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Credit Card Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "creditCardDetailsSection",
+      "gateChain": [
+        "creditCardDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "creditCardDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "creditCardChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 571
+        }
+      ],
+      "options": [],
+      "snapshotLine": 430,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "creditCardLimitHomeDepot"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_phoneRequestType": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_phoneRequestType",
+      "control": "phoneRequestType",
+      "id": null,
+      "label": "New Request",
+      "type": "radio",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Mobile Phone Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "mobilePhoneDetailsSection",
+      "gateChain": [
+        "mobilePhoneDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "mobilePhoneDetailsSection"
+      ],
+      "showHideRules": [
+        {
+          "rule": "phoneChecked ? 'block' : 'none'",
+          "handler": "toggleEquipmentDetails",
+          "snapshotLine": 574
+        }
+      ],
+      "options": [
+        {
+          "value": "New",
+          "line": 446
+        },
+        {
+          "value": "Reassignment",
+          "line": 447
+        }
+      ],
+      "snapshotLine": 446,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "phoneRequestType"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_phonePreviousUser": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_phonePreviousUser",
+      "control": "phonePreviousUser",
+      "id": null,
+      "label": "Previous User Name",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Mobile Phone Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "phoneReassignFields",
+      "gateChain": [
+        "phoneReassignFields",
+        "mobilePhoneDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "mobilePhoneDetailsSection",
+        "phoneReassignFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "(requestType && requestType.value === 'Reassignment') ? 'block' : 'none'",
+          "handler": "togglePhoneReassignFields",
+          "snapshotLine": 585
+        }
+      ],
+      "options": [],
+      "snapshotLine": 454,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "phonePreviousUser"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_phonePreviousNumber": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_phonePreviousNumber",
+      "control": "phonePreviousNumber",
+      "id": null,
+      "label": "Previous Phone Number",
+      "type": "text",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Mobile Phone Details",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "phoneReassignFields",
+      "gateChain": [
+        "phoneReassignFields",
+        "mobilePhoneDetailsSection"
+      ],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm",
+        "mobilePhoneDetailsSection",
+        "phoneReassignFields"
+      ],
+      "showHideRules": [
+        {
+          "rule": "(requestType && requestType.value === 'Reassignment') ? 'block' : 'none'",
+          "handler": "togglePhoneReassignFields",
+          "snapshotLine": 585
+        }
+      ],
+      "options": [],
+      "snapshotLine": 458,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "phonePreviousNumber"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_equipRem": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_equipRem",
+      "control": "equipRem",
+      "id": null,
+      "label": "Computer",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Equipment to Return",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "Computer",
+          "line": 472
+        },
+        {
+          "value": "Mobile Phone",
+          "line": 473
+        },
+        {
+          "value": "SiteDocs Tablet",
+          "line": 474
+        },
+        {
+          "value": "Vehicle",
+          "line": 475
+        },
+        {
+          "value": "Credit Card",
+          "line": 476
+        }
+      ],
+      "snapshotLine": 472,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "equipRem"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_rem": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_rem",
+      "control": "rem",
+      "id": null,
+      "label": "ADP",
+      "type": "checkbox",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Access Removal",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [
+        {
+          "value": "ADP",
+          "line": 484
+        },
+        {
+          "value": "BOSS",
+          "line": 485
+        },
+        {
+          "value": "CAA",
+          "line": 486
+        },
+        {
+          "value": "Delivery",
+          "line": 487
+        },
+        {
+          "value": "Fleetio",
+          "line": 488
+        },
+        {
+          "value": "Google Account",
+          "line": 489
+        },
+        {
+          "value": "SiteDocs",
+          "line": 490
+        }
+      ],
+      "snapshotLine": 484,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "rem"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_comments": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_comments",
+      "control": "comments",
+      "id": null,
+      "label": "Rationale / Additional Comments",
+      "type": "textarea",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Logistics",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 495,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "comments"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_attachment": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_attachment",
+      "control": "attachment",
+      "id": null,
+      "label": "Upload Supporting Docs",
+      "type": "file",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Logistics",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 496,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "attachment"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_notes": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_notes",
+      "control": "notes",
+      "id": null,
+      "label": "Review Notes (Optional)",
+      "type": "textarea",
+      "required": false,
+      "multiple": false,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": "Logistics",
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": null,
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [
+        "form-container",
+        "changeForm"
+      ],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 501,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "origin": "markup",
+      "payloadKeys": [
+        "notes"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_adpSites": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_adpSites",
+      "control": "adpSites",
+      "id": null,
+      "label": null,
+      "type": "checkbox",
+      "required": false,
+      "multiple": true,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": null,
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "adpSitesCheckboxes",
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 726,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "origin": "dynamic",
+      "builtBy": "buildDualList",
+      "builtFrom": "data.jobs",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "payloadKeys": [
+        "adpSites"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_purchasingSites": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_purchasingSites",
+      "control": "purchasingSites",
+      "id": null,
+      "label": null,
+      "type": "checkbox",
+      "required": false,
+      "multiple": true,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": null,
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "purchasingSitesCheckboxes",
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 731,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "origin": "dynamic",
+      "builtBy": "buildDualList",
+      "builtFrom": "data.jobs",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "payloadKeys": [
+        "purchasingSites"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_bossComm": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_bossComm",
+      "control": "bossComm",
+      "id": null,
+      "label": null,
+      "type": "checkbox",
+      "required": false,
+      "multiple": true,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": null,
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "bossCommitteesCheckboxes",
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 736,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "origin": "dynamic",
+      "builtBy": "buildDualList",
+      "builtFrom": "data.committees",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "payloadKeys": [
+        "bossComm"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_bossCostJobs": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_bossCostJobs",
+      "control": "bossCostJobs",
+      "id": null,
+      "label": null,
+      "type": "checkbox",
+      "required": false,
+      "multiple": true,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": null,
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "costSheetJobCheckboxes",
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 741,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "origin": "dynamic",
+      "builtBy": "buildDualList",
+      "builtFrom": "data.jobs",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "payloadKeys": [
+        "bossCostJobs"
+      ],
+      "submitted": true
+    },
+    "FIELD_POSITION_SITE_CHANGE_REQUEST_jonasJobs": {
+      "key": "FIELD_POSITION_SITE_CHANGE_REQUEST_jonasJobs",
+      "control": "jonasJobs",
+      "id": null,
+      "label": null,
+      "type": "checkbox",
+      "required": false,
+      "multiple": true,
+      "disabledInMarkup": false,
+      "datalist": null,
+      "section": null,
+      "classes": [],
+      "modeGate": null,
+      "modeGateSource": null,
+      "wrapper": "jonasJobNumbersCheckboxes",
+      "gateChain": [],
+      "pageGate": null,
+      "ancestorIds": [],
+      "showHideRules": null,
+      "options": [],
+      "snapshotLine": 746,
+      "sourceTemplate": "PositionSiteChangeRequest.html",
+      "origin": "dynamic",
+      "builtBy": "buildDualList",
+      "builtFrom": "data.jobs",
+      "availability": {
+        "FORM_POSITION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        },
+        "FORM_IT_CONFIRMATION_CHANGE": {
+          "visible": true,
+          "disabled": false,
+          "requiredEffective": false,
+          "reason": null
+        }
+      },
+      "payloadKeys": [
+        "jonasJobs"
+      ],
+      "submitted": true
+    }
+  }
+}

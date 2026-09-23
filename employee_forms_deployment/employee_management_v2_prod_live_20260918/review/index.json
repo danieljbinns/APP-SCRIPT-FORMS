@@ -1,0 +1,1268 @@
+{
+  "$comment": "Machine-readable registry for the employee_management_v2 PROD snapshot 2026-09-18. Descriptive only. It records WHAT the code does, never whether that is correct, intended, or a defect — those are the maintainer's calls, made per flow during review.",
+  "meta": {
+    "snapshot": "employee_management_v2_prod_live_20260918",
+    "scriptProject": "1AuIbJl1jRh1awi-MW-6y_NftHUGtfUNRexZk1gPzvenmIblSZo-lPz66",
+    "environment": "PROD",
+    "generated": "2026-09-18",
+    "schemaVersion": 1,
+    "coverage": "workflows, steps, forms, routes, groups, task categories, sheets, key functions. Field-level detail is out of scope at this revision."
+  },
+  "environments": {
+    "$comment": "Multiple deployments exist (dev, staging, tests, prod). Same code structure; each has its own spreadsheet and script properties. Only PROD is user-facing. These are lifecycle environments, not variants.",
+    "userFacing": [
+      "PROD"
+    ],
+    "differsBy": [
+      "SPREADSHEET_ID",
+      "script properties",
+      "deployment URL",
+      "attachment folder IDs"
+    ]
+  },
+  "groups": {
+    "GRP_HR": {
+      "email": "grp.forms.hr@team-group.com",
+      "configKey": "EMAILS.HR",
+      "roleTier": 2,
+      "handles": [
+        "HR verification",
+        "HR approval",
+        "HR deactivation",
+        "EOE process"
+      ]
+    },
+    "GRP_IT": {
+      "email": "grp.forms.it@team-group.com",
+      "configKey": "EMAILS.IT",
+      "roleTier": 3,
+      "handles": [
+        "IT setup",
+        "IT deactivation",
+        "IT access change"
+      ]
+    },
+    "GRP_PAYROLL": {
+      "email": "payroll@team-group.com",
+      "configKey": "EMAILS.PAYROLL",
+      "roleTier": 4,
+      "handles": [
+        "ADP",
+        "payroll notification",
+        "termination approval (view)"
+      ]
+    },
+    "GRP_IDSETUP": {
+      "email": "grp.forms.idsetup@team-group.com",
+      "configKey": "EMAILS.IDSETUP",
+      "roleTier": 5,
+      "handles": [
+        "Employee ID setup",
+        "SiteDocs account",
+        "BOSS WIS account",
+        "deactivation"
+      ]
+    },
+    "GRP_SAFETY": {
+      "email": "grp.forms.safety@team-group.com",
+      "configKey": "EMAILS.SAFETY",
+      "roleTier": 5,
+      "handles": [
+        "Safety onboarding",
+        "DSS learning paths",
+        "SiteDocs site assignment"
+      ]
+    },
+    "GRP_FLEET": {
+      "email": "grp.forms.fleetio@team-group.com",
+      "configKey": "EMAILS.FLEETIO",
+      "roleTier": 5,
+      "handles": [
+        "Fleetio access",
+        "vehicle assignment",
+        "vehicle return"
+      ]
+    },
+    "GRP_FINANCE": {
+      "email": "grp.forms.creditcard@team-group.com",
+      "configKey": "EMAILS.CREDIT_CARD",
+      "roleTier": 5,
+      "handles": [
+        "Credit card applications"
+      ]
+    },
+    "GRP_PURCHASING": {
+      "email": "grp.forms.jonas@team-group.com",
+      "configKey": "EMAILS.JONAS",
+      "roleTier": 5,
+      "handles": [
+        "Central Purchasing",
+        "Jonas job numbers"
+      ]
+    },
+    "GRP_REVIEW_306090": {
+      "email": "grp.forms.review306090@team-group.com",
+      "configKey": "EMAILS.REVIEW_306090_JR",
+      "roleTier": 5,
+      "handles": [
+        "30/60/90 day review plan"
+      ]
+    },
+    "GRP_JR_TITLE": {
+      "email": "grp.forms.jrtitle@team-group.com",
+      "configKey": "EMAILS.REVIEW_JR_TITLE",
+      "roleTier": 5,
+      "handles": [
+        "JR title verification and assignment"
+      ]
+    },
+    "GRP_BUSINESS_CARDS": {
+      "email": "davelangohr@team-group.com",
+      "configKey": "EMAILS.BUSINESS_CARDS",
+      "roleTier": 5,
+      "handles": [
+        "Business cards"
+      ],
+      "note": "individual address, not a group"
+    },
+    "GRP_IT_CONFIRMATION": {
+      "email": "davelangohr@team-group.com",
+      "configKey": "EMAILS.IT_CONFIRMATION",
+      "roleTier": 5,
+      "handles": [
+        "IT confirmation gate"
+      ],
+      "note": "individual address, not a group"
+    },
+    "ACTOR_MANAGER": {
+      "email": "(from request)",
+      "configKey": null,
+      "roleTier": 7,
+      "handles": [
+        "WIS module assignment",
+        "incoming transfer setup"
+      ],
+      "note": "resolved per workflow from the manager field"
+    },
+    "ACTOR_REQUESTER": {
+      "email": "(from request)",
+      "configKey": null,
+      "roleTier": 6,
+      "handles": [
+        "asset collection"
+      ],
+      "note": "resolved per workflow from the requester field"
+    }
+  },
+  "roleTiers": [
+    {
+      "tier": 1,
+      "key": "ROLE_ADMIN",
+      "source": "CONFIG.ADMIN_EMAILS",
+      "editDates": true,
+      "cancel": "all",
+      "remind": "all",
+      "viewSteps": "all"
+    },
+    {
+      "tier": 2,
+      "key": "ROLE_HR",
+      "source": "GRP_HR",
+      "editDates": true,
+      "cancel": "all",
+      "remind": "all",
+      "viewSteps": "all"
+    },
+    {
+      "tier": 3,
+      "key": "ROLE_IT",
+      "source": "GRP_IT",
+      "editDates": true,
+      "cancel": "all",
+      "remind": "all",
+      "viewSteps": "all"
+    },
+    {
+      "tier": 4,
+      "key": "ROLE_PAYROLL",
+      "source": "GRP_PAYROLL",
+      "editDates": false,
+      "cancel": "none",
+      "remind": "none",
+      "viewSteps": "all"
+    },
+    {
+      "tier": 5,
+      "key": "ROLE_SPECIALIST",
+      "source": "any specialist group",
+      "editDates": false,
+      "cancel": "own",
+      "remind": "own",
+      "viewSteps": "all"
+    },
+    {
+      "tier": 6,
+      "key": "ROLE_REQUESTER",
+      "source": "workflow.requesterEmail",
+      "editDates": false,
+      "cancel": "own",
+      "remind": "own",
+      "viewSteps": "own"
+    },
+    {
+      "tier": 7,
+      "key": "ROLE_MANAGER",
+      "source": "workflow.managerEmail",
+      "editDates": false,
+      "cancel": "own",
+      "remind": "own",
+      "viewSteps": "own"
+    },
+    {
+      "tier": 8,
+      "key": "ROLE_DOMAIN_USER",
+      "source": "CONFIG.ALLOWED_DOMAINS",
+      "editDates": false,
+      "cancel": "none",
+      "remind": "none",
+      "viewSteps": "initial only"
+    }
+  ],
+  "routes": {
+    "ROUTE_LANDING": {
+      "param": "(none)",
+      "serve": "serveLandingPage",
+      "template": "LandingPage",
+      "access": "domain"
+    },
+    "ROUTE_INITIAL_REQUEST": {
+      "param": "initial_request",
+      "serve": "serveInitialRequest",
+      "template": "InitialRequest",
+      "access": "domain"
+    },
+    "ROUTE_EQUIPMENT_REQUEST": {
+      "param": "equipment_request",
+      "serve": "serveEquipmentRequest",
+      "template": "InitialRequest (mode=equipment)",
+      "access": "domain"
+    },
+    "ROUTE_TERMINATION": {
+      "param": "termination_request",
+      "serve": "serveTerminationRequest",
+      "template": "TerminationRequest",
+      "access": "domain"
+    },
+    "ROUTE_POSITION_CHANGE": {
+      "param": "position_site_change",
+      "serve": "servePositionSiteChange",
+      "template": "PositionSiteChangeRequest",
+      "access": "domain"
+    },
+    "ROUTE_ID_SETUP": {
+      "param": "id_setup",
+      "serve": "serveIDSetup",
+      "template": "EmployeeIDSetup",
+      "access": "GRP_IDSETUP + admin"
+    },
+    "ROUTE_HR_VERIFICATION": {
+      "param": "hr_verification",
+      "serve": "serveHRVerification",
+      "template": "HRVerification",
+      "access": "GRP_HR + admin"
+    },
+    "ROUTE_IT_CONFIRMATION": {
+      "param": "it_confirmation",
+      "serve": "serveITConfirmation",
+      "template": "(handler-served)",
+      "access": "GRP_IT_CONFIRMATION + GRP_IT + admin"
+    },
+    "ROUTE_IT_SETUP": {
+      "param": "it_setup",
+      "serve": "serveITSetup",
+      "template": "ITSetup",
+      "access": "GRP_IT + admin"
+    },
+    "ROUTE_TERM_APPROVAL": {
+      "param": "termination_approval",
+      "serve": "serveTerminationApproval",
+      "template": "TerminationApproval",
+      "access": "GRP_HR or GRP_PAYROLL + admin"
+    },
+    "ROUTE_CHANGE_APPROVAL": {
+      "param": "position_change_approval",
+      "serve": "servePositionChangeApproval",
+      "template": "StatusChangeApproval",
+      "access": "GRP_HR or GRP_PAYROLL + admin"
+    },
+    "ROUTE_ACTION_ITEM": {
+      "param": "action_item_view",
+      "serve": "ActionItemService.serveActionItem",
+      "template": "ActionItemForm",
+      "access": "domain, then per-task check"
+    },
+    "ROUTE_SPECIALIST": {
+      "param": "specialist",
+      "serve": "serveSpecialist",
+      "template": "(per category)",
+      "access": "domain, then per-task check"
+    },
+    "ROUTE_DASHBOARD": {
+      "param": "dashboard",
+      "serve": "serveDashboard",
+      "template": "Dashboard",
+      "access": "domain"
+    },
+    "ROUTE_REQUEST_DETAILS": {
+      "param": "request_details",
+      "serve": "serveRequestDetails",
+      "template": "RequestDetails",
+      "access": "domain"
+    },
+    "ROUTE_WORKFLOW_MAP": {
+      "param": "workflow_map",
+      "serve": "serveWorkflowMap",
+      "template": "WorkflowMap",
+      "access": "domain"
+    },
+    "ROUTE_REF_DECK": {
+      "param": "ref_deck",
+      "serve": "serveRefPage",
+      "template": "Employee-Portal-Training-Deck",
+      "access": "domain"
+    },
+    "ROUTE_REF_NEW_HIRE": {
+      "param": "ref_new_hire",
+      "serve": "serveRefPage",
+      "template": "new-hire-submitter",
+      "access": "domain"
+    },
+    "ROUTE_REF_EQUIPMENT": {
+      "param": "ref_equipment",
+      "serve": "serveRefPage",
+      "template": "equipment-request-submitter",
+      "access": "domain"
+    },
+    "ROUTE_REF_TERMINATION": {
+      "param": "ref_termination",
+      "serve": "serveRefPage",
+      "template": "termination-submitter",
+      "access": "domain"
+    },
+    "ROUTE_REF_STATUS_CHANGE": {
+      "param": "ref_status_change",
+      "serve": "serveRefPage",
+      "template": "status-change-submitter",
+      "access": "domain"
+    }
+  },
+  "forms": {
+    "FORM_NEW_HIRE": {
+      "label": "New Employee Request",
+      "route": "ROUTE_INITIAL_REQUEST",
+      "template": "InitialRequest.html",
+      "handlerFile": "InitialRequestHandler.js",
+      "serveFn": "serveInitialRequest",
+      "submitFn": "submitInitialRequest",
+      "writesTo": "SHEET_INITIAL_REQUESTS",
+      "fieldCount": 76,
+      "filledBy": "ACTOR_REQUESTER",
+      "usedAsStepIn": [
+        "SI_NEW_HIRE_1_SUBMIT"
+      ]
+    },
+    "FORM_EQUIPMENT": {
+      "label": "Equipment and Systems Request",
+      "route": "ROUTE_EQUIPMENT_REQUEST",
+      "template": "InitialRequest.html",
+      "handlerFile": "EquipmentRequestHandler.js",
+      "serveFn": "serveEquipmentRequest",
+      "submitFn": "submitEquipmentRequest",
+      "writesTo": "SHEET_INITIAL_REQUESTS",
+      "fieldCount": null,
+      "filledBy": "ACTOR_REQUESTER",
+      "note": "same template as FORM_NEW_HIRE with mode='equipment'",
+      "usedAsStepIn": [
+        "SI_EQUIPMENT_1_SUBMIT"
+      ]
+    },
+    "FORM_TERMINATION": {
+      "label": "End of Employment Request",
+      "route": "ROUTE_TERMINATION",
+      "template": "TerminationRequest.html",
+      "handlerFile": "TerminationHandler.js",
+      "serveFn": "serveTerminationRequest",
+      "submitFn": "submitTerminationRequest",
+      "writesTo": "SHEET_TERMINATIONS",
+      "fieldCount": 40,
+      "filledBy": "ACTOR_REQUESTER",
+      "usedAsStepIn": [
+        "SI_TERMINATION_1_SUBMIT"
+      ]
+    },
+    "FORM_POSITION_CHANGE": {
+      "label": "Position / Site Change",
+      "route": "ROUTE_POSITION_CHANGE",
+      "template": "PositionSiteChangeRequest.html",
+      "handlerFile": "PositionChangeHandler.js",
+      "serveFn": "servePositionSiteChange",
+      "submitFn": "submitPositionChangeRequest",
+      "writesTo": "SHEET_POSITION_CHANGES",
+      "fieldCount": 107,
+      "filledBy": "ACTOR_REQUESTER",
+      "usedAsStepIn": [
+        "SI_POSITION_CHANGE_1_SUBMIT"
+      ]
+    },
+    "FORM_ID_SETUP": {
+      "label": "Employee ID Setup",
+      "route": "ROUTE_ID_SETUP",
+      "template": "EmployeeIDSetup.html",
+      "handlerFile": "IDSetup.js",
+      "serveFn": "serveIDSetup",
+      "submitFn": "submitEmployeeIDSetup",
+      "writesTo": "SHEET_ID_SETUP_RESULTS",
+      "fieldCount": 12,
+      "filledBy": "GRP_IDSETUP",
+      "usedAsStepIn": [
+        "SI_NEW_HIRE_2_ID_SETUP"
+      ]
+    },
+    "FORM_HR_VERIFICATION": {
+      "label": "HR Verification",
+      "route": "ROUTE_HR_VERIFICATION",
+      "template": "HRVerification.html",
+      "handlerFile": "HRVerificationHandler.js",
+      "serveFn": "serveHRVerification",
+      "submitFn": "submitHRVerification",
+      "writesTo": "SHEET_HR_VERIFICATION",
+      "fieldCount": 15,
+      "filledBy": "GRP_HR",
+      "usedAsStepIn": [
+        "SI_NEW_HIRE_3_HR_VERIFICATION"
+      ]
+    },
+    "FORM_IT_CONFIRMATION": {
+      "label": "IT Confirmation",
+      "route": "ROUTE_IT_CONFIRMATION",
+      "template": "InitialRequest.html (mode=it_confirmation)",
+      "handlerFile": "ITConfirmationHandler.js",
+      "serveFn": "serveITConfirmation",
+      "submitFn": "submitITConfirmation",
+      "writesTo": "SHEET_IT_CONFIRMATION",
+      "fieldCount": null,
+      "filledBy": "GRP_IT_CONFIRMATION",
+      "usedAsStepIn": [
+        "SI_NEW_HIRE_4_IT_CONFIRMATION",
+        "SI_EQUIPMENT_2_IT_CONFIRMATION"
+      ]
+    },
+    "FORM_IT_SETUP": {
+      "label": "IT Setup",
+      "route": "ROUTE_IT_SETUP",
+      "template": "ITSetup.html",
+      "handlerFile": "ITSetupHandler.js",
+      "serveFn": "serveITSetup",
+      "submitFn": "submitITSetup",
+      "writesTo": "SHEET_IT_RESULTS",
+      "fieldCount": 41,
+      "filledBy": "GRP_IT",
+      "usedAsStepIn": [
+        "SI_NEW_HIRE_5_IT_SETUP",
+        "SI_EQUIPMENT_3_IT_SETUP",
+        "SI_POSITION_CHANGE_3A_IT_SETUP"
+      ]
+    },
+    "FORM_TERM_APPROVAL": {
+      "label": "Termination Approval",
+      "route": "ROUTE_TERM_APPROVAL",
+      "template": "TerminationApproval.html",
+      "handlerFile": "TerminationHandler.js",
+      "serveFn": "serveTerminationApproval",
+      "submitFn": "submitTerminationApproval",
+      "writesTo": "SHEET_TERM_APPROVALS",
+      "fieldCount": null,
+      "filledBy": "GRP_HR",
+      "usedAsStepIn": [
+        "SI_TERMINATION_2_HR_APPROVAL"
+      ]
+    },
+    "FORM_CHANGE_APPROVAL": {
+      "label": "Position Change Approval",
+      "route": "ROUTE_CHANGE_APPROVAL",
+      "template": "StatusChangeApproval.html",
+      "handlerFile": "PositionChangeHandler.js",
+      "serveFn": "servePositionChangeApproval",
+      "submitFn": "submitPositionChangeApproval",
+      "writesTo": "SHEET_CHANGE_APPROVALS",
+      "fieldCount": null,
+      "filledBy": "GRP_HR",
+      "usedAsStepIn": [
+        "SI_POSITION_CHANGE_2_HR_APPROVAL"
+      ]
+    },
+    "FORM_ACTION_ITEM": {
+      "label": "Action Item",
+      "route": "ROUTE_ACTION_ITEM",
+      "template": "ActionItemForm.html",
+      "handlerFile": "Services/ActionItemService.js",
+      "serveFn": "ActionItemService.serveActionItem",
+      "submitFn": "closeActionItemWithNotes",
+      "writesTo": "SHEET_ACTION_ITEMS",
+      "fieldCount": 7,
+      "filledBy": "(per task assignee)",
+      "usedAsStepIn": [
+        "SI_NEW_HIRE_6_SPECIALISTS",
+        "SI_EQUIPMENT_4_SPECIALISTS",
+        "SI_TERMINATION_3_ACTION_ITEMS",
+        "SI_POSITION_CHANGE_3_ACTION_ITEMS"
+      ]
+    },
+    "FORM_IT_CONFIRMATION_CHANGE": {
+      "label": "IT Confirmation — Status Change",
+      "route": "ROUTE_IT_CONFIRMATION",
+      "template": "PositionSiteChangeRequest.html (mode=it_confirmation)",
+      "handlerFile": "ITConfirmationHandler.js",
+      "serveFn": "serveITConfirmation",
+      "submitFn": "submitITConfirmation",
+      "writesTo": "SHEET_IT_CONFIRMATION",
+      "fieldCount": 67,
+      "filledBy": "GRP_IT_CONFIRMATION",
+      "note": "CHANGE_ workflows use the position change template, not InitialRequest.html",
+      "usedAsStepIn": []
+    }
+  },
+  "workflows": {
+    "WF_NEW_HIRE": {
+      "label": "New Employee Onboarding",
+      "idPrefix": "NEW_EMP_",
+      "doc": "workflows/01-new-hire.md",
+      "entryForm": "FORM_NEW_HIRE",
+      "stepCount": 6,
+      "stepInstances": [
+        "SI_NEW_HIRE_1_SUBMIT",
+        "SI_NEW_HIRE_2_ID_SETUP",
+        "SI_NEW_HIRE_3_HR_VERIFICATION",
+        "SI_NEW_HIRE_4_IT_CONFIRMATION",
+        "SI_NEW_HIRE_5_IT_SETUP",
+        "SI_NEW_HIRE_6_SPECIALISTS"
+      ],
+      "reviewedIndependently": true
+    },
+    "WF_EQUIPMENT": {
+      "label": "System & Equipment Request",
+      "idPrefix": "EQUIP_REQ_",
+      "doc": "workflows/02-equipment.md",
+      "entryForm": "FORM_EQUIPMENT",
+      "stepCount": 4,
+      "stepInstances": [
+        "SI_EQUIPMENT_1_SUBMIT",
+        "SI_EQUIPMENT_2_IT_CONFIRMATION",
+        "SI_EQUIPMENT_3_IT_SETUP",
+        "SI_EQUIPMENT_4_SPECIALISTS"
+      ],
+      "reviewedIndependently": true
+    },
+    "WF_TERMINATION": {
+      "label": "End of Employment",
+      "idPrefix": "TERM_",
+      "doc": "workflows/03-end-of-employment.md",
+      "entryForm": "FORM_TERMINATION",
+      "stepCount": 3,
+      "stepInstances": [
+        "SI_TERMINATION_1_SUBMIT",
+        "SI_TERMINATION_2_HR_APPROVAL",
+        "SI_TERMINATION_3_ACTION_ITEMS"
+      ],
+      "reviewedIndependently": true
+    },
+    "WF_POSITION_CHANGE": {
+      "label": "Position / Site Change",
+      "idPrefix": "CHANGE_",
+      "doc": "workflows/04-position-site-change.md",
+      "entryForm": "FORM_POSITION_CHANGE",
+      "stepCount": 3,
+      "stepInstances": [
+        "SI_POSITION_CHANGE_1_SUBMIT",
+        "SI_POSITION_CHANGE_2_HR_APPROVAL",
+        "SI_POSITION_CHANGE_3_ACTION_ITEMS",
+        "SI_POSITION_CHANGE_3A_IT_SETUP"
+      ],
+      "reviewedIndependently": true
+    }
+  },
+  "stepLabels": {
+    "$comment": "Exact strings written to the Workflows sheet 'Current Step' column. Dashboard_View and the step tracker key off these.",
+    "STEP_INITIAL_REQUEST": "Initial Request",
+    "STEP_ID_SETUP": "ID Setup Needed",
+    "STEP_HR_VERIFICATION": "HR Verification Needed",
+    "STEP_IT_CONFIRMATION": "IT Confirmation Needed",
+    "STEP_IT_SETUP": "IT Setup Needed",
+    "STEP_SPECIALISTS": "Specialist Forms Needed",
+    "STEP_ACTION_ITEMS": "Action Items Pending",
+    "STEP_HR_APPROVAL": "HR Approval Needed",
+    "STEP_EMAIL_SETUP": "Email Setup Needed",
+    "STEP_DONE_ACTION_ITEMS": "All Action Items Closed",
+    "STEP_DONE_HR_VERIFICATION": "HR Verification Complete",
+    "STEP_DONE_CHANGE": "Change Processed",
+    "STEP_PROCESSING": "Processing",
+    "STEP_REJECTED": "Rejected by HR",
+    "STEP_CANCELLED": "Request Cancelled",
+    "STEP_LEGACY_ID_SETUP_DONE": "ID Setup Complete"
+  },
+  "statuses": [
+    "In Progress",
+    "Complete",
+    "Rejected",
+    "Cancelled",
+    "Inactive"
+  ],
+  "taskCategories": {
+    "$comment": "Value written to the Action Items sheet 'Category' column. blocking=true means an open item holds workflow completion (subject to the per-workflow rules in completionRules).",
+    "TASK_IT": {
+      "category": "IT",
+      "group": "GRP_IT",
+      "formTypes": [
+        "it_setup"
+      ],
+      "blocking": true
+    },
+    "TASK_HR": {
+      "category": "HR",
+      "group": "GRP_HR",
+      "formTypes": [
+        "hr_systems",
+        "adp_update"
+      ],
+      "blocking": true
+    },
+    "TASK_PAYROLL": {
+      "category": "Payroll",
+      "group": "GRP_PAYROLL",
+      "formTypes": [
+        "adp_setup"
+      ],
+      "blocking": true
+    },
+    "TASK_FINANCE": {
+      "category": "Finance",
+      "group": "GRP_FINANCE",
+      "formTypes": [
+        "creditcard"
+      ],
+      "blocking": true
+    },
+    "TASK_FLEET": {
+      "category": "Fleet",
+      "group": "GRP_FLEET",
+      "formTypes": [
+        "fleetio"
+      ],
+      "blocking": true
+    },
+    "TASK_PURCHASING": {
+      "category": "Purchasing",
+      "group": "GRP_PURCHASING",
+      "formTypes": [
+        "jonas"
+      ],
+      "blocking": true
+    },
+    "TASK_BUSINESS_CARDS": {
+      "category": "Business Cards",
+      "group": "GRP_BUSINESS_CARDS",
+      "formTypes": [
+        "businesscards"
+      ],
+      "blocking": true
+    },
+    "TASK_SAFETY": {
+      "category": "Safety",
+      "group": "GRP_SAFETY",
+      "formTypes": [
+        "safety_onboarding",
+        "safety_change"
+      ],
+      "blocking": true
+    },
+    "TASK_ID_SETUP": {
+      "category": "ID Setup",
+      "group": "GRP_IDSETUP",
+      "formTypes": [
+        "wis_user",
+        "boss_wis_update",
+        "sitedocs_supervisor",
+        "safety_change"
+      ],
+      "blocking": true
+    },
+    "TASK_REVIEW_306090": {
+      "category": "30/60/90 Review",
+      "group": "GRP_REVIEW_306090",
+      "formTypes": [
+        "review_306090"
+      ],
+      "blocking": true
+    },
+    "TASK_JR_TITLE": {
+      "category": "JR Title",
+      "group": "GRP_JR_TITLE",
+      "formTypes": [
+        "jr_title"
+      ],
+      "blocking": false,
+      "note": "not in getRequiredSpecialistCats, so never blocks onboarding completion"
+    },
+    "TASK_IT_CONFIRMATION": {
+      "category": "IT Confirmation",
+      "group": "GRP_IT_CONFIRMATION",
+      "formTypes": [],
+      "blocking": false,
+      "note": "hidden from the Dashboard_View pending list"
+    },
+    "TASK_WIS": {
+      "category": "WIS",
+      "group": "ACTOR_MANAGER",
+      "formTypes": [
+        "wis",
+        "wis_assignment"
+      ],
+      "blocking": false,
+      "note": "explicitly excluded from the completion check"
+    },
+    "TASK_MANAGER": {
+      "category": "Manager",
+      "group": "ACTOR_MANAGER",
+      "formTypes": [],
+      "blocking": false,
+      "note": "explicitly excluded from the completion check"
+    },
+    "TASK_ASSETS": {
+      "category": "Assets",
+      "group": "ACTOR_REQUESTER",
+      "formTypes": [],
+      "blocking": true
+    },
+    "TASK_DEACTIVATION": {
+      "category": "Deactivation",
+      "group": "GRP_IDSETUP",
+      "formTypes": [],
+      "blocking": true
+    },
+    "TASK_EOE": {
+      "category": "EOE",
+      "group": "GRP_HR",
+      "formTypes": [],
+      "blocking": true
+    }
+  },
+  "completionRules": {
+    "checkedBy": "ActionItemService.checkWorkflowCompletion",
+    "runsOnlyAtSteps": [
+      "Specialist Forms Needed",
+      "Action Items Pending"
+    ],
+    "neverBlocking": [
+      "WIS",
+      "Manager"
+    ],
+    "WF_NEW_HIRE": {
+      "filter": "ActionItemService.getRequiredSpecialistCats",
+      "blockingCategories": [
+        "Safety (always)",
+        "Purchasing (if Jonas job numbers)",
+        "Finance (if any credit card)",
+        "Fleet (if Fleetio)",
+        "Business Cards (if requested)",
+        "30/60/90 Review (if plan306090 = Yes)"
+      ],
+      "note": "categories not in that set are created but do not hold completion"
+    },
+    "WF_EQUIPMENT": {
+      "filter": null,
+      "blockingCategories": [
+        "all open items except WIS and Manager"
+      ]
+    },
+    "WF_TERMINATION": {
+      "filter": null,
+      "blockingCategories": [
+        "all open items except WIS and Manager"
+      ]
+    },
+    "WF_POSITION_CHANGE": {
+      "filter": null,
+      "blockingCategories": [
+        "all open items except WIS and Manager"
+      ]
+    },
+    "onComplete": [
+      "updateWorkflow(status=Complete)",
+      "syncWorkflowState",
+      "notifyWorkflowClosure"
+    ]
+  },
+  "postCloseHooks": {
+    "$comment": "Behaviour triggered by closing a specific action item, in ActionItemService.closeActionItem.",
+    "HOOK_CHANGE_IT_SETUP": {
+      "trigger": "category=IT, formType=it_setup, workflow starts CHANGE_",
+      "effect": "writes the submitted form data to IT Results so closure email has full context"
+    },
+    "HOOK_EQUIP_WIS_USER": {
+      "trigger": "category=ID Setup, formType=wis_user, workflow starts EQUIP_REQ_",
+      "effect": "writes SiteDocs credentials to ID Setup Results"
+    },
+    "HOOK_CHANGE_WIS_SEQUENCE": {
+      "trigger": "formType=boss_wis_update, workflow starts CHANGE_",
+      "effect": "calls launchWisAssignment() to create the manager's WIS task — enforces ID Setup before manager assignment"
+    }
+  },
+  "sheets": {
+    "SHEET_WORKFLOWS": {
+      "name": "Workflows",
+      "role": "master record, one row per request; holds Status and Current Step"
+    },
+    "SHEET_DASHBOARD_VIEW": {
+      "name": "Dashboard_View",
+      "role": "flat pre-computed table the dashboard reads",
+      "writtenBy": "StateSync.syncWorkflowState"
+    },
+    "SHEET_INITIAL_REQUESTS": {
+      "name": "Initial Requests",
+      "role": "new hire AND equipment submissions"
+    },
+    "SHEET_TERMINATIONS": {
+      "name": "Terminations",
+      "role": "end of employment submissions"
+    },
+    "SHEET_POSITION_CHANGES": {
+      "name": "Position Changes",
+      "role": "position/site change submissions"
+    },
+    "SHEET_EQUIPMENT_REQUESTS": {
+      "name": "Equipment_Requests",
+      "role": "declared in config; equipment now writes to Initial Requests"
+    },
+    "SHEET_ID_SETUP_RESULTS": {
+      "name": "ID Setup Results",
+      "role": "ID setup step capture"
+    },
+    "SHEET_HR_VERIFICATION": {
+      "name": "HR Verification Results",
+      "role": "HR verification step capture"
+    },
+    "SHEET_IT_RESULTS": {
+      "name": "IT Results",
+      "role": "IT setup step capture"
+    },
+    "SHEET_IT_CONFIRMATION": {
+      "name": "IT Confirmation Results",
+      "role": "IT confirmation step capture"
+    },
+    "SHEET_TERM_APPROVALS": {
+      "name": "Termination Approval Results",
+      "role": "HR decision on terminations"
+    },
+    "SHEET_CHANGE_APPROVALS": {
+      "name": "Position Change Approval Result",
+      "role": "HR decision on position changes"
+    },
+    "SHEET_ACTION_ITEMS": {
+      "name": "Action Items",
+      "role": "every specialist task"
+    },
+    "SHEET_EMPLOYEE_IDS": {
+      "name": "Employee IDs",
+      "role": "internal employee number allocator"
+    },
+    "SHEET_AUDIT_LOG": {
+      "name": "Audit Log",
+      "role": "audit trail"
+    },
+    "SHEET_FORM_EDIT_LOG": {
+      "name": "Form Edit Log",
+      "role": "before/after diff when a submitted form is edited"
+    },
+    "SHEET_RAW_LOG": {
+      "name": "Raw Log",
+      "role": "event feed"
+    },
+    "SHEET_REF_SITES": {
+      "name": "Reference_Sites",
+      "role": "lookup"
+    },
+    "SHEET_REF_JOB_CODES": {
+      "name": "Reference_JobCodes",
+      "role": "lookup"
+    },
+    "SHEET_REF_MANAGERS": {
+      "name": "Reference_Managers",
+      "role": "lookup"
+    },
+    "SHEET_REF_REQUESTERS": {
+      "name": "Reference_Requesters",
+      "role": "lookup"
+    },
+    "SHEET_REF_JRS": {
+      "name": "Reference_JRs",
+      "role": "lookup"
+    },
+    "SHEET_REF_JOBS_JONAS": {
+      "name": "Reference_JobsJonas",
+      "role": "lookup"
+    }
+  },
+  "coreFunctions": {
+    "$comment": "Functions referenced by the workflow docs. Purpose only — no implementation detail.",
+    "doGet": {
+      "file": "Router.js",
+      "purpose": "single page entry point, dispatches on ?form="
+    },
+    "doPost": {
+      "file": "Router.js",
+      "purpose": "secret-gated JSON endpoint for automation"
+    },
+    "createWorkflow": {
+      "file": "WorkflowManager.js",
+      "purpose": "creates the master Workflows row and returns the workflow ID"
+    },
+    "updateWorkflow": {
+      "file": "WorkflowManager.js",
+      "purpose": "sets status and current step; mirrors status to the origin sheet"
+    },
+    "getWorkflow": {
+      "file": "WorkflowManager.js",
+      "purpose": "reads one workflow row"
+    },
+    "logFormEdit": {
+      "file": "WorkflowManager.js",
+      "purpose": "records a before/after diff when a submitted form is re-saved"
+    },
+    "syncWorkflowState": {
+      "file": "StateSync.js",
+      "purpose": "recomputes the Dashboard_View row for one workflow"
+    },
+    "getWorkflowContext": {
+      "file": "RequestDetailsHandler.js",
+      "purpose": "assembles the full cross-sheet context used by emails and forms"
+    },
+    "sendFormEmail": {
+      "file": "EmailUtils.js",
+      "purpose": "sends one notification with a context block and an optional form button"
+    },
+    "sendInitialRequestEmails": {
+      "file": "EmailUtils.js",
+      "purpose": "sends the submission-time emails for a new hire"
+    },
+    "sendSafetyOnboardingEmail": {
+      "file": "EmailUtils.js",
+      "purpose": "creates the Safety task and emails the safety group"
+    },
+    "sendChangeNotifications": {
+      "file": "ChangeNotify.js",
+      "purpose": "notifies downstream teams when a submitted form's values change"
+    },
+    "triggerNextStepFromIDSetup": {
+      "file": "IDSetup.js",
+      "purpose": "routes from ID Setup to the correct next step"
+    },
+    "triggerSpecialists": {
+      "file": "ITSetupHandler.js",
+      "purpose": "fans out the conditional specialist tasks after IT Setup"
+    },
+    "launchWisAssignment": {
+      "file": "PositionChangeHandler.js",
+      "purpose": "creates the manager's WIS task once ID Setup has closed"
+    },
+    "createActionItem": {
+      "file": "Services/ActionItemService.js",
+      "purpose": "creates one task row and returns its task ID"
+    },
+    "closeActionItem": {
+      "file": "Services/ActionItemService.js",
+      "purpose": "closes a task, runs post-close hooks, re-checks completion"
+    },
+    "checkWorkflowCompletion": {
+      "file": "Services/ActionItemService.js",
+      "purpose": "closes the workflow when no blocking task remains"
+    },
+    "getRequiredSpecialistCats": {
+      "file": "Services/ActionItemService.js",
+      "purpose": "decides which onboarding categories block completion"
+    },
+    "notifyWorkflowClosure": {
+      "file": "Services/ActionItemService.js",
+      "purpose": "sends the final summary email"
+    },
+    "EmployeeIdRegistry.allocate": {
+      "file": "EmployeeIdRegistry.js",
+      "purpose": "assigns the internal employee number"
+    },
+    "AccessControlService.canViewForm": {
+      "file": "Services/AccessControlService.js",
+      "purpose": "group membership check for a route"
+    },
+    "cancelRequest": {
+      "file": "RequestActionsHandler.js",
+      "purpose": "cancels a workflow"
+    },
+    "bumpRequest": {
+      "file": "RequestActionsHandler.js",
+      "purpose": "re-sends the notification for the open step"
+    }
+  },
+  "scriptProperties": {
+    "SPREADSHEET_ID": "target spreadsheet for this environment",
+    "TEST_SPREADSHEET_ID": "overrides SPREADSHEET_ID for smoke tests",
+    "DEPLOYMENT_URL": "the /exec URL used when building form links",
+    "MAINTENANCE_MODE": "serve the maintenance page",
+    "MAINTENANCE_BYPASS_EMAILS": "who gets through maintenance mode",
+    "SUPPRESS_EMAILS_OVERRIDE": "stop all outbound mail",
+    "EMAIL_REDIRECT_ALL": "send all outbound mail to one address",
+    "EASTER_EGGS_ENABLED": "enable the optional easter egg includes",
+    "SAFETY_TRAINING_AT_SUBMIT": "create the Safety task at submit instead of later",
+    "PORTAL_SHARED_SECRET": "authorises the doPost automation endpoint",
+    "JR_TASK_CLOSERS": "who may close the JR Title task via automation",
+    "EFX_EVENT_WEBHOOK_URL": "optional outbound event webhook",
+    "EFX_ALIASES_ON": "allow-list for automation entry points",
+    "EFX_ALIASES_OFF": "deny-list for automation entry points",
+    "EMAIL_*": "per-group routing address overrides"
+  },
+  "automation": {
+    "$comment": "n8n integration. New addition, being enabled across flows. Largely outside the current review scope, though review findings may inform it.",
+    "entryPoints": [
+      {
+        "key": "AUTO_DOPOST",
+        "path": "Router.doPost",
+        "auth": "PORTAL_SHARED_SECRET in request body",
+        "actions": [
+          "completeJrTitle"
+        ]
+      },
+      {
+        "key": "AUTO_EXEC_API",
+        "path": "n8n_* aliases in N8n.js",
+        "auth": "Execution API, access ANYONE",
+        "actions": [
+          "createWorkflow",
+          "submitForm",
+          "task list/close/draft",
+          "ping"
+        ]
+      }
+    ],
+    "supportingFiles": [
+      "N8n.js",
+      "N8nEnvelope.js",
+      "EfxApi.js",
+      "EfxUtil.js",
+      "FormContracts.js",
+      "Actor.js",
+      "EmployeeIdRegistry.js",
+      "RawLog.js"
+    ],
+    "killSwitch": [
+      "EFX_ALIASES_ON",
+      "EFX_ALIASES_OFF"
+    ]
+  },
+  "plannedIndexes": {
+    "$comment": "Not built yet — placeholders so later passes slot in without renaming anything.",
+    "fields": "DONE for the three request templates — see review/fields/. Keyed FIELD_<TEMPLATE>_<control>. Effects documented for InitialRequest; Termination and PositionSiteChange notes still to author.",
+    "functions": "full function index keyed FN_<name>, with file, callers, callees",
+    "variables": "global/config variable index keyed VAR_<name>"
+  },
+  "formTemplates": {
+    "$comment": "Templates and the forms each one serves. Sharing is deliberate: one definition per field. An edit to a shared field lands on every mode listed.",
+    "InitialRequest.html": {
+      "serves": [
+        "FORM_NEW_HIRE",
+        "FORM_EQUIPMENT",
+        "FORM_IT_CONFIRMATION"
+      ],
+      "submitStyle": "explicit-map",
+      "fieldsDefined": 52
+    },
+    "TerminationRequest.html": {
+      "serves": [
+        "FORM_TERMINATION"
+      ],
+      "submitStyle": "passthrough",
+      "fieldsDefined": 24
+    },
+    "PositionSiteChangeRequest.html": {
+      "serves": [
+        "FORM_POSITION_CHANGE",
+        "FORM_IT_CONFIRMATION_CHANGE"
+      ],
+      "submitStyle": "passthrough-dom",
+      "fieldsDefined": 67
+    }
+  },
+  "model": {
+    "$comment": "How the pieces relate. A WORKFLOW is the unit of review. A FORM is a reusable step component that may appear in any number of workflows. A STEP INSTANCE is one use of a form inside one workflow, and is what the workflow docs walk through.",
+    "workflow": "WF_* — one end-to-end flow. Reviewed individually, even where it shares forms with another flow.",
+    "form": "FORM_* — a form as a user meets it. Defined once; used as a step by one or more workflows.",
+    "stepInstance": "SI_<WORKFLOW>_<ordinal>_<SLUG> — one form used at one point in one workflow, with its own entry condition, actor and effects. The same FORM in two workflows is two step instances.",
+    "field": "FIELD_<TEMPLATE>_<control> — defined once per template; see review/fields/."
+  },
+  "stepInstances": {
+    "$comment": "Ordered per workflow. entryCondition is stated as coded, with no view on whether it is right.",
+    "SI_NEW_HIRE_1_SUBMIT": {
+      "workflow": "WF_NEW_HIRE",
+      "ordinal": 1,
+      "form": "FORM_NEW_HIRE",
+      "actor": "ACTOR_REQUESTER",
+      "setsStep": "ID Setup Needed",
+      "entryCondition": "always — creates the workflow",
+      "submitFn": "submitInitialRequest"
+    },
+    "SI_NEW_HIRE_2_ID_SETUP": {
+      "workflow": "WF_NEW_HIRE",
+      "ordinal": 2,
+      "form": "FORM_ID_SETUP",
+      "actor": "GRP_IDSETUP",
+      "setsStep": "HR Verification Needed",
+      "entryCondition": "always",
+      "submitFn": "submitEmployeeIDSetup"
+    },
+    "SI_NEW_HIRE_3_HR_VERIFICATION": {
+      "workflow": "WF_NEW_HIRE",
+      "ordinal": 3,
+      "form": "FORM_HR_VERIFICATION",
+      "actor": "GRP_HR",
+      "setsStep": "IT Confirmation Needed | IT Setup Needed | Complete",
+      "entryCondition": "always",
+      "submitFn": "submitHRVerification",
+      "branches": "Hourly + System Access=No -> Complete; systems include BOSS -> IT Confirmation Needed; otherwise -> IT Setup Needed"
+    },
+    "SI_NEW_HIRE_4_IT_CONFIRMATION": {
+      "workflow": "WF_NEW_HIRE",
+      "ordinal": 4,
+      "form": "FORM_IT_CONFIRMATION",
+      "actor": "GRP_IT_CONFIRMATION",
+      "setsStep": "IT Setup Needed",
+      "entryCondition": "reached only when the requested systems list contains 'BOSS'",
+      "submitFn": "submitITConfirmation"
+    },
+    "SI_NEW_HIRE_5_IT_SETUP": {
+      "workflow": "WF_NEW_HIRE",
+      "ordinal": 5,
+      "form": "FORM_IT_SETUP",
+      "actor": "GRP_IT",
+      "setsStep": "Specialist Forms Needed",
+      "entryCondition": "always on the continuing path",
+      "submitFn": "submitITSetup"
+    },
+    "SI_NEW_HIRE_6_SPECIALISTS": {
+      "workflow": "WF_NEW_HIRE",
+      "ordinal": 6,
+      "form": "FORM_ACTION_ITEM",
+      "actor": "per-task groups (parallel)",
+      "setsStep": "All Action Items Closed",
+      "entryCondition": "created by triggerSpecialists from what was requested",
+      "submitFn": "closeActionItemWithNotes"
+    },
+    "SI_EQUIPMENT_1_SUBMIT": {
+      "workflow": "WF_EQUIPMENT",
+      "ordinal": 1,
+      "form": "FORM_EQUIPMENT",
+      "actor": "ACTOR_REQUESTER",
+      "setsStep": "IT Confirmation Needed",
+      "entryCondition": "always — creates the workflow",
+      "submitFn": "submitEquipmentRequest"
+    },
+    "SI_EQUIPMENT_2_IT_CONFIRMATION": {
+      "workflow": "WF_EQUIPMENT",
+      "ordinal": 2,
+      "form": "FORM_IT_CONFIRMATION",
+      "actor": "GRP_IT_CONFIRMATION",
+      "setsStep": "IT Setup Needed",
+      "entryCondition": "always — set at submit, not conditional here",
+      "submitFn": "submitITConfirmation",
+      "note": "same form as SI_NEW_HIRE_4, served with baseMode=equipment"
+    },
+    "SI_EQUIPMENT_3_IT_SETUP": {
+      "workflow": "WF_EQUIPMENT",
+      "ordinal": 3,
+      "form": "FORM_IT_SETUP",
+      "actor": "GRP_IT",
+      "setsStep": "Specialist Forms Needed",
+      "entryCondition": "always",
+      "submitFn": "submitITSetup"
+    },
+    "SI_EQUIPMENT_4_SPECIALISTS": {
+      "workflow": "WF_EQUIPMENT",
+      "ordinal": 4,
+      "form": "FORM_ACTION_ITEM",
+      "actor": "per-task groups (parallel)",
+      "setsStep": "All Action Items Closed",
+      "entryCondition": "created by triggerSpecialists; several categories are gated off for EQUIP_REQ_",
+      "submitFn": "closeActionItemWithNotes"
+    },
+    "SI_TERMINATION_1_SUBMIT": {
+      "workflow": "WF_TERMINATION",
+      "ordinal": 1,
+      "form": "FORM_TERMINATION",
+      "actor": "ACTOR_REQUESTER",
+      "setsStep": "HR Approval Needed",
+      "entryCondition": "always — creates the workflow",
+      "submitFn": "submitTerminationRequest"
+    },
+    "SI_TERMINATION_2_HR_APPROVAL": {
+      "workflow": "WF_TERMINATION",
+      "ordinal": 2,
+      "form": "FORM_TERM_APPROVAL",
+      "actor": "GRP_HR",
+      "setsStep": "Action Items Pending | Processing | Rejected by HR",
+      "entryCondition": "always",
+      "submitFn": "submitTerminationApproval"
+    },
+    "SI_TERMINATION_3_ACTION_ITEMS": {
+      "workflow": "WF_TERMINATION",
+      "ordinal": 3,
+      "form": "FORM_ACTION_ITEM",
+      "actor": "per-task groups (parallel)",
+      "setsStep": "All Action Items Closed",
+      "entryCondition": "created on approval from what was on the request",
+      "submitFn": "closeActionItemWithNotes"
+    },
+    "SI_POSITION_CHANGE_1_SUBMIT": {
+      "workflow": "WF_POSITION_CHANGE",
+      "ordinal": 1,
+      "form": "FORM_POSITION_CHANGE",
+      "actor": "ACTOR_REQUESTER",
+      "setsStep": "HR Approval Needed",
+      "entryCondition": "always — creates the workflow",
+      "submitFn": "submitPositionChangeRequest"
+    },
+    "SI_POSITION_CHANGE_2_HR_APPROVAL": {
+      "workflow": "WF_POSITION_CHANGE",
+      "ordinal": 2,
+      "form": "FORM_CHANGE_APPROVAL",
+      "actor": "GRP_HR",
+      "setsStep": "Action Items Pending | Change Processed | Rejected by HR",
+      "entryCondition": "always",
+      "submitFn": "submitPositionChangeApproval"
+    },
+    "SI_POSITION_CHANGE_3_ACTION_ITEMS": {
+      "workflow": "WF_POSITION_CHANGE",
+      "ordinal": 3,
+      "form": "FORM_ACTION_ITEM",
+      "actor": "per-task groups (parallel)",
+      "setsStep": "All Action Items Closed",
+      "entryCondition": "created on approval",
+      "submitFn": "closeActionItemWithNotes"
+    },
+    "SI_POSITION_CHANGE_3A_IT_SETUP": {
+      "workflow": "WF_POSITION_CHANGE",
+      "ordinal": 3,
+      "form": "FORM_IT_SETUP",
+      "actor": "GRP_IT",
+      "setsStep": "(no step change)",
+      "entryCondition": "opened from the IT action item rather than from a workflow step",
+      "submitFn": "submitITSetup",
+      "note": "same form as SI_NEW_HIRE_5 / SI_EQUIPMENT_3, reached by a different route"
+    }
+  }
+}
