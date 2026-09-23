@@ -187,6 +187,10 @@ function buildNewHireContextBlock(context, opts) {
 
   var reqRows = ''
     + esRow('Employee', esVal(empName.trim()))
+    // EFX 2026-09-23: present only on the two submit-time emails (sendInitialRequestEmails sets them).
+    // NOT context.internalEmployeeId — that key marks the ID Setup section complete (see hasId above).
+    + (context.requestId             ? esRow('Request ID',  esVal(context.requestId, 'mono'))             : '')
+    + (context.preassignedEmployeeId ? esRow('Internal ID', esVal(context.preassignedEmployeeId, 'mono')) : '')
     // Type only for New Hire (Employment Type · Employee Type)
     + (!isEquipment && context.employmentType
         ? esRow('Type', esVal(context.employmentType + (context.employeeType ? ' · ' + context.employeeType : '')))

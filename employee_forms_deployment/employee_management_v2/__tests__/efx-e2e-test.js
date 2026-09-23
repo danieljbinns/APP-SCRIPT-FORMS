@@ -316,6 +316,21 @@ scenario('1. NEW HIRE — Salary, full systems: create → ID Setup → HR → I
   eq('ID Setup Required → ID Setup group', mails().find(m => m.subject === 'ID Setup Required').to, E.IDSETUP);
   eq('Request Submitted → requester', mails().find(m => m.subject === 'Request Submitted').to, REQ);
   contains('ID Setup email formUrl points at id_setup for wf', mails().find(m => m.subject === 'ID Setup Required').formUrl, 'form=id_setup&wf=' + wf);
+  // EFX 2026-09-23 — both submit emails carry the pre-assigned Internal ID + Request ID (George reads them off the email)
+  for (const subj of ['ID Setup Required', 'Request Submitted']) {
+    const sm = mails().find(m => m.subject === subj);
+    eq(subj + ': context.preassignedEmployeeId = pre-assigned id', sm.contextData.preassignedEmployeeId, '30411');
+    eq(subj + ': context.requestId = workflowId', sm.contextData.requestId, wf);
+    truthy(subj + ': context does NOT set internalEmployeeId (that key would mark ID Setup complete)', !sm.contextData.internalEmployeeId);
+    if (typeof _ctx.buildNewHireContextBlock === 'function') {
+      const html = _ctx.buildNewHireContextBlock(sm.contextData, {});
+      contains(subj + ': HTML shows Internal ID row', html, 'Internal ID');
+      contains(subj + ': HTML shows the id value', html, '30411');
+      contains(subj + ': HTML shows the Request ID', html, wf);
+      contains(subj + ': HTML — ID Setup section still In Progress', html, 'In Progress');
+      truthy(subj + ': HTML — ID Setup section NOT marked complete', !/Completed by/.test(html) && (html.split('✓ Complete').length - 1) <= 1);
+    }
+  }
   eq('no action items yet', aiFor(wf).length, 0);
   eq('Actor isolation after alias', _ctx.Actor.current(), null);
 
@@ -1099,7 +1114,7 @@ scenario('9. NEGATIVE / GUARDS — validation writes nothing, error codes, idemp
   const definedIn = fn => srcFiles.filter(f => new RegExp('^function\\s+' + fn + '\\s*\\(', 'm').test(fs.readFileSync(path.join(SRC, f), 'utf8')));
   truthy('every FormContracts fn is defined in the project (loaded: ' + (forms.length - notLoaded.length) + '/' + forms.length + '; not in LOAD_ORDER: ' + notLoaded.map(fn => fn + '→' + definedIn(fn).join('+')).join(', ') + ')',
     notLoaded.every(fn => definedIn(fn).length > 0));
-  eq('submitITConfirmation is defined twice in the project (known dup: BOSSReviewHandler.js + ITConfirmationHandler.js)', definedIn('submitITConfirmation').length, 2);
+  eq('submitITConfirmation is defined exactly once (BOSSReviewHandler.js duplicate deleted 2026-09-17)', definedIn('submitITConfirmation').length, 1);
   truthy('every FormContracts fn is efxRunAs-callable', forms.every(f => _ctx.FormContracts.isCallable(f.fn)));
   const k1 = _ctx.n8n_contracts(), k2 = _ctx.n8n_contracts();
   eq('n8n_contracts hashes stable across two calls', k1.result.forms.map(f => f.form + ':' + f.hash).join(','), k2.result.forms.map(f => f.form + ':' + f.hash).join(','));

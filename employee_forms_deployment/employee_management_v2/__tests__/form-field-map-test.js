@@ -620,6 +620,10 @@ results.push(runScenario('InitialRequest.html — New Hire (all systems + equipm
     ctx.equipmentRaw || '', 'Computer');
   eq("ctx.department from HTML 'department' → context",
     ctx.department, 'Operations');
+  // EFX 2026-09-23: pre-assigned Internal Employee ID + Request ID travel in the submit-time context
+  truthy('ctx.preassignedEmployeeId is the 4-6 digit id minted at submit', /^[0-9]{4,6}$/.test(String(ctx.preassignedEmployeeId || '')));
+  truthy('ctx.requestId is the NEW_EMP_ workflow id', /^NEW_EMP_/.test(String(ctx.requestId || '')));
+  truthy('ctx.internalEmployeeId is NOT set at submit (would mark ID Setup complete in the template)', !ctx.internalEmployeeId);
 }));
 
 // ═════════════════════════════════════════════════════════════════════════════

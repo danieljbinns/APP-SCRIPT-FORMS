@@ -100,6 +100,7 @@ function submitInitialRequest(formData) {
     
     sendInitialRequestEmails({
       requestId: workflowId,
+      internalEmployeeId: internalEmployeeId,   // EFX: pre-assigned id → "Internal ID" row in both submit emails
       employeeName: employeeName,
       jobTitle: formData.positionTitle,
       siteName: formData.siteName,
@@ -158,6 +159,7 @@ function _sendInitialRequestSubmitEmails(workflowId) {
   const equipmentStr = String(data[IR.EQUIPMENT]  || '');
   sendInitialRequestEmails({
     requestId:          workflowId,
+    internalEmployeeId: String(data[IR.INTERNAL_EMP_ID] || ''),
     employeeName:       employeeName,
     jobTitle:           String(data[IR.POSITION_TITLE]     || ''),
     siteName:           String(data[IR.SITE_NAME]          || ''),

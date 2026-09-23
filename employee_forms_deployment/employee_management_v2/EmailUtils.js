@@ -638,11 +638,13 @@ function sendBatchEmails(emailList) {
  * @param {string} config.requesterEmail - Requester email
  * @param {string} config.employeeIdSetupUrl - URL to employee ID setup form
  * @param {string} config.siteDocsEmail - SITEDOCS team email address
+ * @param {string} [config.internalEmployeeId] - Internal Employee ID pre-assigned at submit (EFX). Rendered as
+ *        "Internal ID" in Request Details so automation reading the email (George) has it without a lookup.
  */
 function sendInitialRequestEmails(config) {
   const { requestId, employeeName, hireDate, requesterEmail, employeeIdSetupUrl, siteDocsEmail,
           jobTitle, siteName, managerName, managerEmail, requestDate, employmentType, employeeType,
-          newHireOrRehire, systemAccess, systems, equipment, department } = config;
+          newHireOrRehire, systemAccess, systems, equipment, department, internalEmployeeId } = config;
   
   Logger.log('Sending initial request emails for: ' + requestId);
   
@@ -667,7 +669,12 @@ function sendInitialRequestEmails(config) {
     systemAccess: systemAccess,
     systems: Array.isArray(systems) ? systems : (systems ? systems.split(',').map(s => s.trim()) : []),
     equipmentRaw: Array.isArray(equipment) ? equipment.join(', ') : equipment,
-    department: department || ''
+    department: department || '',
+    // EFX 2026-09-23: submit-time identifiers for the Request Details section (both emails).
+    // Deliberately NOT keyed as `internalEmployeeId` — buildNewHireContextBlock() treats that key as
+    // "ID Setup complete" (hasId), which would be false at submit time.
+    requestId: requestId || '',
+    preassignedEmployeeId: internalEmployeeId ? String(internalEmployeeId) : ''
   };
   
   try {
