@@ -16,12 +16,164 @@
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
+// _workflowsNarrow_
+// The Workflows sheet was being read twice per request — once inside
+// computeOnboardingPendingStep_ and once by the caller. Same sheet, same columns, same execution.
+// Memoised per execution; returns { rows, idIdx, statusIdx, stepIdx } with only the columns anyone
+// actually uses (Workflow ID / Status / Current Step), not the full width.
+// ─────────────────────────────────────────────────────────────────────────────
+var _WF_NARROW_MEMO_ = null;
+
+function _workflowsNarrow_(ss) {
+  if (_WF_NARROW_MEMO_) return _WF_NARROW_MEMO_;
+  var out = { rows: [], idIdx: -1, statusIdx: -1, stepIdx: -1 };
+  try {
+    var sh = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+    if (sh && sh.getLastRow() > 1) {
+      var head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+      out.idIdx     = head.indexOf('Workflow ID');
+      out.statusIdx = head.indexOf('Status');
+      out.stepIdx   = head.indexOf('Current Step');
+      var width = Math.max(out.idIdx, out.statusIdx, out.stepIdx) + 1;
+      if (width > 0) out.rows = sh.getRange(1, 1, sh.getLastRow(), width).getValues();
+    }
+  } catch (e) {
+    Logger.log('[_workflowsNarrow_] ' + e.message);
+  }
+  _WF_NARROW_MEMO_ = out;
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// computeOnboardingPendingStep_
+//
+// Which onboarding step is actually outstanding for each active New Hire workflow.
+//
+// WHY THIS EXISTS: 'Current Step' on the Workflows sheet is a SINGLE string that every handler
+// overwrites. HR Verification can legitimately be completed before ID Setup (required for Salary),
+// and when it is, it stamps over 'ID Setup Needed' — destroying the only record that ID Setup was
+// still outstanding. The request then vanished from the ID Setup badge and filter even though nobody
+// had done the work. Other categories don't suffer this because they have durable Action Items rows;
+// onboarding ID Setup / HR Verification / IT Setup are step-only and share the one slot.
+//
+// So derive it from DATA instead, exactly the way the email templates already do
+// (EmailTemplates.js:114-125): a step is complete when its result row exists, not when a string says so.
+//
+// Returns { workflowId: 'ID Setup' | 'HR Verification' | 'IT' | '' }. One step per workflow, earliest
+// incomplete first — this preserves today's one-badge-per-workflow behaviour, it just stops the step
+// being forgotten.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function computeOnboardingPendingStep_(ss) {
+  // Short cache: the dashboard calls getDashboardData AND getMyTaskCounts on every load — two
+  // separate executions, each otherwise re-reading four sheets. 90s is long enough to cover a page
+  // load and a refresh, short enough that a completed step appears promptly.
+  const CACHE_KEY = 'efx_pendingStep_v1';
+  try {
+    if (typeof CacheService !== 'undefined' && CacheService && CacheService.getScriptCache) {
+      const hit = CacheService.getScriptCache().get(CACHE_KEY);
+      if (hit) return JSON.parse(hit);
+    }
+  } catch (e) { /* cache is an optimisation, never a dependency */ }
+
+  const out = {};
+  try {
+    // Column-scoped reads. getDataRange() pulls every column — Initial Requests is 57 wide and we
+    // need three of them. Reading only as far as the last column we use is a large saving on a
+    // spreadsheet this size, and the hot path runs twice per dashboard load.
+    function readCols(sheetName, lastNeededIdx) {
+      const sh = ss.getSheetByName(sheetName);
+      if (!sh || sh.getLastRow() < 2) return null;
+      const width = Math.min(lastNeededIdx + 1, sh.getLastColumn());
+      if (width < 1) return null;
+      return sh.getRange(1, 1, sh.getLastRow(), width).getValues();
+    }
+
+    function idSet(sheetName, idCol, valueCol) {
+      const set = {};
+      const d = readCols(sheetName, Math.max(idCol, valueCol === null ? idCol : valueCol));
+      if (!d) return set;
+      for (let i = SCHEMA.ROW.FIRST_DATA; i < d.length; i++) {
+        const wf = String(d[i][idCol] || '');
+        if (!wf) continue;
+        // valueCol null = presence of the row is enough (IT Results has no single marker field)
+        if (valueCol === null || (d[i][valueCol] !== '' && d[i][valueCol] !== null && d[i][valueCol] !== undefined)) set[wf] = true;
+      }
+      return set;
+    }
+
+    const idDone = idSet(CONFIG.SHEETS.ID_SETUP_RESULTS,        SCHEMA.ID_SETUP_RESULTS.WORKFLOW_ID,        SCHEMA.ID_SETUP_RESULTS.INTERNAL_EMP_ID);
+    const hrDone = idSet(CONFIG.SHEETS.HR_VERIFICATION_RESULTS, SCHEMA.HR_VERIFICATION_RESULTS.WORKFLOW_ID, SCHEMA.HR_VERIFICATION_RESULTS.ADP_ASSOCIATE_ID);
+    const itDone = idSet(CONFIG.SHEETS.IT_RESULTS,              SCHEMA.IT_RESULTS.WORKFLOW_ID,              null);
+
+    // needsIt: Hourly with System Access = No skips IT entirely (same rule as EmailTemplates.js:119)
+    const needsIt = {};
+    const IR = SCHEMA.INITIAL_REQUESTS;
+    {
+      const d = readCols(CONFIG.SHEETS.INITIAL_REQUESTS, Math.max(IR.WORKFLOW_ID, IR.EMPLOYMENT_TYPE, IR.SYSTEM_ACCESS));
+      for (let i = d ? SCHEMA.ROW.FIRST_DATA : 0; d && i < d.length; i++) {
+        const wf = String(d[i][IR.WORKFLOW_ID] || '');
+        if (!wf) continue;
+        needsIt[wf] = !(String(d[i][IR.EMPLOYMENT_TYPE] || '') === 'Hourly' &&
+                        String(d[i][IR.SYSTEM_ACCESS]   || '') === 'No');
+      }
+    }
+
+    // Active New Hire workflows only. Cancelled/Inactive are hidden from the table entirely, and a
+    // Complete workflow has finished the onboarding chain — dredging history would flood the badges.
+    {
+      const wfn   = _workflowsNarrow_(ss);
+      const d     = wfn.rows;
+      const idIdx = wfn.idIdx;
+      const stIdx = wfn.statusIdx;
+      if (idIdx !== -1 && stIdx !== -1) {
+        for (let i = 1; i < d.length; i++) {
+          const wf = String(d[i][idIdx] || '');
+          if (!wf || !wf.startsWith('NEW_EMP_')) continue;
+          const st = String(d[i][stIdx] || '');
+          if (st === 'Cancelled' || st === 'Inactive' || st === 'Complete' || st === 'Completed') continue;
+          if      (!idDone[wf])                        out[wf] = 'ID Setup';
+          else if (!hrDone[wf])                        out[wf] = 'HR Verification';
+          else if (needsIt[wf] !== false && !itDone[wf]) out[wf] = 'IT';
+          else                                         out[wf] = '';
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('[computeOnboardingPendingStep_] ' + e.message);
+  }
+
+  try {
+    if (typeof CacheService !== 'undefined' && CacheService && CacheService.getScriptCache) {
+      const payload = JSON.stringify(out);
+      // CacheService rejects values over ~100KB; skip silently rather than throw on a big tenant.
+      if (payload.length < 90000) CacheService.getScriptCache().put(CACHE_KEY, payload, 90);
+    }
+  } catch (e) { /* non-fatal */ }
+
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // getDashboardData
 // Returns ALL non-Cancelled/Inactive workflows + caller's rolePayload.
 // Single bulk read from Dashboard_View (materialized cache).
 // ─────────────────────────────────────────────────────────────────────────────
 
-function getDashboardData() {
+/**
+ * @param {Object} [opts]
+ * @param {boolean} [opts.lean] Omit `requestedItems` / `pendingItems` from each row.
+ *
+ * Those two keys are read by NOTHING — not Dashboard.html, not any other file. `pendingItems` is
+ * always an empty array and `requestedItems` is a per-row JSON blob that is parsed, serialised,
+ * transferred and then ignored, across ~1000 rows. The dashboard passes lean:true; calling with no
+ * arguments keeps the original shape so any external (n8n) caller is unaffected.
+ */
+function getDashboardData(opts) {
+  const lean       = !!(opts && opts.lean);
+  const limit      = (opts && opts.limit  > 0) ? Math.floor(opts.limit)  : 0;   // 0 = everything
+  const offset     = (opts && opts.offset > 0) ? Math.floor(opts.offset) : 0;
+  const activeOnly = !!(opts && opts.activeOnly);
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const viewSheet = ss.getSheetByName(CONFIG.SHEETS.DASHBOARD_VIEW);
@@ -77,7 +229,9 @@ function getDashboardData() {
     const openCategoriesMap = {};
     const aiSheetForMap = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
     if (aiSheetForMap && aiSheetForMap.getLastRow() > 1) {
-      const aiMapData    = aiSheetForMap.getDataRange().getValues();
+      // Only Workflow ID / Category / Status are used here — Action Items is 14 columns wide and
+      // Form Data (col 13) can be large JSON. Read the first 7 columns, not the sheet.
+      const aiMapData    = aiSheetForMap.getRange(1, 1, aiSheetForMap.getLastRow(), Math.min(7, aiSheetForMap.getLastColumn())).getValues();
       const aiMapHeaders = aiMapData[0];
       const aiWfIdx      = aiMapHeaders.indexOf('Workflow ID');
       const aiCatIdx     = aiMapHeaders.indexOf('Category');
@@ -94,10 +248,47 @@ function getDashboardData() {
       }
     }
 
+    // Derived onboarding step per workflow — see computeOnboardingPendingStep_ for why this is not
+    // read from 'Current Step'. Shared with getMyTaskCounts so badge and table always agree.
+    const pendingStepById = computeOnboardingPendingStep_(ss);
+
     const DV = SCHEMA.DASHBOARD_VIEW;
-    const flows = data.slice(1).map(row => {
+
+    // ── Paging: decide WHICH rows before doing the expensive per-row work ──────────────────────
+    //
+    // The row builder below calls Utilities.formatDate up to three times per row. Across ~1000 rows
+    // that is ~3000 calls, and it was happening for every row even though the client paints 25 and
+    // hides Completed by default. Formatting is what makes this call slow — not the transfer.
+    //
+    // So: take a cheap pass that reads only id / status / raw date, filter and sort THAT, slice it,
+    // and only then build full objects for the rows we are actually returning. Sorting here matches
+    // the client default (Date Requested, newest first) so "the first N" is the N the user sees.
+    const rawRows = data.slice(1);
+    const toTime = (v) => {
+      if (v instanceof Date) return v.getTime();
+      const t = Date.parse(String(v || ''));
+      return isNaN(t) ? 0 : t;
+    };
+
+    let index = [];
+    for (let ri = 0; ri < rawRows.length; ri++) {
+      const st = String(rawRows[ri][DV.GLOBAL_STATUS] || '');
+      if (st === 'Cancelled' || st === 'Inactive') continue;          // never shown
+      if (activeOnly && (st === 'Complete' || st === 'Completed')) continue;
+      index.push({ ri: ri, t: toTime(rawRows[ri][DV.DATE_REQUESTED]) });
+    }
+    index.sort((a, b) => b.t - a.t);                                   // newest first
+
+    const totalAvailable = index.length;
+    const slice = (limit > 0) ? index.slice(offset, offset + limit) : index.slice(offset);
+
+    const flows = slice.map(entry => {
+      const row = rawRows[entry.ri];
       let items = {};
-      try { if (row[DV.REQUESTED_ITEMS_JSON]) items = JSON.parse(String(row[DV.REQUESTED_ITEMS_JSON])); } catch (e) {}
+      // Only pay for the parse when the caller actually wants the field.
+      if (!lean) {
+        try { if (row[DV.REQUESTED_ITEMS_JSON]) items = JSON.parse(String(row[DV.REQUESTED_ITEMS_JSON])); } catch (e) {}
+      }
       const workflowId = String(row[DV.WORKFLOW_ID] || '');
       return {
         id: workflowId,
@@ -110,29 +301,36 @@ function getDashboardData() {
         dateRequested:  fmtDate(row[DV.DATE_REQUESTED]),
         lastUpdated:    fmtDateTime(row[DV.LAST_UPDATED]),
         managerEmail:   String(row[DV.MANAGER_EMAIL]    || ''),
-        requestedItems: items,
-        pendingItems:   [],
         hireDate:       fmtDate(row[DV.HIRE_DATE]),
         site:           String(row[DV.SITE]             || ''),
         empType:        String(row[DV.EMPLOYMENT_TYPE]  || '') || (workflowId.startsWith('TERM_') ? (termEmpTypeMap[workflowId] || '') : ''),
         type: workflowId.startsWith('TERM_') ? 'End of Employment' : (workflowId.startsWith('CHANGE_') ? 'Status Change' : (workflowId.startsWith('EQUIP_REQ_') ? 'Equipment' : 'Onboarding')),
-        openCategories: openCategoriesMap[workflowId] || []
+        openCategories: openCategoriesMap[workflowId] || [],
+        // Legacy keys — only materialised for non-lean callers (see the jsdoc above).
+        requestedItems: lean ? undefined : items,
+        pendingItems:   lean ? undefined : [],
+        // Derived onboarding step (data-based, not the overwritable 'Current Step' string) so the
+        // client's ID Setup / IT filters stop losing requests when a later step completes first.
+        pendingStep:    pendingStepById[workflowId] || ''
       };
-    }).filter(wf => {
-      return wf.status !== 'Cancelled' && wf.status !== 'Inactive';
     });
 
     // Termination fallback — catches pre-existing terminations not yet in Dashboard_View.
     // New terminations land in Dashboard_View via syncWorkflowState in TerminationHandler.
+    //
+    // Skipped on a PAGED request: it appends rows from a different source, which would make a page
+    // longer than the limit and repeat on the next page. The client's final (unpaged) fetch picks
+    // these up, so nothing is lost — they just do not appear in the fast first page.
     const flowIds = new Set(flows.map(f => f.id));
-    const workflowsSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+    const skipTermFallback = (limit > 0 || offset > 0);
+    // Third read of the same sheet in one request — reuse the shared narrow read instead.
     let wfMap = {};
-    if (workflowsSheet) {
-      const wData = workflowsSheet.getDataRange().getValues();
-      const headers = wData[0];
-      const idIdx = headers.indexOf('Workflow ID');
-      const statusIdx = headers.indexOf('Status');
-      const stepIdx = headers.indexOf('Current Step');
+    {
+      const wfn3      = _workflowsNarrow_(ss);
+      const wData     = wfn3.rows;
+      const idIdx     = wfn3.idIdx;
+      const statusIdx = wfn3.statusIdx;
+      const stepIdx   = wfn3.stepIdx;
       if (idIdx !== -1) {
         for (let i = 1; i < wData.length; i++) {
           wfMap[String(wData[i][idIdx] || '')] = {
@@ -143,7 +341,7 @@ function getDashboardData() {
       }
     }
 
-    const termSheet = termSheetForType; // reuse — already read above for termEmpTypeMap
+    const termSheet = skipTermFallback ? null : termSheetForType; // reuse — already read above
     if (termSheet) {
       const termData = tData; // reuse data already fetched
       if (termData.length > 1) {
@@ -177,16 +375,18 @@ function getDashboardData() {
             hireDate:       fmtDate(row[TR.TERM_DATE]),
             site:           String(row[TR.SITE]             || ''),
             empType:        String(row[TR.EMPLOYEE_TYPE]    || ''),
-            requestedItems: {},
-            pendingItems:   [],
+
             type:           'End of Employment',
-            openCategories: openCategoriesMap[wfId] || []
+            openCategories: openCategoriesMap[wfId] || [],
+            pendingStep:    pendingStepById[wfId] || ''
           });
         });
       }
     }
 
-    flows.reverse();
+    // Unpaged callers keep the original ordering. A paged request is already sorted newest-first by
+    // the index pass, and reversing it would hand back the oldest of the slice.
+    if (!(limit > 0 || offset > 0)) flows.reverse();
 
     return JSON.stringify({
       success:     true,
@@ -194,7 +394,12 @@ function getDashboardData() {
       currentUser: userEmail,
       canEditDates: canEditDates,
       isAdmin:     rolePayload.isAdmin,
-      rolePayload: rolePayload
+      rolePayload: rolePayload,
+      // Paging metadata — lets the client know whether a follow-up fetch is needed.
+      total:       totalAvailable,
+      offset:      offset,
+      limit:       limit,
+      hasMore:     (limit > 0) && ((offset + flows.length) < totalAvailable)
     });
 
   } catch (error) {
@@ -227,76 +432,114 @@ function getMyTaskCounts() {
       if (wfId.startsWith('EQUIP_REQ_')) return 'Equipment';
       return 'Onboarding';
     }
+    // Each bucket holds a SET OF WORKFLOW IDS, not a tally of tasks. The badge sits above a list of
+    // workflows, so it must count workflows — two Safety tasks on one request is one row, one badge.
+    // It also makes the IT / ID Setup dual-source counting self-correcting: the step source and the
+    // action-item source add the same id, and a Set keeps one.
     function blankCounts() {
       return {
-        'Safety':           0,
-        'Fleet':            0,   // renamed from Fleetio
-        'Business Cards':   0,
-        'Purchasing':       0,   // renamed from Jonas
-        'Finance':          0,   // renamed from Credit Card
-        '30/60/90 Review':  0,
-        'JR Title':         0,
-        'Assets':           0,
-        'IT':               0,   // IT button (action items)
-        'IT Confirmation':  0,   // IT CONF button
-        'HR':               0,   // ADP/HR button (part 1 — HR Systems Deactivation)
-        'Payroll':          0,   // ADP/HR button (part 2 — ADP Deactivation)
-        'EOE':              0,
-        'Manager':          0,
-        'WIS':              0,   // WIS button (WIS Assignment + BOSS WIS Records Update)
-        'ID Setup':         0,   // ID SETUP button — action items + step (additive, same key)
-        'Deactivation':     0,   // DEACTIVATION button (EOE Employee Deactivation)
-        'HR Verification':  0,   // ADP/HR button — step-based part
+        'Safety':           new Set(),
+        'Fleet':            new Set(),   // renamed from Fleetio
+        'Business Cards':   new Set(),
+        'Purchasing':       new Set(),   // renamed from Jonas
+        'Finance':          new Set(),   // renamed from Credit Card
+        '30/60/90 Review':  new Set(),
+        'JR Title':         new Set(),
+        'Assets':           new Set(),
+        'IT':               new Set(),   // IT button (action items + step)
+        'IT Confirmation':  new Set(),   // IT CONF button
+        'HR':               new Set(),   // ADP/HR button (part 1 — HR Systems Deactivation)
+        'Payroll':          new Set(),   // ADP/HR button (part 2 — ADP Deactivation)
+        'EOE':              new Set(),
+        'Manager':          new Set(),
+        'WIS':              new Set(),   // WIS button (WIS Assignment + BOSS WIS Records Update)
+        'ID Setup':         new Set(),   // ID SETUP button — action items + step (same workflow = 1)
+        'Deactivation':     new Set(),   // DEACTIVATION button (EOE Employee Deactivation)
+        'HR Verification':  new Set(),   // ADP/HR button — step-based part
+        'ADP/HR':           new Set(),   // combined bucket — the four above, deduped per workflow
       };
     }
+
+    // The ADP/HR button is one button over four categories. Summing the four on the client
+    // double-counts a workflow that has, say, both HR and Payroll open, so dedupe it here.
+    const ADP_HR_CATS = ['HR', 'Payroll', 'EOE', 'HR Verification'];
 
     // Grand total (back-compat `counts`) + per-type buckets (`countsByType`).
     const total  = blankCounts();
     const byType = {};
     TYPES.forEach(function(t) { byType[t] = blankCounts(); });
 
-    function add(wfId, cat, n) {
-      if (total.hasOwnProperty(cat)) total[cat] += n;
+    function add(wfId, cat) {
+      wfId = String(wfId || '');
+      if (!wfId) return;
       const b = byType[typeOf(wfId)];
-      if (b.hasOwnProperty(cat)) b[cat] += n;
+      if (total.hasOwnProperty(cat)) total[cat].add(wfId);
+      if (b.hasOwnProperty(cat))     b[cat].add(wfId);
+      if (ADP_HR_CATS.indexOf(cat) !== -1) {
+        total['ADP/HR'].add(wfId);
+        b['ADP/HR'].add(wfId);
+      }
+    }
+
+    // Workflow status map — needed so Source 1 can skip tasks belonging to workflows the dashboard
+    // table will never show. Cancelled/Inactive are dropped outright by getDashboardData, so their
+    // open tasks were pure phantom count. 'Complete' is deliberately NOT skipped: WIS and Manager
+    // tasks are non-blocking by design (ActionItemService.js:594) and outlive the workflow — that is
+    // real outstanding work and must keep counting.
+    const wfStatusById = {};
+    {
+      const wfn2   = _workflowsNarrow_(ss);
+      const sData  = wfn2.rows;
+      const sIdIdx = wfn2.idIdx;
+      const sStIdx = wfn2.statusIdx;
+      if (sIdIdx !== -1 && sStIdx !== -1) {
+        for (let si = 1; si < sData.length; si++) {
+          wfStatusById[String(sData[si][sIdIdx] || '')] = String(sData[si][sStIdx] || '');
+        }
+      }
+    }
+    function isHiddenWorkflow(wfId) {
+      const st = wfStatusById[String(wfId || '')] || '';
+      return st === 'Cancelled' || st === 'Inactive';
     }
 
     // ── Source 1: Action Items sheet (Open only) ──────────────────────────────
     const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
     if (aiSheet && aiSheet.getLastRow() > 1) {
-      const aiData    = aiSheet.getDataRange().getValues();
+      // Same as the openCategories read above: Workflow ID / Category / Status only.
+      const aiData    = aiSheet.getRange(1, 1, aiSheet.getLastRow(), Math.min(7, aiSheet.getLastColumn())).getValues();
       const aiHeaders = aiData[0];
       const wfIdx     = aiHeaders.indexOf('Workflow ID');
       const catIdx    = aiHeaders.indexOf('Category');
       const statusIdx = aiHeaders.indexOf('Status');
       for (let i = 1; i < aiData.length; i++) {
         if (String(aiData[i][statusIdx] || '') !== 'Open') continue;
-        add(aiData[i][wfIdx], String(aiData[i][catIdx] || ''), 1);
+        if (isHiddenWorkflow(aiData[i][wfIdx])) continue;
+        add(aiData[i][wfIdx], String(aiData[i][catIdx] || ''));
       }
     }
 
-    // ── Source 2: Workflows sheet — step-based counts ─────────────────────────
-    const wfSheet = ss.getSheetByName(CONFIG.SHEETS.WORKFLOWS);
-    if (wfSheet && wfSheet.getLastRow() > 1) {
-      const wfData    = wfSheet.getDataRange().getValues();
-      const wfHeaders = wfData[0];
-      const wfIdIdx   = wfHeaders.indexOf('Workflow ID');
-      const statusIdx = wfHeaders.indexOf('Status');
-      const stepIdx   = wfHeaders.indexOf('Current Step');
-      for (let i = 1; i < wfData.length; i++) {
-        const status = String(wfData[i][statusIdx] || '');
-        if (status === 'Cancelled' || status === 'Complete' || status === 'Completed' || status === 'Inactive') continue;
-        const step = String(wfData[i][stepIdx] || '').toLowerCase();
-        const wfId = wfData[i][wfIdIdx];
-        // Exact step name matching — 'ID Setup Complete' must NOT count as ID Setup pending.
-        // Legacy 'ID Setup Complete' (pre-fix workflows) maps to HR Verification.
-        if      (step === 'it setup needed')                                         add(wfId, 'IT', 1);
-        else if (step === 'hr verification needed' || step === 'id setup complete')  add(wfId, 'HR Verification', 1);
-        else if (step === 'id setup needed')                                         add(wfId, 'ID Setup', 1);
-      }
-    }
+    // ── Source 2: onboarding steps, derived from result data ─────────────────
+    // Was: read 'Current Step' and string-match it. That lost ID Setup whenever HR Verification was
+    // completed first (allowed, and required for Salary), because HR overwrote the one step slot.
+    // Now derived from whether each step's result row exists — see computeOnboardingPendingStep_.
+    const pendingStepById = computeOnboardingPendingStep_(ss);
+    Object.keys(pendingStepById).forEach(function(wfId) {
+      const pending = pendingStepById[wfId];
+      if (pending) add(wfId, pending);
+    });
 
-    return { success: true, counts: total, countsByType: byType };
+    // Serialize the Sets to plain numbers — the client contract is unchanged, the values are just
+    // now workflow counts rather than task counts.
+    function sizes(buckets) {
+      const out = {};
+      Object.keys(buckets).forEach(function(k) { out[k] = buckets[k].size; });
+      return out;
+    }
+    const byTypeOut = {};
+    Object.keys(byType).forEach(function(t) { byTypeOut[t] = sizes(byType[t]); });
+
+    return { success: true, counts: sizes(total), countsByType: byTypeOut };
 
   } catch (e) {
     Logger.log('[getMyTaskCounts] Error: ' + e.message);
@@ -342,4 +585,85 @@ function getWorkflowMapStats() {
     Logger.log('[getWorkflowMapStats] Error: ' + e.message);
     return { success: false, onboarding: {}, eoe: {} };
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// listPendingIdSetupForRunner
+// Read-only diagnostic: which active New Hire workflows are still waiting on ID Setup, derived from
+// result data rather than the 'Current Step' string. Shaped for gas_runner.py.
+// Used to pick a real workflow id when validating the ID Setup form by hand.
+// ─────────────────────────────────────────────────────────────────────────────
+function listPendingIdSetupForRunner() {
+  try {
+    var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    var map = computeOnboardingPendingStep_(ss);
+    var ids = Object.keys(map).filter(function(k) { return map[k] === 'ID Setup'; }).sort().reverse();
+    Logger.log('Pending ID Setup: ' + ids.length);
+    ids.slice(0, 10).forEach(function(id) { Logger.log('  ' + id); });
+    return { pass: ids.length, fail: 0, warn: 0, emailTotal: 0, failures: [],
+             count: ids.length, newest: ids.slice(0, 10), gasLog: Logger.getLog() };
+  } catch (e) {
+    return { pass: 0, fail: 1, warn: 0, emailTotal: 0, failures: [String(e && e.message)], gasLog: Logger.getLog() };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// profileDashboardForRunner
+// Read-only: time each phase of getDashboardData in isolation, so the cost can be attributed
+// instead of guessed. Slicing the row build did not speed the call up, which means the cost is in
+// the fixed work that happens per CALL, not per ROW. This says which part.
+// ─────────────────────────────────────────────────────────────────────────────
+function profileDashboardForRunner() {
+  var t = [], mark = function(label, fn) {
+    var s = new Date().getTime();
+    var out;
+    try { out = fn(); } catch (e) { out = 'ERR: ' + e.message; }
+    t.push({ phase: label, ms: new Date().getTime() - s, note: (out === undefined ? '' : String(out).slice(0, 60)) });
+  };
+  try {
+    var ss;
+    mark('openById', function() { ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID); return 'ok'; });
+
+    var email;
+    mark('Session.getActiveUser', function() { email = Session.getActiveUser().getEmail(); return email; });
+
+    mark('AccessControlService.getUserRolePayload', function() {
+      var rp = AccessControlService.getUserRolePayload(email);
+      return 'keys=' + Object.keys(rp || {}).length;
+    });
+
+    mark('read Dashboard_View', function() {
+      var sh = ss.getSheetByName(CONFIG.SHEETS.DASHBOARD_VIEW);
+      return sh ? (sh.getDataRange().getValues().length + ' rows') : 'missing';
+    });
+
+    mark('read Terminations', function() {
+      var sh = ss.getSheetByName(CONFIG.SHEETS.TERMINATIONS);
+      return sh ? (sh.getDataRange().getValues().length + ' rows') : 'missing';
+    });
+
+    mark('read Action Items (7 cols)', function() {
+      var sh = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+      if (!sh) return 'missing';
+      return sh.getRange(1, 1, sh.getLastRow(), Math.min(7, sh.getLastColumn())).getValues().length + ' rows';
+    });
+
+    mark('computeOnboardingPendingStep_', function() {
+      return Object.keys(computeOnboardingPendingStep_(ss)).length + ' wf';
+    });
+
+    mark('full getDashboardData (page of 100)', function() {
+      var r = getDashboardData({ lean: true, limit: 100, activeOnly: true });
+      return String(r).length + ' bytes';
+    });
+
+    mark('full getDashboardData (everything)', function() {
+      var r = getDashboardData({ lean: true });
+      return String(r).length + ' bytes';
+    });
+  } catch (e) {
+    t.push({ phase: 'FATAL', ms: 0, note: String(e && e.message) });
+  }
+  t.forEach(function(x) { Logger.log(String(x.ms).padStart(7) + 'ms  ' + x.phase + '  ' + x.note); });
+  return { pass: t.length, fail: 0, warn: 0, emailTotal: 0, failures: [], phases: t, gasLog: Logger.getLog() };
 }

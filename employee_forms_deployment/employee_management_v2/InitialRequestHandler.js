@@ -116,6 +116,8 @@ function submitInitialRequest(formData) {
       systems: formData.systems,
       equipment: formData.equipment,
       department: formData.department || '',
+      dssLanguage: formData.dssLanguage || 'English',
+      union: formData.union || 'No',
       employeeIdSetupUrl: idSetupUrl,
       siteDocsEmail: CONFIG.EMAILS.IDSETUP
     });
@@ -175,6 +177,8 @@ function _sendInitialRequestSubmitEmails(workflowId) {
     systems:            systemsStr   ? systemsStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean)   : [],
     equipment:          equipmentStr ? equipmentStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [],
     department:         String(data[IR.DEPARTMENT]         || ''),
+    dssLanguage:        String(data[IR.DSS_LANGUAGE]       || 'English'),
+    union:              String(data[IR.UNION]              || 'No'),
     employeeIdSetupUrl: buildFormUrl('id_setup', { wf: workflowId }),
     siteDocsEmail:      CONFIG.EMAILS.IDSETUP
   });
@@ -237,7 +241,9 @@ function formatInitialRequestData(data) {
     '',                           // col 52 — Status (written later by ITConfirmationHandler)
     data.adpSalaryAccess || 'No', // col 53 — ADP Salary Access
     data.bossTrainingOnly || 'No', // col 54 — BOSS Training User Only (ER-5)
-    data.internalEmployeeId || '' // col 55 — Internal Employee ID (EFX: allocated at submit)
+    data.internalEmployeeId || '', // col 55 — Internal Employee ID (EFX: allocated at submit)
+    data.dssLanguage || 'English', // col 56 — DSS Language (defaults English; n8n may omit the key)
+    data.union || 'No'             // col 57 — Union (defaults No; n8n may omit the key)
   ];
 }
 

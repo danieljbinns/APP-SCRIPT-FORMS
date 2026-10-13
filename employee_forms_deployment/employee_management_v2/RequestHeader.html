@@ -115,6 +115,7 @@
       <div class="rh-f"><span class="rh-l">Site</span><span class="rh-v"><?= rd.siteName || '—' ?></span></div>
       <? if (rd.jobSiteNumber) { ?><div class="rh-f"><span class="rh-l">Job Site #</span>  <span class="rh-v"><?= rd.jobSiteNumber ?></span></div><? } ?>
       <? if (rd.department)    { ?><div class="rh-f"><span class="rh-l">Department</span>  <span class="rh-v"><?= rd.department    ?></span></div><? } ?>
+      <? if (rd.dssLanguage)   { ?><div class="rh-f"><span class="rh-l">DSS Language</span><span class="rh-v"><?= rd.dssLanguage ?></span></div><? } ?>
       <div class="rh-f"><span class="rh-l">Manager</span><span class="rh-v"><?= rd.managerName || '—' ?></span></div>
       <? if (rd.managerEmail)  { ?><div class="rh-f"><span class="rh-l">Manager Email</span><span class="rh-v link"><?= rd.managerEmail  ?></span></div><? } ?>
       <? if (rd.requesterEmail){ ?><div class="rh-f"><span class="rh-l">Requested By</span><span class="rh-v link"><?= rd.requesterEmail ?></span></div><? } ?>
@@ -125,6 +126,14 @@
       <div class="rh-f"><span class="rh-l">New / Rehire</span>     <span class="rh-v"><?= rd.newHireOrRehire || '—' ?></span></div>
       <div class="rh-f"><span class="rh-l">Employee Type</span>    <span class="rh-v"><?= rd.employeeType   || '—' ?></span></div>
       <div class="rh-f"><span class="rh-l">Employment Type</span>  <span class="rh-v"><?= rd.employmentType || '—' ?></span></div>
+      <?
+        // Union sits between Employment Type and ADP Associate ID: it is part of the employment
+        // classification picture, and ID Setup acts on it (SiteDocs job code / DSS path).
+        // Highlighted when Yes. Blank on records written before the field existed reads 'No',
+        // matching the stored default, so it is never ambiguous on screen.
+        var _union = rd.union || 'No';
+      ?>
+      <div class="rh-f"><span class="rh-l">Union</span><span class="rh-v"<?= _union === 'Yes' ? ' style="color:#b45309;font-weight:700;"' : '' ?>><?= _union ?></span></div>
 
       <div class="rh-f">
         <span class="rh-l">ADP Associate ID<? if (rd.adpAssociateId) { ?> <span class="rh-annot">HR ✓</span><? } ?></span>
@@ -194,6 +203,18 @@
       <? if (showSt) { ?><div class="rh-f"><span class="rh-l">Site Transfer</span>        <span class="rh-v"><?= rd.siteTransfer ?></span></div><? } ?>
       <? var ccVal = String(rd.classChange || ''); var ccParts = ccVal.split(' -> '); var showCc = ccVal && ccVal.indexOf('N/A') === -1 && (ccParts.length < 2 || ccParts[0].trim() !== ccParts[1].trim()); ?>
       <? if (showCc) { ?><div class="rh-f"><span class="rh-l">Classification</span>       <span class="rh-v"><?= rd.classChange ?></span></div><? } ?>
+      <?
+        // Union on a Status Change is stored as "old -> new". Unlike the other pairs above, this one
+        // is shown even when unchanged: the point of capturing it on every change is that a record
+        // accumulates for employees who predate the field, which is only useful if it is visible.
+        // Current status is highlighted when Yes; 'Unknown' means we genuinely have no record yet.
+        var ucVal   = String(rd.unionChange || '');
+        var ucParts = ucVal.split(' -> ');
+        var ucOld   = ucParts[0] ? ucParts[0].trim() : '';
+        var ucNew   = ucParts.length > 1 ? ucParts[1].trim() : ucOld;
+        var ucMoved = ucOld && ucNew && ucOld !== ucNew;
+      ?>
+      <? if (ucVal) { ?><div class="rh-f"><span class="rh-l">Union</span><span class="rh-v"<?= ucNew === 'Yes' ? ' style="color:#b45309;font-weight:700;"' : '' ?>><?= ucMoved ? ucVal : ucNew ?></span></div><? } ?>
       <? var mcVal = String(rd.managerChange || ''); var showMc = mcVal && mcVal.indexOf('N/A (N/A)') === -1 && mcVal.indexOf('N/A -> N/A') === -1 && mcVal.indexOf(' -> ') !== -1; var mcParts = mcVal.split(' -> '); var showMcFinal = showMc && (mcParts.length < 2 || mcParts[0].trim() !== mcParts[1].trim()); ?>
       <? if (showMcFinal) { ?><div class="rh-f"><span class="rh-l">Manager Change</span>  <span class="rh-v"><?= rd.managerChange ?></span></div><? } ?>
       <? /* Direct report delegation — shown when present on any Status Change */ ?>

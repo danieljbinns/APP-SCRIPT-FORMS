@@ -198,6 +198,10 @@ function buildNewHireContextBlock(context, opts) {
     + (context.jobTitle   ? esRow(isEquipment ? 'Position' : 'Job Title', esVal(context.jobTitle)) : '')
     + (context.siteName   ? esRow('Site',       esVal(context.siteName))   : '')
     + (context.department ? esRow('Department', esVal(context.department)) : '')
+    // DSS Language — New Hire only; Equipment has no training/learning-path step.
+    + (!isEquipment && context.dssLanguage ? esRow('DSS Language', esVal(context.dssLanguage)) : '')
+    // Union — New Hire only. Shown even when 'No' so the record is explicit on every request.
+    + (!isEquipment && context.union ? esRow('Union', esVal(context.union)) : '')
     // New Hire: Start Date from hireDate. Equipment: Request Date from requestDate.
     + (!isEquipment && hireDisplay       ? esRow('Start Date',    esVal(hireDisplay))           : '')
     + (isEquipment && context.requestDate ? esRow('Request Date', esVal(context.requestDate))   : '')
@@ -803,12 +807,24 @@ function buildStatusChangeContextBlock(context, opts) {
   var tcChange = _showChange(context.titleChange);
   var ccChange = _showChange(context.classChange);
   var mcChange = _showChange(context.managerChange);
+  var ucChange = _showChange(context.unionChange);
+  // Current union status for the snapshot section: the NEW side of the stored "old -> new" pair,
+  // since that is what the employee's status will be. Shown even when unchanged — that record is the
+  // whole reason the field is captured on every change.
+  var unionNow = (function() {
+    var v = String(context.unionChange || '').trim();
+    if (!v) return '';
+    var i = v.indexOf(' -> ');
+    var side = (i === -1) ? v : v.substring(i + 4).trim();
+    return (side && side !== 'N/A') ? side : '';
+  })();
 
   // ============================================================
   // SECTION 1 — Employee  (always complete — current state snapshot)
   // ============================================================
   var empRows = ''
     + esRow('Employee',        esVal(empName.trim()))
+    + (unionNow                ? esRow('Union',           esVal(unionNow))                                                 : '')
     + (context.employmentType  ? esRow('Classification',  esVal(context.employmentType))                                    : '')
     + (context.siteName        ? esRow('Site',            esVal(context.siteName))                                          : '')
     + (context.currentTitle    ? esRow('Current Title',   esVal(context.currentTitle))                                      : '')
@@ -834,6 +850,7 @@ function buildStatusChangeContextBlock(context, opts) {
   if (stChange) changeRows += esRow('Site Transfer',    esVal(stChange));
   if (tcChange) changeRows += esRow('Title Change',     esVal(tcChange));
   if (ccChange) changeRows += esRow('Classification',   esVal(ccChange));
+  if (ucChange) changeRows += esRow('Union Change',     esVal(ucChange));
   if (mcChange) changeRows += esRow('Manager Change',   esVal(mcChange));
 
   // Direct report delegation — shown whenever present in the request.

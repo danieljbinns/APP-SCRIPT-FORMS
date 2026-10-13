@@ -265,6 +265,7 @@ function getWorkflowContext(workflowId) {
           siteTransfer: changeData.siteTransfer || '',
           titleChange: changeData.titleChange || '',
           classChange: changeData.classChange || '',
+          unionChange: changeData.unionChange || '',
           managerChange: mcStr,
           systems: changeData.systems ? changeData.systems.split(', ').map(function(s) { return s.trim(); }).filter(Boolean) : [],
           equipmentRaw: changeData.equipment || '',
@@ -354,6 +355,10 @@ function getWorkflowContext(workflowId) {
       requestDate:   Utilities.formatDate(new Date(row[headers.indexOf('Timestamp')]), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
       employmentType: row[headers.indexOf('Employment Type')],
       department:    row[headers.indexOf('Department')] || '',
+      // DSS Language — blank on rows written before the field existed, so fall back to English.
+      dssLanguage:   row[headers.indexOf('DSS Language')] || 'English',
+      // Union — blank on rows written before the field existed, so fall back to No.
+      union:         row[headers.indexOf('Union')] || 'No',
       employeeType:  row[headers.indexOf('Employee Type')],
       newHireOrRehire: row[headers.indexOf('New Hire/Rehire')] || row[SCHEMA.INITIAL_REQUESTS.NEW_HIRE_OR_REHIRE] || '',
       jobSiteNumber: row[headers.indexOf('Job Site #')],
@@ -381,6 +386,11 @@ function getWorkflowContext(workflowId) {
       creditCardUSA:    String(row[SCHEMA.INITIAL_REQUESTS.CC_USA]           || ''),
       creditCardCanada: String(row[SCHEMA.INITIAL_REQUESTS.CC_CAN]           || ''),
       creditCardHomeDepot: String(row[SCHEMA.INITIAL_REQUESTS.CC_HD]         || ''),
+      // The requested limits were never mapped here, so triggerSpecialists (ITSetupHandler.js:483-485)
+      // always fell back to "Standard" on the Finance checklist. The change branch (:277-281) had them.
+      creditCardLimitUSA:       String(row[SCHEMA.INITIAL_REQUESTS.CC_LIMIT_USA] || ''),
+      creditCardLimitCanada:    String(row[SCHEMA.INITIAL_REQUESTS.CC_LIMIT_CAN] || ''),
+      creditCardLimitHomeDepot: String(row[SCHEMA.INITIAL_REQUESTS.CC_LIMIT_HD]  || ''),
       jonasJobNumbers:  String(row[SCHEMA.INITIAL_REQUESTS.JONAS_JOB_NUMBERS]|| ''),
       plan306090:       String(row[SCHEMA.INITIAL_REQUESTS.PLAN_306090]      || ''),
       businessCards:    String(row[SCHEMA.INITIAL_REQUESTS.EQUIPMENT]        || '').toLowerCase().indexOf('business card') !== -1 ? 'Yes' : 'No'
@@ -644,7 +654,8 @@ function sendBatchEmails(emailList) {
 function sendInitialRequestEmails(config) {
   const { requestId, employeeName, hireDate, requesterEmail, employeeIdSetupUrl, siteDocsEmail,
           jobTitle, siteName, managerName, managerEmail, requestDate, employmentType, employeeType,
-          newHireOrRehire, systemAccess, systems, equipment, department, internalEmployeeId } = config;
+          newHireOrRehire, systemAccess, systems, equipment, department, internalEmployeeId,
+          dssLanguage, union } = config;
   
   Logger.log('Sending initial request emails for: ' + requestId);
   
@@ -670,6 +681,8 @@ function sendInitialRequestEmails(config) {
     systems: Array.isArray(systems) ? systems : (systems ? systems.split(',').map(s => s.trim()) : []),
     equipmentRaw: Array.isArray(equipment) ? equipment.join(', ') : equipment,
     department: department || '',
+    dssLanguage: dssLanguage || 'English',
+    union: union || 'No',
     // EFX 2026-09-23: submit-time identifiers for the Request Details section (both emails).
     // Deliberately NOT keyed as `internalEmployeeId` — buildNewHireContextBlock() treats that key as
     // "ID Setup complete" (hasId), which would be false at submit time.
@@ -1104,6 +1117,10 @@ function sendSafetyOnboardingEmail(workflowId, requestData, setupData) {
     if (!contextData.hireDate    && requestData.hireDate)      contextData.hireDate     = requestData.hireDate;
     if (siteDocsJobCode) contextData.siteDocsJobCode = siteDocsJobCode;
 
+    // Checklist item names are KEYS, not labels: N8n.js:259-260 closes these items by exact string.
+    // Do not interpolate the language (or anything else) into them — a renamed item can never be
+    // closed by n8n and the task stays open forever. DSS Language rides in contextData instead and
+    // renders in the Request Details header of this email.
     const description = JSON.stringify([
       'Assign SiteDocs locations for employee',
       'Assign DSS learning paths'

@@ -499,8 +499,13 @@
         // Set dynamic URLs on load
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Both server calls start together. They used to be chained — loadMyTasks() ran inside
+            // displayData(), so the counts call could not begin until the (much slower) workflow
+            // call had returned, and the user waited for the SUM of the two. They share no data;
+            // the only real dependency is that counts cannot be RENDERED until _rolePayload has
+            // arrived, which renderTaskCounts() now handles by holding the result until both land.
             loadData();
-            // loadMyTasks() is called inside displayData() once _rolePayload is set
+            loadMyTasks();
         });
         let allWorkflows = [];
         let filteredWorkflows = []; // For search + pagination combo
@@ -525,22 +530,62 @@
         const ITEMS_PER_PAGE = 25;
         let currentPage = 1;
 
+        // Timings for every server call, so load cost can be inspected without DevTools:
+        //   window.__dashTimings  → [{call, ms, rows}]
+        window.__dashTimings = [];
+        function _timeCall(name, start, extra) {
+            var ms = Math.round(performance.now() - start);
+            window.__dashTimings.push(Object.assign({ call: name, ms: ms }, extra || {}));
+            console.log('[dash] ' + name + ' ' + ms + 'ms' + (extra && extra.rows !== undefined ? ' (' + extra.rows + ' rows)' : ''));
+            return ms;
+        }
+
+        // First page size. The table shows 25 per page and hides Completed by default, so 100 active
+        // rows covers the first few pages instantly while the rest streams in behind it.
+        const FIRST_PAGE_SIZE = 100;
+
         function loadData() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding: 40px; color: #888;">Refreshing data...</td></tr>';
-            google.script.run.withSuccessHandler(displayData).withFailureHandler(showError).getDashboardData();
+            window.__dashTimings = [];
+
+            // Single fetch. A two-pass version (first 100 rows, then the rest) was tried and REMOVED:
+            // profiling showed row building is only ~2.6s of the call, while the fixed per-call cost
+            // — role resolution — was ~8.3s. Paging therefore saved almost nothing on the first
+            // paint and doubled the fixed cost, taking total completion from ~14s to ~34s.
+            var t0 = performance.now();
+            google.script.run
+                .withSuccessHandler(function(raw) {
+                    var res = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+                    _timeCall('getDashboardData', t0, { rows: (res && res.workflows || []).length });
+                    displayData(raw);
+                })
+                .withFailureHandler(showError)
+                .getDashboardData({ lean: true });   // requestedItems/pendingItems are never read here
         }
 
         function loadMyTasks() {
+            var t0 = performance.now();
             google.script.run
                 .withSuccessHandler(function(res) {
+                    _timeCall('getMyTaskCounts', t0);
                     if (!res || !res.success) return;
                     _countsByType = res.countsByType || {};
                     _countsTotal  = res.counts || {};
-                    renderTaskCounts();
+                    _countsLoaded = true;
+                    // Whichever call finishes second does the render.
+                    renderTaskCountsWhenReady();
                 })
                 .withFailureHandler(function() { /* silently fail */ })
                 .getMyTaskCounts();
+        }
+
+        // The counts panel needs the role payload (group membership drives which buttons show) AND
+        // the counts themselves. Either call may land first now that they run in parallel.
+        function renderTaskCountsWhenReady() {
+            if (!_countsLoaded) return;
+            if (!_rolePayload || _rolePayload.isAdmin === undefined) return;
+            renderTaskCounts();
         }
 
         // Sum the per-type count buckets for the currently active Type filters.
@@ -567,7 +612,12 @@
 
                     // ADP/HR combines: HR action items, Payroll action items, HR Verification
                     // workflow step, and EOE process action items (assigned to HR, same team).
-                    var adpHrCount = (counts['HR'] || 0) + (counts['Payroll'] || 0) + (counts['HR Verification'] || 0) + (counts['EOE'] || 0);
+                    // Use the server's combined bucket: summing the four here double-counts a
+                    // workflow that has more than one of them open, while the table shows one row.
+                    // Fall back to the old sum only if an older backend is serving this page.
+                    var adpHrCount = (counts['ADP/HR'] !== undefined)
+                        ? counts['ADP/HR']
+                        : ((counts['HR'] || 0) + (counts['Payroll'] || 0) + (counts['HR Verification'] || 0) + (counts['EOE'] || 0));
 
                     // All filter buttons — always visible to all authenticated users, no role gating.
                     // Each button filters the workflow list to show workflows with open items in that category.
@@ -769,8 +819,8 @@
             if (rp.isSpecialist) document.body.classList.add('is-specialist');
             applyFiltersAndSort(); // Triggers sorting and initially setting filteredWorkflows
 
-            // Load task counts now that _rolePayload is set (avoids race condition)
-            loadMyTasks();
+            // Counts were requested in parallel at init; render them if they have arrived.
+            renderTaskCountsWhenReady();
             // Render My Open Requests panel — client-side filter of already-loaded workflows
             renderMyRequests(allWorkflows, response.currentUser);
         }
@@ -944,51 +994,76 @@
                     if (!allowed.includes(wf.type)) return false;
                 }
 
-                // Status filter: default (no filter) hides Complete and Cancelled; filters show OR union
-                const isCompleted = wf.status === 'Completed' || wf.status === 'Complete';
-                const isCancelled = wf.status === 'Cancelled';
-                const isPending = !isCompleted && !isCancelled;
-                if (activeStatusFilters.size === 0) {
-                    if (isCompleted || isCancelled) return false;
-                } else {
-                    const matchesAny = (activeStatusFilters.has('COMPLETED') && isCompleted) ||
-                        (activeStatusFilters.has('CANCELLED') && isCancelled) ||
-                        (activeStatusFilters.has('PENDING') && isPending);
-                    if (!matchesAny) return false;
-                }
-
-                // Category filter — set by filter buttons in the task panel
-                if (activeCategoryFilter) {
+                // Does this workflow belong under the active category button? Computed up front so the
+                // status filter below can consult it — the category test itself is unchanged.
+                function matchesActiveCategory() {
+                    if (!activeCategoryFilter) return false;
                     if (activeCategoryFilter === '__ADPHR__') {
-                        // ADP/HR combined: show workflows with HR or Payroll open items
-                        if (!wf.openCategories ||
-                            (!wf.openCategories.includes('HR') && !wf.openCategories.includes('Payroll') && !wf.openCategories.includes('EOE') && !wf.openCategories.includes('HR Verification'))) return false;
-                    } else if (activeCategoryFilter === 'IT') {
-                        // IT SETUP button: matches IT action items OR 'pending: it setup' step
+                        // ADP/HR combined: HR / Payroll / EOE action items, plus the derived
+                        // HR Verification onboarding step. 'HR Verification' is never an action-item
+                        // category, so without pendingStep the badge counted rows this filter could
+                        // not match.
+                        return !!(wf.pendingStep === 'HR Verification' || (wf.openCategories &&
+                            (wf.openCategories.includes('HR') || wf.openCategories.includes('Payroll') || wf.openCategories.includes('EOE') || wf.openCategories.includes('HR Verification'))));
+                    }
+                    if (activeCategoryFilter === 'IT') {
+                        // IT SETUP button: IT action items OR the derived onboarding step.
+                        // wf.pendingStep comes from result data, not the overwritable 'Current Step'
+                        // string — the legacy step match is kept only as a fallback for old rows.
                         var hasItAI   = wf.openCategories && wf.openCategories.includes('IT');
                         var itStepLower = (wf.step || '').toLowerCase();
                         // Exact 'pending: it' (onboarding IT Setup step, renamed from 'Pending: IT Setup').
                         // Itemized lists (e.g. 'Pending: IT Confirmation, Fleet') are matched via openCategories
                         // above, so avoid a loose includes() that would false-match 'IT Confirmation'.
-                        var hasItStep = itStepLower === 'pending: it' ||
+                        var hasItStep = wf.pendingStep === 'IT' ||
+                                        itStepLower === 'pending: it' ||
                                         itStepLower.includes('it setup needed');
-                        if (!hasItAI && !hasItStep) return false;
-                    } else if (activeCategoryFilter === 'ID Setup') {
-                        // ID SETUP button: matches ID Setup action items OR 'pending: id setup' step
+                        return !!(hasItAI || hasItStep);
+                    }
+                    if (activeCategoryFilter === 'ID Setup') {
+                        // ID SETUP button: ID Setup action items OR the derived onboarding step.
+                        // Previously step-string only, so a request vanished from this filter as soon
+                        // as HR Verification completed first and overwrote the step.
                         var hasIdAI   = wf.openCategories && wf.openCategories.includes('ID Setup');
-                        var hasIdStep = (wf.step || '').toLowerCase().includes('pending: id setup') ||
+                        var hasIdStep = wf.pendingStep === 'ID Setup' ||
+                                        (wf.step || '').toLowerCase().includes('pending: id setup') ||
                                         (wf.step || '').toLowerCase().includes('id setup needed');
-                        if (!hasIdAI && !hasIdStep) return false;
-                    } else if (STEP_CATEGORY_TERMS[activeCategoryFilter]) {
+                        return !!(hasIdAI || hasIdStep);
+                    }
+                    if (STEP_CATEGORY_TERMS[activeCategoryFilter]) {
                         // Other step-based filters
                         const terms = STEP_CATEGORY_TERMS[activeCategoryFilter];
                         const stepLower = (wf.step || '').toLowerCase();
-                        if (!terms.some(t => stepLower.includes(t))) return false;
+                        return terms.some(t => stepLower.includes(t));
+                    }
+                    // Action-item-based: filter by openCategories array on workflow object
+                    return !!(wf.openCategories && wf.openCategories.includes(activeCategoryFilter));
+                }
+                const inActiveCategory = matchesActiveCategory();
+
+                // Status filter: default (no filter) hides Complete and Cancelled; filters show OR union.
+                // Exception: a workflow can legitimately be Complete with WIS / Manager / non-required
+                // specialist tasks still Open (ActionItemService.js:594 treats them as non-blocking).
+                // That is real outstanding work, so when the user has filtered to a category and this
+                // workflow is in it, do not hide the row for being Complete — otherwise the badge counts
+                // work the table refuses to show.
+                const isCompleted = wf.status === 'Completed' || wf.status === 'Complete';
+                const isCancelled = wf.status === 'Cancelled';
+                const isPending = !isCompleted && !isCancelled;
+                const keepCompletedForCategory = isCompleted && inActiveCategory;
+                if (!keepCompletedForCategory) {
+                    if (activeStatusFilters.size === 0) {
+                        if (isCompleted || isCancelled) return false;
                     } else {
-                        // Action-item-based: filter by openCategories array on workflow object
-                        if (!wf.openCategories || !wf.openCategories.includes(activeCategoryFilter)) return false;
+                        const matchesAny = (activeStatusFilters.has('COMPLETED') && isCompleted) ||
+                            (activeStatusFilters.has('CANCELLED') && isCancelled) ||
+                            (activeStatusFilters.has('PENDING') && isPending);
+                        if (!matchesAny) return false;
                     }
                 }
+
+                // Category filter — set by filter buttons in the task panel
+                if (activeCategoryFilter && !inActiveCategory) return false;
 
                 return true;
             });

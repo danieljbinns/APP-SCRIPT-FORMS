@@ -32,6 +32,10 @@ function initializeSystem() {
     ]);
     
     // 2. Initialize Initial Requests
+    initSheet(ss, CONFIG.SHEETS.REFERENCE_GROUPS, [
+      'Group Key', 'Group Email', 'Member Email', 'Updated'
+    ]);
+
     initSheet(ss, CONFIG.SHEETS.INITIAL_REQUESTS, [
       'Workflow ID', 'Form ID', 'Timestamp', 'Date Requested', 'Requester Name', 'Requester Email',
       'Hire Date', 'New Hire/Rehire', 'Employee Type', 'Employment Type',
@@ -43,7 +47,10 @@ function initializeSystem() {
       'Phone Req', 'Prev User (Phone)', 'Prev Number', 'BOSS Sites', 'BOSS Cost Sheet',
       'BOSS Jobs', 'BOSS Trip', 'BOSS Grievances', 'Jonas Job #s', 'JR Req', 'JR Assign',
       '30/60/90', 'Comments', 'ADP Sites', 'Department', 'Purchasing Sites', 'Status',
-      'ADP Salary Access'
+      'ADP Salary Access',
+      // cols 54-57 — this list had drifted behind SCHEMA.INITIAL_REQUESTS; a fresh setup was
+      // creating a 54-wide sheet while the handler writes 58. Keep in step with SchemaConstants.js.
+      'BOSS Training User Only', 'Internal Employee ID', 'DSS Language', 'Union'
     ]);
     
     // 3. Initialize ID Setup Results
@@ -101,7 +108,9 @@ function initializeSystem() {
       'Phone Req', 'Phone Prev User', 'Phone Prev Number',
       'Jonas Job Numbers', 'Equipment to Return', 'Status',
       // col 60 (added 2026-05-15)
-      'Attachment URL'
+      'Attachment URL',
+      // col 61 (added 2026-10-13) — stored "old -> new" like the other change pairs
+      'Union'
     ]);
 
     // 7b. Initialize Equipment Requests

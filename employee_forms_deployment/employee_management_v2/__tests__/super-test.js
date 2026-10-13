@@ -448,7 +448,7 @@ results.push(runScenario('NEW HIRE — Salary, Full Systems (BOSS + Google + Sit
   if (irAppends.length > 0) {
     const irRow = irAppends.find(w => String(w.values[0]).startsWith('NEW_EMP_')) || irAppends[irAppends.length - 1];
     console.log('    Row has ' + irRow.values.length + ' columns (expected 55)');
-    eq('IR columns = 56 (EFX: + Internal Employee ID)', irRow.values.length, 56);
+    eq('IR columns = 58 (EFX: + Internal Employee ID, + DSS Language, + Union)', irRow.values.length, 58);
 
     // Field-by-field assertions mapped to SCHEMA.INITIAL_REQUESTS indices
     console.log('\n    Field mapping:');

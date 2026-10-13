@@ -349,7 +349,12 @@ function _sdVerifyDashboardView(workflowId, expectedMap) {
  */
 function checkSuperDebugEmailSafety() {
   var suppressed = (typeof CONFIG !== 'undefined' && CONFIG.SUPPRESS_EMAILS === true);
-  var redirect   = PropertiesService.getScriptProperties().getProperty('EMAIL_REDIRECT_ALL') || '';
+  // Read through ConfigurationService so an EXECUTION-SCOPED redirect counts as safe. Reading the
+  // Script Property alone meant an isolated run (runtime override, nothing global) failed this
+  // gate even though its mail was in fact redirected.
+  var redirect   = (typeof ConfigurationService !== 'undefined'
+                      ? ConfigurationService.getSetting('EMAIL_REDIRECT_ALL')
+                      : PropertiesService.getScriptProperties().getProperty('EMAIL_REDIRECT_ALL')) || '';
 
   Logger.log('══ [SD] Email Safety Check ══');
   Logger.log('  CONFIG.SUPPRESS_EMAILS  : ' + (suppressed ? '✓ true' : '✗ FALSE'));
@@ -556,6 +561,7 @@ var SD_NH_INITIAL = {
   newHireOrRehire:       'New Hire',
   employeeType:          'Salaried',
   employmentType:        'Salaried',
+  union:                 'Yes',        // SD: union New Hire
   positionTitle:         'SD Test Position',
   siteName:              'SD Test Site',
   jobSiteNumber:         '8888',
@@ -630,6 +636,7 @@ var SD_NH_ITCONF = function(wfId) { return {
   hireType:              'New Hire',
   employeeType:          'Salaried',
   employmentType:        'Salaried',
+  union:                 'Yes',        // SD: union New Hire
   firstName:             'SdFirst',
   lastName:              'SdLast',
   middleName:            '',
@@ -1176,6 +1183,8 @@ function _sdChangePayload(overrides) {
     titleNew:              'N/A',        // "titleOld -> titleNew" written to TITLE_CHANGE
     classOld:              'Salaried',
     classNew:              'N/A',        // "classOld -> classNew" written to CLASSIFICATION
+    unionOld:              'No',         // SD: union goes No -> Yes on the change
+    unionNew:              'Yes',
     mgrOldName:            'SD Current Manager',
     mgrOldEmail:           SD_EMAIL,
     mgrNewName:            '',
@@ -1249,6 +1258,7 @@ function runSuperDebugStatusChange_Title() {
     _sdEmailCapture();
     var payload = _sdChangePayload({
       changeType:   ['Title Change', 'Classification Change'],
+      unionOld:     'No',   unionNew: 'Yes',   // SD: becomes union
       titleOld:     'SD Old Title',
       titleNew:     'SD New Title',
       classOld:     'Salaried',
@@ -1341,6 +1351,7 @@ function runSuperDebugStatusChange_Site() {
     _sdEmailCapture();
     var payload = _sdChangePayload({
       changeType:           ['Site Transfer', 'Manager Change'],
+      unionOld:             'No',  unionNew: '',      // SD: stays non-union
       siteOld:              'SD Current Site',
       siteNew:              'SD New Site',
       mgrOldName:           'SD Current Manager',
@@ -1428,6 +1439,7 @@ function runSuperDebugStatusChange_Full() {
     _sdEmailCapture();
     var payload = _sdChangePayload({
       changeType:            ['Title Change', 'Classification Change', 'Site Transfer', 'Manager Change'],
+      unionOld:              'Yes', unionNew: 'Yes',  // SD: already union
       titleOld:              'SD Old Title',
       titleNew:              'SD New Title',
       classOld:              'Salaried',
@@ -2104,3 +2116,176 @@ function runSuperDebugAggregation() {
   return _sdSummary('Aggregation Layer');
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// runSuperDebugUnionIsolatedForRunner
+//
+// New Hire + Status Change SuperDebug suites with EXECUTION-SCOPED overrides: rows go to the DEV
+// spreadsheet and all mail is redirected to SMOKE_EMAIL_TO. Nothing is written to Script Properties,
+// so a real form submitted while this runs is untouched — it writes to prod and mails its real
+// recipients as normal.
+//
+// SuperDebug on its own targets whatever CONFIG.SPREADSHEET_ID resolves to, which in prod is the
+// LIVE sheet. This wrapper is the safe way to run it against prod code.
+//
+// Union coverage: the New Hire fixture carries union 'Yes'; the Status Change fixture moves the
+// employee No -> Yes, so both the static field and the old -> new pair are exercised.
+// ─────────────────────────────────────────────────────────────────────────────
+function runSuperDebugUnionIsolatedForRunner() {
+  var CS = ConfigurationService;
+  var out = { pass: 0, fail: 0, warn: 0, emailTotal: 0, failures: [] };
+  try {
+    CS.setRuntimeOverride('TEST_SPREADSHEET_ID',      SMOKE_DEV_SS_ID);
+    CS.setRuntimeOverride('SUPPRESS_EMAILS_OVERRIDE', 'false');
+    CS.setRuntimeOverride('EMAIL_REDIRECT_ALL',       SMOKE_EMAIL_TO);
+
+    if (String(CONFIG.SPREADSHEET_ID) !== String(SMOKE_DEV_SS_ID)) {
+      throw new Error('ABORT: runtime override did not take — active sheet is ' + CONFIG.SPREADSHEET_ID);
+    }
+    Logger.log('[SD ISOLATED] sheet    = ' + CONFIG.SPREADSHEET_ID + ' (DEV)');
+    Logger.log('[SD ISOLATED] mail to  = ' + SMOKE_EMAIL_TO + ' (this execution only)');
+
+    var suites = [
+      ['NEW HIRE  (union = Yes)',          runSuperDebugNewHire],
+      ['STATUS CHANGE (union No -> Yes)',  runSuperDebugStatusChange]
+    ];
+    suites.forEach(function(pair) {
+      var label = pair[0];
+      try {
+        var r = pair[1]() || {};
+        out.pass += (r.pass || 0);
+        out.fail += (r.fail || 0);
+        out.warn += (r.warn || 0);
+        out.emailTotal += (r.emailTotal || 0);
+        (r.failures || []).forEach(function(f) { out.failures.push(label + ': ' + f); });
+        Logger.log('[SD ISOLATED] ' + label + ' → pass=' + (r.pass || 0) + ' fail=' + (r.fail || 0));
+      } catch (e) {
+        out.fail += 1;
+        out.failures.push(label + ' threw: ' + (e && e.message));
+      }
+    });
+  } catch (e) {
+    out.fail += 1;
+    out.failures.push('setup: ' + (e && e.message));
+  } finally {
+    CS.clearRuntimeOverrides();
+    Logger.log('[SD ISOLATED] overrides cleared; sheet back to ' + CONFIG.SPREADSHEET_ID);
+  }
+
+  var props = PropertiesService.getScriptProperties();
+  out.redirectedTo     = SMOKE_EMAIL_TO;
+  out.globalTestSheet  = props.getProperty('TEST_SPREADSHEET_ID')      || '(none)';
+  out.globalRedirect   = props.getProperty('EMAIL_REDIRECT_ALL')       || '(none)';
+  out.globalSuppress   = props.getProperty('SUPPRESS_EMAILS_OVERRIDE') || '(none)';
+  out.activeSheetAfter = String(CONFIG.SPREADSHEET_ID);
+  out.gasLog = Logger.getLog();
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// runSuperDebugUnionOpenableForRunner
+//
+// Same two suites, but rows are written to the LIVE spreadsheet so the resulting workflows can be
+// opened in the real forms. Email is still redirected (execution-scoped) so nothing reaches a real
+// recipient.
+//
+// TRADE-OFF, read before using: these rows are REAL rows in the prod sheet. They will show on the
+// dashboard and in badge counts until removed. cleanupSuperDebugAll() deletes them. The dev-sheet
+// variant (runSuperDebugUnionIsolatedForRunner) leaves prod untouched but its records cannot be
+// opened in a form, because the forms read the live sheet.
+//
+// Returns the created workflow ids so the form URLs can be built.
+// ─────────────────────────────────────────────────────────────────────────────
+function runSuperDebugUnionOpenableForRunner() {
+  var CS = ConfigurationService;
+  var out = { pass: 0, fail: 0, warn: 0, emailTotal: 0, failures: [], created: {} };
+  try {
+    // NOTE: deliberately NOT overriding TEST_SPREADSHEET_ID — rows must land in the live sheet.
+    CS.setRuntimeOverride('SUPPRESS_EMAILS_OVERRIDE', 'false');
+    CS.setRuntimeOverride('EMAIL_REDIRECT_ALL',       SMOKE_EMAIL_TO);
+    Logger.log('[SD OPENABLE] sheet   = ' + CONFIG.SPREADSHEET_ID + ' (LIVE — rows are real)');
+    Logger.log('[SD OPENABLE] mail to = ' + SMOKE_EMAIL_TO + ' (this execution only)');
+
+    var before = _sdWorkflowIds();
+
+    [['NEW HIRE (union = Yes)', runSuperDebugNewHire],
+     ['STATUS CHANGE (union No -> Yes)', runSuperDebugStatusChange]].forEach(function(pair) {
+      try {
+        var r = pair[1]() || {};
+        out.pass += (r.pass || 0); out.fail += (r.fail || 0);
+        out.warn += (r.warn || 0); out.emailTotal += (r.emailTotal || 0);
+        (r.failures || []).forEach(function(f) { out.failures.push(pair[0] + ': ' + f); });
+      } catch (e) {
+        out.fail += 1; out.failures.push(pair[0] + ' threw: ' + (e && e.message));
+      }
+    });
+
+    // Whatever appeared during this run is what we just created.
+    var after = _sdWorkflowIds();
+    var fresh = after.filter(function(id) { return before.indexOf(id) === -1; });
+    out.created.newHire = fresh.filter(function(id) { return id.indexOf('NEW_EMP_') === 0; });
+    out.created.change  = fresh.filter(function(id) { return id.indexOf('CHANGE_')  === 0; });
+    Logger.log('[SD OPENABLE] created: ' + JSON.stringify(out.created));
+  } catch (e) {
+    out.fail += 1; out.failures.push('setup: ' + (e && e.message));
+  } finally {
+    CS.clearRuntimeOverrides();
+  }
+  var props = PropertiesService.getScriptProperties();
+  out.globalRedirect = props.getProperty('EMAIL_REDIRECT_ALL') || '(none)';
+  out.gasLog = Logger.getLog();
+  return out;
+}
+
+// Workflow ids currently on the Workflows sheet — used to diff before/after a run.
+function _sdWorkflowIds() {
+  try {
+    var sh = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.WORKFLOWS);
+    if (!sh || sh.getLastRow() < 2) return [];
+    var head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+    var i = head.indexOf('Workflow ID');
+    if (i === -1) return [];
+    return sh.getRange(1, 1, sh.getLastRow(), i + 1).getValues()
+             .slice(1).map(function(r) { return String(r[i] || ''); }).filter(Boolean);
+  } catch (e) { return []; }
+}
+
+// Read-only: locate the SuperDebug sentinel rows in the LIVE sheet and report the global override
+// state. Used after a run whose client connection timed out, to recover the created workflow ids.
+function listSuperDebugRecentForRunner() {
+  var out = { pass: 0, fail: 0, warn: 0, emailTotal: 0, failures: [], newHire: [], change: [] };
+  try {
+    var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    out.sheet = String(CONFIG.SPREADSHEET_ID);
+
+    function scan(sheetName, idHeader, matchCols, needle, bucket) {
+      var sh = ss.getSheetByName(sheetName);
+      if (!sh || sh.getLastRow() < 2) return;
+      var d = sh.getDataRange().getValues();
+      var head = d[0];
+      var idIdx = head.indexOf(idHeader);
+      if (idIdx === -1) return;
+      var cols = matchCols.map(function(h) { return head.indexOf(h); }).filter(function(i) { return i >= 0; });
+      for (var i = 1; i < d.length; i++) {
+        var hit = cols.some(function(c) { return String(d[i][c] || '').toUpperCase().indexOf(needle) !== -1; });
+        if (hit) out[bucket].push(String(d[i][idIdx]));
+      }
+      out[bucket] = out[bucket].slice(-6);
+    }
+
+    scan(CONFIG.SHEETS.INITIAL_REQUESTS, 'Workflow ID', ['First Name', 'Last Name', 'Comments'], 'SD', 'newHire');
+    scan(CONFIG.SHEETS.POSITION_CHANGES, 'Workflow ID', ['Employee Name', 'Comments'], 'SUPERDEBUG', 'change');
+
+    var props = PropertiesService.getScriptProperties();
+    out.globalRedirect  = props.getProperty('EMAIL_REDIRECT_ALL')       || '(none)';
+    out.globalTestSheet = props.getProperty('TEST_SPREADSHEET_ID')      || '(none)';
+    out.globalSuppress  = props.getProperty('SUPPRESS_EMAILS_OVERRIDE') || '(none)';
+    out.pass = out.newHire.length + out.change.length;
+    Logger.log('newHire: ' + JSON.stringify(out.newHire));
+    Logger.log('change : ' + JSON.stringify(out.change));
+  } catch (e) {
+    out.fail = 1; out.failures.push(String(e && e.message));
+  }
+  out.gasLog = Logger.getLog();
+  return out;
+}

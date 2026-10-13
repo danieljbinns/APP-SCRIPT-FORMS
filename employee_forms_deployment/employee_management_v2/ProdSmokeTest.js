@@ -17,6 +17,13 @@
  *   runProdSmokeEquipment()   — equipment only
  *   cleanupProdSmokeTest()    — remove all smoke sentinel rows from dev sheet
  *   checkProdSmokeOverrides() — print current override state (verify safe to run)
+ *
+ * Visible-email variants (rows still go to the DEV sheet; mail is REDIRECTED, not suppressed, so the
+ * rendered emails can be inspected). The editor's Run button cannot pass arguments, so use the
+ * zero-arg ones — the destination is the SMOKE_EMAIL_TO constant below:
+ *   runProdSmokeTestEmailToMe()     — all 4 suites, emails to SMOKE_EMAIL_TO
+ *   runProdSmokeNewHireEmailToMe()  — new hire only, emails to SMOKE_EMAIL_TO
+ *   clearSmokeEmailRedirect()       — safety valve if a run was interrupted
  */
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -80,7 +87,171 @@ function _smokeSetup() {
 function _smokeTeardown() {
   PropertiesService.getScriptProperties().deleteProperty('TEST_SPREADSHEET_ID');
   PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE');
+  PropertiesService.getScriptProperties().deleteProperty('EMAIL_REDIRECT_ALL');
   Logger.log('[SMOKE TEARDOWN] Overrides cleared — prod back to normal.');
+}
+
+// ─── Visible-email variant ───────────────────────────────────────────────────
+//
+// Same smoke suites, but instead of suppressing mail it REDIRECTS every email to one address so the
+// rendered output can actually be inspected. Rows still go to the DEV sheet, so prod data is
+// untouched.
+//
+// ⚠ EMAIL_REDIRECT_ALL IS GLOBAL AND LIVE WHILE THIS RUNS. Any real form submitted by a real user
+// during the run has ITS emails redirected here too — managers and specialists get nothing, with no
+// error and no retry. The window is one execution (~1-2 min) and _smokeTeardown clears the property
+// in a finally block, but prod is active during business hours, so run it when the forms are quiet
+// and confirm the teardown line in the log afterwards.
+//
+// If the run dies in a way that skips the finally block, clear it by hand:
+//   PropertiesService.getScriptProperties().deleteProperty('EMAIL_REDIRECT_ALL')
+// or call clearSmokeEmailRedirect() below.
+
+// Zero-argument entry point — the editor's Run button cannot pass parameters, so this is the one to
+// select from the dropdown. Address is baked in deliberately; change the constant, not the call.
+var SMOKE_EMAIL_TO = 'dbinns@robinsonsolutions.com';
+
+function runProdSmokeTestEmailToMe() {
+  return runProdSmokeTestEmailTo(SMOKE_EMAIL_TO);
+}
+
+function runProdSmokeNewHireEmailToMe() {
+  _smokeSetup();
+  PropertiesService.getScriptProperties().setProperties({
+    'SUPPRESS_EMAILS_OVERRIDE': 'false',
+    'EMAIL_REDIRECT_ALL':       SMOKE_EMAIL_TO
+  });
+  Logger.log('[SMOKE SETUP] EMAIL_REDIRECT_ALL → ' + SMOKE_EMAIL_TO);
+  try { return _smokeSummary([_smokeNewHire()]); }
+  finally {
+    _smokeTeardown();
+    Logger.log('[SMOKE TEARDOWN] EMAIL_REDIRECT_ALL now = ' +
+      (PropertiesService.getScriptProperties().getProperty('EMAIL_REDIRECT_ALL') || '(cleared — prod mail normal)'));
+  }
+}
+
+// ─── Isolated run (no global state) ──────────────────────────────────────────
+//
+// Preferred entry point. Identical coverage to runProdSmokeTestEmailToMe, but the dev-sheet and
+// email-redirect overrides are EXECUTION-SCOPED (ConfigurationService.setRuntimeOverride) instead of
+// Script Properties. Nothing outside this execution can observe them, so a real form submitted while
+// this runs writes to PROD and mails its real recipients, exactly as normal.
+//
+// Aborts before touching anything if the dev-sheet override does not take effect.
+function runProdSmokeIsolatedForRunner() {
+  var CS = ConfigurationService;
+  var results = [];
+  try {
+    CS.setRuntimeOverride('TEST_SPREADSHEET_ID',      SMOKE_DEV_SS_ID);
+    CS.setRuntimeOverride('SUPPRESS_EMAILS_OVERRIDE', 'false');
+    CS.setRuntimeOverride('EMAIL_REDIRECT_ALL',       SMOKE_EMAIL_TO);
+
+    // Hard guard: never run the suites against the prod spreadsheet.
+    if (String(CONFIG.SPREADSHEET_ID) !== String(SMOKE_DEV_SS_ID)) {
+      throw new Error('ABORT: runtime override did not take — active sheet is ' + CONFIG.SPREADSHEET_ID +
+                      ', expected dev ' + SMOKE_DEV_SS_ID);
+    }
+    Logger.log('[SMOKE ISOLATED] active sheet  = ' + CONFIG.SPREADSHEET_ID + ' (DEV)');
+    Logger.log('[SMOKE ISOLATED] redirect mail = ' + SMOKE_EMAIL_TO + ' (this execution only)');
+    Logger.log('[SMOKE ISOLATED] suppressed    = ' + CONFIG.SUPPRESS_EMAILS + ' (expected false)');
+
+    results.push(_smokeNewHire());
+    results.push(_smokeTermination());
+    results.push(_smokeChange());
+    results.push(_smokeEquipment());
+  } catch (e) {
+    return { pass: 0, fail: 1, warn: 0, emailTotal: 0,
+             failures: ['threw: ' + (e && e.message)], gasLog: Logger.getLog() };
+  } finally {
+    CS.clearRuntimeOverrides();
+    Logger.log('[SMOKE ISOLATED] runtime overrides cleared; active sheet back to ' + CONFIG.SPREADSHEET_ID);
+  }
+
+  var pass = 0, fail = 0, failures = [];
+  results.forEach(function(r) {
+    pass += (r.passed || 0);
+    fail += (r.failed || 0);
+    if (!r.pass) failures.push(r.suite + ' (wfId=' + (r.wfId || '-') + ')');
+  });
+  _smokeSummary(results);
+  var props = PropertiesService.getScriptProperties();
+  return {
+    pass: pass, fail: fail, warn: 0, emailTotal: 0,
+    redirectedTo: SMOKE_EMAIL_TO,
+    // Proof no global state was left behind — all three must read '(none)'.
+    globalTestSheet:  props.getProperty('TEST_SPREADSHEET_ID')      || '(none)',
+    globalRedirect:   props.getProperty('EMAIL_REDIRECT_ALL')       || '(none)',
+    globalSuppress:   props.getProperty('SUPPRESS_EMAILS_OVERRIDE') || '(none)',
+    activeSheetAfter: String(CONFIG.SPREADSHEET_ID),
+    failures: failures,
+    gasLog: Logger.getLog()
+  };
+}
+
+// Runner-compatible entry point. gas_runner.py expects the SuperDebug result shape
+// ({pass, fail, warn, emailTotal, failures, gasLog}) — the smoke suites return their own shape, so
+// this adapts it and attaches Logger.getLog() so the full run log comes back to the caller.
+function runProdSmokeEmailToMeForRunner() {
+  var res;
+  try {
+    res = runProdSmokeTestEmailTo(SMOKE_EMAIL_TO);
+  } catch (e) {
+    return { pass: 0, fail: 1, warn: 0, emailTotal: 0,
+             failures: ['threw: ' + (e && e.message)], gasLog: Logger.getLog() };
+  }
+  var pass = 0, fail = 0, failures = [];
+  (res.results || []).forEach(function(r) {
+    pass += (r.passed || 0);
+    fail += (r.failed || 0);
+    if (!r.pass) failures.push(r.suite + ' (wfId=' + (r.wfId || '-') + ')');
+  });
+  return {
+    pass: pass, fail: fail, warn: 0, emailTotal: 0,
+    redirectedTo: res.redirectedTo || SMOKE_EMAIL_TO,
+    residualRedirect: PropertiesService.getScriptProperties().getProperty('EMAIL_REDIRECT_ALL') || '(cleared)',
+    failures: failures,
+    gasLog: Logger.getLog()
+  };
+}
+
+function runProdSmokeTestEmailTo(address) {
+  var to = String(address || '').trim();
+  if (!to || to.indexOf('@') < 0) {
+    throw new Error('runProdSmokeTestEmailTo requires a single destination address, e.g. ' +
+                    "runProdSmokeTestEmailTo('dbinns@robinsonsolutions.com')");
+  }
+
+  _smokeSetup();                                   // dev sheet + suppression…
+  PropertiesService.getScriptProperties().setProperties({
+    'SUPPRESS_EMAILS_OVERRIDE': 'false',           // …then swap suppression for redirection
+    'EMAIL_REDIRECT_ALL':       to
+  });
+  Logger.log('[SMOKE SETUP] EMAIL_REDIRECT_ALL → ' + to + '  (ALL prod mail goes here until teardown)');
+  Logger.log('[SMOKE SETUP] Emails suppressed: ' + CONFIG.SUPPRESS_EMAILS + ' (expected false)');
+
+  var results = [];
+  try {
+    results.push(_smokeNewHire());
+    results.push(_smokeTermination());
+    results.push(_smokeChange());
+    results.push(_smokeEquipment());
+  } finally {
+    _smokeTeardown();
+    var left = PropertiesService.getScriptProperties().getProperty('EMAIL_REDIRECT_ALL');
+    Logger.log('[SMOKE TEARDOWN] EMAIL_REDIRECT_ALL now = ' + (left || '(cleared — prod mail normal)'));
+  }
+  _smokeSummary(results);
+  return { ok: results.every(function(r) { return r.pass; }), redirectedTo: to, results: results };
+}
+
+// Safety valve — run this if a smoke run was interrupted and mail is still being redirected.
+function clearSmokeEmailRedirect() {
+  PropertiesService.getScriptProperties().deleteProperty('EMAIL_REDIRECT_ALL');
+  PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE');
+  PropertiesService.getScriptProperties().deleteProperty('TEST_SPREADSHEET_ID');
+  Logger.log('[SMOKE] All smoke overrides cleared. EMAIL_REDIRECT_ALL = ' +
+             (PropertiesService.getScriptProperties().getProperty('EMAIL_REDIRECT_ALL') || '(cleared)'));
+  Logger.log('[SMOKE] Active spreadsheet now: ' + CONFIG.SPREADSHEET_ID);
 }
 
 // ─── Suite: New Hire ─────────────────────────────────────────────────────────
@@ -98,6 +269,7 @@ function _smokeNewHire() {
       positionTitle:          'Smoke Test Role',
       department:             'Testing',
       employmentType:         'Salaried',
+      union:                  'Yes',          // exercise the Union field end to end
       newHireOrRehire:        'New Hire',
       employeeType:           'Salaried',
       siteName:               'Toronto Office',
@@ -222,6 +394,8 @@ function _smokeChange() {
       effectiveDate:         '2099-07-01',
       currentSite:           'Toronto Office',
       changeTypes:           ['Title Change'],
+      unionOld:              'No',           // exercise the Union old -> new pair
+      unionNew:              'Yes',
       titleChange:           'Old Title → Smoke Test Title',
       siteTransfer:          '',
       classification:        '',

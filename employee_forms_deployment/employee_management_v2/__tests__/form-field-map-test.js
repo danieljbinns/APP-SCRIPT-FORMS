@@ -470,7 +470,7 @@ results.push(runScenario('InitialRequest.html — New Hire (all systems + equipm
                  irAppends[irAppends.length - 1]).values;
 
   console.log('\n  SHEET MAP — Initial Requests (' + irRow.length + ' cols, expected 55):');
-  eq('IR row has exactly 56 columns (EFX: + Internal Employee ID)', irRow.length, 56);
+  eq('IR row has exactly 58 columns (EFX: + Internal Employee ID, + DSS Language, + Union)', irRow.length, 58);
 
   // Generated columns (handler-assigned, not from form fields)
   truthy('IR[0]  workflowId assigned (NEW_EMP_*)',  String(irRow[0]).startsWith('NEW_EMP_'));
@@ -766,7 +766,7 @@ results.push(runScenario('InitialRequest.html — Equipment Request mode', () =>
                  irAppends[irAppends.length - 1]).values;
 
   console.log('\n  SHEET MAP — Initial Requests (equipment mode):');
-  eq('IR row has exactly 56 columns (EFX: + Internal Employee ID)', irRow.length, 56);
+  eq('IR row has exactly 58 columns (EFX: + Internal Employee ID, + DSS Language, + Union)', irRow.length, 58);
 
   truthy("IR[0]  workflowId = EQUIP_REQ_*",    String(irRow[0]).startsWith('EQUIP_REQ_'));
   assertCol(irRow,  4, 'Test Requester',        "HTML 'requesterName' → IR[4]");

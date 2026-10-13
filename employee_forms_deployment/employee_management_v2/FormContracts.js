@@ -36,7 +36,7 @@ var FormContracts = (function () {
                  'creditCardHomeDepot', 'creditCardLimitHomeDepot', 'phoneRequestType', 'phonePreviousUser', 'phonePreviousNumber',
                  'bossJobSites', 'bossCostSheet', 'bossCostSheetJobs', 'bossTripReports', 'bossGrievances', 'jonasJobNumbers',
                  'jrRequired', 'jrAssignment', 'plan306090', 'comments', 'adpSites', 'department', 'purchasingSites',
-                 'adpSalaryAccess', 'bossTrainingOnly', 'existingInternalEmployeeId'],
+                 'adpSalaryAccess', 'bossTrainingOnly', 'existingInternalEmployeeId', 'dssLanguage', 'union'],
       types: { systems: 'string[]', equipment: 'string[]', adpSites: 'string[]|csv', purchasingSites: 'string[]|csv',
                bossJobSites: 'csv', bossCostSheetJobs: 'csv', jonasJobNumbers: 'csv',
                hireDate: 'yyyy-MM-dd', dateRequested: 'yyyy-MM-dd', systemAccess: 'YesNo', plan306090: 'YesNo', jrRequired: 'YesNo',
@@ -46,7 +46,9 @@ var FormContracts = (function () {
                employmentType: ['Hourly', 'Salary'], newHireOrRehire: ['New Hire', 'Rehire'], employeeType: ['Direct Hire', 'Agency'],
                systemAccess: ['Yes', 'No'], computerRequestType: ['New', 'Reassignment', ''], computerType: ['Chromebook', 'Windows', 'Mac', ''],
                phoneRequestType: ['New', 'Reassignment', ''],
-               googleDomain: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com', 'stgroup.ca', ''] },
+               googleDomain: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com', 'stgroup.ca', 'ajvac.ca', ''],
+               dssLanguage: ['English', 'Spanish', ''],
+               union: ['Yes', 'No', ''] },
       // multi-value checkbox groups (InitialRequest.html:251-382, :394-519) — allowed values, not validated as scalars
       multi: { systems: ['ADP Supervisor Access', 'BOSS', 'CAA', 'Delivery', 'Fleetio', 'Google Account', 'Incidents', 'Central Purchasing/Jonas', 'Net Promoter Score', 'SiteDocs Supervisor'],
                equipment: ['Business Cards', 'Computer', 'Credit Card', 'Mobile Phone', 'SiteDocs Tablet', 'Vehicle'] },
@@ -108,6 +110,7 @@ var FormContracts = (function () {
       // checked radio → string, dual-lists (adpSites, purchasingSites, bossComm, bossCostJobs, jonasJobs) → CSV string.
       optional: ['reqName', 'reqEmail', 'reqDate', 'currentTitle', 'currentManagerEmail', 'currentManagerName',
                  'changeType', 'siteOld', 'siteNew', 'department', 'receivingManagerEmail', 'titleOld', 'titleNew', 'classOld', 'classNew',
+                 'unionOld', 'unionNew',
                  'mgrOldEmail', 'mgrOldName', 'mgrNewEmail', 'mgrNewName', 'hadReports', 'oldReportsTo', 'gainingReports', 'newReportsFrom',
                  'hasGoogle', 'existingEmail', 'googleEmail', 'googleDomain', 'sys', 'adpSalaryAccess', 'adpSites',
                  'bossTrainingOnly', 'bossComm', 'bossCost', 'bossCostJobs', 'bossTrip', 'bossGriev',
@@ -122,6 +125,7 @@ var FormContracts = (function () {
                adpSalaryAccess: 'Yes|empty (send a STRING; the UI sends ["Yes"]/[] which is written raw)',
                creditCardUSA: 'Yes|empty (string)', creditCardCanada: 'Yes|empty (string)', creditCardHomeDepot: 'Yes|empty (string)' },
       enums: { siteName: 'reference.sites', currentClass: ['Hourly', 'Salary'], classOld: ['Hourly', 'Salary', ''], classNew: ['Hourly', 'Salary', ''],
+               unionOld: ['Yes', 'No', 'Unknown', ''], unionNew: ['Yes', 'No', ''],
                jrTitle: 'reference.jrs' },
       // multi-value fields (array or CSV) — allowed values, not validated as scalars
       multi: { changeType: ['Site Transfer', 'Position Change', 'Classification', 'Manager Change'],
@@ -178,7 +182,7 @@ var FormContracts = (function () {
       types: { Email_Created: 'YesNo', Computer_Assigned: 'YesNo', Phone_Assigned: 'YesNo', BOSS_Access: 'YesNo',
                Incidents_Access: 'YesNo', CAA_Access: 'YesNo', Delivery_App_Access: 'YesNo', Net_Promoter_Score_Access: 'YesNo',
                BOSS_TripReports: 'Confirmed|absent', BOSS_Grievances: 'Confirmed|absent' },
-      enums: { Email_Domain: ['@team-group.com', '@robinsonsolutions.com', '@industrialappliedtech.com', ''] },
+      enums: { Email_Domain: ['@team-group.com', '@robinsonsolutions.com', '@industrialappliedtech.com', '@stgroup.ca', '@ajvac.ca', ''] },
       responseFields: ['success', 'message'],
       notes: 'Email_Username/Domain/Temp_Password are required by the UI regardless of Email_Created (static required attr); Assigned Email is built only when Email_Created==="Yes". ' +
              'The UI defaults Incidents/CAA/Delivery/NPS to "No" when unchecked — send them explicitly. bossDetails is server-derived (not a payload key). ' +
@@ -202,7 +206,7 @@ var FormContracts = (function () {
                  'creditCardHomeDepot', 'creditCardLimitHomeDepot', 'phonePreviousUser', 'phonePreviousNumber', 'jrRequired', 'jrAssignment',
                  'plan306090', 'comments', 'adpSalaryAccess', 'bossTrainingOnly',
                  // CHANGE_ keys:
-                 'siteNew', 'titleNew', 'classNew', 'sys', 'equip', 'rem'],
+                 'siteNew', 'titleNew', 'classNew', 'unionNew', 'sys', 'equip', 'rem'],
       responseFields: ['success', 'scriptUrl'],
       notes: 'FIXED 2026-09-17 (EFX): the duplicate definition is gone — BOSSReviewHandler.js was an older, ' +
              'misnamed copy of this whole handler and every function it held was shadowed or identical, so it was deleted. ' +

@@ -170,6 +170,7 @@ var CHANGE_FIELDS_IT_STATUS_CHANGE = [
   { key: 'siteNew',         label: 'New Site' },
   { key: 'titleNew',        label: 'New Title' },
   { key: 'classNew',        label: 'New Classification' },
+  { key: 'unionNew',        label: 'New Union Status' },
   { key: 'department',      label: 'Department' },
   { key: 'systems',         label: 'Systems to Add',    isArray: true },
   { key: 'equipment',       label: 'Equipment',         isArray: true },

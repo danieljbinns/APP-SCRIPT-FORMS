@@ -287,7 +287,7 @@ scenario('1. NEW HIRE — Salary, full systems: create → ID Setup → HR → I
   truthy('workflowId NEW_EMP_', /^NEW_EMP_/.test(wf || ''));
   eq('internalEmployeeId continues from ID Setup Results max (30410 → 30411)', c.result.internalEmployeeId, '30411');
   const ir = rows('Initial Requests').find(r => r[0] === wf);
-  eq('Initial Requests row has 56 columns', ir.length, 56);
+  eq('Initial Requests row has 58 columns', ir.length, 58);
   eq('IR[55] Internal Employee ID', ir[55], '30411');
   eq('IR[20] systems csv', ir[20], FULL_SYSTEMS.join(', '));
   eq('IR[47] 30/60/90 = Yes', ir[47], 'Yes');
@@ -685,7 +685,7 @@ scenario('6. EQUIPMENT REQUEST — submit → IT Confirmation → IT Setup → w
   truthy('EQUIP_REQ_ workflow', /^EQUIP_REQ_/.test(wf || ''));
   eq('record read-back is the Initial Requests row', r.record && r.record['First Name'], 'Eve');
   const ir = rows('Initial Requests').find(x => x[0] === wf);
-  eq('IR row written to Initial Requests (56 cols)', ir.length, 56);
+  eq('IR row written to Initial Requests (58 cols)', ir.length, 58);
   eq('IR systemAccess forced Yes', ir[19], 'Yes');
   eq('IR systems csv', ir[20], 'BOSS, SiteDocs, Fleetio');
   eq('IR no Internal Employee ID for equipment', ir[55], '');
@@ -887,7 +887,7 @@ scenario('8. STATUS CHANGE — request → HR approval → 11 action items → b
   truthy('CHANGE_ workflow', /^CHANGE_/.test(wf || ''));
   eq('Raw Log submit attributed to actor', (rawLog().find(e => e.source === 'submitPositionChangeRequest') || {}).user, ACTOR.email);
   const pc = rows('Position Changes').find(x => x[0] === wf);
-  eq('Position Changes row 61 cols', pc.length, 61);
+  eq('Position Changes row 62 cols', pc.length, 62);
   eq('PC[9] change types', pc[9], 'Site Transfer, Position Change, Manager Change');
   eq('PC[10] site transfer', pc[10], 'Aurora -> Ottawa Main');
   eq('PC[13] manager change', pc[13], 'Old Manager (oldmgr@team-group.com) -> New Manager (newmgr@team-group.com)');
@@ -1045,7 +1045,11 @@ scenario('9. NEGATIVE / GUARDS — validation writes nothing, error codes, idemp
   eq('forced: task Closed', fRow[6], 'Closed');
   contains('forced: notes carry FORCED marker', fRow[9], 'FORCED close with unconfirmed items via n8n');
   truthy('forced: DSS checklist item left Open in draft', /"Assign DSS learning paths":\{"status":"Open"/.test(String(fRow[11])));
-  eq('createActionItem idempotency: same wf/category/formType twice → same task id', _ctx.ActionItemService.createActionItem(wfS, 'Fleet', 'A', '["a"]', E.FLEET, 'fleetio'), _ctx.ActionItemService.createActionItem(wfS, 'Fleet', 'B', '["b"]', E.FLEET, 'fleetio'));
+  // Idempotency is keyed on wf+category+formType+NAME. A replayed submit repeats the same name and
+  // dedupes; two genuinely different tasks (Fleetio Access Update vs Removal) must both survive —
+  // the old 3-key guard silently dropped the removal and the access was never revoked.
+  eq('createActionItem idempotency: identical wf/category/formType/name → same task id', _ctx.ActionItemService.createActionItem(wfS, 'Fleet', 'A', '["a"]', E.FLEET, 'fleetio'), _ctx.ActionItemService.createActionItem(wfS, 'Fleet', 'A', '["a"]', E.FLEET, 'fleetio'));
+  truthy('createActionItem: same wf/category/formType but DIFFERENT name → distinct task ids', _ctx.ActionItemService.createActionItem(wfS, 'Fleet', 'B', '["b"]', E.FLEET, 'fleetio') !== _ctx.ActionItemService.createActionItem(wfS, 'Fleet', 'C', '["c"]', E.FLEET, 'fleetio'));
 
   // 30-second idempotency guard — keyed on (type, requester, employee|hireDate) for Initial Requests (review pass 2 H2)
   _rt.captures.reset(); seedBase();

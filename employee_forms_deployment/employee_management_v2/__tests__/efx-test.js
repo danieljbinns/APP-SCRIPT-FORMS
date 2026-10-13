@@ -149,7 +149,7 @@ results.push(scenario('CREATE — n8n_createInitialRequest mints the Internal Em
   truthy('workflowId NEW_EMP_', /^NEW_EMP_/.test(createdWf));
   eq('internalEmployeeId continues from ID Setup Results max (30410 → 30411)', r.result.internalEmployeeId, '30411');
   const ir = rows('Initial Requests');
-  eq('Initial Requests row has 56 columns', ir[1].length, 56);
+  eq('Initial Requests row has 58 columns', ir[1].length, 58);
   eq('col 56 = Internal Employee ID', ir[1][55], '30411');
   eq('record read-back carries Internal Employee ID', r.record && r.record['Internal Employee ID'], '30411');
   const reg = rows('Employee IDs');

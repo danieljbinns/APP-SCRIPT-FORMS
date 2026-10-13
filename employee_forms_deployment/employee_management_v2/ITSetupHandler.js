@@ -116,6 +116,8 @@ function getITContextData(workflowId) {
           vehicleRequested: equipmentRaw.includes('Vehicle') ? 'Yes' : 'No',
           fleetioAccess: systemsRaw.includes('Fleetio') ? 'Yes' : 'No',
           department: mainData[i][IR.DEPARTMENT] || '',
+          dssLanguage: mainData[i][IR.DSS_LANGUAGE] || 'English',
+          union: mainData[i][IR.UNION] || 'No',
           purchasingSites: mainData[i][IR.PURCHASING_SITES] || ''
         };
         break;

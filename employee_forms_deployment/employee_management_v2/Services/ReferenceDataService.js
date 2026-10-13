@@ -311,7 +311,9 @@ function getFullNewHireData(workflowId) {
         adpSites:                 splitCSV(r[IR.ADP_SITES]),
         department:               r[IR.DEPARTMENT]                || '',
         purchasingSites:          splitCSV(r[IR.PURCHASING_SITES]),
-        adpSalaryAccess:          r[IR.ADP_SALARY_ACCESS]         || 'No'
+        adpSalaryAccess:          r[IR.ADP_SALARY_ACCESS]         || 'No',
+        dssLanguage:              r[IR.DSS_LANGUAGE]              || 'English',
+        union:                    r[IR.UNION]                     || 'No'
       };
     }
     return null;

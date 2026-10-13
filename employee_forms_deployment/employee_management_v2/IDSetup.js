@@ -96,7 +96,11 @@ function getIDSetupRequestData(workflowId) {
           googleDomain: get(row, 'Google Domain'),
           requestedUsername: get(row, 'Google Email'),
           requestedDomain: get(row, 'Google Domain'),
-          department: get(row, 'Department') || ''
+          department: get(row, 'Department') || '',
+          dssLanguage: get(row, 'DSS Language') || 'English',
+          // Union drives the SiteDocs job code / DSS path the ID Setup team picks, so it has to be
+          // visible on this form. Blank on rows written before the field existed → 'No'.
+          union: get(row, 'Union') || 'No'
         };
       }
     }

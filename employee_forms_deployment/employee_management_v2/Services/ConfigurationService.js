@@ -46,12 +46,22 @@ var ConfigurationService = (function() {
     try {
       var props = PropertiesService.getScriptProperties().getProperties();
       var settings = {};
-      
+
       // Merge defaults if key is missing
       for (var key in DEFAULTS) {
         settings[key] = props[key] || DEFAULTS[key];
       }
-      
+
+      // Apply execution-scoped overrides last, so this agrees with getSetting(). Without this a
+      // caller reading settings in bulk during an isolated run would see PROD values while every
+      // getSetting() call saw the overridden ones. Nothing calls getAllSettings today — this closes
+      // the trap before something does.
+      for (var rk in RUNTIME_) {
+        if (!Object.prototype.hasOwnProperty.call(RUNTIME_, rk)) continue;
+        if (rk === 'TEST_SPREADSHEET_ID') settings['SPREADSHEET_ID'] = RUNTIME_[rk];
+        settings[rk] = RUNTIME_[rk];
+      }
+
       return settings;
     } catch (e) {
       console.error("Failed to load settings: " + e.message);
@@ -65,8 +75,36 @@ var ConfigurationService = (function() {
    *   SPREADSHEET_ID      — TEST_SPREADSHEET_ID script property takes precedence (smoke test redirect)
    *   SUPPRESS_EMAILS_OVERRIDE — checked by Config.SUPPRESS_EMAILS; 'true'/'false' or '' (use default)
    */
+  // ── Execution-scoped overrides ──────────────────────────────────────────────
+  // Apps Script gives every execution its own global scope, so anything stored here is visible ONLY
+  // inside the run that set it. A form submitted by a real user at the same moment runs in a
+  // separate execution and sees none of it.
+  //
+  // That is the whole point: the Script-Property overrides below (TEST_SPREADSHEET_ID,
+  // EMAIL_REDIRECT_ALL, SUPPRESS_EMAILS_OVERRIDE) are GLOBAL and live — while a smoke test held
+  // them, a concurrent real submission wrote its rows to the dev sheet and sent its mail to the
+  // tester, with no error. Runtime overrides remove that exposure entirely.
+  //
+  // Empty by default, so behaviour is unchanged unless a run explicitly sets one.
+  var RUNTIME_ = {};
+
+  function setRuntimeOverride(key, value) {
+    if (value === null || value === undefined) delete RUNTIME_[key];
+    else RUNTIME_[key] = String(value);
+  }
+  function clearRuntimeOverrides() { RUNTIME_ = {}; }
+  function getRuntimeOverrides() {
+    var copy = {};
+    Object.keys(RUNTIME_).forEach(function(k) { copy[k] = RUNTIME_[k]; });
+    return copy;
+  }
+
   function getSetting(key) {
     try {
+      // Execution-scoped first — see RUNTIME_ above.
+      if (key === 'SPREADSHEET_ID' && RUNTIME_['TEST_SPREADSHEET_ID']) return RUNTIME_['TEST_SPREADSHEET_ID'];
+      if (Object.prototype.hasOwnProperty.call(RUNTIME_, key)) return RUNTIME_[key];
+
       var props = PropertiesService.getScriptProperties();
       // Smoke test redirect: TEST_SPREADSHEET_ID overrides SPREADSHEET_ID
       if (key === 'SPREADSHEET_ID') {
@@ -96,7 +134,10 @@ var ConfigurationService = (function() {
   return {
     getAllSettings: getAllSettings,
     getSetting: getSetting,
-    saveSettings: saveSettings
+    saveSettings: saveSettings,
+    setRuntimeOverride: setRuntimeOverride,
+    clearRuntimeOverrides: clearRuntimeOverrides,
+    getRuntimeOverrides: getRuntimeOverrides
   };
 
 })();

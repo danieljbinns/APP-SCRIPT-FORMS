@@ -20,7 +20,7 @@ const CONFIG = {
   get TERM_FOLDER_ID()          { return ConfigurationService.getSetting('TERM_ATTACHMENTS_FOLDER_ID'); },
   get CHANGE_FOLDER_ID()        { return ConfigurationService.getSetting('CHANGE_ATTACHMENTS_FOLDER_ID'); },
   get DEPLOYMENT_URL()          { return ConfigurationService.getSetting('DEPLOYMENT_URL'); },
-  ALLOWED_DOMAINS: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com'],
+  ALLOWED_DOMAINS: ['team-group.com', 'robinsonsolutions.com', 'industrialappliedtech.com', 'stgroup.ca', 'ajvac.ca'],
   ADMIN_EMAILS: ['dbinns@team-group.com', 'dbinns@robinsonsolutions.com', 'no-reply@team-group.com', 'davelangohr@team-group.com', 'jaynepalmer@team-group.com'],
 
   // Suppress emails in prod by setting SUPPRESS_EMAILS_OVERRIDE='true' in Script Properties.
@@ -66,6 +66,7 @@ const CONFIG = {
     REFERENCE_SITES: 'Reference_Sites',
     REFERENCE_JOB_CODES: 'Reference_JobCodes',
     REFERENCE_MANAGERS: 'Reference_Managers',
+    REFERENCE_GROUPS: 'Reference_Groups',   // directory group membership snapshot (see refreshDirectoryGroups)
     REFERENCE_REQUESTERS: 'Reference_Requesters',
     REFERENCE_JRS: 'Reference_JRs',
     REFERENCE_JOBS_JONAS: 'Reference_JobsJonas',

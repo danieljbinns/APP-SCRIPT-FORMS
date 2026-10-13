@@ -110,7 +110,9 @@ const SCHEMA = {
     STATUS:                52,  // string   — Status
     ADP_SALARY_ACCESS:     53,  // boolean  — ADP Salary Access
     BOSS_TRAINING_ONLY:    54,  // string   — BOSS Training User Only (Yes/No)
-    INTERNAL_EMP_ID:       55   // number   — Internal Employee ID (EFX: allocated at submit; header 'Internal Employee ID')
+    INTERNAL_EMP_ID:       55,  // number   — Internal Employee ID (EFX: allocated at submit; header 'Internal Employee ID')
+    DSS_LANGUAGE:          56,  // string   — DSS/training language (header 'DSS Language'; defaults 'English' when blank)
+    UNION:                 57   // string   — Union member Yes/No (header 'Union'; defaults 'No' when blank)
   },
 
   // ─────────────────────────────────────────────
@@ -353,7 +355,9 @@ const SCHEMA = {
     JONAS_JOB_NUMBERS:        57,  // csv      — Jonas Job Numbers assigned
     EQUIPMENT_RETURN:         58,  // csv      — Equipment to be returned
     STATUS:                   59,  // string   — Workflow status (synced from Workflows sheet)
-    ATTACHMENT_URL:           60   // string   — Supporting docs Drive link
+    ATTACHMENT_URL:           60,  // string   — Supporting docs Drive link
+    UNION:                    61   // string   — Union status change, stored "old -> new" like CLASSIFICATION
+                                   //            (header 'Union'; old side may be 'Unknown' for pre-existing employees)
   },
 
   // ─────────────────────────────────────────────
@@ -411,6 +415,18 @@ const SCHEMA = {
   // Columns are positional (accessed by index, not header name).
   // When adding a new column here, also add its header string to DATA_LOOKUP_HEADERS below.
   // ─────────────────────────────────────────────
+  // ─────────────────────────────────────────────
+  // REFERENCE_GROUPS — directory group membership snapshot
+  // Sheet: Reference_Groups, refreshed by refreshDirectoryGroups()
+  // Exists so role checks read one sheet instead of ~14 Admin Directory calls per page load.
+  // ─────────────────────────────────────────────
+  REFERENCE_GROUPS: {
+    GROUP_KEY:    0,   // string   — CONFIG.EMAILS key, e.g. 'HR', 'SAFETY'
+    GROUP_EMAIL:  1,   // string   — the group address that was queried
+    MEMBER_EMAIL: 2,   // string   — one member per row, lower-cased
+    UPDATED:      3    // datetime — when this snapshot was written
+  },
+
   DATA_LOOKUP: {
     SITES:            0,  // string — Column A — Site names
     JOB_NUMBERS:      3,  // string — Column D — Job site numbers (Initial Request field)

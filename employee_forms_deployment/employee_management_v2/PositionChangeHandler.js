@@ -133,7 +133,15 @@ function submitPositionChangeRequest(formData) {
       jonasJobs,                                                                                // 57 JONAS_JOB_NUMBERS
       equipReturn,                                                                              // 58 EQUIPMENT_RETURN
       'In Progress',                                                                            // 59 STATUS
-      attachmentUrl                                                                             // 60 ATTACHMENT_URL
+      attachmentUrl,                                                                            // 60 ATTACHMENT_URL
+      // 61 UNION — always written so a union record accumulates even for employees who predate the
+      // field. Old side defaults to 'Unknown' rather than 'No' so we never invent a history; when no
+      // new value is given the status is not changing, so new mirrors old.
+      (function() {
+        var uOld = formData.unionOld || 'Unknown';
+        var uNew = formData.unionNew || uOld;
+        return uOld + ' -> ' + uNew;
+      })()
     ];
 
     const sheetSuccess = addSheetRow(CONFIG.SPREADSHEET_ID, CONFIG.SHEETS.POSITION_CHANGES, rowData);
@@ -259,6 +267,7 @@ function getPositionChangeData(workflowId) {
     siteTransfer:          String(data[PC.SITE_TRANSFER]         || ''),
     titleChange:           String(data[PC.TITLE_CHANGE]          || ''),
     classChange:           String(data[PC.CLASSIFICATION]        || ''),
+    unionChange:           String(data[PC.UNION]                  || ''),
     managerChange:         String(data[PC.MANAGER_CHANGE]        || ''),
     // Derived values from delta strings
     jobTitle:              parseNewTitle(),
@@ -422,8 +431,11 @@ function submitPositionChangeApproval(formData) {
       // Current (old) manager email — from stored current manager or parsed managerChange
       const mgrMatches = (changeData.managerChange || '').match(/\(([^)@\s]+@[^)\s]+)\)/g) || [];
       const mgrOldEmail = changeData.currentManagerEmail || (mgrMatches.length > 0 ? mgrMatches[0].replace(/[()]/g, '') : '');
-      // Only use a new manager email for routing if a Reporting Manager Change was explicitly requested
-      const mgrNewEmail = (changeData.changes && changeData.changes.includes('Reporting Manager Change'))
+      // Only use a new manager email for routing if a manager change was explicitly requested.
+      // changeData.changes is a CSV STRING. The UI and the contract send 'Manager Change'
+      // (FormContracts.js:128); this used to test only for 'Reporting Manager Change', which nothing
+      // sends — so the approval email always fell back to the OLD manager. Substring match covers both.
+      const mgrNewEmail = (changeData.changes && changeData.changes.includes('Manager Change'))
         ? (receivingManagerEmail || (mgrMatches.length > 1 ? mgrMatches[1].replace(/[()]/g, '') : mgrOldEmail))
         : mgrOldEmail;
 

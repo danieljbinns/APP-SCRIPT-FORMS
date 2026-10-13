@@ -253,6 +253,7 @@
         _di('Site',             r['Site Name'] || r['Site']) +
         _di('Changes',          r['Change Type']) +
         _di('Department',       r['Department']) +
+        _di('Union',            r['Union']) +
         _di('Current Manager',  (r['Current Manager Name'] || '') + (r['Current Manager Email'] ? ' \xb7 ' + r['Current Manager Email'] : '') || null) +
         _di('Requester',        (r['Requester Name'] || '') + (r['Requester Email'] ? ' \xb7 ' + r['Requester Email'] : '') || null);
 
@@ -293,6 +294,8 @@
         _di('Employee Type',  r['Employee Type']) +
         _di('Position Title', r['Position Title'] || r['HR Verified Title'] || r['Position/JR Title']) +
         _di('Department',     r['Department']) +
+        _di('Union',          r['Union'] || 'No') +
+        _di('DSS Language',   r['DSS Language'] || 'English') +
         _di('Site',           r['Site/Office Location'] || r['Site Name'] || r['Site']) +
         _di('Job Site #',     r['Job Site #']) +
         _di('Start Date',     r['Hire Date'] || r['Hire/Start Date']) +

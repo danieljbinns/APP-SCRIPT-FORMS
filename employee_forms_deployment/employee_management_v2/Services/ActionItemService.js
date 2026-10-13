@@ -61,7 +61,14 @@ var ActionItemService = (function() {
    */
   function createActionItem(workflowId, category, name, description, assignedTo, formType) {
     try {
-      // Idempotency guard: return existing Open task if one already matches workflowId+category+formType
+      // Idempotency guard: return existing Open task if one already matches
+      // workflowId+category+formType+NAME.
+      //
+      // The name is part of the key because two genuinely different tasks can share
+      // category+formType: a Position Change creates both 'Fleetio Access Update' and
+      // 'Fleetio Access Removal' under Fleet/fleetio (PositionChangeHandler.js:609 and :647).
+      // Without the name the removal task was silently swallowed and the access never revoked.
+      // A true duplicate submit still dedupes, because it replays the identical name.
       try {
         const aiSheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
         if (aiSheet) {
@@ -72,6 +79,7 @@ var ActionItemService = (function() {
             if (r[AI.WORKFLOW_ID] === workflowId &&
                 String(r[AI.CATEGORY] || '') === String(category || '') &&
                 String(r[AI.FORM_TYPE] || '') === String(formType || '') &&
+                String(r[AI.TASK_NAME] || '') === String(name || '') &&
                 String(r[AI.STATUS] || '') === 'Open') {
               Logger.log('[ActionItemService] Returning existing Open task ' + r[AI.TASK_ID] + ' for ' + workflowId + '/' + category);
               return String(r[AI.TASK_ID]);

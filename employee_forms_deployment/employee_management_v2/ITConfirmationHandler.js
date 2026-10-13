@@ -134,10 +134,12 @@ function submitITConfirmation(formData) {
           const siteOldVal  = String(pcRows[i][PCC.SITE_TRANSFER]  || '').split(' -> ')[0] || '';
           const titleOldVal = String(pcRows[i][PCC.TITLE_CHANGE]   || '').split(' -> ')[0] || '';
           const classOldVal = String(pcRows[i][PCC.CLASSIFICATION]  || '').split(' -> ')[0] || '';
+          const unionOldVal = String(pcRows[i][PCC.UNION]           || '').split(' -> ')[0] || '';
           [
             [PCC.SITE_TRANSFER,   siteOldVal  + (formData.siteNew  ? ' -> ' + formData.siteNew  : '')],
             [PCC.TITLE_CHANGE,    titleOldVal + (formData.titleNew  ? ' -> ' + formData.titleNew : '')],
             [PCC.CLASSIFICATION,  classOldVal + (formData.classNew  ? ' -> ' + formData.classNew : '')],
+            [PCC.UNION,           unionOldVal + ' -> ' + (formData.unionNew || unionOldVal)],
             [PCC.SYSTEMS_ADDED,   csvOrStr(formData.sys)],
             [PCC.EQUIPMENT,       csvOrStr(formData.equip)],
             [PCC.REMOVED_ACCESS,  csvOrStr(formData.rem)],

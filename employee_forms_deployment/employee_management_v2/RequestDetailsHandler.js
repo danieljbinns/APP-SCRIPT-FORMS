@@ -624,6 +624,8 @@ function getEquipmentRequestDetails(workflowId) {
         'Systems':          String(row[IR.SYSTEMS]          || ''),
         'Comments':         String(row[IR.COMMENTS]         || ''),
         'Department':       String(row[IR.DEPARTMENT]       || ''),
+        'DSS Language':     String(row[IR.DSS_LANGUAGE]     || 'English'),
+        'Union':            String(row[IR.UNION]            || 'No'),
         'Requester Name':   String(row[IR.REQUESTER_NAME]   || ''),
         'Requester Email':  String(row[IR.REQUESTER_EMAIL]  || ''),
         'Date Requested':   fmtD(row[IR.DATE_REQUESTED]),
