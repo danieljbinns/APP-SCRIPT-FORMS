@@ -37,6 +37,7 @@ var SMOKE_EQUIP_NAME = 'SmkEquip SmkEquipLast';
 // ─── Public Entry Points ──────────────────────────────────────────────────────
 
 function runProdSmokeTest() {
+  _assertTestAdmin_('runProdSmokeTest');
   _smokeSetup();
   var results = [];
   try {
@@ -51,10 +52,10 @@ function runProdSmokeTest() {
   return { ok: results.every(function(r) { return r.pass; }), results: results };
 }
 
-function runProdSmokeNewHire()     { _smokeSetup(); try { return _smokeSummary([_smokeNewHire()]); }     finally { _smokeTeardown(); } }
-function runProdSmokeTermination() { _smokeSetup(); try { return _smokeSummary([_smokeTermination()]); } finally { _smokeTeardown(); } }
-function runProdSmokeChange()      { _smokeSetup(); try { return _smokeSummary([_smokeChange()]); }      finally { _smokeTeardown(); } }
-function runProdSmokeEquipment()   { _smokeSetup(); try { return _smokeSummary([_smokeEquipment()]); }   finally { _smokeTeardown(); } }
+function runProdSmokeNewHire()     { _assertTestAdmin_('runProdSmokeNewHire'); _smokeSetup(); try { return _smokeSummary([_smokeNewHire()]); }     finally { _smokeTeardown(); } }
+function runProdSmokeTermination() { _assertTestAdmin_('runProdSmokeTermination'); _smokeSetup(); try { return _smokeSummary([_smokeTermination()]); } finally { _smokeTeardown(); } }
+function runProdSmokeChange()      { _assertTestAdmin_('runProdSmokeChange'); _smokeSetup(); try { return _smokeSummary([_smokeChange()]); }      finally { _smokeTeardown(); } }
+function runProdSmokeEquipment()   { _assertTestAdmin_('runProdSmokeEquipment'); _smokeSetup(); try { return _smokeSummary([_smokeEquipment()]); }   finally { _smokeTeardown(); } }
 
 function checkProdSmokeOverrides() {
   var props = PropertiesService.getScriptProperties().getProperties();
@@ -65,6 +66,7 @@ function checkProdSmokeOverrides() {
 }
 
 function cleanupProdSmokeTest() {
+  _assertTestAdmin_('cleanupProdSmokeTest');
   Logger.log('[SMOKE CLEANUP] Removing smoke sentinel rows from dev sheet...');
   var names = [SMOKE_NH_NAME, SMOKE_TERM_NAME, SMOKE_CHANGE_NAME, SMOKE_EQUIP_NAME];
   _smokePurgeByNames(names);
@@ -74,6 +76,7 @@ function cleanupProdSmokeTest() {
 // ─── Setup / Teardown ────────────────────────────────────────────────────────
 
 function _smokeSetup() {
+  _assertTestAdmin_('_smokeSetup');
   PropertiesService.getScriptProperties().setProperties({
     'TEST_SPREADSHEET_ID':      SMOKE_DEV_SS_ID,
     'SUPPRESS_EMAILS_OVERRIDE': 'true'
@@ -112,10 +115,12 @@ function _smokeTeardown() {
 var SMOKE_EMAIL_TO = 'dbinns@robinsonsolutions.com';
 
 function runProdSmokeTestEmailToMe() {
+  _assertTestAdmin_('runProdSmokeTestEmailToMe');
   return runProdSmokeTestEmailTo(SMOKE_EMAIL_TO);
 }
 
 function runProdSmokeNewHireEmailToMe() {
+  _assertTestAdmin_('runProdSmokeNewHireEmailToMe');
   _smokeSetup();
   PropertiesService.getScriptProperties().setProperties({
     'SUPPRESS_EMAILS_OVERRIDE': 'false',
@@ -139,6 +144,7 @@ function runProdSmokeNewHireEmailToMe() {
 //
 // Aborts before touching anything if the dev-sheet override does not take effect.
 function runProdSmokeIsolatedForRunner() {
+  _assertTestAdmin_('runProdSmokeIsolatedForRunner');
   var CS = ConfigurationService;
   var results = [];
   try {
@@ -192,6 +198,7 @@ function runProdSmokeIsolatedForRunner() {
 // ({pass, fail, warn, emailTotal, failures, gasLog}) — the smoke suites return their own shape, so
 // this adapts it and attaches Logger.getLog() so the full run log comes back to the caller.
 function runProdSmokeEmailToMeForRunner() {
+  _assertTestAdmin_('runProdSmokeEmailToMeForRunner');
   var res;
   try {
     res = runProdSmokeTestEmailTo(SMOKE_EMAIL_TO);
@@ -215,6 +222,7 @@ function runProdSmokeEmailToMeForRunner() {
 }
 
 function runProdSmokeTestEmailTo(address) {
+  _assertTestAdmin_('runProdSmokeTestEmailTo');
   var to = String(address || '').trim();
   if (!to || to.indexOf('@') < 0) {
     throw new Error('runProdSmokeTestEmailTo requires a single destination address, e.g. ' +
@@ -246,6 +254,7 @@ function runProdSmokeTestEmailTo(address) {
 
 // Safety valve — run this if a smoke run was interrupted and mail is still being redirected.
 function clearSmokeEmailRedirect() {
+  _assertTestAdmin_('clearSmokeEmailRedirect');
   PropertiesService.getScriptProperties().deleteProperty('EMAIL_REDIRECT_ALL');
   PropertiesService.getScriptProperties().deleteProperty('SUPPRESS_EMAILS_OVERRIDE');
   PropertiesService.getScriptProperties().deleteProperty('TEST_SPREADSHEET_ID');
@@ -550,6 +559,7 @@ function _smokeReadRow(sheetName, workflowId) {
 }
 
 function _smokePurgeByNames(sentinelNames) {
+  _assertTestAdmin_('_smokePurgeByNames');
   var ss = SpreadsheetApp.openById(SMOKE_DEV_SS_ID);
   var allSheets = ss.getSheets();
   var totalDeleted = 0;

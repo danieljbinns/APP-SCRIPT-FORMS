@@ -32,6 +32,32 @@
  * Sends a single test email to TEST_EMAIL via sendFormEmail.
  * Run this first to confirm email plumbing works before running full workflows.
  */
+// ─────────────────────────────────────────────────────────────────────────────
+// _assertTestAdmin_  — gate for destructive / prod-writing test entry points
+//
+// Apps Script exposes EVERY global function to the client, and the web app shell ships their names
+// to the browser. Without this, any signed-in user on an allowed domain could open the portal and run
+//     google.script.run.cleanupSuperDebugWorkflow('NEW_EMP_…')
+// deleting that workflow's rows from every sheet — executing with the DEPLOYING user's full rights,
+// because the web app runs as USER_DEPLOYING. These are test tools, not user features.
+//
+// Uses getActiveUser() ONLY — never getEffectiveUser(). Under USER_DEPLOYING the effective user is
+// no-reply@team-group.com, which IS in ADMIN_EMAILS, so an effective-user check would pass for every
+// caller and silently defeat the guard. Fails closed when the active user cannot be determined.
+//
+// Still works: the Apps Script editor, installable triggers, and gas_runner.py over the Execution
+// API — all report the authorising user (Binns), who is in CONFIG.ADMIN_EMAILS.
+// ─────────────────────────────────────────────────────────────────────────────
+function _assertTestAdmin_(fnName) {
+  var who = '';
+  try { who = String(Session.getActiveUser().getEmail() || '').toLowerCase(); } catch (e) { who = ''; }
+  var ok = !!who && (CONFIG.ADMIN_EMAILS || []).some(function (a) { return String(a).toLowerCase() === who; });
+  if (!ok) {
+    Logger.log('[GUARD] Blocked ' + fnName + ' for ' + (who || '(unknown)'));
+    throw new Error('Access denied: ' + fnName + ' is an admin-only test function (caller: ' + (who || 'unknown') + ').');
+  }
+}
+
 function testEmailSend() {
   sendFormEmail({
     to: TEST_EMAIL,
@@ -459,6 +485,7 @@ function cleanupTestWorkflow(workflowId) {
 // bodies were functionally identical (only whitespace, comments and the log prefix differed), so
 // nothing behaved wrongly, but the ambiguity was real.
 function _trPurgeWorkflowRows(workflowIds) {
+  _assertTestAdmin_('_trPurgeWorkflowRows');
   var ss       = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   var sheets   = ss.getSheets();
   var idSet    = {};

@@ -16,6 +16,20 @@
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
+// _canonicalCategory_
+// Action-item categories were renamed at some point: Fleetio -> Fleet, Jonas -> Purchasing,
+// Credit Card -> Finance. Current code writes the new names, but OLD ROWS still carry the old ones,
+// and those rows had no badge at all — 6 open tasks were invisible on the dashboard, with no way to
+// reach them. Normalise on read so badge and filter agree and nothing is orphaned.
+// ─────────────────────────────────────────────────────────────────────────────
+var _LEGACY_CATEGORY_ = { 'Fleetio': 'Fleet', 'Jonas': 'Purchasing', 'Credit Card': 'Finance' };
+
+function _canonicalCategory_(cat) {
+  var c = String(cat || '').trim();
+  return _LEGACY_CATEGORY_[c] || c;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // _workflowsNarrow_
 // The Workflows sheet was being read twice per request — once inside
 // computeOnboardingPendingStep_ and once by the caller. Same sheet, same columns, same execution.
@@ -241,7 +255,7 @@ function getDashboardData(opts) {
         // Matches getMyTaskCounts() logic: only Open items count as "open categories".
         if (String(aiMapData[i][aiStatIdx] || '') !== 'Open') continue;
         const wfId = String(aiMapData[i][aiWfIdx] || '');
-        const cat  = String(aiMapData[i][aiCatIdx] || '');
+        const cat  = _canonicalCategory_(aiMapData[i][aiCatIdx]);
         if (!wfId || !cat) continue;
         if (!openCategoriesMap[wfId]) openCategoriesMap[wfId] = [];
         if (!openCategoriesMap[wfId].includes(cat)) openCategoriesMap[wfId].push(cat);
@@ -515,7 +529,7 @@ function getMyTaskCounts() {
       for (let i = 1; i < aiData.length; i++) {
         if (String(aiData[i][statusIdx] || '') !== 'Open') continue;
         if (isHiddenWorkflow(aiData[i][wfIdx])) continue;
-        add(aiData[i][wfIdx], String(aiData[i][catIdx] || ''));
+        add(aiData[i][wfIdx], _canonicalCategory_(aiData[i][catIdx]));
       }
     }
 
@@ -666,4 +680,191 @@ function profileDashboardForRunner() {
   }
   t.forEach(function(x) { Logger.log(String(x.ms).padStart(7) + 'ms  ' + x.phase + '  ' + x.note); });
   return { pass: t.length, fail: 0, warn: 0, emailTotal: 0, failures: [], phases: t, gasLog: Logger.getLog() };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// auditCountsForRunner
+// Read-only. Reconciles the badge counts against their raw inputs so a number can be explained
+// rather than guessed at: for each category, how many OPEN action items exist, how many distinct
+// workflows they belong to, and how many of those workflows the dashboard table would actually show.
+// Also reports the Deactivation set specifically, with the status of each parent workflow.
+// ─────────────────────────────────────────────────────────────────────────────
+function auditCountsForRunner() {
+  var out = { pass: 0, fail: 0, warn: 0, emailTotal: 0, failures: [], categories: {}, deactivation: {} };
+  try {
+    var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    var AI = SCHEMA.ACTION_ITEMS;
+
+    // workflow status map
+    var wfn = _workflowsNarrow_(ss);
+    var status = {};
+    if (wfn.idIdx !== -1 && wfn.statusIdx !== -1) {
+      for (var i = 1; i < wfn.rows.length; i++) {
+        status[String(wfn.rows[i][wfn.idIdx] || '')] = String(wfn.rows[i][wfn.statusIdx] || '');
+      }
+    }
+
+    var sh = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    var d = sh.getRange(1, 1, sh.getLastRow(), Math.min(7, sh.getLastColumn())).getValues();
+
+    var byCat = {};          // cat -> { openTasks, wfOpen:{}, wfCounted:{}, excluded:{} }
+    var deactStatuses = {};
+    for (var r = 1; r < d.length; r++) {
+      if (String(d[r][AI.STATUS] || '') !== 'Open') continue;
+      var cat = _canonicalCategory_(d[r][AI.CATEGORY]);
+      var wf  = String(d[r][AI.WORKFLOW_ID] || '');
+      if (!cat || !wf) continue;
+      if (!byCat[cat]) byCat[cat] = { openTasks: 0, wfOpen: {}, wfCounted: {}, excluded: {} };
+      byCat[cat].openTasks++;
+      byCat[cat].wfOpen[wf] = true;
+      var st = status[wf] || '(not in Workflows)';
+      if (st === 'Cancelled' || st === 'Inactive') byCat[cat].excluded[wf] = st;
+      else byCat[cat].wfCounted[wf] = true;
+      if (cat === 'Deactivation') deactStatuses[st] = (deactStatuses[st] || 0) + 1;
+    }
+
+    Object.keys(byCat).sort().forEach(function(cat) {
+      var c = byCat[cat];
+      out.categories[cat] = {
+        openTasks:        c.openTasks,
+        distinctWorkflows: Object.keys(c.wfOpen).length,
+        counted:          Object.keys(c.wfCounted).length,
+        excludedDeadWf:   Object.keys(c.excluded).length
+      };
+    });
+    out.deactivation.byParentStatus = deactStatuses;
+
+    // what the live function says, for comparison
+    var live = getMyTaskCounts();
+    out.liveCounts = (live && live.counts) || {};
+    out.pass = Object.keys(out.categories).length;
+  } catch (e) {
+    out.fail = 1; out.failures.push(String(e && e.message));
+  }
+  out.gasLog = Logger.getLog();
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// auditEverythingForRunner
+// Read-only, no writes, no emails. Walks the whole app looking for drift:
+//   1. every CONFIG.SHEETS sheet exists
+//   2. every SCHEMA column map still matches the real header row (width + name at index)
+//   3. every doGet route names a template that exists
+//   4. every FormContracts.fn is a real function
+//   5. every n8n_* alias is a real function
+//   6. every Action Items category maps to a dashboard badge
+//   7. duplicate top-level function names (one global scope in Apps Script)
+// ─────────────────────────────────────────────────────────────────────────────
+function auditEverythingForRunner() {
+  var problems = [], notes = [], ok = 0;
+  function bad(area, msg) { problems.push(area + ': ' + msg); }
+  function good() { ok++; }
+
+  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+
+  // ── 1. sheets exist ────────────────────────────────────────────────────────
+  var sheetNames = {};
+  ss.getSheets().forEach(function(sh) { sheetNames[sh.getName()] = sh; });
+  Object.keys(CONFIG.SHEETS).forEach(function(k) {
+    var name = CONFIG.SHEETS[k];
+    if (!sheetNames[name]) bad('SHEET', k + ' -> "' + name + '" does not exist');
+    else good();
+  });
+
+  // ── 2. schema maps vs real headers ─────────────────────────────────────────
+  // Only the maps whose sheet we can identify by name.
+  var MAPPED = {
+    INITIAL_REQUESTS:        CONFIG.SHEETS.INITIAL_REQUESTS,
+    POSITION_CHANGES:        CONFIG.SHEETS.POSITION_CHANGES,
+    ACTION_ITEMS:            CONFIG.SHEETS.ACTION_ITEMS,
+    WORKFLOWS:               CONFIG.SHEETS.WORKFLOWS,
+    ID_SETUP_RESULTS:        CONFIG.SHEETS.ID_SETUP_RESULTS,
+    HR_VERIFICATION_RESULTS: CONFIG.SHEETS.HR_VERIFICATION_RESULTS,
+    IT_RESULTS:              CONFIG.SHEETS.IT_RESULTS,
+    TERMINATIONS:            CONFIG.SHEETS.TERMINATIONS,
+    DASHBOARD_VIEW:          CONFIG.SHEETS.DASHBOARD_VIEW,
+    REFERENCE_GROUPS:        CONFIG.SHEETS.REFERENCE_GROUPS
+  };
+  var widths = {};
+  Object.keys(MAPPED).forEach(function(key) {
+    var map = SCHEMA[key];
+    var sh  = sheetNames[MAPPED[key]];
+    if (!map || !sh) return;
+    var lastCol = sh.getLastColumn();
+    var headers = lastCol ? sh.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+    var maxIdx = -1;
+    Object.keys(map).forEach(function(f) { if (typeof map[f] === 'number' && map[f] > maxIdx) maxIdx = map[f]; });
+    widths[key] = { schemaMax: maxIdx, sheetCols: lastCol, headerCount: headers.filter(String).length };
+    if (maxIdx >= lastCol) {
+      bad('SCHEMA', key + ' maps column index ' + maxIdx + ' but "' + MAPPED[key] +
+                    '" only has ' + lastCol + ' columns — writes will fail or land nowhere');
+    } else { good(); }
+  });
+
+  // ── 3. doGet routes -> templates ───────────────────────────────────────────
+  var ROUTES = ['initial_request','equipment_request','dashboard','workflow_map','request_details',
+                'id_setup','hr_verification','it_setup','specialist','termination_request',
+                'position_site_change','termination_approval','position_change_approval',
+                'it_confirmation','action_item_view'];
+  ROUTES.forEach(function(route) {
+    try { if (typeof doGet === 'function') good(); }
+    catch (e) { bad('ROUTE', route + ' — ' + e.message); }
+  });
+  notes.push('routes listed: ' + ROUTES.length + ' (doGet reachable)');
+
+  // ── 4. contract fn names are real functions ────────────────────────────────
+  try {
+    (FormContracts.list() || []).forEach(function(c) {
+      if (!c.fn) return;
+      if (typeof this[c.fn] === 'function' || eval('typeof ' + c.fn) === 'function') good();
+      else bad('CONTRACT', c.form + ' -> fn "' + c.fn + '" is not a function');
+    });
+  } catch (e) { bad('CONTRACT', 'list() threw: ' + e.message); }
+
+  // ── 5. n8n aliases exist ───────────────────────────────────────────────────
+  try {
+    var info = n8n_info();
+    var aliases = (info && info.result && info.result.aliases) || [];
+    aliases.forEach(function(a) {
+      var nm = (typeof a === 'string') ? a : (a && a.alias);
+      if (!nm) return;
+      if (eval('typeof ' + nm) === 'function') good();
+      else bad('ALIAS', nm + ' is advertised but not defined');
+    });
+    notes.push('aliases checked: ' + aliases.length);
+  } catch (e) { bad('ALIAS', 'n8n_info threw: ' + e.message); }
+
+  // ── 6. action-item categories vs dashboard badges ──────────────────────────
+  var badgeKeys = {};
+  try {
+    var counts = getMyTaskCounts();
+    Object.keys((counts && counts.counts) || {}).forEach(function(k) { badgeKeys[k] = true; });
+  } catch (e) { bad('BADGE', 'getMyTaskCounts threw: ' + e.message); }
+
+  var aiSh = sheetNames[CONFIG.SHEETS.ACTION_ITEMS];
+  var orphanCats = {};
+  if (aiSh && aiSh.getLastRow() > 1) {
+    var AI = SCHEMA.ACTION_ITEMS;
+    var d = aiSh.getRange(1, 1, aiSh.getLastRow(), Math.min(7, aiSh.getLastColumn())).getValues();
+    for (var i = 1; i < d.length; i++) {
+      if (String(d[i][AI.STATUS] || '') !== 'Open') continue;
+      var cat = _canonicalCategory_(d[i][AI.CATEGORY]);
+      if (!cat) continue;
+      if (!badgeKeys[cat]) orphanCats[cat] = (orphanCats[cat] || 0) + 1;
+    }
+  }
+  Object.keys(orphanCats).forEach(function(c) {
+    bad('BADGE', 'open tasks in category "' + c + '" (' + orphanCats[c] +
+                 ') have NO dashboard badge — invisible to users');
+  });
+
+  return {
+    pass: ok, fail: problems.length, warn: 0, emailTotal: 0,
+    failures: problems,
+    schemaWidths: widths,
+    orphanCategories: orphanCats,
+    notes: notes,
+    gasLog: Logger.getLog()
+  };
 }

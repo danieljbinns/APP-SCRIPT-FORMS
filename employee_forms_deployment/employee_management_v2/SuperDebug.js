@@ -697,6 +697,7 @@ var SD_NH_ITSETUP = function(wfId) { return {
  * Full New Hire trace — 12 phases.
  */
 function runSuperDebugNewHire() {
+  _assertTestAdmin_('runSuperDebugNewHire');
   _SD_RESULTS = [];
   _SD_EMAIL_COUNTS = {};
 
@@ -1053,6 +1054,7 @@ var SD_TERM_APPROVAL = function(wfId) { return {
  * Full EOE (Termination) trace — 10 phases.
  */
 function runSuperDebugEOE() {
+  _assertTestAdmin_('runSuperDebugEOE');
   _SD_RESULTS = [];
   _SD_EMAIL_COUNTS = {};
 
@@ -1247,6 +1249,7 @@ var SD_CHANGE_APPROVAL = function(wfId) { return {
 // ── Sub-suite A: Title + Classification Change ────────────────────────────────
 
 function runSuperDebugStatusChange_Title() {
+  _assertTestAdmin_('runSuperDebugStatusChange_Title');
   _SD_RESULTS = [];
   _SD_EMAIL_COUNTS = {};
   _sdSection(0, 'Pre-flight');
@@ -1340,6 +1343,7 @@ function runSuperDebugStatusChange_Title() {
 // ── Sub-suite B: Site Transfer + Manager + Fleetio + Vehicle ─────────────────
 
 function runSuperDebugStatusChange_Site() {
+  _assertTestAdmin_('runSuperDebugStatusChange_Site');
   _SD_RESULTS = [];
   _SD_EMAIL_COUNTS = {};
   _sdSection(0, 'Pre-flight');
@@ -1428,6 +1432,7 @@ function runSuperDebugStatusChange_Site() {
 // ── Sub-suite C: Full Kitchen Sink (all types + all systems + equipment returns) ─
 
 function runSuperDebugStatusChange_Full() {
+  _assertTestAdmin_('runSuperDebugStatusChange_Full');
   _SD_RESULTS = [];
   _SD_EMAIL_COUNTS = {};
   _sdSection(0, 'Pre-flight');
@@ -1538,6 +1543,7 @@ function runSuperDebugStatusChange_Full() {
 
 /** Run all 3 Status Change sub-suites in sequence. */
 function runSuperDebugStatusChange() {
+  _assertTestAdmin_('runSuperDebugStatusChange');
   Logger.log('[SD] ═══ Running all 3 Status Change sub-suites ═══');
   var r1 = runSuperDebugStatusChange_Title();
   Utilities.sleep(1000);
@@ -1650,6 +1656,7 @@ var SD_EQUIP_ITSETUP = function(wfId) { return {
  * Old checklist path (launchEquipmentActionItems) is commented out in EquipmentRequestHandler.js.
  */
 function runSuperDebugEquipment() {
+  _assertTestAdmin_('runSuperDebugEquipment');
   _SD_RESULTS = [];
   _SD_EMAIL_COUNTS = {};
   _sdSection(0, 'Pre-flight');
@@ -1832,6 +1839,7 @@ function runSuperDebugEquipment() {
  * Final combined report printed at end.
  */
 function runSuperDebugAll(autoCleanup) {
+  _assertTestAdmin_('runSuperDebugAll');
   // autoCleanup=true → delete all test workflows after run completes (default: false for safety)
   const shouldCleanup = autoCleanup === true;
 
@@ -1917,6 +1925,7 @@ function listSuperDebugWorkflows() {
  * Self-contained — does not depend on TestRunner.js.
  */
 function _purgeWorkflowRows(workflowIds) {
+  _assertTestAdmin_('_purgeWorkflowRows');
   var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   var sheets = ss.getSheets();
   var idSet = {};
@@ -1948,6 +1957,7 @@ function _purgeWorkflowRows(workflowIds) {
  * Delete all rows written by SuperDebug test runs from every sheet.
  */
 function cleanupSuperDebugAll() {
+  _assertTestAdmin_('cleanupSuperDebugAll');
   var ids = listSuperDebugWorkflows();
   if (ids.length === 0) {
     Logger.log('[SD] cleanupSuperDebugAll: No SuperDebug workflows found — nothing to delete.');
@@ -1963,6 +1973,7 @@ function cleanupSuperDebugAll() {
  * @param {string} wfId
  */
 function cleanupSuperDebugWorkflow(wfId) {
+  _assertTestAdmin_('cleanupSuperDebugWorkflow');
   if (!wfId) { Logger.log('[SD] cleanupSuperDebugWorkflow: no ID provided.'); return; }
   Logger.log('[SD] Purging single workflow: ' + wfId);
   return _purgeWorkflowRows([wfId]);
@@ -1980,6 +1991,7 @@ function cleanupSuperDebugWorkflow(wfId) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function runSuperDebugAggregation() {
+  _assertTestAdmin_('runSuperDebugAggregation');
   _SD_RESULTS    = [];
   _SD_EMAIL_COUNTS = {};
   var tag = 'AGG';
@@ -2132,6 +2144,7 @@ function runSuperDebugAggregation() {
 // employee No -> Yes, so both the static field and the old -> new pair are exercised.
 // ─────────────────────────────────────────────────────────────────────────────
 function runSuperDebugUnionIsolatedForRunner() {
+  _assertTestAdmin_('runSuperDebugUnionIsolatedForRunner');
   var CS = ConfigurationService;
   var out = { pass: 0, fail: 0, warn: 0, emailTotal: 0, failures: [] };
   try {
@@ -2197,6 +2210,7 @@ function runSuperDebugUnionIsolatedForRunner() {
 // Returns the created workflow ids so the form URLs can be built.
 // ─────────────────────────────────────────────────────────────────────────────
 function runSuperDebugUnionOpenableForRunner() {
+  _assertTestAdmin_('runSuperDebugUnionOpenableForRunner');
   var CS = ConfigurationService;
   var out = { pass: 0, fail: 0, warn: 0, emailTotal: 0, failures: [], created: {} };
   try {
