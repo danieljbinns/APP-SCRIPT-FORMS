@@ -433,7 +433,7 @@ function cleanupAllTestWorkflows() {
   }
 
   Logger.log('[TestRunner] Found ' + ids.length + ' test workflow(s): ' + ids.join(', '));
-  return _purgeWorkflowRows(ids);
+  return _trPurgeWorkflowRows(ids);
 }
 
 /**
@@ -444,7 +444,7 @@ function cleanupTestWorkflow(workflowId) {
   _assertDevOnly();
   if (!workflowId) { Logger.log('[TestRunner] cleanupTestWorkflow: no ID provided.'); return; }
   Logger.log('[TestRunner] Purging workflow: ' + workflowId);
-  return _purgeWorkflowRows([workflowId]);
+  return _trPurgeWorkflowRows([workflowId]);
 }
 
 /**
@@ -453,7 +453,12 @@ function cleanupTestWorkflow(workflowId) {
  * @param {string[]} workflowIds
  * @returns {{ totalDeleted: number, sheets: Object }}
  */
-function _purgeWorkflowRows(workflowIds) {
+// Renamed from _purgeWorkflowRows 2026-10-13: SuperDebug.js defines a function with the same name.
+// Apps Script shares one global scope across all files, so the two collided and whichever loaded
+// last silently won — the editor warns about this when picking a function for a trigger. The two
+// bodies were functionally identical (only whitespace, comments and the log prefix differed), so
+// nothing behaved wrongly, but the ambiguity was real.
+function _trPurgeWorkflowRows(workflowIds) {
   var ss       = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   var sheets   = ss.getSheets();
   var idSet    = {};

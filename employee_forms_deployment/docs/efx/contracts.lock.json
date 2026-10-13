@@ -1,7 +1,7 @@
 {
   "apiVersion": "2026.09.17-1",
   "contractsVersion": "2026.09.16-r2",
-  "generatedAt": "2026-09-17T02:31:21.199Z",
+  "generatedAt": "2026-10-13T20:30:00.482Z",
   "aliases": [
     "n8n_createWorkflow",
     "n8n_submitForm",
@@ -34,7 +34,7 @@
   "forms": {
     "new_hire": {
       "fn": "submitInitialRequest",
-      "hash": "sha256:b55e2c85c365c4b47a592578271547a3a5460b4a70f4b5bca448d45ca6dcc59f",
+      "hash": "sha256:fb219bb4531f5fc494bb026d067cd451ba05acca0a3edc5ef4f505cfb0f8e386",
       "required": [
         "firstName",
         "lastName",
@@ -89,7 +89,9 @@
         "purchasingSites",
         "adpSalaryAccess",
         "bossTrainingOnly",
-        "existingInternalEmployeeId"
+        "existingInternalEmployeeId",
+        "dssLanguage",
+        "union"
       ],
       "verified": true,
       "createsWorkflow": true
@@ -198,7 +200,7 @@
     },
     "position_change_request": {
       "fn": "submitPositionChangeRequest",
-      "hash": "sha256:008b94bb3a323bba49b044aa437bdbdc1d32fa2115fea012b060457964169681",
+      "hash": "sha256:8de4a94ff33a074417d12f73fa1be332a029443123f71abc0c59ae17dfcb8539",
       "required": [
         "firstName",
         "lastName",
@@ -222,6 +224,8 @@
         "titleNew",
         "classOld",
         "classNew",
+        "unionOld",
+        "unionNew",
         "mgrOldEmail",
         "mgrOldName",
         "mgrNewEmail",
@@ -356,7 +360,7 @@
     },
     "it_confirmation": {
       "fn": "submitITConfirmation",
-      "hash": "sha256:5ac580a2da7a03f5ffc4fca174076ee3ea906eb13520f7a5ac919087081d45b3",
+      "hash": "sha256:19afdc88c2d0732a834767c20a632210f18638ff0465b0bcea45873b9aaf4c61",
       "required": [
         "workflowId"
       ],
@@ -420,6 +424,7 @@
         "siteNew",
         "titleNew",
         "classNew",
+        "unionNew",
         "sys",
         "equip",
         "rem"

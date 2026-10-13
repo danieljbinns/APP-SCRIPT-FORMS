@@ -11,10 +11,15 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const ROOT = path.resolve(__dirname, '..');
-const SRC = path.join(ROOT, 'employee_management_v2_efx');
-const OUT_MD = path.join(ROOT, 'docs', 'N8N_CONTRACTS.md');
-const OUT_LOCK = path.join(ROOT, 'docs', 'contracts.lock.json');
+// Paths updated 2026-10-13: this file moved to tools/efx/ and the EFX fork was consolidated into
+// employee_management_v2 during the 2026-09-23 reconciliation. The old values pointed at a source
+// directory that no longer exists, so the generator could not run.
+const ROOT = path.resolve(__dirname, '..', '..');
+const SRC = path.join(ROOT, 'employee_management_v2');
+// Output paths can be overridden by env var. n8n-check.js used to rewrite these two lines with a
+// string replace, which silently broke the moment the lines changed — env vars cannot drift.
+const OUT_MD = process.env.EFX_MD_OUT || path.join(ROOT, 'docs', 'efx', 'N8N_CONTRACTS.md');
+const OUT_LOCK = process.env.EFX_LOCK_OUT || path.join(ROOT, 'docs', 'efx', 'contracts.lock.json');
 
 // Minimal GAS stubs so SchemaConstants/Config/FormContracts/N8n evaluate.
 const ctx = vm.createContext({

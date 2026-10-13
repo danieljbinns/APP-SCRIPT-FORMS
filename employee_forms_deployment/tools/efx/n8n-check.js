@@ -16,20 +16,23 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const ROOT = path.resolve(__dirname, '..');
-const LOCK = path.join(ROOT, 'docs', 'contracts.lock.json');
+const ROOT = path.resolve(__dirname, '..', '..');
+const LOCK = path.join(ROOT, 'docs', 'efx', 'contracts.lock.json');
 const args = process.argv.slice(2);
 const update = args.includes('--update');
 
 // Regenerate current view into a temp lock without touching the committed one
 const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'efx-'));
-process.env.EFX_LOCK_OUT = path.join(tmpDir, 'lock.json');
-const gen = fs.readFileSync(path.join(__dirname, 'gen-contracts.js'), 'utf8')
-  .replace("const OUT_MD = path.join(ROOT, 'docs', 'N8N_CONTRACTS.md');", `const OUT_MD = ${JSON.stringify(path.join(tmpDir, 'c.md'))};`)
-  .replace("const OUT_LOCK = path.join(ROOT, 'docs', 'contracts.lock.json');", `const OUT_LOCK = ${JSON.stringify(path.join(tmpDir, 'lock.json'))};`);
-const tmpGen = path.join(tmpDir, 'gen.js');
-fs.writeFileSync(tmpGen, gen.replace("path.resolve(__dirname, '..')", JSON.stringify(ROOT)));
-execFileSync(process.execPath, [tmpGen], { stdio: 'ignore' });
+// Run the real generator against a throwaway output directory via env vars, rather than rewriting
+// its source. The old approach string-replaced two specific lines and broke when they moved.
+execFileSync(process.execPath, [path.join(__dirname, 'gen-contracts.js'), '--lock'], {
+  stdio: 'pipe',
+  env: Object.assign({}, process.env, {
+    EFX_MD_OUT:   path.join(tmpDir, 'contracts.md'),
+    EFX_LOCK_OUT: path.join(tmpDir, 'lock.json')
+  })
+});
+
 const cur = JSON.parse(fs.readFileSync(path.join(tmpDir, 'lock.json'), 'utf8'));
 
 if (!fs.existsSync(LOCK) || update) {

@@ -22,6 +22,28 @@ three things it did not have:
 | The internal employee number | Minted only when someone opened the ID Setup page | Minted **at submit** and printed in that email |
 | A way to hand ID Setup back | A password posted to a hidden web address, JR only | Named, permanent calls: Submit ID Setup, Close Task, Get Workflow, List Tasks, Close JR Task |
 
+## What changed on 2026-10-13
+
+Three new fields reach n8n. All additive — **nothing George sends today stops working**, and the
+contract version moved, which is the signal that it changed.
+
+| Field | Form | Values | Notes |
+|---|---|---|---|
+| `dssLanguage` | `new_hire` | `English` \| `Spanish` | Which DSS learning path to assign. Defaults to English when omitted. |
+| `union` | `new_hire` | `Yes` \| `No` | Union member. Defaults to No when omitted. |
+| `unionOld` / `unionNew` | `position_change_request` | `Yes` \| `No` \| `Unknown` (old side only) | Stored as `"old -> new"`. `unionNew` is also accepted on `it_confirmation`. |
+
+Why `Unknown`: union status is captured on **every** status change so a record builds up for
+employees who predate the field. Forcing `No` when nobody knows would invent a history, so the old
+side can say `Unknown` honestly.
+
+Two more domains are accepted wherever a company address is: **ajvac.ca** and **stgroup.ca**.
+
+Both new-hire fields appear in the Request Details block of every New Hire email, so an automation
+reading the submit email can pick them up without an extra call.
+
+---
+
 ## What changed on 2026-09-23
 
 - The two submit emails (`ID Setup Required` to the ID Setup team, `Request Submitted` to the requester) now show
