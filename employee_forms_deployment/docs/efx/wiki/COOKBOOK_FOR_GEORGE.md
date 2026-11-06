@@ -229,7 +229,7 @@ Build DSS user + password → Litmos: Create User → Forms · Submit ID Setup �
 {
   "workflowId": "{{ $json.workflowId }}",
   "siteDocsWorkerId": "{{ $('SiteDocs: Create Worker').item.json.id }}",
-  "siteDocsJobCode": "Hourly 1",
+  "siteDocsJobCode": "{{ $json.siteDocsJobCode }}",
   "dssUsername": "{{ $json.dssUsername }}",
   "dssPassword": "{{ $json.dssPassword }}",
   "setupNotes": "Accounts created by n8n",
@@ -237,8 +237,8 @@ Build DSS user + password → Litmos: Create User → Forms · Submit ID Setup �
   "idempotencyKey": "idsetup-{{ $json.workflowId }}"
 }
 ```
-`siteDocsJobCode` must be one of Forms' own codes `Hourly 1 | Hourly 2 | Salary 1 | Salary 2 | Supervisor | Manager` —
-**not** your SiteDocs title codes (`HRLY-U`, `Site-Sup – Union`). The `Map title codes` node in `40` derives both.
+`siteDocsJobCode` takes your SiteDocs title codes directly: `HRLY-U`, `HRLY`, `Site-Sup – Union`, `Site-Sup`, `Site-ADM-U`, `Site-ADM`,
+`Corp-Exec`, `Corp-Mgmt`, `EHS`, `C-Support`. The enum was removed 2026-11-04 — Forms no longer validates it, so no mapping is needed.
 **Never send `internalEmployeeId`** — Forms uses the one minted at submit; a different value is refused. Optional:
 `siteDocsUsername`, `siteDocsPassword` (the UI requires them only when the request's Systems contains `SiteDocs`),
 `bossWisCreated` `Yes|No`, `siteDocsBadgeCreated` `Yes|No`. Generate `dssPassword` per run; it lands in Forms exactly

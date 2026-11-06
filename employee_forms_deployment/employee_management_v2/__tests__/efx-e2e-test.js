@@ -1014,8 +1014,12 @@ scenario('9. NEGATIVE / GUARDS — validation writes nothing, error codes, idemp
   eq('no emails sent by rejected creates', mails().length, 0);
   const v5 = step('id_setup missing required → E_VALIDATION', 'n8n_submitIdSetup', () => _ctx.n8n_submitIdSetup(ACTOR, { workflowId: 'X' }), { expectFail: true });
   eq('code', v5.error && v5.error.code, 'E_VALIDATION');
-  const v6 = step('id_setup bad siteDocsJobCode enum → E_VALIDATION', 'n8n_submitIdSetup', () => _ctx.n8n_submitIdSetup(ACTOR, idSetupPayload('X', { siteDocsJobCode: 'Boss' })), { expectFail: true });
-  truthy('fields names siteDocsJobCode', v6.error && v6.error.fields.some(f => f.field === 'siteDocsJobCode'));
+  // siteDocsJobCode enum removed 2026-11-04 — SiteDocs owns the code list, so a title code now clears
+  // validation and only fails downstream on the unknown workflow. Empty is still rejected as required.
+  const v6 = step('id_setup SiteDocs title code clears validation (no enum) → E_UPSTREAM', 'n8n_submitIdSetup', () => _ctx.n8n_submitIdSetup(ACTOR, idSetupPayload('X', { siteDocsJobCode: 'HRLY-U' })), { expectFail: true });
+  eq('code E_UPSTREAM — the value itself is no longer validated', v6.error && v6.error.code, 'E_UPSTREAM');
+  const v6b = step('id_setup empty siteDocsJobCode still → E_VALIDATION (required)', 'n8n_submitIdSetup', () => _ctx.n8n_submitIdSetup(ACTOR, idSetupPayload('X', { siteDocsJobCode: '' })), { expectFail: true });
+  truthy('fields names siteDocsJobCode as required', v6b.error && v6b.error.fields && v6b.error.fields.some(f => f.field === 'siteDocsJobCode'));
   const v7 = step('id_setup on non-existent workflow → E_UPSTREAM', 'n8n_submitIdSetup', () => _ctx.n8n_submitIdSetup(ACTOR, idSetupPayload('NEW_EMP_NOPE')), { expectFail: true });
   eq('code E_UPSTREAM', v7.error && v7.error.code, 'E_UPSTREAM');
   contains('message names the workflow', v7.error.message, 'NEW_EMP_NOPE');

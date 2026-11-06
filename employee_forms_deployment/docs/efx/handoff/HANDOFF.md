@@ -62,7 +62,8 @@ Every one also accepts `actor` (`{id, email, display}` — recorded as *Submitte
 grants nothing) and `idempotencyKey` (safe retry within 10 minutes). Closers accept `treatAlreadyClosedAsSuccess`
 (default true).
 
-`siteDocsJobCode` is a **strict enum**: `Hourly 1`, `Hourly 2`, `Salary 1`, `Salary 2`, `Supervisor`, `Manager`.
+`siteDocsJobCode` has **no enum** (removed 2026-11-04) — any non-empty string is accepted. SiteDocs owns the
+code list: `HRLY-U`, `HRLY`, `Site-Sup – Union`, `Site-Sup`, `Site-ADM-U`, `Site-ADM`, `Corp-Exec`, `Corp-Mgmt`, `EHS`, `C-Support`. Empty/null is still rejected as `required`.
 **Never pass `internalEmployeeId`** to Submit ID Setup — it is pre-assigned; a different value is refused.
 
 ### Gotcha that cost us an hour — read this

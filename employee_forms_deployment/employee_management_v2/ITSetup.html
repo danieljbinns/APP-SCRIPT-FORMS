@@ -45,7 +45,31 @@
         <input type="hidden" id="ctx_bossTripReports"    value="<?= requestData.bossTripReports    || '' ?>">
         <input type="hidden" id="ctx_bossGrievances"     value="<?= requestData.bossGrievances     || '' ?>">
 
+        <!--
+          Section gating (2026-10-16) — IT Setup must show only what was actually requested.
+          Previously every section rendered unconditionally, and their first field was `required`,
+          so a phone-only equipment request could not be submitted without inventing an email
+          username, domain and temporary password. Identical for New Hire and Equipment: this
+          template has no workflow-type branching.
+          `systems` is supplied as an array by getITContextData() (ITSetupHandler.js:85).
+          Names must match the systems list in FormContracts.js.
+        -->
+        <?
+          var _sys        = (requestData && requestData.systems) || [];
+          var _hasSys     = function(n) { return _sys.indexOf(n) !== -1; };
+          var _wantGoogle = _hasSys('Google Account') || !!requestData.googleEmail;
+          var _wantComp   = requestData.computerReq && requestData.computerReq !== 'None';
+          var _wantPhone  = requestData.phoneReq    && requestData.phoneReq    !== 'No';
+          var _wantBoss   = _hasSys('BOSS');
+          var _wantInc    = _hasSys('Incidents');
+          var _wantCaa    = _hasSys('CAA');
+          var _wantDel    = _hasSys('Delivery');
+          var _wantNps    = _hasSys('Net Promoter Score');
+          var _wantExtra  = _wantInc || _wantCaa || _wantDel || _wantNps;
+        ?>
+
         <!-- ── Google Account Setup ── -->
+        <? if (_wantGoogle) { ?>
         <div class="form-section">
           <h2>Google Account Setup</h2>
 
@@ -88,7 +112,10 @@
           </div>
         </div>
 
+        <? } ?>
+
         <!-- ── Computer Assignment ── -->
+        <? if (_wantComp) { ?>
         <div class="form-section">
           <h2>Computer Assignment</h2>
 
@@ -136,7 +163,10 @@
           </div>
         </div>
 
+        <? } ?>
+
         <!-- ── Phone Assignment ── -->
+        <? if (_wantPhone) { ?>
         <div class="form-section">
           <h2>Phone Assignment</h2>
 
@@ -182,10 +212,12 @@
             <input type="text" id="phoneVMPassword" name="Phone_VM_Password" placeholder="Initial voicemail PIN">
           </div>
         </div>
+        <? } ?>
 
-        <!-- ── BOSS & System Access ── -->
+        <!-- ── BOSS Access ── -->
+        <? if (_wantBoss) { ?>
         <div class="form-section">
-          <h2>BOSS &amp; System Access</h2>
+          <h2>BOSS Access</h2>
 
           <div class="form-field">
             <label>BOSS Access Granted <span class="required">*</span></label>
@@ -250,9 +282,19 @@
           </div>
           <? } ?>
           <? } ?> <!-- end bossTrainingOnly check -->
+        </div>
+        <? } ?>
 
-          <label class="form-label" style="margin: 20px 0 10px; display:block;">Additional System Access — check each system that was granted:</label>
+        <!-- ── Additional System Access ── -->
+        <!-- Split out of the BOSS section 2026-10-16: these are independent systems and must not
+             be hidden or shown just because BOSS was or wasn't requested. -->
+        <? if (_wantExtra) { ?>
+        <div class="form-section">
+          <h2>Additional System Access</h2>
 
+          <label class="form-label" style="margin: 0 0 10px; display:block;">Check each system that was granted:</label>
+
+          <? if (_wantInc) { ?>
           <div class="confirm-item">
             <input type="checkbox" id="Incidents_Access" name="Incidents_Access" value="Yes">
             <label for="Incidents_Access">
@@ -260,6 +302,8 @@
               <span>Access to the Incidents reporting system</span>
             </label>
           </div>
+          <? } ?>
+          <? if (_wantCaa) { ?>
           <div class="confirm-item">
             <input type="checkbox" id="CAA_Access" name="CAA_Access" value="Yes">
             <label for="CAA_Access">
@@ -267,6 +311,8 @@
               <span>Access to the CAA system</span>
             </label>
           </div>
+          <? } ?>
+          <? if (_wantDel) { ?>
           <div class="confirm-item">
             <input type="checkbox" id="Delivery_App_Access" name="Delivery_App_Access" value="Yes">
             <label for="Delivery_App_Access">
@@ -274,6 +320,8 @@
               <span>Access to the delivery application</span>
             </label>
           </div>
+          <? } ?>
+          <? if (_wantNps) { ?>
           <div class="confirm-item">
             <input type="checkbox" id="Net_Promoter_Score_Access" name="Net_Promoter_Score_Access" value="Yes">
             <label for="Net_Promoter_Score_Access">
@@ -281,7 +329,9 @@
               <span>Access to NPS reporting tools</span>
             </label>
           </div>
+          <? } ?>
         </div>
+        <? } ?>
 
         <!-- ── Notes ── -->
         <div class="form-section">

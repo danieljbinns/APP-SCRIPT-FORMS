@@ -55,14 +55,24 @@
               <label>SiteDocs Job Code <span class="required">*</span></label>
               <select name="siteDocsJobCode" required>
                 <option value="">-- Select Job Code --</option>
-                <option value="Hourly 1">Hourly 1</option>
-                <option value="Hourly 2">Hourly 2</option>
-                <option value="Salary 1">Salary 1</option>
-                <option value="Salary 2">Salary 2</option>
-                <option value="Supervisor">Supervisor</option>
-                <option value="Manager">Manager</option>
+                <optgroup label="Corporate">
+                  <option value="Corp-Exec">Corp-Exec &mdash; Executive / Corporate Leadership</option>
+                  <option value="Corp-Mgmt">Corp-Mgmt &mdash; Corporate Management</option>
+                  <option value="EHS">EHS &mdash; Safety</option>
+                  <option value="C-Support">C-Support &mdash; Corporate Management Support</option>
+                </optgroup>
+                <optgroup label="Site &mdash; Union">
+                  <option value="Site-Sup &#8211; Union">Site-Sup &#8211; Union &mdash; Site Level, Union</option>
+                  <option value="Site-ADM-U">Site-ADM-U &mdash; Site Administration, Union</option>
+                  <option value="HRLY-U">HRLY-U &mdash; Site Hourly, Union</option>
+                </optgroup>
+                <optgroup label="Site &mdash; Non-Union">
+                  <option value="Site-Sup">Site-Sup &mdash; Site Level, Non-Union</option>
+                  <option value="Site-ADM">Site-ADM &mdash; Site Administration, Non-Union</option>
+                  <option value="HRLY">HRLY &mdash; Site Hourly, Non-Union</option>
+                </optgroup>
               </select>
-              <small>Job classification for SiteDocs permissions</small>
+              <small>SiteDocs title code &mdash; see "SiteDocs Title Codes" (2026-09-11). Union split matters: check the Union field on the request.</small>
             </div>
           </div>
         </div>

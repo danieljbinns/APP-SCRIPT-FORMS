@@ -685,9 +685,71 @@ function getEquipmentRequestDetails(workflowId) {
       context.checklist.push({ name: 'IT Confirmation', status: 'Pending', target: 'it_confirmation' });
     }
 
+    // IT Setup — pushed explicitly, mirroring the New Hire path (getRequestDetails, ~:131).
+    // Before 2026-10-16 the equipment checklist had no IT Setup step of its own and relied
+    // entirely on an 'IT' row existing in Action Items. 29 of 49 confirmed equipment requests
+    // had none, so the tracker offered no route to the form and users fell back to the email.
+    // checkSheet() is scoped to getRequestDetails(), so the lookup is inline here — same shape
+    // as the IT Confirmation block above.
+    //
+    // Status comes from EITHER source. Historically equipment IT Setup was completed through
+    // action_item_view (because the portal button pointed there), which closes the Action Items
+    // row WITHOUT writing an IT Results row: 19 of 20 equipment workflows with an IT action item
+    // are Closed with no IT Results row. Reading IT Results alone would flip all 19 back to
+    // "Pending" on the tracker. Prefer IT Results for by/time, fall back to the action item.
     const aiSheet = ss.getSheetByName(CONFIG.SHEETS.ACTION_ITEMS);
+    const aiData  = aiSheet ? aiSheet.getDataRange().getValues() : null;
+
+    const itResSheet = ss.getSheetByName(CONFIG.SHEETS.IT_RESULTS);
+    const foundIt    = itResSheet
+      ? itResSheet.getRange('A:A').createTextFinder(workflowId).matchEntireCell(true).findNext()
+      : null;
+
+    // The IT action item for this workflow, if any — second source of truth for completion.
+    var itAi = null;
+    if (aiData) {
+      var _h = aiData[0];
+      var _w = _h.indexOf('Workflow ID'), _c = _h.indexOf('Category'),
+          _s = _h.indexOf('Status'),      _b = _h.indexOf('Closed By'),
+          _t = _h.indexOf('Completed Date');
+      for (var ai = 1; ai < aiData.length; ai++) {
+        if (String(aiData[ai][_w]) !== workflowId) continue;
+        if (String(aiData[ai][_c] || '') !== 'IT')  continue;
+        itAi = {
+          status: String(aiData[ai][_s] || 'Open'),
+          by:     _b >= 0 ? String(aiData[ai][_b] || '') : '',
+          time:   _t >= 0 && aiData[ai][_t] instanceof Date
+                    ? Utilities.formatDate(aiData[ai][_t], _tz, 'M/d/yyyy h:mm a')
+                    : String(_t >= 0 ? (aiData[ai][_t] || '') : '')
+        };
+        break;
+      }
+    }
+    const itAiDone = !!itAi && (itAi.status === 'Closed' || itAi.status === 'Complete');
+
+    if (foundIt || itAiDone) {
+      var itBy = itAi ? itAi.by : '', itTs = itAi ? itAi.time : '';
+      if (foundIt) {
+        const itRow   = itResSheet.getRange(foundIt.getRow(), 1, 1, itResSheet.getLastColumn()).getValues()[0];
+        const itHdrs  = itResSheet.getRange(1, 1, 1, itResSheet.getLastColumn()).getValues()[0];
+        const itTsIdx = itHdrs.indexOf('Submission Timestamp');
+        const itByIdx = itHdrs.indexOf('Submitted By');
+        if (itByIdx >= 0 && itRow[itByIdx]) itBy = String(itRow[itByIdx]);
+        if (itTsIdx >= 0 && itRow[itTsIdx]) {
+          itTs = itRow[itTsIdx] instanceof Date
+            ? Utilities.formatDate(itRow[itTsIdx], _tz, 'M/d/yyyy h:mm a')
+            : String(itRow[itTsIdx]);
+        }
+      }
+      context.checklist.push({ name: 'IT Setup', status: 'Complete', target: 'it_setup', by: itBy, time: itTs });
+    } else {
+      context.checklist.push({
+        name: 'IT Setup', target: 'it_setup',
+        status: itAi ? itAi.status : 'Pending'
+      });
+    }
+
     if (aiSheet) {
-      const aiData = aiSheet.getDataRange().getValues();
       const h      = aiData[0];
       const wfCol  = h.indexOf('Workflow ID'), catCol  = h.indexOf('Category'),
             nmCol  = h.indexOf('Task Name'),   stCol   = h.indexOf('Status'),
@@ -713,6 +775,11 @@ function getEquipmentRequestDetails(workflowId) {
         const st     = String(aiData[i][stCol] || 'Open');
         const tDate  = aiData[i][tmCol];
         const catVal = String(aiData[i][catCol] || '');
+        // IT Setup is now pushed explicitly above, read from IT Results. Skip the Action Items
+        // copy so the tracker doesn't show the step twice — and so the button opens the IT Setup
+        // form rather than action_item_view, which the tid on this row would otherwise force
+        // (RequestDetails.html:829 wins over :831 whenever tid is present).
+        if (catVal === 'IT') continue;
         const ftVal  = ftCol >= 0 ? String(aiData[i][ftCol] || '') : '';
         // Derive target: prefer Form Type (matches action item form routes), then category map, then slugify
         const target = ftVal || EQUIP_CAT_TARGET[catVal] || catVal.toLowerCase().replace(/[\s\/]+/g, '');

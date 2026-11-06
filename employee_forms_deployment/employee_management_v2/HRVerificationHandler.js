@@ -157,7 +157,16 @@ function submitHRVerification(formData) {
         mainSheet.getRange(i + 1, IR.MANAGER_NAME   + 1).setValue(formData.managerName);
         mainSheet.getRange(i + 1, IR.MANAGER_EMAIL  + 1).setValue(formData.managerEmail);
         if (formData.hireDate) mainSheet.getRange(i + 1, IR.HIRE_DATE + 1).setValue(new Date(formData.hireDate + 'T12:00:00'));
-        mainSheet.getRange(i + 1, IR.SITE_NAME      + 1).setValue(formData.siteName);
+        // Guarded 2026-10-16 — siteName ONLY. #siteName is populated by an async getSitesList()
+        // call and carries no `required`, so the form is submittable before it resolves;
+        // formData.siteName is then '' and this write wiped the stored Site Name. hireDate and
+        // department were already guarded this way.
+        //
+        // jobTitle and jrTitle are deliberately NOT guarded: HRVerification.html:106 submits a
+        // hidden jrTitle="" when jrRequired !== 'Yes', so an empty value there means "clear it",
+        // not "not supplied". Guarding them would silently disable that. Confirmed by
+        // __tests__/form-render-test.js, which asserts the hidden field is present in that case.
+        if (formData.siteName) mainSheet.getRange(i + 1, IR.SITE_NAME + 1).setValue(formData.siteName);
         mainSheet.getRange(i + 1, IR.POSITION_TITLE + 1).setValue(formData.jobTitle);
         mainSheet.getRange(i + 1, IR.JR_ASSIGNMENT  + 1).setValue(formData.jrTitle);
         if (formData.department !== undefined) mainSheet.getRange(i + 1, IR.DEPARTMENT + 1).setValue(formData.department);
@@ -278,7 +287,12 @@ function submitHRVerification(formData) {
       });
       Logger.log('[SUCCESS] Completion email sent to requester & manager (Hourly/No System Access)');
     } else {
-      const systems = context.systems;
+      // Guarded 2026-10-16. getWorkflowContext() returns null on any internal throw
+      // (EmailUtils.js:535) or when the row isn't found (:327), and the branch at :228 already
+      // admits context can be falsy. Dereferencing it here threw a TypeError *after* the row
+      // writes and the results appendRow had landed — so the sheet was updated while the caller
+      // was told the submit failed, with no rollback.
+      const systems = (context && context.systems) || '';
       const hasBOSSAccess = Array.isArray(systems) ? systems.includes('BOSS') : String(systems || '').includes('BOSS');
 
       if (hasBOSSAccess) {

@@ -144,8 +144,9 @@ var FormContracts = (function () {
       required: ['workflowId', 'siteDocsWorkerId', 'siteDocsJobCode', 'dssUsername', 'dssPassword'],
       optional: ['internalEmployeeId', 'formId', 'siteDocsUsername', 'siteDocsPassword', 'setupNotes', 'bossWisCreated', 'siteDocsBadgeCreated'],
       types: { bossWisCreated: 'YesNo', siteDocsBadgeCreated: 'YesNo', internalEmployeeId: 'numeric string' },
-      // Hard-coded <option>s in EmployeeIDSetup.html:57-63 (not a reference list)
-      enums: { siteDocsJobCode: ['Hourly 1', 'Hourly 2', 'Salary 1', 'Salary 2', 'Supervisor', 'Manager'] },
+      // No enum on siteDocsJobCode: SiteDocs owns the code list (HRLY-U / HRLY / Site-Sup ...) and it is
+      // still changing. Validating it here only blocked n8n every time SiteDocs added a code.
+      // Removed 2026-11-04. The field is still in `required` above, so null/empty is still rejected.
       responseFields: ['success', 'message'],
       notes: 'internalEmployeeId is pre-assigned at submitInitialRequest (EmployeeIdRegistry); omit it or send the pre-assigned value. ' +
              'A different value is honoured ONLY when the session principal is an admin (Actor.canOverrideEmployeeId(); IDSetup.js) — there is no override flag; ' +

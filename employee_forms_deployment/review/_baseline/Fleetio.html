@@ -1,0 +1,79 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fleetio Setup</title>
+  <?!= include('Styles') ?>
+</head>
+<body>
+  <div class="container">
+    <a href="<?= getBaseUrl() ?>" target="_top" class="back-link">&#8592; Back to Portal</a>
+    <div class="logo-container">
+      <img src="https://team-signature-logos.s3.us-east-1.amazonaws.com/Team+Logo+Black+Background.png" alt="Team Group Companies" class="logo">
+    </div>
+    <div id="form-container" class="card-form">
+      <h1>Fleetio Setup</h1>
+      <p class="subtitle">Please confirm this setup task is complete.</p>
+      <hr>
+      <div id="requestHeaderWrap">
+        <?!= includeWithData('RequestHeader', {requestData: requestData}) ?>
+      </div>
+      <form id="taskForm" autocomplete="off">
+        <input type="hidden" name="workflowId" value="<?= workflowId ?>">
+        <input type="hidden" name="formId" value="<?= formId !== undefined ? formId : '' ?>">
+        <input type="hidden" name="department" value="fleetio">
+
+        <div class="confirm-item">
+          <input type="checkbox" id="fleetioCreated" name="fleetioCreated" value="true" required>
+          <label for="fleetioCreated">
+            <strong>Fleetio Account Created</strong>
+            <span>Employee has been set up in Fleetio with the appropriate fleet group and access.</span>
+          </label>
+        </div>
+
+        <? if (requestData.vehicleRequested === 'Yes') { ?>
+        <div class="confirm-item">
+          <input type="checkbox" id="vehicleAssigned" name="vehicleAssigned" value="true" required>
+          <label for="vehicleAssigned">
+            <strong>Vehicle Assigned</strong>
+            <span>Company vehicle has been assigned and configured in Fleetio for this employee.</span>
+          </label>
+        </div>
+        <? } ?>
+
+        <div class="form-field" style="margin-top:20px;">
+          <label>Notes <span class="optional">(Optional)</span></label>
+          <textarea name="notes" rows="3" placeholder="Vehicle plate, fleet group, or any other details..."></textarea>
+        </div>
+        <div id="statusMessage"></div>
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-full">Confirm Complete</button>
+      </form>
+      <?!= includeWithData('SuccessScreen', {baseUrl: getBaseUrl()}) ?>
+    </div>
+  </div>
+
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Saving...</p>
+  </div>
+
+  <script>
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var form = e.target;
+      var fleetioCreated  = document.getElementById('fleetioCreated')  ? document.getElementById('fleetioCreated').checked  : true;
+      var vehicleAssigned = document.getElementById('vehicleAssigned') ? document.getElementById('vehicleAssigned').checked : null;
+      var data = {
+        workflowId: form.workflowId.value,
+        department: form.department.value,
+        notes: form.notes.value,
+        details: JSON.stringify({ fleetioCreated: fleetioCreated, vehicleAssigned: vehicleAssigned })
+      };
+      submitSpecialistTask(e.target, data, 'Fleetio Setup Complete', 'Submission recorded.');
+    });
+  </script>
+  <?!= include('SharedComponents') ?>
+  <?!= safeInclude('Konami') ?>
+</body>
+</html>

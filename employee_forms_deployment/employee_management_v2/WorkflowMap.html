@@ -234,6 +234,16 @@
             margin-bottom: 6px;
             text-align: center;
         }
+
+        /* ── Light / AODA contrast fix (2026-10-16) ───────────────────────────────
+           .tab-btn.active was color:white on a white background, so the active tab
+           had no perceivable indicator at all in light or AODA — and it is the only
+           cue for which tab is selected. Dark mode untouched. */
+        body.light-mode .tab-btn:hover,
+        body.aoda-mode  .tab-btn:hover,
+        body.light-mode .tab-btn.active,
+        body.aoda-mode  .tab-btn.active { color: var(--text-main); }
+
     </style>
 </head>
 

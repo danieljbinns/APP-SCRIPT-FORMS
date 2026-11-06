@@ -1,0 +1,113 @@
+{
+    "formType": "Termination / End of Employment",
+    "fields": [
+        {
+            "id": "f_site",
+            "label": "Site Name",
+            "type": "text",
+            "included": true
+        },
+        {
+            "id": "f_empname",
+            "label": "Employee Name",
+            "type": "text",
+            "included": true
+        },
+        {
+            "id": "f_date",
+            "label": "Effective Date of Change",
+            "type": "date",
+            "included": true
+        },
+        {
+            "id": "f_reason",
+            "label": "Reason for Leaving",
+            "type": "radio",
+            "included": true
+        },
+        {
+            "id": "f_reqname",
+            "label": "Requester Name",
+            "type": "text",
+            "included": true
+        },
+        {
+            "id": "f_hr_approved",
+            "label": "Has HR Approved this Termination?",
+            "type": "radio",
+            "included": true
+        },
+        {
+            "id": "f_type",
+            "label": "Hourly or Salary",
+            "type": "radio",
+            "included": true
+        },
+        {
+            "id": "f_has_reports",
+            "label": "Does employee have direct reports?",
+            "type": "radio",
+            "included": true
+        },
+        {
+            "id": "f_reassign",
+            "label": "Reassign Direct Reports To",
+            "type": "text",
+            "included": true
+        },
+        {
+            "id": "f_systems",
+            "label": "Systems/Apps to Deactivate",
+            "type": "checkboxes",
+            "included": true
+        },
+        {
+            "id": "f_google_forward",
+            "label": "Email Forwarding (Google Account)",
+            "type": "text",
+            "included": true
+        },
+        {
+            "id": "f_google_files",
+            "label": "Transfer Drive Files To",
+            "type": "text",
+            "included": true
+        },
+        {
+            "id": "f_google_delegate",
+            "label": "Delegated Inbox Access To",
+            "type": "text",
+            "included": true
+        },
+        {
+            "id": "f_google_duration",
+            "label": "Keep Account Active For",
+            "type": "radio",
+            "included": true
+        },
+        {
+            "id": "f_google_vacation",
+            "label": "Vacation Responder Msg",
+            "type": "text",
+            "included": true
+        },
+        {
+            "id": "f_upload",
+            "label": "Upload Documentation",
+            "type": "file",
+            "included": true
+        },
+        {
+            "id": "f_equip",
+            "label": "Return Equipment Checklist",
+            "type": "checkboxes",
+            "included": true
+        },
+        {
+            "id": "f_comments",
+            "label": "Additional Comments",
+            "type": "textarea",
+            "included": true
+        }
+    ]
+}

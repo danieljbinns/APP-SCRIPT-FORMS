@@ -276,23 +276,28 @@ function submitITSetup(formData) {
       workflowId,
       formId,
       new Date(),
-      formData.Email_Created,
+      // Fallbacks required since 2026-10-16: ITSetup.html now renders a section only when that
+      // item was actually requested, so these keys are absent on a form that didn't show them.
+      // Without a fallback the value is `undefined`, which setValues()/appendRow() reject.
+      // 'N/A' for the four Yes/No confirmations (matches the convention used by the detail
+      // fields below); 'No' for the access checkboxes, where "not rendered" means "not granted".
+      formData.Email_Created || 'N/A',
       assignedEmail,
       formData.Email_Temp_Password || 'N/A',
-      formData.Computer_Assigned,
+      formData.Computer_Assigned || 'N/A',
       formData.Computer_Serial || 'N/A',
       formData.Computer_Model || 'N/A',
       formData.Computer_Type || 'N/A',
-      formData.Phone_Assigned,
+      formData.Phone_Assigned || 'N/A',
       formData.Phone_Carrier || 'N/A',
       formData.Phone_Model || 'N/A',
       formData.Phone_Number || 'N/A',
       formData.Phone_VM_Password || 'N/A',
-      formData.BOSS_Access,
-      formData.Incidents_Access,
-      formData.CAA_Access,
-      formData.Delivery_App_Access,
-      formData.Net_Promoter_Score_Access,
+      formData.BOSS_Access || 'N/A',
+      formData.Incidents_Access || 'No',
+      formData.CAA_Access || 'No',
+      formData.Delivery_App_Access || 'No',
+      formData.Net_Promoter_Score_Access || 'No',
       formData.IT_Notes || '',
       Actor.email(),
       JSON.stringify(bossDetails)   // col 22 — BOSS committee/cost sheet/trip/grievances

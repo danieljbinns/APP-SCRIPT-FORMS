@@ -335,6 +335,23 @@
             background: rgba(0, 200, 83, 0.2);
             color: var(--success);
         }
+
+        /* ── Light / AODA contrast fixes (2026-10-16) ─────────────────────────────
+           h2 and .close-btn were hardcoded #fff on a card that is #ffffff in both
+           light and AODA — literally invisible (employee name heading, "Flight Check
+           Details", modal close). .status-badge was #333 behind var(--text-main),
+           ~1.5:1, so every Pending/Complete pill vanished. Dark mode untouched. */
+        body.light-mode h2,
+        body.aoda-mode  h2        { color: var(--text-main); }
+        body.light-mode .close-btn,
+        body.aoda-mode  .close-btn { color: var(--text-main); }
+        body.light-mode .status-badge,
+        body.aoda-mode  .status-badge {
+            background: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
     </style>
 </head>
 

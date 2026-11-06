@@ -348,6 +348,17 @@
         }
         #deleteIdList div { padding: 2px 0; font-family: monospace; }
         .del-confirm-btns { display: flex; gap: 10px; justify-content: flex-end; }
+
+        /* ── Light / AODA contrast fixes (2026-10-16) ─────────────────────────────
+           th and tr:hover hardcode dark-theme colours that no theme variable can
+           override, so they stayed dark while the background went white: all twelve
+           table headers were ~2.1:1 in light mode, and hovering a row blanked it to
+           ~1.1:1. Additive overrides — dark mode is untouched. */
+        body.light-mode th,
+        body.aoda-mode  th      { background: var(--card-bg); color: var(--text-main); }
+        body.light-mode tr:hover,
+        body.aoda-mode  tr:hover { background: var(--bg-color); }
+
     </style>
 </head>
 
@@ -510,6 +521,11 @@
         let allWorkflows = [];
         let filteredWorkflows = []; // For search + pagination combo
         let currentWorkflowId = null;
+        // Declared 2026-10-16. Assigned at :575, read at :586, but never declared — so whenever
+        // getDashboardData resolved before getMyTaskCounts (the usual order, see the comment at
+        // :552) renderTaskCountsWhenReady() threw a ReferenceError, aborting displayData() before
+        // renderMyRequests() at :825. The My Open Requests panel silently never rendered.
+        let _countsLoaded = false;
         let isAdmin = false;
         let selectedIds = new Set(); // Workflow IDs checked for deletion
         // Filtering and Sorting State

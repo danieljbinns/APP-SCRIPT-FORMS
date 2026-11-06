@@ -1,0 +1,28 @@
+<!--
+  ══════════════════════════════════════════════════════════════════
+  SuccessScreen — shared post-submission confirmation panel
+  ══════════════════════════════════════════════════════════════════
+  Include inside the form's card/container div:
+    includeWithData('SuccessScreen', {baseUrl: getBaseUrl()})
+
+  JS must populate dynamic fields after a successful submission:
+    document.getElementById('successTitle').textContent   = '...';
+    document.getElementById('successMessage').textContent = '...';
+    document.getElementById('successRequestId').textContent = 'Request ID: ' + id;
+    document.getElementById('successAnotherLink').href    = baseUrl + '?form=...';
+    document.getElementById('success-screen').style.display = 'block';
+
+  Styled entirely by Styles.html:
+    #success-screen, .success-icon, #success-screen h2/p/.actions
+  ══════════════════════════════════════════════════════════════════
+-->
+<div id="success-screen">
+  <div class="success-icon">✅</div>
+  <h2 id="successTitle"></h2>
+  <p id="successMessage"></p>
+  <p><strong id="successRequestId"></strong></p>
+  <div class="actions">
+    <a id="successAnotherLink" href="#" target="_top" class="btn btn-primary">Submit Another</a>
+    <a href="<?= baseUrl ?>?form=dashboard" target="_top" class="btn btn-secondary">Return to Dashboard</a>
+  </div>
+</div>

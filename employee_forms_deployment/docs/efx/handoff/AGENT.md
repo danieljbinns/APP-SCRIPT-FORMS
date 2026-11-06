@@ -46,7 +46,7 @@ Close JR Task    : idOrWorkflow*:string (TK-… | NEW_EMP_…), notes:string, ac
                    treatAlreadyClosedAsSuccess:boolean
 ```
 
-Enums: `siteDocsJobCode ∈ {Hourly 1, Hourly 2, Salary 1, Salary 2, Supervisor, Manager}`. `status ∈ {Open, Closed, Cancelled}`.
+Enums: `status ∈ {Open, Closed, Cancelled}`. `siteDocsJobCode` has **no enum** (removed 2026-11-04) — any non-empty string; SiteDocs owns the code list.
 `formType` examples: `safety_onboarding`, `jr_title`, `wis`, `review_306090`, `sitedocs`, `it_confirmation`.
 
 Rules: never send `internalEmployeeId` to Submit ID Setup (pre-assigned; refused if different). `actor` shape

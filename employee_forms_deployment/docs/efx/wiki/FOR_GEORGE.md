@@ -86,7 +86,7 @@ Already closed (safe, treat as success):
   "parameters": [
     { "id": "n8n:employee-onboarding", "email": "efx-bot@team-group.com", "display": "Employee onboarding (n8n)" },
     { "workflowId": "NEW_EMP_20260916-141501_123",
-      "siteDocsWorkerId": "184223", "siteDocsJobCode": "Hourly 1",
+      "siteDocsWorkerId": "184223", "siteDocsJobCode": "HRLY-U",
       "siteDocsUsername": "ada.lovelace@team-group.com",
       "dssUsername": "ada.lovelace", "dssPassword": "{{ $json.generatedPassword }}",
       "bossWisCreated": "Yes", "siteDocsBadgeCreated": "No",

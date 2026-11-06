@@ -353,7 +353,7 @@ Response fields: `success`, `workflowId`, `message`
 |---|---|---|---|
 | `workflowId` | **yes** | string |  |
 | `siteDocsWorkerId` | **yes** | string |  |
-| `siteDocsJobCode` | **yes** | string | `Hourly 1` \| `Hourly 2` \| `Salary 1` \| `Salary 2` \| `Supervisor` \| `Manager` |
+| `siteDocsJobCode` | **yes** | string | no enum since 2026-11-04 — any non-empty string. SiteDocs title codes: `HRLY-U`, `HRLY`, `Site-Sup – Union`, `Site-Sup`, `Site-ADM-U`, `Site-ADM`, `Corp-Exec`, `Corp-Mgmt`, `EHS`, `C-Support` |
 | `dssUsername` | **yes** | string |  |
 | `dssPassword` | **yes** | string |  |
 | `internalEmployeeId` | no | numeric string |  |
